@@ -9,7 +9,8 @@ var VERSION = 0x46;
  * @constructor
  */
 function Kinetic() {
-    this.version = VERSION;
+    this._version = VERSION;
+    return this;
 }
 
 Kinetic.error = {};
@@ -38,23 +39,56 @@ Kinetic.error.CONNECTION_TERMINATED = 20;
 Kinetic.error.INVALID_BATCH = 21;
 
 Kinetic.prototype = {
+    constructor: Kinetic,
+
+    setProtobuf: function(pbMessage) {
+        let self = this;
+        self._message = pbMessage;
+        return self;
+    },
+
+    setChunk: function(chunk) {
+        let self = this;
+        self._chunk = chunk;
+        return self;
+    },
+
+    getVersion: function() {
+        return this._version;
+    },
+
+    getProtobuf: function() {
+        return this._message;
+    },
+
+    getProtobufSize: function() {
+        return calculate(this._message);
+    },
+
+    getChunk: function() {
+        return this._chunk;
+    },
+
+    getChunkSize: function() {
+        return this._chunk.length;
+    },
+
     /**
      * Sends data following Kinetic protocol.
      * @param {Socket} sock - Socket to send data through.
      */
-    constructor: Kinetic,
     send: function(sock) {
         let self = this;
-        let buf = new Buffer(8);
+        let buf = new Buffer(9);
 
+        buf.writeInt8(self.getVersion(), 0);
         // BE stands for Big Endian
-        buf.writeInt32BE(calculate(self.message), 0);
-        buf.writeInt32BE(self.data.length, 4);
+        buf.writeInt32BE(self.getProtobufSize(), 1);
+        buf.writeInt32BE(self.getChunkSize(), 5);
 
-        sock.write(self.version);
         sock.write(buf);
-        sock.write(self.message);
-        sock.write(self.chunk);
+        sock.write(self.getProtobufMessage());
+        sock.write(self.getChunk());
         sock.end();
     },
 
@@ -65,16 +99,16 @@ Kinetic.prototype = {
     parse: function(data) {
         let self = this;
 
-        if (data[0] !== VERSION) {
+        if (data[0] !== self.getVersion()) {
             return (self.errors.VERSION_FAILURE);
         }
         // BE stands for Big Endian
-        self.protobufSize = data.readInt32BE(1);
+        const protobufSize = data.readInt32BE(1);
         const chunkSize = data.readInt32BE(5);
-        self.message = data.slice(9, 9 + protobufSize);
-        self.chunk = data.slice(9 + ProtobufSize);
+        self.setProtobuf(data.slice(9, 9 + protobufSize));
+        self.setChunk(data.slice(9 + protobufSize));
 
-        if (self.chunk.length !== chunkSize) {
+        if (self.getChunkSize !== chunkSize) {
             return (self.error.DATA_ERROR = 11);
         }
 
