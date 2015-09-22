@@ -1,8 +1,10 @@
 "use strict";
 
-var VERSION = 0x46;
+var protobuf = require('protobufjs');
 
-// TODO: We need to parse our .proto file at startup and integrate protobuf.js
+var VERSION = 0x46;
+var protoFilePath = __dirname + '/kinetic-protocol/kinetic.proto';
+var buildName = 'com.seagate.kinetic.proto';
 
 /**
  * Represents the Kinetic Protocol Data Structure.
@@ -41,6 +43,12 @@ Kinetic.error.INVALID_BATCH = 21;
 Kinetic.prototype = {
     constructor: Kinetic,
 
+    _init: function() {
+        let self = this;
+        self.build = protobuf.loadProtoFile(protoFilePath).build(buildName);
+        return self;
+    },
+
     setProtobuf: function(pbMessage) {
         let self = this;
         self._message = pbMessage;
@@ -62,7 +70,7 @@ Kinetic.prototype = {
     },
 
     getProtobufSize: function() {
-        return calculate(this._message);
+        return protobuf.calculate(this.getProtobuf());
     },
 
     getChunk: function() {
@@ -87,7 +95,7 @@ Kinetic.prototype = {
         buf.writeInt32BE(self.getChunkSize(), 5);
 
         sock.write(buf);
-        sock.write(self.getProtobufMessage());
+        sock.write(self.getProtobuf());
         sock.write(self.getChunk());
         sock.end();
     },
@@ -102,6 +110,7 @@ Kinetic.prototype = {
         if (data[0] !== self.getVersion()) {
             return (self.errors.VERSION_FAILURE);
         }
+
         // BE stands for Big Endian
         const protobufSize = data.readInt32BE(1);
         const chunkSize = data.readInt32BE(5);
@@ -116,4 +125,4 @@ Kinetic.prototype = {
     }
 };
 
-module.exports = Kinetic;
+module.exports = new Kinetic()._init();
