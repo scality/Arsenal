@@ -21,5 +21,7 @@
   },
   "homepage": "https://github.com/scality/IronMan-Lib#readme",
   "dependencies": {
-  }
+    "protobufjs": "^4.0.0"
+  },
+  "private": true
 }
