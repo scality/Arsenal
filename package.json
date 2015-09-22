@@ -1,0 +1,25 @@
+{
+  "name": "arsenal",
+  "version": "0.0.1",
+  "description": "Common utilities for the S3-kinetic project components",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/scality/IronMan-Lib.git"
+  },
+  "contributors": [{
+      "name": "David Pineau",
+      "email": ""
+    },
+    {
+      "name": "Michael Zapata",
+      "email": ""
+  }],
+  "license": "ISC",
+  "bugs": {
+        "url": "https://github.com/scality/IronMan-Lib/issues"
+  },
+  "homepage": "https://github.com/scality/IronMan-Lib#readme",
+  "dependencies": {
+  }
+}
