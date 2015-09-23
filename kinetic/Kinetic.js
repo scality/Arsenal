@@ -17,6 +17,7 @@ function Kinetic() {
 
 Kinetic.op = {};
 Kinetic.op.PUT = 0;
+Kinetic.op.PUT_RESPONSE = 1;
 
 Kinetic.error = {};
 Kinetic.error.INVALID_STATUS_CODE = -1;
@@ -109,6 +110,25 @@ Kinetic.prototype = {
                 "status" : { },
             }).encode().buffer
         );
+        self.send(socket);
+    },
+
+    /**
+     * Response for the PUT request following the kinetic protocol.
+     * @param {Socket} socket - Socket to send data through.
+     * @param {number} response - error code.
+     * @param {buffer} errorMessage - detailed error message.
+     */
+    putResponse: function(socket, response, errorMessage){
+        var self = this;
+        var _tmp = self.getProtobuf();
+
+        _tmp.status = {
+            "code" : response,
+            "detailedMessage" : errorMessage,
+        };
+
+        self.setProtobuf(_tmp.encode().buffer);
         self.send(socket);
     },
 
