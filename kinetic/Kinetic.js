@@ -15,6 +15,9 @@ function Kinetic() {
     return this;
 }
 
+Kinetic.op = {};
+Kinetic.op.PUT = 0;
+
 Kinetic.error = {};
 Kinetic.error.INVALID_STATUS_CODE = -1;
 Kinetic.error.NOT_ATTEMPTED = 0;
@@ -79,6 +82,34 @@ Kinetic.prototype = {
 
     getChunkSize: function() {
         return this._chunk.length;
+    },
+
+    /**
+     * PUT request following the kinetic protocol.
+     * @param {Socket} sock - Socket to send data through.
+     * @param {number} key - key of the item to put.
+     * @param {number} incrementTCP - monotonically increasing number for each request in a TCP connection
+     */
+    put: function(socket, key, incrementTCP){
+        var self = this;
+        var identity = (new Date).getTime();
+        var File = this.build.Command;
+
+        self.setProtobuf(new File({
+                "header": {
+                    "messageType" : "PUT",
+                    "connectionID" : identity,
+                    "sequence" : incrementTCP,
+                },
+                "body" : {
+                    "keyValue": {
+                        "key": key,
+                    },
+                },
+                "status" : { },
+            }).encode().buffer
+        );
+        self.send(socket);
     },
 
     /**
