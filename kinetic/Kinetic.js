@@ -18,6 +18,12 @@ function Kinetic() {
 Kinetic.op = {};
 Kinetic.op.PUT = 0;
 Kinetic.op.PUT_RESPONSE = 1;
+Kinetic.op.GET = 2;
+Kinetic.op.GET_RESPONSE = 3;
+Kinetic.op.NOOP = 4;
+Kinetic.op.NOOP_RESPONSE = 5;
+Kinetic.op.SET_CLUSTER_VERSION = 6;
+Kinetic.op.SETUP_RESPONSE = 7;
 
 Kinetic.error = {};
 Kinetic.error.INVALID_STATUS_CODE = -1;
@@ -86,6 +92,57 @@ Kinetic.prototype = {
     },
 
     /**
+     * set clusterVersion request following the kinetic protocol.
+     * @param {Socket} socket - Socket to send data through.
+     * @param {number} clusterVersion - The version number of this cluster definition.
+     * @param {number} incrementTCP - monotonically increasing number for each request in a TCP connection.
+     */
+    setClusterVersion: function(socket, clusterVersion, incrementTCP){
+        var self = this;
+        var identity = (new Date).getTime();
+        var File = this.build.Command;
+
+        self.setProtobuf(new File({
+                "header": {
+                    "messageType" : "SETUP",
+                    "connectionID" : identity,
+                    "sequence" : incrementTCP,
+                },
+                "body" : {
+                    "setup" : {
+                        "newClusterVersion": clusterVersion,
+                    },
+                },
+            }).encode().buffer
+        );
+        self.send(socket);
+    },
+
+    /**
+     * Setup response request following the kinetic protocol.
+     * @param {Socket} socket - Socket to send data through.
+     * @param {number} response - error code.
+     * @param {string or buffer} errorMessage - detailed error message.
+     */
+    setupResponse: function(socket, response, errorMessage){
+        var self = this;
+        var File = this.build.Command;
+
+        self.setProtobuf(new File({
+                "header": {
+                    "messageType" : "SETUP_RESPONSE",
+                    "ackSequence" : self.getProtobuf().header.sequence,
+                },
+                "status" : {
+                    "code" : response,
+                    "detailedMessage" : errorMessage,
+                },
+            }).encode().buffer
+        );
+        self.send(socket);
+    },
+
+    /**
      * NOOP request following the kinetic protocol.
      * @param {Socket} socket - Socket to send data through.
      * @param {number} incrementTCP - monotonically increasing number for each request in a TCP connection
@@ -110,7 +167,7 @@ Kinetic.prototype = {
      * Response for the NOOP request following the kinetic protocol.
      * @param {Socket} socket - Socket to send data through.
      * @param {number} response - error code.
-     * @param {buffer} errorMessage - detailed error message.
+     * @param {string or buffer} errorMessage - detailed error message.
      */
     noOpResponse: function(socket, response, errorMessage){
         var self = this;
@@ -131,65 +188,12 @@ Kinetic.prototype = {
     },
 
     /**
-     * set clusterVersion request following the kinetic protocol.
-     * @param {Socket} socket - Socket to send data through.
-     * @param {number} clusterVersion - The version number of this cluster definition.
-     * @param {number} incrementTCP - monotonically increasing number for each request in a TCP connection.
-     */
-    setClusterVersion: function(socket, clusterVersion, incrementTCP){
-        var self = this;
-        var identity = (new Date).getTime();
-        var File = this.build.Command;
-
-        self.setProtobuf(new File({
-                "header": {
-                    "messageType" : "SETUP",
-                    "connectionID" : identity,
-                    "sequence" : incrementTCP,
-                },
-                "body" : {
-                    "setup" : {
-                        "newClusterVersion": clusterVersion,
-                    },
-                },
-                "status" : { },
-            }).encode().buffer
-        );
-        self.send(socket);
-    },
-
-    /**
-     * Setup response request following the kinetic protocol.
-     * @param {Socket} socket - Socket to send data through.
-     * @param {number} response - error code.
-     * @param {buffer} errorMessage - detailed error message.
-     */
-    setupResponse: function(socket, response, errorMessage){
-        var self = this;
-        var File = this.build.Command;
-
-        self.setProtobuf(new File({
-                "header": {
-                    "messageType" : "SETUP_RESPONSE",
-                    "ackSequence" : self.getProtobuf().header.sequence,
-                },
-                "body" : { },
-                "status" : {
-                    "code" : response,
-                    "detailedMessage" : errorMessage,
-                },
-            }).encode().buffer
-        );
-        self.send(socket);
-    },
-
-    /**
      * PUT request following the kinetic protocol.
      * @param {Socket} socket - Socket to send data through.
-     * @param {number} key - key of the item to put.
+     * @param {string or buffer} key - key of the item to put.
      * @param {number} incrementTCP - monotonically increasing number for each request in a TCP connection
-     * @param {number} dbVersion - version of the item in the database.
-     * @param {number} newVersion - new version of the item to put.
+     * @param {string or buffer} dbVersion - version of the item in the database.
+     * @param {string or buffer} newVersion - new version of the item to put.
      */
     put: function(socket, key, incrementTCP, dbVersion, newVersion){
         var self = this;
@@ -205,11 +209,10 @@ Kinetic.prototype = {
                 "body" : {
                     "keyValue": {
                         "key": key,
-			"newVersion" : newVersion,
-			"dbVersion" : dbVersion,
+                        "newVersion" : newVersion,
+                        "dbVersion" : dbVersion,
                     },
                 },
-                "status" : { },
             }).encode().buffer
         );
         self.send(socket);
@@ -219,7 +222,7 @@ Kinetic.prototype = {
      * Response for the PUT request following the kinetic protocol.
      * @param {Socket} socket - Socket to send data through.
      * @param {number} response - error code.
-     * @param {buffer} errorMessage - detailed error message.
+     * @param {string or buffer} errorMessage - detailed error message.
      */
     putResponse: function(socket, response, errorMessage){
         var self = this;
@@ -232,6 +235,63 @@ Kinetic.prototype = {
                 },
                 "body" : {
                     "keyValue": { },
+                },
+                "status" : {
+                    "code" : response,
+                    "detailedMessage" : errorMessage,
+                },
+            }).encode().buffer
+        );
+        self.send(socket);
+    },
+
+    /**
+     * GET request following the kinetic protocol.
+     * @param {Socket} socket - Socket to send data through.
+     * @param {string or buffer} key - key of the item to put.
+     * @param {number} incrementTCP - monotonically increasing number for each request in a TCP connection
+     */
+    get: function(socket, key, incrementTCP){
+        var self = this;
+        var identity = (new Date).getTime();
+        var File = this.build.Command;
+        self.setProtobuf(new File({
+                "header": {
+                    "messageType" : "GET",
+                    "connectionID" : identity,
+                    "sequence" : incrementTCP,
+                },
+                "body" : {
+                    "keyValue": {
+                        "key": key,
+                    },
+                },
+            }).encode().buffer
+        );
+        self.send(socket);
+    },
+
+    /**
+     * Response for the GET request following the kinetic protocol.
+     * @param {Socket} socket - Socket to send data through.
+     * @param {number} response - Error code.
+     * @param {string or buffer} errorMessage - Detailed error message.
+     * @param {string or buffer} dbVersion - The version of the item in the database.
+     */
+    getResponse: function(socket, response, errorMessage, dbVersion){
+        var self = this;
+        var File = this.build.Command;
+
+        self.setProtobuf(new File({
+                "header": {
+                    "messageType" : "GET_RESPONSE",
+                    "ackSequence" : self.getProtobuf().header.sequence,
+                },
+                "body" : {
+                    "keyValue": {
+                        "key" : self.getProtobuf().body.keyValue.key,
+                        "dbVersion" : dbVersion,
+                    },
                 },
                 "status" : {
                     "code" : response,
@@ -266,24 +326,33 @@ Kinetic.prototype = {
     * @param {Buffer} data - The data received by the socket.
     */
     parse: function(data) {
-        let self = this;
+        var self = this;
 
-        if (data[0] !== self.getVersion()) {
-            return (self.errors.VERSION_FAILURE);
-        }
+        //if (data[0] !== self.getVersion()) {
+        //    return (self.errors.VERSION_FAILURE);
+        //}
 
-        // BE stands for Big Endian
-        const protobufSize = data.readInt32BE(1);
-        const chunkSize = data.readInt32BE(5);
-        self.setProtobuf(data.slice(9, 9 + protobufSize));
-        self.setChunk(data.slice(9 + protobufSize));
+        var util = require('util');
+        var fs = require('fs');
+        //
+        //var parser = new protobuf.DotProto.Parser(fs.readFileSync(protoFilePath));
+        //var ast = parser.parse();
 
-        if (self.getChunkSize !== chunkSize) {
-            return (self.error.DATA_ERROR = 11);
-        }
 
-        return (self.errors.SUCCESS);
-    }
+
+        var buffer = data;
+        var msg = new self.build.Command;
+        var tmp = msg.decode(buffer);
+
+        console.log(util.inspect(tmp, {showHidden: false, depth: null}));
+        self.setProtobuf(msg);
+
+        //if (self.getChunkSize !== chunkSize) {
+        //    return (self.error.DATA_ERROR = 11);
+        //}
+
+        //return (self.errors.SUCCESS);
+    },
 };
 
 module.exports = new Kinetic()._init();
