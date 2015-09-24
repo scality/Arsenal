@@ -85,6 +85,50 @@ Kinetic.prototype = {
         return this._chunk.length;
     },
 
+    /**
+     * NOOP request following the kinetic protocol.
+     * @param {Socket} socket - Socket to send data through.
+     * @param {number} incrementTCP - monotonically increasing number for each request in a TCP connection
+     */
+    noOp: function(socket, incrementTCP){
+        var self = this;
+        var identity = (new Date).getTime();
+        var File = this.build.Command;
+
+        self.setProtobuf(new File({
+                "header": {
+                    "messageType" : "NOOP",
+                    "connectionID" : identity,
+                    "sequence" : incrementTCP,
+                },
+            }).encode().buffer
+        );
+        self.send(socket);
+    },
+
+    /**
+     * Response for the NOOP request following the kinetic protocol.
+     * @param {Socket} socket - Socket to send data through.
+     * @param {number} response - error code.
+     * @param {buffer} errorMessage - detailed error message.
+     */
+    noOpResponse: function(socket, response, errorMessage){
+        var self = this;
+        var File = this.build.Command;
+
+        self.setProtobuf(new File({
+                "header": {
+                    "messageType" : "NOOP_RESPONSE",
+                    "ackSequence" : self.getProtobuf().header.sequence,
+                },
+                "status" : {
+                    "code" : response,
+                    "detailedMessage" : errorMessage,
+                },
+            }).encode().buffer
+        );
+        self.send(socket);
+    },
 
     /**
      * set clusterVersion request following the kinetic protocol.
@@ -162,7 +206,7 @@ Kinetic.prototype = {
                     "keyValue": {
                         "key": key,
 			"newVersion" : newVersion,
-			"dbVErsion" : dbVersion,
+			"dbVersion" : dbVersion,
                     },
                 },
                 "status" : { },
