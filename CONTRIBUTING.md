@@ -25,24 +25,24 @@ and what does the code pass through, and how we maintain releases.
                    |      |
                    |      X
          /dev/FT/color  / |
-        +--------------+  |
+        +<---<----<---<+  |
         |          |      |
-        |          +---+  |
+        |          +>->+  |
         X               \ |
         |                 X
         X /dev/BF/flow  / |
-    +---|--------------+  |
+    +<--|-<---<---<---<+  |
     |   X                 |
     X   |  Pull Request   |
-    |   +--------------+  |
+    |   +>---->---->-->+  |
     X  code review + CI \ |
     |     -> merge PR     X
     |                     | \   /rel/1.0
-    X                     |  +-------------+
+    X                     |  +>--->--->--->+
     |    Pull Request     |                |
-    +------------------+  |                |
+    +>--->---->--->--->+  |                |
       code review + CI  \ |                |
-                          X----------------X # Bump version to 1.0.1
+                          X>--->---->-->-->X # Bump version to 1.0.1
                           | cherry-pick -x |
                           |                |
                           |                |
@@ -129,12 +129,12 @@ tracker reference (issue number or bugreport link).
 Sticking with the earlier example of the Squeak-On-Push mobile app feature, we
 could have a commit formatted such as:
 ```ascii
-FT: Provide an API (hook) to add custom actions on button push
+FT: Provide an API (hook) to add custom actions on VCS push
 
 Related to issue #245
  * Provide a simple way to hook a callback into the new OnPush API
- * The hook is called whenever the button is pushed/released
- * Multiple hooks can be registered for one button
+ * The hook is called whenever the history is pushed to the central system
+ * Multiple callbacks can be registered for one hook
 ```
 
 The tags used in the commit message shall follow the same scheme as the tags
@@ -163,7 +163,7 @@ The code reviews must include the following checks:
 Any merge into the `master` branch yields a potential `Release Candidate`. This
 does not mean that every merge into the `master` branch will automatically
 generate a release, though. When the team deems the state of the project worthy
-of a `elease (be it due to a specific set of features making it into the
+of a `release` (be it due to a specific set of features making it into the
 `master` branch or anything else), A specific `release` branch is created
 starting from the specific merge commit bringing in the last relevant change.
 ```ascii
@@ -171,7 +171,7 @@ starting from the specific merge commit bringing in the last relevant change.
                           |
                           X
                           | \   /rel/1.0
-                          |  +-------------+
+                          |  +>--->---->-->+
                           |                |
                           v                v
 ```
