@@ -227,7 +227,7 @@ long as he/she follows the rules set for the project. A configuration file for
 JSHint shall accompany this Coding Style Guidelines in order to help enforce
 as much as possible of it.
 
-**As a first note, the rules for this project are heavily relying on [AirBnB's
+**As a first note, the rules for this project rely on [AirBnB's
 coding style
 guidelines](http://github.com/airbnb/javascript/blob/master/README.md).**
 
@@ -236,7 +236,7 @@ guidelines, in order to better fit our project.
 
 ## Irrelevant Sections
 
-The sections 3.2, 3.3 and 25 of AirBnB's guidelines are relevant for our nodejs
+Sections 3.2, 3.3 and 25 of AirBnB's guidelines are irrelevant for our nodejs
 use, as they relate to Jquery code, and to features relating to some specific
 web browsers. They shall be ignored.
 
@@ -246,8 +246,7 @@ web browsers. They shall be ignored.
 
  * [18.1](http://github.com/airbnb/javascript/blob/master/README.md#18.1)
  Use soft tabs set to 4 spaces for the indentation of the code. Although this
- will reduce the efficient line length, this provide a better visibility for
- all sensibilities.
+ will reduce the efficient line length, this rule will result in easier readability.
 ```
 // bad
 function() {
@@ -274,7 +273,7 @@ function() {
  get out of sync with the code itself.
 
  * [17.7](#17.7) No commented code shall find its way to the codebase, as it is
- an useless visual clutter, that holds no meaning most of the time, and is
+ useless visual clutter with limited meaning most of the time, and is
  often outdated when it has a meaning. Prefer using `TODO` markers within
  comments to explain something instead.
 
