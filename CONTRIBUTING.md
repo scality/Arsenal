@@ -273,7 +273,7 @@ function() {
  them, as they are often forgotten when updating the code, and can thus easily
  get out of sync with the code itself.
 
- * [17.7](#17.7) No commented code shall find it way to the codebase, as it is
+ * [17.7](#17.7) No commented code shall find its way to the codebase, as it is
  an useless visual clutter, that holds no meaning most of the time, and is
  often outdated when it has a meaning. Prefer using `TODO` markers within
  comments to explain something instead.
@@ -298,7 +298,7 @@ function() {
   * This function blips a function using the parameter string str.
   * @function
   * @param {function} func  the function to blip
-  * @param {string} str     the string to blip the function with
+  * @param {String} str     the string to blip the function with
   * @return {boolean} true if func fits a random criteria using str
   * @return {boolean} false if func does not fit a random criteria using str
   * @throws {Error} Invalid Parameters
