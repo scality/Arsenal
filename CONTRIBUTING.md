@@ -24,20 +24,20 @@ and what does the code pass through, and how we maintain releases.
                    |      |
                    |      |
                    |      X
-         /dev/FT/color  / |
+          dev/FT/color  / |
         +<---<----<---<+  |
         |          |      |
         |          +>->+  |
         X               \ |
         |                 X
-        X /dev/BF/flow  / |
+        X  dev/BF/flow  / |
     +<--|-<---<---<---<+  |
     |   X                 |
     X   |  Pull Request   |
     |   +>---->---->-->+  |
     X  code review + CI \ |
     |     -> merge PR     X
-    |                     | \   /rel/1.0
+    |                     | \   stable/1.0
     X                     |  +>--->--->--->+
     |    Pull Request     |                |
     +>--->---->--->--->+  |                |
@@ -71,10 +71,10 @@ following the [guidelines](#committing-guidelines).
 The branch name shall follow a very concise naming scheme, in order for an
 **automatic CI system to be able to start builds on every development branch**:
 ```
-/dev/tag/name
+dev/tag/name
 ```
 
-The `WIP` branch name must start by `/dev/`, followed by a `tag` defined to
+The `WIP` branch name must start by `dev/`, followed by a `tag` defined to
 describe the type of task the branch is associated with, then followed by a
 self-explanatory `name` for the branch. The following Tags are currently allowed:
  * FT: Feature branch
@@ -87,7 +87,7 @@ self-explanatory `name` for the branch. The following Tags are currently allowed
 For instance, if contributor A was going to work on the feature adding
 squeaking sounds to his favourite VCS, he could name his branch:
 ```
-/dev/FT/SqueakOnPush
+dev/FT/SqueakOnPush
 ```
 This would mean that it is a working branch for a Feature called "Squeak On
 Push".
@@ -170,7 +170,7 @@ starting from the specific merge commit bringing in the last relevant change.
    WIP Branches         master        Release Branches
                           |
                           X
-                          | \   /rel/1.0
+                          | \   stable/1.0
                           |  +>--->---->-->+
                           |                |
                           v                v
@@ -179,13 +179,13 @@ starting from the specific merge commit bringing in the last relevant change.
 In order to distinguish release branches from the `WIP` branches, they also
 follow a concise naming scheme. As such, every release branch shall be named
 after the version (major and minor) they embody. Indeed, the name shall begin
-with "/rel/", then followed by the version's major number, a dot, and finally
+with "stable/", then followed by the version's major number, a dot, and finally
 the version's minor number. This way, we can follow the semantic versionning
 scheme, increasing the version's patch number for each bugfix brought into the
 release branch. For instance, for the 2.4.X version of the product,
 the branch would be named:
 ```
-/rel/2.4
+stable/2.4
 ```
 In order to bring specific bugfixes or hotfixes into the release branch, the
 patch has to go through the whole process of being reviewed before it's merged
@@ -197,12 +197,12 @@ maintainer can bump the patch version of the given `release` branch.
    WIP Branches         master        Release Branches
                           |
                           X
-          /dev/BF/flow  / |
+           dev/BF/flow  / |
     +<-----<-----<---<-+  |
     |                     |
     X                     |
     |                     X
-    X                     | \   /rel/1.0
+    X                     | \   stable/1.0
     |  merge bufix into   |  +>--->--->--->+ # Set version to 1.0.0
     +->---->---->----->+  |                |
         master branch   \ |                |
