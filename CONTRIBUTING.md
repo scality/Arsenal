@@ -227,78 +227,116 @@ long as he/she follows the rules set for the project. A configuration file for
 JSHint shall accompany this Coding Style Guidelines in order to help enforce
 as much as possible of it.
 
-### Code Commentary and documentation
- - API Functions must be preceded by a small doxygen/jsdoc-formatted explanatory
-   comment: What is the role of the function, what are the parameters, what are
-   the possible return values, and whether it can throw exceptions
- - Internal function shall (if the developer or reviewer deems it deserving,
-   due to a inherent complexity) be preceded by a jsdoc-formatted explanatory
-   comment, similarly to API functions
- - For complex parts of the code, add a comment block before, explaining the
-   WHY, the HOW, and the WHAT FOR
- - Avoid paraphrasing the code through the comments, as it is not useful and
-   generates noise for code reading (reviews included)
- - Avoid one-liner comments as they can easily get out of-sync from the code
+**As a first note, the rules for this project are heavily relying on [AirBnB's
+coding style
+guidelines](http://github.com/airbnb/javascript/blob/master/README.md).**
 
-### Naming conventions
- - Class names and types shall be written in CamelCase (i.e.: the
-   valid form of a type named 'mechanic cow' is 'MechanicCow')
- - Variables and function/method names shall be written in snake_case (i.e.: a
-   variable containing a "client array" could be called "client_array")
- - Every identifier (variable/function/method names) shall bear semantically
-   correct names: for instance, booleans shall have their names starting by
-   'is_' to describe the intent of a boolean test. Those names shall help the
-   reader understand the intent and use of the said variable.
+Following are the amendments that we chose to bring on top of the quoted
+guidelines, in order to better fit our project.
 
-### Syntax Rules
-####  Indentation
-    - Indentation is made of spaces, with 4 spaces by levels of indentation.
-    - Blocks open at the same line of the associated construct (function, if,
-      while, etc...), preceded by a space, and the closing brace shall be alone
-      on a line.
-    - One-line blocks making up the body of a conditional construct such as a
-      'if' must be written with braces to explicit the scope, as it was proven
-      with time that it can lead to subtle programming errors than can be hard
-      to catch
-    - Lines must be no longer than 80 columns, for readability and clarity
-      purposes.
+## Irrelevant Sections
 
-####  Advised Practices
-   - Line length is not explicitly limited, but should be kept as short as
-     possible, in order to make the code easier to read and quickly
-     understandable
-   - The keywords shall be followed by one space (function, if, switch,
-     forEach, etc...)
-   - The operators shall be wrapped in spaces (i.e.: 'i=1;' is invalid,
-     'i = 1;' is valid)
-   - For clarity and safety, avoid post/pre operators (i++, ++i, i--, --i,
-     etc.), and prefer the use of the form '+=' or '-=';
-   - For consistency, prefer using simple quotes to use strings in the code
-   - Prefer the use of the semantically correct construct when given the choice
-     (for instance in JS, prefer using forEach when iterating an array, rather
-      than a simple for).
+The sections 3.2, 3.3 and 25 of AirBnB's guidelines are relevant for our nodejs
+use, as they relate to Jquery code, and to features relating to some specific
+web browsers. They shall be ignored.
 
-####  Forbidden practices
-   - Never throw an un-caught exception from a callback
-   - Never use exceptions without an Object of the appropriate type
-     (std::Exception for C++, Error for JS, etc.)
+## Modified Sections and Rules
 
-### NodeJS Specifics
+### [Whitespace](http://github.com/airbnb/javascript/blob/master/README.md#whitespace)
 
-#### Advised practices
-   - Variable and constant declarations:
-     - For const values declarations, prefer the use of the keyword 'const'
-       over 'let' or 'var', to force the constness of a value, and prevent the
-       post-declaration of this given value.
-     - For variable declarations, prefere the use of the keyword 'let' over
-       'var', to prevent the declaration of a variable after its use.
-   - Prefer the use of forEach to iterate over an array of elements
-   - Favor exceptions for error management within synchronous code (i.e.: as
-     long as the error does not unwind higher than the called callback itself).
-   - When using the 'for..in' loop construct, wrap the body with a check of the
-     property: 'if (obj.hasOwnProperty(propname)) { ...body here... }'
+ * [18.1](http://github.com/airbnb/javascript/blob/master/README.md#18.1)
+ Use soft tabs set to 4 spaces for the indentation of the code. Although this
+ will reduce the efficient line length, this provide a better visibility for
+ all sensibilities.
+```
+// bad
+function() {
+∙∙const name;
+}
 
-####  Forbidden practices
-   - Use of '==' is forbidden, as it may be a headache worthy cause of
-     unexpected behaviors. Use '===' instead, as it is less confusing with '='
-     than '=='.
+// bad
+function() {
+∙const name;
+}
+
+// good
+function() {
+∙∙∙∙const name;
+}
+```
+
+## Additional Rules
+
+### Comments
+
+ * [17.6](#17.6) Even though single line comments are accepted, try to minimize
+ them, as they are often forgotten when updating the code, and can thus easily
+ get out of sync with the code itself.
+
+ * [17.7](#17.7) No commented code shall find it way to the codebase, as it is
+ an useless visual clutter, that holds no meaning most of the time, and is
+ often outdated when it has a meaning. Prefer using `TODO` markers within
+ comments to explain something instead.
+
+ * [17.8](#17.8) API functions must be preceded by a small
+ doxygen/jsdoc-formatted explanatory comment: What is the role of the function,
+ what are the parameters, what are the possible return values, and whether it
+ can throw exceptions:
+ ```
+ // bad
+ /*
+  * The blipMyFunc function takes one function in parameter and returns
+  * true only when the given function fits a random criteria using the
+  * parameter string.
+  */
+ function blipMyFunc(func, str) {
+     ...
+ }
+
+ // good
+ /*
+  * This function blips a function using the parameter string str.
+  * @function
+  * @param {function} func  the function to blip
+  * @param {string} str     the string to blip the function with
+  * @return {boolean} true if func fits a random criteria using str
+  * @return {boolean} false if func does not fit a random criteria using str
+  * @throws {Error} Invalid Parameters
+  */
+ function blipMyFunc(func) {
+    ...
+ }
+ ```
+ Complex internal functions shall also be described through such a comment.
+
+ * [17.9](#17.9) Complex parts of the code shall be preceded by a comment block
+ explaining the WHY, the HOW, and the WHAT FOR. This also includes explaining
+ the choice of the method or tool in a similar manner.
+
+ * [17.10](#17.10) Avoid paraphrasing the code through the comments, as it is
+ not useful and generates noise for code reading (reviews included)
+
+### Coding Style General Rules
+
+ * [29.1](#29.1) The usage of the use strict directive is required at the start
+ of each file of code:
+```
+"use strict";
+```
+
+ * [29.2](#29.2) No line shall be longer than 80 characters, as such a length
+ can provide, within modern working setups, the possibility to work on
+ multiple files at the same time on one screen.
+
+ * [29.3](#29.3) When naming Types, functions and variables, use semantically
+ correct names that describe their use and objective.
+ ```
+ // bad
+ let test = true;
+
+ // bad
+ let human = true;
+
+ // good
+ let userIsHuman = true;
+ ```
