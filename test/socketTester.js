@@ -1,23 +1,24 @@
-var net = require('net');
-var HOST = '127.0.0.1';
-var PORT = 6969;
+"use strict"
 
-net.createServer(function(sock) {
-    //uncomment for showing the connection opening   
-    //console.log('CONNECTED: ' + sock.remoteAddress +':'+ sock.remotePort);
+const net = require('net');
+const HOST = '127.0.0.1';
+const PORT = 6969;
 
-    sock.on('data', function(data) {
+net.createServer(function (sock) {
+    // uncomment for showing the connection opening
+    // console.log('CONNECTED: ' + sock.remoteAddress +':'+ sock.remotePort);
 
-	    //uncomment for showing the received DATA
-	    //console.log('DATA ' + sock.remoteAddress + ': ' + data);
+    sock.on('data', function (data) {
+	    // uncomment for showing the received DATA
+	    // console.log('DATA ' + sock.remoteAddress + ': ' + data);
 
         sock.write(data);
     });
-    sock.on('close', function(data) {
-        //uncomment for showing the connection closing
-	    //console.log('CLOSED: ' + sock.remoteAddress +' '+ sock.remotePort);
-    });
 
+    sock.on('close', function (data) {
+        // uncomment for showing the connection closing
+	    // console.log('CLOSED: ' + sock.remoteAddress +' '+ sock.remotePort);
+    });
 }).listen(PORT, HOST);
 
-console.log('Server listening on ' + HOST +':'+ PORT);
+// console.log('Server listening on ' + HOST +':'+ PORT);
