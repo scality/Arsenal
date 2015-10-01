@@ -1,7 +1,7 @@
-"use strict";
+'use strict';
 
-const protobuf = require('protobufjs');
-const crypto = require('crypto');
+import protobuf from 'protobufjs';
+import crypto from 'crypto';
 
 const VERSION = 0x46;
 const protoFilePath = __dirname + '/kinetic-protocol/kinetic.proto';
@@ -11,8 +11,9 @@ const buildName = 'com.seagate.kinetic.proto';
  * Represents the Kinetic Protocol Data Structure.
  * @constructor
  */
-class Kinetic {
+export default class Kinetic {
     constructor() {
+        this._init();
         this._version = VERSION;
         this.op = {
             PUT: 0,
@@ -491,11 +492,9 @@ class Kinetic {
         this.setChunk(data.slice(pbMsgLen + 9, chunkLen + pbMsgLen + 9));
 
         if (this.getChunkSize !== chunkLen) {
-            return (this.error.DATA_ERROR = 11);
+            return (this.error.DATA_ERROR);
         }
 
         return (this.errors.SUCCESS);
     }
 }
-
-module.exports = new Kinetic()._init();

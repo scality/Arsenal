@@ -1,6 +1,8 @@
-"use strict";
+'use strict';
 
-const Kinetic = require('../index').Kinetic;
+require('babel/register');
+
+const KineticConstructor = require('../index').Kinetic;
 const assert = require("assert");
 const net = require("net");
 const fs = require("fs");
@@ -8,6 +10,7 @@ const util = require('util');
 
 const dataChunk = fs.readFileSync(process.argv[3]);
 const HOST = '127.0.0.1';
+const Kinetic = new KineticConstructor;
 let _tmp = undefined;
 
 const requests = [
@@ -18,6 +21,7 @@ const requests = [
     'flush',
     'getLog'
 ];
+
 const requestResponses = [
     'PUT_RESPONSE',
     'GET_RESPONSE',
@@ -37,24 +41,32 @@ function _fn(val, valResponse) {
             const PORT = 6969;
             const client = new net.Socket();
             client.connect(PORT, HOST, function () {
-                if (val === 'put') {
+                switch (val) {
+                case 'put':
                     Kinetic.put(client, 'qwer', 1, '1234', '1235');
                     _tmp = Kinetic.getProtobuf();
-                }else if (val === 'get') {
+                    break;
+                case 'get':
                     Kinetic.get(client, 'qwer', 1, 1);
                     _tmp = Kinetic.getProtobuf();
-                }else if (val === 'delete') {
+                    break;
+                case 'delete':
                     Kinetic.delete(client, 'qwer', 1, 1);
                     _tmp = Kinetic.getProtobuf();
-                }else if (val === 'flush') {
+                    break;
+                case 'flush':
                     Kinetic.flush(client, 1, 1);
                     _tmp = Kinetic.getProtobuf();
-                }else if (val === 'noop') {
+                    break;
+                case 'noop':
                     Kinetic.noOp(client, 1, 1);
                     _tmp = Kinetic.getProtobuf();
-                }else if (val === 'getLog') {
+                    break;
+                case 'getLog':
                     Kinetic.getLog(client, 1, [1, 2, 3, 4], 1);
                     _tmp = Kinetic.getProtobuf();
+                    break;
+                default:
                 }
                 let ret = undefined;
                 client.on('data', function (data) {
@@ -150,18 +162,28 @@ function _fn(val, valResponse) {
                 },
             });
             client.connect(PORT, HOST, function () {
-                if (val === 'put')
+                switch (val) {
+                case 'put':
                     Kinetic.put(client, 'qwer', 1, '1234', '1235');
-                else if (val === 'get')
+                    break;
+                case 'get':
                     Kinetic.get(client, 'qwer', 1, 1);
-                else if (val === 'delete')
+                    break;
+                case 'delete':
                     Kinetic.delete(client, 'qwer', 1, 1);
-                else if (val === 'flush')
+                    break;
+                case 'flush':
                     Kinetic.flush(client, 1, 1);
-                else if (val === 'noop')
+                    break;
+                case 'noop':
                     Kinetic.noOp(client, 1, 1);
-                else if (val === 'getLog')
-                    Kinetic.getLog(client, 1, [1, 3, 5], 1);
+                    break;
+                case 'getLog':
+                    Kinetic.getLog(client, 1, [1, 2, 3, 4, 5, 6], 1);
+                    break;
+                default:
+                }
+
                 client.on('data', function (data) {
                     ret = data;
                     client.end();

@@ -1,7 +1,5 @@
-"use strict";
-
-const Kinetic = require('./kinetic/Kinetic');
+'use strict';
 
 module.exports = {
-    Kinetic: Kinetic,
+    Kinetic: require('./kinetic/Kinetic.js'),
 };

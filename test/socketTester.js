@@ -1,4 +1,4 @@
-"use strict"
+'use strict';
 
 const net = require('net');
 const HOST = '127.0.0.1';
