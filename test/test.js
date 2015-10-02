@@ -1,3 +1,4 @@
+/* eslint-env node, mocha */
 'use strict';
 
 require('babel/register');
@@ -14,30 +15,22 @@ const Kinetic = new KineticConstructor;
 let _tmp = undefined;
 
 const requests = [
-    'put',
-    'get',
-    'delete',
-    'noop',
-    'flush',
-    'getLog'
-];
-
-const requestResponses = [
-    'PUT_RESPONSE',
-    'GET_RESPONSE',
-    'DELETE_RESPONSE',
-    'NOOP_RESPONSE',
-    'FLUSHALLDATA_RESPONSE',
-    'GETLOG_RESPONSE'
+    ['put', 'PUT_RESPONSE'],
+    ['get', 'GET_RESPONSE'],
+    ['delete', 'DELETE_RESPONSE'],
+    ['noop', 'NOOP_RESPONSE'],
+    ['flush', 'FLUSHALLDATA_RESPONSE'],
+    ['getLog', 'GETLOG_RESPONSE']
 ];
 
 Kinetic.setChunk(dataChunk);
 
-function _fn(val, valResponse) {
-    describe('Chunck and protobuf integrity', function () {
-        const label2 = 'Parsing _ Chunk and protobufMessage ' +
-            'integrity (' + val + ')- should be equal';
-        it(label2, function (done) {
+function checkIntegrity(request) {
+    const val = request[0];
+    const valResponse = request[1];
+    describe(`Assess ${val} Chunk and protobuf integrity`, function () {
+        it(`Chunk and ${val} protobufMessage should be preserved`,
+                function assess(done) {
             const PORT = 6969;
             const client = new net.Socket();
             client.connect(PORT, HOST, function () {
@@ -66,7 +59,6 @@ function _fn(val, valResponse) {
                     Kinetic.getLog(client, 1, [1, 2, 3, 4], 1);
                     _tmp = Kinetic.getProtobuf();
                     break;
-                default:
                 }
                 let ret = undefined;
                 client.on('data', function (data) {
@@ -198,16 +190,12 @@ function _fn(val, valResponse) {
                     // console.log(util.inspect(Kinetic.getProtobuf(),
                     // {showHidden: false, depth: null}));
 
-                    assert.deepEqual(message
-                            .status.detailedMessage.buffer.slice(
-                            message.status.detailedMessage.offset,
-                            message.status.detailedMessage.limit),
-                        Kinetic.getProtobuf()
-                            .status.detailedMessage.buffer.slice(
-                            Kinetic.getProtobuf()
-                                .status.detailedMessage.offset,
-                            Kinetic.getProtobuf()
-                                .status.detailedMessage.limit));
+                    const detail = message.status.detailedMessage;
+                    const objDetail = Kinetic.getProtobuf().status.detailedMessage;
+                    assert.deepEqual(
+                            detail.buffer.slice(detail.offset, detail.limit),
+                            objDetail.buffer.slice(
+                                objDetail.offset, objDetail.limit));
                     assert.deepEqual(message.header.messageType,
                         Kinetic.getProtobuf().header.messageType);
 
@@ -218,6 +206,4 @@ function _fn(val, valResponse) {
     });
 }
 
-for (let i = 0; i <= 5; i++) {
-    _fn(requests[i], requestResponses[i]);
-}
+requests.map(checkIntegrity);

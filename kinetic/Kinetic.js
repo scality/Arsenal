@@ -11,9 +11,8 @@ const buildName = 'com.seagate.kinetic.proto';
  * Represents the Kinetic Protocol Data Structure.
  * @constructor
  */
-export default class Kinetic {
+class Kinetic {
     constructor() {
-        this._init();
         this._version = VERSION;
         this.op = {
             PUT: 0,
@@ -53,10 +52,6 @@ export default class Kinetic {
             CONNECTION_TERMINATED: 20,
             INVALID_BATCH: 21,
         };
-        return this;
-    }
-
-    _init() {
         this.build = protobuf.loadProtoFile(protoFilePath).build(buildName);
         return this;
     }
@@ -125,9 +120,7 @@ export default class Kinetic {
                 },
             },
         });
-
-        this.setProtobuf(message);
-        this.send(socket);
+        return message;
     }
 
     /**
@@ -151,9 +144,7 @@ export default class Kinetic {
                 "detailedMessage": errorMessage,
             },
         });
-
-        this.setProtobuf(message);
-        this.send(socket);
+        return message;
     }
 
     /**
@@ -173,9 +164,7 @@ export default class Kinetic {
             },
             "body": { },
         });
-
-        this.setProtobuf(message);
-        this.send(socket);
+        return message;
     }
 
     /**
@@ -196,9 +185,7 @@ export default class Kinetic {
                 "detailedMessage": errorMessage,
             },
         });
-
-        this.setProtobuf(message);
-        this.send(socket);
+        return message;
     }
 
     /**
@@ -224,9 +211,7 @@ export default class Kinetic {
                 },
             },
         });
-
-        this.setProtobuf(message);
-        this.send(socket);
+        return message;
     }
 
     /**
@@ -246,9 +231,7 @@ export default class Kinetic {
                 "detailedMessage": errorMessage,
             },
         });
-
-        this.setProtobuf(message);
-        this.send(socket);
+        return message;
     }
 
     /**
@@ -267,8 +250,7 @@ export default class Kinetic {
                 "clusterVersion": clusterVersion,
             },
         });
-        this.setProtobuf(message);
-        this.send(socket);
+        return message;
     }
 
     /**
@@ -288,8 +270,7 @@ export default class Kinetic {
                 "detailedMessage": errorMessage,
             },
         });
-        this.setProtobuf(message);
-        this.send(socket);
+        return message;
     }
 
     /**
@@ -319,8 +300,7 @@ export default class Kinetic {
                 },
             },
         });
-        this.setProtobuf(message);
-        this.send(socket);
+        return message;
     }
 
     /**
@@ -343,8 +323,7 @@ export default class Kinetic {
                 "detailedMessage": errorMessage,
             },
         });
-        this.setProtobuf(message);
-        this.send(socket);
+        return message;
     }
 
     /**
@@ -369,8 +348,7 @@ export default class Kinetic {
                 },
             },
         });
-        this.setProtobuf(message);
-        this.send(socket);
+        return message;
     }
 
     /**
@@ -398,8 +376,7 @@ export default class Kinetic {
                 "detailedMessage": errorMessage,
             },
         });
-        this.setProtobuf(message);
-        this.send(socket);
+        return message;
     }
 
     /**
@@ -424,11 +401,10 @@ export default class Kinetic {
                 },
             },
         });
-        this.setProtobuf(message);
-        this.send(socket);
+        return message;
     }
 
-/**
+    /**
      * Response for the DELETE request following the kinetic protocol.
      * @param {Socket} socket - Socket to send data through.
      * @param {number} response - Error code.
@@ -448,8 +424,7 @@ export default class Kinetic {
                 "detailedMessage": errorMessage,
             },
         });
-        this.setProtobuf(message);
-        this.send(socket);
+        return message;
     }
 
     /**
@@ -498,3 +473,5 @@ export default class Kinetic {
         return (this.errors.SUCCESS);
     }
 }
+
+export default Kinetic;
