@@ -1,5 +1,3 @@
-'use strict';
-
 import protobuf from 'protobufjs';
 import crypto from 'crypto';
 
@@ -66,6 +64,11 @@ class Kinetic {
         return this;
     }
 
+    setCommand(command) {
+        const message = new this.build.Command(command);
+        return this.setProtobuf(message);
+    }
+
     setHMAC(key) {
         this._hmac = crypto.createHmac('sha1', key)
             .update(this.getProtobuf().toBuffer()).digest('hex');
@@ -92,21 +95,23 @@ class Kinetic {
         return this._chunk.length;
     }
 
+    getCommand() {
+        return this.build.Command;
+    }
+
     getHMAC() {
         return this._hmac;
     }
 
     /**
      * Getting logs and stats request following the kinetic protocol.
-     * @param {Socket} socket - Socket to send data through.
      * @param {number} incrementTCP - monotonically increasing number for each
      * request in a TCP connection.
      * @param {Array} types - array filled by logs types needed.
-     * @param {number} socket - Socket to send data through.
      */
-    getLog(socket, incrementTCP, types, clusterVersion) {
+    getLog(incrementTCP, types, clusterVersion) {
         const identity = (new Date).getTime();
-        const message = new this.build.Command({
+        return this.setCommand({
             "header": {
                 "messageType": "GETLOG",
                 "connectionID": identity,
@@ -120,18 +125,16 @@ class Kinetic {
                 },
             },
         });
-        return message;
     }
 
     /**
      * Getting logs and stats request following the kinetic protocol.
-     * @param {Socket} socket - Socket to send data through.
      * @param {number} incrementTCP - monotonically increasing number for each
      * request in a TCP connection.
      * @param {Array} types - array filled by logs types needed.
      */
-    getLogResponse(socket, response, errorMessage, responseLogs) {
-        const message = new this.build.Command({
+    getLogResponse(response, errorMessage, responseLogs) {
+        return this.setCommand({
             "header": {
                 "ackSequence": this.getProtobuf().header.sequence,
                 "messageType": "GETLOG_RESPONSE",
@@ -144,18 +147,16 @@ class Kinetic {
                 "detailedMessage": errorMessage,
             },
         });
-        return message;
     }
 
     /**
      * Flush all data request following the kinetic protocol.
-     * @param {Socket} socket - Socket to send data through.
      * @param {number} incrementTCP - monotonically increasing number for each
      * request in a TCP connection.
      */
-    flush(socket, incrementTCP, clusterVersion) {
+    flush(incrementTCP, clusterVersion) {
         const identity = (new Date).getTime();
-        const message = new this.build.Command({
+        return this.setCommand({
             "header": {
                 "messageType": "FLUSHALLDATA",
                 "connectionID": identity,
@@ -164,18 +165,16 @@ class Kinetic {
             },
             "body": { },
         });
-        return message;
     }
 
     /**
      * Flush all data response request following the kinetic protocol.
-     * @param {Socket} socket - Socket to send data through.
      * @param {number} incrementTCP - monotonically increasing number for each
      * request in a TCP connection.
      *
      */
-    flushResponse(socket, response, errorMessage) {
-        const message = new this.build.Command({
+    flushResponse(response, errorMessage) {
+        return this.setCommand({
             "header": {
                 "messageType": "FLUSHALLDATA_RESPONSE",
                 "ackSequence": this.getProtobuf().header.sequence,
@@ -185,20 +184,18 @@ class Kinetic {
                 "detailedMessage": errorMessage,
             },
         });
-        return message;
     }
 
     /**
      * set clusterVersion request following the kinetic protocol.
-     * @param {Socket} socket - Socket to send data through.
      * @param {number} clusterVersion - The version number of this cluster
      * definition
      * @param {number} incrementTCP - monotonically increasing number for each
      * request in a TCP connection.
      */
-    setClusterVersion(socket, clusterVersion, incrementTCP, oldClusterVersion) {
+    setClusterVersion(clusterVersion, incrementTCP, oldClusterVersion) {
         const identity = (new Date).getTime();
-        const message = new this.build.Command({
+        return this.setCommand({
             "header": {
                 "messageType": "SETUP",
                 "connectionID": identity,
@@ -211,17 +208,15 @@ class Kinetic {
                 },
             },
         });
-        return message;
     }
 
     /**
      * Setup response request following the kinetic protocol.
-     * @param {Socket} socket - Socket to send data through.
      * @param {number} response - error code.
-     * @param {string or buffer} errorMessage - detailed error message.
+     * @param {String or Buffer} errorMessage - detailed error message.
      */
-    setupResponse(socket, response, errorMessage) {
-        const message = new this.build.Command({
+    setupResponse(response, errorMessage) {
+        return this.setCommand({
             "header": {
                 "messageType": "SETUP_RESPONSE",
                 "ackSequence": this.getProtobuf().header.sequence,
@@ -231,18 +226,16 @@ class Kinetic {
                 "detailedMessage": errorMessage,
             },
         });
-        return message;
     }
 
     /**
      * NOOP request following the kinetic protocol.
-     * @param {Socket} socket - Socket to send data through.
      * @param {number} incrementTCP - monotonically increasing number for each
      * request in a TCP connection
      */
-    noOp(socket, incrementTCP, clusterVersion) {
+    noOp(incrementTCP, clusterVersion) {
         const identity = (new Date).getTime();
-        const message = new this.build.Command({
+        return this.setCommand({
             "header": {
                 "messageType": "NOOP",
                 "connectionID": identity,
@@ -250,17 +243,15 @@ class Kinetic {
                 "clusterVersion": clusterVersion,
             },
         });
-        return message;
     }
 
     /**
      * Response for the NOOP request following the kinetic protocol.
-     * @param {Socket} socket - Socket to send data through.
      * @param {number} response - error code.
-     * @param {string or buffer} errorMessage - detailed error message.
+     * @param {String or Buffer} errorMessage - detailed error message.
      */
-    noOpResponse(socket, response, errorMessage) {
-        const message = new this.build.Command({
+    noOpResponse(response, errorMessage) {
+        return this.setCommand({
             "header": {
                 "messageType": "NOOP_RESPONSE",
                 "ackSequence": this.getProtobuf().header.sequence,
@@ -270,12 +261,10 @@ class Kinetic {
                 "detailedMessage": errorMessage,
             },
         });
-        return message;
     }
 
     /**
      * PUT request following the kinetic protocol.
-     * @param {Socket} socket - Socket to send data through.
      * @param {string or Buffer} key - key of the item to put.
      * @param {number} incrementTCP - monotonically increasing number for each
      * request in a TCP connection
@@ -283,9 +272,9 @@ class Kinetic {
      * database.
      * @param {string or Buffer} newVersion - new version of the item to put.
      */
-    put(socket, key, incrementTCP, dbVersion, newVersion, clusterVersion) {
+    put(key, incrementTCP, dbVersion, newVersion, clusterVersion) {
         const identity = (new Date).getTime();
-        const message = new this.build.Command({
+        return this.setCommand({
             "header": {
                 "messageType": "PUT",
                 "connectionID": identity,
@@ -300,17 +289,15 @@ class Kinetic {
                 },
             },
         });
-        return message;
     }
 
     /**
      * Response for the PUT request following the kinetic protocol.
-     * @param {Socket} socket - Socket to send data through.
      * @param {number} response - error code.
      * @param {string or buffer} errorMessage - detailed error message.
      */
-    putResponse(socket, response, errorMessage) {
-        const message = new this.build.Command({
+    putResponse(response, errorMessage) {
+        return this.setCommand({
             "header": {
                 "messageType": "PUT_RESPONSE",
                 "ackSequence": this.getProtobuf().header.sequence,
@@ -323,19 +310,17 @@ class Kinetic {
                 "detailedMessage": errorMessage,
             },
         });
-        return message;
     }
 
     /**
      * GET request following the kinetic protocol.
-     * @param {Socket} socket - Socket to send data through.
      * @param {string or Buffer} key - key of the item to put.
      * @param {number} incrementTCP - monotonically increasing number for each
      * request in a TCP connection
      */
-    get(socket, key, incrementTCP, clusterVersion) {
+    get(key, incrementTCP, clusterVersion) {
         const identity = (new Date).getTime();
-        const message = new this.build.Command({
+        return this.setCommand({
             "header": {
                 "messageType": "GET",
                 "connectionID": identity,
@@ -348,19 +333,17 @@ class Kinetic {
                 },
             },
         });
-        return message;
     }
 
     /**
      * Response for the GET request following the kinetic protocol.
-     * @param {Socket} socket - Socket to send data through.
      * @param {number} response - Error code.
      * @param {string or Buffer} errorMessage - Detailed error message.
      * @param {string or buffer} dbVersion - The version of the item in the
      * database.
      */
-    getResponse(socket, response, errorMessage, dbVersion) {
-        const message = new this.build.Command({
+    getResponse(response, errorMessage, dbVersion) {
+        return this.setCommand({
             "header": {
                 "messageType": "GET_RESPONSE",
                 "ackSequence": this.getProtobuf().header.sequence,
@@ -376,19 +359,17 @@ class Kinetic {
                 "detailedMessage": errorMessage,
             },
         });
-        return message;
     }
 
     /**
      * DELETE request following the kinetic protocol.
-     * @param {Socket} socket - Socket to send data through.
      * @param {string or Buffer} key - key of the item to put.
      * @param {number} incrementTCP - monotonically increasing number for each
      * request in a TCP connection
      */
-    delete(socket, key, incrementTCP, clusterVersion) {
+    delete(key, incrementTCP, clusterVersion) {
         const identity = (new Date).getTime();
-        const message = new this.build.Command({
+        return this.setCommand({
             "header": {
                 "messageType": "DELETE",
                 "connectionID": identity,
@@ -401,17 +382,15 @@ class Kinetic {
                 },
             },
         });
-        return message;
     }
 
     /**
      * Response for the DELETE request following the kinetic protocol.
-     * @param {Socket} socket - Socket to send data through.
      * @param {number} response - Error code.
      * @param {string or Buffer} errorMessage - Detailed error message.
      */
-    deleteResponse(socket, response, errorMessage) {
-        const message = new this.build.Command({
+    deleteResponse(response, errorMessage) {
+        return this.setCommand({
             "header": {
                 "messageType": "DELETE_RESPONSE",
                 "ackSequence": this.getProtobuf().header.sequence,
@@ -424,7 +403,6 @@ class Kinetic {
                 "detailedMessage": errorMessage,
             },
         });
-        return message;
     }
 
     /**
@@ -461,15 +439,11 @@ class Kinetic {
         if (version !== this.getVersion()) {
             return (this.errors.VERSION_FAILURE);
         }
-
-        const msg = this.build.Command;
-        this.setProtobuf(msg.decode(data.slice(9, pbMsgLen + 9)));
+        this.setProtobuf(this.getCommand().decode(data.slice(9, pbMsgLen + 9)));
         this.setChunk(data.slice(pbMsgLen + 9, chunkLen + pbMsgLen + 9));
-
         if (this.getChunkSize !== chunkLen) {
             return (this.error.DATA_ERROR);
         }
-
         return (this.errors.SUCCESS);
     }
 }

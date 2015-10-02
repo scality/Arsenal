@@ -1,20 +1,14 @@
 /* eslint-env node, mocha */
-'use strict';
+import { Kinetic } from '../index';
+import assert from 'assert';
+import net from 'net';
+import fs from 'fs';
 
-require('babel/register');
-
-const KineticConstructor = require('../index').Kinetic;
-const assert = require("assert");
-const net = require("net");
-const fs = require("fs");
-const util = require('util');
-
-const dataChunk = fs.readFileSync(process.argv[3]);
+const dataChunk = fs.readFileSync('./package.json');
 const HOST = '127.0.0.1';
-const Kinetic = new KineticConstructor;
 let _tmp = undefined;
 
-const requests = [
+const requestsArr = [
     ['put', 'PUT_RESPONSE'],
     ['get', 'GET_RESPONSE'],
     ['delete', 'DELETE_RESPONSE'],
@@ -23,187 +17,171 @@ const requests = [
     ['getLog', 'GETLOG_RESPONSE']
 ];
 
-Kinetic.setChunk(dataChunk);
+const kinetic = new Kinetic;
+kinetic.setChunk(dataChunk);
 
-function checkIntegrity(request) {
-    const val = request[0];
-    const valResponse = request[1];
-    describe(`Assess ${val} Chunk and protobuf integrity`, function () {
-        it(`Chunk and ${val} protobufMessage should be preserved`,
-                function assess(done) {
-            const PORT = 6969;
-            const client = new net.Socket();
-            client.connect(PORT, HOST, function () {
-                switch (val) {
-                case 'put':
-                    Kinetic.put(client, 'qwer', 1, '1234', '1235');
-                    _tmp = Kinetic.getProtobuf();
-                    break;
-                case 'get':
-                    Kinetic.get(client, 'qwer', 1, 1);
-                    _tmp = Kinetic.getProtobuf();
-                    break;
-                case 'delete':
-                    Kinetic.delete(client, 'qwer', 1, 1);
-                    _tmp = Kinetic.getProtobuf();
-                    break;
-                case 'flush':
-                    Kinetic.flush(client, 1, 1);
-                    _tmp = Kinetic.getProtobuf();
-                    break;
-                case 'noop':
-                    Kinetic.noOp(client, 1, 1);
-                    _tmp = Kinetic.getProtobuf();
-                    break;
-                case 'getLog':
-                    Kinetic.getLog(client, 1, [1, 2, 3, 4], 1);
-                    _tmp = Kinetic.getProtobuf();
-                    break;
-                }
-                let ret = undefined;
-                client.on('data', function (data) {
-                    ret = data;
-                    client.end();
-                });
+function getSlice(obj) {
+    return obj.buffer.slice(obj.offset, obj.limit);
+}
 
-                client.on('end', function () {
-                    Kinetic.parse(ret);
-
-                    // Uncomment those lines for more details (pb structure);
-                    // console.log('=Local================================');
-                    // console.log(util.inspect(_tmp,
-                    // {showHidden: false, depth: null}));
-                    // console.log('*Received*****************************');
-                    // console.log(util.inspect(Kinetic.getProtobuf(),
-                    // {showHidden: false, depth: null}));
-
-                    assert.deepEqual(dataChunk, Kinetic.getChunk());
-                    assert.deepEqual(_tmp.header.messageType,
-                        Kinetic.getProtobuf().header.messageType);
-                    assert.deepEqual(_tmp.header.sequence,
-                        Kinetic.getProtobuf().header.sequence);
-                    assert.deepEqual(_tmp.header.clusterVersion,
-                        Kinetic.getProtobuf().header.clusterVersion);
-
-                    if (val !== 'noop' &&
-                        val !== 'flush' &&
-                        val !== 'getLog') {
-                        assert.deepEqual(_tmp
-                                .body.keyValue.key.buffer.slice(
-                                _tmp.body.keyValue.key.offset,
-                                _tmp.body.keyValue.key.limit),
-                            Kinetic.getProtobuf()
-                                .body.keyValue.key.buffer.slice(
-                                Kinetic.getProtobuf()
-                                    .body.keyValue.key.offset,
-                                Kinetic.getProtobuf()
-                                    .body.keyValue.key.limit));
-                    }
-                    if (val === 'put') {
-                        assert.deepEqual(
-                            _tmp.body.keyValue.dbVersion.buffer.slice(
-                                _tmp.body.keyValue.dbVersion.offset,
-                                _tmp.body.keyValue.dbVersion.limit),
-                            Kinetic.getProtobuf()
-                                .body.keyValue.dbVersion.buffer.slice(
-                                Kinetic.getProtobuf()
-                                    .body.keyValue.dbVersion.offset,
-                                Kinetic.getProtobuf()
-                                    .body.keyValue.dbVersion.limit));
-
-                        assert.deepEqual(_tmp
-                                .body.keyValue.newVersion.buffer.slice(
-                                _tmp.body.keyValue.newVersion.offset,
-                                _tmp.body.keyValue.newVersion.limit),
-                            Kinetic.getProtobuf()
-                                .body.keyValue.newVersion.buffer.slice(
-                                Kinetic.getProtobuf()
-                                    .body.keyValue.newVersion.offset,
-                                Kinetic.getProtobuf()
-                                    .body.keyValue.newVersion.limit));
-                    }
-                    if (val === 'getLog') {
-                        assert.deepEqual(_tmp.body.getLog.types,
-                                        Kinetic.getProtobuf()
-                                            .body.getLog.types);
-                    }
-                    done();
-                });
-            });
+function checkRequest(request, done) {
+    const PORT = 6969;
+    const client = new net.Socket();
+    client.connect(PORT, HOST, function firstConn() {
+        switch (request) {
+        case 'put':
+            kinetic.put(new Buffer('qwer'), 1,
+                new Buffer('1234'), new Buffer('1235'), 12);
+            break;
+        case 'get':
+            kinetic.get('qwer', 1, 1);
+            break;
+        case 'delete':
+            kinetic.delete('qwer', 1, 1);
+            break;
+        case 'flush':
+            kinetic.flush(1, 1);
+            break;
+        case 'noop':
+            kinetic.noOp(1, 1);
+            break;
+        case 'getLog':
+            kinetic.getLog(1, [1, 2, 3, 4], 1);
+            break;
+        default:
+            throw new Error("wrong request");
+        }
+        kinetic.send(client);
+        _tmp = kinetic.getProtobuf();
+        let ret = undefined;
+        client.on('data', function handleData(data) {
+            ret = data;
+            client.end();
         });
 
-        const label = valResponse + ' _ errorMessage ' +
-            'and messageType - should be equal';
-        it(label, function (done) {
-            const PORT = 6970;
-            let ret = undefined;
-            const client = new net.Socket();
-            const errorMessage = new Buffer('qwerty');
+        client.on('end', function requestEnd() {
+            kinetic.parse(ret);
 
-            const message = new Kinetic.build.Command({
-                "header": {
-                    "messageType": valResponse,
-                    "ackSequence": 1,
-                },
-                "body": {
-                    "keyValue": {},
-                },
-                "status": {
-                    "code": 1,
-                    "detailedMessage": errorMessage,
-                },
-            });
-            client.connect(PORT, HOST, function () {
-                switch (val) {
-                case 'put':
-                    Kinetic.put(client, 'qwer', 1, '1234', '1235');
-                    break;
-                case 'get':
-                    Kinetic.get(client, 'qwer', 1, 1);
-                    break;
-                case 'delete':
-                    Kinetic.delete(client, 'qwer', 1, 1);
-                    break;
-                case 'flush':
-                    Kinetic.flush(client, 1, 1);
-                    break;
-                case 'noop':
-                    Kinetic.noOp(client, 1, 1);
-                    break;
-                case 'getLog':
-                    Kinetic.getLog(client, 1, [1, 2, 3, 4, 5, 6], 1);
-                    break;
-                default:
-                }
+            // Uncomment those lines for more details (pb structure);
+            // console.log('=Local================================');
+            // console.log(util.inspect(_tmp,
+            // {showHidden: false, depth: null}));
+            // console.log('*Received*****************************');
+            // console.log(util.inspect(kinetic.getProtobuf(),
+            // {showHidden: false, depth: null}));
+            const protobuf = kinetic.getProtobuf();
 
-                client.on('data', function (data) {
-                    ret = data;
-                    client.end();
-                }).on('end', function () {
-                    Kinetic.parse(ret);
+            assert.deepEqual(dataChunk, kinetic.getChunk());
+            assert.deepEqual(_tmp.header.messageType,
+                    protobuf.header.messageType);
+            assert.deepEqual(_tmp.header.sequence,
+                    protobuf.header.sequence);
+            assert.deepEqual(_tmp.header.clusterVersion,
+                    protobuf.header.clusterVersion);
 
-                    // Uncomment those lines for more details (pb structure);
-                    // console.log('=Local================================');
-                    // console.log(util.inspect(message,
-                    // {showHidden: false, depth: null}));
-                    // console.log('*Received*****************************');
-                    // console.log(util.inspect(Kinetic.getProtobuf(),
-                    // {showHidden: false, depth: null}));
+            if (request !== 'noop' &&
+                    request !== 'flush' &&
+                    request !== 'getLog') {
+                assert.deepEqual(_tmp.body.keyValue.key.buffer,
+                        getSlice(protobuf.body.keyValue.key));
+            }
+            if (request === 'put') {
+                assert.deepEqual(_tmp.body.keyValue.dbVersion.buffer,
+                        getSlice(protobuf.body.keyValue.dbVersion));
 
-                    const detail = message.status.detailedMessage;
-                    const objDetail = Kinetic.getProtobuf().status.detailedMessage;
-                    assert.deepEqual(
-                            detail.buffer.slice(detail.offset, detail.limit),
-                            objDetail.buffer.slice(
-                                objDetail.offset, objDetail.limit));
-                    assert.deepEqual(message.header.messageType,
-                        Kinetic.getProtobuf().header.messageType);
-
-                    done();
-                });
-            });
+                assert.deepEqual(_tmp.body.keyValue.newVersion.buffer,
+                        getSlice(protobuf.body.keyValue.newVersion));
+            }
+            if (request === 'getLog') {
+                assert.deepEqual(_tmp.body.getLog.types,
+                        protobuf.body.getLog.types);
+            }
+            done();
         });
     });
 }
 
-requests.map(checkIntegrity);
+function checkResponse(request, response, done) {
+    const PORT = 6970;
+    let ret = undefined;
+    const client = new net.Socket();
+    const errorMessage = new Buffer('qwerty');
+
+    const message = new kinetic.build.Command({
+        "header": {
+            "messageType": response,
+            "ackSequence": 1,
+        },
+        "body": {
+            "keyValue": {},
+        },
+        "status": {
+            "code": 1,
+            "detailedMessage": errorMessage,
+        },
+    });
+    client.connect(PORT, HOST, function conn() {
+        switch (request) {
+        case 'put':
+            kinetic.put('qwer', 1, new Buffer('234'), new Buffer('1235'), 12);
+            break;
+        case 'get':
+            kinetic.get('qwer', 1, 1);
+            break;
+        case 'delete':
+            kinetic.delete('qwer', 1, 1);
+            break;
+        case 'flush':
+            kinetic.flush(1, 1);
+            break;
+        case 'noop':
+            kinetic.noOp(1, 1);
+            break;
+        case 'getLog':
+            kinetic.getLog(1, [1, 2, 3, 4, 5, 6], 1);
+            break;
+        default:
+            throw new Error("wrong request");
+        }
+        kinetic.send(client);
+
+        client.on('data', function handle(data) {
+            ret = data;
+            client.end();
+        });
+        client.on('end', function responseEnd() {
+            kinetic.parse(ret);
+            const protobuf = kinetic.getProtobuf();
+
+            // Uncomment those lines for more details (pb structure);
+            // console.log('=Local================================');
+            // console.log(util.inspect(message,
+            // {showHidden: false, depth: null}));
+            // console.log('*Received*****************************');
+            // console.log(util.inspect(protobuf,
+            // {showHidden: false, depth: null}));
+
+            const detail = message.status.detailedMessage;
+            const objDetail = protobuf.status.detailedMessage;
+            assert.deepEqual(detail.buffer, getSlice(objDetail));
+            assert.deepEqual(message.header.messageType,
+                    protobuf.header.messageType);
+
+            done();
+        });
+    });
+}
+
+function checkIntegrity(requestArr) {
+    const request = requestArr[0];
+    const response = requestArr[1];
+    describe(`Assess ${request} and its response ${response}`, () => {
+        it(`Chunk and ${request} protobufMessage should be preserved`,
+                (done) => { checkRequest(request, done); });
+        it(`Assess ${response} Type`, (done) => {
+            checkResponse(request, response, done);
+        });
+    });
+}
+
+requestsArr.forEach(checkIntegrity);

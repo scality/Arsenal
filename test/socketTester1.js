@@ -1,14 +1,10 @@
-'use strict';
+import net from 'net';
+import { Kinetic } from '../index';
 
-require('babel/register');
-
-const net = require('net');
-const KineticConstructor = require('../index.js').Kinetic;
 const errorMessage = new Buffer('qwerty');
-
 const HOST = '127.0.0.1';
 const PORT = 6970;
-const Kinetic = new KineticConstructor;
+const kinetic = new Kinetic;
 
 function loadLogs(int) {
     switch (int) {
@@ -55,83 +51,80 @@ function loadLogs(int) {
             maxKeyRangeCount: 55,
         };
     default:
+        throw new Error('Unhandled message');
     }
 }
 
-net.createServer(function (sock) {
+net.createServer(function server(sock) {
     // uncomment for showing the connection opening
     // console.log('CONNECTED: ' + sock.remoteAddress +':'+ sock.remotePort);
 
-    sock.on('data', function (data) {
+    sock.on('data', function listener(data) {
         // uncomment for showing the received DATA
         // console.log('DATA ' + sock.remoteAddress + ': ' + data)
 
-        Kinetic.parse(data);
+        kinetic.parse(data);
 
-        switch (Kinetic.getProtobuf().header.messageType) {
+        switch (kinetic.getProtobuf().header.messageType) {
         case 2:
-            Kinetic.getResponse(sock, 1, errorMessage, '1234');
+            kinetic.getResponse(1, errorMessage, '1234');
             break;
         case 4:
-            Kinetic.putResponse(sock, 1, errorMessage);
+            kinetic.putResponse(1, errorMessage);
             break;
         case 6:
-            Kinetic.deleteResponse(sock, 1, errorMessage);
+            kinetic.deleteResponse(1, errorMessage);
             break;
         case 22:
-            Kinetic.setupResponse(sock, 1, errorMessage);
+            kinetic.setupResponse(1, errorMessage);
             break;
         case 32:
-            Kinetic.flushResponse(sock, 1, errorMessage);
+            kinetic.flushResponse(1, errorMessage);
             break;
         case 30:
-            Kinetic.noOpResponse(sock, 1, errorMessage);
+            kinetic.noOpResponse(1, errorMessage);
             break;
         case 24:
             const logObject = {
-                "types": Kinetic.getProtobuf().body.getLog.types
+                "types": kinetic.getProtobuf().body.getLog.types
             };
-            for (let i = 0; i < Kinetic.getProtobuf()
-                .body.getLog.types.length; i++) {
-                switch (Kinetic.getProtobuf().body.getLog.types[i]) {
+            kinetic.getProtobuf().body.getLog.types.forEach((type) => {
+                switch (type) {
                 case 0:
-                    logObject.utilization = loadLogs(
-                        Kinetic.getProtobuf().body.getLog.types[i]);
+                    logObject.utilization = loadLogs(type);
                     break;
                 case 1:
-                    logObject.temperatures = loadLogs(
-                        Kinetic.getProtobuf().body.getLog.types[i]);
+                    logObject.temperatures = loadLogs(type);
                     break;
                 case 2:
-                    logObject.capacity = loadLogs(
-                        Kinetic.getProtobuf().body.getLog.types[i]);
+                    logObject.capacity = loadLogs(type);
                     break;
                 case 3:
-                    logObject.configuration = loadLogs(
-                        Kinetic.getProtobuf().body.getLog.types[i]);
+                    logObject.configuration = loadLogs(type);
                     break;
                 case 4:
-                    logObject.statistics = loadLogs(
-                        Kinetic.getProtobuf().body.getLog.types[i]);
+                    logObject.statistics = loadLogs(type);
                     break;
                 case 5:
-                    logObject.messages = loadLogs(
-                        Kinetic.getProtobuf().body.getLog.types[i]);
+                    logObject.messages = loadLogs(type);
                     break;
                 case 6:
-                    logObject.limits = loadLogs(
-                        Kinetic.getProtobuf().body.getLog.types[i]);
+                    logObject.limits = loadLogs(type);
                     break;
                 default:
+                    throw new Error('Unhandled log type');
                 }
-            }
-            Kinetic.getLogResponse(sock, 1, errorMessage, logObject);
+            });
+            kinetic.getLogResponse(1, errorMessage, logObject);
             break;
         default:
+            throw new Error('Unhandled message');
         }
+        kinetic.send(sock);
     });
 
-    sock.on('close', function (data) {
+    sock.on('close', function serverClose(data) {
+        data;
         // uncomment for showing the connection closing
         // console.log('CLOSED: ' + sock.remoteAddress +' '+ sock.remotePort);
     });
