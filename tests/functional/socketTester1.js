@@ -1,5 +1,5 @@
 import net from 'net';
-import { Kinetic } from '../index';
+import { Kinetic } from '../../index';
 
 const errorMessage = new Buffer('qwerty');
 const HOST = '127.0.0.1';

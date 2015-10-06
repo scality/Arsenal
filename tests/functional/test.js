@@ -1,5 +1,5 @@
 /* eslint-env node, mocha */
-import { Kinetic } from '../index';
+import { Kinetic } from '../../index';
 import assert from 'assert';
 import net from 'net';
 import fs from 'fs';

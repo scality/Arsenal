@@ -36,7 +36,7 @@
     "eslint-plugin-react": "^3.4.2"
   },
   "scripts": {
-    "test": "sh test/test_launcher.sh"
+    "test": "sh tests/functional/test_launcher.sh"
   },
   "private": true
 }
