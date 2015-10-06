@@ -4,7 +4,7 @@
 
 As with all node modules, you will need:
 ```node
-import { Kinetic } from '../index';
+import { Kinetic } from 'arsenal';
 const kinetic = new Kinetic;
 ```
 The kinetic protocol is based on a simple exchange format, the Kinetic Protocol
