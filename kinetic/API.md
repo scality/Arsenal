@@ -4,7 +4,8 @@
 
 As with all node modules, you will need:
 ```node
-var Kinetic = require('arsenal').Kinetic;
+import { Kinetic } from '../index';
+const kinetic = new Kinetic;
 ```
 The kinetic protocol is based on a simple exchange format, the Kinetic Protocol
 Data Structure.
@@ -41,6 +42,46 @@ function Kinetic.getChunkSize() -> number
 ```
 `getChunkSize()` returns the size of the Value.
 
+```node
+function Kinetic.getHMAC() -> string
+```
+`getHMAC()` returns the HMAC.
+
+```node
+function Kinetic.getCommand() -> {}
+```
+`getCommand()` returns the full Kinetic protobuf template.
+
+```node
+function Kinetic.getMessageType() -> number
+```
+`getMessageType()` returns the request value.
+
+```node
+function Kinetic.getKey() -> buffer
+```
+`getKey()` returns the object key.
+
+```node
+function Kinetic.getDbVersion() -> Buffer
+```
+`getDbVersion()` returns the database version of the object.
+
+```node
+function Kinetic.getNewVersion() -> Buffer
+```
+`getNewVersion()` returns the new version of the object.
+
+```node
+function Kinetic.getErrorMessage() -> Buffer
+```
+`getErrorMessage()` returns the detailed error message.
+
+```node
+function Kinetic.getGetLogMessage() -> Buffer
+```
+`getGetLogMessage()` returns the log message .
+
 ##### Setters
 
 ```node
@@ -52,7 +93,20 @@ It returns the `Kinetic` object to allow for a functional style.
 ```node
 function Kinetic.setChunk(chunk: Buffer) -> Kinetic
 ```
-`setProtobuf()` sets the Value for the Kinetic Protocol Data Unit.
+`setChunk()` sets the Value for the Kinetic Protocol Data Unit.
+It returns the `Kinetic` object to allow for a functional style.
+
+```node
+function Kinetic.setHMAC(secret: Buffer) -> Kinetic
+```
+`setHMAC()` sets the HMAC signature for the Kinetic Protocol Data Unit integrity.
+It returns the `Kinetic` object to allow for a functional style.
+
+```node
+function Kinetic.setCommand(command: {}) -> Kinetic
+```
+`setCommand()` sets the protobuf structure from the specific message structure
+and the template.
 It returns the `Kinetic` object to allow for a functional style.
 
 ##### Methods
@@ -66,4 +120,5 @@ allow for a functional style.
 ```node
 function Kinetic.parse(data: Buffer) -> Kinetic
 ```
-`parse()` returns the `Kinetic` object parsed from the received Data Unit.
+`parse()` returns the `Kinetic` object parsed from the received Data Unit. It
+sets chunk and protobuf.
