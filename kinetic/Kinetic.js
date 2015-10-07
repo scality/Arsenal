@@ -12,18 +12,31 @@ const buildName = 'com.seagate.kinetic.proto';
 class Kinetic {
     constructor() {
         this._version = VERSION;
+        this.logs = {
+            UTILIZATIONS: 0,
+            TEMPERATURES: 1,
+            CAPACITIES: 2,
+            CONFIGURATION: 3,
+            STATISTICS: 4,
+            MESSAGES: 5,
+            LIMITS: 6,
+            DEVICE: 7,
+        };
         this.op = {
-            PUT: 0,
-            PUT_RESPONSE: 1,
+            PUT: 4,
+            PUT_RESPONSE: 3,
             GET: 2,
-            GET_RESPONSE: 3,
-            NOOP: 4,
-            NOOP_RESPONSE: 5,
+            GET_RESPONSE: 1,
+            NOOP: 30,
+            NOOP_RESPONSE: 29,
             DELETE: 6,
-            DELETE_RESPONSE: 7,
-            SET_CLUSTER_VERSION: 8,
-            SETUP_RESPONSE: 9,
-            GET_LOG: 10,
+            DELETE_RESPONSE: 5,
+            SET_CLUSTER_VERSION: 22,
+            SETUP_RESPONSE: 21,
+            FLUSH: 32,
+            FLUSH_RESPONSE: 31,
+            GETLOG: 24,
+            GETLOG_RESPONSE: 23,
         };
         this.error = {
             INVALID_STATUS_CODE: -1,
@@ -220,7 +233,8 @@ class Kinetic {
      * request in a TCP connection.
      * @param {Array} types - array filled by logs types needed.
      * @param {number} clusterVersion - version of the cluster
-     * @returns {Kinetic} this - message structure following the kinetic protocol
+     * @returns {Kinetic} this - message structure following the kinetic
+     * protocol
      */
     getLog(incrementTCP, types, clusterVersion) {
         const identity = (new Date).getTime();
@@ -245,7 +259,8 @@ class Kinetic {
      * @param {String or number} response - response code (SUCCESS, FAIL)
      * @param {String or Buffer} errorMessage - detailed error message.
      * @param {object} responseLogs - object filled by logs needed.
-     * @returns {Kinetic} this - message structure following the kinetic protocol
+     * @returns {Kinetic} this - message structure following the kinetic
+     * protocol
      */
     getLogResponse(response, errorMessage, responseLogs) {
         return this.setCommand({
@@ -268,7 +283,8 @@ class Kinetic {
      * @param {number} incrementTCP - monotonically increasing number for each
      * request in a TCP connection.
      * @param {number} clusterVersion - version of the cluster
-     * @returns {Kinetic} this - message structure following the kinetic protocol
+     * @returns {Kinetic} this - message structure following the kinetic
+     * protocol
      */
     flush(incrementTCP, clusterVersion) {
         const identity = (new Date).getTime();
@@ -287,7 +303,8 @@ class Kinetic {
      * Flush all data response following the kinetic protocol.
      * @param {String or number} response - response code (SUCCESS, FAIL)
      * @param {String or Buffer} errorMessage - detailed error message.
-     * @returns {Kinetic} this - message structure following the kinetic protocol
+     * @returns {Kinetic} this - message structure following the kinetic
+     * protocol
      */
     flushResponse(response, errorMessage) {
         return this.setCommand({
@@ -310,7 +327,8 @@ class Kinetic {
      * request in a TCP connection.
      * @param {number} oldClusterVersion - The old version number of this
      * cluster definition
-     * @returns {Kinetic} this - message structure following the kinetic protocol
+     * @returns {Kinetic} this - message structure following the kinetic
+     * protocol
      */
     setClusterVersion(clusterVersion, incrementTCP, oldClusterVersion) {
         const identity = (new Date).getTime();
@@ -333,7 +351,8 @@ class Kinetic {
      * Setup response request following the kinetic protocol.
      * @param {String or number} response - response code (SUCCESS, FAIL)
      * @param {String or Buffer} errorMessage - detailed error message.
-     * @returns {Kinetic} this - message structure following the kinetic protocol
+     * @returns {Kinetic} this - message structure following the kinetic
+     * protocol
      */
     setupResponse(response, errorMessage) {
         return this.setCommand({
@@ -354,7 +373,8 @@ class Kinetic {
      * request in a TCP connection
      * @param {number} clusterVersion - The version number of this cluster
      * definition
-     * @returns {Kinetic} this - message structure following the kinetic protocol
+     * @returns {Kinetic} this - message structure following the kinetic
+     * protocol
      */
     noOp(incrementTCP, clusterVersion) {
         const identity = (new Date).getTime();
@@ -372,7 +392,8 @@ class Kinetic {
      * Response for the NOOP request following the kinetic protocol.
      * @param {String or number} response - response code (SUCCESS, FAIL)
      * @param {String or Buffer} errorMessage - detailed error message.
-     * @returns {Kinetic} this - message structure following the kinetic protocol
+     * @returns {Kinetic} this - message structure following the kinetic
+     * protocol
      */
     noOpResponse(response, errorMessage) {
         return this.setCommand({
@@ -397,7 +418,8 @@ class Kinetic {
      * @param {String or Buffer} newVersion - new version of the item to put.
      * @param {number} clusterVersion - The version number of this cluster
      * definition
-     * @returns {Kinetic} this - message structure following the kinetic protocol
+     * @returns {Kinetic} this - message structure following the kinetic
+     * protocol
      */
     put(key, incrementTCP, dbVersion, newVersion, clusterVersion) {
         const identity = (new Date).getTime();
@@ -422,7 +444,8 @@ class Kinetic {
      * Response for the PUT request following the kinetic protocol.
      * @param {String or number} response - response code (SUCCESS, FAIL)
      * @param {String or Buffer} errorMessage - detailed error message.
-     * @returns {Kinetic} this - message structure following the kinetic protocol
+     * @returns {Kinetic} this - message structure following the kinetic
+     * protocol
      */
     putResponse(response, errorMessage) {
         return this.setCommand({
@@ -447,7 +470,8 @@ class Kinetic {
      * request in a TCP connection
      * @param {number} clusterVersion - The version number of this cluster
      * definition
-     * @returns {Kinetic} this - message structure following the kinetic protocol
+     * @returns {Kinetic} this - message structure following the kinetic
+     * protocol
      */
     get(key, incrementTCP, clusterVersion) {
         const identity = (new Date).getTime();
@@ -472,7 +496,8 @@ class Kinetic {
      * @param {String or Buffer} errorMessage - Detailed error message.
      * @param {String or Buffer} dbVersion - The version of the item in the
      * database.
-     * @returns {Kinetic} this - message structure following the kinetic protocol
+     * @returns {Kinetic} this - message structure following the kinetic
+     * protocol
      */
     getResponse(response, errorMessage, dbVersion) {
         return this.setCommand({
@@ -500,7 +525,8 @@ class Kinetic {
      * request in a TCP connection
      * @param {number} clusterVersion - The version number of this cluster
      * definition
-     * @returns {Kinetic} this - message structure following the kinetic protocol
+     * @returns {Kinetic} this - message structure following the kinetic
+     * protocol
      */
     delete(key, incrementTCP, clusterVersion) {
         const identity = (new Date).getTime();
@@ -523,7 +549,8 @@ class Kinetic {
      * Response for the DELETE request following the kinetic protocol.
      * @param {String or number} response - response code (SUCCESS, FAIL)
      * @param {String or Buffer} errorMessage - Detailed error message.
-     * @returns {Kinetic} this - message structure following the kinetic protocol
+     * @returns {Kinetic} this - message structure following the kinetic
+     * protocol
      */
     deleteResponse(response, errorMessage) {
         return this.setCommand({
