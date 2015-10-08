@@ -588,7 +588,6 @@ class Kinetic {
      * @param {Socket} sock - Socket to send data through.
      */
     send(sock) {
-        const arrayBuffer = [];
         const buf = new Buffer(9);
 
         buf.writeInt8(this.getVersion(), 0);
@@ -597,12 +596,9 @@ class Kinetic {
         buf.writeInt32BE(this.getProtobufSize(), 1);
         buf.writeInt32BE(this.getChunkSize(), 5);
 
-        arrayBuffer[0] = buf;
-        arrayBuffer[1] = this.getProtobuf().toBuffer();
-        arrayBuffer[2] = this.getChunk();
-
-        const endBuffer = Buffer.concat(arrayBuffer);
-        sock.write(endBuffer);
+        sock.write(Buffer.concat(
+                [buf, this.getProtobuf().toBuffer(), this.getChunk()]
+            ));
     }
 
     /**
