@@ -97,7 +97,7 @@ function Kinetic.setChunk(chunk: Buffer) -> Kinetic
 It returns the `Kinetic` object to allow for a functional style.
 
 ```node
-function Kinetic.setHMAC(secret: Buffer) -> Kinetic
+function Kinetic.setHMAC() -> Kinetic
 ```
 `setHMAC()` sets the HMAC signature for the Kinetic Protocol Data Unit integrity.
 It returns the `Kinetic` object to allow for a functional style.
@@ -122,3 +122,9 @@ function Kinetic.parse(data: Buffer) -> Kinetic
 ```
 `parse()` returns the `Kinetic` object parsed from the received Data Unit. It
 sets chunk and protobuf.
+
+```node
+function hmacIntegrity(hmac: Buffer) -> Boolean
+```
+`hmacIntegrity()` returns a Boolean from the diff between hmac in parameters and
+the hmac from getHMAC().

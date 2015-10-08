@@ -38,7 +38,7 @@ class Kinetic {
             GETLOG: 24,
             GETLOG_RESPONSE: 23,
         };
-        this.error = {
+        this.errors = {
             INVALID_STATUS_CODE: -1,
             NOT_ATTEMPTED: 0,
             SUCCESS: 1,
@@ -116,8 +116,8 @@ class Kinetic {
      * @param {Buffer} secret - the shared secret.
      * @returns {Kinetic} to allow for a functional style.
      */
-    setHMAC(secret) {
-        this._hmac = crypto.createHmac('sha1', secret)
+    setHMAC() {
+        this._hmac =  crypto.createHmac('sha1', 'asdfasdf')
             .update(this.getProtobuf().toBuffer()).digest('hex');
         return this;
     }
@@ -225,6 +225,21 @@ class Kinetic {
      */
     getGetLogMessage() {
         return this.getSlice(this.getProtobuf().body.getLog.messages);
+    }
+
+    diff(buf0, buf1) {
+        if (buf0.length !== buf1.length) {
+            return false;
+        }
+        for (let i = 0; i <= buf0.length; i++) {
+            if (buf0[i] !== buf1[i])
+                return false;
+        }
+        return true;
+    }
+
+    hmacIntegrity(hmac) {
+        return this.diff(hmac, new Buffer(this.getHMAC()));
     }
 
     /**
@@ -605,7 +620,7 @@ class Kinetic {
         this.setProtobuf(this.getCommand().decode(data.slice(9, pbMsgLen + 9)));
         this.setChunk(data.slice(pbMsgLen + 9, chunkLen + pbMsgLen + 9));
         if (this.getChunkSize !== chunkLen) {
-            return (this.error.DATA_ERROR);
+            return (this.errors.DATA_ERROR);
         }
         return (this.errors.SUCCESS);
     }

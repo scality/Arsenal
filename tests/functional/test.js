@@ -7,6 +7,7 @@ import fs from 'fs';
 const dataChunk = fs.readFileSync('./package.json');
 const HOST = '127.0.0.1';
 let _tmp = undefined;
+let _hmacTmp = null;
 
 const requestsArr = [
     ['put', 'PUT_RESPONSE'],
@@ -51,11 +52,17 @@ function checkRequest(request, done) {
         default:
             throw new Error("wrong request");
         }
+        kinetic.setHMAC();
         kinetic.send(client);
+        client.write(kinetic.getHMAC());
         _tmp = kinetic.getProtobuf();
         let ret = undefined;
         client.on('data', function handleData(data) {
-            ret = data;
+            if (data.length === 40) {
+                _hmacTmp = data;
+            }else {
+                ret = data;
+            }
             client.end();
         });
 
@@ -69,8 +76,11 @@ function checkRequest(request, done) {
             // console.log('*Received*****************************');
             // console.log(util.inspect(kinetic.getProtobuf(),
             // {showHidden: false, depth: null}));
-            const protobuf = kinetic.getProtobuf();
 
+            const protobuf = kinetic.getProtobuf();
+            kinetic.setHMAC();
+
+            assert.deepEqual(kinetic.hmacIntegrity(_hmacTmp), true);
             assert.deepEqual(dataChunk, kinetic.getChunk());
             assert.deepEqual(_tmp.header.messageType,
                     protobuf.header.messageType);
