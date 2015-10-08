@@ -336,16 +336,16 @@ class Kinetic {
 
     /**
      * set clusterVersion request following the kinetic protocol.
-     * @param {number} clusterVersion - The version number of this cluster
-     * definition
      * @param {number} incrementTCP - monotonically increasing number for each
      * request in a TCP connection.
+     * @param {number} clusterVersion - The version number of this cluster
+     * definition
      * @param {number} oldClusterVersion - The old version number of this
      * cluster definition
      * @returns {Kinetic} this - message structure following the kinetic
      * protocol
      */
-    setClusterVersion(clusterVersion, incrementTCP, oldClusterVersion) {
+    setClusterVersion(incrementTCP, clusterVersion, oldClusterVersion) {
         const identity = (new Date).getTime();
         return this.setCommand({
             "header": {
