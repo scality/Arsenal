@@ -118,7 +118,7 @@ class Kinetic {
      */
     setHMAC() {
         this._hmac =  crypto.createHmac('sha1', 'asdfasdf')
-            .update(this.getProtobuf().toBuffer()).digest('hex');
+            .update(this.getProtobuf().toBuffer()).digest();
         return this;
     }
 
@@ -227,6 +227,10 @@ class Kinetic {
         return this.getSlice(this.getProtobuf().body.getLog.messages);
     }
 
+    getKeyByValue(object, value) {
+        return Object.keys(object).find(key => object[key] === value);
+    }
+
     diff(buf0, buf1) {
         if (buf0.length !== buf1.length) {
             return false;
@@ -239,7 +243,21 @@ class Kinetic {
     }
 
     hmacIntegrity(hmac) {
-        return this.diff(hmac, new Buffer(this.getHMAC()));
+        if (this.diff(hmac, this.getHMAC()) === false)
+            return this.errors.HMAC_FAILURE;
+        return true;
+    }
+
+    getOp(opCode) {
+        return this.getKeyByValue(this.op, opCode);
+    }
+
+    getError(errorCode) {
+        return this.getKeyByValue(this.errors, errorCode);
+    }
+
+    getLogType(logCode) {
+        return this.getKeyByValue(this.logs, logCode);
     }
 
     /**
@@ -613,8 +631,14 @@ class Kinetic {
         if (version !== this.getVersion()) {
             return (this.errors.VERSION_FAILURE);
         }
-        this.setProtobuf(this.getCommand().decode(data.slice(9, pbMsgLen + 9)));
-        this.setChunk(data.slice(pbMsgLen + 9, chunkLen + pbMsgLen + 9));
+        try {
+            this.setProtobuf(
+                this.getCommand().decode(data.slice(9, pbMsgLen + 9))
+            );
+            this.setChunk(data.slice(pbMsgLen + 9, chunkLen + pbMsgLen + 9));
+        }catch (e) {
+            return e;
+        }
         if (this.getChunkSize !== chunkLen) {
             return (this.errors.DATA_ERROR);
         }

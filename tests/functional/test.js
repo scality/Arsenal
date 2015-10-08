@@ -58,7 +58,7 @@ function checkRequest(request, done) {
         _tmp = kinetic.getProtobuf();
         let ret = undefined;
         client.on('data', function handleData(data) {
-            if (data.length === 40) {
+            if (data.length === 20) {
                 _hmacTmp = data;
             }else {
                 ret = data;

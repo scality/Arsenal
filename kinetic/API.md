@@ -129,6 +129,21 @@ function kinetic.hmacIntegrity(hmac: Buffer) -> Boolean
 `hmacIntegrity()` returns a Boolean from the diff between hmac in parameters and
 the hmac from getHMAC().
 
+```node
+function kinetic.getOp(opCode: number) -> String
+```
+`getOp()` returns the string from the operation code.
+
+```node
+function kinetic.getError(errorCode: number) -> String
+```
+`getError()` returns the string from the error code.
+
+```node
+function kinetic.getLogType(logCode: number) -> String
+```
+`getLogType()` returns the string from the logType code.
+
 ##### Requests Methods
 
 Set the actual protobuf message from the asked request.
