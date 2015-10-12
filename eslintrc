@@ -2,6 +2,12 @@
     "extends": "airbnb",
 
     // Overrides
+    "env": {
+        "browser": false,
+        "node": true,
+        "mocha": true
+    },
+
     "rules": {
         "strict": [2, "global"],
         "indent": [2, 4],
