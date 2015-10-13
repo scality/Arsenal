@@ -82,6 +82,21 @@ function kinetic.getGetLogMessage() -> Buffer
 ```
 `getGetLogMessage()` returns the log message .
 
+```node
+function kinetic.getOp() -> String
+```
+`getOp()` returns the operation name.
+
+```node
+function kinetic.getError() -> String
+```
+`getError()` returns the error name.
+
+```node
+function kinetic.getLogType() -> Buffer
+```
+`getLogType()` returns the log type name.
+
 ##### Setters
 
 ```node
@@ -143,6 +158,11 @@ function kinetic.getError(errorCode: number) -> String
 function kinetic.getLogType(logCode: number) -> String
 ```
 `getLogType()` returns the string from the logType code.
+
+```node
+function kinetic.hmacIntegrity(hmac: buffer) -> Boolean
+```
+`hmacIntegrity()` returns true if HMACs match.
 
 ##### Requests Methods
 

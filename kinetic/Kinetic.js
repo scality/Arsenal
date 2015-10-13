@@ -227,10 +227,48 @@ class Kinetic {
         return this.getSlice(this.getProtobuf().body.getLog.messages);
     }
 
+    /**
+     * Gets the operartion name with it code.
+     * @param {Number} opCode - the operation code.
+     * @returns {String} operation name.
+     */
+    getOp(opCode) {
+        return this.getKeyByValue(this.op, opCode);
+    }
+
+    /**
+     * Gets the error name with it code.
+     * @param {Number} errorCode - the error code.
+     * @returns {String} error name.
+     */
+    getError(errorCode) {
+        return this.getKeyByValue(this.errors, errorCode);
+    }
+
+    /**
+     * Gets the log type name with it code.
+     * @param {Number} logCode - the log type code.
+     * @returns {String} log type name.
+     */
+    getLogType(logCode) {
+        return this.getKeyByValue(this.logs, logCode);
+    }
+
+    /**
+     * Gets the key of an object with it value.
+     * @param {Object} object - the corresponding object.
+     * @param {value} value - the corresponding value.
+     * @returns {Buffer} object key.
+     */
     getKeyByValue(object, value) {
         return Object.keys(object).find(key => object[key] === value);
     }
 
+    /**
+     * Compare two buffers.
+     * @param {Buffer} buf0/buf1 - the buffers to compare.
+     * @returns {Boolean} false if it's different true if not.
+     */
     diff(buf0, buf1) {
         if (buf0.length !== buf1.length) {
             return false;
@@ -242,22 +280,16 @@ class Kinetic {
         return true;
     }
 
+    /**
+     * Test the HMAC integrity between the actual instance and the given HMAC.
+     * @param {Buffer} hmac - the non instance hmac to compare.
+     * @returns {Boolean} true if the HMACs are the same.
+     * @returns an error if they are different.
+     */
     hmacIntegrity(hmac) {
         if (this.diff(hmac, this.getHMAC()) === false)
             return this.errors.HMAC_FAILURE;
         return true;
-    }
-
-    getOp(opCode) {
-        return this.getKeyByValue(this.op, opCode);
-    }
-
-    getError(errorCode) {
-        return this.getKeyByValue(this.errors, errorCode);
-    }
-
-    getLogType(logCode) {
-        return this.getKeyByValue(this.logs, logCode);
     }
 
     /**
