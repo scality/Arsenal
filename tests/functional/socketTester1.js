@@ -51,7 +51,7 @@ function loadLogs(int) {
             maxKeyRangeCount: 55,
         };
     default:
-        throw new Error('Unhandled message');
+        throw new Error('socketTester1/loadLogs/INVALID_LOG_TYPE');
     }
 }
 
