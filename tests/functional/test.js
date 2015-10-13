@@ -3,6 +3,14 @@ import { Kinetic } from '../../index';
 import assert from 'assert';
 import net from 'net';
 import fs from 'fs';
+import util from 'util';
+import winston from 'winston';
+
+const logger = new (winston.Logger)({
+    transports: [
+        new (winston.transports.Console)({ level: 'warn' }),
+    ]
+});
 
 const dataChunk = fs.readFileSync('./package.json');
 const HOST = '127.0.0.1';
@@ -69,13 +77,12 @@ function checkRequest(request, done) {
         client.on('end', function requestEnd() {
             kinetic.parse(ret);
 
-            // Uncomment those lines for more details (pb structure);
-            // console.log('=Local================================');
-            // console.log(util.inspect(_tmp,
-            // {showHidden: false, depth: null}));
-            // console.log('*Received*****************************');
-            // console.log(util.inspect(kinetic.getProtobuf(),
-            // {showHidden: false, depth: null}));
+            logger.info('=Local================================');
+            logger.info(util.inspect(_tmp,
+            {showHidden: false, depth: null}));
+            logger.info('*Received*****************************');
+            logger.info(util.inspect(kinetic.getProtobuf(),
+            {showHidden: false, depth: null}));
 
             const protobuf = kinetic.getProtobuf();
             kinetic.setHMAC();
@@ -163,13 +170,12 @@ function checkResponse(request, response, done) {
             kinetic.parse(ret);
             const protobuf = kinetic.getProtobuf();
 
-            // Uncomment those lines for more details (pb structure);
-            // console.log('=Local================================');
-            // console.log(util.inspect(message,
-            // {showHidden: false, depth: null}));
-            // console.log('*Received*****************************');
-            // console.log(util.inspect(protobuf,
-            // {showHidden: false, depth: null}));
+            logger.info('=Local================================');
+            logger.info(util.inspect(message,
+            {showHidden: false, depth: null}));
+            logger.info('*Received*****************************');
+            logger.info(util.inspect(protobuf,
+            {showHidden: false, depth: null}));
 
             const detail = message.status.detailedMessage;
             const objDetail = protobuf.status.detailedMessage;

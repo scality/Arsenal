@@ -1,5 +1,12 @@
 import net from 'net';
 import { Kinetic } from '../../index';
+import winston from 'winston';
+
+const logger = new (winston.Logger)({
+    transports: [
+        new (winston.transports.Console)({ level: 'warn' }),
+    ]
+});
 
 const errorMessage = new Buffer('qwerty');
 const HOST = '127.0.0.1';
@@ -56,12 +63,10 @@ function loadLogs(int) {
 }
 
 net.createServer(function server(sock) {
-    // uncomment for showing the connection opening
-    // console.log('CONNECTED: ' + sock.remoteAddress +':'+ sock.remotePort);
+    logger.info('CONNECTED: ' + sock.remoteAddress + ':' + sock.remotePort);
 
     sock.on('data', function listener(data) {
-        // uncomment for showing the received DATA
-        // console.log('DATA ' + sock.remoteAddress + ': ' + data)
+        logger.info('DATA ' + sock.remoteAddress + ': ' + data);
 
         kinetic.parse(data);
 
@@ -125,8 +130,7 @@ net.createServer(function server(sock) {
 
     sock.on('close', function serverClose(data) {
         data;
-        // uncomment for showing the connection closing
-        // console.log('CLOSED: ' + sock.remoteAddress +' '+ sock.remotePort);
+        logger.info('CLOSED: ' + sock.remoteAddress + ' ' + sock.remotePort);
     });
 }).listen(PORT, HOST);
-// console.log('Server listening on ' + HOST +':'+ PORT);
+logger.info('Server listening on ' + HOST + ':' + PORT);
