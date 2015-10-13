@@ -20,6 +20,7 @@
         "camelcase": [2, {"properties": "always"}],
         "id-length": 0,
         "no-shadow": 0,
-        "valid-jsdoc": 1
+        "valid-jsdoc": 1,
+        "eol-last": 2
     }
 }
