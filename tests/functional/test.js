@@ -15,7 +15,7 @@ const logger = new (winston.Logger)({
 const dataChunk = fs.readFileSync('./package.json');
 const HOST = '127.0.0.1';
 let _tmp = undefined;
-let _hmacTmp = null;
+let _hmacTmp = undefined;
 
 const requestsArr = [
     ['put', 'PUT_RESPONSE'],
@@ -61,8 +61,8 @@ function checkRequest(request, done) {
             throw new Error("wrong request");
         }
         kinetic.setHMAC();
-        kinetic.send(client);
         client.write(kinetic.getHMAC());
+        kinetic.send(client);
         _tmp = kinetic.getProtobuf();
         let ret = undefined;
         client.on('data', function handleData(data) {
@@ -87,7 +87,12 @@ function checkRequest(request, done) {
             const protobuf = kinetic.getProtobuf();
             kinetic.setHMAC();
 
-            assert.deepEqual(kinetic.hmacIntegrity(_hmacTmp), true);
+            if (_hmacTmp) {
+                assert.deepEqual(kinetic.hmacIntegrity(_hmacTmp), true);
+            } else {
+                assert.deepEqual(kinetic.hmacIntegrity(_hmacTmp),
+                    kinetic.errors.HMAC_FAILURE);
+            }
             assert.deepEqual(dataChunk, kinetic.getChunk());
             assert.deepEqual(_tmp.header.messageType,
                     protobuf.header.messageType);
@@ -113,6 +118,7 @@ function checkRequest(request, done) {
                 assert.deepEqual(_tmp.body.getLog.types,
                         protobuf.body.getLog.types);
             }
+            _hmacTmp = undefined;
             done();
         });
     });

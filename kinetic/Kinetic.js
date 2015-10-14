@@ -287,6 +287,8 @@ class Kinetic {
      * @returns an error if they are different.
      */
     hmacIntegrity(hmac) {
+        if (hmac === undefined || this.getHMAC() === undefined)
+            return this.errors.HMAC_FAILURE;
         if (this.diff(hmac, this.getHMAC()) === false)
             return this.errors.HMAC_FAILURE;
         return true;
