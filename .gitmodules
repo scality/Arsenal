@@ -1,0 +1,6 @@
+[submodule "kinetic/kinetic-protocol"]
+	path = kinetic/kinetic-protocol
+	url = git://github.com/Kinetic/kinetic-protocol
+[submodule "tests/dependencies/kinetic-java"]
+	path = tests/dependencies/kinetic-java
+	url = https://github.com/Kinetic/kinetic-java.git
