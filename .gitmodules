@@ -1,0 +1,3 @@
+[submodule "kinetic/kinetic-protocol"]
+	path = kinetic/kinetic-protocol
+	url = https://github.com/Kinetic/kinetic-protocol.git

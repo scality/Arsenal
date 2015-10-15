@@ -1,0 +1,43 @@
+{
+  "name": "arsenal",
+  "version": "0.0.1",
+  "description": "Common utilities for the S3-kinetic project components",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/scality/IronMan-Arsenal.git"
+  },
+  "contributors": [{
+      "name": "David Pineau",
+      "email": ""
+    },
+    {
+    "name": "Antonin Coulibaly",
+    "email": ""
+    },
+    {
+      "name": "Michael Zapata",
+      "email": ""
+  }],
+  "license": "ISC",
+  "bugs": {
+        "url": "https://github.com/scality/IronMan-Arsenal/issues"
+  },
+  "homepage": "https://github.com/scality/IronMan-Arsenal#readme",
+  "dependencies": {
+    "babel": "^5.8.23",
+    "protobufjs": "^4.0.0"
+  },
+  "devDependencies": {
+    "mocha": "^2.3.3",
+    "babel-eslint": "^4.1.3",
+    "eslint": "^1.5.1",
+    "eslint-config-airbnb": "0.0.9",
+    "eslint-plugin-react": "^3.4.2",
+    "winston": "^1.1.0"
+  },
+  "scripts": {
+    "test": "sh tests/functional/test_launcher.sh"
+  },
+  "private": true
+}
