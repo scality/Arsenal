@@ -67,15 +67,9 @@ class Kinetic {
         return this;
     }
 
-
-    /**
-     * Slice the buffer with the offset and the limit.
-     * @param {Object} obj - an object buffer with offset and limit.
-     * @returns {Buffer} sliced buffer from the buffer structure with the offset
-     * and the limit.
-     */
-    getSlice(obj) {
-        return obj.buffer.slice(obj.offset, obj.limit);
+    setMessage(message) {
+        const msg = new this.build.Message(message);
+        return this.setProtobuf(msg);
     }
 
     /**
@@ -88,7 +82,6 @@ class Kinetic {
         return this;
     }
 
-
     /**
      * Sets the chunk for the Kinetic Protocol Data Unit.
      * @param {Buffer} chunk.
@@ -98,7 +91,6 @@ class Kinetic {
         this._chunk = chunk;
         return this;
     }
-
 
     /**
      * Sets the general protobuf message for the Kinetic Protocol Data Unit.
@@ -111,17 +103,55 @@ class Kinetic {
         return this.setProtobuf(message);
     }
 
+    setMessage() {
+        this.setHMAC(this.getProtobuf().toBuffer());
+        const tmp = new this.build.Message({
+            "authType": 1,
+            "hmacAuth": {
+                "identity": 1,
+                "hmac": this.getHMAC(),
+            },
+            "commandBytes": this.getProtobuf().toBuffer(),
+        });
+
+        return this.setProtobuf(tmp);
+    }
+
+    /**
+     * Sets the general protobuf message for the Kinetic Protocol Data Unit.
+     * @param {Object} command - the well formated general kinetic protobuf
+     * structure.
+     * @returns {Kinetic} setting the protobuf message.
+     */
+    setACL(acl) {
+        this._acl = acl;
+        return this;
+    }
+
+    getACL() {
+        return this._acl;
+    }
+
     /**
      * Sets the HMAC for the Kinetic Protocol Data Unit integrity.
      * @param {Buffer} secret - the shared secret.
      * @returns {Kinetic} to allow for a functional style.
      */
-    setHMAC() {
+    setHMAC(integrity) {
         this._hmac =  crypto.createHmac('sha1', 'asdfasdf')
-            .update(this.getProtobuf().toBuffer()).digest();
+            .update(integrity).digest('binary');
         return this;
     }
 
+    /**
+     * Slice the buffer with the offset and the limit.
+     * @param {Object} obj - an object buffer with offset and limit.
+     * @returns {Buffer} sliced buffer from the buffer structure with the offset
+     * and the limit.
+     */
+    getSlice(obj) {
+        return obj.buffer.slice(obj.offset, obj.limit);
+    }
 
     /**
      * Gets the actual version of the kinetic protocol.
@@ -172,6 +202,14 @@ class Kinetic {
     }
 
     /**
+     * Gets the general build template.
+     * @returns {Object} General kinetic protobuf structure.
+     */
+    getMessage() {
+        return this.build.Message;
+    }
+
+    /**
      * Gets the actual HMAC.
      * @returns {Buffer} HMAC.
      */
@@ -185,6 +223,14 @@ class Kinetic {
      */
     getMessageType() {
         return this.getProtobuf().header.messageType;
+    }
+
+    /**
+     * Gets the actual clusterVersion.
+     * @returns {Number} The clusterVersion.
+     */
+    getClusterVersion() {
+        return this.getProtobuf().header.clusterVersion.low;
     }
 
     /**
@@ -305,7 +351,7 @@ class Kinetic {
      */
     getLog(incrementTCP, types, clusterVersion) {
         const identity = (new Date).getTime();
-        return this.setCommand({
+        this.setCommand({
             "header": {
                 "messageType": "GETLOG",
                 "connectionID": identity,
@@ -319,6 +365,7 @@ class Kinetic {
                 },
             },
         });
+        return this.setMessage();
     }
 
     /**
@@ -330,7 +377,7 @@ class Kinetic {
      * protocol
      */
     getLogResponse(response, errorMessage, responseLogs) {
-        return this.setCommand({
+        this.setCommand({
             "header": {
                 "ackSequence": this.getProtobuf().header.sequence,
                 "messageType": "GETLOG_RESPONSE",
@@ -343,6 +390,7 @@ class Kinetic {
                 "detailedMessage": errorMessage,
             },
         });
+        return this.setMessage();
     }
 
     /**
@@ -355,15 +403,17 @@ class Kinetic {
      */
     flush(incrementTCP, clusterVersion) {
         const identity = (new Date).getTime();
-        return this.setCommand({
+        this.setCommand({
             "header": {
                 "messageType": "FLUSHALLDATA",
                 "connectionID": identity,
                 "sequence": incrementTCP,
                 "clusterVersion": clusterVersion,
             },
-            "body": { },
+            "body": {
+            },
         });
+        return this.setMessage();
     }
 
     /**
@@ -374,7 +424,7 @@ class Kinetic {
      * protocol
      */
     flushResponse(response, errorMessage) {
-        return this.setCommand({
+        this.setCommand({
             "header": {
                 "messageType": "FLUSHALLDATA_RESPONSE",
                 "ackSequence": this.getProtobuf().header.sequence,
@@ -384,6 +434,7 @@ class Kinetic {
                 "detailedMessage": errorMessage,
             },
         });
+        return this.setMessage();
     }
 
     /**
@@ -399,7 +450,7 @@ class Kinetic {
      */
     setClusterVersion(incrementTCP, clusterVersion, oldClusterVersion) {
         const identity = (new Date).getTime();
-        return this.setCommand({
+        this.setCommand({
             "header": {
                 "messageType": "SETUP",
                 "connectionID": identity,
@@ -412,6 +463,7 @@ class Kinetic {
                 },
             },
         });
+        return this.setMessage();
     }
 
     /**
@@ -422,7 +474,7 @@ class Kinetic {
      * protocol
      */
     setupResponse(response, errorMessage) {
-        return this.setCommand({
+        this.setCommand({
             "header": {
                 "messageType": "SETUP_RESPONSE",
                 "ackSequence": this.getProtobuf().header.sequence,
@@ -432,6 +484,7 @@ class Kinetic {
                 "detailedMessage": errorMessage,
             },
         });
+        return this.setMessage();
     }
 
     /**
@@ -445,14 +498,17 @@ class Kinetic {
      */
     noOp(incrementTCP, clusterVersion) {
         const identity = (new Date).getTime();
-        return this.setCommand({
+        this.setCommand({
             "header": {
                 "messageType": "NOOP",
                 "connectionID": identity,
                 "sequence": incrementTCP,
                 "clusterVersion": clusterVersion,
             },
+            "body": {
+            },
         });
+        return this.setMessage();
     }
 
     /**
@@ -463,7 +519,7 @@ class Kinetic {
      * protocol
      */
     noOpResponse(response, errorMessage) {
-        return this.setCommand({
+        this.setCommand({
             "header": {
                 "messageType": "NOOP_RESPONSE",
                 "ackSequence": this.getProtobuf().header.sequence,
@@ -473,6 +529,7 @@ class Kinetic {
                 "detailedMessage": errorMessage,
             },
         });
+        return this.setMessage();
     }
 
     /**
@@ -490,7 +547,7 @@ class Kinetic {
      */
     put(key, incrementTCP, dbVersion, newVersion, clusterVersion) {
         const identity = (new Date).getTime();
-        return this.setCommand({
+        this.setCommand({
             "header": {
                 "messageType": "PUT",
                 "connectionID": identity,
@@ -505,6 +562,7 @@ class Kinetic {
                 },
             },
         });
+        return this.setMessage();
     }
 
     /**
@@ -515,7 +573,7 @@ class Kinetic {
      * protocol
      */
     putResponse(response, errorMessage) {
-        return this.setCommand({
+        this.setCommand({
             "header": {
                 "messageType": "PUT_RESPONSE",
                 "ackSequence": this.getProtobuf().header.sequence,
@@ -528,6 +586,7 @@ class Kinetic {
                 "detailedMessage": errorMessage,
             },
         });
+        return this.setMessage();
     }
 
     /**
@@ -542,7 +601,7 @@ class Kinetic {
      */
     get(key, incrementTCP, clusterVersion) {
         const identity = (new Date).getTime();
-        return this.setCommand({
+        this.setCommand({
             "header": {
                 "messageType": "GET",
                 "connectionID": identity,
@@ -555,6 +614,7 @@ class Kinetic {
                 },
             },
         });
+        return this.setMessage();
     }
 
     /**
@@ -567,7 +627,7 @@ class Kinetic {
      * protocol
      */
     getResponse(response, errorMessage, dbVersion) {
-        return this.setCommand({
+        this.setCommand({
             "header": {
                 "messageType": "GET_RESPONSE",
                 "ackSequence": this.getProtobuf().header.sequence,
@@ -583,6 +643,7 @@ class Kinetic {
                 "detailedMessage": errorMessage,
             },
         });
+        return this.setMessage();
     }
 
     /**
@@ -597,7 +658,7 @@ class Kinetic {
      */
     delete(key, incrementTCP, clusterVersion) {
         const identity = (new Date).getTime();
-        return this.setCommand({
+        this.setCommand({
             "header": {
                 "messageType": "DELETE",
                 "connectionID": identity,
@@ -610,6 +671,7 @@ class Kinetic {
                 },
             },
         });
+        return this.setMessage();
     }
 
     /**
@@ -620,7 +682,7 @@ class Kinetic {
      * protocol
      */
     deleteResponse(response, errorMessage) {
-        return this.setCommand({
+        this.setCommand({
             "header": {
                 "messageType": "DELETE_RESPONSE",
                 "ackSequence": this.getProtobuf().header.sequence,
@@ -633,6 +695,7 @@ class Kinetic {
                 "detailedMessage": errorMessage,
             },
         });
+        return this.setMessage();
     }
 
     /**
@@ -673,6 +736,21 @@ class Kinetic {
         } catch (e) {
             return e;
         }
+<<<<<<< HEAD
+=======
+
+        try {
+            const msg = this.build.Message.decode(data.slice(9, 9 + pbMsgLen));
+            this.setProtobuf(this.getCommand().decode(msg.commandBytes));
+        } catch (e) {
+            if (e.decoded) {
+                this.setProtobuf(e.decoded);
+            } else {
+                return this.errors.INTERNAL_ERROR;
+            }
+        }
+        this.setChunk(data.slice(pbMsgLen + 9, chunkLen + pbMsgLen + 9));
+>>>>>>> 239112a... FT(kinetic) add simulator and corresponding tests
         if (this.getChunkSize() !== chunkLen) {
             return this.errors.DATA_ERROR;
         }
