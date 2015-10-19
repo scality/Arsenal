@@ -32,11 +32,12 @@
     "mocha": "^2.3.3",
     "babel-eslint": "^4.1.3",
     "eslint": "^1.5.1",
-    "eslint-config-airbnb": "0.0.9",
-    "eslint-plugin-react": "^3.4.2",
+    "eslint-config-airbnb": "^0.0.9",
+    "eslint-config-ironman": "scality/IronMan-Guidelines",
     "winston": "^1.1.0"
   },
   "scripts": {
+    "lint": "node_modules/.bin/eslint $(git ls-files '*.js')",
     "test": "sh tests/functional/test_launcher.sh"
   },
   "private": true

@@ -1,9 +1,15 @@
-checkout:
-  post:
-    - git submodule sync
-    - git submodule update --init
 machine:
   pre:
     - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.9 20
   node:
     version: 4.1.1
+
+checkout:
+  post:
+    - git submodule sync
+    - git submodule update --init
+
+test:
+  override:
+    - npm run --silent lint
+    - npm test
