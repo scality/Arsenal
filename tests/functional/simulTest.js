@@ -10,32 +10,29 @@ let incrementTCP = 0;
 
 const kinetic = new Kinetic;
 
-kinetic.setChunk("");
-
 const logger = new (winston.Logger)({
-    transports: [
-        new (winston.transports.Console)({ level: 'warn' }),
-    ]
+    transports: [new (winston.transports.Console)({ level: 'error' })]
 });
 
 const requestsArr = [
     ['put', 'PUT_RESPONSE'],
     ['get', 'GET_RESPONSE'],
-    ['delete', 'DELETE_RESPONSE'],
     ['noop', 'NOOP_RESPONSE'],
     ['flush', 'FLUSH_RESPONSE'],
     ['getLog', 'GETLOG_RESPONSE']
 ];
 
-function functionx(request, client) {
+function requestsLauncher(request, client) {
     if (request === 'noop')
         kinetic.noOp(incrementTCP, 0);
-    else if (request === 'put')
-        kinetic.put('qwer', incrementTCP, '1234', '1235', 0);
-    else if (request === 'get')
+    else if (request === 'put') {
+        kinetic.setChunk(new Buffer("ON DIT BONJOUR TOUT LE MONDE"));
+        kinetic.put('qwer', incrementTCP, null, '1', 0);
+    } else if (request === 'get')
         kinetic.get('qwer', incrementTCP, 0);
     else if (request === 'delete')
-        kinetic.delete('qwer', incrementTCP, 0);
+
+        kinetic.delete('qwer', incrementTCP, 0, '1236');
     else if (request === 'flush')
         kinetic.flush(incrementTCP, 0);
     else if (request === 'getLog')
@@ -50,14 +47,16 @@ function checkTest(request, requestResponse, done) {
 
     });
     client.on('data', function heandleData(data) {
-        kinetic.parse(data);
-        logger.info(util.inspect(kinetic.getProtobuf(),
-            {showHidden: false,  depth: null}));
+        logger.warn(kinetic.getError(kinetic.parse(data)));
         if (kinetic.getMessageType() === null ||
             kinetic.getOp(kinetic.getMessageType()) !== requestResponse)
-            functionx(request, client);
+            requestsLauncher(request, client);
         else {
             client.end();
+            logger.info(util.inspect(kinetic.getProtobuf(),
+                {showHidden: false, depth: null}));
+            logger.info(util.inspect(kinetic.getChunk().toString(),
+                {showHidden: false, depth: null}));
             assert.deepEqual(kinetic.getOp(kinetic.getMessageType()),
                 requestResponse);
             done();
