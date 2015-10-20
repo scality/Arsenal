@@ -7,15 +7,13 @@ import util from 'util';
 import winston from 'winston';
 
 const logger = new (winston.Logger)({
-    transports: [
-        new (winston.transports.Console)({ level: 'warn' }),
-    ]
+    transports: [new (winston.transports.Console)({ level: 'warn' })]
 });
 
 const dataChunk = fs.readFileSync('./package.json');
 const HOST = '127.0.0.1';
 let _tmp = undefined;
-let _hmacTmp = undefined;
+let _errorTest = undefined;
 
 const requestsArr = [
     ['put', 'PUT_RESPONSE'],
@@ -60,23 +58,16 @@ function checkRequest(request, done) {
         default:
             throw new Error("wrong request");
         }
-        kinetic.setHMAC();
-        client.write(kinetic.getHMAC());
         kinetic.send(client);
-        _tmp = kinetic.getProtobuf();
+        _tmp = kinetic.getCommand().decode(kinetic.getProtobuf().commandBytes);
         let ret = undefined;
         client.on('data', function handleData(data) {
-            if (data.length === 20) {
-                _hmacTmp = data;
-            }else {
-                ret = data;
-            }
+            ret = data;
             client.end();
         });
 
         client.on('end', function requestEnd() {
             kinetic.parse(ret);
-
             logger.info('=Local================================');
             logger.info(util.inspect(_tmp,
             {showHidden: false, depth: null}));
@@ -85,14 +76,7 @@ function checkRequest(request, done) {
             {showHidden: false, depth: null}));
 
             const protobuf = kinetic.getProtobuf();
-            kinetic.setHMAC();
 
-            if (_hmacTmp) {
-                assert.deepEqual(kinetic.hmacIntegrity(_hmacTmp), true);
-            } else {
-                assert.deepEqual(kinetic.hmacIntegrity(_hmacTmp),
-                    kinetic.errors.HMAC_FAILURE);
-            }
             assert.deepEqual(dataChunk, kinetic.getChunk());
             assert.deepEqual(_tmp.header.messageType,
                     protobuf.header.messageType);
@@ -104,21 +88,20 @@ function checkRequest(request, done) {
             if (request !== 'noop' &&
                     request !== 'flush' &&
                     request !== 'getLog') {
-                assert.deepEqual(_tmp.body.keyValue.key.buffer,
-                        getSlice(protobuf.body.keyValue.key));
+                assert.deepEqual(getSlice(_tmp.body.keyValue.key)
+                , getSlice(protobuf.body.keyValue.key));
             }
             if (request === 'put') {
-                assert.deepEqual(_tmp.body.keyValue.dbVersion.buffer,
+                assert.deepEqual(getSlice(_tmp.body.keyValue.dbVersion),
                         getSlice(protobuf.body.keyValue.dbVersion));
 
-                assert.deepEqual(_tmp.body.keyValue.newVersion.buffer,
+                assert.deepEqual(getSlice(_tmp.body.keyValue.newVersion),
                         getSlice(protobuf.body.keyValue.newVersion));
             }
             if (request === 'getLog') {
                 assert.deepEqual(_tmp.body.getLog.types,
                         protobuf.body.getLog.types);
             }
-            _hmacTmp = undefined;
             done();
         });
     });
@@ -205,5 +188,22 @@ function checkIntegrity(requestArr) {
         });
     });
 }
+
+function checkError(done) {
+    _errorTest = new Buffer('VERSION_FAILURE');
+    assert.deepEqual(kinetic.parse(_errorTest),
+        kinetic.errors.VERSION_FAILURE);
+    _errorTest[0] = 70;
+    assert.deepEqual(kinetic.parse(_errorTest),
+        kinetic.errors.DATA_ERROR);
+    done();
+}
+
+describe(`Assess Errors`, () => {
+    after(`Assess  Type`, (done) => {
+        checkError(done);
+    });
+});
+
 
 requestsArr.forEach(checkIntegrity);
