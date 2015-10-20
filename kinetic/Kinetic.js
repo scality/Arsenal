@@ -663,20 +663,20 @@ class Kinetic {
         const chunkLen = data.readInt32BE(5);
 
         if (version !== this.getVersion()) {
-            return (this.errors.VERSION_FAILURE);
+            return this.errors.VERSION_FAILURE;
         }
         try {
             this.setProtobuf(
                 this.getCommand().decode(data.slice(9, pbMsgLen + 9))
             );
             this.setChunk(data.slice(pbMsgLen + 9, chunkLen + pbMsgLen + 9));
-        }catch (e) {
+        } catch (e) {
             return e;
         }
-        if (this.getChunkSize !== chunkLen) {
-            return (this.errors.DATA_ERROR);
+        if (this.getChunkSize() !== chunkLen) {
+            return this.errors.DATA_ERROR;
         }
-        return (this.errors.SUCCESS);
+        return this.errors.SUCCESS;
     }
 }
 
