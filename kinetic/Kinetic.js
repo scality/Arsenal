@@ -79,7 +79,7 @@ class Kinetic {
 
     /**
      * Sets the chunk for the Kinetic Protocol Data Unit.
-     * @param {Buffer} chunk.
+     * @param {Buffer} chunk - the data .
      * @returns {Kinetic} to allow for a functional style.
      */
     setChunk(chunk) {
@@ -117,7 +117,7 @@ class Kinetic {
 
     /**
      * Sets the HMAC for the Kinetic Protocol Data Unit integrity.
-     * @param {Buffer} secret - the shared secret.
+     * @param {Buffer} integrity - the shared secret.
      * @returns {Kinetic} to allow for a functional style.
      */
     setHMAC(integrity) {
@@ -286,7 +286,7 @@ class Kinetic {
     /**
      * Gets the key of an object with it value.
      * @param {Object} object - the corresponding object.
-     * @param {value} value - the corresponding value.
+     * @param {String} value - the corresponding value.
      * @returns {Buffer} object key.
      */
     getKeyByValue(object, value) {
@@ -295,7 +295,8 @@ class Kinetic {
 
     /**
      * Compare two buffers.
-     * @param {Buffer} buf0/buf1 - the buffers to compare.
+     * @param {Buffer} buf0 - the buffers to compare.
+     * @param {Buffer} buf1 - the buffers to compare.
      * @returns {Boolean} false if it's different true if not.
      */
     diff(buf0, buf1) {
@@ -310,10 +311,10 @@ class Kinetic {
     }
 
     /**
-     * Test the HMAC integrity between the actual instance and the given HMAC.
-     * @param {Buffer} hmac - the non instance hmac to compare.
-     * @returns {Boolean} true if the HMACs are the same.
-     * @returns an error if they are different.
+     * Test the HMAC integrity between the actual instance and the given HMAC
+     * @param {Buffer} hmac - the non instance hmac to compare
+     * @returns {Boolean} true if the HMACs are the same,
+     * HMAC_FAILURE code if not
      */
     hmacIntegrity(hmac) {
         const buf = new Buffer(4);
@@ -353,8 +354,8 @@ class Kinetic {
 
     /**
      * Getting logs and stats response following the kinetic protocol.
-     * @param {String or number} response - response code (SUCCESS, FAIL)
-     * @param {String or Buffer} errorMessage - detailed error message.
+     * @param {number} response - response code (SUCCESS, FAIL)
+     * @param {Buffer} errorMessage - detailed error message.
      * @param {object} responseLogs - object filled by logs needed.
      * @returns {Kinetic} this - message structure following the kinetic
      * protocol
@@ -399,8 +400,8 @@ class Kinetic {
 
     /**
      * Flush all data response following the kinetic protocol.
-     * @param {String or number} response - response code (SUCCESS, FAIL)
-     * @param {String or Buffer} errorMessage - detailed error message.
+     * @param {number} response - response code (SUCCESS, FAIL)
+     * @param {Buffer} errorMessage - detailed error message.
      * @returns {Kinetic} this - message structure following the kinetic
      * protocol
      */
@@ -447,8 +448,8 @@ class Kinetic {
 
     /**
      * Setup response request following the kinetic protocol.
-     * @param {String or number} response - response code (SUCCESS, FAIL)
-     * @param {String or Buffer} errorMessage - detailed error message.
+     * @param {Number} response - response code (SUCCESS, FAIL)
+     * @param {Buffer} errorMessage - detailed error message.
      * @returns {Kinetic} this - message structure following the kinetic
      * protocol
      */
@@ -490,8 +491,8 @@ class Kinetic {
 
     /**
      * Response for the NOOP request following the kinetic protocol.
-     * @param {String or number} response - response code (SUCCESS, FAIL)
-     * @param {String or Buffer} errorMessage - detailed error message.
+     * @param {Number} response - response code (SUCCESS, FAIL)
+     * @param {Buffer} errorMessage - detailed error message.
      * @returns {Kinetic} this - message structure following the kinetic
      * protocol
      */
@@ -510,12 +511,12 @@ class Kinetic {
 
     /**
      * PUT request following the kinetic protocol.
-     * @param {String or Buffer} key - key of the item to put.
+     * @param {Buffer} key - key of the item to put.
      * @param {number} incrementTCP - monotonically increasing number for each
      * request in a TCP connection
-     * @param {String or Buffer} dbVersion - version of the item in the
+     * @param {Buffer} dbVersion - version of the item in the
      * database.
-     * @param {String or Buffer} newVersion - new version of the item to put.
+     * @param {Buffer} newVersion - new version of the item to put.
      * @param {number} clusterVersion - The version number of this cluster
      * definition
      * @returns {Kinetic} this - message structure following the kinetic
@@ -543,8 +544,8 @@ class Kinetic {
 
     /**
      * Response for the PUT request following the kinetic protocol.
-     * @param {String or number} response - response code (SUCCESS, FAIL)
-     * @param {String or Buffer} errorMessage - detailed error message.
+     * @param {Number} response - response code (SUCCESS, FAIL)
+     * @param {Buffer} errorMessage - detailed error message.
      * @returns {Kinetic} this - message structure following the kinetic
      * protocol
      */
@@ -566,7 +567,7 @@ class Kinetic {
 
     /**
      * GET request following the kinetic protocol.
-     * @param {String or Buffer} key - key of the item to put.
+     * @param {Buffer} key - key of the item to put.
      * @param {number} incrementTCP - monotonically increasing number for each
      * request in a TCP connection
      * @param {number} clusterVersion - The version number of this cluster
@@ -593,9 +594,9 @@ class Kinetic {
 
     /**
      * Response for the GET request following the kinetic protocol.
-     * @param {String or number} response - response code (SUCCESS, FAIL)
-     * @param {String or Buffer} errorMessage - Detailed error message.
-     * @param {String or Buffer} dbVersion - The version of the item in the
+     * @param {Number} response - response code (SUCCESS, FAIL)
+     * @param {Buffer} errorMessage - Detailed error message.
+     * @param {Buffer} dbVersion - The version of the item in the
      * database.
      * @returns {Kinetic} this - message structure following the kinetic
      * protocol
@@ -621,13 +622,13 @@ class Kinetic {
 
     /**
      * DELETE request following the kinetic protocol.
-     * @param {String or Buffer} key - key of the item to put.
+     * @param {Buffer} key - key of the item to put.
      * @param {number} incrementTCP - monotonically increasing number for each
      * request in a TCP connection
-     * @param {String or Buffer} dbVersion - version of the item in the
-     * database.
      * @param {number} clusterVersion - The version number of this cluster
      * definition
+     * @param {Buffer} dbVersion - version of the item in the
+     * database.
      * @returns {Kinetic} this - message structure following the kinetic
      * protocol
      */
@@ -652,8 +653,8 @@ class Kinetic {
 
     /**
      * Response for the DELETE request following the kinetic protocol.
-     * @param {String or number} response - response code (SUCCESS, FAIL)
-     * @param {String or Buffer} errorMessage - Detailed error message.
+     * @param {Number} response - response code (SUCCESS, FAIL)
+     * @param {Buffer} errorMessage - Detailed error message.
      * @returns {Kinetic} this - message structure following the kinetic
      * protocol
      */
@@ -676,24 +677,26 @@ class Kinetic {
     /**
      * Sends data following Kinetic protocol.
      * @param {Socket} sock - Socket to send data through.
+     * @returns {Number} an error code
      */
     send(sock) {
         const buf = new Buffer(9);
 
         buf.writeInt8(this.getVersion(), 0);
 
-        // BE stands for Big Endian
         buf.writeInt32BE(this.getProtobufSize(), 1);
         buf.writeInt32BE(this.getChunkSize(), 5);
 
         sock.write(Buffer.concat(
                 [buf, this.getProtobuf().toBuffer(), this.getChunk()]
             ));
+        return this.errors.SUCCESS;
     }
 
     /**
      * Creates the Kinetic Protocol Data Structure from a buffer.
      * @param {Buffer} data - The data received by the socket.
+     * @returns {Number} an error code
      */
     parse(data) {
         const version = data.readInt8(0);
