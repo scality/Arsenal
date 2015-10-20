@@ -2,7 +2,7 @@ import protobuf from 'protobufjs';
 import crypto from 'crypto';
 
 const VERSION = 0x46;
-const protoFilePath = __dirname + '/kinetic-protocol/kinetic.proto';
+const protoFilePath = __dirname + '/kinetic.proto';
 const buildName = 'com.seagate.kinetic.proto';
 
 /**
