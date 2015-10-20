@@ -12,7 +12,7 @@ let incrementTCP = 0;
 const kinetic = new Kinetic;
 
 const logger = new (winston.Logger)({
-    transports: [new (winston.transports.Console)({ level: 'warn' })]
+    transports: [new (winston.transports.Console)({ level: 'error' })]
 });
 
 const requestsArr = [

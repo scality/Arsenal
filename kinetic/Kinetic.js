@@ -257,7 +257,6 @@ class Kinetic {
     }
 
     /**
-<<<<<<< HEAD
      * Gets the operartion name with it code.
      * @param {Number} opCode - the operation code.
      * @returns {String} operation name.
@@ -285,8 +284,6 @@ class Kinetic {
     }
 
     /**
-=======
->>>>>>> b6a5046... FT(kinetic) Implement kinetic simul compatibility
      * Gets the key of an object with it value.
      * @param {Object} object - the corresponding object.
      * @param {value} value - the corresponding value.
@@ -319,49 +316,14 @@ class Kinetic {
      * @returns an error if they are different.
      */
     hmacIntegrity(hmac) {
-<<<<<<< HEAD
-        if (hmac === undefined || this.getHMAC() === undefined)
-            return this.errors.HMAC_FAILURE;
-=======
         const buf = new Buffer(4);
         buf.writeInt32BE(this.getProtobufSize());
         this.setHMAC(Buffer.concat([buf, this.getProtobuf().toBuffer()]));
->>>>>>> b6a5046... FT(kinetic) Implement kinetic simul compatibility
         if (this.diff(hmac, this.getHMAC()) === false)
             return this.errors.HMAC_FAILURE;
         return true;
     }
 
-<<<<<<< HEAD
-=======
-    /**
-     * Gets the operartion name with it code.
-     * @param {Number} opCode - the operation code.
-     * @returns {String} operation name.
-     */
-    getOp(opCode) {
-        return this.getKeyByValue(this.op, opCode);
-    }
-
-    /**
-     * Gets the error name with it code.
-     * @param {Number} errorCode - the error code.
-     * @returns {String} error name.
-     */
-    getError(errorCode) {
-        return this.getKeyByValue(this.errors, errorCode);
-    }
-
-    /**
-     * Gets the log type name with it code.
-     * @param {Number} logCode - the log type code.
-     * @returns {String} log type name.
-     */
-    getLogType(logCode) {
-        return this.getKeyByValue(this.logs, logCode);
-    }
-
->>>>>>> b6a5046... FT(kinetic) Implement kinetic simul compatibility
     /**
      * Getting logs and stats request following the kinetic protocol.
      * @param {number} incrementTCP - monotonically increasing number for each
@@ -741,20 +703,7 @@ class Kinetic {
         if (version !== this.getVersion()) {
             return this.errors.VERSION_FAILURE;
         }
-        try {
-            this.setProtobuf(
-                this.getCommand().decode(data.slice(9, pbMsgLen + 9))
-            );
-            this.setChunk(data.slice(pbMsgLen + 9, chunkLen + pbMsgLen + 9));
-        } catch (e) {
-            return e;
-        }
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
 
-=======
->>>>>>> b6a5046... FT(kinetic) Implement kinetic simul compatibility
         try {
             this._cmd = this.build.Message.decode(data.slice(9, 9 + pbMsgLen));
             this.setProtobuf(this.getCommand().decode(this._cmd.commandBytes));
@@ -766,18 +715,13 @@ class Kinetic {
             }
         }
         this.setChunk(data.slice(pbMsgLen + 9, chunkLen + pbMsgLen + 9));
->>>>>>> 239112a... FT(kinetic) add simulator and corresponding tests
         if (this.getChunkSize() !== chunkLen) {
             return this.errors.DATA_ERROR;
         }
-<<<<<<< HEAD
-        return this.errors.SUCCESS;
-=======
         if (this._cmd.authType === 1 &&
             this.hmacIntegrity(this.getSlice(this._cmd.hmacAuth.hmac)) !== true)
             return this.errors.HMAC_FAILURE;
         return (this.errors.SUCCESS);
->>>>>>> b6a5046... FT(kinetic) Implement kinetic simul compatibility
     }
 }
 

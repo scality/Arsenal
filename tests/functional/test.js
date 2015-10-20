@@ -7,23 +7,13 @@ import util from 'util';
 import winston from 'winston';
 
 const logger = new (winston.Logger)({
-<<<<<<< HEAD
-    transports: [
-        new (winston.transports.Console)({ level: 'warn' }),
-    ]
-=======
     transports: [new (winston.transports.Console)({ level: 'warn' })]
->>>>>>> b6a5046... FT(kinetic) Implement kinetic simul compatibility
 });
 
 const dataChunk = fs.readFileSync('./package.json');
 const HOST = '127.0.0.1';
 let _tmp = undefined;
-<<<<<<< HEAD
-let _hmacTmp = undefined;
-=======
-const _errorTest = undefined;
->>>>>>> b6a5046... FT(kinetic) Implement kinetic simul compatibility
+let _errorTest = undefined;
 
 const requestsArr = [
     ['put', 'PUT_RESPONSE'],
@@ -68,15 +58,8 @@ function checkRequest(request, done) {
         default:
             throw new Error("wrong request");
         }
-<<<<<<< HEAD
-        kinetic.setHMAC();
-        client.write(kinetic.getHMAC());
-        kinetic.send(client);
-        _tmp = kinetic.getProtobuf();
-=======
         kinetic.send(client);
         _tmp = kinetic.getCommand().decode(kinetic.getProtobuf().commandBytes);
->>>>>>> b6a5046... FT(kinetic) Implement kinetic simul compatibility
         let ret = undefined;
         client.on('data', function handleData(data) {
             ret = data;
@@ -85,10 +68,6 @@ function checkRequest(request, done) {
 
         client.on('end', function requestEnd() {
             kinetic.parse(ret);
-<<<<<<< HEAD
-
-=======
->>>>>>> b6a5046... FT(kinetic) Implement kinetic simul compatibility
             logger.info('=Local================================');
             logger.info(util.inspect(_tmp,
             {showHidden: false, depth: null}));
@@ -97,18 +76,7 @@ function checkRequest(request, done) {
             {showHidden: false, depth: null}));
 
             const protobuf = kinetic.getProtobuf();
-<<<<<<< HEAD
-            kinetic.setHMAC();
 
-            if (_hmacTmp) {
-                assert.deepEqual(kinetic.hmacIntegrity(_hmacTmp), true);
-            } else {
-                assert.deepEqual(kinetic.hmacIntegrity(_hmacTmp),
-                    kinetic.errors.HMAC_FAILURE);
-            }
-=======
-
->>>>>>> b6a5046... FT(kinetic) Implement kinetic simul compatibility
             assert.deepEqual(dataChunk, kinetic.getChunk());
             assert.deepEqual(_tmp.header.messageType,
                     protobuf.header.messageType);
@@ -134,7 +102,6 @@ function checkRequest(request, done) {
                 assert.deepEqual(_tmp.body.getLog.types,
                         protobuf.body.getLog.types);
             }
-            _hmacTmp = undefined;
             done();
         });
     });
@@ -222,8 +189,6 @@ function checkIntegrity(requestArr) {
     });
 }
 
-<<<<<<< HEAD
-=======
 function checkError(done) {
     _errorTest = new Buffer('VERSION_FAILURE');
     assert.deepEqual(kinetic.parse(_errorTest),
@@ -241,5 +206,4 @@ describe(`Assess Errors`, () => {
 });
 
 
->>>>>>> b6a5046... FT(kinetic) Implement kinetic simul compatibility
 requestsArr.forEach(checkIntegrity);
