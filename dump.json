@@ -1,0 +1,2620 @@
+[
+  {
+    "__docId__": 0,
+    "kind": "file",
+    "static": true,
+    "variation": null,
+    "name": "kinetic/Kinetic.js",
+    "memberof": null,
+    "longname": "kinetic/Kinetic.js",
+    "access": null,
+    "description": null,
+    "lineNumber": 1,
+    "content": "import protobuf from 'protobufjs';\nimport crypto from 'crypto';\n\nconst VERSION = 0x46;\nconst protoFilePath = __dirname + '/kinetic.proto';\nconst buildName = 'com.seagate.kinetic.proto';\n\n/**\n * Represents the Kinetic Protocol Data Structure.\n * @constructor\n */\nclass Kinetic {\n    constructor() {\n        this._version = VERSION;\n        this.logs = {\n            UTILIZATIONS: 0,\n            TEMPERATURES: 1,\n            CAPACITIES: 2,\n            CONFIGURATION: 3,\n            STATISTICS: 4,\n            MESSAGES: 5,\n            LIMITS: 6,\n            DEVICE: 7,\n        };\n        this.op = {\n            PUT: 4,\n            PUT_RESPONSE: 3,\n            GET: 2,\n            GET_RESPONSE: 1,\n            NOOP: 30,\n            NOOP_RESPONSE: 29,\n            DELETE: 6,\n            DELETE_RESPONSE: 5,\n            SET_CLUSTER_VERSION: 22,\n            SETUP_RESPONSE: 21,\n            FLUSH: 32,\n            FLUSH_RESPONSE: 31,\n            GETLOG: 24,\n            GETLOG_RESPONSE: 23,\n        };\n        this.errors = {\n            INVALID_STATUS_CODE: -1,\n            NOT_ATTEMPTED: 0,\n            SUCCESS: 1,\n            HMAC_FAILURE: 2,\n            NOT_AUTHORIZED: 3,\n            VERSION_FAILURE: 4,\n            INTERNAL_ERROR: 5,\n            HEADER_REQUIRED: 6,\n            NOT_FOUND: 7,\n            VERSION_MISMATCH: 8,\n            SERVICE_BUSY: 9,\n            EXPIRED: 10,\n            DATA_ERROR: 11,\n            PERM_DATA_ERROR: 12,\n            REMOTE_CONNECTION_ERROR: 13,\n            NO_SPACE: 14,\n            NO_SUCH_HMAC_ALGORITHM: 15,\n            INVALID_REQUEST: 16,\n            NESTED_OPERATION_ERRORS: 17,\n            DEVICE_LOCKED: 18,\n            DEVICE_ALREADY_UNLOCKED: 19,\n            CONNECTION_TERMINATED: 20,\n            INVALID_BATCH: 21,\n        };\n        this.build = protobuf.loadProtoFile(protoFilePath).build(buildName);\n        return this;\n    }\n\n\n    /**\n     * Slice the buffer with the offset and the limit.\n     * @param {Object} obj - an object buffer with offset and limit.\n     * @returns {Buffer} sliced buffer from the buffer structure with the offset\n     * and the limit.\n     */\n    getSlice(obj) {\n        return obj.buffer.slice(obj.offset, obj.limit);\n    }\n\n    /**\n     * Sets the actual protobuf message for the Kinetic Protocol Data Unit.\n     * @param {Object} pbMessage - the well formated kinetic protobuf structure.\n     * @returns {Kinetic} to allow for a functional style.\n     */\n    setProtobuf(pbMessage) {\n        this._message = pbMessage;\n        return this;\n    }\n\n\n    /**\n     * Sets the chunk for the Kinetic Protocol Data Unit.\n     * @param {Buffer} chunk.\n     * @returns {Kinetic} to allow for a functional style.\n     */\n    setChunk(chunk) {\n        this._chunk = chunk;\n        return this;\n    }\n\n\n    /**\n     * Sets the general protobuf message for the Kinetic Protocol Data Unit.\n     * @param {Object} command - the well formated general kinetic protobuf\n     * structure.\n     * @returns {Kinetic} setting the protobuf message.\n     */\n    setCommand(command) {\n        const message = new this.build.Command(command);\n        return this.setProtobuf(message);\n    }\n\n    /**\n     * Sets the HMAC for the Kinetic Protocol Data Unit integrity.\n     * @param {Buffer} secret - the shared secret.\n     * @returns {Kinetic} to allow for a functional style.\n     */\n    setHMAC() {\n        this._hmac =  crypto.createHmac('sha1', 'asdfasdf')\n            .update(this.getProtobuf().toBuffer()).digest();\n        return this;\n    }\n\n\n    /**\n     * Gets the actual version of the kinetic protocol.\n     * @returns {Number} the current version of the kinetic protocol.\n     */\n    getVersion() {\n        return this._version;\n    }\n\n    /**\n     * Gets the actual protobuf message.\n     * @returns {Object} Kinetic protobuf message.\n     */\n    getProtobuf() {\n        return this._message;\n    }\n\n    /**\n     * Gets the actual protobuf message size.\n     * @returns {Number} Size of the kinetic protobuf message.\n     */\n    getProtobufSize() {\n        return this.getProtobuf().calculate();\n    }\n\n    /**\n     * Gets the actual chunk.\n     * @returns {Buffer} Chunk.\n     */\n    getChunk() {\n        return this._chunk;\n    }\n\n    /**\n     * Gets the actual chunk size.\n     * @returns {Number} Chunk size.\n     */\n    getChunkSize() {\n        return this._chunk.length;\n    }\n\n    /**\n     * Gets the general build template.\n     * @returns {Object} General kinetic protobuf structure.\n     */\n    getCommand() {\n        return this.build.Command;\n    }\n\n    /**\n     * Gets the actual HMAC.\n     * @returns {Buffer} HMAC.\n     */\n    getHMAC() {\n        return this._hmac;\n    }\n\n    /**\n     * Gets the actual request messageType.\n     * @returns {Number} The code number of the request.\n     */\n    getMessageType() {\n        return this.getProtobuf().header.messageType;\n    }\n\n    /**\n     * Gets the actual key.\n     * @returns {Buffer} Key.\n     */\n    getKey() {\n        return this.getSlice(this.getProtobuf().body.keyValue.key);\n    }\n\n    /**\n     * Gets the version of the data unit in the database.\n     * @returns {Buffer} Version of the data unit in the database.\n     */\n    getDbVersion() {\n        return this.getSlice(this.getProtobuf().body.keyValue.dbVersion);\n    }\n\n    /**\n     * Gets the new version of the data unit.\n     * @returns {Buffer} New version of the data unit.\n     */\n    getNewVersion() {\n        return this.getSlice(this.getProtobuf().body.keyValue.newVersion);\n    }\n\n    /**\n     * Gets the detailed error message.\n     * @returns {Buffer} Detailed error message.\n     */\n    getErrorMessage() {\n        return this.getSlice(this.getProtobuf().status.detailedMessage);\n    }\n\n    /**\n     * Gets the logs message.\n     * @returns {Buffer} Logs message.\n     */\n    getGetLogMessage() {\n        return this.getSlice(this.getProtobuf().body.getLog.messages);\n    }\n\n    /**\n     * Gets the operartion name with it code.\n     * @param {Number} opCode - the operation code.\n     * @returns {String} operation name.\n     */\n    getOp(opCode) {\n        return this.getKeyByValue(this.op, opCode);\n    }\n\n    /**\n     * Gets the error name with it code.\n     * @param {Number} errorCode - the error code.\n     * @returns {String} error name.\n     */\n    getError(errorCode) {\n        return this.getKeyByValue(this.errors, errorCode);\n    }\n\n    /**\n     * Gets the log type name with it code.\n     * @param {Number} logCode - the log type code.\n     * @returns {String} log type name.\n     */\n    getLogType(logCode) {\n        return this.getKeyByValue(this.logs, logCode);\n    }\n\n    /**\n     * Gets the key of an object with it value.\n     * @param {Object} object - the corresponding object.\n     * @param {value} value - the corresponding value.\n     * @returns {Buffer} object key.\n     */\n    getKeyByValue(object, value) {\n        return Object.keys(object).find(key => object[key] === value);\n    }\n\n    /**\n     * Compare two buffers.\n     * @param {Buffer} buf0/buf1 - the buffers to compare.\n     * @returns {Boolean} false if it's different true if not.\n     */\n    diff(buf0, buf1) {\n        if (buf0.length !== buf1.length) {\n            return false;\n        }\n        for (let i = 0; i <= buf0.length; i++) {\n            if (buf0[i] !== buf1[i])\n                return false;\n        }\n        return true;\n    }\n\n    /**\n     * Test the HMAC integrity between the actual instance and the given HMAC.\n     * @param {Buffer} hmac - the non instance hmac to compare.\n     * @returns {Boolean} true if the HMACs are the same.\n     * @returns an error if they are different.\n     */\n    hmacIntegrity(hmac) {\n        if (hmac === undefined || this.getHMAC() === undefined)\n            return this.errors.HMAC_FAILURE;\n        if (this.diff(hmac, this.getHMAC()) === false)\n            return this.errors.HMAC_FAILURE;\n        return true;\n    }\n\n    /**\n     * Getting logs and stats request following the kinetic protocol.\n     * @param {number} incrementTCP - monotonically increasing number for each\n     * request in a TCP connection.\n     * @param {Array} types - array filled by logs types needed.\n     * @param {number} clusterVersion - version of the cluster\n     * @returns {Kinetic} this - message structure following the kinetic\n     * protocol\n     */\n    getLog(incrementTCP, types, clusterVersion) {\n        const identity = (new Date).getTime();\n        return this.setCommand({\n            \"header\": {\n                \"messageType\": \"GETLOG\",\n                \"connectionID\": identity,\n                \"sequence\": incrementTCP,\n                \"clusterVersion\": clusterVersion,\n            },\n            \"body\": {\n                \"getLog\": {\n                    \"types\": types,\n\n                },\n            },\n        });\n    }\n\n    /**\n     * Getting logs and stats response following the kinetic protocol.\n     * @param {String or number} response - response code (SUCCESS, FAIL)\n     * @param {String or Buffer} errorMessage - detailed error message.\n     * @param {object} responseLogs - object filled by logs needed.\n     * @returns {Kinetic} this - message structure following the kinetic\n     * protocol\n     */\n    getLogResponse(response, errorMessage, responseLogs) {\n        return this.setCommand({\n            \"header\": {\n                \"ackSequence\": this.getProtobuf().header.sequence,\n                \"messageType\": \"GETLOG_RESPONSE\",\n            },\n            \"body\": {\n                \"getLog\": responseLogs,\n            },\n            \"status\": {\n                \"code\": response,\n                \"detailedMessage\": errorMessage,\n            },\n        });\n    }\n\n    /**\n     * Flush all data request following the kinetic protocol.\n     * @param {number} incrementTCP - monotonically increasing number for each\n     * request in a TCP connection.\n     * @param {number} clusterVersion - version of the cluster\n     * @returns {Kinetic} this - message structure following the kinetic\n     * protocol\n     */\n    flush(incrementTCP, clusterVersion) {\n        const identity = (new Date).getTime();\n        return this.setCommand({\n            \"header\": {\n                \"messageType\": \"FLUSHALLDATA\",\n                \"connectionID\": identity,\n                \"sequence\": incrementTCP,\n                \"clusterVersion\": clusterVersion,\n            },\n            \"body\": { },\n        });\n    }\n\n    /**\n     * Flush all data response following the kinetic protocol.\n     * @param {String or number} response - response code (SUCCESS, FAIL)\n     * @param {String or Buffer} errorMessage - detailed error message.\n     * @returns {Kinetic} this - message structure following the kinetic\n     * protocol\n     */\n    flushResponse(response, errorMessage) {\n        return this.setCommand({\n            \"header\": {\n                \"messageType\": \"FLUSHALLDATA_RESPONSE\",\n                \"ackSequence\": this.getProtobuf().header.sequence,\n            },\n            \"status\": {\n                \"code\": response,\n                \"detailedMessage\": errorMessage,\n            },\n        });\n    }\n\n    /**\n     * set clusterVersion request following the kinetic protocol.\n     * @param {number} incrementTCP - monotonically increasing number for each\n     * request in a TCP connection.\n     * @param {number} clusterVersion - The version number of this cluster\n     * definition\n     * @param {number} oldClusterVersion - The old version number of this\n     * cluster definition\n     * @returns {Kinetic} this - message structure following the kinetic\n     * protocol\n     */\n    setClusterVersion(incrementTCP, clusterVersion, oldClusterVersion) {\n        const identity = (new Date).getTime();\n        return this.setCommand({\n            \"header\": {\n                \"messageType\": \"SETUP\",\n                \"connectionID\": identity,\n                \"sequence\": incrementTCP,\n                \"clusterVersion\": oldClusterVersion,\n            },\n            \"body\": {\n                \"setup\": {\n                    \"newClusterVersion\": clusterVersion,\n                },\n            },\n        });\n    }\n\n    /**\n     * Setup response request following the kinetic protocol.\n     * @param {String or number} response - response code (SUCCESS, FAIL)\n     * @param {String or Buffer} errorMessage - detailed error message.\n     * @returns {Kinetic} this - message structure following the kinetic\n     * protocol\n     */\n    setupResponse(response, errorMessage) {\n        return this.setCommand({\n            \"header\": {\n                \"messageType\": \"SETUP_RESPONSE\",\n                \"ackSequence\": this.getProtobuf().header.sequence,\n            },\n            \"status\": {\n                \"code\": response,\n                \"detailedMessage\": errorMessage,\n            },\n        });\n    }\n\n    /**\n     * NOOP request following the kinetic protocol.\n     * @param {number} incrementTCP - monotonically increasing number for each\n     * request in a TCP connection\n     * @param {number} clusterVersion - The version number of this cluster\n     * definition\n     * @returns {Kinetic} this - message structure following the kinetic\n     * protocol\n     */\n    noOp(incrementTCP, clusterVersion) {\n        const identity = (new Date).getTime();\n        return this.setCommand({\n            \"header\": {\n                \"messageType\": \"NOOP\",\n                \"connectionID\": identity,\n                \"sequence\": incrementTCP,\n                \"clusterVersion\": clusterVersion,\n            },\n        });\n    }\n\n    /**\n     * Response for the NOOP request following the kinetic protocol.\n     * @param {String or number} response - response code (SUCCESS, FAIL)\n     * @param {String or Buffer} errorMessage - detailed error message.\n     * @returns {Kinetic} this - message structure following the kinetic\n     * protocol\n     */\n    noOpResponse(response, errorMessage) {\n        return this.setCommand({\n            \"header\": {\n                \"messageType\": \"NOOP_RESPONSE\",\n                \"ackSequence\": this.getProtobuf().header.sequence,\n            },\n            \"status\": {\n                \"code\": response,\n                \"detailedMessage\": errorMessage,\n            },\n        });\n    }\n\n    /**\n     * PUT request following the kinetic protocol.\n     * @param {String or Buffer} key - key of the item to put.\n     * @param {number} incrementTCP - monotonically increasing number for each\n     * request in a TCP connection\n     * @param {String or Buffer} dbVersion - version of the item in the\n     * database.\n     * @param {String or Buffer} newVersion - new version of the item to put.\n     * @param {number} clusterVersion - The version number of this cluster\n     * definition\n     * @returns {Kinetic} this - message structure following the kinetic\n     * protocol\n     */\n    put(key, incrementTCP, dbVersion, newVersion, clusterVersion) {\n        const identity = (new Date).getTime();\n        return this.setCommand({\n            \"header\": {\n                \"messageType\": \"PUT\",\n                \"connectionID\": identity,\n                \"sequence\": incrementTCP,\n                \"clusterVersion\": clusterVersion,\n            },\n            \"body\": {\n                \"keyValue\": {\n                    \"key\": key,\n                    \"newVersion\": newVersion,\n                    \"dbVersion\": dbVersion,\n                },\n            },\n        });\n    }\n\n    /**\n     * Response for the PUT request following the kinetic protocol.\n     * @param {String or number} response - response code (SUCCESS, FAIL)\n     * @param {String or Buffer} errorMessage - detailed error message.\n     * @returns {Kinetic} this - message structure following the kinetic\n     * protocol\n     */\n    putResponse(response, errorMessage) {\n        return this.setCommand({\n            \"header\": {\n                \"messageType\": \"PUT_RESPONSE\",\n                \"ackSequence\": this.getProtobuf().header.sequence,\n            },\n            \"body\": {\n                \"keyValue\": { },\n            },\n            \"status\": {\n                \"code\": response,\n                \"detailedMessage\": errorMessage,\n            },\n        });\n    }\n\n    /**\n     * GET request following the kinetic protocol.\n     * @param {String or Buffer} key - key of the item to put.\n     * @param {number} incrementTCP - monotonically increasing number for each\n     * request in a TCP connection\n     * @param {number} clusterVersion - The version number of this cluster\n     * definition\n     * @returns {Kinetic} this - message structure following the kinetic\n     * protocol\n     */\n    get(key, incrementTCP, clusterVersion) {\n        const identity = (new Date).getTime();\n        return this.setCommand({\n            \"header\": {\n                \"messageType\": \"GET\",\n                \"connectionID\": identity,\n                \"sequence\": incrementTCP,\n                \"clusterVersion\": clusterVersion,\n            },\n            \"body\": {\n                \"keyValue\": {\n                    \"key\": key,\n                },\n            },\n        });\n    }\n\n    /**\n     * Response for the GET request following the kinetic protocol.\n     * @param {String or number} response - response code (SUCCESS, FAIL)\n     * @param {String or Buffer} errorMessage - Detailed error message.\n     * @param {String or Buffer} dbVersion - The version of the item in the\n     * database.\n     * @returns {Kinetic} this - message structure following the kinetic\n     * protocol\n     */\n    getResponse(response, errorMessage, dbVersion) {\n        return this.setCommand({\n            \"header\": {\n                \"messageType\": \"GET_RESPONSE\",\n                \"ackSequence\": this.getProtobuf().header.sequence,\n            },\n            \"body\": {\n                \"keyValue\": {\n                    \"key\": this.getProtobuf().body.keyValue.key,\n                    \"dbVersion\": dbVersion,\n                },\n            },\n            \"status\": {\n                \"code\": response,\n                \"detailedMessage\": errorMessage,\n            },\n        });\n    }\n\n    /**\n     * DELETE request following the kinetic protocol.\n     * @param {String or Buffer} key - key of the item to put.\n     * @param {number} incrementTCP - monotonically increasing number for each\n     * request in a TCP connection\n     * @param {number} clusterVersion - The version number of this cluster\n     * definition\n     * @returns {Kinetic} this - message structure following the kinetic\n     * protocol\n     */\n    delete(key, incrementTCP, clusterVersion) {\n        const identity = (new Date).getTime();\n        return this.setCommand({\n            \"header\": {\n                \"messageType\": \"DELETE\",\n                \"connectionID\": identity,\n                \"sequence\": incrementTCP,\n                \"clusterVersion\": clusterVersion,\n            },\n            \"body\": {\n                \"keyValue\": {\n                    \"key\": key,\n                },\n            },\n        });\n    }\n\n    /**\n     * Response for the DELETE request following the kinetic protocol.\n     * @param {String or number} response - response code (SUCCESS, FAIL)\n     * @param {String or Buffer} errorMessage - Detailed error message.\n     * @returns {Kinetic} this - message structure following the kinetic\n     * protocol\n     */\n    deleteResponse(response, errorMessage) {\n        return this.setCommand({\n            \"header\": {\n                \"messageType\": \"DELETE_RESPONSE\",\n                \"ackSequence\": this.getProtobuf().header.sequence,\n            },\n            \"body\": {\n                \"keyValue\": { },\n            },\n            \"status\": {\n                \"code\": response,\n                \"detailedMessage\": errorMessage,\n            },\n        });\n    }\n\n    /**\n     * Sends data following Kinetic protocol.\n     * @param {Socket} sock - Socket to send data through.\n     */\n    send(sock) {\n        const buf = new Buffer(9);\n\n        buf.writeInt8(this.getVersion(), 0);\n\n        // BE stands for Big Endian\n        buf.writeInt32BE(this.getProtobufSize(), 1);\n        buf.writeInt32BE(this.getChunkSize(), 5);\n\n        sock.write(Buffer.concat(\n                [buf, this.getProtobuf().toBuffer(), this.getChunk()]\n            ));\n    }\n\n    /**\n     * Creates the Kinetic Protocol Data Structure from a buffer.\n     * @param {Buffer} data - The data received by the socket.\n     */\n    parse(data) {\n        const version = data.readInt8(0);\n        const pbMsgLen = data.readInt32BE(1);\n        const chunkLen = data.readInt32BE(5);\n\n        if (version !== this.getVersion()) {\n            return this.errors.VERSION_FAILURE;\n        }\n        try {\n            this.setProtobuf(\n                this.getCommand().decode(data.slice(9, pbMsgLen + 9))\n            );\n            this.setChunk(data.slice(pbMsgLen + 9, chunkLen + pbMsgLen + 9));\n        } catch (e) {\n            return e;\n        }\n        if (this.getChunkSize() !== chunkLen) {\n            return this.errors.DATA_ERROR;\n        }\n        return this.errors.SUCCESS;\n    }\n}\n\nexport default Kinetic;\n"
+  },
+  {
+    "__docId__": 1,
+    "kind": "variable",
+    "static": true,
+    "variation": null,
+    "name": "VERSION",
+    "memberof": "kinetic/Kinetic.js",
+    "longname": "kinetic/Kinetic.js~VERSION",
+    "access": null,
+    "export": false,
+    "importPath": "arsenal/kinetic/Kinetic.js",
+    "importStyle": null,
+    "description": null,
+    "lineNumber": 4,
+    "undocument": true,
+    "type": {
+      "types": [
+        "number"
+      ]
+    }
+  },
+  {
+    "__docId__": 2,
+    "kind": "variable",
+    "static": true,
+    "variation": null,
+    "name": "protoFilePath",
+    "memberof": "kinetic/Kinetic.js",
+    "longname": "kinetic/Kinetic.js~protoFilePath",
+    "access": null,
+    "export": false,
+    "importPath": "arsenal/kinetic/Kinetic.js",
+    "importStyle": null,
+    "description": null,
+    "lineNumber": 5,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 3,
+    "kind": "variable",
+    "static": true,
+    "variation": null,
+    "name": "buildName",
+    "memberof": "kinetic/Kinetic.js",
+    "longname": "kinetic/Kinetic.js~buildName",
+    "access": null,
+    "export": false,
+    "importPath": "arsenal/kinetic/Kinetic.js",
+    "importStyle": null,
+    "description": null,
+    "lineNumber": 6,
+    "undocument": true,
+    "type": {
+      "types": [
+        "string"
+      ]
+    }
+  },
+  {
+    "__docId__": 4,
+    "kind": "class",
+    "static": true,
+    "variation": null,
+    "name": "Kinetic",
+    "memberof": "kinetic/Kinetic.js",
+    "longname": "kinetic/Kinetic.js~Kinetic",
+    "access": null,
+    "export": true,
+    "importPath": "arsenal/kinetic/Kinetic.js",
+    "importStyle": "Kinetic",
+    "description": "Represents the Kinetic Protocol Data Structure.",
+    "lineNumber": 12,
+    "unknown": [
+      {
+        "tagName": "@constructor",
+        "tagValue": ""
+      }
+    ],
+    "interface": false
+  },
+  {
+    "__docId__": 5,
+    "kind": "constructor",
+    "static": false,
+    "variation": null,
+    "name": "constructor",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#constructor",
+    "access": null,
+    "description": null,
+    "lineNumber": 13,
+    "undocument": true,
+    "params": [],
+    "generator": false
+  },
+  {
+    "__docId__": 6,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_version",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#_version",
+    "access": null,
+    "description": null,
+    "lineNumber": 14,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 7,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "logs",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#logs",
+    "access": null,
+    "description": null,
+    "lineNumber": 15,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 8,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "op",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#op",
+    "access": null,
+    "description": null,
+    "lineNumber": 25,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 9,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "errors",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#errors",
+    "access": null,
+    "description": null,
+    "lineNumber": 41,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 10,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "build",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#build",
+    "access": null,
+    "description": null,
+    "lineNumber": 66,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 11,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "getSlice",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#getSlice",
+    "access": null,
+    "description": "Slice the buffer with the offset and the limit.",
+    "lineNumber": 77,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Buffer} sliced buffer from the buffer structure with the offset\nand the limit."
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Object"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "obj",
+        "description": "an object buffer with offset and limit."
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Buffer"
+      ],
+      "spread": false,
+      "description": "sliced buffer from the buffer structure with the offset\nand the limit."
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 12,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "setProtobuf",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#setProtobuf",
+    "access": null,
+    "description": "Sets the actual protobuf message for the Kinetic Protocol Data Unit.",
+    "lineNumber": 86,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Kinetic} to allow for a functional style."
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Object"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "pbMessage",
+        "description": "the well formated kinetic protobuf structure."
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Kinetic"
+      ],
+      "spread": false,
+      "description": "to allow for a functional style."
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 13,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_message",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#_message",
+    "access": null,
+    "description": null,
+    "lineNumber": 87,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 14,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "setChunk",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#setChunk",
+    "access": null,
+    "description": "Sets the chunk for the Kinetic Protocol Data Unit.",
+    "lineNumber": 97,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Kinetic} to allow for a functional style."
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Buffer"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "chunk.",
+        "description": ""
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Kinetic"
+      ],
+      "spread": false,
+      "description": "to allow for a functional style."
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 15,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_chunk",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#_chunk",
+    "access": null,
+    "description": null,
+    "lineNumber": 98,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 16,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "setCommand",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#setCommand",
+    "access": null,
+    "description": "Sets the general protobuf message for the Kinetic Protocol Data Unit.",
+    "lineNumber": 109,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Kinetic} setting the protobuf message."
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Object"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "command",
+        "description": "the well formated general kinetic protobuf\nstructure."
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Kinetic"
+      ],
+      "spread": false,
+      "description": "setting the protobuf message."
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 17,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "setHMAC",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#setHMAC",
+    "access": null,
+    "description": "Sets the HMAC for the Kinetic Protocol Data Unit integrity.",
+    "lineNumber": 119,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Kinetic} to allow for a functional style."
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Buffer"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "secret",
+        "description": "the shared secret."
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Kinetic"
+      ],
+      "spread": false,
+      "description": "to allow for a functional style."
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 18,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_hmac",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#_hmac",
+    "access": null,
+    "description": null,
+    "lineNumber": 120,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 19,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "getVersion",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#getVersion",
+    "access": null,
+    "description": "Gets the actual version of the kinetic protocol.",
+    "lineNumber": 130,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Number} the current version of the kinetic protocol."
+      }
+    ],
+    "params": [],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Number"
+      ],
+      "spread": false,
+      "description": "the current version of the kinetic protocol."
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 20,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "getProtobuf",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#getProtobuf",
+    "access": null,
+    "description": "Gets the actual protobuf message.",
+    "lineNumber": 138,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Object} Kinetic protobuf message."
+      }
+    ],
+    "params": [],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Object"
+      ],
+      "spread": false,
+      "description": "Kinetic protobuf message."
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 21,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "getProtobufSize",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#getProtobufSize",
+    "access": null,
+    "description": "Gets the actual protobuf message size.",
+    "lineNumber": 146,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Number} Size of the kinetic protobuf message."
+      }
+    ],
+    "params": [],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Number"
+      ],
+      "spread": false,
+      "description": "Size of the kinetic protobuf message."
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 22,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "getChunk",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#getChunk",
+    "access": null,
+    "description": "Gets the actual chunk.",
+    "lineNumber": 154,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Buffer} Chunk."
+      }
+    ],
+    "params": [],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Buffer"
+      ],
+      "spread": false,
+      "description": "Chunk."
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 23,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "getChunkSize",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#getChunkSize",
+    "access": null,
+    "description": "Gets the actual chunk size.",
+    "lineNumber": 162,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Number} Chunk size."
+      }
+    ],
+    "params": [],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Number"
+      ],
+      "spread": false,
+      "description": "Chunk size."
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 24,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "getCommand",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#getCommand",
+    "access": null,
+    "description": "Gets the general build template.",
+    "lineNumber": 170,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Object} General kinetic protobuf structure."
+      }
+    ],
+    "params": [],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Object"
+      ],
+      "spread": false,
+      "description": "General kinetic protobuf structure."
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 25,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "getHMAC",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#getHMAC",
+    "access": null,
+    "description": "Gets the actual HMAC.",
+    "lineNumber": 178,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Buffer} HMAC."
+      }
+    ],
+    "params": [],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Buffer"
+      ],
+      "spread": false,
+      "description": "HMAC."
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 26,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "getMessageType",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#getMessageType",
+    "access": null,
+    "description": "Gets the actual request messageType.",
+    "lineNumber": 186,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Number} The code number of the request."
+      }
+    ],
+    "params": [],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Number"
+      ],
+      "spread": false,
+      "description": "The code number of the request."
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 27,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "getKey",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#getKey",
+    "access": null,
+    "description": "Gets the actual key.",
+    "lineNumber": 194,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Buffer} Key."
+      }
+    ],
+    "params": [],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Buffer"
+      ],
+      "spread": false,
+      "description": "Key."
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 28,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "getDbVersion",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#getDbVersion",
+    "access": null,
+    "description": "Gets the version of the data unit in the database.",
+    "lineNumber": 202,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Buffer} Version of the data unit in the database."
+      }
+    ],
+    "params": [],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Buffer"
+      ],
+      "spread": false,
+      "description": "Version of the data unit in the database."
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 29,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "getNewVersion",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#getNewVersion",
+    "access": null,
+    "description": "Gets the new version of the data unit.",
+    "lineNumber": 210,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Buffer} New version of the data unit."
+      }
+    ],
+    "params": [],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Buffer"
+      ],
+      "spread": false,
+      "description": "New version of the data unit."
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 30,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "getErrorMessage",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#getErrorMessage",
+    "access": null,
+    "description": "Gets the detailed error message.",
+    "lineNumber": 218,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Buffer} Detailed error message."
+      }
+    ],
+    "params": [],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Buffer"
+      ],
+      "spread": false,
+      "description": "Detailed error message."
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 31,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "getGetLogMessage",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#getGetLogMessage",
+    "access": null,
+    "description": "Gets the logs message.",
+    "lineNumber": 226,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Buffer} Logs message."
+      }
+    ],
+    "params": [],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Buffer"
+      ],
+      "spread": false,
+      "description": "Logs message."
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 32,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "getOp",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#getOp",
+    "access": null,
+    "description": "Gets the operartion name with it code.",
+    "lineNumber": 235,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{String} operation name."
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Number"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "opCode",
+        "description": "the operation code."
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "String"
+      ],
+      "spread": false,
+      "description": "operation name."
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 33,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "getError",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#getError",
+    "access": null,
+    "description": "Gets the error name with it code.",
+    "lineNumber": 244,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{String} error name."
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Number"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "errorCode",
+        "description": "the error code."
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "String"
+      ],
+      "spread": false,
+      "description": "error name."
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 34,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "getLogType",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#getLogType",
+    "access": null,
+    "description": "Gets the log type name with it code.",
+    "lineNumber": 253,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{String} log type name."
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Number"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "logCode",
+        "description": "the log type code."
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "String"
+      ],
+      "spread": false,
+      "description": "log type name."
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 35,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "getKeyByValue",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#getKeyByValue",
+    "access": null,
+    "description": "Gets the key of an object with it value.",
+    "lineNumber": 263,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Buffer} object key."
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Object"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "object",
+        "description": "the corresponding object."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "value"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "value",
+        "description": "the corresponding value."
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Buffer"
+      ],
+      "spread": false,
+      "description": "object key."
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 36,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "diff",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#diff",
+    "access": null,
+    "description": "Compare two buffers.",
+    "lineNumber": 272,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Boolean} false if it's different true if not."
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Buffer"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "buf0/buf1",
+        "description": "the buffers to compare."
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Boolean"
+      ],
+      "spread": false,
+      "description": "false if it's different true if not."
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 37,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "hmacIntegrity",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#hmacIntegrity",
+    "access": null,
+    "description": "Test the HMAC integrity between the actual instance and the given HMAC.",
+    "lineNumber": 289,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Boolean} true if the HMACs are the same."
+      },
+      {
+        "tagName": "@returns",
+        "tagValue": "an error if they are different."
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Buffer"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "hmac",
+        "description": "the non instance hmac to compare."
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "*"
+      ],
+      "spread": false,
+      "description": "an error if they are different."
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 38,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "getLog",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#getLog",
+    "access": null,
+    "description": "Getting logs and stats request following the kinetic protocol.",
+    "lineNumber": 306,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Kinetic} this - message structure following the kinetic\nprotocol"
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "number"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "incrementTCP",
+        "description": "monotonically increasing number for each\nrequest in a TCP connection."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "Array"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "types",
+        "description": "array filled by logs types needed."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "number"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "clusterVersion",
+        "description": "version of the cluster"
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Kinetic"
+      ],
+      "spread": false,
+      "description": "this - message structure following the kinetic\nprotocol"
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 39,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "getLogResponse",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#getLogResponse",
+    "access": null,
+    "description": "Getting logs and stats response following the kinetic protocol.",
+    "lineNumber": 332,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Kinetic} this - message structure following the kinetic\nprotocol"
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "String or number"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "response",
+        "description": "response code (SUCCESS, FAIL)"
+      },
+      {
+        "nullable": null,
+        "types": [
+          "String or Buffer"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "errorMessage",
+        "description": "detailed error message."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "object"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "responseLogs",
+        "description": "object filled by logs needed."
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Kinetic"
+      ],
+      "spread": false,
+      "description": "this - message structure following the kinetic\nprotocol"
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 40,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "flush",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#flush",
+    "access": null,
+    "description": "Flush all data request following the kinetic protocol.",
+    "lineNumber": 356,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Kinetic} this - message structure following the kinetic\nprotocol"
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "number"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "incrementTCP",
+        "description": "monotonically increasing number for each\nrequest in a TCP connection."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "number"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "clusterVersion",
+        "description": "version of the cluster"
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Kinetic"
+      ],
+      "spread": false,
+      "description": "this - message structure following the kinetic\nprotocol"
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 41,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "flushResponse",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#flushResponse",
+    "access": null,
+    "description": "Flush all data response following the kinetic protocol.",
+    "lineNumber": 376,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Kinetic} this - message structure following the kinetic\nprotocol"
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "String or number"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "response",
+        "description": "response code (SUCCESS, FAIL)"
+      },
+      {
+        "nullable": null,
+        "types": [
+          "String or Buffer"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "errorMessage",
+        "description": "detailed error message."
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Kinetic"
+      ],
+      "spread": false,
+      "description": "this - message structure following the kinetic\nprotocol"
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 42,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "setClusterVersion",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#setClusterVersion",
+    "access": null,
+    "description": "set clusterVersion request following the kinetic protocol.",
+    "lineNumber": 400,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Kinetic} this - message structure following the kinetic\nprotocol"
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "number"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "incrementTCP",
+        "description": "monotonically increasing number for each\nrequest in a TCP connection."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "number"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "clusterVersion",
+        "description": "The version number of this cluster\ndefinition"
+      },
+      {
+        "nullable": null,
+        "types": [
+          "number"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "oldClusterVersion",
+        "description": "The old version number of this\ncluster definition"
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Kinetic"
+      ],
+      "spread": false,
+      "description": "this - message structure following the kinetic\nprotocol"
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 43,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "setupResponse",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#setupResponse",
+    "access": null,
+    "description": "Setup response request following the kinetic protocol.",
+    "lineNumber": 424,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Kinetic} this - message structure following the kinetic\nprotocol"
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "String or number"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "response",
+        "description": "response code (SUCCESS, FAIL)"
+      },
+      {
+        "nullable": null,
+        "types": [
+          "String or Buffer"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "errorMessage",
+        "description": "detailed error message."
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Kinetic"
+      ],
+      "spread": false,
+      "description": "this - message structure following the kinetic\nprotocol"
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 44,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "noOp",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#noOp",
+    "access": null,
+    "description": "NOOP request following the kinetic protocol.",
+    "lineNumber": 446,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Kinetic} this - message structure following the kinetic\nprotocol"
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "number"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "incrementTCP",
+        "description": "monotonically increasing number for each\nrequest in a TCP connection"
+      },
+      {
+        "nullable": null,
+        "types": [
+          "number"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "clusterVersion",
+        "description": "The version number of this cluster\ndefinition"
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Kinetic"
+      ],
+      "spread": false,
+      "description": "this - message structure following the kinetic\nprotocol"
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 45,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "noOpResponse",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#noOpResponse",
+    "access": null,
+    "description": "Response for the NOOP request following the kinetic protocol.",
+    "lineNumber": 465,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Kinetic} this - message structure following the kinetic\nprotocol"
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "String or number"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "response",
+        "description": "response code (SUCCESS, FAIL)"
+      },
+      {
+        "nullable": null,
+        "types": [
+          "String or Buffer"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "errorMessage",
+        "description": "detailed error message."
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Kinetic"
+      ],
+      "spread": false,
+      "description": "this - message structure following the kinetic\nprotocol"
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 46,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "put",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#put",
+    "access": null,
+    "description": "PUT request following the kinetic protocol.",
+    "lineNumber": 491,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Kinetic} this - message structure following the kinetic\nprotocol"
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "String or Buffer"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "key",
+        "description": "key of the item to put."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "number"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "incrementTCP",
+        "description": "monotonically increasing number for each\nrequest in a TCP connection"
+      },
+      {
+        "nullable": null,
+        "types": [
+          "String or Buffer"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "dbVersion",
+        "description": "version of the item in the\ndatabase."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "String or Buffer"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "newVersion",
+        "description": "new version of the item to put."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "number"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "clusterVersion",
+        "description": "The version number of this cluster\ndefinition"
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Kinetic"
+      ],
+      "spread": false,
+      "description": "this - message structure following the kinetic\nprotocol"
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 47,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "putResponse",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#putResponse",
+    "access": null,
+    "description": "Response for the PUT request following the kinetic protocol.",
+    "lineNumber": 517,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Kinetic} this - message structure following the kinetic\nprotocol"
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "String or number"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "response",
+        "description": "response code (SUCCESS, FAIL)"
+      },
+      {
+        "nullable": null,
+        "types": [
+          "String or Buffer"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "errorMessage",
+        "description": "detailed error message."
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Kinetic"
+      ],
+      "spread": false,
+      "description": "this - message structure following the kinetic\nprotocol"
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 48,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "get",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#get",
+    "access": null,
+    "description": "GET request following the kinetic protocol.",
+    "lineNumber": 543,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Kinetic} this - message structure following the kinetic\nprotocol"
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "String or Buffer"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "key",
+        "description": "key of the item to put."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "number"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "incrementTCP",
+        "description": "monotonically increasing number for each\nrequest in a TCP connection"
+      },
+      {
+        "nullable": null,
+        "types": [
+          "number"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "clusterVersion",
+        "description": "The version number of this cluster\ndefinition"
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Kinetic"
+      ],
+      "spread": false,
+      "description": "this - message structure following the kinetic\nprotocol"
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 49,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "getResponse",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#getResponse",
+    "access": null,
+    "description": "Response for the GET request following the kinetic protocol.",
+    "lineNumber": 569,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Kinetic} this - message structure following the kinetic\nprotocol"
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "String or number"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "response",
+        "description": "response code (SUCCESS, FAIL)"
+      },
+      {
+        "nullable": null,
+        "types": [
+          "String or Buffer"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "errorMessage",
+        "description": "Detailed error message."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "String or Buffer"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "dbVersion",
+        "description": "The version of the item in the\ndatabase."
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Kinetic"
+      ],
+      "spread": false,
+      "description": "this - message structure following the kinetic\nprotocol"
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 50,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "delete",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#delete",
+    "access": null,
+    "description": "DELETE request following the kinetic protocol.",
+    "lineNumber": 598,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Kinetic} this - message structure following the kinetic\nprotocol"
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "String or Buffer"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "key",
+        "description": "key of the item to put."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "number"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "incrementTCP",
+        "description": "monotonically increasing number for each\nrequest in a TCP connection"
+      },
+      {
+        "nullable": null,
+        "types": [
+          "number"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "clusterVersion",
+        "description": "The version number of this cluster\ndefinition"
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Kinetic"
+      ],
+      "spread": false,
+      "description": "this - message structure following the kinetic\nprotocol"
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 51,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "deleteResponse",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#deleteResponse",
+    "access": null,
+    "description": "Response for the DELETE request following the kinetic protocol.",
+    "lineNumber": 622,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Kinetic} this - message structure following the kinetic\nprotocol"
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "String or number"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "response",
+        "description": "response code (SUCCESS, FAIL)"
+      },
+      {
+        "nullable": null,
+        "types": [
+          "String or Buffer"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "errorMessage",
+        "description": "Detailed error message."
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Kinetic"
+      ],
+      "spread": false,
+      "description": "this - message structure following the kinetic\nprotocol"
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 52,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "send",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#send",
+    "access": null,
+    "description": "Sends data following Kinetic protocol.",
+    "lineNumber": 642,
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Socket"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "sock",
+        "description": "Socket to send data through."
+      }
+    ],
+    "generator": false
+  },
+  {
+    "__docId__": 53,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "parse",
+    "memberof": "kinetic/Kinetic.js~Kinetic",
+    "longname": "kinetic/Kinetic.js~Kinetic#parse",
+    "access": null,
+    "description": "Creates the Kinetic Protocol Data Structure from a buffer.",
+    "lineNumber": 660,
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Buffer"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "data",
+        "description": "The data received by the socket."
+      }
+    ],
+    "return": {
+      "types": [
+        "*"
+      ]
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 54,
+    "kind": "variable",
+    "static": true,
+    "variation": null,
+    "name": "kinetic",
+    "memberof": "kinetic/Kinetic.js",
+    "longname": "kinetic/Kinetic.js~kinetic",
+    "access": null,
+    "export": true,
+    "importPath": "arsenal/kinetic/Kinetic.js",
+    "importStyle": "kinetic",
+    "description": null,
+    "lineNumber": 683,
+    "undocument": true,
+    "type": {
+      "types": [
+        "kinetic/Kinetic.js~Kinetic"
+      ]
+    }
+  },
+  {
+    "__docId__": 56,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Infinity",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Infinity",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Infinity",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 57,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "NaN",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/NaN",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~NaN",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 58,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "undefined",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/undefined",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~undefined",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 59,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "null",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~null",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 60,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Object",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Object",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 61,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "object",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~object",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 62,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Function",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Function",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 63,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "function",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~function",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 64,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Boolean",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Boolean",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 65,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "boolean",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~boolean",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 66,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Symbol",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Symbol",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 67,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Error",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Error",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 68,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "EvalError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/EvalError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~EvalError",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 69,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "InternalError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/InternalError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~InternalError",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 70,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "RangeError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RangeError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~RangeError",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 71,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "ReferenceError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ReferenceError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~ReferenceError",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 72,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "SyntaxError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SyntaxError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~SyntaxError",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 73,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "TypeError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypeError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~TypeError",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 74,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "URIError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/URIError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~URIError",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 75,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Number",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Number",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 76,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "number",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~number",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 77,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Date",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Date",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 78,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "String",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~String",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 79,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "string",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~string",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 80,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "RegExp",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~RegExp",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 81,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Array",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 82,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Int8Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Int8Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Int8Array",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 83,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Uint8Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Uint8Array",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 84,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Uint8ClampedArray",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8ClampedArray",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Uint8ClampedArray",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 85,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Int16Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Int16Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Int16Array",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 86,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Uint16Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint16Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Uint16Array",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 87,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Int32Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Int32Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Int32Array",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 88,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Uint32Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint32Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Uint32Array",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 89,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Float32Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Float32Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Float32Array",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 90,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Float64Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Float64Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Float64Array",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 91,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Map",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Map",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 92,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Set",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Set",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 93,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "WeakMap",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakMap",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~WeakMap",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 94,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "WeakSet",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakSet",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~WeakSet",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 95,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "ArrayBuffer",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~ArrayBuffer",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 96,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "DataView",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/DataView",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~DataView",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 97,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "JSON",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~JSON",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 98,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Promise",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Promise",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 99,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Generator",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Generator",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Generator",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 100,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "GeneratorFunction",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/GeneratorFunction",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~GeneratorFunction",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 101,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Reflect",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Reflect",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Reflect",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 102,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Proxy",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Proxy",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 104,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "CanvasRenderingContext2D",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~CanvasRenderingContext2D",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 105,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "DocumentFragment",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/DocumentFragment",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~DocumentFragment",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 106,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Element",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/Element",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~Element",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 107,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Event",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/Event",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~Event",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 108,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Node",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/Node",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~Node",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 109,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "NodeList",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/NodeList",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~NodeList",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 110,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "XMLHttpRequest",
+    "externalLink": "https://developer.mozilla.org/en/docs/Web/API/XMLHttpRequest",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~XMLHttpRequest",
+    "access": null,
+    "description": null,
+    "builtinExternal": true
+  }
+]

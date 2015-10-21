@@ -1,0 +1,19 @@
+{
+  "coverage": "87.23%",
+  "expectCount": 47,
+  "actualCount": 41,
+  "files": {
+    "kinetic/Kinetic.js": {
+      "expectCount": 47,
+      "actualCount": 41,
+      "undocumentLines": [
+        66,
+        13,
+        41,
+        683,
+        15,
+        25
+      ]
+    }
+  }
+}
