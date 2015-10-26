@@ -1,21 +1,20 @@
-/* eslint-env node, mocha */
-import { Kinetic } from '../../index';
+import { JSONLib } from '../../index.js';
 import winston from 'winston';
 import fs from 'fs';
 
+
 const timer = new (winston.Logger)({
     transports: [new (winston.transports.Console)({ level: 'warn' }),
-        new (winston.transports.File)({ filename: 'timerKinetic.log' })
+        new (winston.transports.File)({ filename: 'timerJSON.log' })
     ]
 });
 
 let incrementTCP = 0;
 
-const kinetic = new Kinetic;
+const json = new JSONLib;
 let time0 = [];
 let time1 = [];
 let encodedMessage = undefined;
-
 const requestsArr = [
     ['put'],
     ['get'],
@@ -24,59 +23,66 @@ const requestsArr = [
     ['flush'],
     ['getLog']
 ];
+
 const filesArr = ['1Byte', '1KByte', '1MByte'];
 
 function encodeMessage() {
     const buf = new Buffer(9);
 
-    buf.writeInt8(kinetic.getVersion(), 0);
+    const buf2 = new Buffer(JSON.stringify(json.getProtobuf()));
 
-    buf.writeInt32BE(kinetic.getProtobufSize(), 1);
-    timer.info('Size of the message : ' + kinetic.getProtobufSize() + '++++++');
-    buf.writeInt32BE(kinetic.getChunkSize(), 5);
+    buf.writeInt8(json.getVersion(), 0);
+    buf.writeInt32BE(buf2.length, 1);
+    buf.writeInt32BE(json.getChunkSize(), 5);
+
+    timer.info('Size of the message : ' + buf2.length + '++++++');
 
     return Buffer.concat(
-        [buf, kinetic.getProtobuf().toBuffer(), kinetic.getChunk()]
+        [buf, buf2, json.getChunk()]
     );
 }
 
 function requestsLauncher(request, file, done) {
     timer.info('==================' + file + '========================');
+
+    json.setChunk(fs.readFileSync(file));
+
     time0 = [];
     time1 = [];
+
     if (request === 'noop') {
         time0 = process.hrtime();
-        kinetic.noOp(incrementTCP, 0);
+        json.noOp(incrementTCP, 0);
         time1 = process.hrtime(time0);
         timer.info('Time for the BUILD of ' + request + ' : ' +
             time1[0] + 'secondes and ' + time1[1] + ' nanosecondes');
     } else if (request === 'put') {
         time0 = process.hrtime();
-        kinetic.put('qwer', incrementTCP, null, '1', 0);
+        json.put('qwer', incrementTCP, null, '1', 0);
         time1 = process.hrtime(time0);
         timer.info('Time for the BUILD of ' + request + ' : ' +
             time1[0] + 'secondes and ' + time1[1] + ' nanosecondes');
     } else if (request === 'get') {
         time0 = process.hrtime();
-        kinetic.get('qwer', incrementTCP, 0);
+        json.get('qwer', incrementTCP, 0);
         time1 = process.hrtime(time0);
         timer.info('Time for the BUILD of ' + request + ' : ' +
             time1[0] + 'secondes and ' + time1[1] + ' nanosecondes');
     } else if (request === 'delete') {
         time0 = process.hrtime();
-        kinetic.delete('qwer', incrementTCP, 0, '1');
+        json.delete('qwer', incrementTCP, 0, '1');
         time1 = process.hrtime(time0);
         timer.info('Time for the BUILD of ' + request + ' : ' +
             time1[0] + 'secondes and ' + time1[1] + ' nanosecondes');
     } else if (request === 'flush') {
         time0 = process.hrtime();
-        kinetic.flush(incrementTCP, 0);
+        json.flush(incrementTCP, 0);
         time1 = process.hrtime(time0);
         timer.info('Time for the BUILD of ' + request + ' : ' +
             time1[0] + 'secondes and ' + time1[1] + ' nanosecondes');
     } else if (request === 'getLog') {
         time0 = process.hrtime();
-        kinetic.getLog(incrementTCP, [1, 2, 3, 4], 0);
+        json.getLog(incrementTCP, [1, 2, 3, 4], 0);
         time1 = process.hrtime(time0);
         timer.info('Time for the BUILD of ' + request + ' : ' +
             time1[0] + 'secondes and ' + time1[1] + ' nanosecondes');
@@ -88,11 +94,13 @@ function requestsLauncher(request, file, done) {
     time1 = process.hrtime(time0);
     timer.info('Time for the ENCODE of ' + request + ' : ' +
         time1[0] + 'secondes and ' + time1[1] + ' nanosecondes');
+
     time0 = process.hrtime();
-    kinetic.parse(encodedMessage);
+    json.parseJSON(encodedMessage);
     time1 = process.hrtime(time0);
     timer.info('Time for the DECODE of ' + request + ' : ' +
-        time1[0] + 'secondes and ' + time1[1] + ' nanosecondes');
+        time1[0] + 'secondes and ' + time1[1] +
+        ' nanosecondes');
     timer.info('*************************************************************');
     done();
 }
@@ -107,8 +115,6 @@ function checkIntegrity(requestArr, file) {
 }
 
 for (let i = 0; i < 3; i++) {
-    kinetic.setChunk(fs.readFileSync(filesArr[i]));
-
     for (let j = 0; j < requestsArr.length; j++) {
         checkIntegrity(requestsArr[j], filesArr[i]);
     }
