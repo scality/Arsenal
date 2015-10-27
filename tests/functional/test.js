@@ -68,7 +68,7 @@ function checkRequest(request, done) {
         client.on('data', function handleData(data) {
             if (data.length === 20) {
                 _hmacTmp = data;
-            }else {
+            } else {
                 ret = data;
             }
             client.end();
