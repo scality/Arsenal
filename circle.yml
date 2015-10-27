@@ -1,6 +1,7 @@
 dependencies:
   pre:
     - sudo apt-get install maven
+    - make -C tests/functional build_cache
   cache_directories:
     - "tests/dependencies/kinetic-java"
 

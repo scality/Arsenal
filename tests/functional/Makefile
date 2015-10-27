@@ -14,6 +14,8 @@ submodule_sync:
 $(SIMULATOR_POM): submodule_sync
 $(SIMULATOR): submodule_sync
 
+.PHONY:
+build_cache: $(SIMULATOR_JAR)
 $(SIMULATOR_JAR): $(SIMULATOR_POM)
 	mvn clean package -f $(SIMULATOR_POM)
 
