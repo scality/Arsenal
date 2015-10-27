@@ -35,7 +35,7 @@ function encodeMessage() {
     buf.writeInt32BE(buf2.length, 1);
     buf.writeInt32BE(json.getChunkSize(), 5);
 
-    timer.info('Size of the message : ' + buf2.length + '++++++');
+    timer.info('Size of the message : ' + buf2.length + ' ');
 
     return Buffer.concat(
         [buf, buf2, json.getChunk()]

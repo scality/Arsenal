@@ -31,7 +31,7 @@ function encodeMessage() {
     buf.writeInt8(kinetic.getVersion(), 0);
 
     buf.writeInt32BE(kinetic.getProtobufSize(), 1);
-    timer.info('Size of the message : ' + kinetic.getProtobufSize() + '++++++');
+    timer.info('Size of the message : ' + kinetic.getProtobufSize() + ' ');
     buf.writeInt32BE(kinetic.getChunkSize(), 5);
 
     return Buffer.concat(
