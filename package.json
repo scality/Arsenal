@@ -38,10 +38,8 @@
   },
   "scripts": {
     "lint": "node_modules/.bin/eslint $(git ls-files '*.js')",
-    "test": "sh tests/functional/test_launcher.sh",
-    "setupSimulator": "mvn clean package -f tests/dependencies/kinetic-java/pom.xml",
-    "startSimulator": "sh tests/dependencies/kinetic-java/bin/startSimulator.sh",
-    "simultest": "mocha --compilers js:babel/register tests/functional/simulTest.js"
+    "tests_functional": "sh tests/functional/test_launcher.sh",
+    "tests_functional_simulator": "make -C tests/functional"
   },
   "private": true
 }

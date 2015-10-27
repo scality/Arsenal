@@ -1,13 +1,15 @@
+dependencies:
+  pre:
+    - sudo apt-get install maven
+  cache_directories:
+    - "tests/dependencies/kinetic-java"
+
 machine:
   node:
     version: 4.1.1
 
-checkout:
-  post:
-    - git submodule sync
-    - git submodule update --init
-
 test:
   override:
     - npm run --silent lint
-    - npm test
+    - npm run --silent tests_functional
+    - npm run --silent tests_functional_simulator
