@@ -3,7 +3,6 @@ import net from 'net';
 import util from 'util';
 
 import winston from 'winston';
-import fs from 'fs';
 
 import { Kinetic } from '../../index';
 
@@ -12,13 +11,12 @@ const PORT = 8123;
 let incrementTCP = 0;
 
 const logger = new (winston.Logger)({
-    transports: [new (winston.transports.Console)({ level: 'warn' })]
+    transports: [new (winston.transports.Console)({ level: 'error' })]
 });
 
 const requestsArr = [
     ['put', 'PUT_RESPONSE'],
     ['get', 'GET_RESPONSE'],
-    ['delete', 'DELETE_RESPONSE'],
     ['noop', 'NOOP_RESPONSE'],
     ['delete', 'DELETE_RESPONSE'],
     ['flush', 'FLUSH_RESPONSE'],

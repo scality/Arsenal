@@ -368,7 +368,6 @@ export class PDU {
         if (this._cmd.authType === 1 &&
                 !this.hmacIntegrity(this.getSlice(this._cmd.hmacAuth.hmac)))
             return errors.HMAC_FAILURE;
-
         return errors.SUCCESS;
     }
 }
@@ -785,7 +784,6 @@ export class DeleteResponsePDU extends PDU {
                 "detailedMessage": errorMessage,
             },
         });
-
         return this;
     }
 }

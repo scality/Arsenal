@@ -1,4 +1,3 @@
-/* eslint-env node, mocha */
 import { Kinetic } from '../../index';
 import winston from 'winston';
 import fs from 'fs';
