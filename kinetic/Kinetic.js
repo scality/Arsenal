@@ -87,32 +87,19 @@ class Kinetic {
         return this;
     }
 
-    /**
-     * Sets the general protobuf message for the Kinetic Protocol Data Unit.
-     * @param {Object} command - the well formated general kinetic protobuf
-     * structure.
-     * @returns {Kinetic} setting the protobuf message.
-     */
-    setCommand(command) {
-        const message = new this.build.Command(command);
-        return this.setProtobuf(message);
-    }
-
-
-    setMessage() {
+    setMessage(command) {
         const buf = new Buffer(4);
+        this._message = new this.build.Command(command);
         buf.writeInt32BE(this.getProtobufSize());
-        this.setHMAC(Buffer.concat([buf, this.getProtobuf().toBuffer()]));
-        const tmp = new this.build.Message({
+        this.setHMAC(Buffer.concat([buf, this._message.toBuffer()]));
+        return this.setProtobuf(new this.build.Message({
             "authType": 1,
             "hmacAuth": {
                 "identity": 1,
                 "hmac": this.getHMAC(),
             },
-            "commandBytes": this.getProtobuf().toBuffer(),
-        });
-
-        return this.setProtobuf(tmp);
+            "commandBytes": this._message.toBuffer(),
+        }));
     }
 
     /**
@@ -158,7 +145,7 @@ class Kinetic {
      * @returns {Number} - Size of the kinetic protobuf message.
      */
     getProtobufSize() {
-        return this.getProtobuf().calculate();
+        return this._message.calculate();
     }
 
     /**
@@ -206,7 +193,7 @@ class Kinetic {
      * @returns {Number} - The code number of the request.
      */
     getMessageType() {
-        return this.getProtobuf().header.messageType;
+        return this._message.header.messageType;
     }
 
     /**
@@ -214,7 +201,7 @@ class Kinetic {
      * @returns {Number} - The clusterVersion.
      */
     getClusterVersion() {
-        return this.getProtobuf().header.clusterVersion.low;
+        return this._message.header.clusterVersion.low;
     }
 
     /**
@@ -222,7 +209,7 @@ class Kinetic {
      * @returns {Buffer} - Key.
      */
     getKey() {
-        return this.getSlice(this.getProtobuf().body.keyValue.key);
+        return this.getSlice(this._message.body.keyValue.key);
     }
 
     /**
@@ -230,7 +217,7 @@ class Kinetic {
      * @returns {Buffer} - Version of the data unit in the database.
      */
     getDbVersion() {
-        return this.getSlice(this.getProtobuf().body.keyValue.dbVersion);
+        return this.getSlice(this._message.body.keyValue.dbVersion);
     }
 
     /**
@@ -238,7 +225,7 @@ class Kinetic {
      * @returns {Buffer} - New version of the data unit.
      */
     getNewVersion() {
-        return this.getSlice(this.getProtobuf().body.keyValue.newVersion);
+        return this.getSlice(this._message.body.keyValue.newVersion);
     }
 
     /**
@@ -246,7 +233,7 @@ class Kinetic {
      * @returns {Buffer} - Detailed error message.
      */
     getErrorMessage() {
-        return this.getSlice(this.getProtobuf().status.detailedMessage);
+        return this.getSlice(this._message.status.detailedMessage);
     }
 
     /**
@@ -254,7 +241,7 @@ class Kinetic {
      * @returns {Buffer} - Logs message.
      */
     getGetLogMessage() {
-        return this.getSlice(this.getProtobuf().body.getLog.messages);
+        return this.getSlice(this._message.body.getLog.messages);
     }
 
     /**
@@ -323,7 +310,7 @@ class Kinetic {
 
         const buf = new Buffer(4);
         buf.writeInt32BE(this.getProtobufSize());
-        this.setHMAC(Buffer.concat([buf, this.getProtobuf().toBuffer()]));
+        this.setHMAC(Buffer.concat([buf, this._message.toBuffer()]));
         if (this.diff(hmac, this.getHMAC()) === false)
             return this.errors.HMAC_FAILURE;
         return true;
@@ -340,7 +327,7 @@ class Kinetic {
      */
     getLog(incrementTCP, types, clusterVersion) {
         const identity = (new Date).getTime();
-        return this.setCommand({
+        return this.setMessage({
             "header": {
                 "messageType": "GETLOG",
                 "connectionID": identity,
@@ -353,7 +340,7 @@ class Kinetic {
 
                 },
             },
-        }).setMessage();
+        });
     }
 
     /**
@@ -365,9 +352,9 @@ class Kinetic {
      * protocol
      */
     getLogResponse(response, errorMessage, responseLogs) {
-        return this.setCommand({
+        return this.setMessage({
             "header": {
-                "ackSequence": this.getProtobuf().header.sequence,
+                "ackSequence": this._message.header.sequence,
                 "messageType": "GETLOG_RESPONSE",
             },
             "body": {
@@ -377,7 +364,7 @@ class Kinetic {
                 "code": response,
                 "detailedMessage": errorMessage,
             },
-        }).setMessage();
+        });
     }
 
     /**
@@ -390,7 +377,7 @@ class Kinetic {
      */
     flush(incrementTCP, clusterVersion) {
         const identity = (new Date).getTime();
-        return this.setCommand({
+        return this.setMessage({
             "header": {
                 "messageType": "FLUSHALLDATA",
                 "connectionID": identity,
@@ -399,7 +386,7 @@ class Kinetic {
             },
             "body": {
             },
-        }).setMessage();
+        });
     }
 
     /**
@@ -410,16 +397,16 @@ class Kinetic {
      * protocol
      */
     flushResponse(response, errorMessage) {
-        return this.setCommand({
+        return this.setMessage({
             "header": {
                 "messageType": "FLUSHALLDATA_RESPONSE",
-                "ackSequence": this.getProtobuf().header.sequence,
+                "ackSequence": this._message.header.sequence,
             },
             "status": {
                 "code": response,
                 "detailedMessage": errorMessage,
             },
-        }).setMessage();
+        });
     }
 
     /**
@@ -435,7 +422,7 @@ class Kinetic {
      */
     setClusterVersion(incrementTCP, clusterVersion, oldClusterVersion) {
         const identity = (new Date).getTime();
-        return this.setCommand({
+        return this.setMessage({
             "header": {
                 "messageType": "SETUP",
                 "connectionID": identity,
@@ -447,7 +434,7 @@ class Kinetic {
                     "newClusterVersion": clusterVersion,
                 },
             },
-        }).setMessage();
+        });
     }
 
     /**
@@ -458,16 +445,16 @@ class Kinetic {
      * protocol
      */
     setupResponse(response, errorMessage) {
-        return this.setCommand({
+        return this.setMessage({
             "header": {
                 "messageType": "SETUP_RESPONSE",
-                "ackSequence": this.getProtobuf().header.sequence,
+                "ackSequence": this._message.header.sequence,
             },
             "status": {
                 "code": response,
                 "detailedMessage": errorMessage,
             },
-        }).setMessage();
+        });
     }
 
     /**
@@ -481,7 +468,7 @@ class Kinetic {
      */
     noOp(incrementTCP, clusterVersion) {
         const identity = (new Date).getTime();
-        return this.setCommand({
+        return this.setMessage({
             "header": {
                 "messageType": "NOOP",
                 "connectionID": identity,
@@ -490,7 +477,7 @@ class Kinetic {
             },
             "body": {
             },
-        }).setMessage();
+        });
     }
 
     /**
@@ -501,16 +488,16 @@ class Kinetic {
      * protocol
      */
     noOpResponse(response, errorMessage) {
-        return this.setCommand({
+        return this.setMessage({
             "header": {
                 "messageType": "NOOP_RESPONSE",
-                "ackSequence": this.getProtobuf().header.sequence,
+                "ackSequence": this._message.header.sequence,
             },
             "status": {
                 "code": response,
                 "detailedMessage": errorMessage,
             },
-        }).setMessage();
+        });
     }
 
     /**
@@ -528,7 +515,7 @@ class Kinetic {
      */
     put(key, incrementTCP, dbVersion, newVersion, clusterVersion) {
         const identity = (new Date).getTime();
-        return this.setCommand({
+        return this.setMessage({
             "header": {
                 "messageType": "PUT",
                 "connectionID": identity,
@@ -543,7 +530,7 @@ class Kinetic {
                     "synchronization": 'WRITETHROUGH',
                 },
             },
-        }).setMessage();
+        });
     }
 
     /**
@@ -554,10 +541,10 @@ class Kinetic {
      * protocol
      */
     putResponse(response, errorMessage) {
-        return this.setCommand({
+        return this.setMessage({
             "header": {
                 "messageType": "PUT_RESPONSE",
-                "ackSequence": this.getProtobuf().header.sequence,
+                "ackSequence": this._message.header.sequence,
             },
             "body": {
                 "keyValue": { },
@@ -566,7 +553,7 @@ class Kinetic {
                 "code": response,
                 "detailedMessage": errorMessage,
             },
-        }).setMessage();
+        });
     }
 
     /**
@@ -581,7 +568,7 @@ class Kinetic {
      */
     get(key, incrementTCP, clusterVersion) {
         const identity = (new Date).getTime();
-        return this.setCommand({
+        return this.setMessage({
             "header": {
                 "messageType": "GET",
                 "connectionID": identity,
@@ -593,7 +580,7 @@ class Kinetic {
                     "key": key,
                 },
             },
-        }).setMessage();
+        });
     }
 
     /**
@@ -606,14 +593,14 @@ class Kinetic {
      * protocol
      */
     getResponse(response, errorMessage, dbVersion) {
-        return this.setCommand({
+        return this.setMessage({
             "header": {
                 "messageType": "GET_RESPONSE",
-                "ackSequence": this.getProtobuf().header.sequence,
+                "ackSequence": this._message.header.sequence,
             },
             "body": {
                 "keyValue": {
-                    "key": this.getProtobuf().body.keyValue.key,
+                    "key": this._message.body.keyValue.key,
                     "dbVersion": dbVersion,
                 },
             },
@@ -621,7 +608,7 @@ class Kinetic {
                 "code": response,
                 "detailedMessage": errorMessage,
             },
-        }).setMessage();
+        });
     }
 
     /**
@@ -638,7 +625,7 @@ class Kinetic {
      */
     delete(key, incrementTCP, clusterVersion, dbVersion) {
         const identity = (new Date).getTime();
-        return this.setCommand({
+        return this.setMessage({
             "header": {
                 "messageType": "DELETE",
                 "connectionID": identity,
@@ -652,7 +639,7 @@ class Kinetic {
                     "synchronization": 'WRITETHROUGH',
                 },
             },
-        }).setMessage();
+        });
     }
 
     /**
@@ -663,10 +650,10 @@ class Kinetic {
      * protocol
      */
     deleteResponse(response, errorMessage) {
-        return this.setCommand({
+        return this.setMessage({
             "header": {
                 "messageType": "DELETE_RESPONSE",
-                "ackSequence": this.getProtobuf().header.sequence,
+                "ackSequence": this._message.header.sequence,
             },
             "body": {
                 "keyValue": { },
@@ -675,7 +662,7 @@ class Kinetic {
                 "code": response,
                 "detailedMessage": errorMessage,
             },
-        }).setMessage();
+        });
     }
 
     /**
@@ -692,7 +679,7 @@ class Kinetic {
         buf.writeInt32BE(this.getChunkSize(), 5);
 
         sock.write(Buffer.concat(
-                [buf, this.getProtobuf().toBuffer(), this.getChunk()]
+                [buf, this._message.toBuffer(), this.getChunk()]
             ));
         return this.errors.SUCCESS;
     }
@@ -727,7 +714,8 @@ class Kinetic {
             return this.errors.DATA_ERROR;
         }
         if (this._cmd.authType === 1 &&
-            this.hmacIntegrity(this.getSlice(this._cmd.hmacAuth.hmac)) !== true)
+                this.hmacIntegrity(this.getSlice(this._cmd.hmacAuth.hmac)) !==
+                true)
             return this.errors.HMAC_FAILURE;
 
         return this.errors.SUCCESS;

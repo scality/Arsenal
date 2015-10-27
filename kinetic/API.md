@@ -117,13 +117,6 @@ function kinetic.setHMAC() -> Kinetic
 `setHMAC()` sets the HMAC signature for the Kinetic Protocol Data Unit integrity.
 It returns the `Kinetic` object to allow for a functional style.
 
-```node
-function kinetic.setCommand(command: {}) -> Kinetic
-```
-`setCommand()` sets the protobuf structure from the specific message structure
-and the template.
-It returns the `Kinetic` object to allow for a functional style.
-
 ##### Methods
 ```node
 function kinetic.send(sock: Socket) -> Kinetic
