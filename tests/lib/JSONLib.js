@@ -79,27 +79,22 @@ class JSONLib {
         return this;
     }
 
-    setMessage() {
-        const buf = new Buffer(JSON.stringify(this._message));
+    setMessage(command) {
+        const buf = new Buffer(JSON.stringify(command));
         this.setHMAC(buf);
-        const tmp = {
+        return this.setProtobuf({
             "authType": 1,
             "hmacAuth": {
                 "identity": 1,
                 "hmac": this._hmac,
             },
             "commandBytes": buf,
-        };
-        return this.setProtobuf(tmp);
-    }
-
-    setCommand(command) {
-        return this.setProtobuf(command);
+        });
     }
 
     noOp(incrementTCP, clusterVersion) {
         const identity = (new Date).getTime();
-        this.setCommand({
+        return this.setMessage({
             "header": {
                 "messageType": "NOOP",
                 "connectionID": identity,
@@ -108,12 +103,11 @@ class JSONLib {
             },
             "body": {},
         });
-        return this.setMessage();
     }
 
     put(key, incrementTCP, dbVersion, newVersion, clusterVersion) {
         const identity = (new Date).getTime();
-        this.setCommand({
+        return this.setMessage({
             "header": {
                 "messageType": "PUT",
                 "connectionID": identity,
@@ -129,12 +123,11 @@ class JSONLib {
                 },
             },
         });
-        return this.setMessage();
     }
 
     get(key, incrementTCP, clusterVersion) {
         const identity = (new Date).getTime();
-        this.setCommand({
+        return this.setMessage({
             "header": {
                 "messageType": "GET",
                 "connectionID": identity,
@@ -147,12 +140,11 @@ class JSONLib {
                 },
             },
         });
-        return this.setMessage();
     }
 
     delete(key, incrementTCP, clusterVersion, dbVersion) {
         const identity = (new Date).getTime();
-        this.setCommand({
+        return this.setMessage({
             "header": {
                 "messageType": "DELETE",
                 "connectionID": identity,
@@ -167,12 +159,11 @@ class JSONLib {
                 },
             },
         });
-        return this.setMessage();
     }
 
     getLog(incrementTCP, types, clusterVersion) {
         const identity = (new Date).getTime();
-        this.setCommand({
+        return this.setMessage({
             "header": {
                 "messageType": "GETLOG",
                 "connectionID": identity,
@@ -186,12 +177,11 @@ class JSONLib {
                 },
             },
         });
-        return this.setMessage();
     }
 
     flush(incrementTCP, clusterVersion) {
         const identity = (new Date).getTime();
-        this.setCommand({
+        return this.setMessage({
             "header": {
                 "messageType": "FLUSHALLDATA",
                 "connectionID": identity,
@@ -201,7 +191,6 @@ class JSONLib {
             "body": {
             },
         });
-        return this.setMessage();
     }
 
 
