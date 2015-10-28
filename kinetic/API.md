@@ -117,13 +117,6 @@ function kinetic.setHMAC() -> Kinetic
 `setHMAC()` sets the HMAC signature for the Kinetic Protocol Data Unit integrity.
 It returns the `Kinetic` object to allow for a functional style.
 
-```node
-function kinetic.setCommand(command: {}) -> Kinetic
-```
-`setCommand()` sets the protobuf structure from the specific message structure
-and the template.
-It returns the `Kinetic` object to allow for a functional style.
-
 ##### Methods
 ```node
 function kinetic.send(sock: Socket) -> Kinetic
@@ -136,7 +129,7 @@ allow for a functional style.
 function kinetic.parse(data: Buffer) -> Kinetic
 ```
 `parse()` returns the `Kinetic` object parsed from the received Data Unit. It
-sets chunk and protobuf.
+sets chunk and protobuf. It also verify the hmac integrity.
 
 ```node
 function kinetic.hmacIntegrity(hmac: Buffer) -> Boolean
@@ -167,6 +160,18 @@ function kinetic.hmacIntegrity(hmac: buffer) -> Boolean
 ##### Requests Methods
 
 Set the actual protobuf message from the asked request.
+Set also the HMAC from the actual protobuf message.
+
+Exemple :
+
+```node
+  kinetic.noOp(incrementTCP, 0);
+  console.log('HMAC : ')
+  console.log(kinetic.getHMAC());
+
+// HMAC :
+// <Buffer 02 32 e8 a4 10 d1 85 1b e6 ec 16 17 fe b6 37 e0 7a c2 64 a7>
+```
 
 ```node
 function kinetic.getLog(incrementTCP: number,
