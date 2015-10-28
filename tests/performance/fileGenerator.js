@@ -1,6 +1,4 @@
-'use strict'; // eslint-disable-line strict
-
-const fs = require('fs');
+import fs from 'fs';
 
 const tmp = new Buffer(+process.argv[2]);
 for (let i = 0; i < +process.argv[2]; i++) {
