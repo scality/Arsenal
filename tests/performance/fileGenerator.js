@@ -1,7 +1,4 @@
 import fs from 'fs';
+import crypto from 'crypto';
 
-const tmp = new Buffer(+process.argv[2]);
-for (let i = 0; i < +process.argv[2]; i++) {
-    tmp[i] = 70;
-}
-fs.writeFileSync(process.argv[3], tmp);
+fs.writeFileSync(process.argv[3], crypto.randomBytes(+process.argv[2]));
