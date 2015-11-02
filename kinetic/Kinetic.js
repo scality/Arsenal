@@ -328,11 +328,11 @@ class Kinetic {
      * protocol
      */
     getLog(incrementTCP, types, clusterVersion) {
-        const identity = (new Date).getTime();
+        const connectionID = (new Date).getTime();
         return this.setMessage({
             "header": {
                 "messageType": "GETLOG",
-                "connectionID": identity,
+                "connectionID": connectionID,
                 "sequence": incrementTCP,
                 "clusterVersion": clusterVersion,
             },
@@ -378,11 +378,11 @@ class Kinetic {
      * protocol
      */
     flush(incrementTCP, clusterVersion) {
-        const identity = (new Date).getTime();
+        const connectionID = (new Date).getTime();
         return this.setMessage({
             "header": {
                 "messageType": "FLUSHALLDATA",
-                "connectionID": identity,
+                "connectionID": connectionID,
                 "sequence": incrementTCP,
                 "clusterVersion": clusterVersion,
             },
@@ -423,11 +423,11 @@ class Kinetic {
      * protocol
      */
     setClusterVersion(incrementTCP, clusterVersion, oldClusterVersion) {
-        const identity = (new Date).getTime();
+        const connectionID = (new Date).getTime();
         return this.setMessage({
             "header": {
                 "messageType": "SETUP",
-                "connectionID": identity,
+                "connectionID": connectionID,
                 "sequence": incrementTCP,
                 "clusterVersion": oldClusterVersion,
             },
@@ -469,11 +469,11 @@ class Kinetic {
      * protocol
      */
     noOp(incrementTCP, clusterVersion) {
-        const identity = (new Date).getTime();
+        const connectionID = (new Date).getTime();
         return this.setMessage({
             "header": {
                 "messageType": "NOOP",
-                "connectionID": identity,
+                "connectionID": connectionID,
                 "sequence": incrementTCP,
                 "clusterVersion": clusterVersion,
             },
@@ -516,11 +516,11 @@ class Kinetic {
      * protocol
      */
     put(key, incrementTCP, dbVersion, newVersion, clusterVersion) {
-        const identity = (new Date).getTime();
+        const connectionID = (new Date).getTime();
         return this.setMessage({
             "header": {
                 "messageType": "PUT",
-                "connectionID": identity,
+                "connectionID": connectionID,
                 "sequence": incrementTCP,
                 "clusterVersion": clusterVersion,
             },
@@ -569,11 +569,11 @@ class Kinetic {
      * protocol
      */
     get(key, incrementTCP, clusterVersion) {
-        const identity = (new Date).getTime();
+        const connectionID = (new Date).getTime();
         return this.setMessage({
             "header": {
                 "messageType": "GET",
-                "connectionID": identity,
+                "connectionID": connectionID,
                 "sequence": incrementTCP,
                 "clusterVersion": clusterVersion,
             },
@@ -626,11 +626,11 @@ class Kinetic {
      * protocol
      */
     delete(key, incrementTCP, clusterVersion, dbVersion) {
-        const identity = (new Date).getTime();
+        const connectionID = (new Date).getTime();
         return this.setMessage({
             "header": {
                 "messageType": "DELETE",
-                "connectionID": identity,
+                "connectionID": connectionID,
                 "sequence": incrementTCP,
                 "clusterVersion": clusterVersion,
             },
