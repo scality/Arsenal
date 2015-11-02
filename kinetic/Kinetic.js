@@ -161,6 +161,8 @@ class Kinetic {
      * @returns {Number} - Chunk size.
      */
     getChunkSize() {
+        if (this._chunk === undefined)
+            return 0;
         return this._chunk.length;
     }
 
@@ -671,16 +673,19 @@ class Kinetic {
      * @returns {Number} - an error code
      */
     send(sock) {
-        const buf = new Buffer(9);
+        const pduHeader = new Buffer(9);
 
-        buf.writeInt8(this.getVersion(), 0);
+        pduHeader.writeInt8(this.getVersion(), 0);
 
-        buf.writeInt32BE(this.getProtobufSize(), 1);
-        buf.writeInt32BE(this.getChunkSize(), 5);
+        pduHeader.writeInt32BE(this.getProtobufSize(), 1);
+        pduHeader.writeInt32BE(this.getChunkSize(), 5);
 
-        sock.write(Buffer.concat(
-                [buf, this._message.toBuffer(), this.getChunk()]
-            ));
+        if (this.getChunk() !== undefined)
+            sock.write(Buffer.concat(
+                    [pduHeader, this._message.toBuffer(), this.getChunk()]));
+        else
+            sock.write(Buffer.concat([pduHeader, this._message.toBuffer()]));
+
         return this.errors.SUCCESS;
     }
 
