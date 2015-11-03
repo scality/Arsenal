@@ -23,21 +23,22 @@ const requestsArr = [
 ];
 
 function requestsLauncher(request, client) {
-    const pdu = new Kinetic.PDU();
+    let pdu;
 
-    if (request === 'noop')
-        pdu.noOp(incrementTCP, 0);
-    else if (request === 'put') {
+    if (request === 'noop') {
+        pdu = new Kinetic.NoOpPDU(incrementTCP, 0);
+    } else if (request === 'put') {
+        pdu = new Kinetic.PutPDU('qwer', incrementTCP, null, '1', 0);
         pdu.setChunk(new Buffer("ON DIT BONJOUR TOUT LE MONDE"));
-        pdu.put('qwer', incrementTCP, null, '1', 0);
-    } else if (request === 'get')
-        pdu.get('qwer', incrementTCP, 0);
-    else if (request === 'delete')
-        pdu.delete('qwer', incrementTCP, 0, '1236');
-    else if (request === 'flush')
-        pdu.flush(incrementTCP, 0);
-    else if (request === 'getLog')
-        pdu.getLog(incrementTCP, [1, 2, 3, 4], 0);
+    } else if (request === 'get') {
+        pdu = new Kinetic.GetPDU('qwer', incrementTCP, 0);
+    } else if (request === 'delete') {
+        pdu = new Kinetic.DeletePDU('qwer', incrementTCP, 0, '1236');
+    } else if (request === 'flush') {
+        pdu = new Kinetic.FlushPDU(incrementTCP, 0);
+    } else if (request === 'getLog') {
+        pdu = new Kinetic.GetLogPDU(incrementTCP, [1, 2, 3, 4], 0);
+    }
 
     pdu.send(client);
     incrementTCP++;

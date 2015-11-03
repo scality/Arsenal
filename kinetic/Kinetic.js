@@ -315,355 +315,6 @@ export class PDU {
     }
 
     /**
-     * Getting logs and stats request following the kinetic protocol.
-     * @param {number} incrementTCP - monotonically increasing number for each
-     * request in a TCP connection.
-     * @param {Array} types - array filled by logs types needed.
-     * @param {number} clusterVersion - version of the cluster
-     * @returns {Kinetic} - message structure following the kinetic
-     * protocol
-     */
-    getLog(incrementTCP, types, clusterVersion) {
-        const connectionID = (new Date).getTime();
-        return this.setMessage({
-            "header": {
-                "messageType": "GETLOG",
-                "connectionID": connectionID,
-                "sequence": incrementTCP,
-                "clusterVersion": clusterVersion,
-            },
-            "body": {
-                "getLog": {
-                    "types": types,
-
-                },
-            },
-        });
-    }
-
-    /**
-     * Getting logs and stats response following the kinetic protocol.
-     * @param {number} response - response code (SUCCESS, FAIL)
-     * @param {Buffer} errorMessage - detailed error message.
-     * @param {object} responseLogs - object filled by logs needed.
-     * @returns {Kinetic} - message structure following the kinetic
-     * protocol
-     */
-    getLogResponse(response, errorMessage, responseLogs) {
-        return this.setMessage({
-            "header": {
-                "ackSequence": this._message.header.sequence,
-                "messageType": "GETLOG_RESPONSE",
-            },
-            "body": {
-                "getLog": responseLogs,
-            },
-            "status": {
-                "code": response,
-                "detailedMessage": errorMessage,
-            },
-        });
-    }
-
-    /**
-     * Flush all data request following the kinetic protocol.
-     * @param {number} incrementTCP - monotonically increasing number for each
-     * request in a TCP connection.
-     * @param {number} clusterVersion - version of the cluster
-     * @returns {Kinetic} - message structure following the kinetic
-     * protocol
-     */
-    flush(incrementTCP, clusterVersion) {
-        const connectionID = (new Date).getTime();
-        return this.setMessage({
-            "header": {
-                "messageType": "FLUSHALLDATA",
-                "connectionID": connectionID,
-                "sequence": incrementTCP,
-                "clusterVersion": clusterVersion,
-            },
-            "body": {
-            },
-        });
-    }
-
-    /**
-     * Flush all data response following the kinetic protocol.
-     * @param {number} response - response code (SUCCESS, FAIL)
-     * @param {Buffer} errorMessage - detailed error message.
-     * @returns {Kinetic} - message structure following the kinetic
-     * protocol
-     */
-    flushResponse(response, errorMessage) {
-        return this.setMessage({
-            "header": {
-                "messageType": "FLUSHALLDATA_RESPONSE",
-                "ackSequence": this._message.header.sequence,
-            },
-            "status": {
-                "code": response,
-                "detailedMessage": errorMessage,
-            },
-        });
-    }
-
-    /**
-     * set clusterVersion request following the kinetic protocol.
-     * @param {number} incrementTCP - monotonically increasing number for each
-     * request in a TCP connection.
-     * @param {number} clusterVersion - The version number of this cluster
-     * definition
-     * @param {number} oldClusterVersion - The old version number of this
-     * cluster definition
-     * @returns {Kinetic} - message structure following the kinetic
-     * protocol
-     */
-    setClusterVersion(incrementTCP, clusterVersion, oldClusterVersion) {
-        const connectionID = (new Date).getTime();
-        return this.setMessage({
-            "header": {
-                "messageType": "SETUP",
-                "connectionID": connectionID,
-                "sequence": incrementTCP,
-                "clusterVersion": oldClusterVersion,
-            },
-            "body": {
-                "setup": {
-                    "newClusterVersion": clusterVersion,
-                },
-            },
-        });
-    }
-
-    /**
-     * Setup response request following the kinetic protocol.
-     * @param {Number} response - response code (SUCCESS, FAIL)
-     * @param {Buffer} errorMessage - detailed error message.
-     * @returns {Kinetic} - message structure following the kinetic
-     * protocol
-     */
-    setupResponse(response, errorMessage) {
-        return this.setMessage({
-            "header": {
-                "messageType": "SETUP_RESPONSE",
-                "ackSequence": this._message.header.sequence,
-            },
-            "status": {
-                "code": response,
-                "detailedMessage": errorMessage,
-            },
-        });
-    }
-
-    /**
-     * NOOP request following the kinetic protocol.
-     * @param {number} incrementTCP - monotonically increasing number for each
-     * request in a TCP connection
-     * @param {number} clusterVersion - The version number of this cluster
-     * definition
-     * @returns {Kinetic} - message structure following the kinetic
-     * protocol
-     */
-    noOp(incrementTCP, clusterVersion) {
-        const connectionID = (new Date).getTime();
-        return this.setMessage({
-            "header": {
-                "messageType": "NOOP",
-                "connectionID": connectionID,
-                "sequence": incrementTCP,
-                "clusterVersion": clusterVersion,
-            },
-            "body": {
-            },
-        });
-    }
-
-    /**
-     * Response for the NOOP request following the kinetic protocol.
-     * @param {Number} response - response code (SUCCESS, FAIL)
-     * @param {Buffer} errorMessage - detailed error message.
-     * @returns {Kinetic} - message structure following the kinetic
-     * protocol
-     */
-    noOpResponse(response, errorMessage) {
-        return this.setMessage({
-            "header": {
-                "messageType": "NOOP_RESPONSE",
-                "ackSequence": this._message.header.sequence,
-            },
-            "status": {
-                "code": response,
-                "detailedMessage": errorMessage,
-            },
-        });
-    }
-
-    /**
-     * PUT request following the kinetic protocol.
-     * @param {Buffer} key - key of the item to put.
-     * @param {number} incrementTCP - monotonically increasing number for each
-     * request in a TCP connection
-     * @param {Buffer} dbVersion - version of the item in the
-     * database.
-     * @param {Buffer} newVersion - new version of the item to put.
-     * @param {number} clusterVersion - The version number of this cluster
-     * definition
-     * @returns {Kinetic} - message structure following the kinetic
-     * protocol
-     */
-    put(key, incrementTCP, dbVersion, newVersion, clusterVersion) {
-        const connectionID = (new Date).getTime();
-        return this.setMessage({
-            "header": {
-                "messageType": "PUT",
-                "connectionID": connectionID,
-                "sequence": incrementTCP,
-                "clusterVersion": clusterVersion,
-            },
-            "body": {
-                "keyValue": {
-                    "key": key,
-                    "newVersion": newVersion,
-                    "dbVersion": dbVersion,
-                    "synchronization": 'WRITETHROUGH',
-                },
-            },
-        });
-    }
-
-    /**
-     * Response for the PUT request following the kinetic protocol.
-     * @param {Number} response - response code (SUCCESS, FAIL)
-     * @param {Buffer} errorMessage - detailed error message.
-     * @returns {Kinetic} - message structure following the kinetic
-     * protocol
-     */
-    putResponse(response, errorMessage) {
-        return this.setMessage({
-            "header": {
-                "messageType": "PUT_RESPONSE",
-                "ackSequence": this._message.header.sequence,
-            },
-            "body": {
-                "keyValue": { },
-            },
-            "status": {
-                "code": response,
-                "detailedMessage": errorMessage,
-            },
-        });
-    }
-
-    /**
-     * GET request following the kinetic protocol.
-     * @param {Buffer} key - key of the item to put.
-     * @param {number} incrementTCP - monotonically increasing number for each
-     * request in a TCP connection
-     * @param {number} clusterVersion - The version number of this cluster
-     * definition
-     * @returns {Kinetic} - message structure following the kinetic
-     * protocol
-     */
-    get(key, incrementTCP, clusterVersion) {
-        const connectionID = (new Date).getTime();
-        return this.setMessage({
-            "header": {
-                "messageType": "GET",
-                "connectionID": connectionID,
-                "sequence": incrementTCP,
-                "clusterVersion": clusterVersion,
-            },
-            "body": {
-                "keyValue": {
-                    "key": key,
-                },
-            },
-        });
-    }
-
-    /**
-     * Response for the GET request following the kinetic protocol.
-     * @param {Number} response - response code (SUCCESS, FAIL)
-     * @param {Buffer} errorMessage - Detailed error message.
-     * @param {Buffer} dbVersion - The version of the item in the
-     * database.
-     * @returns {Kinetic} - message structure following the kinetic
-     * protocol
-     */
-    getResponse(response, errorMessage, dbVersion) {
-        return this.setMessage({
-            "header": {
-                "messageType": "GET_RESPONSE",
-                "ackSequence": this._message.header.sequence,
-            },
-            "body": {
-                "keyValue": {
-                    "key": this._message.body.keyValue.key,
-                    "dbVersion": dbVersion,
-                },
-            },
-            "status": {
-                "code": response,
-                "detailedMessage": errorMessage,
-            },
-        });
-    }
-
-    /**
-     * DELETE request following the kinetic protocol.
-     * @param {Buffer} key - key of the item to put.
-     * @param {number} incrementTCP - monotonically increasing number for each
-     * request in a TCP connection
-     * @param {number} clusterVersion - The version number of this cluster
-     * definition
-     * @param {Buffer} dbVersion - version of the item in the
-     * database.
-     * @returns {Kinetic} - message structure following the kinetic
-     * protocol
-     */
-    delete(key, incrementTCP, clusterVersion, dbVersion) {
-        const connectionID = (new Date).getTime();
-        return this.setMessage({
-            "header": {
-                "messageType": "DELETE",
-                "connectionID": connectionID,
-                "sequence": incrementTCP,
-                "clusterVersion": clusterVersion,
-            },
-            "body": {
-                "keyValue": {
-                    "key": key,
-                    "dbVersion": dbVersion,
-                    "synchronization": 'WRITETHROUGH',
-                },
-            },
-        });
-    }
-
-    /**
-     * Response for the DELETE request following the kinetic protocol.
-     * @param {Number} response - response code (SUCCESS, FAIL)
-     * @param {Buffer} errorMessage - Detailed error message.
-     * @returns {Kinetic} - message structure following the kinetic
-     * protocol
-     */
-    deleteResponse(response, errorMessage) {
-        return this.setMessage({
-            "header": {
-                "messageType": "DELETE_RESPONSE",
-                "ackSequence": this._message.header.sequence,
-            },
-            "body": {
-                "keyValue": { },
-            },
-            "status": {
-                "code": response,
-                "detailedMessage": errorMessage,
-            },
-        });
-    }
-
-    /**
      * Sends data following Kinetic protocol.
      * @param {Socket} sock - Socket to send data through.
      * @returns {Number} - an error code
@@ -719,5 +370,392 @@ export class PDU {
             return errors.HMAC_FAILURE;
 
         return errors.SUCCESS;
+    }
+}
+
+/**
+ * Getting logs and stats request following the kinetic protocol.
+ * @param {number} incrementTCP - monotonically increasing number for each
+ *                                request in a TCP connection.
+ * @param {Array} types - array filled by logs types needed.
+ * @param {number} clusterVersion - version of the cluster
+ * @returns {Kinetic} - message structure following the kinetic protocol
+ */
+export class GetLogPDU extends PDU {
+    constructor(incrementTCP, types, clusterVersion) {
+        super();
+        const connectionID = (new Date).getTime();
+        this.setMessage({
+            "header": {
+                "messageType": "GETLOG",
+                "connectionID": connectionID,
+                "sequence": incrementTCP,
+                "clusterVersion": clusterVersion,
+            },
+            "body": {
+                "getLog": {
+                    "types": types,
+                },
+            },
+        });
+        return this;
+    }
+}
+
+/**
+ * Getting logs and stats response following the kinetic protocol.
+ * @param {number} response - response code (SUCCESS, FAIL)
+ * @param {Buffer} errorMessage - detailed error message.
+ * @param {object} responseLogs - object filled by logs needed.
+ * @returns {Kinetic} - message structure following the kinetic protocol
+ */
+export class GetLogResponsePDU extends PDU {
+    constructor(response, errorMessage, responseLogs) {
+        super();
+        this.setMessage({
+            "header": {
+                "ackSequence": this._message.header.sequence,
+                "messageType": "GETLOG_RESPONSE",
+            },
+            "body": {
+                "getLog": responseLogs,
+            },
+            "status": {
+                "code": response,
+                "detailedMessage": errorMessage,
+            },
+        });
+        return this;
+    }
+}
+
+/**
+ * Flush all data request following the kinetic protocol.
+ * @param {number} incrementTCP - monotonically increasing number for each
+ *                                request in a TCP connection.
+ * @param {number} clusterVersion - version of the cluster
+ * @returns {Kinetic} - message structure following the kinetic protocol
+ */
+export class FlushPDU extends PDU {
+    constructor(incrementTCP, clusterVersion) {
+        super();
+        const connectionID = (new Date).getTime();
+        this.setMessage({
+            "header": {
+                "messageType": "FLUSHALLDATA",
+                "connectionID": connectionID,
+                "sequence": incrementTCP,
+                "clusterVersion": clusterVersion,
+            },
+            "body": {
+            },
+        });
+        return this;
+    }
+}
+
+/**
+ * Flush all data response following the kinetic protocol.
+ * @param {number} response - response code (SUCCESS, FAIL)
+ * @param {Buffer} errorMessage - detailed error message.
+ * @returns {Kinetic} - message structure following the kinetic protocol
+ */
+export class FlushResponsePDU extends PDU {
+    constructor(response, errorMessage) {
+        super();
+        this.setMessage({
+            "header": {
+                "messageType": "FLUSHALLDATA_RESPONSE",
+                "ackSequence": this._message.header.sequence,
+            },
+            "status": {
+                "code": response,
+                "detailedMessage": errorMessage,
+            },
+        });
+        return this;
+    }
+}
+
+/**
+ * set clusterVersion request following the kinetic protocol.
+ * @param {number} incrementTCP - monotonically increasing number for each
+ *                                request in a TCP connection.
+ * @param {number} clusterVersion - The version number of this cluster
+ *                                  definition
+ * @param {number} oldClusterVersion - The old version number of this cluster
+ *                                     definition
+ * @returns {Kinetic} - message structure following the kinetic protocol
+ */
+export class SetClusterVersionPDU extends PDU {
+    constructor(incrementTCP, clusterVersion, oldClusterVersion) {
+        super();
+        const connectionID = (new Date).getTime();
+        this.setMessage({
+            "header": {
+                "messageType": "SETUP",
+                "connectionID": connectionID,
+                "sequence": incrementTCP,
+                "clusterVersion": oldClusterVersion,
+            },
+            "body": {
+                "setup": {
+                    "newClusterVersion": clusterVersion,
+                },
+            },
+        });
+        return this;
+    }
+}
+
+/**
+ * Setup response request following the kinetic protocol.
+ * @param {Number} response - response code (SUCCESS, FAIL)
+ * @param {Buffer} errorMessage - detailed error message.
+ * @returns {Kinetic} - message structure following the kinetic protocol
+ */
+export class SetupResponsePDU extends PDU {
+    constructor(response, errorMessage) {
+        super();
+        this.setMessage({
+            "header": {
+                "messageType": "SETUP_RESPONSE",
+                "ackSequence": this._message.header.sequence,
+            },
+            "status": {
+                "code": response,
+                "detailedMessage": errorMessage,
+            },
+        });
+        return this;
+    }
+}
+
+/**
+ * NOOP request following the kinetic protocol.
+ * @param {number} incrementTCP - monotonically increasing number for each
+ *                                request in a TCP connection
+ * @param {number} clusterVersion - The version number of this cluster
+ *                                  definition
+ * @returns {Kinetic} - message structure following the kinetic protocol
+ */
+export class NoOpPDU extends PDU {
+    constructor(incrementTCP, clusterVersion) {
+        super();
+        const connectionID = (new Date).getTime();
+        this.setMessage({
+            "header": {
+                "messageType": "NOOP",
+                "connectionID": connectionID,
+                "sequence": incrementTCP,
+                "clusterVersion": clusterVersion,
+            },
+            "body": {
+            },
+        });
+        return this;
+    }
+}
+
+/**
+ * Response for the NOOP request following the kinetic protocol.
+ * @param {Number} response - response code (SUCCESS, FAIL)
+ * @param {Buffer} errorMessage - detailed error message.
+ * @returns {Kinetic} - message structure following the kinetic protocol
+ */
+export class NoOpResponsePDU extends PDU {
+    constructor(response, errorMessage) {
+        super();
+        this.setMessage({
+            "header": {
+                "messageType": "NOOP_RESPONSE",
+                "ackSequence": this._message.header.sequence,
+            },
+            "status": {
+                "code": response,
+                "detailedMessage": errorMessage,
+            },
+        });
+        return this;
+    }
+}
+
+/**
+ * PUT request following the kinetic protocol.
+ * @param {Buffer} key - key of the item to put.
+ * @param {number} incrementTCP - monotonically increasing number for each
+ *                                request in a TCP connection
+ * @param {Buffer} dbVersion - version of the item in the database.
+ * @param {Buffer} newVersion - new version of the item to put.
+ * @param {number} clusterVersion - The version number of this cluster
+ *                                  definition
+ * @returns {Kinetic} - message structure following the kinetic protocol
+ */
+export class PutPDU extends PDU {
+    constructor(key, incrementTCP, dbVersion, newVersion, clusterVersion) {
+        super();
+        const connectionID = (new Date).getTime();
+        this.setMessage({
+            "header": {
+                "messageType": "PUT",
+                "connectionID": connectionID,
+                "sequence": incrementTCP,
+                "clusterVersion": clusterVersion,
+            },
+            "body": {
+                "keyValue": {
+                    "key": key,
+                    "newVersion": newVersion,
+                    "dbVersion": dbVersion,
+                    "synchronization": 'WRITETHROUGH',
+                },
+            },
+        });
+        return this;
+    }
+}
+
+/**
+ * Response for the PUT request following the kinetic protocol.
+ * @param {Number} response - response code (SUCCESS, FAIL)
+ * @param {Buffer} errorMessage - detailed error message.
+ * @returns {Kinetic} - message structure following the kinetic protocol
+ */
+export class PutResponsePDU extends PDU {
+    constructor(response, errorMessage) {
+        super();
+        this.setMessage({
+            "header": {
+                "messageType": "PUT_RESPONSE",
+                "ackSequence": this._message.header.sequence,
+            },
+            "body": {
+                "keyValue": { },
+            },
+            "status": {
+                "code": response,
+                "detailedMessage": errorMessage,
+            },
+        });
+        return this;
+    }
+}
+
+/**
+ * GET request following the kinetic protocol.
+ * @param {Buffer} key - key of the item to put.
+ * @param {number} incrementTCP - monotonically increasing number for each
+ *                                request in a TCP connection
+ * @param {number} clusterVersion - The version number of this cluster
+ *                                  definition
+ * @returns {Kinetic} - message structure following the kinetic protocol
+ */
+export class GetPDU extends PDU {
+    constructor(key, incrementTCP, clusterVersion) {
+        super();
+        const connectionID = (new Date).getTime();
+        this.setMessage({
+            "header": {
+                "messageType": "GET",
+                "connectionID": connectionID,
+                "sequence": incrementTCP,
+                "clusterVersion": clusterVersion,
+            },
+            "body": {
+                "keyValue": {
+                    "key": key,
+                },
+            },
+        });
+        return this;
+    }
+}
+
+/**
+ * Response for the GET request following the kinetic protocol.
+ * @param {Number} response - response code (SUCCESS, FAIL)
+ * @param {Buffer} errorMessage - Detailed error message.
+ * @param {Buffer} dbVersion - The version of the item in the database.
+ * @returns {Kinetic} - message structure following the kinetic protocol
+ */
+export class GetResponsePDU extends PDU {
+    constructor(response, errorMessage, dbVersion) {
+        super();
+        this.setMessage({
+            "header": {
+                "messageType": "GET_RESPONSE",
+                "ackSequence": this._message.header.sequence,
+            },
+            "body": {
+                "keyValue": {
+                    "key": this._message.body.keyValue.key,
+                    "dbVersion": dbVersion,
+                },
+            },
+            "status": {
+                "code": response,
+                "detailedMessage": errorMessage,
+            },
+        });
+        return this;
+    }
+}
+
+/**
+ * DELETE request following the kinetic protocol.
+ * @param {Buffer} key - key of the item to put.
+ * @param {number} incrementTCP - monotonically increasing number for each
+ *                                request in a TCP connection
+ * @param {number} clusterVersion - The version number of this cluster
+ *                                  definition
+ * @param {Buffer} dbVersion - version of the item in the database.
+ * @returns {Kinetic} - message structure following the kinetic protocol
+ */
+export class DeletePDU extends PDU {
+    constructor(key, incrementTCP, clusterVersion, dbVersion) {
+        super();
+        const connectionID = (new Date).getTime();
+        this.setMessage({
+            "header": {
+                "messageType": "DELETE",
+                "connectionID": connectionID,
+                "sequence": incrementTCP,
+                "clusterVersion": clusterVersion,
+            },
+            "body": {
+                "keyValue": {
+                    "key": key,
+                    "dbVersion": dbVersion,
+                    "synchronization": 'WRITETHROUGH',
+                },
+            },
+        });
+        return this;
+    }
+}
+
+/**
+ * Response for the DELETE request following the kinetic protocol.
+ * @param {Number} response - response code (SUCCESS, FAIL)
+ * @param {Buffer} errorMessage - Detailed error message.
+ * @returns {Kinetic} - message structure following the kinetic protocol
+ */
+export class DeleteResponsePDU extends PDU {
+    constructor(response, errorMessage) {
+        super();
+        this.setMessage({
+            "header": {
+                "messageType": "DELETE_RESPONSE",
+                "ackSequence": this._message.header.sequence,
+            },
+            "body": {
+                "keyValue": { },
+            },
+            "status": {
+                "code": response,
+                "detailedMessage": errorMessage,
+            },
+        });
+        return this;
     }
 }

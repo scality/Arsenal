@@ -15,10 +15,15 @@ import Kinetic from 'Kinetic';
 const rawData = new Buffer('\x46\x00\x00\x00\x32\x00');
 const kineticPDU = new Kinetic.PDU(rawData);
 
-const sock = net.connect(1234, 'localhost');
-const ret = kineticPDU.send(sock);
-if (ret !== Kinetic.errors.SUCCESS)
-    throw new Error("argh: " + Kinetic.getErrorName(ret) + "!");
+if (kineticPDU.getMessageType() === Kinetic.ops.GET) {
+    const response = new Kinetic.PutPDU('key', 1, null, '1', 0);
+    response.setChunk(new Buffer('value'));
+
+    const sock = net.connect(1234, 'localhost');
+    const ret = response.send(sock);
+    if (ret !== Kinetic.errors.SUCCESS)
+        throw new Error("argh: " + Kinetic.getErrorName(ret) + "!");
+}
 ```
 
 ## Guidelines
