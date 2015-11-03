@@ -1,14 +1,14 @@
-import { Kinetic } from '../../index';
+import assert from 'assert';
 import net from 'net';
 import util from 'util';
-import assert from 'assert';
+
 import winston from 'winston';
+
+import { Kinetic } from '../../index';
 
 const HOST = '127.0.0.1';
 const PORT = 8123;
 let incrementTCP = 0;
-
-const kinetic = new Kinetic;
 
 const logger = new (winston.Logger)({
     transports: [new (winston.transports.Console)({ level: 'error' })]
@@ -23,21 +23,24 @@ const requestsArr = [
 ];
 
 function requestsLauncher(request, client) {
-    if (request === 'noop')
-        kinetic.noOp(incrementTCP, 0);
-    else if (request === 'put') {
-        kinetic.setChunk(new Buffer("ON DIT BONJOUR TOUT LE MONDE"));
-        kinetic.put('qwer', incrementTCP, null, '1', 0);
-    } else if (request === 'get')
-        kinetic.get('qwer', incrementTCP, 0);
-    else if (request === 'delete')
+    let pdu;
 
-        kinetic.delete('qwer', incrementTCP, 0, '1236');
-    else if (request === 'flush')
-        kinetic.flush(incrementTCP, 0);
-    else if (request === 'getLog')
-        kinetic.getLog(incrementTCP, [1, 2, 3, 4], 0);
-    kinetic.send(client);
+    if (request === 'noop') {
+        pdu = new Kinetic.NoOpPDU(incrementTCP, 0);
+    } else if (request === 'put') {
+        pdu = new Kinetic.PutPDU('qwer', incrementTCP, null, '1', 0);
+        pdu.setChunk(new Buffer("ON DIT BONJOUR TOUT LE MONDE"));
+    } else if (request === 'get') {
+        pdu = new Kinetic.GetPDU('qwer', incrementTCP, 0);
+    } else if (request === 'delete') {
+        pdu = new Kinetic.DeletePDU('qwer', incrementTCP, 0, '1236');
+    } else if (request === 'flush') {
+        pdu = new Kinetic.FlushPDU(incrementTCP, 0);
+    } else if (request === 'getLog') {
+        pdu = new Kinetic.GetLogPDU(incrementTCP, [1, 2, 3, 4], 0);
+    }
+
+    pdu.send(client);
     incrementTCP++;
 }
 
@@ -47,17 +50,19 @@ function checkTest(request, requestResponse, done) {
 
     });
     client.on('data', function heandleData(data) {
-        logger.warn(kinetic.getError(kinetic.parse(data)));
-        if (kinetic.getMessageType() === null ||
-            kinetic.getOp(kinetic.getMessageType()) !== requestResponse)
+        const pdu = new Kinetic.PDU();
+        const err = pdu._parse(data);
+        logger.warn(Kinetic.getErrorName(err));
+        if (pdu.getMessageType() === null ||
+            Kinetic.getOpName(pdu.getMessageType()) !== requestResponse) {
             requestsLauncher(request, client);
-        else {
+        } else {
             client.end();
-            logger.info(util.inspect(kinetic.getProtobuf(),
+            logger.info(util.inspect(pdu.getProtobuf(),
                 {showHidden: false, depth: null}));
-            logger.info(util.inspect(kinetic.getChunk().toString(),
+            logger.info(util.inspect(pdu.getChunk().toString(),
                 {showHidden: false, depth: null}));
-            assert.deepEqual(kinetic.getOp(kinetic.getMessageType()),
+            assert.deepEqual(Kinetic.getOpName(pdu.getMessageType()),
                 requestResponse);
             done();
         }
