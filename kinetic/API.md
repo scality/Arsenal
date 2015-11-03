@@ -83,14 +83,14 @@ function kinetic.getGetLogMessage() -> Buffer
 `getGetLogMessage()` returns the log message .
 
 ```node
-function kinetic.getOp() -> String
+function kinetic.getOpName() -> String
 ```
-`getOp()` returns the operation name.
+`getOpName()` returns the operation name.
 
 ```node
-function kinetic.getError() -> String
+function kinetic.getErrorName() -> String
 ```
-`getError()` returns the error name.
+`getErrorName()` returns the error name.
 
 ```node
 function kinetic.getLogType() -> Buffer
