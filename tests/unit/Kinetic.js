@@ -91,3 +91,45 @@ describe('Kinetic.PDU send()', () => {
         done();
     });
 });
+
+describe('Kinetic.PutPDU()', () => {
+    it('should check key type', (done) => {
+        try {
+            const k = new Kinetic.PutPDU("string", 1, '2', '3', 1);
+            k;
+            done(new Error("constructor accepted string-typed key"));
+        } catch (e) {
+            if (e.message !== "key is not a buffer")
+                done(e);
+            done();
+        }
+    });
+});
+
+describe('Kinetic.GetPDU()', () => {
+    it('should check key type', (done) => {
+        try {
+            const k = new Kinetic.GetPDU("string", 1, '2');
+            k;
+            done(new Error("constructor accepted string-typed key"));
+        } catch (e) {
+            if (e.message !== "key is not a buffer")
+                done(e);
+            done();
+        }
+    });
+});
+
+describe('Kinetic.DeletePDU()', () => {
+    it('should check key type', (done) => {
+        try {
+            const k = new Kinetic.DeletePDU("string", 1, '2', '3');
+            k;
+            done(new Error("constructor accepted string-typed key"));
+        } catch (e) {
+            if (e.message !== "key is not a buffer")
+                done(e);
+            done();
+        }
+    });
+});
