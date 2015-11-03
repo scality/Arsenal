@@ -13,4 +13,3 @@ test:
   override:
     - npm run --silent lint
     - npm run --silent tests_functional
-    - npm run --silent tests_functional_simulator
