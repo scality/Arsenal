@@ -175,7 +175,7 @@ export class PDU {
      * @returns {Kinetic} - to allow for a functional style.
      */
     setHMAC(integrity) {
-        this._hmac =  crypto.createHmac('sha1', 'asdfasdf')
+        this._hmac = crypto.createHmac('sha1', 'asdfasdf')
             .update(integrity).digest();
         return this;
     }
@@ -299,23 +299,6 @@ export class PDU {
     }
 
     /**
-     * Compare two buffers.
-     * @param {Buffer} buf0 - the buffers to compare.
-     * @param {Buffer} buf1 - the buffers to compare.
-     * @returns {Boolean} - false if it's different true if not.
-     */
-    diff(buf0, buf1) {
-        if (buf0.length !== buf1.length) {
-            return false;
-        }
-        for (let i = 0; i <= buf0.length; i++) {
-            if (buf0[i] !== buf1[i])
-                return false;
-        }
-        return true;
-    }
-
-    /**
      * Test the HMAC integrity between the actual instance and the given HMAC
      * @param {Buffer} hmac - the non instance hmac to compare
      * @returns {Boolean} - true if the HMACs are the same,
@@ -328,7 +311,7 @@ export class PDU {
         const buf = new Buffer(4);
         buf.writeInt32BE(this.getProtobufSize());
         this.setHMAC(Buffer.concat([buf, this._message.toBuffer()]));
-        if (this.diff(hmac, this.getHMAC()) === false)
+        if (!this.getHMAC().equals(hmac))
             return errors.HMAC_FAILURE;
         return true;
     }
