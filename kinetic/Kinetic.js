@@ -130,15 +130,13 @@ export class PDU {
         this._chunk = undefined;
 
         if (input !== undefined) {
-            if (!Buffer.isBuffer(input)) {
+            if (!Buffer.isBuffer(input))
                 throw new Error("input is not a buffer");
-            } else {
-                const ret = this._parse(input);
-                if (ret !== errors.SUCCESS) {
-                    throw new Error("could not parse input buffer (" +
-                                    getErrorName(ret) + ")");
-                }
-            }
+
+            const ret = this._parse(input);
+            if (ret !== errors.SUCCESS)
+                throw new Error("could not parse input buffer (" +
+                                getErrorName(ret) + ")");
         }
 
         return this;
@@ -155,10 +153,8 @@ export class PDU {
     }
 
     setMessage(command) {
-        const buf = new Buffer(4);
         this._message = new protoBuild.Command(command);
-        buf.writeInt32BE(this.getProtobufSize());
-        this.setHMAC(Buffer.concat([buf, this._message.toBuffer()]));
+        this.computeHMAC();
         return this.setProtobuf(new protoBuild.Message({
             "authType": 1,
             "hmacAuth": {
@@ -167,17 +163,6 @@ export class PDU {
             },
             "commandBytes": this._message.toBuffer(),
         }));
-    }
-
-    /**
-     * Sets the HMAC for the Kinetic Protocol Data Unit integrity.
-     * @param {Buffer} integrity - the shared secret.
-     * @returns {Kinetic} - to allow for a functional style.
-     */
-    setHMAC(integrity) {
-        this._hmac = crypto.createHmac('sha1', 'asdfasdf')
-            .update(integrity).digest();
-        return this;
     }
 
     /**
@@ -232,6 +217,20 @@ export class PDU {
         if (this._chunk === undefined)
             return 0;
         return this._chunk.length;
+    }
+
+    /**
+     * Sets the HMAC for the Kinetic Protocol Data Unit integrity.
+     * @returns {Kinetic} - to allow for a functional style.
+     */
+    computeHMAC() {
+        const buf = new Buffer(4);
+        buf.writeInt32BE(this.getProtobufSize());
+        // TODO: Avoid buffer concatenation
+        const toHash = Buffer.concat([buf, this._message.toBuffer()]);
+        this._hmac = crypto.createHmac('sha1', 'asdfasdf')
+            .update(toHash).digest();
+        return this;
     }
 
     /**
@@ -306,13 +305,12 @@ export class PDU {
      */
     hmacIntegrity(hmac) {
         if (hmac === undefined || this.getHMAC() === undefined)
-            return errors.HMAC_FAILURE;
+            return false;
 
-        const buf = new Buffer(4);
-        buf.writeInt32BE(this.getProtobufSize());
-        this.setHMAC(Buffer.concat([buf, this._message.toBuffer()]));
+        this.computeHMAC();
         if (!this.getHMAC().equals(hmac))
-            return errors.HMAC_FAILURE;
+            return false;
+
         return true;
     }
 
@@ -717,8 +715,7 @@ export class PDU {
             return errors.DATA_ERROR;
         }
         if (this._cmd.authType === 1 &&
-                this.hmacIntegrity(this.getSlice(this._cmd.hmacAuth.hmac)) !==
-                true)
+                !this.hmacIntegrity(this.getSlice(this._cmd.hmacAuth.hmac)))
             return errors.HMAC_FAILURE;
 
         return errors.SUCCESS;
