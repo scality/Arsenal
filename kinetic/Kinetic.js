@@ -304,7 +304,7 @@ export class PDU {
      * HMAC_FAILURE code if not
      */
     hmacIntegrity(hmac) {
-        if (hmac === undefined || this.getHMAC() === undefined)
+        if (hmac === undefined)
             return false;
 
         this.computeHMAC();
