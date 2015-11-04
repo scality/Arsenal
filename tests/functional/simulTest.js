@@ -31,7 +31,7 @@ function requestsLauncher(request, client) {
         pdu = new Kinetic.NoOpPDU(incrementTCP, 0);
     } else if (request === 'put') {
         pdu = new Kinetic.PutPDU(new Buffer('qwer'), incrementTCP,
-            null, new Buffer('1'), 0);
+            new Buffer(0), new Buffer('1'), 0);
         pdu.setChunk(new Buffer("ON DIT BONJOUR TOUT LE MONDE"));
     } else if (request === 'get') {
         pdu = new Kinetic.GetPDU(new Buffer('qwer'), incrementTCP, 0);

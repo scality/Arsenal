@@ -412,6 +412,8 @@ export class GetLogPDU extends PDU {
 export class GetLogResponsePDU extends PDU {
     constructor(response, errorMessage, responseLogs) {
         super();
+        if (!Buffer.isBuffer(errorMessage))
+            throw new Error("the error message is not a buffer");
         this.setMessage({
             "header": {
                 "ackSequence": this._message.header.sequence,
@@ -463,6 +465,8 @@ export class FlushPDU extends PDU {
 export class FlushResponsePDU extends PDU {
     constructor(response, errorMessage) {
         super();
+        if (!Buffer.isBuffer(errorMessage))
+            throw new Error("the error message is not a buffer");
         this.setMessage({
             "header": {
                 "messageType": "FLUSHALLDATA_RESPONSE",
@@ -517,6 +521,8 @@ export class SetClusterVersionPDU extends PDU {
 export class SetupResponsePDU extends PDU {
     constructor(response, errorMessage) {
         super();
+        if (!Buffer.isBuffer(errorMessage))
+            throw new Error("the error message is not a buffer");
         this.setMessage({
             "header": {
                 "messageType": "SETUP_RESPONSE",
@@ -566,6 +572,8 @@ export class NoOpPDU extends PDU {
 export class NoOpResponsePDU extends PDU {
     constructor(response, errorMessage) {
         super();
+        if (!Buffer.isBuffer(errorMessage))
+            throw new Error("the error message is not a buffer");
         this.setMessage({
             "header": {
                 "messageType": "NOOP_RESPONSE",
@@ -594,8 +602,10 @@ export class NoOpResponsePDU extends PDU {
 export class PutPDU extends PDU {
     constructor(key, incrementTCP, dbVersion, newVersion, clusterVersion) {
         super();
-        if (!Buffer.isBuffer(key))
-            throw new Error("key is not a buffer");
+        if (!Buffer.isBuffer(key) ||
+            !Buffer.isBuffer(dbVersion) ||
+            !Buffer.isBuffer(newVersion))
+            throw new Error("key or the old/new dbversion is not a buffer");
         const connectionID = (new Date).getTime();
         this.setMessage({
             "header": {
@@ -626,6 +636,8 @@ export class PutPDU extends PDU {
 export class PutResponsePDU extends PDU {
     constructor(response, errorMessage) {
         super();
+        if (!Buffer.isBuffer(errorMessage))
+            throw new Error("the error message is not a buffer");
         this.setMessage({
             "header": {
                 "messageType": "PUT_RESPONSE",
@@ -685,6 +697,9 @@ export class GetPDU extends PDU {
 export class GetResponsePDU extends PDU {
     constructor(response, errorMessage, dbVersion) {
         super();
+        if (!Buffer.isBuffer(dbVersion) ||
+            !Buffer.isBuffer(errorMessage))
+            throw new Error("dbVersion or the error message is not a buffer");
         this.setMessage({
             "header": {
                 "messageType": "GET_RESPONSE",
@@ -718,8 +733,9 @@ export class GetResponsePDU extends PDU {
 export class DeletePDU extends PDU {
     constructor(key, incrementTCP, clusterVersion, dbVersion) {
         super();
-        if (!Buffer.isBuffer(key))
-            throw new Error("key is not a buffer");
+        if (!Buffer.isBuffer(key) ||
+            !Buffer.isBuffer(dbVersion))
+            throw new Error("key or dbVersion is not a buffer");
         const connectionID = (new Date).getTime();
         this.setMessage({
             "header": {
@@ -749,6 +765,8 @@ export class DeletePDU extends PDU {
 export class DeleteResponsePDU extends PDU {
     constructor(response, errorMessage) {
         super();
+        if (!Buffer.isBuffer(errorMessage))
+            throw new Error("the error message is not a buffer");
         this.setMessage({
             "header": {
                 "messageType": "DELETE_RESPONSE",
