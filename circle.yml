@@ -12,4 +12,5 @@ machine:
 test:
   override:
     - npm run --silent lint
+    - npm run --silent tests_unit
     - npm run --silent tests_functional

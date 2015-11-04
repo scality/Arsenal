@@ -594,6 +594,8 @@ export class NoOpResponsePDU extends PDU {
 export class PutPDU extends PDU {
     constructor(key, incrementTCP, dbVersion, newVersion, clusterVersion) {
         super();
+        if (!Buffer.isBuffer(key))
+            throw new Error("key is not a buffer");
         const connectionID = (new Date).getTime();
         this.setMessage({
             "header": {
@@ -653,6 +655,8 @@ export class PutResponsePDU extends PDU {
 export class GetPDU extends PDU {
     constructor(key, incrementTCP, clusterVersion) {
         super();
+        if (!Buffer.isBuffer(key))
+            throw new Error("key is not a buffer");
         const connectionID = (new Date).getTime();
         this.setMessage({
             "header": {
@@ -714,6 +718,8 @@ export class GetResponsePDU extends PDU {
 export class DeletePDU extends PDU {
     constructor(key, incrementTCP, clusterVersion, dbVersion) {
         super();
+        if (!Buffer.isBuffer(key))
+            throw new Error("key is not a buffer");
         const connectionID = (new Date).getTime();
         this.setMessage({
             "header": {

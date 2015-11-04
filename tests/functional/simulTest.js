@@ -28,12 +28,14 @@ function requestsLauncher(request, client) {
     if (request === 'noop') {
         pdu = new Kinetic.NoOpPDU(incrementTCP, 0);
     } else if (request === 'put') {
-        pdu = new Kinetic.PutPDU('qwer', incrementTCP, null, '1', 0);
+        pdu = new Kinetic.PutPDU(new Buffer('qwer'), incrementTCP, null, '1',
+                                 0);
         pdu.setChunk(new Buffer("ON DIT BONJOUR TOUT LE MONDE"));
     } else if (request === 'get') {
-        pdu = new Kinetic.GetPDU('qwer', incrementTCP, 0);
+        pdu = new Kinetic.GetPDU(new Buffer('qwer'), incrementTCP, 0);
     } else if (request === 'delete') {
-        pdu = new Kinetic.DeletePDU('qwer', incrementTCP, 0, '1236');
+        pdu = new Kinetic.DeletePDU(new Buffer('qwer'), incrementTCP, 0,
+                                    '1236');
     } else if (request === 'flush') {
         pdu = new Kinetic.FlushPDU(incrementTCP, 0);
     } else if (request === 'getLog') {
