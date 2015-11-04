@@ -17,6 +17,7 @@ const logger = new (winston.Logger)({
 const requestsArr = [
     ['put', 'PUT_RESPONSE'],
     ['get', 'GET_RESPONSE'],
+    ['delete', 'DELETE_RESPONSE'],
     ['noop', 'NOOP_RESPONSE'],
     ['flush', 'FLUSH_RESPONSE'],
     ['getLog', 'GETLOG_RESPONSE'],
@@ -29,14 +30,14 @@ function requestsLauncher(request, client) {
     if (request === 'noop') {
         pdu = new Kinetic.NoOpPDU(incrementTCP, 0);
     } else if (request === 'put') {
-        pdu = new Kinetic.PutPDU(new Buffer('qwer'), incrementTCP, null, '1',
-                                 0);
+        pdu = new Kinetic.PutPDU(new Buffer('qwer'), incrementTCP,
+            null, new Buffer('1'), 0);
         pdu.setChunk(new Buffer("ON DIT BONJOUR TOUT LE MONDE"));
     } else if (request === 'get') {
         pdu = new Kinetic.GetPDU(new Buffer('qwer'), incrementTCP, 0);
     } else if (request === 'delete') {
         pdu = new Kinetic.DeletePDU(new Buffer('qwer'), incrementTCP, 0,
-                                    '1236');
+                                    new Buffer('1'));
     } else if (request === 'flush') {
         pdu = new Kinetic.FlushPDU(incrementTCP, 0);
     } else if (request === 'getLog') {
@@ -68,9 +69,14 @@ function checkTest(request, requestResponse, done) {
 
             assert.deepEqual(pdu.getProtobuf().status.code,
                 Kinetic.errors.SUCCESS);
-
             assert.deepEqual(Kinetic.getOpName(pdu.getMessageType()),
                 requestResponse);
+            if (request === 'get') {
+                assert.deepEqual(pdu.getChunk(),
+                    new Buffer("ON DIT BONJOUR TOUT LE MONDE"));
+                assert.equal(pdu.getKey(), "qwer");
+                assert.equal(pdu.getDbVersion(), '1');
+            }
 
             if (requestResponse === 'SETUP_RESPONSE') {
                 const k = new Kinetic.SetClusterVersionPDU(
