@@ -19,7 +19,8 @@ const requestsArr = [
     ['get', 'GET_RESPONSE'],
     ['noop', 'NOOP_RESPONSE'],
     ['flush', 'FLUSH_RESPONSE'],
-    ['getLog', 'GETLOG_RESPONSE']
+    ['getLog', 'GETLOG_RESPONSE'],
+    ['setClusterVersion', 'SETUP_RESPONSE']
 ];
 
 function requestsLauncher(request, client) {
@@ -40,6 +41,8 @@ function requestsLauncher(request, client) {
         pdu = new Kinetic.FlushPDU(incrementTCP, 0);
     } else if (request === 'getLog') {
         pdu = new Kinetic.GetLogPDU(incrementTCP, [1, 2, 3, 4], 0);
+    } else if (request === 'setClusterVersion') {
+        pdu = new Kinetic.SetClusterVersionPDU(incrementTCP, 1234, 0);
     }
 
     pdu.send(client);
@@ -49,7 +52,6 @@ function requestsLauncher(request, client) {
 function checkTest(request, requestResponse, done) {
     const client = new net.Socket();
     client.connect(PORT, HOST, function firstConn() {
-
     });
     client.on('data', function heandleData(data) {
         const pdu = new Kinetic.PDU();
@@ -59,13 +61,25 @@ function checkTest(request, requestResponse, done) {
             Kinetic.getOpName(pdu.getMessageType()) !== requestResponse) {
             requestsLauncher(request, client);
         } else {
-            client.end();
             logger.info(util.inspect(pdu.getProtobuf(),
                 {showHidden: false, depth: null}));
             logger.info(util.inspect(pdu.getChunk().toString(),
                 {showHidden: false, depth: null}));
+
+            assert.deepEqual(pdu.getProtobuf().status.code,
+                Kinetic.errors.SUCCESS);
+
             assert.deepEqual(Kinetic.getOpName(pdu.getMessageType()),
                 requestResponse);
+
+            if (requestResponse === 'SETUP_RESPONSE') {
+                const k = new Kinetic.SetClusterVersionPDU(
+                    incrementTCP, 0, 1234);
+                k.send(client);
+            }
+
+            client.end();
+
             done();
         }
     });
