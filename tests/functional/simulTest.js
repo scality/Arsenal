@@ -41,7 +41,7 @@ function requestsLauncher(request, client) {
     } else if (request === 'flush') {
         pdu = new Kinetic.FlushPDU(incrementTCP, 0);
     } else if (request === 'getLog') {
-        pdu = new Kinetic.GetLogPDU(incrementTCP, [1, 2, 3, 4], 0);
+        pdu = new Kinetic.GetLogPDU(incrementTCP, [0, 1, 2, 4, 5, 6], 0);
     } else if (request === 'setClusterVersion') {
         pdu = new Kinetic.SetClusterVersionPDU(incrementTCP, 1234, 0);
     }

@@ -602,10 +602,12 @@ export class NoOpResponsePDU extends PDU {
 export class PutPDU extends PDU {
     constructor(key, incrementTCP, dbVersion, newVersion, clusterVersion) {
         super();
-        if (!Buffer.isBuffer(key) ||
-            !Buffer.isBuffer(dbVersion) ||
-            !Buffer.isBuffer(newVersion))
-            throw new Error("key or the old/new dbversion is not a buffer");
+        if (!Buffer.isBuffer(key))
+            throw new Error("key is not a buffer");
+        if (!Buffer.isBuffer(dbVersion))
+            throw new Error("old dbversion is not a buffer");
+        if (!Buffer.isBuffer(newVersion))
+            throw new Error("new dbversion is not a buffer");
         const connectionID = (new Date).getTime();
         this.setMessage({
             "header": {
@@ -697,9 +699,11 @@ export class GetPDU extends PDU {
 export class GetResponsePDU extends PDU {
     constructor(response, errorMessage, dbVersion) {
         super();
-        if (!Buffer.isBuffer(dbVersion) ||
-            !Buffer.isBuffer(errorMessage))
-            throw new Error("dbVersion or the error message is not a buffer");
+        if (!Buffer.isBuffer(errorMessage))
+            throw new Error("the error message is not a buffer");
+        if (!Buffer.isBuffer(dbVersion))
+            throw new Error("dbVersion is not a buffer");
+
         this.setMessage({
             "header": {
                 "messageType": "GET_RESPONSE",
@@ -733,9 +737,10 @@ export class GetResponsePDU extends PDU {
 export class DeletePDU extends PDU {
     constructor(key, incrementTCP, clusterVersion, dbVersion) {
         super();
-        if (!Buffer.isBuffer(key) ||
-            !Buffer.isBuffer(dbVersion))
-            throw new Error("key or dbVersion is not a buffer");
+        if (!Buffer.isBuffer(key))
+            throw new Error("key is not a buffer");
+        if (!Buffer.isBuffer(dbVersion))
+            throw new Error("dbVersion is not a buffer");
         const connectionID = (new Date).getTime();
         this.setMessage({
             "header": {
