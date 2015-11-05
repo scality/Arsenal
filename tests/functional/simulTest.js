@@ -17,9 +17,11 @@ const logger = new (winston.Logger)({
 const requestsArr = [
     ['put', 'PUT_RESPONSE'],
     ['get', 'GET_RESPONSE'],
+    ['delete', 'DELETE_RESPONSE'],
     ['noop', 'NOOP_RESPONSE'],
     ['flush', 'FLUSH_RESPONSE'],
-    ['getLog', 'GETLOG_RESPONSE']
+    ['getLog', 'GETLOG_RESPONSE'],
+    ['setClusterVersion', 'SETUP_RESPONSE']
 ];
 
 function requestsLauncher(request, client) {
@@ -28,18 +30,20 @@ function requestsLauncher(request, client) {
     if (request === 'noop') {
         pdu = new Kinetic.NoOpPDU(incrementTCP, 0);
     } else if (request === 'put') {
-        pdu = new Kinetic.PutPDU(new Buffer('qwer'), incrementTCP, null, '1',
-                                 0);
+        pdu = new Kinetic.PutPDU(new Buffer('qwer'), incrementTCP,
+            new Buffer(0), new Buffer('1'), 0);
         pdu.setChunk(new Buffer("ON DIT BONJOUR TOUT LE MONDE"));
     } else if (request === 'get') {
         pdu = new Kinetic.GetPDU(new Buffer('qwer'), incrementTCP, 0);
     } else if (request === 'delete') {
         pdu = new Kinetic.DeletePDU(new Buffer('qwer'), incrementTCP, 0,
-                                    '1236');
+                                    new Buffer('1'));
     } else if (request === 'flush') {
         pdu = new Kinetic.FlushPDU(incrementTCP, 0);
     } else if (request === 'getLog') {
-        pdu = new Kinetic.GetLogPDU(incrementTCP, [1, 2, 3, 4], 0);
+        pdu = new Kinetic.GetLogPDU(incrementTCP, [0, 1, 2, 4, 5, 6], 0);
+    } else if (request === 'setClusterVersion') {
+        pdu = new Kinetic.SetClusterVersionPDU(incrementTCP, 1234, 0);
     }
 
     pdu.send(client);
@@ -49,7 +53,6 @@ function requestsLauncher(request, client) {
 function checkTest(request, requestResponse, done) {
     const client = new net.Socket();
     client.connect(PORT, HOST, function firstConn() {
-
     });
     client.on('data', function heandleData(data) {
         const pdu = new Kinetic.PDU();
@@ -59,13 +62,30 @@ function checkTest(request, requestResponse, done) {
             Kinetic.getOpName(pdu.getMessageType()) !== requestResponse) {
             requestsLauncher(request, client);
         } else {
-            client.end();
             logger.info(util.inspect(pdu.getProtobuf(),
                 {showHidden: false, depth: null}));
             logger.info(util.inspect(pdu.getChunk().toString(),
                 {showHidden: false, depth: null}));
+
+            assert.deepEqual(pdu.getProtobuf().status.code,
+                Kinetic.errors.SUCCESS);
             assert.deepEqual(Kinetic.getOpName(pdu.getMessageType()),
                 requestResponse);
+            if (request === 'get') {
+                assert.deepEqual(pdu.getChunk(),
+                    new Buffer("ON DIT BONJOUR TOUT LE MONDE"));
+                assert.equal(pdu.getKey(), "qwer");
+                assert.equal(pdu.getDbVersion(), '1');
+            }
+
+            if (requestResponse === 'SETUP_RESPONSE') {
+                const k = new Kinetic.SetClusterVersionPDU(
+                    incrementTCP, 0, 1234);
+                k.send(client);
+            }
+
+            client.end();
+
             done();
         }
     });

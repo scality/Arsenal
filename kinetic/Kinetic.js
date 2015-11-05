@@ -226,10 +226,10 @@ export class PDU {
     computeHMAC() {
         const buf = new Buffer(4);
         buf.writeInt32BE(this.getProtobufSize());
-        // TODO: Avoid buffer concatenation
-        const toHash = Buffer.concat([buf, this._message.toBuffer()]);
-        this._hmac = crypto.createHmac('sha1', 'asdfasdf')
-            .update(toHash).digest();
+        this._hmac = crypto.createHmac('sha1', 'asdfasdf');
+        this._hmac.update(buf);
+        this._hmac.update(this._message.toBuffer());
+        this._hmac = this._hmac.digest();
         return this;
     }
 
@@ -412,6 +412,8 @@ export class GetLogPDU extends PDU {
 export class GetLogResponsePDU extends PDU {
     constructor(response, errorMessage, responseLogs) {
         super();
+        if (!Buffer.isBuffer(errorMessage))
+            throw new Error("the error message is not a buffer");
         this.setMessage({
             "header": {
                 "ackSequence": this._message.header.sequence,
@@ -463,6 +465,8 @@ export class FlushPDU extends PDU {
 export class FlushResponsePDU extends PDU {
     constructor(response, errorMessage) {
         super();
+        if (!Buffer.isBuffer(errorMessage))
+            throw new Error("the error message is not a buffer");
         this.setMessage({
             "header": {
                 "messageType": "FLUSHALLDATA_RESPONSE",
@@ -517,6 +521,8 @@ export class SetClusterVersionPDU extends PDU {
 export class SetupResponsePDU extends PDU {
     constructor(response, errorMessage) {
         super();
+        if (!Buffer.isBuffer(errorMessage))
+            throw new Error("the error message is not a buffer");
         this.setMessage({
             "header": {
                 "messageType": "SETUP_RESPONSE",
@@ -566,6 +572,8 @@ export class NoOpPDU extends PDU {
 export class NoOpResponsePDU extends PDU {
     constructor(response, errorMessage) {
         super();
+        if (!Buffer.isBuffer(errorMessage))
+            throw new Error("the error message is not a buffer");
         this.setMessage({
             "header": {
                 "messageType": "NOOP_RESPONSE",
@@ -596,6 +604,10 @@ export class PutPDU extends PDU {
         super();
         if (!Buffer.isBuffer(key))
             throw new Error("key is not a buffer");
+        if (!Buffer.isBuffer(dbVersion))
+            throw new Error("old dbversion is not a buffer");
+        if (!Buffer.isBuffer(newVersion))
+            throw new Error("new dbversion is not a buffer");
         const connectionID = (new Date).getTime();
         this.setMessage({
             "header": {
@@ -626,6 +638,8 @@ export class PutPDU extends PDU {
 export class PutResponsePDU extends PDU {
     constructor(response, errorMessage) {
         super();
+        if (!Buffer.isBuffer(errorMessage))
+            throw new Error("the error message is not a buffer");
         this.setMessage({
             "header": {
                 "messageType": "PUT_RESPONSE",
@@ -685,6 +699,11 @@ export class GetPDU extends PDU {
 export class GetResponsePDU extends PDU {
     constructor(response, errorMessage, dbVersion) {
         super();
+        if (!Buffer.isBuffer(errorMessage))
+            throw new Error("the error message is not a buffer");
+        if (!Buffer.isBuffer(dbVersion))
+            throw new Error("dbVersion is not a buffer");
+
         this.setMessage({
             "header": {
                 "messageType": "GET_RESPONSE",
@@ -720,6 +739,8 @@ export class DeletePDU extends PDU {
         super();
         if (!Buffer.isBuffer(key))
             throw new Error("key is not a buffer");
+        if (!Buffer.isBuffer(dbVersion))
+            throw new Error("dbVersion is not a buffer");
         const connectionID = (new Date).getTime();
         this.setMessage({
             "header": {
@@ -749,6 +770,8 @@ export class DeletePDU extends PDU {
 export class DeleteResponsePDU extends PDU {
     constructor(response, errorMessage) {
         super();
+        if (!Buffer.isBuffer(errorMessage))
+            throw new Error("the error message is not a buffer");
         this.setMessage({
             "header": {
                 "messageType": "DELETE_RESPONSE",
