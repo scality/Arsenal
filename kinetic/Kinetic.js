@@ -226,10 +226,10 @@ export class PDU {
     computeHMAC() {
         const buf = new Buffer(4);
         buf.writeInt32BE(this.getProtobufSize());
-        // TODO: Avoid buffer concatenation
-        const toHash = Buffer.concat([buf, this._message.toBuffer()]);
-        this._hmac = crypto.createHmac('sha1', 'asdfasdf')
-            .update(toHash).digest();
+        this._hmac = crypto.createHmac('sha1', 'asdfasdf');
+        this._hmac.update(buf);
+        this._hmac.update(this._message.toBuffer());
+        this._hmac = this._hmac.digest();
         return this;
     }
 
