@@ -259,7 +259,7 @@ describe('Kinetic.PDU send()', () => {
             "\xd9\xf1\xae\x57\x3b\x3a\x14\x0a\x10\x08\xbe\xea\xda\x04\x18\x82" +
             "\xf9\xdb\x8f\x8d\x2a\x20\x7b\x38\x1e\x12\x00", "ascii");
 
-        // Ignore the timestamp bytes (16 -> 37 & 47 -> 51)
+        // Ignore the timestamp bytes (17 -> 37 & 47 -> 51)
         assert(result.slice(0, 17).equals(expected.slice(0, 17)));
         assert(result.slice(37, 47).equals(expected.slice(37, 47)));
         assert(result.slice(51).equals(expected.slice(51)));
@@ -285,7 +285,7 @@ describe('Kinetic.PDU send()', () => {
             "\x8d\x2a\x20\x00\x38\x04\x12\x0f\x0a\x0d\x12\x01\x31\x1a\x04qwer" +
             "\x22\x00\x48\x01ON DIT BONJOUR TOUT LE MONDE", "ascii");
 
-        // Ignore the timestamp bytes (16 -> 37 & 47 -> 51)
+        // Ignore the timestamp bytes (17 -> 37 & 44 -> 48)
         assert(result.slice(0, 17).equals(expected.slice(0, 17)));
         assert(result.slice(37, 44).equals(expected.slice(37, 44)));
         assert(result.slice(48).equals(expected.slice(48)));
@@ -308,10 +308,34 @@ describe('Kinetic.PDU send()', () => {
             "\x8d\x2a\x20\x00\x38\x02\x12\x08\x0a\x06\x1a\x04\x71\x77\x65\x72",
             "ascii");
 
-        // Ignore the timestamp bytes (16 -> 37 & 47 -> 51)
+        // Ignore the timestamp bytes (17 -> 37 & 44 -> 48)
         assert(result.slice(0, 17).equals(expected.slice(0, 17)));
         assert(result.slice(37, 44).equals(expected.slice(37, 44)));
         assert(result.slice(48).equals(expected.slice(48)));
+
+        done();
+    });
+    it('should write valid DELETE', (done) => {
+        const sock = new stream.PassThrough();
+
+        const k = new Kinetic.DeletePDU(new Buffer('qwer'), 0, 0,
+            new Buffer('1234'));
+        const ret = k.send(sock);
+        assert(ret === Kinetic.errors.SUCCESS);
+
+        const result = sock.read();
+
+        const expected = new Buffer(
+            "\x46\x00\x00\x00\x3f\x00\x00\x00\x00\x20\x01\x2a\x18\x08\x01\x12" +
+            "\x14\x9b\xbd\xcc\x31\xf6\x25\xa1\x0d\xd0\x0f\xcd\xd4\x22\xf5\xd0" +
+            "\x27\xe8\x20\x7a\xc4\x3a\x21\x0a\x0d\x08\x00\x18\x98\xe2\xb3\xc3" +
+            "\x8d\x2a\x20\x00\x38\x06\x12\x10\x0a\x0e\x1a\x04\x71\x77\x65\x72" +
+            "\x22\x04\x31\x32\x33\x34\x48\x01", "ascii");
+
+        // Ignore the timestamp bytes (17 -> 37 & 44 -> 47)
+        assert(result.slice(0, 17).equals(expected.slice(0, 17)));
+        assert(result.slice(37, 44).equals(expected.slice(37, 44)));
+        assert(result.slice(47).equals(expected.slice(47)));
 
         done();
     });
