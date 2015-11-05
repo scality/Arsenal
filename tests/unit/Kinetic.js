@@ -362,7 +362,30 @@ describe('Kinetic.PDU send()', () => {
 
         done();
     });
+    it('should write valid GETLOG', (done) => {
+        const sock = new stream.PassThrough();
 
+        const k = new Kinetic.GetLogPDU(0, [0, 1, 2, 4, 5, 6], 0);
+
+        const ret = k.send(sock);
+        assert(ret === Kinetic.errors.SUCCESS);
+
+        const result = sock.read();
+
+        const expected = new Buffer(
+            "\x46\x00\x00\x00\x3d\x00\x00\x00\x00\x20\x01\x2a\x18\x08\x01\x12" +
+            "\x14\xa6\x25\x09\x88\xca\x6f\xbf\x42\x80\xc7\x87\x77\x47\xc4\x78" +
+            "\x97\x88\xd9\x2b\xd7\x3a\x1f\x0a\x0d\x08\x00\x18\xb1\xea\xa7\xc4" +
+            "\x8d\x2a\x20\x00\x38\x18\x12\x0e\x32\x0c\x08\x00\x08\x01\x08\x02" +
+            "\x08\x04\x08\x05\x08\x06", "ascii");
+
+        // Ignore the timestamp bytes (17 -> 37 & 44 -> 48)
+        assert(result.slice(0, 17).equals(expected.slice(0, 17)));
+        assert(result.slice(37, 44).equals(expected.slice(37, 44)));
+        assert(result.slice(48).equals(expected.slice(48)));
+
+        done();
+    });
 });
 
 describe('Kinetic.PutPDU()', () => {
