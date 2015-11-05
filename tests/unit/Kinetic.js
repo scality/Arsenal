@@ -283,11 +283,30 @@ describe('Kinetic.PDU send()', () => {
             "\x14\x7d\x41\xc3\xd7\x37\xb9\x69\x82\xef\xb5\x2d\x7b\xc3\x9f\x47" +
             "\x35\x82\x92\x29\x6d\x3a\x20\x0a\x0d\x08\x00\x18\xdb\x9e\xcc\xc0" +
             "\x8d\x2a\x20\x00\x38\x04\x12\x0f\x0a\x0d\x12\x01\x31\x1a\x04qwer" +
-            "\x22\x00\x48\x01ON DIT BONJOUR TOUT LE MONDE",
-            "ascii");
+            "\x22\x00\x48\x01ON DIT BONJOUR TOUT LE MONDE", "ascii");
 
-        console.log(expected.slice(44).toString());
-        console.log(result.slice(44));
+        // Ignore the timestamp bytes (16 -> 37 & 47 -> 51)
+        assert(result.slice(0, 17).equals(expected.slice(0, 17)));
+        assert(result.slice(37, 44).equals(expected.slice(37, 44)));
+        assert(result.slice(48).equals(expected.slice(48)));
+
+        done();
+    });
+    it('should write valid GET', (done) => {
+        const sock = new stream.PassThrough();
+
+        const k = new Kinetic.GetPDU(new Buffer('qwer'), 0, 0);
+        const ret = k.send(sock);
+        assert(ret === Kinetic.errors.SUCCESS);
+
+        const result = sock.read();
+
+        const expected = new Buffer(
+            "\x46\x00\x00\x00\x37\x00\x00\x00\x00\x20\x01\x2a\x18\x08\x01\x12" +
+            "\x14\x71\x45\xcf\xea\xa2\x7c\x91\xc9\x90\xfb\x3e\x09\xa1\xe0\x92" +
+            "\xd4\x5a\xb6\x17\xfd\x3a\x19\x0a\x0d\x08\x00\x18\x95\xd3\xeb\xc2" +
+            "\x8d\x2a\x20\x00\x38\x02\x12\x08\x0a\x06\x1a\x04\x71\x77\x65\x72",
+            "ascii");
 
         // Ignore the timestamp bytes (16 -> 37 & 47 -> 51)
         assert(result.slice(0, 17).equals(expected.slice(0, 17)));
