@@ -130,15 +130,15 @@ export class PDU {
         this._chunk = undefined;
 
         if (input !== undefined) {
-            if (!Buffer.isBuffer(input))
-                throw new Error("input is not a buffer");
-
+            if (!Buffer.isBuffer(input)) {
+                const err = new Error("input is not a buffer");
+                err.badTypeInput = true;
+                throw err;
+            }
             const ret = this._parse(input);
-            if (ret !== errors.SUCCESS)
-                throw new Error("could not parse input buffer (" +
-                                getErrorName(ret) + ")");
+            if (ret === Error)
+                throw ret;
         }
-
         return this;
     }
 
@@ -329,16 +329,19 @@ export class PDU {
 
         if (this.getChunk() !== undefined)
             sock.write(Buffer.concat(
-                    [pduHeader, this._message.toBuffer(), this.getChunk()]));
+                [pduHeader, this._message.toBuffer(), this.getChunk()]));
         else
-            sock.write(Buffer.concat([pduHeader, this._message.toBuffer()]));
-
-        return errors.SUCCESS;
+            sock.write(Buffer.concat(
+                [pduHeader, this._message.toBuffer()]));
     }
 
     /**
      * Creates the Kinetic Protocol Data Structure from a buffer.
      * @param {Buffer} data - The data received by the socket.
+     * @throws {Error} - throw err = new Error('error message') filled with :
+     *          - err.badVersion : true
+     *          - err.badChunk : true
+     *          - err.hmacFail : true
      * @returns {Number} - an error code
      */
     _parse(data) {
@@ -347,7 +350,9 @@ export class PDU {
         const chunkLen = data.readInt32BE(5);
 
         if (version !== getVersion()) {
-            return errors.VERSION_FAILURE;
+            const err = new Error('version failure');
+            err.badVersion = true;
+            throw err;
         }
 
         try {
@@ -357,19 +362,22 @@ export class PDU {
             if (e.decoded) {
                 this.setProtobuf(e.decoded);
             } else {
-                return errors.INTERNAL_ERROR;
+                throw e;
             }
         }
         this.setChunk(data.slice(pbMsgLen + 9, chunkLen + pbMsgLen + 9));
 
         if (this.getChunkSize() !== chunkLen) {
-            return errors.DATA_ERROR;
+            const err = new Error('bad chunk');
+            err.badChunk = true;
+            throw err;
         }
         if (this._cmd.authType === 1 &&
-                !this.hmacIntegrity(this.getSlice(this._cmd.hmacAuth.hmac)))
-            return errors.HMAC_FAILURE;
-
-        return errors.SUCCESS;
+                !this.hmacIntegrity(this.getSlice(this._cmd.hmacAuth.hmac))) {
+            const err = new Error('HMAC did not compare');
+            err.hmacFail = true;
+            throw err;
+        }
     }
 }
 
