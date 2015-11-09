@@ -16,7 +16,8 @@ const rawData = new Buffer('\x46\x00\x00\x00\x32\x00');
 const kineticPDU = new Kinetic.PDU(rawData);
 
 if (kineticPDU.getMessageType() === Kinetic.ops.GET) {
-    const response = new Kinetic.PutPDU('key', 1, null, '1', 0);
+    const response = new Kinetic.PutPDU(new Buffer('key'), 1, new Buffer(0),
+        new  Buffer('1'), 0);
     response.setChunk(new Buffer('value'));
 
     const sock = net.connect(1234, 'localhost');
