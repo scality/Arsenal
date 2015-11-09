@@ -235,7 +235,7 @@ describe('Kinetic.PDU send()', () => {
         // Ignore the timestamp bytes (17 -> 37 & 47 -> 51)
         assert(result.slice(0, 17).equals(expected.slice(0, 17)));
         assert(result.slice(37, 47).equals(expected.slice(37, 47)));
-        assert(result.slice(51).equals(expected.slice(51)));
+        assert(result.slice(52).equals(expected.slice(52)));
 
         done();
     });
@@ -261,7 +261,7 @@ describe('Kinetic.PDU send()', () => {
         // Ignore the timestamp bytes (17 -> 37 & 44 -> 48)
         assert(result.slice(0, 17).equals(expected.slice(0, 17)));
         assert(result.slice(37, 44).equals(expected.slice(37, 44)));
-        assert(result.slice(48).equals(expected.slice(48)));
+        assert(result.slice(49).equals(expected.slice(49)));
 
         done();
     });
@@ -284,7 +284,7 @@ describe('Kinetic.PDU send()', () => {
         // Ignore the timestamp bytes (17 -> 37 & 44 -> 48)
         assert(result.slice(0, 17).equals(expected.slice(0, 17)));
         assert(result.slice(37, 44).equals(expected.slice(37, 44)));
-        assert(result.slice(48).equals(expected.slice(48)));
+        assert(result.slice(49).equals(expected.slice(49)));
 
         done();
     });
@@ -308,7 +308,7 @@ describe('Kinetic.PDU send()', () => {
         // Ignore the timestamp bytes (17 -> 37 & 44 -> 48)
         assert(result.slice(0, 17).equals(expected.slice(0, 17)));
         assert(result.slice(37, 44).equals(expected.slice(37, 44)));
-        assert(result.slice(48).equals(expected.slice(48)));
+        assert(result.slice(49).equals(expected.slice(49)));
 
         done();
     });
@@ -331,7 +331,7 @@ describe('Kinetic.PDU send()', () => {
         // Ignore the timestamp bytes (17 -> 37 & 44 -> 48)
         assert(result.slice(0, 17).equals(expected.slice(0, 17)));
         assert(result.slice(37, 44).equals(expected.slice(37, 44)));
-        assert(result.slice(48).equals(expected.slice(48)));
+        assert(result.slice(49).equals(expected.slice(49)));
 
         done();
     });
@@ -355,7 +355,7 @@ describe('Kinetic.PDU send()', () => {
         // Ignore the timestamp bytes (17 -> 37 & 44 -> 48)
         assert(result.slice(0, 17).equals(expected.slice(0, 17)));
         assert(result.slice(37, 44).equals(expected.slice(37, 44)));
-        assert(result.slice(48).equals(expected.slice(48)));
+        assert(result.slice(49).equals(expected.slice(49)));
 
         done();
     });
