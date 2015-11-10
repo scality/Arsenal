@@ -7,6 +7,8 @@ working as we add more code.
  behave correctly with specific sets of arguments.
 * [Functional tests](#functional-tests) to test the compatibility between our 
  kinetic library with the kinetic device simulator.
+* [Performance tests](#performance-tests) to test and compare the performances
+  between JSON and Protobuf message.
 
 #### I wrote a patch and I want to check tests are passing!
 
@@ -16,6 +18,7 @@ Sure. You can run some tests locally:
 npm run --silent lint
 npm run --silent tests_unit
 npm run --silent tests_functional
+npm run --silent tests_performance
 ```
 
 Integration and performance tests really need a CI infrastructure to simulate
@@ -168,3 +171,25 @@ Test are run by:
   - Send()
     - Check the simulator returns (SUCCESS)
     - The simulator check the HMAC(integrity of PDU sent)
+
+## Performance tests
+
+Performance tests are located in the `tests/performance` directory.
+
+### Architecture
+
+Test are run by:
+* Launching performanceTest.sh :
+  - generate the test files(1B 1KB 1MB) with `tests/performance/filegenerator.js`
+  - launch the performanceTest.js(Protobuf message) 
+      with node_modules/babel/bin/babel-node.js
+  - launch the performanceJSON.js(JSON message)
+      with node_modules/babel/bin/babel-node.js
+
+### Performances tested
+
+- Time
+  - Building
+  - Encode
+  - Decode
+- Size of the Message

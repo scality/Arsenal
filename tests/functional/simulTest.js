@@ -17,8 +17,8 @@ const logger = new (winston.Logger)({
 const requestsArr = [
     ['put', 'PUT_RESPONSE'],
     ['get', 'GET_RESPONSE'],
-    ['delete', 'DELETE_RESPONSE'],
     ['noop', 'NOOP_RESPONSE'],
+    ['delete', 'DELETE_RESPONSE'],
     ['flush', 'FLUSH_RESPONSE'],
     ['getLog', 'GETLOG_RESPONSE'],
     ['setClusterVersion', 'SETUP_RESPONSE']
