@@ -1,6 +1,8 @@
-import { Kinetic } from '../../index';
-import winston from 'winston';
 import fs from 'fs';
+
+import winston from 'winston';
+
+import { Kinetic } from '../../index';
 
 const logOptions = {
     'filename': 'timerKinetic.log',
@@ -14,7 +16,6 @@ const timer = new (winston.Logger)({
     ]
 });
 
-const kinetic = new Kinetic;
 let time0 = [];
 let time1 = [];
 let incrementTCP = 0;
@@ -31,57 +32,67 @@ const requestsArr = [
 
 const filesArr = ['1Byte', '1KByte', '1MByte'];
 
-function encodeMessage() {
-    const buf = new Buffer(9);
+function encodeMessage(k) {
+    const pduHeader = new Buffer(9);
 
-    buf.writeInt8(kinetic.getVersion(), 0);
+    pduHeader.writeInt8(Kinetic.getVersion(), 0);
 
-    buf.writeInt32BE(kinetic.getProtobufSize(), 1);
-    timer.info('Size of the message : ' + kinetic.getProtobufSize() + ' Bytes');
-    buf.writeInt32BE(kinetic.getChunkSize(), 5);
+    pduHeader.writeInt32BE(k.getProtobufSize(), 1);
+    timer.info('Size of the message : ' + k.getProtobufSize() + ' Bytes');
+    pduHeader.writeInt32BE(k.getChunkSize(), 5);
 
-    return Buffer.concat(
-        [buf, kinetic.getProtobuf().toBuffer(), kinetic.getChunk()]
-    );
+    if (k.getChunk() !== undefined)
+        return Buffer.concat(
+            [pduHeader, k.getProtobuf().toBuffer(), k.getChunk()]);
+    return Buffer.concat([pduHeader, k.getProtobuf().toBuffer()]);
 }
 
 function requestsLauncher(request, file) {
+    let pdu;
+
+    const pduKey = new Buffer('qwer');
+    const oldClusterVersion = new Buffer(0);
+    const clusterVersion = new Buffer('1');
+
     timer.info('==================' + file + '========================');
     time0 = [];
     time1 = [];
     if (request === 'noop') {
         time0 = process.hrtime();
-        kinetic.noOp(incrementTCP, 0);
+        pdu = new Kinetic.NoOpPDU(incrementTCP, 0);
         time1 = process.hrtime(time0);
         timer.info('Time for the BUILD of ' + request + ' : ' +
             (time1[0] * 1e3 + time1[1] * 1e-6) + ' millisecondes');
     } else if (request === 'put') {
         time0 = process.hrtime();
-        kinetic.put('qwer', incrementTCP, null, '1', 0);
+        pdu = new Kinetic.PutPDU(pduKey, incrementTCP, oldClusterVersion,
+            clusterVersion, 0);
         time1 = process.hrtime(time0);
         timer.info('Time for the BUILD of ' + request + ' : ' +
             (time1[0] * 1e3 + time1[1] * 1e-6) + ' millisecondes');
+        pdu.setChunk(fs.readFileSync(file));
     } else if (request === 'get') {
         time0 = process.hrtime();
-        kinetic.get('qwer', incrementTCP, 0);
+        pdu = new Kinetic.GetPDU(pduKey, incrementTCP, 0);
         time1 = process.hrtime(time0);
         timer.info('Time for the BUILD of ' + request + ' : ' +
             (time1[0] * 1e3 + time1[1] * 1e-6) + ' millisecondes');
     } else if (request === 'delete') {
         time0 = process.hrtime();
-        kinetic.delete('qwer', incrementTCP, 0, '1');
+        pdu = new Kinetic.DeletePDU(pduKey, incrementTCP, 0, clusterVersion);
         time1 = process.hrtime(time0);
         timer.info('Time for the BUILD of ' + request + ' : ' +
             (time1[0] * 1e3 + time1[1] * 1e-6) + ' millisecondes');
     } else if (request === 'flush') {
         time0 = process.hrtime();
-        kinetic.flush(incrementTCP, 0);
+        pdu = new Kinetic.FlushPDU(incrementTCP, 0);
         time1 = process.hrtime(time0);
         timer.info('Time for the BUILD of ' + request + ' : ' +
             (time1[0] * 1e3 + time1[1] * 1e-6) + ' millisecondes');
     } else if (request === 'getLog') {
+        const types = [0, 1, 2, 4, 5, 6];
         time0 = process.hrtime();
-        kinetic.getLog(incrementTCP, [1, 2, 3, 4], 0);
+        pdu = new Kinetic.GetLogPDU(incrementTCP, types, 0);
         time1 = process.hrtime(time0);
         timer.info('Time for the BUILD of ' + request + ' : ' +
             (time1[0] * 1e3 + time1[1] * 1e-6) + ' millisecondes');
@@ -89,12 +100,19 @@ function requestsLauncher(request, file) {
     incrementTCP++;
 
     time0 = process.hrtime();
-    encodedMessage = encodeMessage();
+    const k = new Kinetic.PDU();
+    time1 = process.hrtime(time0);
+    timer.info('Time for the new instance : ' +
+        (time1[0] * 1e3 + time1[1] * 1e-6) + ' millisecondes');
+
+    time0 = process.hrtime();
+    encodedMessage = encodeMessage(pdu);
     time1 = process.hrtime(time0);
     timer.info('Time for the ENCODE of ' + request + ' : ' +
         (time1[0] * 1e3 + time1[1] * 1e-6) + ' millisecondes');
+
     time0 = process.hrtime();
-    kinetic.parse(encodedMessage);
+    k._parse(encodedMessage);
     time1 = process.hrtime(time0);
     timer.info('Time for the DECODE of ' + request + ' : ' +
         (time1[0] * 1e3 + time1[1] * 1e-6) + ' millisecondes');
@@ -102,8 +120,6 @@ function requestsLauncher(request, file) {
 }
 
 for (let i = 0; i < 3; i++) {
-    kinetic.setChunk(fs.readFileSync(filesArr[i]));
-
     for (let j = 0; j < requestsArr.length; j++) {
         requestsLauncher(requestsArr[j], filesArr[i]);
     }
