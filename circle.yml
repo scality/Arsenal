@@ -1,16 +1,3 @@
-dependencies:
-  cache_directories:
-    - "tests/dependencies/kinetic-java"
-  post:
-    - sudo apt-get install maven
-    - make -C tests/functional build_cache
-
-machine:
-  node:
-    version: 4.1.1
-
 test:
   override:
-    - npm run --silent lint
-    - npm run --silent tests_unit
-    - npm run --silent tests_functional
+    - /bin/true
