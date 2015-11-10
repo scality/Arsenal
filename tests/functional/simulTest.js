@@ -56,8 +56,11 @@ function checkTest(request, requestResponse, done) {
     });
     client.on('data', function heandleData(data) {
         const pdu = new Kinetic.PDU();
-        const err = pdu._parse(data);
-        logger.warn(Kinetic.getErrorName(err));
+        try {
+            pdu._parse(data);
+        } catch (e) {
+            done(e);
+        }
         if (pdu.getMessageType() === null ||
             Kinetic.getOpName(pdu.getMessageType()) !== requestResponse) {
             requestsLauncher(request, client);
@@ -81,7 +84,11 @@ function checkTest(request, requestResponse, done) {
             if (requestResponse === 'SETUP_RESPONSE') {
                 const k = new Kinetic.SetClusterVersionPDU(
                     incrementTCP, 0, 1234);
-                k.send(client);
+                try {
+                    k.send(client);
+                } catch (e) {
+                    done(e);
+                }
             }
 
             client.end();
