@@ -1,3 +1,3 @@
 module.exports = {
-    shuffle: require('./lib/shuffle');
+    shuffle: require('./lib/shuffle'),
 };
