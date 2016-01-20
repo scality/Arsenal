@@ -1,4 +1,15 @@
-module.exports = {
-    errors: require('./lib/errors'),
-    shuffle: require('./lib/shuffle'),
+import {
+    shuffle,
+} from './lib/shuffle';
+
+import {
+    errorWithCode,
+    propError,
+} from './lib/errors';
+
+
+export default {
+    errorWithCode,
+    propError,
+    shuffle,
 };
