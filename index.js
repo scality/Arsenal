@@ -1,3 +1,7 @@
-module.exports = {
-    shuffle: require('./lib/shuffle'),
+import {
+    shuffle,
+} from './lib/shuffle';
+
+export default {
+    shuffle,
 };
