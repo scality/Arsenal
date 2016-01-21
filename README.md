@@ -9,3 +9,19 @@ multiple components making up the whole Project.
 
 Please read our coding and workflow guidelines at
 [scality/IronMan-Guidelines](https://github.com/scality/IronMan-Guidelines).
+
+## Shuffle
+
+Usage :
+
+``` js
+import { shuffle } from 'arsenal';
+
+let array = [1, 2, 3, 4, 5];
+
+shuffle(array);
+
+console.log(array);
+
+//[5, 3, 1, 2, 4]
+```
