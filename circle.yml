@@ -1,3 +1,9 @@
+machine:
+  node:
+    version: 4.2
+
 test:
   override:
-    - /bin/true
+    - npm run --silent lint
+    - npm run --silent lint_md
+    - npm run --silent test
