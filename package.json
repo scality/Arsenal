@@ -20,6 +20,16 @@
   "dependencies": {
   },
   "devDependencies": {
+    "mocha": "^2.3.3",
+    "eslint": "^1.5.1",
+    "eslint-config-airbnb": "^1.0.2",
+    "eslint-config-ironman": "scality/IronMan-Guidelines"
+  },
+  "scripts": {
+    "lint": "eslint $(git ls-files '*.js')",
+    "lint_md": "mdlint $(git ls-files '*.md')",
+    "lint_yml": "yamllint $(git ls-files '*.yml')",
+    "test": "mocha tests/unit"
   },
   "private": true
 }
