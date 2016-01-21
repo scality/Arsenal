@@ -20,6 +20,25 @@
   "dependencies": {
   },
   "devDependencies": {
+    "babel-core": "^6.1.21",
+    "babel-plugin-transform-es2015-destructuring": "^6.1.18",
+    "babel-plugin-transform-es2015-modules-commonjs": "^6.2.0",
+    "babel-plugin-transform-es2015-parameters": "^6.1.18",
+    "babel-cli": "^6.1.21",
+    "mocha": "^2.3.3",
+    "eslint": "^1.5.1",
+    "eslint-config-airbnb": "^1.0.2",
+    "eslint-config-ironman": "scality/IronMan-Guidelines"
+  },
+  "scripts": {
+    "compile": "babel -d target/lib/ lib/ && babel -d target/tests/ tests/ && babel -d target/ index.js ",
+    "lint": "eslint $(git ls-files '*.js')",
+    "lint_md": "mdlint $(git ls-files '*.md')",
+    "lint_yml": "yamllint $(git ls-files '*.yml')",
+    "pretest": "npm run compile",
+    "postinstall": "npm run compile",
+    "prepublish": "npm run compile",
+    "test": "mocha target/tests/unit"
   },
   "private": true
 }
