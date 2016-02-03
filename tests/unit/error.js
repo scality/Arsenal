@@ -871,4 +871,187 @@ describe('class errors extended from Error', () => {
                                   .ServiceFailure.description);
            done();
        });
+    it('should return IncompleteSignature Error',
+       (done) => {
+           const errorTest = errors.incompleteSignature();
+           assert.deepStrictEqual(errorTest instanceof Error, true);
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .IncompleteSignature.httpCode);
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .IncompleteSignature.description);
+           done();
+       });
+
+    it('should return InternalFailure Error',
+       (done) => {
+           const errorTest = errors.internalFailure();
+           assert.deepStrictEqual(errorTest instanceof Error, true);
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .InternalFailure.httpCode);
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .InternalFailure.description);
+           done();
+       });
+
+    it('should return InvalidAction Error',
+       (done) => {
+           const errorTest = errors.invalidAction();
+           assert.deepStrictEqual(errorTest instanceof Error, true);
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .InvalidAction.httpCode);
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .InvalidAction.description);
+           done();
+       });
+
+    it('should return InvalidClientTokenId Error',
+       (done) => {
+           const errorTest = errors.invalidClientTokenId();
+           assert.deepStrictEqual(errorTest instanceof Error, true);
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .InvalidClientTokenId.httpCode);
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .InvalidClientTokenId.description);
+           done();
+       });
+
+    it('should return InvalidParameterCombination Error',
+       (done) => {
+           const errorTest = errors.invalidParameterCombination();
+           assert.deepStrictEqual(errorTest instanceof Error, true);
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .InvalidParameterCombination.httpCode);
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .InvalidParameterCombination.description);
+           done();
+       });
+
+    it('should return InvalidParameterValue Error',
+       (done) => {
+           const errorTest = errors.invalidParameterValue();
+           assert.deepStrictEqual(errorTest instanceof Error, true);
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .InvalidParameterValue.httpCode);
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .InvalidParameterValue.description);
+           done();
+       });
+
+    it('should return InvalidQueryParameter Error',
+       (done) => {
+           const errorTest = errors.invalidQueryParameter();
+           assert.deepStrictEqual(errorTest instanceof Error, true);
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .InvalidQueryParameter.httpCode);
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .InvalidQueryParameter.description);
+           done();
+       });
+
+    it('should return MalformedQueryString Error',
+       (done) => {
+           const errorTest = errors.malformedQueryString();
+           assert.deepStrictEqual(errorTest instanceof Error, true);
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .MalformedQueryString.httpCode);
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .MalformedQueryString.description);
+           done();
+       });
+
+    it('should return MissingAction Error',
+       (done) => {
+           const errorTest = errors.missingAction();
+           assert.deepStrictEqual(errorTest instanceof Error, true);
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .MissingAction.httpCode);
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .MissingAction.description);
+           done();
+       });
+
+    it('should return MissingAuthenticationToken Error',
+       (done) => {
+           const errorTest = errors.missingAuthenticationToken();
+           assert.deepStrictEqual(errorTest instanceof Error, true);
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .MissingAuthenticationToken.httpCode);
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .MissingAuthenticationToken.description);
+           done();
+       });
+
+    it('should return MissingParameter Error',
+       (done) => {
+           const errorTest = errors.missingParameter();
+           assert.deepStrictEqual(errorTest instanceof Error, true);
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .MissingParameter.httpCode);
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .MissingParameter.description);
+           done();
+       });
+
+    it('should return OptInRequired Error',
+       (done) => {
+           const errorTest = errors.optInRequired();
+           assert.deepStrictEqual(errorTest instanceof Error, true);
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .OptInRequired.httpCode);
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .OptInRequired.description);
+           done();
+       });
+
+    it('should return RequestExpired Error',
+       (done) => {
+           const errorTest = errors.requestExpired();
+           assert.deepStrictEqual(errorTest instanceof Error, true);
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .RequestExpired.httpCode);
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .RequestExpired.description);
+           done();
+       });
+
+    it('should return ServiceUnavailable Error',
+       (done) => {
+           const errorTest = errors.serviceUnavailable();
+           assert.deepStrictEqual(errorTest instanceof Error, true);
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .ServiceUnavailable.httpCode);
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .ServiceUnavailable.description);
+           done();
+       });
+    it('should return Throttling Error',
+       (done) => {
+           const errorTest = errors.throttling();
+           assert.deepStrictEqual(errorTest instanceof Error, true);
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .Throttling.httpCode);
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .Throttling.description);
+           done();
+       });
+    it('should return DeleteConflict Error',
+       (done) => {
+           const errorTest = errors.deleteConflict();
+           assert.deepStrictEqual(errorTest instanceof Error, true);
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .DeleteConflict.httpCode);
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .DeleteConflict.description);
+           done();
+       });
+    it('should return LimitExceeded Error',
+       (done) => {
+           const errorTest = errors.limitExceeded();
+           assert.deepStrictEqual(errorTest instanceof Error, true);
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .LimitExceeded.httpCode);
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .LimitExceeded.description);
+           done();
+       });
 });
