@@ -1,3 +1,16 @@
+---
+
+machine:
+  node:
+    version: 4.2
+
+dependencies:
+  pre:
+    - sudo pip install yamllint
+
 test:
   override:
-    - /bin/true
+    - npm run --silent lint_yml
+    - npm run --silent lint
+    - npm run --silent lint_md
+    - npm run --silent test
