@@ -1,4 +1,5 @@
 {
+  "_comment": "------------------- Amazon errors ------------------",
   "AccessDenied": {
     "httpCode": 403,
     "description": "Access Denied"
@@ -410,5 +411,201 @@
   "Throttling": {
     "httpCode": 400,
     "description": "The request was denied due to request throttling."
+  },
+  "_comment": "-------------- Internal project errors --------------",
+  "_comment": "----------------------- Vault -----------------------",
+  "_comment": "#### formatErrors ####",
+  "badName": {
+    "description": "name not ok",
+    "code": 5001
+  },
+  "badAccount": {
+    "description": "account not ok",
+    "code": 5002
+  },
+  "badGroup": {
+    "description": "group not ok",
+    "code": 5003
+  },
+  "badId": {
+    "description": "id not ok",
+    "code": 5004
+  },
+  "badAccountName": {
+    "description": "accountName not ok",
+    "code": 5005
+  },
+  "badNameFriendly": {
+    "description": "nameFriendly not ok",
+    "code": 5006
+  },
+  "badEmailAddress": {
+    "description": "email address not ok",
+    "code": 5007
+  },
+  "badPath": {
+    "description": "path not ok",
+    "code": 5008
+  },
+  "badArn": {
+    "description": "arn not ok",
+    "code": 5009
+  },
+  "badCreateDate": {
+    "description": "createDate not ok",
+    "code": 5010
+  },
+  "badLastUsedDate": {
+    "description": "lastUsedDate not ok",
+    "code": 5011
+  },
+  "badNotBefore": {
+    "description": "notBefore not ok",
+    "code": 5012
+  },
+  "badNotAfter": {
+    "description": "notAfter not ok",
+    "code": 5013
+  },
+  "badSaltedPwd": {
+    "description": "salted password not ok",
+    "code": 5014
+  },
+  "ok": {
+    "description": "No error",
+    "code": 5015
+  },
+  "badUser": {
+    "description": "user not ok",
+    "code": 5016
+  },
+  "badSaltedPasswd": {
+    "description": "salted password not ok",
+    "code": 5017
+  },
+  "badPasswdDate": {
+    "description": "password date not ok",
+    "code": 5018
+  },
+  "badCanonicalId": {
+    "description": "canonicalId not ok",
+    "code": 5019
+  },
+  "badAlias": {
+    "description": "alias not ok",
+    "code": 5020
+  },
+  "_comment": "#### internalErrors ####",
+  "dBPutFailed": {
+    "description": "DB put failed",
+    "code": 5021
+  },
+  "_comment": "#### alreadyExistErrors ####",
+  "accountEmailAlreadyUsed": {
+    "description": "an other account already uses that email",
+    "code": 5022
+  },
+  "accountNameAlreadyUsed": {
+    "description": "an other account already uses that name",
+    "code": 5023
+  },
+  "userEmailAlreadyUsed": {
+    "description": "an other user already uses that email",
+    "code": 5024
+  },
+  "userNameAlreadyUsed": {
+    "description": "an other user already uses that name",
+    "code": 5025
+  },
+  "_comment": "#### doesntExistErrors ####",
+  "noParentAccount": {
+    "description": "parent account does not exist",
+    "code": 5026
+  },
+  "_comment": "#### authErrors ####",
+  "badStringToSign": {
+    "description": "stringToSign not ok'",
+    "code": 5027
+  },
+  "badSignatureFromRequest": {
+    "description": "signatureFromRequest not ok",
+    "code": 5028
+  },
+  "badAlgorithm": {
+    "description": "hashAlgorithm not ok",
+    "code": 5029
+  },
+  "secretKeyDoesNotExist": {
+    "description": "secret key does not exist",
+    "code": 5030
+  }, 
+  "invalidRegion": {
+    "description": "Region was not provided or is not recognized by the system",
+    "code": 5031
+  },
+  "scopeDate": {
+    "description": "scope date is missing, or format is invalid",
+    "code": 5032
+  },
+  "badAccessKey": {
+    "description": "access key not ok",
+    "code": 5033
+  },
+  "noDict": {
+    "description": "no dictionary of params provided for signature verification",
+    "code": 5034
+  }, 
+  "_comment": "#### OidcpErrors ####",
+  "badUrl": {
+    "description": "url not ok",
+    "code": 5035
+  }, 
+  "badClientIdList": {
+    "description": "client id list not ok'",
+    "code": 5036
+  }, 
+  "badThumbprintList": {
+    "description": "thumbprint list not ok'",
+    "code": 5037
+  }, 
+  "badObject": {
+    "description": "Object not ok'",
+    "code": 5038
+  },
+  "_comment": "#### RoleErrors ####",
+  "badRole": {
+    "description": "role not ok",
+    "code": 5039
+  }, 
+  "_comment": "#### SamlpErrors ####",
+  "badSamlp": {
+    "description": "samlp not ok",
+    "code": 5040
+  }, 
+  "badMetadataDocument": {
+    "description": "metadata document not ok",
+    "code": 5041
+  },
+  "unauthorized": {
+    "description": "not authenticated",
+    "code": 5041
+  },
+  "_comment": "---------------------  MetaData ---------------------",
+  "_comment": "#### formatErrors ####",
+  "BucketAlreadyExist": {
+    "description": "This bucket already exist",
+    "code": 1001
+  },
+  "DBNotFound": {
+    "description": "This DB does not exist",
+    "code": 1002
+  },
+  "DBAlreadyExists": {
+    "description": "This DB already exist",
+    "code": 1003
+  },
+  "ObjNotFound": {
+    "description": "This object does not exist",
+    "code": 1004
   }
 }

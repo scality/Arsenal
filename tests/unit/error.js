@@ -1965,4 +1965,845 @@ describe('class errors extended from Error', () => {
                                   "details not match");
            done();
        });
+
+    it('should return badName Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.badName(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .badName.code,
+                                  "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .badName.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.badName, true,
+                                  "errorTest.badName have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return badId Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.badId(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .badId.code, "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .badId.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.badId, true,
+                                  "errorTest.badId have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return badAccountName Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.badAccountName(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .badAccountName.code, "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .badAccountName.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.badAccountName, true,
+                                  "errorTest.badAccountName have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return badAccount Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.badAccount(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .badAccount.code, "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .badAccount.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.badAccount, true,
+                                  "errorTest.badAccount have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return badNameFriendly Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.badNameFriendly(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .badNameFriendly.code, "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .badNameFriendly.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.badNameFriendly, true,
+                                  "errorTest.badNameFriendly have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return badEmailAddress Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.badEmailAddress(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .badEmailAddress.code, "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .badEmailAddress.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.badEmailAddress, true,
+                                  "errorTest.badEmailAddress have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return badPath Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.badPath(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .badPath.code, "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .badPath.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.badPath, true,
+                                  "errorTest.badPath have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return badArn Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.badArn(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .badArn.code, "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .badArn.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.badArn, true,
+                                  "errorTest.badArn have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return badCreateDate Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.badCreateDate(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .badCreateDate.code, "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .badCreateDate.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.badCreateDate, true,
+                                  "errorTest.badCreateDate have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return badLastUsedDate Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.badLastUsedDate(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .badLastUsedDate.code, "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .badLastUsedDate.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.badLastUsedDate, true,
+                                  "errorTest.badLastUsedDate have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return badNotBefore Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.badNotBefore(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .badNotBefore.code, "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .badNotBefore.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.badNotBefore, true,
+                                  "errorTest.badNotBefore have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return badNotAfter Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.badNotAfter(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .badNotAfter.code, "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .badNotAfter.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.badNotAfter, true,
+                                  "errorTest.badNotAfter have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return badSaltedPwd Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.badSaltedPwd(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .badSaltedPwd.code, "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .badSaltedPwd.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.badSaltedPwd, true,
+                                  "errorTest.badSaltedPwd have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return badUser Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.badUser(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .badUser.code, "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .badUser.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.badUser, true,
+                                  "errorTest.badUser have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return badGroup Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.badGroup(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .badGroup.code, "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .badGroup.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.badGroup, true,
+                                  "errorTest.badGroup have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return badPasswdDate Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.badPasswdDate(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .badPasswdDate.code, "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .badPasswdDate.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.badPasswdDate, true,
+                                  "errorTest.badPasswdDate have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return badCanonicalId Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.badCanonicalId(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .badCanonicalId.code, "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .badCanonicalId.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.badCanonicalId, true,
+                                  "errorTest.badCanonicalId have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return badAlias Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.badAlias(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .badAlias.code, "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .badAlias.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.badAlias, true,
+                                  "errorTest.badAlias have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return everythingOK Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.ok(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .ok.code, "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .ok.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.ok, true,
+                                  "errorTest.ok have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return dBPutFailed Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.dBPutFailed(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .dBPutFailed.code, "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .dBPutFailed.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.dBPutFailed, true,
+                                  "errorTest.dBPutFailed have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return accountEmailAlreadyUsed Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.accountEmailAlreadyUsed(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .accountEmailAlreadyUsed.code,
+                                  "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .accountEmailAlreadyUsed.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.accountEmailAlreadyUsed, true,
+                                  "errorTest.accountEmailAlreadyUsed " +
+                                  "have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return accountNameAlreadyUsed Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.accountNameAlreadyUsed(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .accountNameAlreadyUsed.code,
+                                  "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .accountNameAlreadyUsed.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.accountNameAlreadyUsed, true,
+                                  "errorTest.accountNameAlreadyUsed " +
+                                  "have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return userEmailAlreadyUsed Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.userEmailAlreadyUsed(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .userEmailAlreadyUsed.code,
+                                  "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .userEmailAlreadyUsed.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.userEmailAlreadyUsed, true,
+                                  "errorTest.userEmailAlreadyUsed " +
+                                  "have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return userNameAlreadyUsed Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.userNameAlreadyUsed(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .userNameAlreadyUsed.code,
+                                  "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .userNameAlreadyUsed.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.userNameAlreadyUsed, true,
+                                  "errorTest.userNameAlreadyUsed " +
+                                  "have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return noParentAccount Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.noParentAccount(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .noParentAccount.code,
+                                  "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .noParentAccount.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.noParentAccount, true,
+                                  "errorTest.noParentAccount " +
+                                  "have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+    it('should return BucketAlreadyExist Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.bucketAlreadyExist(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .BucketAlreadyExist.code,
+                                  "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .BucketAlreadyExist.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.BucketAlreadyExist, true,
+                                  "errorTest.BucketAlreadyExist " +
+                                  "have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+    it('should return DBNotFound Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.dBNotFound(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .DBNotFound.code,
+                                  "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .DBNotFound.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.DBNotFound, true,
+                                  "errorTest.DBNotFound have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return DBAlreadyExists Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.dBAlreadyExists(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .DBAlreadyExists.code,
+                                  "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .DBAlreadyExists.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.DBAlreadyExists, true,
+                                  "errorTest.DBAlreadyExists have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return ObjNotFound Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.objNotFound(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .ObjNotFound.code,
+                                  "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .ObjNotFound.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.ObjNotFound, true,
+                                  "errorTest.ObjNotFound have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return badStringToSign Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.badStringToSign(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .badStringToSign.code,
+                                  "Wrong code");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .badStringToSign.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.badStringToSign, true,
+                                  "errorTest.badStringToSign have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return badSignatureFromRequest Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.badSignatureFromRequest(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .badSignatureFromRequest.code,
+                                  "Wrong code");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .badSignatureFromRequest.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.badSignatureFromRequest, true,
+                                  "errorTest.badSignatureFromRequest have to "
+                                  + "be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return badAlgorithm Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.badAlgorithm(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .badAlgorithm.code,
+                                  "Wrong code");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .badAlgorithm.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.badAlgorithm, true,
+                                  "errorTest.badAlgorithm have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return secretKeyDoesNotExist Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.secretKeyDoesNotExist(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .secretKeyDoesNotExist.code,
+                                  "Wrong code");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .secretKeyDoesNotExist.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.secretKeyDoesNotExist, true,
+                                  "errorTest.secretKeyDoesNotExist have to be"
+                                  + " true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return badUrl Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.badUrl(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .badUrl.code,
+                                  "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .badUrl.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.badUrl, true,
+                                  "errorTest.badUrl have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return badClientIdList Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.badClientIdList(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .badClientIdList.code,
+                                  "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .badClientIdList.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.badClientIdList, true,
+                                  "errorTest.badClientIdList have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return badThumbprintList Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.badThumbprintList(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .badThumbprintList.code,
+                                  "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .badThumbprintList.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.badThumbprintList, true,
+                                  "error.badThumbprintList have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return badObject Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.badObject(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .badObject.code,
+                                  "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .badObject.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.badObject, true,
+                                  "errorTest.badObject have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return badRole Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.badRole(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .badRole.code,
+                                  "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .badRole.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.badRole, true,
+                                  "errorTest.badRole have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+    it('should return badSamlp Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.badSamlp(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .badSamlp.code,
+                                  "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .badSamlp.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.badSamlp, true,
+                                  "errorTest.badSamlp have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return badMetadataDocument Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.badMetadataDocument(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .badMetadataDocument.code,
+                                  "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .badMetadataDocument.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.badMetadataDocument, true,
+                                  "error.badMetadataDocument have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+    it('should return invalidRegion Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.invalidRegion(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .invalidRegion.code,
+                                  "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .invalidRegion.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.invalidRegion, true,
+                                  "errorTest.invalidRegion have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return scopeDate Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.scopeDate(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .scopeDate.code,
+                                  "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .scopeDate.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.scopeDate, true,
+                                  "errorTest.scopeDate have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return badAccessKey Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.badAccessKey(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .badAccessKey.code,
+                                  "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .badAccessKey.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.badAccessKey, true,
+                                  "errorTest.badAccessKey have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return unauthorized Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.unauthorized(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .unauthorized.code,
+                                  "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .unauthorized.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.unauthorized, true,
+                                  "errorTest.unauthorized have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return secretKeyDoesNotExist Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.secretKeyDoesNotExist(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .secretKeyDoesNotExist.code,
+                                  "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .secretKeyDoesNotExist.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.secretKeyDoesNotExist, true,
+                                  "errorTest.secretKeyDoesNotExist have to be" +
+                                  " true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
 });
