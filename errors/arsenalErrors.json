@@ -292,9 +292,12 @@
     "httpCode": 403,
     "description": "The request signature we calculated does not match the signature you provided."
   },
-  "ServiceUnavailable": {
-    "httpCode": 503,
-    "description": "Reduce your request rate."
+  "_comment" : {
+    "note" : "This is an AWS S3 specific error. We are opting to use the more general 'ServiceUnavailable' error used throughout AWS (IAM/EC2) to have uniformity of error messages even though we are potentially compromising S3 compatibility.",    
+    "ServiceUnavailable": {
+      "httpCode": 503,
+      "description": "Reduce your request rate."
+    }
   },
   "ServiceUnavailable": { 
     "httpCode": 503,
@@ -606,6 +609,6 @@
   },
   "ObjNotFound": {
     "description": "This object does not exist",
-    "code": 1004
+    "code": 100
   }
 }
