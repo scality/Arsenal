@@ -2806,4 +2806,61 @@ describe('class errors extended from Error', () => {
                                   "details not match");
            done();
        });
+
+    it('should return badSecretKey Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.badSecretKey(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .badSecretKey.code,
+                                  "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .badSecretKey.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.badSecretKey, true,
+                                  "errorTest.badSecretKey have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return badSecretKeyValue Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.badSecretKeyValue(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .badSecretKeyValue.code,
+                                  "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .badSecretKeyValue.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.badSecretKeyValue, true,
+                                  "errorbadSecretKeyValue have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
+
+    it('should return badSecretKeyStatus Error',
+       (done) => {
+           const details = crypto.randomBytes(40).toString("utf8");
+           const errorTest = errors.badSecretKeyStatus(details);
+           assert.deepStrictEqual(errorTest instanceof Error, true,
+                                  "errorTest must be an instance of Error");
+           assert.deepStrictEqual(errorTest.code, arsenalErrors
+                                  .badSecretKeyStatus.code,
+                                  "Wrong httpCode");
+           assert.deepStrictEqual(errorTest.description, arsenalErrors
+                                  .badSecretKeyStatus.description,
+                                  "Not the good description");
+           assert.deepStrictEqual(errorTest.badSecretKeyStatus, true,
+                                  "error.badSecretKeyStatus have to be true");
+           assert.deepStrictEqual(errorTest.details, details,
+                                  "details not match");
+           done();
+       });
 });

@@ -557,41 +557,53 @@
   "noDict": {
     "description": "no dictionary of params provided for signature verification",
     "code": 5034
-  }, 
+  },
+  "badSecretKey": {
+    "description": "secretKey not ok",
+    "code": 5035
+  },
+  "badSecretKeyValue": {
+    "description": "secretKey value not ok",
+    "code": 5036
+  },
+  "badSecretKeyStatus": {
+    "description": "secretKey status not ok",
+    "code": 5037
+  },
   "_comment": "#### OidcpErrors ####",
   "badUrl": {
     "description": "url not ok",
-    "code": 5035
+    "code": 5038
   }, 
   "badClientIdList": {
     "description": "client id list not ok'",
-    "code": 5036
+    "code": 5039
   }, 
   "badThumbprintList": {
     "description": "thumbprint list not ok'",
-    "code": 5037
+    "code": 5040
   }, 
   "badObject": {
     "description": "Object not ok'",
-    "code": 5038
+    "code": 5041
   },
   "_comment": "#### RoleErrors ####",
   "badRole": {
     "description": "role not ok",
-    "code": 5039
+    "code": 5042
   }, 
   "_comment": "#### SamlpErrors ####",
   "badSamlp": {
     "description": "samlp not ok",
-    "code": 5040
+    "code": 5043
   }, 
   "badMetadataDocument": {
     "description": "metadata document not ok",
-    "code": 5041
+    "code": 5044
   },
   "unauthorized": {
     "description": "not authenticated",
-    "code": 5041
+    "code": 5045
   },
   "_comment": "---------------------  MetaData ---------------------",
   "_comment": "#### formatErrors ####",
