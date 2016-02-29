@@ -3,6 +3,7 @@
   "version": "1.0.0-beta",
   "description": "Common utilities for the S3-kinetic project components",
   "main": "index.js",
+  "bin": { "endtoend": "bin/endtoend" },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/scality/IronMan-Arsenal.git"
@@ -28,6 +29,7 @@
     "temp": "^0.8.3"
   },
   "scripts": {
+    "end_test": "bin/endtoend",
     "lint": "eslint $(git ls-files '*.js')",
     "lint_md": "mdlint $(git ls-files '*.md')",
     "lint_yml": "yamllint $(git ls-files '*.yml')",
