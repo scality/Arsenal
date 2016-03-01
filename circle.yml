@@ -1,4 +1,8 @@
 ---
+general:
+  branches:
+    ignore:
+      - /^ultron\/.*/ # Ignore ultron/* branches
 
 machine:
   node:
