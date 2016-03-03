@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -eu
+
+git clone https://github.com/scality/IronMan-Integration.git
+cd IronMan-Integration && bash -eu balance.bash
