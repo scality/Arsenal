@@ -480,7 +480,7 @@
   },
   "ok": {
     "description": "No error",
-    "code": 5015
+    "code": 200
   },
   "badUser": {
     "description": "user not ok",
