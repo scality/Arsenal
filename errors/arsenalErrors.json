@@ -480,7 +480,7 @@
   },
   "ok": {
     "description": "No error",
-    "code": 5015
+    "code": 200
   },
   "badUser": {
     "description": "user not ok",
@@ -611,20 +611,52 @@
   },
   "_comment": "---------------------  MetaData ---------------------",
   "_comment": "#### formatErrors ####",
-  "BucketAlreadyExist": {
-    "description": "This bucket already exist",
-    "code": 1001
-  },
   "DBNotFound": {
     "description": "This DB does not exist",
-    "code": 1002
+    "code": 404
   },
   "DBAlreadyExists": {
     "description": "This DB already exist",
-    "code": 1003
+    "code": 409
   },
   "ObjNotFound": {
     "description": "This object does not exist",
-    "code": 100
+    "code": 404
+  },
+  "PermissionDenied": {
+    "description": "Permission denied",
+    "code": 403
+  },
+  "BadRequest": {
+    "description": "BadRequest",
+    "code": 400
+  },
+  "RaftSessionNotLeader": {
+    "description": "NotLeader",
+    "code": 500
+  },
+  "RaftSessionLeaderNotConnected": {
+    "description": "RaftSessionLeaderNotConnected",
+    "code": 400
+  },
+  "NoLeaderForDB": {
+    "description": "NoLeaderForDB",
+    "code": 400
+  },
+  "RouteNotFound": {
+    "description": "RouteNotFound",
+    "code": 404
+  },
+  "NoMapsInConfig": {
+    "description": "NoMapsInConfig",
+    "code": 404
+  },
+  "DBAPINotReady": {
+    "message": "DBAPINotReady",
+    "code": 500
+  },
+  "NotEnoughMapsInConfig:": {
+    "description": "NotEnoughMapsInConfig",
+    "code": 400
   }
 }
