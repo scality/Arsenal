@@ -607,7 +607,7 @@
   },
   "unauthorized": {
     "description": "not authenticated",
-    "code": 5045
+    "code": 401
   },
   "_comment": "---------------------  MetaData ---------------------",
   "_comment": "#### formatErrors ####",
