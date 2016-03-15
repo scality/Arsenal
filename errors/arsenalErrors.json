@@ -419,6 +419,11 @@
     "code": 500,
     "description": "No account was found in Vault, please contact your system administrator."
   },
+  "_comment": "-------------- Special non-AWS S3 errors --------------",
+  "MPUinProgress": {
+    "code": 409,
+    "description": "The bucket you tried to delete has an ongoing multipart upload."
+  },
   "_comment": "-------------- Internal project errors --------------",
   "_comment": "----------------------- Vault -----------------------",
   "_comment": "#### formatErrors ####",
