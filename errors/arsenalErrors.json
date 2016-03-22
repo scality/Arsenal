@@ -419,62 +419,67 @@
     "code": 500,
     "description": "No account was found in Vault, please contact your system administrator."
   },
+  "_comment": "-------------- Special non-AWS S3 errors --------------",
+  "MPUinProgress": {
+    "code": 409,
+    "description": "The bucket you tried to delete has an ongoing multipart upload."
+  },
   "_comment": "-------------- Internal project errors --------------",
   "_comment": "----------------------- Vault -----------------------",
   "_comment": "#### formatErrors ####",
-  "badName": {
+  "BadName": {
     "description": "name not ok",
     "code": 5001
   },
-  "badAccount": {
+  "BadAccount": {
     "description": "account not ok",
     "code": 5002
   },
-  "badGroup": {
+  "BadGroup": {
     "description": "group not ok",
     "code": 5003
   },
-  "badId": {
+  "BadId": {
     "description": "id not ok",
     "code": 5004
   },
-  "badAccountName": {
+  "BadAccountName": {
     "description": "accountName not ok",
     "code": 5005
   },
-  "badNameFriendly": {
+  "BadNameFriendly": {
     "description": "nameFriendly not ok",
     "code": 5006
   },
-  "badEmailAddress": {
+  "BadEmailAddress": {
     "description": "email address not ok",
     "code": 5007
   },
-  "badPath": {
+  "BadPath": {
     "description": "path not ok",
     "code": 5008
   },
-  "badArn": {
+  "BadArn": {
     "description": "arn not ok",
     "code": 5009
   },
-  "badCreateDate": {
+  "BadCreateDate": {
     "description": "createDate not ok",
     "code": 5010
   },
-  "badLastUsedDate": {
+  "BadLastUsedDate": {
     "description": "lastUsedDate not ok",
     "code": 5011
   },
-  "badNotBefore": {
+  "BadNotBefore": {
     "description": "notBefore not ok",
     "code": 5012
   },
-  "badNotAfter": {
+  "BadNotAfter": {
     "description": "notAfter not ok",
     "code": 5013
   },
-  "badSaltedPwd": {
+  "BadSaltedPwd": {
     "description": "salted password not ok",
     "code": 5014
   },
@@ -482,130 +487,130 @@
     "description": "No error",
     "code": 200
   },
-  "badUser": {
+  "BadUser": {
     "description": "user not ok",
     "code": 5016
   },
-  "badSaltedPasswd": {
+  "BadSaltedPasswd": {
     "description": "salted password not ok",
     "code": 5017
   },
-  "badPasswdDate": {
+  "BadPasswdDate": {
     "description": "password date not ok",
     "code": 5018
   },
-  "badCanonicalId": {
+  "BadCanonicalId": {
     "description": "canonicalId not ok",
     "code": 5019
   },
-  "badAlias": {
+  "BadAlias": {
     "description": "alias not ok",
     "code": 5020
   },
   "_comment": "#### internalErrors ####",
-  "dBPutFailed": {
+  "DBPutFailed": {
     "description": "DB put failed",
     "code": 5021
   },
   "_comment": "#### alreadyExistErrors ####",
-  "accountEmailAlreadyUsed": {
+  "AccountEmailAlreadyUsed": {
     "description": "an other account already uses that email",
     "code": 5022
   },
-  "accountNameAlreadyUsed": {
+  "AccountNameAlreadyUsed": {
     "description": "an other account already uses that name",
     "code": 5023
   },
-  "userEmailAlreadyUsed": {
+  "UserEmailAlreadyUsed": {
     "description": "an other user already uses that email",
     "code": 5024
   },
-  "userNameAlreadyUsed": {
+  "UserNameAlreadyUsed": {
     "description": "an other user already uses that name",
     "code": 5025
   },
   "_comment": "#### doesntExistErrors ####",
-  "noParentAccount": {
+  "NoParentAccount": {
     "description": "parent account does not exist",
     "code": 5026
   },
   "_comment": "#### authErrors ####",
-  "badStringToSign": {
+  "BadStringToSign": {
     "description": "stringToSign not ok'",
     "code": 5027
   },
-  "badSignatureFromRequest": {
+  "BadSignatureFromRequest": {
     "description": "signatureFromRequest not ok",
     "code": 5028
   },
-  "badAlgorithm": {
+  "BadAlgorithm": {
     "description": "hashAlgorithm not ok",
     "code": 5029
   },
-  "secretKeyDoesNotExist": {
+  "SecretKeyDoesNotExist": {
     "description": "secret key does not exist",
     "code": 5030
   }, 
-  "invalidRegion": {
+  "InvalidRegion": {
     "description": "Region was not provided or is not recognized by the system",
     "code": 5031
   },
-  "scopeDate": {
+  "ScopeDate": {
     "description": "scope date is missing, or format is invalid",
     "code": 5032
   },
-  "badAccessKey": {
+  "BadAccessKey": {
     "description": "access key not ok",
     "code": 5033
   },
-  "noDict": {
+  "NoDict": {
     "description": "no dictionary of params provided for signature verification",
     "code": 5034
   },
-  "badSecretKey": {
+  "BadSecretKey": {
     "description": "secretKey not ok",
     "code": 5035
   },
-  "badSecretKeyValue": {
+  "BadSecretKeyValue": {
     "description": "secretKey value not ok",
     "code": 5036
   },
-  "badSecretKeyStatus": {
+  "BadSecretKeyStatus": {
     "description": "secretKey status not ok",
     "code": 5037
   },
   "_comment": "#### OidcpErrors ####",
-  "badUrl": {
+  "BadUrl": {
     "description": "url not ok",
     "code": 5038
   }, 
-  "badClientIdList": {
+  "BadClientIdList": {
     "description": "client id list not ok'",
     "code": 5039
   }, 
-  "badThumbprintList": {
+  "BadThumbprintList": {
     "description": "thumbprint list not ok'",
     "code": 5040
   }, 
-  "badObject": {
+  "BadObject": {
     "description": "Object not ok'",
     "code": 5041
   },
   "_comment": "#### RoleErrors ####",
-  "badRole": {
+  "BadRole": {
     "description": "role not ok",
     "code": 5042
   }, 
   "_comment": "#### SamlpErrors ####",
-  "badSamlp": {
+  "BadSamlp": {
     "description": "samlp not ok",
     "code": 5043
   }, 
-  "badMetadataDocument": {
+  "BadMetadataDocument": {
     "description": "metadata document not ok",
     "code": 5044
   },
-  "unauthorized": {
+  "Unauthorized": {
     "description": "not authenticated",
     "code": 401
   },
