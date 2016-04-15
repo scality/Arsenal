@@ -35,6 +35,8 @@ console.log(array);
 
 ### Usage
 
+#### Get an error
+
 ``` js
 import { errors } from 'arsenal';
 
@@ -44,5 +46,19 @@ console.log(errors.AccessDenied);
 //    code: 403,
 //    description: 'Access Denied',
 //    AccessDenied: true }
+
+```
+
+#### Map an error
+
+``` js
+import { errors } from 'arsenal';
+
+console.log(errors.DBNotFound.errorsMap());
+
+// { [Error: NoSuchBucket]
+//     code: 404,
+//     description: 'The specified bucket does not exist.',
+//     NoSuchBucket: true }
 
 ```
