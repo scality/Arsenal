@@ -31,7 +31,7 @@
     "lint": "eslint $(git ls-files '*.js')",
     "lint_md": "mdlint $(git ls-files '*.md')",
     "lint_yml": "yamllint $(git ls-files '*.yml')",
-    "test": "mocha tests/unit"
+    "test": "mocha --timeout 5500 tests/unit"
   },
   "private": true
 }
