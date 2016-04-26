@@ -5,7 +5,7 @@ const errors = require('../../index').errors;
 
 describe('Runtime errors instance generation', () => {
     Object.keys(errors).forEach(index => {
-        it(`should return and instance of ${index} Error`, (done) => {
+        it(`should return and instance of ${index} Error`, done => {
             assert.deepStrictEqual(errors[index] instanceof Error, true,
                                    'should be an instance of Error');
             assert.deepStrictEqual(errors[index].code, errorsJSON[index].code,

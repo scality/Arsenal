@@ -23,7 +23,7 @@ function checkValueInDb(db, k, v, done) {
         if (value === v)
             return done();
 
-        done(new Error('values differ'));
+        return done(new Error('values differ'));
     });
 }
 
@@ -37,7 +37,7 @@ function checkValueNotInDb(db, k, done) {
 }
 
 describe('IndexTransaction', () => {
-    it('should allow put', (done) => {
+    it('should allow put', done => {
         const db = createDb();
         const transaction = new IndexTransaction(db);
 
@@ -47,15 +47,15 @@ describe('IndexTransaction', () => {
             value: 'v',
         });
 
-        transaction.commit((err) => {
+        transaction.commit(err => {
             if (err)
                 return done(err);
 
-            checkValueInDb(db, 'k', 'v', done);
+            return checkValueInDb(db, 'k', 'v', done);
         });
     });
 
-    it('should allow del', (done) => {
+    it('should allow del', done => {
         const db = createDb();
         const transaction = new IndexTransaction(db);
 
@@ -64,20 +64,20 @@ describe('IndexTransaction', () => {
             key: 'k',
         });
 
-        db.put('k', 'v', (err) => {
+        db.put('k', 'v', err => {
             if (err)
                 return done(err);
 
-            transaction.commit((err) => {
+            return transaction.commit(err => {
                 if (err)
                     return done(err);
 
-                checkValueNotInDb(db, 'k', done);
+                return checkValueNotInDb(db, 'k', done);
             });
         });
     });
 
-    it('should commit put and del combined', (done) => {
+    it('should commit put and del combined', done => {
         const db = createDb();
         const transaction = new IndexTransaction(db);
 
@@ -96,15 +96,15 @@ describe('IndexTransaction', () => {
             if (err)
                 return done(err);
 
-            transaction.commit((err) => {
+            return transaction.commit(err => {
                 if (err)
                     return done(err);
 
-                checkValueNotInDb(db, 'k1', (err) => {
+                return checkValueNotInDb(db, 'k1', err => {
                     if (err)
                         return done(err);
 
-                    checkValueInDb(db, 'k2', 'v3', done);
+                    return checkValueInDb(db, 'k2', 'v3', done);
                 });
             });
         }
@@ -115,7 +115,7 @@ describe('IndexTransaction', () => {
             .write(commitTransactionAndCheck);
     });
 
-    it('should refuse types other than del and put', (done) => {
+    it('should refuse types other than del and put', done => {
         const transaction = new IndexTransaction();
 
         function tryPush() {
@@ -132,13 +132,13 @@ describe('IndexTransaction', () => {
                 return true;
             }
 
-            done(new Error('should have denied verb append'));
+            return done(new Error('should have denied verb append'));
         }
 
         assert.throws(tryPush, validateError);
     });
 
-    it('should refuse put without key', (done) => {
+    it('should refuse put without key', done => {
         const transaction = new IndexTransaction();
 
         function tryPush() {
@@ -154,13 +154,13 @@ describe('IndexTransaction', () => {
                 return true;
             }
 
-            done(new Error('should have detected missing key'));
+            return done(new Error('should have detected missing key'));
         }
 
         assert.throws(tryPush, validateError);
     });
 
-    it('should refuse del without key', (done) => {
+    it('should refuse del without key', done => {
         const transaction = new IndexTransaction();
 
         function tryPush() {
@@ -175,13 +175,13 @@ describe('IndexTransaction', () => {
                 return true;
             }
 
-            done(new Error('should have detected missing key'));
+            return done(new Error('should have detected missing key'));
         }
 
         assert.throws(tryPush, validateError);
     });
 
-    it('should refuse put without value', (done) => {
+    it('should refuse put without value', done => {
         const transaction = new IndexTransaction();
 
         function tryPush() {
@@ -197,24 +197,24 @@ describe('IndexTransaction', () => {
                 return true;
             }
 
-            done(new Error('should have detected missing value'));
+            return done(new Error('should have detected missing value'));
         }
 
         assert.throws(tryPush, validateError);
     });
 
-    it('should refuse to commit without any ops', (done) => {
+    it('should refuse to commit without any ops', done => {
         const transaction = new IndexTransaction();
 
-        transaction.commit((err) => {
+        transaction.commit(err => {
             if (err && err.emptyTransaction)
                 return done();
 
-            done(new Error('allowed to commit an empty transaction'));
+            return done(new Error('allowed to commit an empty transaction'));
         });
     });
 
-    it('should refuse to commit twice', (done) => {
+    it('should refuse to commit twice', done => {
         const transaction = new IndexTransaction(createDb());
 
         transaction.push({
@@ -227,19 +227,19 @@ describe('IndexTransaction', () => {
             if (err)
                 return done(err);
 
-            transaction.commit((err2) => {
+            return transaction.commit(err2 => {
                 if (err2 && err2.alreadyCommitted) {
                     return done();
                 }
 
-                done(new Error('allowed to commit twice'));
+                return done(new Error('allowed to commit twice'));
             });
         }
 
         transaction.commit(tryCommitAgain);
     });
 
-    it('should refuse add an op if already committed', (done) => {
+    it('should refuse add an op if already committed', done => {
         const transaction = new IndexTransaction(createDb());
 
         function push() {
@@ -256,49 +256,49 @@ describe('IndexTransaction', () => {
                 return true;
             }
 
-            done(new Error());
+            return done(new Error());
         }
 
         function tryPushAgain(err) {
             if (err)
                 return done(err);
 
-            assert.throws(push, validateError);
+            return assert.throws(push, validateError);
         }
 
         push();
         transaction.commit(tryPushAgain);
     });
 
-    it('should have a working put shortcut method', (done) => {
+    it('should have a working put shortcut method', done => {
         const db = createDb();
         const transaction = new IndexTransaction(db);
 
         transaction.put('k', 'v');
 
-        transaction.commit((err) => {
+        transaction.commit(err => {
             if (err)
                 return done(err);
 
-            checkValueInDb(db, 'k', 'v', done);
+            return checkValueInDb(db, 'k', 'v', done);
         });
     });
 
-    it('should have a working del shortcut method', (done) => {
+    it('should have a working del shortcut method', done => {
         const db = createDb();
         const transaction = new IndexTransaction(db);
 
         transaction.del('k');
 
-        db.put('k', 'v', (err) => {
+        db.put('k', 'v', err => {
             if (err)
                 return done(err);
 
-            transaction.commit((err) => {
+            return transaction.commit(err => {
                 if (err)
                     return done(err);
 
-                checkValueNotInDb(db, 'k', done);
+                return checkValueNotInDb(db, 'k', done);
             });
         });
     });
