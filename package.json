@@ -20,8 +20,8 @@
   "dependencies": {
   },
   "devDependencies": {
-    "eslint": "^1.5.1",
-    "eslint-config-airbnb": "^1.0.2",
+    "eslint": "^2.4.0",
+    "eslint-config-airbnb": "^6.0.0",
     "eslint-config-ironman": "scality/IronMan-Guidelines",
     "level": "^1.3.0",
     "mocha": "^2.3.3",
@@ -31,7 +31,7 @@
     "lint": "eslint $(git ls-files '*.js')",
     "lint_md": "mdlint $(git ls-files '*.md')",
     "lint_yml": "yamllint $(git ls-files '*.yml')",
-    "test": "mocha tests/unit"
+    "test": "mocha --timeout 5500 tests/unit"
   },
   "private": true
 }

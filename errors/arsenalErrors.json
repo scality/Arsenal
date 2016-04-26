@@ -612,7 +612,7 @@
   },
   "BadSessionIndex": {
     "description": "session index not ok",
-    "code": 5045  
+    "code": 5045
   },
   "Unauthorized": {
     "description": "not authenticated",
