@@ -3,4 +3,5 @@ module.exports = {
     errors: require('./lib/errors.js'),
     shuffle: require('./lib/shuffle'),
     stringHash: require('./lib/stringHash'),
+    plotter: require('./lib/plotter'),
 };
