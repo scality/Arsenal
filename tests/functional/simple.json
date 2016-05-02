@@ -1,0 +1,22 @@
+{
+    "method": "simple",
+    "width": 12,
+    "height": 10,
+    "dataFolder": "./tests/functional",
+    "dataFile": "data.txt",
+    "output": "simple_file",
+    "xCol": 1,
+    "yCols": [2, 3, [4, 5], 6],
+    "font": "CMR14",
+    "fontSize": 14,
+    "title": "Simple plot",
+    "xLabel": "Number of successes",
+    "yLabel": "Average of latency (ms)",
+    "lineTitle": ["Test1", "Test2", "Test 3", "Test 4"],
+    "message": "Functional test for plotter, use config file",
+    "grid": "xtics ytics",
+    "styleData": "linespoints",
+    "lineSize": 1,
+    "pointSize": 1,
+    "legendPos": "top right"
+}

@@ -65,7 +65,8 @@ import Plotter from 'arsenal';
 ```
 
 #### Use '.json' file
-    This file should have the following structure:
+
+This file should have the following structure:
 
 ```javascript
 {
@@ -110,10 +111,11 @@ plotter.plotData(err => {
 ```
 
 #### Use object
+
 Define an object containing parameters for Plotter:
 
 ```javascript
-const object = {
+const config = {
     dataFolder: './tests/functional',
     dataFile: 'data.txt',
     output: 'multiplot_arg',
@@ -149,6 +151,7 @@ const object = {
     legendPos: 'top left',
 }
 ```
+
 Then, plot graph by
 
 ```javascript
