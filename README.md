@@ -46,3 +46,17 @@ console.log(errors.AccessDenied);
 //    AccessDenied: true }
 
 ```
+
+#### Map an error
+
+``` js
+import { errors } from 'arsenal';
+
+console.log(errors.DBNotFound.toS3());
+
+// { [Error: NoSuchBucket]
+//     code: 404,
+//     description: 'The specified bucket does not exist.',
+//     NoSuchBucket: true }
+
+```

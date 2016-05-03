@@ -19,3 +19,21 @@ describe('Runtime errors instance generation', () => {
         });
     });
 });
+
+describe('Error translation', () => {
+    Object.keys(errors).forEach(index => {
+        const err = errors[index].translation ?
+                  errors[errors[index].translation.S3].message :
+                  errors[index].message;
+        it(`should return the S3 translation of ${errors[index]} (${err})`,
+           done => {
+               if (errors[index].translation) {
+                   assert.deepStrictEqual(errors[errors[index].translation.S3],
+                                          errors[index].toS3());
+               } else {
+                   assert.deepStrictEqual(errors[index], errors[index].toS3());
+               }
+               done();
+           });
+    });
+});

@@ -293,13 +293,13 @@
     "description": "The request signature we calculated does not match the signature you provided."
   },
   "_comment" : {
-    "note" : "This is an AWS S3 specific error. We are opting to use the more general 'ServiceUnavailable' error used throughout AWS (IAM/EC2) to have uniformity of error messages even though we are potentially compromising S3 compatibility.",    
+    "note" : "This is an AWS S3 specific error. We are opting to use the more general 'ServiceUnavailable' error used throughout AWS (IAM/EC2) to have uniformity of error messages even though we are potentially compromising S3 compatibility.",
     "ServiceUnavailable": {
       "code": 503,
       "description": "Reduce your request rate."
     }
   },
-  "ServiceUnavailable": { 
+  "ServiceUnavailable": {
     "code": 503,
     "description": "The request has failed due to a temporary failure of the server."
   },
@@ -550,7 +550,7 @@
   "SecretKeyDoesNotExist": {
     "description": "secret key does not exist",
     "code": 5030
-  }, 
+  },
   "InvalidRegion": {
     "description": "Region was not provided or is not recognized by the system",
     "code": 5031
@@ -583,15 +583,15 @@
   "BadUrl": {
     "description": "url not ok",
     "code": 5038
-  }, 
+  },
   "BadClientIdList": {
     "description": "client id list not ok'",
     "code": 5039
-  }, 
+  },
   "BadThumbprintList": {
     "description": "thumbprint list not ok'",
     "code": 5040
-  }, 
+  },
   "BadObject": {
     "description": "Object not ok'",
     "code": 5041
@@ -600,12 +600,12 @@
   "BadRole": {
     "description": "role not ok",
     "code": 5042
-  }, 
+  },
   "_comment": "#### SamlpErrors ####",
   "BadSamlp": {
     "description": "samlp not ok",
     "code": 5043
-  }, 
+  },
   "BadMetadataDocument": {
     "description": "metadata document not ok",
     "code": 5044
@@ -618,50 +618,86 @@
   "_comment": "#### formatErrors ####",
   "DBNotFound": {
     "description": "This DB does not exist",
-    "code": 404
+    "code": 404,
+    "translation": {
+        "S3": "NoSuchBucket"
+    }
   },
   "DBAlreadyExists": {
     "description": "This DB already exist",
-    "code": 409
+    "code": 409,
+    "translation": {
+        "S3": "BucketAlreadyExists"
+    }
   },
   "ObjNotFound": {
     "description": "This object does not exist",
-    "code": 404
+    "code": 404,
+    "translation": {
+        "S3": "NoSuchKey"
+    }
   },
   "PermissionDenied": {
     "description": "Permission denied",
-    "code": 403
+    "code": 403,
+    "translation": {
+        "S3": "PermissionDenied"
+    }
   },
   "BadRequest": {
     "description": "BadRequest",
-    "code": 400
+    "code": 400,
+    "translation": {
+        "S3": "BadRequest"
+    }
   },
   "RaftSessionNotLeader": {
     "description": "NotLeader",
-    "code": 500
+    "code": 500,
+    "translation": {
+        "S3": "RaftSessionNotLeader"
+    }
   },
   "RaftSessionLeaderNotConnected": {
     "description": "RaftSessionLeaderNotConnected",
-    "code": 400
+    "code": 400,
+    "translation": {
+        "S3": "RaftSessionLeaderNotConnected"
+    }
   },
   "NoLeaderForDB": {
     "description": "NoLeaderForDB",
-    "code": 400
+    "code": 400,
+    "translation": {
+        "S3": "NoLeaderForDB"
+    }
   },
   "RouteNotFound": {
     "description": "RouteNotFound",
-    "code": 404
+    "code": 404,
+    "translation": {
+        "S3": "RouteNotFound"
+    }
   },
   "NoMapsInConfig": {
     "description": "NoMapsInConfig",
-    "code": 404
+    "code": 404,
+    "translation": {
+        "S3": "NoMapsInConfig"
+    }
   },
   "DBAPINotReady": {
     "message": "DBAPINotReady",
-    "code": 500
+    "code": 500,
+    "translation": {
+        "S3": "DBAPINotReady"
+    }
   },
   "NotEnoughMapsInConfig:": {
     "description": "NotEnoughMapsInConfig",
-    "code": 400
+    "code": 400,
+    "translation": {
+        "S3": "NotEnoughMapsInConfig:"
+    }
   }
 }
