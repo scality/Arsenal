@@ -610,6 +610,10 @@
     "description": "metadata document not ok",
     "code": 5044
   },
+  "BadSessionIndex": {
+    "description": "session index not ok",
+    "code": 5045  
+  },
   "Unauthorized": {
     "description": "not authenticated",
     "code": 401
