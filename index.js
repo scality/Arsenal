@@ -23,4 +23,7 @@ module.exports = {
         RequestContext: require('./lib/policyEvaluator/RequestContext.js'),
     },
     Clustering: require('./lib/Clustering'),
+    testing: {
+        matrix: require('./lib/testing/matrix.js'),
+    },
 };
