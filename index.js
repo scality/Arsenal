@@ -3,4 +3,7 @@ module.exports = {
     errors: require('./lib/errors.js'),
     shuffle: require('./lib/shuffle'),
     stringHash: require('./lib/stringHash'),
+    Testing: {
+        Matrix: require('./lib/testing/matrix.js'),
+    },
 };
