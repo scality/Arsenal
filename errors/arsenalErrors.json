@@ -620,6 +620,10 @@
   },
   "_comment": "---------------------  MetaData ---------------------",
   "_comment": "#### formatErrors ####",
+  "CacheUpdated": {
+    "description": "The cache has been updated",
+    "code": 500
+  },
   "DBNotFound": {
     "description": "This DB does not exist",
     "code": 404
