@@ -1,5 +1,8 @@
 # Arsenal
 
+[![CircleCI][badgepub]](https://circleci.com/gh/scality/Arsenal)
+[![Scality CI][badgepriv]](http://ci.ironmann.io/gh/scality/Arsenal)
+
 Common utilities for the S3 project components
 
 Within this repository, you will be able to find the shared libraries for the
@@ -46,3 +49,6 @@ console.log(errors.AccessDenied);
 //    AccessDenied: true }
 
 ```
+
+[badgepub]: https://circleci.com/gh/scality/Arsenal.svg?style=svg
+[badgepriv]: http://ci.ironmann.io/gh/scality/Arsenal.svg?style=svg&circle-token=c3d2570682cba6763a97ea0bc87521941413d75c
