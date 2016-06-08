@@ -18,6 +18,12 @@ multiple components making up the whole Project.
 Please read our coding and workflow guidelines at
 [scality/Guidelines](https://github.com/scality/Guidelines).
 
+### Contributing
+
+In order to contribute, please follow the
+[Contributing Guidelines](
+https://github.com/scality/Guidelines/blob/master/CONTRIBUTING.md).
+
 ## Shuffle
 
 ### Usage
