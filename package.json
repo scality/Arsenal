@@ -1,6 +1,6 @@
 {
   "name": "arsenal",
-  "version": "1.0.1-beta2",
+  "version": "1.0.2",
   "description": "Common utilities for the S3 project components",
   "main": "index.js",
   "repository": {
