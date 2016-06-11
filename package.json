@@ -1,6 +1,6 @@
 {
   "name": "arsenal",
-  "version": "1.0.1-beta2",
+  "version": "1.0.2",
   "description": "Common utilities for the S3 project components",
   "main": "index.js",
   "repository": {
@@ -18,12 +18,14 @@
   },
   "homepage": "https://github.com/scality/Arsenal#readme",
   "dependencies": {
+    "utf8": "~2.1.1"
   },
   "devDependencies": {
     "eslint": "^2.4.0",
     "eslint-config-airbnb": "^6.0.0",
     "eslint-config-scality": "scality/Guidelines#rel/1.0",
     "level": "^1.3.0",
+    "lolex": "^1.4.0",
     "mocha": "^2.3.3",
     "temp": "^0.8.3",
     "werelogs": "scality/werelogs#rel/1.0"
@@ -32,7 +34,7 @@
     "lint": "eslint $(git ls-files '*.js')",
     "lint_md": "mdlint $(git ls-files '*.md')",
     "lint_yml": "yamllint $(git ls-files '*.yml')",
-    "test": "mocha --timeout 5500 tests/unit"
+    "test": "mocha --recursive --timeout 5500 tests/unit"
   },
   "private": true
 }
