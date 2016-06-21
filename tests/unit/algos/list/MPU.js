@@ -1,13 +1,12 @@
 'use strict'; // eslint-disable-line strict
 
 const assert = require('assert');
-const ListMultipartUploads =
-    require('../../../lib/extension/listMPU.extension').
-    ListMultipartUploads;
+const MultipartUploads =
+    require('../../../../lib/algos/list/MPU').MultipartUploads;
 const werelogs = require('werelogs');
 const logger = new werelogs('listMpuTest');
-const performListing = require('../../utils/performListing');
-describe('List Multipart Uploads extension', () => {
+const performListing = require('../../../utils/performListing');
+describe('Multipart Uploads listing algorithm', () => {
     const splitter = '**';
     const overviewPrefix = `overview${splitter}`;
     const storageClass = 'STANDARD';
@@ -123,7 +122,7 @@ describe('List Multipart Uploads extension', () => {
     });
 
     it('should perform a listing of all keys', done => {
-        const listingResult = performListing(keys, ListMultipartUploads,
+        const listingResult = performListing(keys, MultipartUploads,
             listingParams, logger);
         assert.deepStrictEqual(listingResult, expectedResult);
         done();
@@ -140,7 +139,7 @@ describe('List Multipart Uploads extension', () => {
         expectedResult.NextKeyMarker = 'prefixTest/';
         expectedResult.NextUploadIdMarker = '';
 
-        const listingResult = performListing(keys, ListMultipartUploads,
+        const listingResult = performListing(keys, MultipartUploads,
             listingParams, logger);
         assert.deepStrictEqual(listingResult, expectedResult);
         done();
@@ -157,7 +156,7 @@ describe('List Multipart Uploads extension', () => {
         expectedResult.IsTruncated = true;
         expectedResult.MaxKeys = 3;
 
-        const listingResult = performListing(keys, ListMultipartUploads,
+        const listingResult = performListing(keys, MultipartUploads,
             listingParams, logger);
         assert.deepStrictEqual(listingResult, expectedResult);
         done();
