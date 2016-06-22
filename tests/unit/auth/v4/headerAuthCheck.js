@@ -9,7 +9,6 @@ const createAlteredRequest = require('../../helpers').createAlteredRequest;
 const headerAuthCheck =
     require('../../../../lib/auth/v4/headerAuthCheck').check;
 const DummyRequestLogger = require('../../helpers').DummyRequestLogger;
-const makeAuthInfo = require('../../helpers').makeAuthInfo;
 
 const log = new DummyRequestLogger();
 
@@ -35,25 +34,22 @@ const request = {
     headers,
     query: {},
 };
-const createdAuthInfo = makeAuthInfo('accessKey1');
 
 describe('v4 headerAuthCheck', () => {
     it('should return error if undefined authorization header', done => {
         const alteredRequest = createAlteredRequest({
             authorization: undefined }, 'headers', request, headers);
-        headerAuthCheck(alteredRequest, log, err => {
-            assert.deepStrictEqual(err, errors.MissingSecurityHeader);
-            done();
-        });
+        const res = headerAuthCheck(alteredRequest, log);
+        assert.deepStrictEqual(res.err, errors.MissingSecurityHeader);
+        done();
     });
 
     it('should return error if undefined sha256 header', done => {
         const alteredRequest = createAlteredRequest({
             'x-amz-content-sha256': undefined }, 'headers', request, headers);
-        headerAuthCheck(alteredRequest, log, err => {
-            assert.deepStrictEqual(err, errors.MissingSecurityHeader);
-            done();
-        });
+        const res = headerAuthCheck(alteredRequest, log);
+        assert.deepStrictEqual(res.err, errors.MissingSecurityHeader);
+        done();
     });
 
     it('should return error if missing credentials', done => {
@@ -62,10 +58,9 @@ describe('v4 headerAuthCheck', () => {
                 'x-amz-content-sha256;x-amz-date, Signature=abed9' +
                 '24c06abf8772c670064d22eacd6ccb85c06befa15f' +
                 '4a789b0bae19307bc' }, 'headers', request, headers);
-        headerAuthCheck(alteredRequest, log, err => {
-            assert.deepStrictEqual(err, errors.MissingSecurityHeader);
-            done();
-        });
+        const res = headerAuthCheck(alteredRequest, log);
+        assert.deepStrictEqual(res.err, errors.MissingSecurityHeader);
+        done();
     });
 
     it('should return error if missing SignedHeaders', done => {
@@ -77,10 +72,9 @@ describe('v4 headerAuthCheck', () => {
                 'x-amz-date, Signature=abed924c06abf8772c6' +
                 '70064d22eacd6ccb85c06befa15f' +
                 '4a789b0bae19307bc' }, 'headers', request, headers);
-        headerAuthCheck(alteredRequest, log, err => {
-            assert.deepStrictEqual(err, errors.MissingSecurityHeader);
-            done();
-        });
+        const res = headerAuthCheck(alteredRequest, log);
+        assert.deepStrictEqual(res.err, errors.MissingSecurityHeader);
+        done();
     });
 
     it('should return error if missing Signature', done => {
@@ -92,19 +86,17 @@ describe('v4 headerAuthCheck', () => {
                 'x-amz-date, Sig=abed924c06abf8772c6' +
                 '70064d22eacd6ccb85c06befa15f' +
                 '4a789b0bae19307bc' }, 'headers', request, headers);
-        headerAuthCheck(alteredRequest, log, err => {
-            assert.deepStrictEqual(err, errors.MissingSecurityHeader);
-            done();
-        });
+        const res = headerAuthCheck(alteredRequest, log);
+        assert.deepStrictEqual(res.err, errors.MissingSecurityHeader);
+        done();
     });
 
     it('should return error if missing timestamp', done => {
         const alteredRequest = createAlteredRequest({
             'x-amz-date': undefined }, 'headers', request, headers);
-        headerAuthCheck(alteredRequest, log, err => {
-            assert.deepStrictEqual(err, errors.MissingSecurityHeader);
-            done();
-        });
+        const res = headerAuthCheck(alteredRequest, log);
+        assert.deepStrictEqual(res.err, errors.MissingSecurityHeader);
+        done();
     });
 
     it('should return error if scope date does not ' +
@@ -112,10 +104,9 @@ describe('v4 headerAuthCheck', () => {
         // Different timestamp (2015 instead of 2016)
         const alteredRequest = createAlteredRequest({
             'x-amz-date': '20150208T201405Z' }, 'headers', request, headers);
-        headerAuthCheck(alteredRequest, log, err => {
-            assert.deepStrictEqual(err, errors.InvalidArgument);
-            done();
-        });
+        const res = headerAuthCheck(alteredRequest, log);
+        assert.deepStrictEqual(res.err, errors.InvalidArgument);
+        done();
     });
 
     it('should return error if timestamp from x-amz-date header' +
@@ -129,10 +120,9 @@ describe('v4 headerAuthCheck', () => {
                 'x-amz-date, Signature=abed924c06abf8772c67' +
                 '0064d22eacd6ccb85c06befa15f' +
                 '4a789b0bae19307bc' }, 'headers', request, headers);
-        headerAuthCheck(alteredRequest, log, err => {
-            assert.deepStrictEqual(err, errors.RequestTimeTooSkewed);
-            done();
-        });
+        const res = headerAuthCheck(alteredRequest, log);
+        assert.deepStrictEqual(res.err, errors.RequestTimeTooSkewed);
+        done();
     });
 
     it('should return error if timestamp from date header' +
@@ -147,10 +137,9 @@ describe('v4 headerAuthCheck', () => {
                 '4a789b0bae19307bc' },
             'headers', request, headers);
         delete alteredRequest.headers['x-amz-date'];
-        headerAuthCheck(alteredRequest, log, err => {
-            assert.deepStrictEqual(err, errors.RequestTimeTooSkewed);
-            done();
-        });
+        const res = headerAuthCheck(alteredRequest, log);
+        assert.deepStrictEqual(res.err, errors.RequestTimeTooSkewed);
+        done();
     });
 
     it('should return error if timestamp from x-amz-date header' +
@@ -165,10 +154,9 @@ describe('v4 headerAuthCheck', () => {
                 '0064d22eacd6ccb85c06befa15f' +
                 '4a789b0bae19307bc' },
             'headers', request, headers);
-        headerAuthCheck(alteredRequest, log, err => {
-            assert.deepStrictEqual(err, errors.RequestTimeTooSkewed);
-            done();
-        });
+        const res = headerAuthCheck(alteredRequest, log);
+        assert.deepStrictEqual(res.err, errors.RequestTimeTooSkewed);
+        done();
     });
 
     it('should return error if timestamp from date header' +
@@ -184,10 +172,9 @@ describe('v4 headerAuthCheck', () => {
                 '4a789b0bae19307bc' },
             'headers', request, headers);
         delete alteredRequest.headers['x-amz-date'];
-        headerAuthCheck(alteredRequest, log, err => {
-            assert.deepStrictEqual(err, errors.RequestTimeTooSkewed);
-            done();
-        });
+        const res = headerAuthCheck(alteredRequest, log);
+        assert.deepStrictEqual(res.err, errors.RequestTimeTooSkewed);
+        done();
     });
 
     it('should not return error due to unknown region', done => {
@@ -200,39 +187,19 @@ describe('v4 headerAuthCheck', () => {
                 '8e43e369f48ea6d3a5f1fe518e14',
         }, 'headers', request, headers);
         const clock = lolex.install(1454962445000);
-        headerAuthCheck(alteredRequest, log, err => {
-            clock.uninstall();
-            assert.ifError(err);
-            done();
-        });
+        const res = headerAuthCheck(alteredRequest, log);
+        clock.uninstall();
+        assert.ifError(res.err);
+        done();
     });
 
-    it('should successfully authenticate', done => {
+    it('should successfully return v4 and no error', done => {
         // Freezes time so date created within function will be Feb 8, 2016
         const clock = lolex.install(1454962445000);
-        headerAuthCheck(request, log, (err, authInfo) => {
-            clock.uninstall();
-            assert.strictEqual(err, null);
-            assert.strictEqual(authInfo.getCanonicalID(),
-                createdAuthInfo.getCanonicalID());
-            done();
-        });
-    });
-
-    it('should return error if accessKey does not exist', done => {
-        const alteredRequest = createAlteredRequest({
-            authorization: 'AWS4-HMAC-SHA256 ' +
-                'Credential=nonexistaentkey/20160208' +
-                '/us-east-1/s3/aws4_request, SignedHeaders=host;' +
-                'x-amz-content-sha256;' +
-                'x-amz-date, Signature=abed924c06abf8772c67006' +
-                '4d22eacd6ccb85c06befa15f' +
-                '4a789b0bae19307bc' }, 'headers', request, headers);
-        const clock = lolex.install(1454962445000);
-        headerAuthCheck(alteredRequest, log, err => {
-            clock.uninstall();
-            assert.deepStrictEqual(err, errors.InvalidAccessKeyId);
-            done();
-        });
+        const res = headerAuthCheck(request, log);
+        clock.uninstall();
+        assert.strictEqual(res.err, null);
+        assert.strictEqual(res.version, 4);
+        done();
     });
 });
