@@ -10,5 +10,6 @@ module.exports = {
         dhparam: require('./lib/https/dh2048.js'),
     },
     delimiter: require('./lib/extension/delimiter.extension'),
+    list: require('./lib/extension/list.extension'),
     listMPU: require('./lib/extension/listMPU.extension'),
 };
