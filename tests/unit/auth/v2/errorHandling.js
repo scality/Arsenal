@@ -3,8 +3,10 @@
 const assert = require('assert');
 
 const errors = require('../../../../lib/errors');
-const auth = require('../../../../lib/auth/auth').doAuth;
+const auth = require('../../../../lib/auth/auth');
 const DummyRequestLogger = require('../../helpers').DummyRequestLogger;
+
+auth.setAuthHandler(require('../../../../lib/auth/vault'));
 
 const logger = new DummyRequestLogger();
 
@@ -24,10 +26,10 @@ describe('Error handling in checkAuth', () => {
             url: '/bucket',
             query: {},
         };
-        auth(request, logger, err => {
+        auth.doAuth(request, logger, err => {
             assert.deepStrictEqual(err, errors.InvalidAccessKeyId);
             done();
-        });
+        }, 's3', request.query);
     });
 
     it('should return an error message if no date header ' +
@@ -43,10 +45,10 @@ describe('Error handling in checkAuth', () => {
             url: '/bucket',
         };
 
-        auth(request, logger, err => {
+        auth.doAuth(request, logger, err => {
             assert.deepStrictEqual(err, errors.MissingSecurityHeader);
             done();
-        });
+        }, 's3', request.query);
     });
 
     it('should return an error message if the Expires ' +
@@ -64,10 +66,10 @@ describe('Error handling in checkAuth', () => {
             },
             headers: {},
         };
-        auth(request, logger, err => {
+        auth.doAuth(request, logger, err => {
             assert.deepStrictEqual(err, errors.RequestTimeTooSkewed);
             done();
-        });
+        }, 's3', request.query);
     });
 
     it('should return an error message if ' +
@@ -89,10 +91,10 @@ describe('Error handling in checkAuth', () => {
             },
             headers: { host: 's3.amazonaws.com' },
         };
-        auth(request, logger, err => {
+        auth.doAuth(request, logger, err => {
             assert.deepStrictEqual(err, errors.SignatureDoesNotMatch);
             done();
-        });
+        }, 's3', request.query);
     });
 
     it('should return an error message if the ' +
@@ -110,10 +112,10 @@ describe('Error handling in checkAuth', () => {
             url: '/bucket',
             query: {},
         };
-        auth(request, logger, err => {
+        auth.doAuth(request, logger, err => {
             assert.deepStrictEqual(err, errors.SignatureDoesNotMatch);
             done();
-        });
+        }, 's3', request.query);
     });
 
     it('should return an error message if accessKey is empty for' +
@@ -131,10 +133,10 @@ describe('Error handling in checkAuth', () => {
             url: '/bucket',
             query: {},
         };
-        auth(request, logger, err => {
+        auth.doAuth(request, logger, err => {
             assert.deepStrictEqual(err, errors.MissingSecurityHeader);
             done();
-        });
+        }, 's3', request.query);
     });
 });
 

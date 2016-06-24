@@ -8,7 +8,6 @@ const errors = require('../../../../lib/errors');
 const createAlteredRequest = require('../../helpers').createAlteredRequest;
 const queryAuthCheck = require('../../../../lib/auth/v4/queryAuthCheck').check;
 const DummyRequestLogger = require('../../helpers').DummyRequestLogger;
-const makeAuthInfo = require('../../helpers').makeAuthInfo;
 
 const log = new DummyRequestLogger();
 
@@ -32,35 +31,29 @@ const request = {
     query,
 };
 
-
-const createdAuthInfo = makeAuthInfo('accessKey1');
-
 describe('v4 queryAuthCheck', () => {
     it('should return error if algorithm param incorrect', done => {
         const alteredRequest = createAlteredRequest({ 'X-Amz-Algorithm':
             'AWS4-HMAC-SHA1' }, 'query', request, query);
-        queryAuthCheck(alteredRequest, log, err => {
-            assert.deepStrictEqual(err, errors.InvalidArgument);
-            done();
-        });
+        const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
+        assert.deepStrictEqual(res.err, errors.InvalidArgument);
+        done();
     });
 
     it('should return error if X-Amz-Credential param is undefined', done => {
         const alteredRequest = createAlteredRequest({ 'X-Amz-Credential':
             undefined }, 'query', request, query);
-        queryAuthCheck(alteredRequest, log, err => {
-            assert.deepStrictEqual(err, errors.InvalidArgument);
-            done();
-        });
+        const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
+        assert.deepStrictEqual(res.err, errors.InvalidArgument);
+        done();
     });
 
     it('should return error if credential param format incorrect', done => {
         const alteredRequest = createAlteredRequest({ 'X-Amz-Credential':
             'incorrectformat' }, 'query', request, query);
-        queryAuthCheck(alteredRequest, log, err => {
-            assert.deepStrictEqual(err, errors.InvalidArgument);
-            done();
-        });
+        const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
+        assert.deepStrictEqual(res.err, errors.InvalidArgument);
+        done();
     });
 
     it('should return error if service set forth in ' +
@@ -68,10 +61,9 @@ describe('v4 queryAuthCheck', () => {
         const alteredRequest = createAlteredRequest({ 'X-Amz-Credential':
         'accessKey1/20160208/us-east-1/EC2/aws4_request' },
         'query', request, query);
-        queryAuthCheck(alteredRequest, log, err => {
-            assert.deepStrictEqual(err, errors.InvalidArgument);
-            done();
-        });
+        const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
+        assert.deepStrictEqual(res.err, errors.InvalidArgument);
+        done();
     });
 
     it('should return error if requestType set forth in ' +
@@ -79,56 +71,50 @@ describe('v4 queryAuthCheck', () => {
         const alteredRequest = createAlteredRequest({ 'X-Amz-Credential':
         'accessKey1/20160208/us-east-1/s3/aws2_request' },
         'query', request, query);
-        queryAuthCheck(alteredRequest, log, err => {
-            assert.deepStrictEqual(err, errors.InvalidArgument);
-            done();
-        });
+        const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
+        assert.deepStrictEqual(res.err, errors.InvalidArgument);
+        done();
     });
 
     it('should return error if undefined X-Amz-SignedHeaders param', done => {
         const alteredRequest = createAlteredRequest({ 'X-Amz-SignedHeaders':
         undefined }, 'query', request, query);
-        queryAuthCheck(alteredRequest, log, err => {
-            assert.deepStrictEqual(err, errors.InvalidArgument);
-            done();
-        });
+        const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
+        assert.deepStrictEqual(res.err, errors.InvalidArgument);
+        done();
     });
 
     it('should return error if undefined X-Amz-Signature param', done => {
         const alteredRequest = createAlteredRequest({ 'X-Amz-Signature':
         undefined }, 'query', request, query);
-        queryAuthCheck(alteredRequest, log, err => {
-            assert.deepStrictEqual(err, errors.InvalidArgument);
-            done();
-        });
+        const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
+        assert.deepStrictEqual(res.err, errors.InvalidArgument);
+        done();
     });
 
     it('should return error if undefined X-Amz-Date param', done => {
         const alteredRequest = createAlteredRequest({ 'X-Amz-Date':
         undefined }, 'query', request, query);
-        queryAuthCheck(alteredRequest, log, err => {
-            assert.deepStrictEqual(err, errors.InvalidArgument);
-            done();
-        });
+        const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
+        assert.deepStrictEqual(res.err, errors.InvalidArgument);
+        done();
     });
 
     it('should return error if undefined X-Amz-Expires param', done => {
         const alteredRequest = createAlteredRequest({ 'X-Amz-Expires':
         undefined }, 'query', request, query);
-        queryAuthCheck(alteredRequest, log, err => {
-            assert.deepStrictEqual(err, errors.InvalidArgument);
-            done();
-        });
+        const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
+        assert.deepStrictEqual(res.err, errors.InvalidArgument);
+        done();
     });
 
     it('should return error if X-Amz-Expires param ' +
     'is less than 1', done => {
         const alteredRequest = createAlteredRequest({ 'X-Amz-Expires':
         0 }, 'query', request, query);
-        queryAuthCheck(alteredRequest, log, err => {
-            assert.deepStrictEqual(err, errors.InvalidArgument);
-            done();
-        });
+        const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
+        assert.deepStrictEqual(res.err, errors.InvalidArgument);
+        done();
     });
 
     it('should return error if X-Amz-Expires param ' +
@@ -136,10 +122,9 @@ describe('v4 queryAuthCheck', () => {
         // Greater than 604800 seconds (7 days)
         const alteredRequest = createAlteredRequest({ 'X-Amz-Expires':
         604801 }, 'query', request, query);
-        queryAuthCheck(alteredRequest, log, err => {
-            assert.deepStrictEqual(err, errors.InvalidArgument);
-            done();
-        });
+        const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
+        assert.deepStrictEqual(res.err, errors.InvalidArgument);
+        done();
     });
 
     it('should return error if X-Amz-Date param is in the future', done => {
@@ -148,20 +133,18 @@ describe('v4 queryAuthCheck', () => {
             'X-Amz-Date': '20950208T234304Z',
             'X-Amz-Credential': 'accessKey1/20950208/us-east-1/s3/aws4_request',
         }, 'query', request, query);
-        queryAuthCheck(alteredRequest, log, err => {
-            assert.deepStrictEqual(err, errors.RequestTimeTooSkewed);
-            done();
-        });
+        const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
+        assert.deepStrictEqual(res.err, errors.RequestTimeTooSkewed);
+        done();
     });
 
     it('should return error if X-Amz-Date param is too old', done => {
         const alteredRequest = createAlteredRequest({
             'X-Amz-Date': '20160208T234304Z',
         }, 'query', request, query);
-        queryAuthCheck(alteredRequest, log, err => {
-            assert.deepStrictEqual(err, errors.RequestTimeTooSkewed);
-            done();
-        });
+        const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
+        assert.deepStrictEqual(res.err, errors.RequestTimeTooSkewed);
+        done();
     });
 
     it('should return error if scope date from X-Amz-Credential param' +
@@ -171,23 +154,20 @@ describe('v4 queryAuthCheck', () => {
             'X-Amz-Credential': 'accessKey1/20160209/' +
                 'us-east-1/s3/aws4_request',
         }, 'query', request, query);
-        queryAuthCheck(alteredRequest, log, err => {
-            clock.uninstall();
-            assert.deepStrictEqual(err, errors.InvalidArgument);
-            done();
-        });
+        const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
+        clock.uninstall();
+        assert.deepStrictEqual(res.err, errors.InvalidArgument);
+        done();
     });
 
-    it('should successfully authenticate', done => {
+    it('should successfully return v4 and no error', done => {
         // Freezes time so date created within function will be Feb 8, 2016
         // (within 15 minutes of timestamp in request)
         const clock = lolex.install(1454974984001);
-        queryAuthCheck(request, log, (err, authInfo) => {
-            clock.uninstall();
-            assert.deepStrictEqual(err, null);
-            assert.strictEqual(authInfo.getCanonicalID(),
-                createdAuthInfo.getCanonicalID());
-            done();
-        });
+        const res = queryAuthCheck(request, log, request.query);
+        clock.uninstall();
+        assert.deepStrictEqual(res.err, null);
+        assert.strictEqual(res.version, 4);
+        done();
     });
 });

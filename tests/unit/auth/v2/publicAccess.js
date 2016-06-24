@@ -28,7 +28,7 @@ describe('Public Access', () => {
             assert.strictEqual(authInfo.getCanonicalID(),
                                publicAuthInfo.getCanonicalID());
             done();
-        });
+        }, 's3', request.query);
     });
 
     it('should not grant access to a request that contains ' +
@@ -45,6 +45,6 @@ describe('Public Access', () => {
         auth(request, logger, err => {
             assert.deepStrictEqual(err, errors.MissingSecurityHeader);
             done();
-        });
+        }, 's3', request.query);
     });
 });

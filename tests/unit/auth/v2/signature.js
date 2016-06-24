@@ -27,7 +27,7 @@ describe('checkAuth reconstruction of signature', () => {
             query: {},
         };
         const secretKey = 'verySecretKey1';
-        const stringToSign = constructStringToSign(request, log);
+        const stringToSign = constructStringToSign(request, request.query, log);
         const reconstructedSig = hashSignature(stringToSign, secretKey, 'sha1');
         assert.strictEqual(reconstructedSig, 'MJNF7AqNapSu32TlBOVkcAxj58c=');
     });
@@ -50,7 +50,7 @@ describe('checkAuth reconstruction of signature', () => {
             query: { 'max-keys': '1000', 'prefix': '', 'delimiter': '/' },
         };
         const secretKey = 'verySecretKey1';
-        const stringToSign = constructStringToSign(request, log);
+        const stringToSign = constructStringToSign(request, request.query, log);
         const reconstructedSig = hashSignature(stringToSign, secretKey, 'sha1');
         assert.strictEqual(reconstructedSig, 'V8g5UJUFmMzruMqUHVT6ZwvUw+M=');
     });
@@ -77,7 +77,7 @@ describe('checkAuth reconstruction of signature', () => {
             query: {},
         };
         const secretKey = 'verySecretKey1';
-        const stringToSign = constructStringToSign(request, log);
+        const stringToSign = constructStringToSign(request, request.query, log);
         const reconstructedSig = hashSignature(stringToSign, secretKey, 'sha1');
         assert.strictEqual(reconstructedSig, 'fWPcicKn7Fhzfje/0pRTifCxL44=');
     });
