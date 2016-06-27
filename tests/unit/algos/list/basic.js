@@ -1,10 +1,10 @@
 'use strict'; // eslint-disable-line strict
 
 const assert = require('assert');
-const List = require('../../../lib/extension/list.extension').List;
+const Basic = require('../../../../lib/algos/list/basic').List;
 const Werelogs = require('werelogs');
 const logger = new Werelogs('listTest');
-const performListing = require('../../utils/performListing');
+const performListing = require('../../../utils/performListing');
 
 class Test {
     constructor(name, input, output) {
@@ -14,7 +14,7 @@ class Test {
     }
 }
 
-describe('List extension', () => {
+describe('Basic listing algorithm', () => {
     const data = [];
     for (let i = 0; i < 15000; ++i) {
         data.push({
@@ -33,7 +33,7 @@ describe('List extension', () => {
     ];
     tests.forEach(test => {
         it(`Should list ${test.name}`, done => {
-            const res = performListing(data, List, test.input, logger);
+            const res = performListing(data, Basic, test.input, logger);
             assert.deepStrictEqual(res, test.output);
             done();
         });

@@ -9,7 +9,11 @@ module.exports = {
         ciphers: require('./lib/https/ciphers.js'),
         dhparam: require('./lib/https/dh2048.js'),
     },
-    delimiter: require('./lib/extension/delimiter.extension'),
-    list: require('./lib/extension/list.extension'),
-    listMPU: require('./lib/extension/listMPU.extension'),
+    algorithms: {
+        list: {
+            Basic: require('./lib/algos/list/basic').List,
+            Delimiter: require('./lib/algos/list/delimiter').Delimiter,
+            MPU: require('./lib/algos/list/MPU').MultipartUploads,
+        },
+    },
 };

@@ -2,7 +2,7 @@
 
 const assert = require('assert');
 
-const checkLimit = require('../../../lib/extension/tools').checkLimit;
+const checkLimit = require('../../../../lib/algos/list/tools').checkLimit;
 
 describe('checkLimit function', () => {
     const tests = [

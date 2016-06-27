@@ -2,10 +2,10 @@
 
 const assert = require('assert');
 const Delimiter =
-    require('../../../lib/extension/delimiter.extension').Delimiter;
+    require('../../../../lib/algos/list/delimiter').Delimiter;
 const Werelogs = require('werelogs');
 const logger = new Werelogs('listTest');
-const performListing = require('../../utils/performListing');
+const performListing = require('../../../utils/performListing');
 
 class Test {
     constructor(name, input, output, filter) {
@@ -20,7 +20,7 @@ class Test {
     }
 }
 
-describe('Delimiter extension', () => {
+describe('Delimiter listing algorithm', () => {
     const value = {
         ETag: undefined,
         EventualStorageBucket: undefined,
