@@ -6,7 +6,7 @@ const errors = require('../../../../lib/errors');
 const auth = require('../../../../lib/auth/auth');
 const DummyRequestLogger = require('../../helpers').DummyRequestLogger;
 
-auth.setAuthHandler(require('../../../../lib/auth/vault'));
+auth.setHandler(require('../../../../lib/auth/vault'));
 
 const logger = new DummyRequestLogger();
 
@@ -26,7 +26,7 @@ describe('Error handling in checkAuth', () => {
             url: '/bucket',
             query: {},
         };
-        auth.doAuth(request, logger, err => {
+        auth.server.doAuth(request, logger, err => {
             assert.deepStrictEqual(err, errors.InvalidAccessKeyId);
             done();
         }, 's3', request.query);
@@ -45,7 +45,7 @@ describe('Error handling in checkAuth', () => {
             url: '/bucket',
         };
 
-        auth.doAuth(request, logger, err => {
+        auth.server.doAuth(request, logger, err => {
             assert.deepStrictEqual(err, errors.MissingSecurityHeader);
             done();
         }, 's3', request.query);
@@ -66,7 +66,7 @@ describe('Error handling in checkAuth', () => {
             },
             headers: {},
         };
-        auth.doAuth(request, logger, err => {
+        auth.server.doAuth(request, logger, err => {
             assert.deepStrictEqual(err, errors.RequestTimeTooSkewed);
             done();
         }, 's3', request.query);
@@ -91,7 +91,7 @@ describe('Error handling in checkAuth', () => {
             },
             headers: { host: 's3.amazonaws.com' },
         };
-        auth.doAuth(request, logger, err => {
+        auth.server.doAuth(request, logger, err => {
             assert.deepStrictEqual(err, errors.SignatureDoesNotMatch);
             done();
         }, 's3', request.query);
@@ -112,7 +112,7 @@ describe('Error handling in checkAuth', () => {
             url: '/bucket',
             query: {},
         };
-        auth.doAuth(request, logger, err => {
+        auth.server.doAuth(request, logger, err => {
             assert.deepStrictEqual(err, errors.SignatureDoesNotMatch);
             done();
         }, 's3', request.query);
@@ -133,7 +133,7 @@ describe('Error handling in checkAuth', () => {
             url: '/bucket',
             query: {},
         };
-        auth.doAuth(request, logger, err => {
+        auth.server.doAuth(request, logger, err => {
             assert.deepStrictEqual(err, errors.MissingSecurityHeader);
             done();
         }, 's3', request.query);
