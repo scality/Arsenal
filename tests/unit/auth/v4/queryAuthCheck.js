@@ -167,7 +167,7 @@ describe('v4 queryAuthCheck', () => {
         const res = queryAuthCheck(request, log, request.query);
         clock.uninstall();
         assert.deepStrictEqual(res.err, null);
-        assert.strictEqual(res.version, 4);
+        assert.strictEqual(res.params.version, 4);
         done();
     });
 });

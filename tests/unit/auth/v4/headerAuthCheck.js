@@ -199,7 +199,7 @@ describe('v4 headerAuthCheck', () => {
         const res = headerAuthCheck(request, log);
         clock.uninstall();
         assert.strictEqual(res.err, null);
-        assert.strictEqual(res.version, 4);
+        assert.strictEqual(res.params.version, 4);
         done();
     });
 });
