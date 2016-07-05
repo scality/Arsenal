@@ -10,10 +10,11 @@
   "author": "Giorgio Regni",
   "license": "Apache-2.0",
   "bugs": {
-        "url": "https://github.com/scality/Arsenal/issues"
+    "url": "https://github.com/scality/Arsenal/issues"
   },
   "homepage": "https://github.com/scality/Arsenal#readme",
   "dependencies": {
+    "ip": "^1.1.3",
     "utf8": "~2.1.1"
   },
   "devDependencies": {

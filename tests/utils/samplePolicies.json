@@ -1,0 +1,132 @@
+{
+    "arn:aws:iam::aws:policy/AmazonS3FullAccess": {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Action": "s3:*",
+                "Resource": "*"
+            }
+        ]
+    },
+    "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess": {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "s3:Get*",
+                    "s3:List*"
+                ],
+                "Resource": "*"
+            }
+        ]
+    },
+    "Deny Bucket Policy": {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "Stmt1466620739001",
+                "Effect": "Deny",
+                "Action": [
+                    "s3:CreateBucket",
+                    "s3:DeleteBucket",
+                    "s3:DeleteBucketPolicy"
+                ],
+                "Resource": [
+                    "arn:aws:s3:::my_favorite_bucket"
+                ]
+            }
+        ]
+    },
+    "Simple Bucket Policy": {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "s3:PutObject",
+            "Resource": "arn:aws:s3:::bucket"
+        }
+    },
+    "Variable Bucket Policy": {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "Stmt1466620739005",
+                "Effect": "Allow",
+                "Action": [
+                    "s3:PutObject",
+                    "s3:GetObject"
+                ],
+                "Resource": [
+                    "arn:aws:s3:::personalbucket/${aws:username}"
+                ]
+            }
+        ]
+    },
+    "Multi-Statement Policy": {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "Stmt1466625337000",
+                "Effect": "Allow",
+                "Action": [
+                    "s3:GetObject"
+                ],
+                "Resource": [
+                    "arn:aws:s3:::notVeryPrivate/*"
+                ]
+            },
+            {
+                "Sid": "Stmt1466625416000",
+                "Effect": "Allow",
+                "Action": [
+                    "s3:GetObjectAcl"
+                ],
+                "Resource": [
+                    "arn:aws:s3:::notVeryPrivate/*"
+                ]
+            },
+            {
+                "Sid": "Stmt1466625455000",
+                "Effect": "Allow",
+                "Action": [
+                    "s3:PutObject"
+                ],
+                "Resource": [
+                    "arn:aws:s3:::notVeryPrivate"
+                ]
+            }
+        ]
+    },
+    "NotResource Example": {
+      "Version": "2012-10-17",
+      "Statement": {
+        "Effect": "Allow",
+        "Action": "s3:*",
+        "NotResource": [
+          "arn:aws:s3:::mybucket/CompanySecretInfo",
+          "arn:aws:s3:::mybucket/CompanySecretInfo/*"
+        ]
+      }
+  },
+    "NotAction and NotResource Example": {
+       "Version":"2012-10-17",
+       "Statement":[
+          {
+             "Effect":"Allow",
+             "Action":"s3:PutObject",
+             "Resource":"arn:aws:s3:::my_corporate_bucket/uploads/widgetco/*"
+          },
+          {
+             "Effect":"Deny",
+             "NotAction":"s3:PutObject",
+             "Resource":"arn:aws:s3:::my_corporate_bucket/uploads/widgetco/*"
+          },
+          {
+             "Effect":"Deny",
+             "Action":"s3:*",
+             "NotResource":"arn:aws:s3:::my_corporate_bucket/uploads/widgetco/*"
+          }
+       ]
+    }
+}

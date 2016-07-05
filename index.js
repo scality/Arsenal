@@ -16,4 +16,7 @@ module.exports = {
             MPU: require('./lib/algos/list/MPU').MultipartUploads,
         },
     },
+    policies: {
+        evaluators: require('./lib/policyEvaluator/evaluator.js'),
+    },
 };
