@@ -7,6 +7,8 @@ const auth = require('../../../../lib/auth/auth').doAuth;
 const AuthInfo = require('../../../../lib/auth/AuthInfo');
 const constants = require('../../../../lib/constants');
 const DummyRequestLogger = require('../../helpers.js').DummyRequestLogger;
+const RequestContext =
+    require('../../../../lib/policyEvaluator/RequestContext.js');
 
 const logger = new DummyRequestLogger();
 
@@ -20,6 +22,10 @@ describe('Public Access', () => {
             url: '/bucket',
             query: {},
         };
+        const requestContext = new RequestContext(request.headers,
+            request.query, request.bucketName, request.objectKey,
+            undefined, undefined,
+            'bucketGet', 's3');
         const publicAuthInfo = new AuthInfo({
             canonicalID: constants.publicId,
         });
@@ -28,7 +34,7 @@ describe('Public Access', () => {
             assert.strictEqual(authInfo.getCanonicalID(),
                                publicAuthInfo.getCanonicalID());
             done();
-        }, 's3', request.query);
+        }, 's3', requestContext);
     });
 
     it('should not grant access to a request that contains ' +
@@ -42,9 +48,13 @@ describe('Public Access', () => {
             url: '/bucket',
             query: {},
         };
+        const requestContext = new RequestContext(request.headers,
+            request.query, request.bucketName, request.objectKey,
+            undefined, undefined,
+            'bucketGet', 's3');
         auth(request, logger, err => {
             assert.deepStrictEqual(err, errors.MissingSecurityHeader);
             done();
-        }, 's3', request.query);
+        }, 's3', requestContext);
     });
 });
