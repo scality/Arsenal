@@ -1,0 +1,411 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "title": "AWS Policy schema.",
+    "description": "This schema describes a user policy per AWS policy grammar rules",
+    "definitions": {
+        "actionItem": {
+            "type": "string",
+            "pattern": "^[^*:]+:([^:])+|^\\*{1}$"
+        },
+        "resourceItem": {
+            "type": "string",
+            "pattern": "^\\*|arn:aws(:(\\*{1}|[a-z0-9\\*\\-]{2,})*?){3}:((?!\\$\\{\\}).)*?$"
+        },
+        "conditions": {
+            "type": "object",
+            "properties": {
+                "StringEquals": {
+                    "type": "object"
+                },
+                "StringNotEquals": {
+                    "type": "object"
+                },
+                "StringEqualsIgnoreCase": {
+                    "type": "object"
+                },
+                "StringNotEqualsIgnoreCase": {
+                    "type": "object"
+                },
+                "StringLike": {
+                    "type": "object"
+                },
+                "StringNotLike": {
+                    "type": "object"
+                },
+                "NumericEquals": {
+                    "type": "object"
+                },
+                "NumericNotEquals": {
+                    "type": "object"
+                },
+                "NumericLessThan": {
+                    "type": "object"
+                },
+                "NumericLessThanEquals": {
+                    "type": "object"
+                },
+                "NumericGreaterThan": {
+                    "type": "object"
+                },
+                "NumericGreaterThanEquals": {
+                    "type": "object"
+                },
+                "DateEquals": {
+                    "type": "object"
+                },
+                "DateNotEquals": {
+                    "type": "object"
+                },
+                "DateLessThan": {
+                    "type": "object"
+                },
+                "DateLessThanEquals": {
+                    "type": "object"
+                },
+                "DateGreaterThan": {
+                    "type": "object"
+                },
+                "DateGreaterThanEquals": {
+                    "type": "object"
+                },
+                "Bool": {
+                    "type": "object"
+                },
+                "BinaryEquals": {
+                    "type": "object"
+                },
+                "BinaryNotEquals": {
+                    "type": "object"
+                },
+                "IpAddress": {
+                    "type": "object"
+                },
+                "NotIpAddress": {
+                    "type": "object"
+                },
+                "ArnEquals": {
+                    "type": "object"
+                },
+                "ArnNotEquals": {
+                    "type": "object"
+                },
+                "ArnLike": {
+                    "type": "object"
+                },
+                "ArnNotLike": {
+                    "type": "object"
+                },
+                "Null": {
+                    "type": "object"
+                },
+                "StringEqualsIfExists": {
+                    "type": "object"
+                },
+                "StringNotEqualsIfExists": {
+                    "type": "object"
+                },
+                "StringEqualsIgnoreCaseIfExists": {
+                    "type": "object"
+                },
+                "StringNotEqualsIgnoreCaseIfExists": {
+                    "type": "object"
+                },
+                "StringLikeIfExists": {
+                    "type": "object"
+                },
+                "StringNotLikeIfExists": {
+                    "type": "object"
+                },
+                "NumericEqualsIfExists": {
+                    "type": "object"
+                },
+                "NumericNotEqualsIfExists": {
+                    "type": "object"
+                },
+                "NumericLessThanIfExists": {
+                    "type": "object"
+                },
+                "NumericLessThanEqualsIfExists": {
+                    "type": "object"
+                },
+                "NumericGreaterThanIfExists": {
+                    "type": "object"
+                },
+                "NumericGreaterThanEqualsIfExists": {
+                    "type": "object"
+                },
+                "DateEqualsIfExists": {
+                    "type": "object"
+                },
+                "DateNotEqualsIfExists": {
+                    "type": "object"
+                },
+                "DateLessThanIfExists": {
+                    "type": "object"
+                },
+                "DateLessThanEqualsIfExists": {
+                    "type": "object"
+                },
+                "DateGreaterThanIfExists": {
+                    "type": "object"
+                },
+                "DateGreaterThanEqualsIfExists": {
+                    "type": "object"
+                },
+                "BoolIfExists": {
+                    "type": "object"
+                },
+                "BinaryEqualsIfExists": {
+                    "type": "object"
+                },
+                "BinaryNotEqualsIfExists": {
+                    "type": "object"
+                },
+                "IpAddressIfExists": {
+                    "type": "object"
+                },
+                "NotIpAddressIfExists": {
+                    "type": "object"
+                },
+                "ArnEqualsIfExists": {
+                    "type": "object"
+                },
+                "ArnNotEqualsIfExists": {
+                    "type": "object"
+                },
+                "ArnLikeIfExists": {
+                    "type": "object"
+                },
+                "ArnNotLikeIfExists": {
+                    "type": "object"
+                }
+            },
+            "additionalProperties": false
+        }
+    },
+    "properties": {
+        "Version": {
+            "type": "string",
+            "enum": [
+                "2012-10-17"
+            ]
+        },
+        "Statement": {
+            "oneOf": [
+                {
+                    "type": [
+                        "array"
+                    ],
+                    "minItems": 1,
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "Sid": {
+                                "type": "string",
+                                "pattern": "[a-zA-Z0-9]+"
+                            },
+                            "Effect": {
+                                "type": "string",
+                                "enum": [
+                                    "Allow",
+                                    "Deny"
+                                ]
+                            },
+                            "Action": {
+                                "oneOf": [
+                                    {
+                                        "$ref": "#/definitions/actionItem"
+                                    },
+                                    {
+                                        "type": "array",
+                                        "items": {
+                                            "$ref": "#/definitions/actionItem"
+                                        }
+                                    }
+                                ]
+                            },
+                            "NotAction": {
+                                "oneOf": [
+                                    {
+                                        "$ref": "#/definitions/actionItem"
+                                    },
+                                    {
+                                        "type": "array",
+                                        "items": {
+                                            "$ref": "#/definitions/actionItem"
+                                        }
+                                    }
+                                ]
+                            },
+                            "Resource": {
+                                "oneOf": [
+                                    {
+                                        "$ref": "#/definitions/resourceItem"
+                                    },
+                                    {
+                                        "type": "array",
+                                        "items": {
+                                            "$ref": "#/definitions/resourceItem"
+                                        },
+                                        "minItems": 1
+                                    }
+                                ]
+                            },
+                            "NotResource": {
+                                "oneOf": [
+                                    {
+                                        "$ref": "#/definitions/resourceItem"
+                                    },
+                                    {
+                                        "type": "array",
+                                        "items": {
+                                            "$ref": "#/definitions/resourceItem"
+                                        },
+                                        "minItems": 1
+                                    }
+                                ]
+                            },
+                            "Condition": {
+                                "$ref": "#/definitions/conditions"
+                            }
+                        },
+                        "oneOf": [
+                            {
+                                "required": [
+                                    "Effect",
+                                    "Action",
+                                    "Resource"
+                                ]
+                            }, {
+                                "required": [
+                                    "Effect",
+                                    "Action",
+                                    "NotResource"
+                                ]
+                            }, {
+                                "required": [
+                                    "Effect",
+                                    "NotAction",
+                                    "Resource"
+                                ]
+                            }, {
+                                "required": [
+                                    "Effect",
+                                    "NotAction",
+                                    "NotResource"
+                                ]
+                            }
+                        ]
+                    }
+                },
+                {
+                    "type": [
+                        "object"
+                    ],
+                    "properties": {
+                        "Sid": {
+                            "type": "string",
+                            "pattern": "[a-zA-Z0-9]+"
+                        },
+                        "Effect": {
+                            "type": "string",
+                            "enum": [
+                                "Allow",
+                                "Deny"
+                            ]
+                        },
+                        "Action": {
+                            "oneOf": [
+                                {
+                                    "$ref": "#/definitions/actionItem"
+                                },
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/actionItem"
+                                    }
+                                }
+                            ]
+                        },
+                        "NotAction": {
+                            "oneOf": [
+                                {
+                                    "$ref": "#/definitions/actionItem"
+                                },
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/actionItem"
+                                    }
+                                }
+                            ]
+                        },
+                        "Resource": {
+                            "oneOf": [
+                                {
+                                    "$ref": "#/definitions/resourceItem"
+                                },
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/resourceItem"
+                                    },
+                                    "minItems": 1
+                                }
+                            ]
+                        },
+                        "NotResource": {
+                            "oneOf": [
+                                {
+                                    "$ref": "#/definitions/resourceItem"
+                                },
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/resourceItem"
+                                    },
+                                    "minItems": 1
+                                }
+                            ]
+                        },
+                        "Condition": {
+                            "$ref": "#/definitions/conditions"
+                        }
+                    },
+                    "oneOf": [
+                        {
+                            "required": [
+                                "Action",
+                                "Effect",
+                                "Resource"
+                            ]
+                        }, {
+                            "required": [
+                                "Action",
+                                "Effect",
+                                "NotResource"
+                            ]
+                        }, {
+                            "required": [
+                                "Effect",
+                                "NotAction",
+                                "Resource"
+                            ]
+                        }, {
+                            "required": [
+                                "Effect",
+                                "NotAction",
+                                "NotResource"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    "required": [
+        "Version",
+        "Statement"
+    ]
+}
