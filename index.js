@@ -20,5 +20,6 @@ module.exports = {
         evaluators: require('./lib/policyEvaluator/evaluator.js'),
         validateUserPolicy: require('./lib/policy/policyValidator')
             .validateUserPolicy,
+        RequestContext: require('./lib/policyEvaluator/RequestContext.js'),
     },
 };
