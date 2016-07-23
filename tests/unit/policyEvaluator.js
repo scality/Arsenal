@@ -977,7 +977,7 @@ describe('handleWildcards', () => {
         'unlimited of any character and  will match ? as any single ' +
         'character', () => {
         const result = handleWildcards('lsdkfj?lk*');
-        assert.deepStrictEqual(result, '^lsdkfj.{1}lk.*?$');
+        assert.deepStrictEqual(result, '^lsdkfj.lk.*?$');
     });
 
     it('should convert a string to a regEx string that matches ${*} as ' +
@@ -990,7 +990,7 @@ describe('handleWildcards', () => {
     it('should escape other regular expression special characters', () => {
         const result = handleWildcards('*^.+?()|[\]{}');
         assert.deepStrictEqual(result,
-            '^.*?\\^\\.\\+.{1}\\(\\)\\|\\[\\\]\\{\\}$');
+            '^.*?\\^\\.\\+.\\(\\)\\|\\[\\\]\\{\\}$');
     });
 });
 
