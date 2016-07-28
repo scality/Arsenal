@@ -1,6 +1,7 @@
 'use strict'; // eslint-disable-line strict
 
 const assert = require('assert');
+const lolex = require('lolex');
 
 const evaluator = require('../../lib/policyEvaluator/evaluator.js');
 const evaluatePolicy = evaluator.evaluatePolicy;
@@ -20,6 +21,8 @@ function check(requestContext, rcModifiers, policy, expected) {
     Object.keys(rcModifiers).forEach(key => {
         modifiedRequestContext[key] = rcModifiers[key];
     });
+    // Note that evaluate policy converts the policy statements into an array
+    // so cannot modify the policy conditions after running check function
     const result = evaluatePolicy(requestContext, policy, log);
     assert.deepStrictEqual(result, expected);
 }
@@ -555,7 +558,7 @@ describe('policyEvaluator', () => {
                     check(requestContext, rcModifiers, policy, 'Allow');
                 });
 
-            it('should be neutral for DateEquals condition ' +
+            it('should be neutral for DateEquals condition with ISO date' +
                 'if do not meet condition',
                 () => {
                     policy.Statement.Condition = { DateEquals:
@@ -567,12 +570,20 @@ describe('policyEvaluator', () => {
                     rcModifiers =
                         { _tokenIssueTime: '1467315743431' };
                     check(requestContext, rcModifiers, policy, 'Neutral');
-                    policy.Statement.Condition = { DateEquals:
-                        { 'aws:EpochTime':
-                        '1467315743531' } };
                 });
 
-            it('should allow access for DateEquals condition ' +
+            it('should be neutral for DateEquals condition with epoch date' +
+                'if do not meet condition',
+                () => {
+                    policy.Statement.Condition =
+                        { 'aws:EpochTime':
+                        '1467315743531' };
+                    const rcModifiers =
+                            { _tokenIssueTime: '1467315743431' };
+                    check(requestContext, rcModifiers, policy, 'Neutral');
+                });
+
+            it('should allow access for DateEquals condition with ISO time ' +
                 'if meet condition',
                 () => {
                     policy.Statement.Condition = { DateEquals:
@@ -584,13 +595,20 @@ describe('policyEvaluator', () => {
                     rcModifiers =
                         { _tokenIssueTime: '1467315743431' };
                     check(requestContext, rcModifiers, policy, 'Allow');
+                });
+
+            it('should allow access for DateEquals condition with epoch time ' +
+                'if meet condition',
+                () => {
+                    const clock = lolex.install(1467315743431);
                     policy.Statement.Condition = { DateEquals:
                         { 'aws:EpochTime':
                         '1467315743431' } };
                     check(requestContext, {}, policy, 'Allow');
+                    clock.uninstall();
                 });
 
-            it('should be neutral for DateNotEquals condition ' +
+            it('should be neutral for DateNotEquals condition with ISO time' +
                 'if do not meet condition',
                 () => {
                     policy.Statement.Condition = { DateNotEquals:
@@ -602,13 +620,20 @@ describe('policyEvaluator', () => {
                     rcModifiers =
                         { _tokenIssueTime: '1467315743431' };
                     check(requestContext, rcModifiers, policy, 'Neutral');
+                });
+
+            it('should be neutral for DateNotEquals condition with epoch ' +
+                'time if do not meet condition',
+                () => {
+                    const clock = lolex.install(1467315743431);
                     policy.Statement.Condition = { DateNotEquals:
                         { 'aws:EpochTime':
                         '1467315743431' } };
                     check(requestContext, {}, policy, 'Neutral');
+                    clock.uninstall();
                 });
 
-            it('should allow access for DateNotEquals condition ' +
+            it('should allow access for DateNotEquals condition with ISO time' +
                 'if meet condition',
                 () => {
                     policy.Statement.Condition = { DateNotEquals:
@@ -620,14 +645,19 @@ describe('policyEvaluator', () => {
                     rcModifiers =
                         { _tokenIssueTime: '1467315743431' };
                     check(requestContext, rcModifiers, policy, 'Allow');
+                });
+
+            it('should allow access for DateNotEquals condition with epoch ' +
+            'time if meet condition',
+                () => {
                     policy.Statement.Condition = { DateNotEquals:
                         { 'aws:EpochTime':
                         '1467315743531' } };
                     check(requestContext, {}, policy, 'Allow');
                 });
 
-            it('should be neutral for DateLessThan condition ' +
-                'if do not meet condition',
+            it('should be neutral for DateLessThan token issue time ' +
+            'condition with ISO time if do not meet condition',
                 () => {
                     policy.Statement.Condition = { DateLessThan:
                         { 'aws:TokenIssueTime':
@@ -635,44 +665,64 @@ describe('policyEvaluator', () => {
                     let rcModifiers =
                         { _tokenIssueTime: '2016-06-30T19:42:23.531Z' };
                     check(requestContext, rcModifiers, policy, 'Neutral');
+                    rcModifiers =
+                        { _tokenIssueTime: '1467315743531' };
+                    check(requestContext, rcModifiers, policy, 'Neutral');
+                });
+
+            it('should be neutral for DateLessThan current time condition ' +
+                'with ISO time if do not meet condition',
+                () => {
                     policy.Statement.Condition = { DateLessThan:
                         { 'aws:CurrentTime':
                         '2016-06-30T19:42:23.431Z' } };
                     check(requestContext, {}, policy, 'Neutral');
-                    rcModifiers =
-                        { _tokenIssueTime: '1467315743531' };
-                    check(requestContext, rcModifiers, policy, 'Neutral');
+                });
+
+            it('should be neutral for DateLessThan current time condition ' +
+                'with epoch time if do not meet condition',
+                () => {
                     policy.Statement.Condition = { DateLessThan:
                         { 'aws:EpochTime':
                         '1467315743431' } };
                     check(requestContext, {}, policy, 'Neutral');
                 });
 
-            it('should allow access for DateLessThan condition ' +
-                'if meet condition',
+            it('should allow access for DateLessThan ISO token time ' +
+                'condition if meet condition',
                 () => {
                     policy.Statement.Condition = { DateLessThan:
                         { 'aws:TokenIssueTime':
                         ['2016-06-30T19:42:23.431Z', '2017-06-30T19:42:23.431Z',
                         '2018-06-30T19:42:23.431Z'] },
                     };
-                    let rcModifiers =
+                    const rcModifiers =
                         { _tokenIssueTime: '2016-06-30T19:42:23.331Z' };
                     check(requestContext, rcModifiers, policy, 'Allow');
+                });
+
+            it('should allow access for DateLessThan ISO current time ' +
+                'condition if meet condition',
+                () => {
                     policy.Statement.Condition = { DateLessThan:
                         { 'aws:CurrentTime':
                         '2099-06-30T19:42:23.431Z' } };
                     check(requestContext, {}, policy, 'Allow');
-                    rcModifiers = { _tokenIssueTime: '1467315743331' };
+                    const rcModifiers = { _tokenIssueTime: '1467315743331' };
                     check(requestContext, rcModifiers, policy, 'Allow');
+                });
+
+            it('should allow access for DateLessThan epoch current time ' +
+                'condition if meet condition',
+                () => {
                     policy.Statement.Condition = { DateLessThan:
                         { 'aws:EpochTime':
                         '4086531743431' } };
                     check(requestContext, {}, policy, 'Allow');
                 });
 
-            it('should be neutral for DateLessThanEquals condition ' +
-                'if do not meet condition',
+            it('should be neutral for DateLessThanEquals token condition ' +
+                'with ISO time if do not meet condition',
                 () => {
                     policy.Statement.Condition = { DateLessThanEquals:
                         { 'aws:TokenIssueTime':
@@ -680,14 +730,19 @@ describe('policyEvaluator', () => {
                     const rcModifiers =
                         { _tokenIssueTime: '2016-06-30T19:42:23.531Z' };
                     check(requestContext, rcModifiers, policy, 'Neutral');
+                });
+
+            it('should be neutral for DateLessThanEquals current time ' +
+                'condition with ISO time if do not meet condition',
+                () => {
                     policy.Statement.Condition = { DateLessThanEquals:
                         { 'aws:CurrentTime':
                         '2016-06-30T19:42:23.431Z' } };
                     check(requestContext, {}, policy, 'Neutral');
                 });
 
-            it('should allow access for DateLessThanEquals condition ' +
-                'if meet condition',
+            it('should allow access for DateLessThanEquals toekn condition ' +
+                'with ISO time if meet condition',
                 () => {
                     policy.Statement.Condition = { DateLessThanEquals:
                         { 'aws:TokenIssueTime':
@@ -695,14 +750,19 @@ describe('policyEvaluator', () => {
                     const rcModifiers =
                         { _tokenIssueTime: '2016-06-30T19:42:23.431Z' };
                     check(requestContext, rcModifiers, policy, 'Allow');
+                });
+
+            it('should allow access for DateLessThanEquals current time ' +
+                'condition with ISO time if meet condition',
+                () => {
                     policy.Statement.Condition = { DateLessThanEquals:
                         { 'aws:CurrentTime':
                         '2099-06-30T19:42:23.431Z' } };
                     check(requestContext, {}, policy, 'Allow');
                 });
 
-            it('should be neutral for DateGreaterThan condition ' +
-                'if do not meet condition',
+            it('should be neutral for DateGreaterThan token condition ' +
+                'with ISO time if do not meet condition',
                 () => {
                     policy.Statement.Condition = { DateGreaterThan:
                         { 'aws:TokenIssueTime':
@@ -710,14 +770,19 @@ describe('policyEvaluator', () => {
                     const rcModifiers =
                         { _tokenIssueTime: '2016-06-30T19:42:23.331Z' };
                     check(requestContext, rcModifiers, policy, 'Neutral');
+                });
+
+            it('should be neutral for DateGreaterThan current time ' +
+                'condition with ISO time if do not meet condition',
+                () => {
                     policy.Statement.Condition = { DateGreaterThan:
                         { 'aws:CurrentTime':
                         '2099-06-30T19:42:23.431Z' } };
                     check(requestContext, {}, policy, 'Neutral');
                 });
 
-            it('should allow access for DateGreaterThan condition ' +
-                'if meet condition',
+            it('should allow access for DateGreaterThan token condition ' +
+                'with ISO time if meet condition',
                 () => {
                     policy.Statement.Condition = { DateGreaterThan:
                         { 'aws:TokenIssueTime':
@@ -725,14 +790,19 @@ describe('policyEvaluator', () => {
                     const rcModifiers =
                         { _tokenIssueTime: '2016-06-30T19:42:23.531Z' };
                     check(requestContext, rcModifiers, policy, 'Allow');
+                });
+
+            it('should allow access for DateGreaterThan current time ' +
+                'condition with ISO time if meet condition',
+                () => {
                     policy.Statement.Condition = { DateGreaterThan:
                         { 'aws:CurrentTime':
                         '2016-06-30T19:42:23.431Z' } };
                     check(requestContext, {}, policy, 'Allow');
                 });
 
-            it('should be neutral for DateGreaterThanEquals condition ' +
-                'if do not meet condition',
+            it('should be neutral for DateGreaterThanEquals token condition ' +
+                'with ISO time if do not meet condition',
                 () => {
                     policy.Statement.Condition = { DateGreaterThanEquals:
                         { 'aws:TokenIssueTime':
@@ -740,14 +810,19 @@ describe('policyEvaluator', () => {
                     const rcModifiers =
                         { _tokenIssueTime: '2016-06-30T19:42:23.331Z' };
                     check(requestContext, rcModifiers, policy, 'Neutral');
+                });
+
+            it('should be neutral for DateGreaterThanEquals current time ' +
+                'condition with ISO time if do not meet condition',
+                () => {
                     policy.Statement.Condition = { DateGreaterThanEquals:
                         { 'aws:CurrentTime':
                         '2099-06-30T19:42:23.431Z' } };
                     check(requestContext, {}, policy, 'Neutral');
                 });
 
-            it('should allow access for DateGreaterThanEquals condition ' +
-                'if meet condition',
+            it('should allow access for DateGreaterThanEquals token ' +
+                'condition with ISO time if meet condition',
                 () => {
                     policy.Statement.Condition = { DateGreaterThanEquals:
                         { 'aws:TokenIssueTime':
@@ -755,6 +830,11 @@ describe('policyEvaluator', () => {
                     const rcModifiers =
                         { _tokenIssueTime: '2016-06-30T19:42:23.431Z' };
                     check(requestContext, rcModifiers, policy, 'Allow');
+                });
+
+            it('should allow access for DateGreaterThanEquals current ' +
+                'time condition with ISO time if meet condition',
+                () => {
                     policy.Statement.Condition = { DateGreaterThanEquals:
                         { 'aws:CurrentTime':
                         '2016-06-30T19:42:23.431Z' } };
