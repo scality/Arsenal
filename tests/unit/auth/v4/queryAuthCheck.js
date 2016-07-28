@@ -24,10 +24,13 @@ const query = {
         '7723157d8148ad5888b3aee1133784eb5aec08b',
     'X-Amz-SignedHeaders': 'host',
 };
+const headers = {
+    host,
+};
 const request = {
     method,
     path,
-    headers: { host },
+    headers,
     query,
 };
 
@@ -89,6 +92,32 @@ describe('v4 queryAuthCheck', () => {
         undefined }, 'query', request, query);
         const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
         assert.deepStrictEqual(res.err, errors.InvalidArgument);
+        done();
+    });
+
+    it('should return error if host is not included as signed header', done => {
+        const alteredRequest = createAlteredRequest({ 'X-Amz-SignedHeaders':
+            'none' }, 'query', request, query);
+        const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
+        assert.deepStrictEqual(res.err, errors.AccessDenied);
+        done();
+    });
+
+    it('should return error if an x-amz header is not included as signed ' +
+        'header but is in request', done => {
+        const alteredRequest = createAlteredRequest({
+            'x-amz-acl': 'public' }, 'headers', request, headers);
+        const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
+        assert.deepStrictEqual(res.err, errors.AccessDenied);
+        done();
+    });
+
+    it('should return error if an x-scal header is not included as signed ' +
+        'header but is in request', done => {
+        const alteredRequest = createAlteredRequest({
+            'x-scal-encryption': 'true' }, 'headers', request, headers);
+        const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
+        assert.deepStrictEqual(res.err, errors.AccessDenied);
         done();
     });
 
