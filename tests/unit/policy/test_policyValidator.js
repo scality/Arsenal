@@ -328,4 +328,11 @@ describe('Policies validation - Statement::Condition_block', () => {
         };
         check(policy, failRes());
     });
+
+    it('should fail when invalid property is assigned', () => {
+        policy.Condition = {
+            SomethingLike: { 's3:prefix': ['Development/*'] },
+        };
+        check(policy, failRes());
+    });
 });

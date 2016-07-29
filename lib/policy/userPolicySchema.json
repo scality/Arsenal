@@ -407,5 +407,6 @@
     "required": [
         "Version",
         "Statement"
-    ]
+    ],
+    "additionalProperties": false
 }
