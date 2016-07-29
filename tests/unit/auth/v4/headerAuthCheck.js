@@ -60,30 +60,27 @@ describe('v4 headerAuthCheck', () => {
                 'x-amz-date, ' +
                 'Signature=abed924c06abf8772c670064d22eacd6ccb85c06befa15f' +
                 '4a789b0bae19307bc' }, 'headers', request, headers);
-        headerAuthCheck(alteredRequest, log, err => {
-            assert.deepStrictEqual(err, errors.AccessDenied);
-            done();
-        });
+        const res = headerAuthCheck(alteredRequest, log);
+        assert.deepStrictEqual(res.err, errors.AccessDenied);
+        done();
     });
 
     it('should return error if an x-amz header is not included as signed ' +
         'header but is in request', done => {
         const alteredRequest = createAlteredRequest({
             'x-amz-acl': 'public' }, 'headers', request, headers);
-        headerAuthCheck(alteredRequest, log, err => {
-            assert.deepStrictEqual(err, errors.AccessDenied);
-            done();
-        });
+        const res = headerAuthCheck(alteredRequest, log);
+        assert.deepStrictEqual(res.err, errors.AccessDenied);
+        done();
     });
 
     it('should return error if an x-scal header is not included as signed ' +
         'header but is in request', done => {
         const alteredRequest = createAlteredRequest({
             'x-scal-encryption': 'true' }, 'headers', request, headers);
-        headerAuthCheck(alteredRequest, log, err => {
-            assert.deepStrictEqual(err, errors.AccessDenied);
-            done();
-        });
+        const res = headerAuthCheck(alteredRequest, log);
+        assert.deepStrictEqual(res.err, errors.AccessDenied);
+        done();
     });
 
     it('should return error if missing credentials', done => {
