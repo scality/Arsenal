@@ -140,6 +140,11 @@ describe('Policies validation - Statement::Sid_block', () => {
         check(policy, successRes);
     });
 
+    it('should fail if Sid is not a valid format', () => {
+        policy.Statement.Sid = 'foo bar()';
+        check(policy, failRes());
+    });
+
     it('should fail if Sid is not a string', () => {
         policy.Statement.Sid = 1234;
         check(policy, failRes());
