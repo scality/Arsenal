@@ -1,6 +1,6 @@
 'use strict'; // eslint-disable-line
 
-const Logger = require('werelogs');
+const Logger = require('werelogs').Logger;
 const http = require('http');
 const Clustering = require('../../../../lib/Clustering');
 const Cluster = require('cluster');
