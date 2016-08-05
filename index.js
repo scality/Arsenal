@@ -1,4 +1,5 @@
 module.exports = {
+    MD5Sum: require('./lib/MD5Sum.js'),
     auth: require('./lib/auth/auth'),
     constants: require('./lib/constants'),
     db: require('./lib/db'),
