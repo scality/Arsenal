@@ -24,7 +24,7 @@
     "lolex": "^1.4.0",
     "mocha": "^2.3.3",
     "temp": "^0.8.3",
-    "werelogs": "scality/werelogs#rel/1.1"
+    "werelogs": "scality/werelogs#perf/improvment"
   },
   "scripts": {
     "lint": "eslint $(git ls-files '*.js')",
