@@ -22,4 +22,5 @@ module.exports = {
             .validateUserPolicy,
         RequestContext: require('./lib/policyEvaluator/RequestContext.js'),
     },
+    Clustering: require('./lib/Clustering'),
 };
