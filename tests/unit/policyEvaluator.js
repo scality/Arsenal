@@ -923,6 +923,46 @@ describe('policyEvaluator', () => {
                     check(requestContext, rcModifiers, policy, 'Allow');
                 });
 
+            it('should be neutral for IpAddress condition ' +
+                'if do not meet condition even if ipv4 address is mapped',
+                () => {
+                    policy.Statement.Condition = { IpAddress:
+                        { 'aws:SourceIp': '203.0.113.0/24' } };
+                    const rcModifiers =
+                        { _requesterIp: '::ffff:203.0.114.255' };
+                    check(requestContext, rcModifiers, policy, 'Neutral');
+                });
+
+            it('should allow access for IpAddress condition ' +
+                'if meet condition even if ipv4 addres is mapped',
+                () => {
+                    policy.Statement.Condition = { IpAddress:
+                        { 'aws:SourceIp': '203.0.113.0/24' } };
+                    const rcModifiers =
+                        { _requesterIp: '::ffff:203.0.113.254' };
+                    check(requestContext, rcModifiers, policy, 'Allow');
+                });
+
+            it('should be neutral for IpAddress condition ' +
+                'if nonsense is given for ip address in request',
+                () => {
+                    policy.Statement.Condition = { IpAddress:
+                        { 'aws:SourceIp': '203.0.113.0/24' } };
+                    const rcModifiers =
+                        { _requesterIp: 'nonsense' };
+                    check(requestContext, rcModifiers, policy, 'Neutral');
+                });
+
+            it('should be neutral for IpAddress condition ' +
+                'if nonsense is given for ip address in condition',
+                () => {
+                    policy.Statement.Condition = { IpAddress:
+                        { 'aws:SourceIp': 'nonsense' } };
+                    const rcModifiers =
+                        { _requesterIp: '203.0.113.254' };
+                    check(requestContext, rcModifiers, policy, 'Neutral');
+                });
+
             it('should be neutral for NotIpAddress condition ' +
                 'if do not meet condition',
                 () => {
@@ -938,6 +978,26 @@ describe('policyEvaluator', () => {
                     policy.Statement.Condition = { NotIpAddress:
                         { 'aws:SourceIp': '203.0.113.0/24' } };
                     const rcModifiers = { _requesterIp: '203.0.112.254' };
+                    check(requestContext, rcModifiers, policy, 'Allow');
+                });
+
+            it('should be neutral for NotIpAddress condition ' +
+                'if do not meet condition even if ipv4 mapped address is used',
+                () => {
+                    policy.Statement.Condition = { NotIpAddress:
+                        { 'aws:SourceIp': '203.0.113.0/24' } };
+                    const rcModifiers =
+                        { _requesterIp: '::ffff:203.0.113.254' };
+                    check(requestContext, rcModifiers, policy, 'Neutral');
+                });
+
+            it('should allow access for NotIpAddress condition ' +
+                'if meet condition even if ipv4 mapped address is used',
+                () => {
+                    policy.Statement.Condition = { NotIpAddress:
+                        { 'aws:SourceIp': '203.0.113.0/24' } };
+                    const rcModifiers =
+                        { _requesterIp: '::ffff:203.0.112.254' };
                     check(requestContext, rcModifiers, policy, 'Allow');
                 });
 
