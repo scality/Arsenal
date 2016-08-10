@@ -416,7 +416,7 @@
     "description": "The request was denied due to request throttling."
   },
   "AccountNotFound": {
-    "code": 500,
+    "code": 404,
     "description": "No account was found in Vault, please contact your system administrator."
   },
   "ValidationError": {
