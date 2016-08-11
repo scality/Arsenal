@@ -3,7 +3,7 @@
 const assert = require('assert');
 const Delimiter =
     require('../../../../lib/algos/list/delimiter').Delimiter;
-const Werelogs = require('werelogs');
+const Werelogs = require('werelogs').Logger;
 const logger = new Werelogs('listTest');
 const performListing = require('../../../utils/performListing');
 
