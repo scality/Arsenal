@@ -1,3 +1,5 @@
+import { Logger } from 'werelogs';
+
 interface Ciphers {
     ciphers: string;
 }
@@ -179,6 +181,11 @@ declare module "arsenal" {
     }
 
     export var errors: { [key:string]: ArsenalError };
+
+    export class Clustering {
+        constructor(size: number, logger: Logger, timeout?: number);
+        start(cb: (cluster: Clustering) => void): Clustering;
+    }
 
     namespace https {
         var ciphers: Ciphers;
