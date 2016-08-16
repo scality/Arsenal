@@ -3,7 +3,7 @@
 const assert = require('assert');
 const DelimiterMaster =
     require('../../../../index').algorithms.list.DelimiterMaster;
-const Werelogs = require('werelogs');
+const Werelogs = require('werelogs').Logger;
 const logger = new Werelogs('listTest');
 const performListing = require('../../../utils/performListing');
 const VSConst =
