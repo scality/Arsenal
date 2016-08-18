@@ -332,8 +332,8 @@ describe('policyEvaluator', () => {
                         check(requestContext, rcModifiers, policy, 'Allow');
                     });
 
-            it('should allow access for StringNotLike condition with ' +
-            'variables and wildcards: without any prefix in the query',
+            it('should allow access for StringNotLike condition if condition' +
+            ' parameter is completely missing from request',
                     () => {
                         policy.Statement.Action = 's3:ListBucket';
                         policy.Statement.Resource = '*';
@@ -406,7 +406,7 @@ describe('policyEvaluator', () => {
                 });
 
             it('should allow access for StringNotEquals condition if ' +
-            'meet condition: no ACL header',
+            'condition parameter is completely missing from request',
                 () => {
                     policy.Statement.Resource = 'arn:aws:s3:::bucket/*';
                     policy.Statement.Condition = { StringNotEquals:
@@ -476,7 +476,7 @@ describe('policyEvaluator', () => {
                     check(requestContext, rcModifiers, policy, 'Allow');
                 });
             it('should allow access for StringNotEqualsIgnoreCase condition ' +
-                'if meet condition: without user-agent',
+                'if condition parameter is completely missing from request',
                 () => {
                     policy.Statement.Condition = { StringNotEqualsIgnoreCase:
                         { 'aws:UserAgent':
@@ -518,6 +518,15 @@ describe('policyEvaluator', () => {
                     policy.Statement.Condition = { NumericNotEquals:
                         { 's3:max-keys': '100' } };
                     const rcModifiers = { _query: { 'max-keys': '101' } };
+                    check(requestContext, rcModifiers, policy, 'Allow');
+                });
+
+            it('should allow access for NumericNotEquals condition ' +
+                'if condition parameter is completely missing from request',
+                () => {
+                    policy.Statement.Condition = { NumericNotEquals:
+                        { 's3:max-keys': '100' } };
+                    const rcModifiers = {};
                     check(requestContext, rcModifiers, policy, 'Allow');
                 });
 
