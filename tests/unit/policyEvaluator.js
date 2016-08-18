@@ -332,6 +332,24 @@ describe('policyEvaluator', () => {
                         check(requestContext, rcModifiers, policy, 'Allow');
                     });
 
+            it('should allow access for StringNotLike condition with ' +
+            'variables and wildcards: without any prefix in the query',
+                    () => {
+                        policy.Statement.Action = 's3:ListBucket';
+                        policy.Statement.Resource = '*';
+                        policy.Statement.Condition = {
+                            StringNotLike: { 's3:prefix': [
+                                'home/${aws:username}/?/*',
+                                'home/',
+                            ] } };
+                        const rcModifiers = {
+                            _query: {},
+                            _apiMethod: 'bucketGet',
+                            _requesterInfo: { username: 'Pete' },
+                        };
+                        check(requestContext, rcModifiers, policy, 'Allow');
+                    });
+
             it('should be neutral for StringNotLike condition with ' +
             'variables and wildcards if do not match wildcard pattern',
                 () => {
@@ -383,6 +401,20 @@ describe('policyEvaluator', () => {
                         _headers: {
                             'x-amz-acl': 'private',
                         },
+                    };
+                    check(requestContext, rcModifiers, policy, 'Allow');
+                });
+
+            it('should allow access for StringNotEquals condition if ' +
+            'meet condition: no ACL header',
+                () => {
+                    policy.Statement.Resource = 'arn:aws:s3:::bucket/*';
+                    policy.Statement.Condition = { StringNotEquals:
+                        { 's3:x-amz-acl':
+                            ['public-read', 'public-read-write'] } };
+                    const rcModifiers = {
+                        _bucket: 'bucket',
+                        _object: 'obj',
                     };
                     check(requestContext, rcModifiers, policy, 'Allow');
                 });
@@ -441,6 +473,15 @@ describe('policyEvaluator', () => {
                             'user-agent': 'builtMyOwn',
                         },
                     };
+                    check(requestContext, rcModifiers, policy, 'Allow');
+                });
+            it('should allow access for StringNotEqualsIgnoreCase condition ' +
+                'if meet condition: without user-agent',
+                () => {
+                    policy.Statement.Condition = { StringNotEqualsIgnoreCase:
+                        { 'aws:UserAgent':
+                            ['CyberSquaw', 's3Sergeant', 'jetSetter'] } };
+                    const rcModifiers = {};
                     check(requestContext, rcModifiers, policy, 'Allow');
                 });
 
