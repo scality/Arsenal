@@ -120,4 +120,41 @@ describe('createCanonicalRequest function', () => {
         const actualOutput = createCanonicalRequest(params);
         assert.strictEqual(actualOutput, expectedOutput);
     });
+
+
+    it('should construct a canonical request that contains upper and ' +
+        'lower case query params and query params treated like headers ' +
+        '(x-amz-acl)', () => {
+        const params = {
+            pHttpVerb: 'PUT',
+            pResource: '/test.txt',
+            pQuery: {
+                'X-Amz-Expires': '86400',
+                'X-Amz-SignedHeaders': 'host',
+                'X-Amz-Algorithm': 'AWS4-HMAC-SHA256',
+                'x-amz-acl': 'public',
+                'X-Amz-Date': '20130524T000000Z',
+                'X-Amz-Credential': 'AKIAIOSFODNN7EXAMPLE/20130524/' +
+                    'us-east-1/s3/aws4_request',
+            },
+            pHeaders: {
+                host: 'examplebucket.s3.amazonaws.com',
+            },
+            pSignedHeaders: 'host;x-amz-acl',
+            payloadChecksum: 'UNSIGNED-PAYLOAD',
+        };
+        const expectedOutput = 'PUT\n' +
+            '/test.txt\n' +
+            'X-Amz-Algorithm=AWS4-HMAC-SHA256&' +
+            'X-Amz-Credential=AKIAIOSFODNN7EXAMPLE%2F20130524%2' +
+            'Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20130524T000000' +
+            'Z&X-Amz-Expires=86400&X-Amz-SignedHeaders=host' +
+            '&x-amz-acl=public\n' +
+            'host:examplebucket.s3.amazonaws.com\n' +
+            'x-amz-acl:public\n\n' +
+            'host;x-amz-acl\n' +
+            'UNSIGNED-PAYLOAD';
+        const actualOutput = createCanonicalRequest(params);
+        assert.strictEqual(actualOutput, expectedOutput);
+    });
 });
