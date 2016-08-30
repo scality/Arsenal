@@ -162,6 +162,16 @@ describe('Delimiter extension', () => {
             IsTruncated: false,
             NextMarker: undefined,
         }, (e, input) => e.key > input.start && e.key < input.lt),
+        new Test('delimiter and prefix (related to #147)', {
+            delimiter: '/',
+            start: '/notes/',
+        }, {
+            Contents: [receivedData[6]],
+            CommonPrefixes: ['/notes/spring/', '/notes/summer/'],
+            Delimiter: '/',
+            IsTruncated: false,
+            NextMarker: undefined,
+        }),
     ];
     tests.forEach(test => {
         it(`Should list ${test.name}`, done => {
