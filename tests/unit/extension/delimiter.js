@@ -36,26 +36,20 @@ describe('Delimiter extension', () => {
         creationDate: undefined,
         partLocations: undefined,
     };
-    const data = [
-        { key: '/notes/spring/1.txt', value: '{}' },
-        { key: '/notes/spring/2.txt', value: '{}' },
-        { key: '/notes/spring/march/1.txt', value: '{}' },
-        { key: '/notes/summer/1.txt', value: '{}' },
-        { key: '/notes/summer/2.txt', value: '{}' },
-        { key: '/notes/summer/august/1.txt', value: '{}' },
-        { key: '/notes/year.txt', value: '{}' },
-        { key: '/Pâtisserie=中文-español-English', value: '{}' },
+    const files = [
+        '/notes/spring/1.txt',
+        '/notes/spring/2.txt',
+        '/notes/spring/march/1.txt',
+        '/notes/summer/1.txt',
+        '/notes/summer/2.txt',
+        '/notes/summer/august/1.txt',
+        '/notes/year.txt',
+        '/notes/yore.rs',
+        '/notes/zaphod/Beeblebrox.txt',
+        '/Pâtisserie=中文-español-English',
     ];
-    const receivedData = [
-        { key: '/notes/spring/1.txt', value },
-        { key: '/notes/spring/2.txt', value },
-        { key: '/notes/spring/march/1.txt', value },
-        { key: '/notes/summer/1.txt', value },
-        { key: '/notes/summer/2.txt', value },
-        { key: '/notes/summer/august/1.txt', value },
-        { key: '/notes/year.txt', value },
-        { key: '/Pâtisserie=中文-español-English', value },
-    ];
+    const data = files.map(item => ({ key: item, value: '{}' }));
+    const receivedData = files.map(item => ({ key: item, value }));
     const tests = [
         new Test('all elements', {}, {
             Contents: receivedData,
@@ -71,6 +65,8 @@ describe('Delimiter extension', () => {
             Contents: [
                 receivedData[4],
                 receivedData[6],
+                receivedData[7],
+                receivedData[8],
             ],
             CommonPrefixes: ['/notes/summer/august/'],
             Delimiter: '/',
@@ -145,6 +141,8 @@ describe('Delimiter extension', () => {
                 receivedData[2],
                 receivedData[6],
                 receivedData[7],
+                receivedData[8],
+                receivedData[9],
             ],
             CommonPrefixes: ['/notes/summer'],
             Delimiter: '/notes/summer',
@@ -156,8 +154,15 @@ describe('Delimiter extension', () => {
             start: '/notes/',
             lt: '/notes0',
         }, {
-            Contents: [receivedData[6]],
-            CommonPrefixes: ['/notes/spring/', '/notes/summer/'],
+            Contents: [
+                receivedData[6],
+                receivedData[7],
+            ],
+            CommonPrefixes: [
+                '/notes/spring/',
+                '/notes/summer/',
+                '/notes/zaphod/',
+            ],
             Delimiter: '/',
             IsTruncated: false,
             NextMarker: undefined,
@@ -166,12 +171,34 @@ describe('Delimiter extension', () => {
             delimiter: '/',
             start: '/notes/',
         }, {
-            Contents: [receivedData[6]],
-            CommonPrefixes: ['/notes/spring/', '/notes/summer/'],
+            Contents: [
+                receivedData[6],
+                receivedData[7],
+            ],
+            CommonPrefixes: [
+                '/notes/spring/',
+                '/notes/summer/',
+                '/notes/zaphod/',
+            ],
             Delimiter: '/',
             IsTruncated: false,
             NextMarker: undefined,
         }),
+        new Test('delimiter, prefix and marker (related to #147)', {
+            delimiter: '/',
+            start: '/notes/',
+            gt: '/notes/year.txt',
+        }, {
+            Contents: [
+                receivedData[7],
+            ],
+            CommonPrefixes: [
+                '/notes/zaphod/',
+            ],
+            Delimiter: '/',
+            IsTruncated: false,
+            NextMarker: undefined,
+        }, (e, input) => e.key > input.gt),
     ];
     tests.forEach(test => {
         it(`Should list ${test.name}`, done => {
