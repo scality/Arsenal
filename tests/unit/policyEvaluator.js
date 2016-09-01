@@ -61,8 +61,8 @@ describe('policyEvaluator', () => {
                 () => {
                     const rcModifiers = {
                         _apiMethod: 'objectGet',
-                        _bucket: 'notVeryPrivate',
-                        _object: 'object',
+                        _generalResource: 'notVeryPrivate',
+                        _specificResource: 'object',
                     };
                     check(requestContext, rcModifiers,
                         samples['Multi-Statement Policy'],
@@ -74,7 +74,7 @@ describe('policyEvaluator', () => {
                 () => {
                     const rcModifiers = {
                         _apiMethod: 'objectDelete',
-                        _bucket: 'notVeryPrivate',
+                        _generalResource: 'notVeryPrivate',
                     };
                     check(requestContext, rcModifiers,
                         samples['Multi-Statement Policy'],
@@ -85,8 +85,8 @@ describe('policyEvaluator', () => {
                 'resource', () => {
                 const rcModifiers = {
                     _apiMethod: 'objectPut',
-                    _bucket: 'personalbucket',
-                    _object: 'Peggy',
+                    _generalResource: 'personalbucket',
+                    _specificResource: 'Peggy',
                     _requesterInfo: { username: 'Peggy' },
                 };
                 check(requestContext, rcModifiers,
@@ -99,8 +99,8 @@ describe('policyEvaluator', () => {
                 () => {
                     const rcModifiers = {
                         _apiMethod: 'objectPut',
-                        _bucket: 'personalbucket',
-                        _object: 'Joan',
+                        _generalResource: 'personalbucket',
+                        _specificResource: 'Joan',
                         _requesterInfo: { username: 'Peggy' },
                     };
                     check(requestContext, rcModifiers,
@@ -113,8 +113,8 @@ describe('policyEvaluator', () => {
                 'requestContext', () => {
                 const rcModifiers = {
                     _apiMethod: 'objectPut',
-                    _bucket: 'personalbucket',
-                    _object: 'Joan',
+                    _generalResource: 'personalbucket',
+                    _specificResource: 'Joan',
                     _requesterInfo: {},
                 };
                 check(requestContext, rcModifiers,
@@ -146,8 +146,8 @@ describe('policyEvaluator', () => {
             it('should deny access that impacts resource other than that ' +
                 'specified in NotResource in Deny policy', () => {
                 const rcModifiers = {
-                    _bucket: 'someotherresource',
-                    _object: undefined,
+                    _generalResource: 'someotherresource',
+                    _specificResource: undefined,
                 };
                 check(requestContext, rcModifiers, policy, 'Deny');
             });
@@ -155,8 +155,8 @@ describe('policyEvaluator', () => {
             it('should be neutral on access that impacts resource ' +
                 'specified in NotResource in Allow policy', () => {
                 const rcModifiers = {
-                    _bucket: 'mybucket',
-                    _object: 'CompanySecretInfo',
+                    _generalResource: 'mybucket',
+                    _specificResource: 'CompanySecretInfo',
                 };
                 check(requestContext, rcModifiers,
                     samples['NotResource Example'], 'Neutral');
@@ -165,8 +165,8 @@ describe('policyEvaluator', () => {
             it('should allow access to resource that is not specified ' +
                 'as part of NotResource in Allow policy', () => {
                 const rcModifiers = {
-                    _bucket: 'someotherresource',
-                    _object: 'notIt',
+                    _generalResource: 'someotherresource',
+                    _specificResource: 'notIt',
                 };
                 check(requestContext, rcModifiers,
                     samples['NotResource Example'], 'Allow');
@@ -361,8 +361,8 @@ describe('policyEvaluator', () => {
                         { 's3:x-amz-acl':
                             ['public-read', 'public-read-write'] } };
                     const rcModifiers = {
-                        _bucket: 'bucket',
-                        _object: 'obj',
+                        _generalResource: 'bucket',
+                        _specificResource: 'obj',
                         _headers: {
                             'x-amz-acl': 'public-read-write',
                         },
@@ -378,8 +378,8 @@ describe('policyEvaluator', () => {
                         { 's3:x-amz-acl':
                             ['public-read', 'public-read-write'] } };
                     const rcModifiers = {
-                        _bucket: 'bucket',
-                        _object: 'obj',
+                        _generalResource: 'bucket',
+                        _specificResource: 'obj',
                         _headers: {
                             'x-amz-acl': 'private',
                         },
@@ -1109,6 +1109,24 @@ describe('policyEvaluator', () => {
                     samples['Variable Bucket Policy']], log);
                 assert.strictEqual(result, 'Deny');
             });
+    });
+});
+
+describe('policyEvaluator for utapi', () => {
+    it('should permit access to list metrics for bucket named in policy',
+        () => {
+            const requestContext = new RequestContext({}, {}, 'buckets', 'mine',
+                undefined, undefined, 'ListMetrics', 'utapi');
+            check(requestContext, {},
+            samples['utapi list metrics'], 'Allow');
+        });
+
+    it('should be neutral on access to list metrics for bucket not ' +
+        'named in policy', () => {
+        const requestContext = new RequestContext({}, {}, 'buckets', 'notMine',
+            undefined, undefined, 'ListMetrics', 'utapi');
+        check(requestContext, {},
+            samples['utapi list metrics'], 'Neutral');
     });
 });
 
