@@ -28,9 +28,9 @@ describe('Error handling in checkAuth', () => {
             url: '/bucket',
             query: {},
         };
-        const requestContext = new RequestContext(request.headers,
+        const requestContext = [new RequestContext(request.headers,
             request.query, request.bucketName, request.objectKey,
-            undefined, undefined, 'bucketGet', 's3');
+            undefined, undefined, 'bucketGet', 's3')];
         auth.doAuth(request, logger, err => {
             assert.deepStrictEqual(err, errors.InvalidAccessKeyId);
             done();
@@ -49,9 +49,9 @@ describe('Error handling in checkAuth', () => {
             },
             url: '/bucket',
         };
-        const requestContext = new RequestContext(request.headers,
+        const requestContext = [new RequestContext(request.headers,
             request.query, request.bucketName, request.objectKey,
-            undefined, undefined, 'bucketGet', 's3');
+            undefined, undefined, 'bucketGet', 's3')];
 
         auth.doAuth(request, logger, err => {
             assert.deepStrictEqual(err, errors.MissingSecurityHeader);
@@ -74,9 +74,9 @@ describe('Error handling in checkAuth', () => {
             },
             headers: {},
         };
-        const requestContext = new RequestContext(request.headers,
+        const requestContext = [new RequestContext(request.headers,
             request.query, request.bucketName, request.objectKey,
-            undefined, undefined, 'bucketGet', 's3');
+            undefined, undefined, 'bucketGet', 's3')];
         auth.doAuth(request, logger, err => {
             assert.deepStrictEqual(err, errors.RequestTimeTooSkewed);
             done();
@@ -102,9 +102,9 @@ describe('Error handling in checkAuth', () => {
             },
             headers: { host: 's3.amazonaws.com' },
         };
-        const requestContext = new RequestContext(request.headers,
+        const requestContext = [new RequestContext(request.headers,
             request.query, request.bucketName, request.objectKey,
-            undefined, undefined, 'bucketGet', 's3');
+            undefined, undefined, 'bucketGet', 's3')];
         auth.doAuth(request, logger, err => {
             assert.deepStrictEqual(err, errors.SignatureDoesNotMatch);
             done();
@@ -126,9 +126,9 @@ describe('Error handling in checkAuth', () => {
             url: '/bucket',
             query: {},
         };
-        const requestContext = new RequestContext(request.headers,
+        const requestContext = [new RequestContext(request.headers,
             request.query, request.bucketName, request.objectKey,
-            undefined, undefined, 'bucketGet', 's3');
+            undefined, undefined, 'bucketGet', 's3')];
         auth.doAuth(request, logger, err => {
             assert.deepStrictEqual(err, errors.SignatureDoesNotMatch);
             done();
@@ -150,9 +150,9 @@ describe('Error handling in checkAuth', () => {
             url: '/bucket',
             query: {},
         };
-        const requestContext = new RequestContext(request.headers,
+        const requestContext = [new RequestContext(request.headers,
             request.query, request.bucketName, request.objectKey,
-            undefined, undefined, 'bucketGet', 's3');
+            undefined, undefined, 'bucketGet', 's3')];
         auth.doAuth(request, logger, err => {
             assert.deepStrictEqual(err, errors.MissingSecurityHeader);
             done();
