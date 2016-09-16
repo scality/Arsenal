@@ -22,10 +22,11 @@ describe('Public Access', () => {
             url: '/bucket',
             query: {},
         };
-        const requestContext = new RequestContext(request.headers,
+        const singleRequstContext = new RequestContext(request.headers,
             request.query, request.bucketName, request.objectKey,
             undefined, undefined,
             'bucketGet', 's3');
+        const requestContext = [singleRequstContext, singleRequstContext];
         const publicAuthInfo = new AuthInfo({
             canonicalID: constants.publicId,
         });
@@ -48,10 +49,10 @@ describe('Public Access', () => {
             url: '/bucket',
             query: {},
         };
-        const requestContext = new RequestContext(request.headers,
+        const requestContext = [new RequestContext(request.headers,
             request.query, request.bucketName, request.objectKey,
             undefined, undefined,
-            'bucketGet', 's3');
+            'bucketGet', 's3')];
         auth(request, logger, err => {
             assert.deepStrictEqual(err, errors.MissingSecurityHeader);
             done();
