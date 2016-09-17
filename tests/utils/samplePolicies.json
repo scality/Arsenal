@@ -128,5 +128,18 @@
              "NotResource":"arn:aws:s3:::my_corporate_bucket/uploads/widgetco/*"
           }
        ]
-    }
+   },
+   "utapi list metrics": {
+       "Version": "2012-10-17",
+	      "Statement": [
+		{
+			"Sid": "utapiListing",
+			"Action": [
+			"utapi:ListMetrics"
+			],
+			"Effect": "Allow",
+			"Resource": "arn:scality:utapi:::buckets/mine"
+		}
+	   ]
+   }
 }

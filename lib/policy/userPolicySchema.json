@@ -10,7 +10,7 @@
         },
         "resourceItem": {
             "type": "string",
-            "pattern": "^\\*|arn:aws(:(\\*{1}|[a-z0-9\\*\\-]{2,})*?){3}:((?!\\$\\{\\}).)*?$"
+            "pattern": "^\\*|arn:(aws|scality)(:(\\*{1}|[a-z0-9\\*\\-]{2,})*?){3}:((?!\\$\\{\\}).)*?$"
         },
         "conditions": {
             "type": "object",
