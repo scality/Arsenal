@@ -334,21 +334,21 @@ describe('policyEvaluator', () => {
 
             it('should allow access for StringNotLike condition if condition' +
             ' parameter is completely missing from request',
-                    () => {
-                        policy.Statement.Action = 's3:ListBucket';
-                        policy.Statement.Resource = '*';
-                        policy.Statement.Condition = {
-                            StringNotLike: { 's3:prefix': [
-                                'home/${aws:username}/?/*',
-                                'home/',
-                            ] } };
-                        const rcModifiers = {
-                            _query: {},
-                            _apiMethod: 'bucketGet',
-                            _requesterInfo: { username: 'Pete' },
-                        };
-                        check(requestContext, rcModifiers, policy, 'Allow');
-                    });
+            () => {
+                policy.Statement.Action = 's3:ListBucket';
+                policy.Statement.Resource = '*';
+                policy.Statement.Condition = {
+                    StringNotLike: { 's3:prefix': [
+                        'home/${aws:username}/?/*',
+                        'home/',
+                    ] } };
+                const rcModifiers = {
+                    _query: {},
+                    _apiMethod: 'bucketGet',
+                    _requesterInfo: { username: 'Pete' },
+                };
+                check(requestContext, rcModifiers, policy, 'Allow');
+            });
 
             it('should be neutral for StringNotLike condition with ' +
             'variables and wildcards if do not match wildcard pattern',
@@ -413,8 +413,8 @@ describe('policyEvaluator', () => {
                         { 's3:x-amz-acl':
                             ['public-read', 'public-read-write'] } };
                     const rcModifiers = {
-                        _bucket: 'bucket',
-                        _object: 'obj',
+                        _generalResource: 'bucket',
+                        _specificResource: 'obj',
                     };
                     check(requestContext, rcModifiers, policy, 'Allow');
                 });
