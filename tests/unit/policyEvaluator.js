@@ -332,6 +332,24 @@ describe('policyEvaluator', () => {
                         check(requestContext, rcModifiers, policy, 'Allow');
                     });
 
+            it('should allow access for StringNotLike condition if condition' +
+            ' parameter is completely missing from request',
+            () => {
+                policy.Statement.Action = 's3:ListBucket';
+                policy.Statement.Resource = '*';
+                policy.Statement.Condition = {
+                    StringNotLike: { 's3:prefix': [
+                        'home/${aws:username}/?/*',
+                        'home/',
+                    ] } };
+                const rcModifiers = {
+                    _query: {},
+                    _apiMethod: 'bucketGet',
+                    _requesterInfo: { username: 'Pete' },
+                };
+                check(requestContext, rcModifiers, policy, 'Allow');
+            });
+
             it('should be neutral for StringNotLike condition with ' +
             'variables and wildcards if do not match wildcard pattern',
                 () => {
@@ -383,6 +401,20 @@ describe('policyEvaluator', () => {
                         _headers: {
                             'x-amz-acl': 'private',
                         },
+                    };
+                    check(requestContext, rcModifiers, policy, 'Allow');
+                });
+
+            it('should allow access for StringNotEquals condition if ' +
+            'condition parameter is completely missing from request',
+                () => {
+                    policy.Statement.Resource = 'arn:aws:s3:::bucket/*';
+                    policy.Statement.Condition = { StringNotEquals:
+                        { 's3:x-amz-acl':
+                            ['public-read', 'public-read-write'] } };
+                    const rcModifiers = {
+                        _generalResource: 'bucket',
+                        _specificResource: 'obj',
                     };
                     check(requestContext, rcModifiers, policy, 'Allow');
                 });
@@ -443,6 +475,15 @@ describe('policyEvaluator', () => {
                     };
                     check(requestContext, rcModifiers, policy, 'Allow');
                 });
+            it('should allow access for StringNotEqualsIgnoreCase condition ' +
+                'if condition parameter is completely missing from request',
+                () => {
+                    policy.Statement.Condition = { StringNotEqualsIgnoreCase:
+                        { 'aws:UserAgent':
+                            ['CyberSquaw', 's3Sergeant', 'jetSetter'] } };
+                    const rcModifiers = {};
+                    check(requestContext, rcModifiers, policy, 'Allow');
+                });
 
             it('should be neutral for NumericEquals condition ' +
                 'if do not meet condition',
@@ -477,6 +518,15 @@ describe('policyEvaluator', () => {
                     policy.Statement.Condition = { NumericNotEquals:
                         { 's3:max-keys': '100' } };
                     const rcModifiers = { _query: { 'max-keys': '101' } };
+                    check(requestContext, rcModifiers, policy, 'Allow');
+                });
+
+            it('should allow access for NumericNotEquals condition ' +
+                'if condition parameter is completely missing from request',
+                () => {
+                    policy.Statement.Condition = { NumericNotEquals:
+                        { 's3:max-keys': '100' } };
+                    const rcModifiers = {};
                     check(requestContext, rcModifiers, policy, 'Allow');
                 });
 
