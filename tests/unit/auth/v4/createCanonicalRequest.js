@@ -157,4 +157,27 @@ describe('createCanonicalRequest function', () => {
         const actualOutput = createCanonicalRequest(params);
         assert.strictEqual(actualOutput, expectedOutput);
     });
+
+    it('should construct a canonical request that contains a ' +
+        'signed header with an empty string value', () => {
+        const params = {
+            pHttpVerb: 'PUT',
+            pResource: '/test.txt',
+            pQuery: {},
+            pHeaders: {
+                'content-type': '',
+                'host': 'examplebucket.s3.amazonaws.com',
+            },
+            pSignedHeaders: 'host;content-type',
+            payloadChecksum: 'UNSIGNED-PAYLOAD',
+        };
+        const expectedOutput = 'PUT\n' +
+            '/test.txt\n\n' +
+            'content-type:\n' +
+            'host:examplebucket.s3.amazonaws.com\n\n' +
+            'content-type;host\n' +
+            'UNSIGNED-PAYLOAD';
+        const actualOutput = createCanonicalRequest(params);
+        assert.strictEqual(actualOutput, expectedOutput);
+    });
 });
