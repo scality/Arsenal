@@ -13,6 +13,10 @@ module.exports = {
         list: {
             Basic: require('./lib/algos/list/basic').List,
             Delimiter: require('./lib/algos/list/delimiter').Delimiter,
+            DelimiterVersions: require('./lib/algos/list/delimiterVersions')
+                .DelimiterVersions,
+            DelimiterMaster: require('./lib/algos/list/delimiterMaster')
+                .DelimiterMaster,
             MPU: require('./lib/algos/list/MPU').MultipartUploads,
         },
     },
@@ -25,5 +29,10 @@ module.exports = {
     Clustering: require('./lib/Clustering'),
     testing: {
         matrix: require('./lib/testing/matrix.js'),
+    },
+    versioning: {
+        VersioningConstants: require('./lib/versioning/constants.js')
+            .VersioningConstants,
+        VersioningUtils: require('./lib/versioning/utils.js').VersioningUtils,
     },
 };
