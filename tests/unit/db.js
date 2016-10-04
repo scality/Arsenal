@@ -17,11 +17,13 @@ function createDb() {
 
 function checkValueInDb(db, k, v, done) {
     db.get(k, (err, value) => {
-        if (err)
+        if (err) {
             return done(err);
+        }
 
-        if (value === v)
+        if (value === v) {
             return done();
+        }
 
         return done(new Error('values differ'));
     });
@@ -29,8 +31,9 @@ function checkValueInDb(db, k, v, done) {
 
 function checkValueNotInDb(db, k, done) {
     db.get(k, (err, value) => {
-        if (!err || (err && !err.notFound))
+        if (!err || (err && !err.notFound)) {
             return done(new Error(`value still in db: ${value}`));
+        }
 
         return done();
     });
@@ -48,8 +51,9 @@ describe('IndexTransaction', () => {
         });
 
         transaction.commit(err => {
-            if (err)
+            if (err) {
                 return done(err);
+            }
 
             return checkValueInDb(db, 'k', 'v', done);
         });
@@ -65,12 +69,14 @@ describe('IndexTransaction', () => {
         });
 
         db.put('k', 'v', err => {
-            if (err)
+            if (err) {
                 return done(err);
+            }
 
             return transaction.commit(err => {
-                if (err)
+                if (err) {
                     return done(err);
+                }
 
                 return checkValueNotInDb(db, 'k', done);
             });
@@ -93,16 +99,19 @@ describe('IndexTransaction', () => {
         });
 
         function commitTransactionAndCheck(err) {
-            if (err)
+            if (err) {
                 return done(err);
+            }
 
             return transaction.commit(err => {
-                if (err)
+                if (err) {
                     return done(err);
+                }
 
                 return checkValueNotInDb(db, 'k1', err => {
-                    if (err)
+                    if (err) {
                         return done(err);
+                    }
 
                     return checkValueInDb(db, 'k2', 'v3', done);
                 });
@@ -207,8 +216,9 @@ describe('IndexTransaction', () => {
         const transaction = new IndexTransaction();
 
         transaction.commit(err => {
-            if (err && err.emptyTransaction)
+            if (err && err.emptyTransaction) {
                 return done();
+            }
 
             return done(new Error('allowed to commit an empty transaction'));
         });
@@ -224,8 +234,9 @@ describe('IndexTransaction', () => {
         });
 
         function tryCommitAgain(err) {
-            if (err)
+            if (err) {
                 return done(err);
+            }
 
             return transaction.commit(err2 => {
                 if (err2 && err2.alreadyCommitted) {
@@ -260,8 +271,9 @@ describe('IndexTransaction', () => {
         }
 
         function tryPushAgain(err) {
-            if (err)
+            if (err) {
                 return done(err);
+            }
 
             return assert.throws(push, validateError);
         }
@@ -277,8 +289,9 @@ describe('IndexTransaction', () => {
         transaction.put('k', 'v');
 
         transaction.commit(err => {
-            if (err)
+            if (err) {
                 return done(err);
+            }
 
             return checkValueInDb(db, 'k', 'v', done);
         });
@@ -291,12 +304,14 @@ describe('IndexTransaction', () => {
         transaction.del('k');
 
         db.put('k', 'v', err => {
-            if (err)
+            if (err) {
                 return done(err);
+            }
 
             return transaction.commit(err => {
-                if (err)
+                if (err) {
                     return done(err);
+                }
 
                 return checkValueNotInDb(db, 'k', done);
             });

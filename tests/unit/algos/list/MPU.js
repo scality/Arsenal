@@ -4,6 +4,7 @@ const assert = require('assert');
 const MultipartUploads =
     require('../../../../lib/algos/list/MPU').MultipartUploads;
 const werelogs = require('werelogs').Logger;
+// eslint-disable-next-line new-cap
 const logger = new werelogs('listMpuTest');
 const performListing = require('../../../utils/performListing');
 describe('Multipart Uploads listing algorithm', () => {

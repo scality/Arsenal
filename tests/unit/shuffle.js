@@ -12,8 +12,9 @@ describe('Shuffle', () => {
         for (let i = 0; i < 20000; i++) {
             array = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0];
             shuffle(array);
-            if (array === reference)
+            if (array === reference) {
                 fails++;
+            }
         }
         assert.equal(fails / 200 <= 0.005, true);
         done();
