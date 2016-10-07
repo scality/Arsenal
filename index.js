@@ -37,7 +37,7 @@ module.exports = {
     },
     network: {
         http: {
-            server: require('./lib/network/webserver'),
+            server: require('./lib/network/http/server'),
         },
     },
 };

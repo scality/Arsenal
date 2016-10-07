@@ -4,18 +4,18 @@ const fs = require('fs');
 const assert = require('assert');
 const http = require('http');
 const https = require('https');
-const dhparam = require('../../../lib/https/dh2048').dhparam;
-const ciphers = require('../../../lib/https/ciphers').ciphers;
+const dhparam = require('../../../../lib/https/dh2048').dhparam;
+const ciphers = require('../../../../lib/https/ciphers').ciphers;
 const Logger = require('werelogs').Logger;
-const WebServer = require('../../../lib/network/webserver');
+const Server = require('../../../../lib/network/http/server');
 const log = new Logger({
     level: 'info',
     dump: 'error',
 });
 
 function request(server, uri, cb, unsafeCa, cert, key) {
-    const transport = server.isHttps ? https : http;
-    const ca = server.isHttps && !!server.authorityCertificate;
+    const transport = server.isHttps() ? https : http;
+    const ca = server.isHttps() && !!server.getAuthorityCertificate();
     let reject = ca;
     if (unsafeCa) {
         reject = false;
@@ -27,7 +27,7 @@ function request(server, uri, cb, unsafeCa, cert, key) {
         hostname: '127.0.0.1',
         port: 3000,
         path: uri,
-        ca: ca ? server.authorityCertificate[0] : undefined,
+        ca: ca ? server.getAuthorityCertificate()[0] : undefined,
         rejectUnauthorized: reject,
         requestCert: ca,
     };
@@ -55,12 +55,12 @@ function request(server, uri, cb, unsafeCa, cert, key) {
 }
 
 const httpsRef = {
-    cert: fs.readFileSync(`${__dirname}/../../utils/test.crt`, 'ascii'),
-    key: fs.readFileSync(`${__dirname}/../../utils/test.key`, 'ascii'),
-    ca: fs.readFileSync(`${__dirname}/../../utils/ca.crt`, 'ascii'),
+    cert: fs.readFileSync(`${__dirname}/../../../utils/test.crt`, 'ascii'),
+    key: fs.readFileSync(`${__dirname}/../../../utils/test.key`, 'ascii'),
+    ca: fs.readFileSync(`${__dirname}/../../../utils/ca.crt`, 'ascii'),
 };
 
-describe('network.WebServer: ', () => {
+describe('network.Server: ', () => {
     [
         ['http', {}],
         ['https', {
@@ -74,7 +74,7 @@ describe('network.WebServer: ', () => {
         }],
     ].forEach(test => {
         function createServer() {
-            const ws = new WebServer(3000, log);
+            const ws = new Server(3000, log);
             ws.setHttps(test[1].cert, test[1].key, test[1].ca, false);
             return ws;
         }
@@ -93,10 +93,10 @@ describe('network.WebServer: ', () => {
                     .onListening(() => {
                         const bindingTimeout = setTimeout(() => {
                             const err =
-                                'WebServer does not send an binding error';
+                                'Server does not send an binding error';
                             ws.onStop(() => done(new Error(err))).stop();
                         }, 5000);
-                        const ws2 = new WebServer(3000, log).onError(err => {
+                        const ws2 = new Server(3000, log).onError(err => {
                             if (err.code === 'EADDRINUSE') {
                                 clearTimeout(bindingTimeout);
                                 return ws.onStop(done).stop();
@@ -122,7 +122,7 @@ describe('network.WebServer: ', () => {
                         return ws.onStop(() => {
                             assert.strictEqual(res.res.statusCode, 500);
                             assert.strictEqual(res.body,
-                                'InternalError: No handler in webserver');
+                                'InternalError: No handler in Server');
                             done();
                         }).stop();
                     });
@@ -155,7 +155,7 @@ describe('network.WebServer: ', () => {
     });
 
     it('should fail when the server is twoWay', done => {
-        const ws = new WebServer(3000, log);
+        const ws = new Server(3000, log);
         ws.setHttps(httpsRef.cert, httpsRef.key, httpsRef.ca, true);
         ws.onError(done).onListening(() => {
             const requestTimeout = setTimeout(() => {
