@@ -90,7 +90,7 @@ describe('v4 headerAuthCheck', () => {
                 '24c06abf8772c670064d22eacd6ccb85c06befa15f' +
                 '4a789b0bae19307bc' }, 'headers', request, headers);
         const res = headerAuthCheck(alteredRequest, log);
-        assert.deepStrictEqual(res.err, errors.MissingSecurityHeader);
+        assert.deepStrictEqual(res.err, errors.InvalidArgument);
         done();
     });
 
@@ -104,7 +104,7 @@ describe('v4 headerAuthCheck', () => {
                 '70064d22eacd6ccb85c06befa15f' +
                 '4a789b0bae19307bc' }, 'headers', request, headers);
         const res = headerAuthCheck(alteredRequest, log);
-        assert.deepStrictEqual(res.err, errors.MissingSecurityHeader);
+        assert.deepStrictEqual(res.err, errors.InvalidArgument);
         done();
     });
 
@@ -118,7 +118,7 @@ describe('v4 headerAuthCheck', () => {
                 '70064d22eacd6ccb85c06befa15f' +
                 '4a789b0bae19307bc' }, 'headers', request, headers);
         const res = headerAuthCheck(alteredRequest, log);
-        assert.deepStrictEqual(res.err, errors.MissingSecurityHeader);
+        assert.deepStrictEqual(res.err, errors.InvalidArgument);
         done();
     });
 
