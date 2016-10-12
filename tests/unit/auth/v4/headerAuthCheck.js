@@ -126,7 +126,9 @@ describe('v4 headerAuthCheck', () => {
         const alteredRequest = createAlteredRequest({
             'x-amz-date': undefined }, 'headers', request, headers);
         const res = headerAuthCheck(alteredRequest, log);
-        assert.deepStrictEqual(res.err, errors.MissingSecurityHeader);
+        assert.deepStrictEqual(res.err, errors.AccessDenied.
+          customizeDescription('Authentication requires a valid Date or ' +
+          'x-amz-date header'));
         done();
     });
 
