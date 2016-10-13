@@ -138,7 +138,25 @@ describe('v4 headerAuthCheck', () => {
         const alteredRequest = createAlteredRequest({
             'x-amz-date': '20150208T201405Z' }, 'headers', request, headers);
         const res = headerAuthCheck(alteredRequest, log);
-        assert.deepStrictEqual(res.err, errors.InvalidArgument);
+        assert.deepStrictEqual(res.err, errors.RequestTimeTooSkewed);
+        done();
+    });
+
+    it('should return error if timestamp from x-amz-date header' +
+        'is before epochTime', done => {
+        // Different date (2095 instead of 2016)
+        const alteredRequest = createAlteredRequest({
+            'x-amz-date': '19500707T215304Z',
+            'authorization': 'AWS4-HMAC-SHA256 Credential' +
+                '=accessKey1/20160208/us-east-1/s3/aws4_request, ' +
+                'SignedHeaders=host;x-amz-content-sha256;' +
+                'x-amz-date, Signature=abed924c06abf8772c67' +
+                '0064d22eacd6ccb85c06befa15f' +
+                '4a789b0bae19307bc' }, 'headers', request, headers);
+        const res = headerAuthCheck(alteredRequest, log);
+        assert.deepStrictEqual(res.err, errors.AccessDenied.
+        customizeDescription('Authentication requires a valid Date or ' +
+        'x-amz-date header'));
         done();
     });
 
