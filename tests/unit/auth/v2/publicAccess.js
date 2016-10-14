@@ -54,7 +54,7 @@ describe('Public Access', () => {
             undefined, undefined,
             'bucketGet', 's3')];
         auth(request, logger, err => {
-            assert.deepStrictEqual(err, errors.MissingSecurityHeader);
+            assert.deepStrictEqual(err, errors.AccessDenied);
             done();
         }, 's3', requestContext);
     });
