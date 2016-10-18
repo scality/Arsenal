@@ -23,12 +23,12 @@
     "eslint": "2.13.1",
     "eslint-config-airbnb": "6.2.0",
     "eslint-plugin-react": "4.3.0",
-    "eslint-config-scality": "scality/Guidelines",
+    "eslint-config-scality": "scality/Guidelines#ft/node-v6",
     "level": "1.5.0",
     "lolex": "1.5.1",
     "mocha": "2.5.3",
     "temp": "0.8.3",
-    "werelogs": "scality/werelogs"
+    "werelogs": "scality/werelogs#ft/node-v6"
   },
   "peerDependencies": {
       "babel-eslint": "6.1.2",
