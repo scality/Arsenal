@@ -136,6 +136,8 @@ describe('createCanonicalRequest function', () => {
                 'X-Amz-Date': '20130524T000000Z',
                 'X-Amz-Credential': 'AKIAIOSFODNN7EXAMPLE/20130524/' +
                     'us-east-1/s3/aws4_request',
+                'X-Amz-Meta-camelCase': 'before',
+                'X-Amz-Meta-camelcase': 'after',
             },
             pHeaders: {
                 host: 'examplebucket.s3.amazonaws.com',
@@ -148,7 +150,10 @@ describe('createCanonicalRequest function', () => {
             'X-Amz-Algorithm=AWS4-HMAC-SHA256&' +
             'X-Amz-Credential=AKIAIOSFODNN7EXAMPLE%2F20130524%2' +
             'Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20130524T000000' +
-            'Z&X-Amz-Expires=86400&X-Amz-SignedHeaders=host' +
+            'Z&X-Amz-Expires=86400' +
+            '&X-Amz-Meta-camelCase=before' +
+            '&X-Amz-Meta-camelcase=after' +
+            '&X-Amz-SignedHeaders=host' +
             '&x-amz-acl=public\n' +
             'host:examplebucket.s3.amazonaws.com\n' +
             'x-amz-acl:public\n\n' +
