@@ -22,7 +22,7 @@ describe('Multipart Uploads listing algorithm', () => {
                 'initiator': initiator1,
                 'owner-id': '1',
                 'owner-display-name': 'owner1',
-                storageClass,
+                'x-amz-storage-class': storageClass,
                 'initiated': '',
             }),
         }, {
@@ -33,7 +33,7 @@ describe('Multipart Uploads listing algorithm', () => {
                 'initiator': initiator2,
                 'owner-id': '1',
                 'owner-display-name': 'owner2',
-                storageClass,
+                'x-amz-storage-class': storageClass,
                 'initiated': '',
             }),
         }, {
@@ -44,7 +44,7 @@ describe('Multipart Uploads listing algorithm', () => {
                 'initiator': initiator1,
                 'owner-id': '1',
                 'owner-display-name': 'owner1',
-                storageClass,
+                'x-amz-storage-class': storageClass,
                 'initiated': '',
             }),
         }, {
@@ -55,7 +55,7 @@ describe('Multipart Uploads listing algorithm', () => {
                 'initiator': initiator2,
                 'owner-id': '1',
                 'owner-display-name': 'owner2',
-                storageClass,
+                'x-amz-storage-class': storageClass,
                 'initiated': '',
             }),
         }, {
@@ -66,7 +66,7 @@ describe('Multipart Uploads listing algorithm', () => {
                 'initiator': initiator1,
                 'owner-id': '1',
                 'owner-display-name': 'owner1',
-                storageClass,
+                'x-amz-storage-class': storageClass,
                 'initiated': '',
             }),
         }, {
@@ -77,7 +77,7 @@ describe('Multipart Uploads listing algorithm', () => {
                 'initiator': initiator1,
                 'owner-id': '1',
                 'owner-display-name': 'owner1',
-                storageClass,
+                'x-amz-storage-class': storageClass,
                 'initiated': '',
             }),
         },
@@ -114,7 +114,7 @@ describe('Multipart Uploads listing algorithm', () => {
                         ID: tmp['owner-id'],
                         DisplayName: tmp['owner-display-name'],
                     },
-                    StorageClass: tmp.storageClass,
+                    StorageClass: tmp['x-amz-storage-class'],
                     Initiated: tmp.initiated,
                 },
             };
