@@ -185,7 +185,7 @@ describe('v4 queryAuthCheck', () => {
         }, 'query', request, query);
         const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
         clock.uninstall();
-        assert.deepStrictEqual(res.err, errors.InvalidArgument);
+        assert.deepStrictEqual(res.err, errors.RequestTimeTooSkewed);
         done();
     });
 
