@@ -37,16 +37,16 @@ describe('Delimiter listing algorithm', () => {
         partLocations: undefined,
     };
     const files = [
-        '/notes/spring/1.txt',
-        '/notes/spring/2.txt',
-        '/notes/spring/march/1.txt',
-        '/notes/summer/1.txt',
-        '/notes/summer/2.txt',
-        '/notes/summer/august/1.txt',
-        '/notes/year.txt',
-        '/notes/yore.rs',
-        '/notes/zaphod/Beeblebrox.txt',
-        '/Pâtisserie=中文-español-English',
+        'Pâtisserie=中文-español-English',
+        'notes/spring/1.txt',
+        'notes/spring/2.txt',
+        'notes/spring/march/1.txt',
+        'notes/summer/1.txt',
+        'notes/summer/2.txt',
+        'notes/summer/august/1.txt',
+        'notes/year.txt',
+        'notes/yore.rs',
+        'notes/zaphod/Beeblebrox.txt',
     ];
     const data = files.map(item => ({ key: item, value: '{}' }));
     const receivedData = files.map(item => ({ key: item, value }));
@@ -59,17 +59,17 @@ describe('Delimiter listing algorithm', () => {
             NextMarker: undefined,
         }),
         new Test('with valid marker', {
-            gt: '/notes/summer/1.txt',
-            delimiter: '/',
+            gt: files[4],
         }, {
             Contents: [
-                receivedData[4],
+                receivedData[5],
                 receivedData[6],
                 receivedData[7],
                 receivedData[8],
+                receivedData[9],
             ],
-            CommonPrefixes: ['/notes/summer/august/'],
-            Delimiter: '/',
+            CommonPrefixes: [],
+            Delimiter: undefined,
             IsTruncated: false,
             NextMarker: undefined,
         }, (e, input) => e.key > input.gt),
@@ -83,28 +83,6 @@ describe('Delimiter listing algorithm', () => {
             IsTruncated: false,
             NextMarker: undefined,
         }, (e, input) => e.key > input.gt),
-        new Test('with prefix', {
-            start: '/notes/summer/',
-            lt: '/notes/summer0',
-            delimiter: '/',
-        }, {
-            Contents: receivedData.slice(3, 5),
-            CommonPrefixes: ['/notes/summer/august/'],
-            Delimiter: '/',
-            IsTruncated: false,
-            NextMarker: undefined,
-        }, (e, input) => e.key > input.start && e.key < input.lt),
-        new Test('with bad prefix', {
-            start: 'zzzy',
-            lt: 'zzzz',
-            delimiter: '/',
-        }, {
-            Contents: [],
-            CommonPrefixes: [],
-            Delimiter: '/',
-            IsTruncated: false,
-            NextMarker: undefined,
-        }, (e, input) => e.key > input.start && e.key < input.lt),
         new Test('with makKeys', {
             maxKeys: 3,
         }, {
@@ -112,7 +90,7 @@ describe('Delimiter listing algorithm', () => {
             CommonPrefixes: [],
             Delimiter: undefined,
             IsTruncated: true,
-            NextMarker: '/notes/spring/march/1.txt',
+            NextMarker: undefined,
         }),
         new Test('with big makKeys', {
             maxKeys: 15000,
@@ -126,59 +104,54 @@ describe('Delimiter listing algorithm', () => {
         new Test('with delimiter', {
             delimiter: '/',
         }, {
-            Contents: [],
-            CommonPrefixes: ['/'],
+            Contents: [
+                receivedData[0],
+            ],
+            CommonPrefixes: ['notes/'],
             Delimiter: '/',
             IsTruncated: false,
             NextMarker: undefined,
         }),
         new Test('with long delimiter', {
-            delimiter: '/notes/summer',
+            delimiter: 'notes/summer',
         }, {
             Contents: [
                 receivedData[0],
                 receivedData[1],
                 receivedData[2],
-                receivedData[6],
+                receivedData[3],
                 receivedData[7],
                 receivedData[8],
                 receivedData[9],
             ],
-            CommonPrefixes: ['/notes/summer'],
-            Delimiter: '/notes/summer',
+            CommonPrefixes: ['notes/summer'],
+            Delimiter: 'notes/summer',
             IsTruncated: false,
             NextMarker: undefined,
         }),
-        new Test('with delimiter and prefix', {
+        new Test('bad marker and good prefix', {
             delimiter: '/',
-            start: '/notes/',
-            lt: '/notes0',
+            start: 'notes/summer/',
+            gt: 'notes/summer0',
         }, {
-            Contents: [
-                receivedData[6],
-                receivedData[7],
-            ],
-            CommonPrefixes: [
-                '/notes/spring/',
-                '/notes/summer/',
-                '/notes/zaphod/',
-            ],
+            Contents: [],
+            CommonPrefixes: [],
             Delimiter: '/',
             IsTruncated: false,
             NextMarker: undefined,
-        }, (e, input) => e.key > input.start && e.key < input.lt),
+        }, (e, input) => e.key > input.gt),
         new Test('delimiter and prefix (related to #147)', {
             delimiter: '/',
-            start: '/notes/',
+            start: 'notes/',
         }, {
             Contents: [
-                receivedData[6],
                 receivedData[7],
+                receivedData[8],
             ],
             CommonPrefixes: [
-                '/notes/spring/',
-                '/notes/summer/',
-                '/notes/zaphod/',
+                'notes/spring/',
+                'notes/summer/',
+                'notes/zaphod/',
             ],
             Delimiter: '/',
             IsTruncated: false,
@@ -186,15 +159,83 @@ describe('Delimiter listing algorithm', () => {
         }),
         new Test('delimiter, prefix and marker (related to #147)', {
             delimiter: '/',
-            start: '/notes/',
-            gt: '/notes/year.txt',
+            start: 'notes/',
+            gt: 'notes/year.txt',
+        }, {
+            Contents: [
+                receivedData[8],
+            ],
+            CommonPrefixes: [
+                'notes/zaphod/',
+            ],
+            Delimiter: '/',
+            IsTruncated: false,
+            NextMarker: undefined,
+        }, (e, input) => e.key > input.gt),
+        new Test('all parameters 1/3', {
+            delimiter: '/',
+            start: 'notes/',
+            gt: 'notes/',
+            maxKeys: 1,
+        }, {
+            Contents: [],
+            CommonPrefixes: ['notes/spring/'],
+            Delimiter: '/',
+            IsTruncated: true,
+            NextMarker: 'notes/spring/',
+        }, (e, input) => e.key > input.gt),
+
+        new Test('all parameters 2/3', {
+            delimiter: '/',
+            start: 'notes/', // prefix
+            gt: 'notes/spring/',
+            maxKeys: 1,
+        }, {
+            Contents: [],
+            CommonPrefixes: ['notes/summer/'],
+            Delimiter: '/',
+            IsTruncated: true,
+            NextMarker: 'notes/summer/',
+        }, (e, input) => e.key > input.gt),
+
+        new Test('all parameters 3/3', {
+            delimiter: '/',
+            start: 'notes/', // prefix
+            gt: 'notes/summer/',
+            maxKeys: 1,
         }, {
             Contents: [
                 receivedData[7],
             ],
-            CommonPrefixes: [
-                '/notes/zaphod/',
+            CommonPrefixes: [],
+            Delimiter: '/',
+            IsTruncated: true,
+            NextMarker: 'notes/year.txt',
+        }, (e, input) => e.key > input.gt),
+
+        new Test('all parameters 4/3', {
+            delimiter: '/',
+            start: 'notes/', // prefix
+            gt: 'notes/year.txt',
+            maxKeys: 1,
+        }, {
+            Contents: [
+                receivedData[8],
             ],
+            CommonPrefixes: [],
+            Delimiter: '/',
+            IsTruncated: true,
+            NextMarker: 'notes/yore.rs',
+        }, (e, input) => e.key > input.gt),
+
+        new Test('all parameters 5/3', {
+            delimiter: '/',
+            start: 'notes/',
+            gt: 'notes/yore.rs',
+            maxKeys: 1,
+        }, {
+            Contents: [],
+            CommonPrefixes: ['notes/zaphod/'],
             Delimiter: '/',
             IsTruncated: false,
             NextMarker: undefined,
