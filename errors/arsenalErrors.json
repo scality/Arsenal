@@ -228,6 +228,10 @@
     "code": 404,
     "description": "The lifecycle configuration does not exist."
   },
+  "NoSuchWebsiteConfiguration": {
+    "code": 404,
+    "description": "The specified bucket does not have a website configuration"
+  },
   "NoSuchUpload": {
     "code": 404,
     "description": "The specified multipart upload does not exist. The upload ID might be invalid, or the multipart upload might have been aborted or completed."
