@@ -24,7 +24,7 @@ class Test {
     }
 }
 
-describe('DelimiterVersions listing algorithm', () => {
+describe.skip('DelimiterVersions listing algorithm', () => {
     const VersionIdMarker = '1234567890';
     const value = '{}';
     const data = [
