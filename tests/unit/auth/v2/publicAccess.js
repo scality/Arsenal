@@ -19,6 +19,7 @@ describe('Public Access', () => {
         const request = {
             method: 'GET',
             headers: { host: 's3.amazonaws.com' },
+            rawHeaders: [],
             url: '/bucket',
             query: {},
         };
@@ -46,6 +47,7 @@ describe('Public Access', () => {
                 host: 's3.amazonaws.com',
                 authorization: 'noAuth',
             },
+            rawHeaders: ['authorization', 'noAuth'],
             url: '/bucket',
             query: {},
         };
