@@ -128,6 +128,10 @@
     "code": 416,
     "description": "The requested range cannot be satisfied."
   },
+  "InvalidRedirectLocation": {
+    "code": 400,
+    "description": "The website redirect location must have a prefix of 'http://' or 'https://' or '/'."
+  },
   "InvalidRequest": {
     "code": 400,
     "description": "SOAP requests must be made over an HTTPS connection."
