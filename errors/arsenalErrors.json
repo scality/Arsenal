@@ -224,6 +224,10 @@
     "code": 404,
     "description": "The specified bucket does not exist."
   },
+  "NoSuchCORSConfiguration": {
+    "code": 404,
+    "description": "The CORS configuration does not exist"
+  },
   "NoSuchKey": {
     "code": 404,
     "description": "The specified key does not exist."
