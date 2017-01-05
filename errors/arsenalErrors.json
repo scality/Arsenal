@@ -4,6 +4,10 @@
     "code": 403,
     "description": "Access Denied"
   },
+  "AccessForbidden": {
+    "code": 403,
+    "description": "Access Forbidden"
+  },
   "AccountProblem": {
     "code": 403,
     "description": "There is a problem with your AWS account that prevents the operation from completing successfully. Please use Contact Us."
