@@ -4,6 +4,34 @@
     "title": "AWS Policy schema.",
     "description": "This schema describes a user policy per AWS policy grammar rules",
     "definitions": {
+        "AWSprincipalItem": {
+            "oneOf": [
+                {
+                    "type": "string",
+                    "pattern": "^\\*$"
+                },
+                {
+                    "type": "string",
+                    "pattern": "^[0-9]{12}$"
+                },
+                {
+                    "type": "string",
+                    "pattern": "^arn:aws:iam::[0-9]{12}:root$"
+                },
+                {
+                    "type": "string",
+                    "pattern": "^arn:aws:iam::[0-9]{12}:user((\u002F)|(\u002F[\u0021-\u007F]+\u002F))[\\w+=,.@ -]{1,32}$"
+                },
+                {
+                    "type": "string",
+                    "pattern": "^arn:aws:iam::[0-9]{12}:role((\u002F)|(\u002F[\u0021-\u007F]+\u002F))[\\w+=,.@ -]{1,32}$"
+                },
+                {
+                    "type": "string",
+                    "pattern": "^arn:aws:sts::[0-9]{12}:assumed-role/[\\w+=,.@ -]{1,32}/[\\w+=,.@ -]{1,32}$"
+                }
+            ]
+        },
         "actionItem": {
             "type": "string",
             "pattern": "^[^*:]+:([^:])+|^\\*{1}$"
@@ -205,6 +233,22 @@
                                 "type": "string",
                                 "pattern": "^[a-zA-Z0-9]+$"
                             },
+                            "Principal": {
+                                "oneOf": [
+                                    {
+                                        "type": "string",
+                                        "pattern": "^\\*$"
+                                    },
+                                    {
+                                        "type": "object",
+                                        "properties": {
+                                            "AWS": {
+                                                "$ref": "#/definitions/AWSprincipalItem"
+                                            }
+                                        }
+                                    }
+                                ]
+                            },
                             "Effect": {
                                 "type": "string",
                                 "enum": [
@@ -307,6 +351,22 @@
                         "Sid": {
                             "type": "string",
                             "pattern": "^[a-zA-Z0-9]+$"
+                        },
+                        "Principal": {
+                            "oneOf": [
+                                {
+                                    "type": "string",
+                                    "pattern": "^\\*$"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "AWS": {
+                                            "$ref": "#/definitions/AWSprincipalItem"
+                                        }
+                                    }
+                                }
+                            ]
                         },
                         "Effect": {
                             "type": "string",

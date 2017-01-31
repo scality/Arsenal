@@ -341,3 +341,107 @@ describe('Policies validation - Statement::Condition_block', () => {
         check(policy, failRes());
     });
 });
+
+describe('Policies validation - Statement::Principal_block', () => {
+    it('should succeed for anonymous', () => {
+        policy.Statement.Principal = '*';
+        check(policy, successRes);
+    });
+
+    it('should suceed for valid account id', () => {
+        policy.Statement.Principal = { AWS: '234567890123' };
+        check(policy, successRes);
+    });
+
+    it('should succeed for valid account arn', () => {
+        policy.Statement.Principal = {
+            AWS: 'arn:aws:iam::234567890123:root',
+        };
+        check(policy, successRes);
+    });
+
+    it('should succeed for valid user arn', () => {
+        policy.Statement.Principal = {
+            AWS: 'arn:aws:iam::234567890123:user/im-an-username',
+        };
+        check(policy, successRes);
+    });
+
+    it('should succeed for valid user arn with path', () => {
+        policy.Statement.Principal = {
+            AWS: 'arn:aws:iam::234567890123:user/im/a/path/im-an-username',
+        };
+        check(policy, successRes);
+    });
+
+    it('should succeed for valid role arn', () => {
+        policy.Statement.Principal = {
+            AWS: 'arn:aws:iam::234567890123:role/im-a-role',
+        };
+        check(policy, successRes);
+    });
+
+    it('should succeed for valid role arn with path', () => {
+        policy.Statement.Principal = {
+            AWS: 'arn:aws:iam::234567890123:role/im/a/path/im-a-role',
+        };
+        check(policy, successRes);
+    });
+
+    it('should succeed for valid asuume role arn', () => {
+        policy.Statement.Principal = {
+            AWS:
+                'arn:aws:sts::234567890123:assumed-role/im-a-role/im-a-session',
+        };
+        check(policy, successRes);
+    });
+
+    it('should fail for other string than anonymous', () => {
+        policy.Statement.Principal = 'arn:aws:iam::234567890123:user/im-a-user';
+        check(policy, failRes());
+    });
+
+    it('should fail for wrong format arn', () => {
+        policy.Statement.Principal = {
+            AWS: 'arn:aws:iam::wrong-account-id:root',
+        };
+        check(policy, failRes());
+        policy.Statement.Principal = {
+            AWS: 'arn:aws:s3::234567890123:root',
+        };
+        check(policy, failRes());
+        policy.Statement.Principal = {
+            AWS: 'arn:aws:iam::234567890123:wrong/arn',
+        };
+        check(policy, failRes());
+        policy.Statement.Principal = {
+            AWS: 'arn:scality:iam::234567890123:root',
+        };
+        check(policy, failRes());
+        policy.Statement.Principal = {
+            AWS: 'arn:aws:iam::234567890123:user/Not/Good#UserName',
+        };
+        check(policy, failRes());
+        policy.Statement.Principal = {
+            AWS: 'arn:aws:sts::234567890123:assumed-role/im/a/path' +
+                '/im-a-role/im-a-session',
+        };
+        check(policy, failRes());
+        policy.Statement.Principal = {
+            AWS:
+                'arn:aws:iam::234567890123:assumed-role/im-a-role/im-a-session',
+        };
+        check(policy, failRes());
+    });
+
+    it('should fail for wrong account id', () => {
+        policy.Statement.Principal = {
+            AWS: 'fake-account-id',
+        };
+        check(policy, failRes());
+        policy.Statement.Principal = {
+            AWS: '1213425632145',
+        };
+        check(policy, failRes());
+    });
+});
