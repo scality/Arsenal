@@ -141,5 +141,15 @@
 			"Resource": "arn:scality:utapi:::buckets/mine"
 		}
 	   ]
+   },
+   "lowercase action": {
+       "Version": "2012-10-17",
+       "Statement": [
+           {
+               "Effect": "Allow",
+               "Action": "s3:createbucket",
+               "Resource": "*"
+           }
+       ]
    }
 }
