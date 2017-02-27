@@ -15,17 +15,17 @@
   "homepage": "https://github.com/scality/Arsenal#readme",
   "dependencies": {
     "ajv": "4.1.5",
-    "ipaddr.js": "^1.2.0",
-    "utf8": "~2.1.1"
+    "ipaddr.js": "1.2.0",
+    "utf8": "2.1.2"
   },
   "devDependencies": {
-    "eslint": "^2.4.0",
-    "eslint-config-airbnb": "^6.0.0",
+    "eslint": "2.13.1",
+    "eslint-config-airbnb": "6.2.0",
     "eslint-config-scality": "scality/Guidelines#rel/6.4",
-    "level": "^1.3.0",
-    "lolex": "^1.4.0",
-    "mocha": "^2.3.3",
-    "temp": "^0.8.3",
+    "level": "1.6.0",
+    "lolex": "1.5.2",
+    "mocha": "2.5.3",
+    "temp": "0.8.3",
     "werelogs": "scality/werelogs#rel/6.4"
   },
   "scripts": {
