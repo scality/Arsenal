@@ -94,6 +94,15 @@ describe('policyEvaluator', () => {
                     'Allow');
             });
 
+            it('check of action should be case insensitive', () => {
+                const rcModifiers = {
+                    _apiMethod: 'bucketPut',
+                    _generalResource: 'random',
+                };
+                check(requestContext, rcModifiers,
+                    samples['lowercase action'], 'Allow');
+            });
+
             it('should be neutral under a policy with a variable in the ' +
                 'resource if the variable value does not match the request',
                 () => {
