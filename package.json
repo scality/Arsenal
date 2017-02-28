@@ -1,6 +1,9 @@
 {
   "name": "arsenal",
-  "version": "1.1.0",
+  "engines": {
+    "node": "6.9.5"
+  },
+  "version": "7.0.0",
   "description": "Common utilities for the S3 project components",
   "main": "index.js",
   "repository": {
@@ -14,12 +17,13 @@
   },
   "homepage": "https://github.com/scality/Arsenal#readme",
   "dependencies": {
-    "ajv": "4.1.5",
+    "ajv": "4.10.0",
     "ipaddr.js": "1.2.0",
     "utf8": "2.1.2"
   },
   "devDependencies": {
     "eslint": "2.13.1",
+    "eslint-plugin-react": "^4.3.0",
     "eslint-config-airbnb": "6.2.0",
     "eslint-config-scality": "scality/Guidelines",
     "level": "1.6.0",
