@@ -19,7 +19,10 @@
   "dependencies": {
     "ajv": "4.10.0",
     "ipaddr.js": "1.2.0",
-    "utf8": "2.1.2"
+    "utf8": "2.1.2",
+    "socket.io": "1.7.3",
+    "socket.io-client": "1.7.3",
+    "socket.io-stream": "0.9.1"
   },
   "devDependencies": {
     "eslint": "2.13.1",
