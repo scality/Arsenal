@@ -6,7 +6,7 @@ const temp = require('temp');
 const assert = require('assert');
 const levelNet = require('../../../../lib/network/level-net');
 
-describe('level-net - LevelDB over network', function () {
+describe('level-net - LevelDB over network', () => {
     let db;
     let client;
 
@@ -17,8 +17,8 @@ describe('level-net - LevelDB over network', function () {
         client = levelNet.client();
         client.connect('localhost', 6677, 'testnsp');
     }
-    before(function (done) {
-        temp.mkdir('level-net-testdb-', function (err, dbDir) {
+    before(done => {
+        temp.mkdir('level-net-testdb-', (err, dbDir) => {
             const rootDb = level(dbDir);
             db = sublevel(rootDb);
             setupLevelNet();
@@ -26,8 +26,8 @@ describe('level-net - LevelDB over network', function () {
         });
     });
 
-    describe('simple tests', function () {
-        it('should ping a level-net server (sync on server)', function (done) {
+    describe('simple tests', () => {
+        it('should ping a level-net server (sync on server)', done => {
             client.ping((err, args) => {
                 if (err) {
                     return done(err);
@@ -36,7 +36,7 @@ describe('level-net - LevelDB over network', function () {
                 return done();
             });
         });
-        it('should ping a level-net server (async on server)', function (done) {
+        it('should ping a level-net server (async on server)', done => {
             client.pingAsync((err, args) => {
                 if (err) {
                     return done(err);
@@ -45,7 +45,7 @@ describe('level-net - LevelDB over network', function () {
                 return done();
             });
         });
-        it('should be able to put data and read it back', function (done) {
+        it('should be able to put data and read it back', done => {
             client.put('testkey1', 'value of testkey1', err => {
                 assert.ifError(err);
                 client.get('testkey1', (err, data) => {
@@ -55,7 +55,7 @@ describe('level-net - LevelDB over network', function () {
                 });
             });
         });
-        it('should timeout if command is too long to respond', function (done) {
+        it('should timeout if command is too long to respond', done => {
             // shorten the timeout to 200ms to speed up the test
             const oldTimeout = client.getTimeout();
             client.setTimeout(200);
@@ -67,7 +67,7 @@ describe('level-net - LevelDB over network', function () {
             client.setTimeout(oldTimeout);
         });
     });
-    describe('multiple keys tests', function () {
+    describe('multiple keys tests', () => {
         const nbKeys = 100;
 
         function keyOfIter(i) {
@@ -91,10 +91,10 @@ describe('level-net - LevelDB over network', function () {
                 client.put(keyOfIter(i), valueOfIter(i), putCb);
             }
         }
-        before(function (done) {
+        before(done => {
             prefillKeys(done);
         });
-        it('should be able to read keys back at random', function (done) {
+        it('should be able to read keys back at random', done => {
             const nbGet = 100;
             let nbGetDone = 0;
 
@@ -114,7 +114,7 @@ describe('level-net - LevelDB over network', function () {
             }
         });
         it('should be able to list all keys through a stream and rewrite' +
-           'them on-the-fly', function (done) {
+           'them on-the-fly', done => {
             client.createReadStream((err, keyStream) => {
                 assert.ifError(err);
 
@@ -137,7 +137,7 @@ describe('level-net - LevelDB over network', function () {
                 });
             });
         });
-        it('should delete all keys successfully', function (done) {
+        it('should delete all keys successfully', done => {
             let nbDelDone = 0;
 
             function checkAllDeleted(done) {
