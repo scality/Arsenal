@@ -19,14 +19,18 @@
   "dependencies": {
     "ajv": "4.10.0",
     "ipaddr.js": "1.2.0",
-    "utf8": "2.1.2"
+    "utf8": "2.1.2",
+    "level": "1.6.0",
+    "level-sublevel": "6.6.1",
+    "socket.io": "1.7.3",
+    "socket.io-client": "1.7.3",
+    "socket.io-stream": "0.9.1"
   },
   "devDependencies": {
     "eslint": "2.13.1",
     "eslint-plugin-react": "^4.3.0",
     "eslint-config-airbnb": "6.2.0",
     "eslint-config-scality": "scality/Guidelines",
-    "level": "1.6.0",
     "lolex": "1.5.2",
     "mocha": "2.5.3",
     "temp": "0.8.3",
