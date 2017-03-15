@@ -28,7 +28,6 @@ describe('Basic listing algorithm', () => {
         new Test('10000 elements', { maxKeys: 10000 }, data.slice(0, 10000)),
         new Test('more than limit', { maxKeys: 15000 }, data.slice(0, 10000)),
         new Test('default limit', {}, data.slice(0, 10000)),
-        new Test('without parameters', undefined, data.slice(0, 10000)),
         new Test('with bad parameters', 'lala', data.slice(0, 10000)),
     ];
     tests.forEach(test => {
