@@ -185,4 +185,30 @@ describe('createCanonicalRequest function', () => {
         const actualOutput = createCanonicalRequest(params);
         assert.strictEqual(actualOutput, expectedOutput);
     });
+
+    it('should trim white space in a canonical header value so that ' +
+        'there is no white space before or after a value and any sequential ' +
+        'white space becomes a single space', () => {
+        const params = {
+            pHttpVerb: 'GET',
+            pResource: '/',
+            pQuery: {},
+            pHeaders: {
+                'host': 'examplebucket.s3.amazonaws.com',
+                'user-agent': ' aws-cli/1.8.2   Python/2.7.12  Darwin/15.6.0  ',
+            },
+            pSignedHeaders: 'host;user-agent',
+            payloadChecksum: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4' +
+                '649b934ca495991b7852b855',
+        };
+        const expectedOutput = 'GET\n' +
+            '/\n\n' +
+            'host:examplebucket.s3.amazonaws.com\n' +
+            'user-agent:aws-cli/1.8.2 Python/2.7.12 Darwin/15.6.0\n\n' +
+            'host;user-agent\n' +
+            'e3b0c44298fc1c149afbf4c8996fb92427ae41e4' +
+                '649b934ca495991b7852b855';
+        const actualOutput = createCanonicalRequest(params);
+        assert.strictEqual(actualOutput, expectedOutput);
+    });
 });
