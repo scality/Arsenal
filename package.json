@@ -29,6 +29,9 @@
     "uuid": "~3.0.1",
     "werelogs": "scality/werelogs"
   },
+  "optionalDependencies": {
+      "ioctl": "2.0.0"
+  },
   "devDependencies": {
     "eslint": "2.13.1",
     "eslint-plugin-react": "^4.3.0",
