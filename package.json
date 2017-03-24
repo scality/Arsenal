@@ -26,7 +26,8 @@
     "socket.io": "~1.7.3",
     "socket.io-client": "~1.7.3",
     "utf8": "2.1.2",
-    "uuid": "~3.0.1"
+    "uuid": "~3.0.1",
+    "werelogs": "scality/werelogs"
   },
   "devDependencies": {
     "eslint": "2.13.1",
@@ -35,8 +36,7 @@
     "eslint-config-scality": "scality/Guidelines",
     "lolex": "1.5.2",
     "mocha": "2.5.3",
-    "temp": "0.8.3",
-    "werelogs": "scality/werelogs"
+    "temp": "0.8.3"
   },
   "scripts": {
     "lint": "eslint $(git ls-files '*.js')",
