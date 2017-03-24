@@ -19,7 +19,8 @@
   "dependencies": {
     "ajv": "4.10.0",
     "ipaddr.js": "1.2.0",
-    "utf8": "2.1.2"
+    "utf8": "2.1.2",
+    "werelogs": "scality/werelogs"
   },
   "devDependencies": {
     "eslint": "2.13.1",
@@ -29,8 +30,7 @@
     "level": "1.6.0",
     "lolex": "1.5.2",
     "mocha": "2.5.3",
-    "temp": "0.8.3",
-    "werelogs": "scality/werelogs"
+    "temp": "0.8.3"
   },
   "scripts": {
     "lint": "eslint $(git ls-files '*.js')",
