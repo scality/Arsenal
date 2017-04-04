@@ -8,6 +8,7 @@ const DelimiterMaster =
 const Werelogs = require('werelogs').Logger;
 const logger = new Werelogs('listTest');
 const performListing = require('../../../utils/performListing');
+const zpad = require('../../helpers').zpad;
 
 class Test {
     constructor(name, input, output, filter) {
@@ -264,6 +265,15 @@ const tests = [
 ];
 
 describe('Delimiter listing algorithm', () => {
+    it('Should return good skipping value for DelimiterMaster', done => {
+        const delimiter = new DelimiterMaster({ delimiter: '/' });
+        for (let i = 0; i < 100; i++) {
+            delimiter.filter({ key: `foo/${zpad(i)}`, value: '{}' });
+        }
+        assert.strictEqual(delimiter.skipping(), 'foo/');
+        done();
+    });
+
     tests.forEach(test => {
         it(`Should list ${test.name}`, done => {
             // Simulate skip scan done by LevelDB
