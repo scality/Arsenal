@@ -26,25 +26,18 @@ describe('test generating versionIds', () => {
         done();
     });
 
-    it('should not decrypt bad versionIds', done => {
-        const encrypted = vids.map(vid => VID.encrypt(vid));
-        try {
-            encrypted.map(vid => VID.decrypt(`${vid}foo`));
-            done('decrypted bad versionIds with good password');
-        } catch (exception) {
-            done();
-        }
+    it('should return error decoding non-hex string versionIds', done => {
+        const encoded = vids.map(vid => VID.encode(vid));
+        const decoded = encoded.map(vid => VID.decode(`${vid}foo`));
+        decoded.forEach(result => assert(result instanceof Error));
+        done();
     });
 
-    it('should encrypt and decrypt versionIds using same password', done => {
-        const encrypted = vids.map(vid => VID.encrypt(vid));
-        const decrypted = encrypted.map(vid => VID.decrypt(vid));
+    it('should encode and decode versionIds', done => {
+        const encoded = vids.map(vid => VID.encode(vid));
+        const decoded = encoded.map(vid => VID.decode(vid));
         assert.strictEqual(vids.length, count);
-        // workaround because assert.strictEqual(vids, decrypted) does not work
-        assert.strictEqual(vids.length, decrypted.length);
-        for (let i = 0; i < count; i++) {
-            assert.strictEqual(vids[i], decrypted[i]);
-        }
+        assert.deepStrictEqual(vids, decoded);
         done();
     });
 });
