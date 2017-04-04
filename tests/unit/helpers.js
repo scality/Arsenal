@@ -44,6 +44,18 @@ function createAlteredRequest(alteredItems, objToAlter,
     return alteredRequest;
 }
 
+/**
+ * Create a zero left padded string with the default length of 15 bytes.
+ * The default value represents the estimated average object key length.
+ *
+ * @param {any} key - the key to be zero padded
+ * @param {number} length - the length of the key
+ * @return {string} - the zero padded string
+ */
+function zpad(key, length = 15) {
+    return `${'0'.repeat(length + 1)}${key}`.slice(-length);
+}
+
 class DummyRequestLogger {
 
     constructor() {
@@ -99,4 +111,4 @@ class DummyRequestLogger {
 }
 
 module.exports = { makeid, timeDiff, makeAuthInfo,
-                   createAlteredRequest, DummyRequestLogger };
+                   createAlteredRequest, zpad, DummyRequestLogger };
