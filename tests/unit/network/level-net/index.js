@@ -12,6 +12,8 @@ const debug = require('debug')('level-net:test');
 describe('level-net - LevelDB over network', () => {
     let db;
     let client;
+    const params = { };
+    const reqUids = 'foo';
 
     function setupLevelNet() {
         const server = levelNet.createServer(
@@ -49,7 +51,7 @@ describe('level-net - LevelDB over network', () => {
                 const dbg = (`put sub '${db.path.join(':')}' ` +
                              `key '${key}' value '${value}'`);
                 debug(`BEGIN ${dbg}`);
-                db.put(key, value, err => {
+                db.put(key, value, params, reqUids, err => {
                     debug(`END ${dbg} -> ${err}`);
                     done(err);
                 });
@@ -60,7 +62,7 @@ describe('level-net - LevelDB over network', () => {
             opList.push(done => {
                 const dbg = `get sub '${db.path.join(':')}' key '${key}'`;
                 debug(`BEGIN ${dbg}`);
-                db.get(key, (err, data) => {
+                db.get(key, params, reqUids, (err, data) => {
                     if (!err) {
                         assert.strictEqual(data, expectedValue);
                     }
@@ -75,7 +77,7 @@ describe('level-net - LevelDB over network', () => {
                 const dbg = (`update sub '${db.path.join(':')}' ` +
                              `key '${key}' value '${value}'`);
                 debug(`BEGIN ${dbg}`);
-                db.put(key, value, err => {
+                db.put(key, value, params, reqUids, err => {
                     debug(`END ${dbg} -> ${err}`);
                     done(err);
                 });
@@ -85,7 +87,7 @@ describe('level-net - LevelDB over network', () => {
                 const dbg = (`get (check) sub '${db.path.join(':')}' ` +
                              `key '${key}'`);
                 debug(`BEGIN ${dbg}`);
-                db.get(key, (err, data) => {
+                db.get(key, params, reqUids, (err, data) => {
                     debug(`END ${dbg} -> (${err},'${data}')`);
                     assert.ifError(err);
                     assert.strictEqual(data, value);
@@ -97,7 +99,7 @@ describe('level-net - LevelDB over network', () => {
             opList.push(done => {
                 const dbg = `del sub '${db.path.join(':')}' key '${key}'`;
                 debug(`BEGIN ${dbg}`);
-                db.del(key, err => {
+                db.del(key, params, reqUids, err => {
                     debug(`END ${dbg} -> ${err}`);
                     done(err);
                 });
@@ -107,10 +109,10 @@ describe('level-net - LevelDB over network', () => {
                 const dbg = (`get (check) sub '${db.path.join(':')}' ` +
                              `key '${key}'`);
                 debug(`BEGIN ${dbg}`);
-                db.get(key, err => {
+                db.get(key, params, reqUids, err => {
                     debug(`END ${dbg} -> ${err}`);
                     assert(err);
-                    assert(err.notFound);
+                    assert(err.ObjNotFound);
                     done();
                 });
             });
@@ -172,7 +174,7 @@ describe('level-net - LevelDB over network', () => {
                 const otherSub = client.openSub('sub4');
                 doCRUDTest(otherSub, 'RD', 'subkey', err => {
                     assert(err);
-                    assert(err.notFound);
+                    assert(err.ObjNotFound);
                     return done();
                 });
             });
@@ -187,7 +189,7 @@ describe('level-net - LevelDB over network', () => {
                 doCRUDTest(nestedSub22, 'R', 'key', err => {
                     // expect get error, it's another sub-level
                     assert(err);
-                    assert(err.notFound);
+                    assert(err.ObjNotFound);
                     done();
                 });
             });
@@ -214,7 +216,8 @@ describe('level-net - LevelDB over network', () => {
                 return undefined;
             }
             for (let i = 0; i < nbKeys; ++i) {
-                client.put(keyOfIter(i), valueOfIter(i), putCb);
+                client.put(keyOfIter(i), valueOfIter(i),
+                           params, reqUids, putCb);
             }
         }
         before(done => {
@@ -236,7 +239,7 @@ describe('level-net - LevelDB over network', () => {
                         return done();
                     }
                 }
-                client.get(keyOfIter(randI), getCb);
+                client.get(keyOfIter(randI), params, reqUids, getCb);
             }
         });
         it('should be able to list all keys through a stream and ' +
@@ -259,7 +262,8 @@ describe('level-net - LevelDB over network', () => {
                     assert(!prevKey || entry.key > prevKey);
                     prevKey = entry.key;
                     client.put(entry.key,
-                               `new data for key ${entry.key}`, err => {
+                               `new data for key ${entry.key}`,
+                               params, reqUids, err => {
                                    assert.ifError(err);
                                    ++nbPutDone;
                                    if (nbPutDone === nbKeys && receivedEnd) {
@@ -317,7 +321,7 @@ describe('level-net - LevelDB over network', () => {
                 let nbGetDone = 0;
 
                 function checkCb(err) {
-                    assert(err.notFound);
+                    assert(err.ObjNotFound);
                     ++nbGetDone;
                     if (nbGetDone === nbKeys) {
                         return done();
@@ -325,7 +329,7 @@ describe('level-net - LevelDB over network', () => {
                     return undefined;
                 }
                 for (let i = 0; i < nbKeys; ++i) {
-                    client.get(keyOfIter(i), checkCb);
+                    client.get(keyOfIter(i), params, reqUids, checkCb);
                 }
             }
             function delCb(err) {
@@ -336,7 +340,7 @@ describe('level-net - LevelDB over network', () => {
                 }
             }
             for (let i = 0; i < nbKeys; ++i) {
-                client.del(keyOfIter(i), delCb);
+                client.del(keyOfIter(i), params, reqUids, delCb);
             }
         });
     });
