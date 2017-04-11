@@ -90,7 +90,7 @@ function batch(callback) {
     }, callback);
 }
 
-describe('test VSP', () => {
+describe.only('test VSP', () => {
     afterEach(() => _cleanupKeyValueStore());
 
     it('should run a batch of operations correctly', done => {
@@ -127,7 +127,7 @@ describe('test VSP', () => {
             (nextVID, callback) => wgm.list({}, logger, (err, list) => {
                 assert.strictEqual(err, null);
                 // listing result has the master version
-                assert(list.length, OP_COUNT);
+                assert.strictEqual(list.length, OP_COUNT);
                 assert(Version.isPHD(list[0].value),
                         'latest version must be a PHD version');
                 // force repairing using a get request so that
@@ -142,7 +142,7 @@ describe('test VSP', () => {
                 setTimeout(() => wgm.list({}, logger, (err, list) => {
                     assert.strictEqual(err, null);
                     // listing result has the master version
-                    assert(list.length, OP_COUNT);
+                    assert.strictEqual(list.length, OP_COUNT);
                     assert.strictEqual(list[0].value, res,
                             'latest version is not repaired');
                     callback();
