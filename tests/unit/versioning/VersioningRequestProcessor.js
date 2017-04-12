@@ -90,7 +90,7 @@ function batch(callback) {
     }, callback);
 }
 
-describe.only('test VSP', () => {
+describe('test VSP', () => {
     afterEach(() => _cleanupKeyValueStore());
 
     it('should run a batch of operations correctly', done => {
