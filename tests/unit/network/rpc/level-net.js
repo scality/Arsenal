@@ -4,10 +4,12 @@ const level = require('level');
 const sublevel = require('level-sublevel');
 const temp = require('temp');
 const assert = require('assert');
-const levelNet = require('../../../../lib/network/level-net');
 const async = require('async');
-const Logger = require('werelogs').Logger;
 const debug = require('debug')('level-net:test');
+
+const Logger = require('werelogs').Logger;
+
+const levelNet = require('../../../../lib/network/rpc/level-net');
 
 describe('level-net - LevelDB over network', () => {
     let db;
