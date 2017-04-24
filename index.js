@@ -41,7 +41,8 @@ module.exports = {
         http: {
             server: require('./lib/network/http/server'),
         },
-        level: require('./lib/network/level-net'),
+        rpc: require('./lib/network/rpc/rpc'),
+        level: require('./lib/network/rpc/level-net'),
     },
     storage: {
         metadata: {

@@ -4,37 +4,73 @@ const level = require('level');
 const sublevel = require('level-sublevel');
 const temp = require('temp');
 const assert = require('assert');
-const levelNet = require('../../../../lib/network/level-net');
 const async = require('async');
-const Logger = require('werelogs').Logger;
 const debug = require('debug')('level-net:test');
+
+const Logger = require('werelogs').Logger;
+
+const rpc = require('../../../../lib/network/rpc/rpc');
+const levelNet = require('../../../../lib/network/rpc/level-net');
+
+
+// simply forward the API calls to the db as-is
+const dbAsyncAPI = {
+    put: (env, ...args) => {
+        env.subDb.put.apply(env.subDb, args);
+    },
+    del: (env, ...args) => {
+        env.subDb.del.apply(env.subDb, args);
+    },
+    get: (env, ...args) => {
+        env.subDb.get.apply(env.subDb, args);
+    },
+    batch: (env, ...args) => {
+        env.subDb.batch.apply(env.subDb, args);
+    },
+};
+const dbSyncAPI = {
+    createReadStream:
+    (env, ...args) => env.subDb.createReadStream.apply(env.subDb, args),
+};
 
 describe('level-net - LevelDB over network', () => {
     let db;
+    let server;
     let client;
+    const params = { };
+    const srvLogger = new Logger('level-net:test-server',
+                                 { level: 'info', dump: 'error' });
+    const cliLogger = new Logger('level-net:test-client',
+                                 { level: 'info', dump: 'error' });
+    const reqLogger = cliLogger.newRequestLoggerFromSerializedUids('foo');
 
-    function setupLevelNet() {
-        const server = levelNet.createServer(
-            db, { logger: new Logger('level-net:test-server',
-                                     { level: 'info', dump: 'error' }) });
-        server.initMetadataService('/test');
+    function setupLevelNet(done) {
+        server = new rpc.RPCServer({ logger: srvLogger });
         server.listen(6677);
 
-        client = levelNet.client({ baseNs: '/test',
-                                   logger: new Logger('level-net:test-client',
-                                                      { level: 'info',
-                                                        dump: 'error' }) });
-        client.connect('localhost', 6677);
+        const dbService = new levelNet.LevelDbService({
+            server,
+            rootDb: db,
+            namespace: '/test/db',
+            logger: srvLogger });
+        dbService.registerSyncAPI(dbSyncAPI);
+        dbService.registerAsyncAPI(dbAsyncAPI);
+
+        client = new levelNet.LevelDbClient({
+            url: 'http://localhost:6677/test/db',
+            logger: cliLogger,
+        });
+        client.connect(done);
     }
 
     /**
      * create-read-update-delete simple test
      *
-     * @param {Object} db database object
-     * @param {String} crudSelect string containing one or more of
+     * @param {Object} db - database object
+     * @param {String} crudSelect - string containing one or more of
      * 'C', 'R', 'U' and 'D' letters to enable each type of test
-     * @param {String} key object key to work with
-     * @param {function} cb callback when done
+     * @param {String} key - object key to work with
+     * @param {function} cb - callback when done
      * @return {undefined}
      */
     function doCRUDTest(db, crudSelect, key, cb) {
@@ -49,10 +85,11 @@ describe('level-net - LevelDB over network', () => {
                 const dbg = (`put sub '${db.path.join(':')}' ` +
                              `key '${key}' value '${value}'`);
                 debug(`BEGIN ${dbg}`);
-                db.put(key, value, err => {
-                    debug(`END ${dbg} -> ${err}`);
-                    done(err);
-                });
+                db.withRequestLogger(reqLogger)
+                    .put(key, value, params, err => {
+                        debug(`END ${dbg} -> ${err}`);
+                        done(err);
+                    });
             });
         }
         if (crudList.includes('R')) {
@@ -60,13 +97,14 @@ describe('level-net - LevelDB over network', () => {
             opList.push(done => {
                 const dbg = `get sub '${db.path.join(':')}' key '${key}'`;
                 debug(`BEGIN ${dbg}`);
-                db.get(key, (err, data) => {
-                    if (!err) {
-                        assert.strictEqual(data, expectedValue);
-                    }
-                    debug(`END ${dbg} -> (${err},'${data}')`);
-                    done(err);
-                });
+                db.withRequestLogger(reqLogger)
+                    .get(key, params, (err, data) => {
+                        if (!err) {
+                            assert.strictEqual(data, expectedValue);
+                        }
+                        debug(`END ${dbg} -> (${err},'${data}')`);
+                        done(err);
+                    });
             });
         }
         if (crudList.includes('U')) {
@@ -75,44 +113,48 @@ describe('level-net - LevelDB over network', () => {
                 const dbg = (`update sub '${db.path.join(':')}' ` +
                              `key '${key}' value '${value}'`);
                 debug(`BEGIN ${dbg}`);
-                db.put(key, value, err => {
-                    debug(`END ${dbg} -> ${err}`);
-                    done(err);
-                });
+                db.withRequestLogger(reqLogger)
+                    .put(key, value, params, err => {
+                        debug(`END ${dbg} -> ${err}`);
+                        done(err);
+                    });
             });
             // read after write to check contents have been updated
             opList.push(done => {
                 const dbg = (`get (check) sub '${db.path.join(':')}' ` +
                              `key '${key}'`);
                 debug(`BEGIN ${dbg}`);
-                db.get(key, (err, data) => {
-                    debug(`END ${dbg} -> (${err},'${data}')`);
-                    assert.ifError(err);
-                    assert.strictEqual(data, value);
-                    done();
-                });
+                db.withRequestLogger(reqLogger)
+                    .get(key, params, (err, data) => {
+                        debug(`END ${dbg} -> (${err},'${data}')`);
+                        assert.ifError(err);
+                        assert.strictEqual(data, value);
+                        done();
+                    });
             });
         }
         if (crudList.includes('D')) {
             opList.push(done => {
                 const dbg = `del sub '${db.path.join(':')}' key '${key}'`;
                 debug(`BEGIN ${dbg}`);
-                db.del(key, err => {
-                    debug(`END ${dbg} -> ${err}`);
-                    done(err);
-                });
+                db.withRequestLogger(reqLogger)
+                    .del(key, params, err => {
+                        debug(`END ${dbg} -> ${err}`);
+                        done(err);
+                    });
             });
             // check that contents have effectively been deleted
             opList.push(done => {
                 const dbg = (`get (check) sub '${db.path.join(':')}' ` +
                              `key '${key}'`);
                 debug(`BEGIN ${dbg}`);
-                db.get(key, err => {
-                    debug(`END ${dbg} -> ${err}`);
-                    assert(err);
-                    assert(err.notFound);
-                    done();
-                });
+                db.withRequestLogger(reqLogger)
+                    .get(key, params, err => {
+                        debug(`END ${dbg} -> ${err}`);
+                        assert(err);
+                        assert(err.notFound);
+                        done();
+                    });
             });
         }
 
@@ -123,30 +165,19 @@ describe('level-net - LevelDB over network', () => {
         temp.mkdir('level-net-testdb-', (err, dbDir) => {
             const rootDb = level(dbDir);
             db = sublevel(rootDb);
-            setupLevelNet();
-            return done();
+            setupLevelNet(done);
         });
     });
 
+    after(done => {
+        client.once('disconnect', () => {
+            server.close();
+            done();
+        });
+        client.disconnect();
+    });
+
     describe('simple tests', () => {
-        it('should ping a level-net server (sync on server)', done => {
-            client.ping((err, args) => {
-                if (err) {
-                    return done(err);
-                }
-                assert.strictEqual(args, 'pong');
-                return done();
-            });
-        });
-        it('should ping a level-net server (async on server)', done => {
-            client.pingAsync((err, args) => {
-                if (err) {
-                    return done(err);
-                }
-                assert.strictEqual(args, 'pong');
-                return done();
-            });
-        });
         it('should be able to perform a complete CRUD test', done => {
             doCRUDTest(client, 'CRUD', 'testkey', done);
         });
@@ -214,7 +245,8 @@ describe('level-net - LevelDB over network', () => {
                 return undefined;
             }
             for (let i = 0; i < nbKeys; ++i) {
-                client.put(keyOfIter(i), valueOfIter(i), putCb);
+                client.withRequestLogger(reqLogger)
+                    .put(keyOfIter(i), valueOfIter(i), params, putCb);
             }
         }
         before(done => {
@@ -236,7 +268,8 @@ describe('level-net - LevelDB over network', () => {
                         return done();
                     }
                 }
-                client.get(keyOfIter(randI), getCb);
+                client.withRequestLogger(reqLogger)
+                    .get(keyOfIter(randI), params, getCb);
             }
         });
         it('should be able to list all keys through a stream and ' +
@@ -258,15 +291,16 @@ describe('level-net - LevelDB over network', () => {
                     assert(entry.key);
                     assert(!prevKey || entry.key > prevKey);
                     prevKey = entry.key;
-                    client.put(entry.key,
-                               `new data for key ${entry.key}`, err => {
-                                   assert.ifError(err);
-                                   ++nbPutDone;
-                                   if (nbPutDone === nbKeys && receivedEnd) {
-                                       done();
-                                   }
-                                   return undefined;
-                               });
+                    client.withRequestLogger(reqLogger)
+                        .put(entry.key, `new data for key ${entry.key}`,
+                             params, err => {
+                                 assert.ifError(err);
+                                 ++nbPutDone;
+                                 if (nbPutDone === nbKeys && receivedEnd) {
+                                     done();
+                                 }
+                                 return undefined;
+                             });
                 });
                 keyStream.on('end', () => {
                     receivedEnd = true;
@@ -325,7 +359,8 @@ describe('level-net - LevelDB over network', () => {
                     return undefined;
                 }
                 for (let i = 0; i < nbKeys; ++i) {
-                    client.get(keyOfIter(i), checkCb);
+                    client.withRequestLogger(reqLogger)
+                        .get(keyOfIter(i), params, checkCb);
                 }
             }
             function delCb(err) {
@@ -336,28 +371,9 @@ describe('level-net - LevelDB over network', () => {
                 }
             }
             for (let i = 0; i < nbKeys; ++i) {
-                client.del(keyOfIter(i), delCb);
+                client.withRequestLogger(reqLogger)
+                    .del(keyOfIter(i), params, delCb);
             }
-        });
-    });
-
-    describe('error tests', () => {
-        it('should timeout if command is too long to respond', done => {
-            // shorten the timeout to 200ms to speed up the test
-            const oldTimeout = client.getCallTimeout();
-            client.setCallTimeout(200);
-            client.slowCommand(err => {
-                assert(err);
-                assert.strictEqual(err.code, 'ETIMEDOUT');
-                return done();
-            });
-            client.setCallTimeout(oldTimeout);
-        });
-        it('should throw if last argument of call is not a callback', done => {
-            assert.throws(() => {
-                client.pingAsync('not a callback');
-            }, Error);
-            done();
         });
     });
 });
