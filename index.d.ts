@@ -49,6 +49,7 @@ declare module "arsenal" {
         'InvalidSOAPRequest'?: boolean;
         'InvalidStorageClass'?: boolean;
         'InvalidTargetBucketForLogging'?: boolean;
+        'InvalidTag'?: boolean;
         'InvalidToken'?: boolean;
         'InvalidURI'?: boolean;
         'KeyTooLong'?: boolean;
