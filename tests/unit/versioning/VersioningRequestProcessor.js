@@ -76,7 +76,7 @@ const dbapi = {
 };
 const wgm = new WGM(dbapi);
 const writeCache = new WriteCache(wgm);
-const vsp = new VSP(writeCache, wgm);
+const vsp = new VSP(writeCache, wgm, { replicationGroupId: 'PARIS' });
 
 function batch(callback) {
     async.times(OP_COUNT, (i, next) => {

@@ -13,7 +13,7 @@ describe('test generating versionIds', () => {
     const count = 1000;
     const vids = Array(count).fill(null);
     for (let i = 0; i < count; i++) {
-        vids[i] = VID.generateVersionId(randkey(15));
+        vids[i] = VID.generateVersionId(randkey(15), 'PARIS');
     }
     process.env.VID_CRYPTO_PASSWORD = randkey(64);
 
