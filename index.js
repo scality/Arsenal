@@ -35,7 +35,7 @@ module.exports = {
         VersioningConstants: require('./lib/versioning/constants.js')
             .VersioningConstants,
         Version: require('./lib/versioning/Version.js').Version,
-        VersionID: require('./lib/versioning/VersionID.js'),
+        VersionID: require('./lib/versioning/VersionID.js').instance,
     },
     network: {
         http: {
