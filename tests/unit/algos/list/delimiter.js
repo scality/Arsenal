@@ -123,6 +123,15 @@ const tests = [
         IsTruncated: false,
         NextMarker: undefined,
     }),
+    new Test('with zero makKeys', {
+        maxKeys: 0,
+    }, {
+        Contents: [],
+        CommonPrefixes: [],
+        Delimiter: undefined,
+        IsTruncated: true,
+        NextMarker: undefined,
+    }),
     new Test('with delimiter', {
         delimiter: '/',
     }, {
