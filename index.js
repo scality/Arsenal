@@ -6,6 +6,7 @@ module.exports = {
     shuffle: require('./lib/shuffle'),
     stringHash: require('./lib/stringHash'),
     ipCheck: require('./lib/ipCheck'),
+    jsutil: require('./lib/jsutil'),
     https: {
         ciphers: require('./lib/https/ciphers.js'),
         dhparam: require('./lib/https/dh2048.js'),
@@ -43,11 +44,23 @@ module.exports = {
         },
         rpc: require('./lib/network/rpc/rpc'),
         level: require('./lib/network/rpc/level-net'),
+        rest: {
+            RESTServer: require('./lib/network/rest/RESTServer'),
+            RESTClient: require('./lib/network/rest/RESTClient'),
+        },
     },
     storage: {
         metadata: {
-            server: require('./lib/storage/metadata/file/server'),
-            client: require('./lib/storage/metadata/file/client'),
+            MetadataFileServer:
+            require('./lib/storage/metadata/file/MetadataFileServer'),
+            MetadataFileClient:
+            require('./lib/storage/metadata/file/MetadataFileClient'),
+        },
+        data: {
+            file: {
+                DataFileStore:
+                require('./lib/storage/data/file/DataFileStore'),
+            },
         },
         utils: require('./lib/storage/utils'),
     },
