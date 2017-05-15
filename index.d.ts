@@ -50,6 +50,7 @@ declare module "arsenal" {
         'InvalidStorageClass'?: boolean;
         'InvalidTag'?: boolean;
         'InvalidTargetBucketForLogging'?: boolean;
+        'InvalidTag'?: boolean;
         'InvalidToken'?: boolean;
         'InvalidURI'?: boolean;
         'KeyTooLong'?: boolean;

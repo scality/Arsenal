@@ -160,6 +160,10 @@
     "code": 400,
     "description": "The target bucket for logging does not exist, is not owned by you, or does not have the appropriate grants for the log-delivery group."
   },
+  "InvalidTag": {
+    "code": 400,
+    "description": "The Tag you have provided is invalid"
+  },
   "InvalidToken": {
     "code": 400,
     "description": "The provided token is malformed or otherwise invalid."
