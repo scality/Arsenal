@@ -36,6 +36,22 @@ const request = {
 };
 
 describe('v4 headerAuthCheck', () => {
+    [
+        { token: undefined, error: false },
+        { token: 'invalid-token', error: true },
+        { token: 'a'.repeat(128), error: false },
+    ].forEach(test => it(`test with token(${test.token})`, () => {
+        const alteredRequest = createAlteredRequest({
+            'x-amz-security-token': test.token }, 'headers', request, headers);
+        const res = headerAuthCheck(alteredRequest, log);
+        if (test.error) {
+            assert.notStrictEqual(res.err, undefined);
+            assert.strictEqual(res.err.InvalidToken, true);
+        } else {
+            assert.strictEqual(res.err.AccessDenied, true);
+        }
+    }));
+
     it('should return error if undefined authorization header', done => {
         const alteredRequest = createAlteredRequest({
             authorization: undefined }, 'headers', request, headers);
