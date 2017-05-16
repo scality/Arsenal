@@ -150,4 +150,73 @@ describe('test VSP', () => {
             }),
         ], done);
     });
+    it('should allow to write a specific version + update master', done => {
+        let v1;
+        let v2;
+
+        async.waterfall([next => {
+            const request = {
+                db: 'foo',
+                key: 'bar',
+                value: '{"qux":"quz"}',
+                options: { versioning: true },
+            };
+            vsp.put(request, logger, next);
+        },
+        (res, next) => {
+            v1 = Version.from(res).getVersionId();
+            const request = {
+                db: 'foo',
+                key: 'bar',
+                value: '{"qux":"quz2"}',
+                options: { versioning: true },
+            };
+            vsp.put(request, logger, next);
+        },
+        (res, next) => {
+            v2 = Version.from(res).getVersionId();
+
+            // overwriting v1: master should not be updated
+            const request = {
+                db: 'foo',
+                key: 'bar',
+                value: '{"qux":"quz1.1"}',
+                options: { versioning: true,
+                           versionId: v1 },
+            };
+            vsp.put(request, logger, next);
+        },
+        (res, next) => {
+            const request = {
+                db: 'foo',
+                key: 'bar',
+            };
+            vsp.get(request, logger, next);
+        },
+        (res, next) => {
+            assert.strictEqual(JSON.parse(res).qux, 'quz2');
+
+            // overwriting v2: master should be updated
+            const request = {
+                db: 'foo',
+                key: 'bar',
+                value: '{"qux":"quz2.1"}',
+                options: { versioning: true,
+                           versionId: v2 },
+            };
+            vsp.put(request, logger, next);
+        },
+        (res, next) => {
+            const request = {
+                db: 'foo',
+                key: 'bar',
+            };
+            vsp.get(request, logger, next);
+        },
+        (res, next) => {
+            assert.strictEqual(JSON.parse(res).qux, 'quz2.1');
+            next();
+        }],
+                     done);
+    });
 });
