@@ -4,6 +4,104 @@
     "title": "AWS Policy schema.",
     "description": "This schema describes a user policy per AWS policy grammar rules",
     "definitions": {
+        "principalService": {
+            "type": "object",
+            "properties": {
+                "Service": {
+                    "type": "string",
+                    "enum": [
+                        "backbeat"
+                    ]
+                }
+            },
+            "additionalProperties": false
+        },
+        "principalAnonymous": {
+            "type": "string",
+            "pattern": "^\\*$"
+        },
+        "principalAWSAccountID": {
+            "type": "string",
+            "pattern": "^[0-9]{12}$"
+        },
+        "principalAWSAccountArn": {
+            "type": "string",
+            "pattern": "^arn:aws:iam::[0-9]{12}:root$"
+        },
+        "principalAWSUserArn": {
+            "type": "string",
+            "pattern": "^arn:aws:iam::[0-9]{12}:user/[\\w+=,.@ -]{1,64}$"
+        },
+        "principalAWSRoleArn": {
+            "type": "string",
+            "pattern": "^arn:aws:iam::[0-9]{12}:role/[\\w+=,.@ -]{1,64}$"
+        },
+        "principalFederatedSamlIdp": {
+            "type": "string",
+            "pattern": "^arn:aws:iam::[0-9]{12}:saml-provider/[\\w._-]{1,128}$"
+        },
+        "principalAWSItem": {
+            "type": "object",
+            "properties": {
+                "AWS": {
+                    "oneOf": [
+                        { "$ref": "#/definitions/principalAWSAccountID" },
+                        { "$ref": "#/definitions/principalAnonymous" },
+                        { "$ref": "#/definitions/principalAWSAccountArn" },
+                        { "$ref": "#/definitions/principalAWSUserArn" },
+                        { "$ref": "#/definitions/principalAWSRoleArn" },
+                        {
+                            "type": "array",
+                            "minItems": 1,
+                            "items": {
+                                "$ref": "#/definitions/principalAWSAccountID"
+                            }
+                        },
+                        {
+                            "type": "array",
+                            "minItems": 1,
+                            "items": {
+                                "$ref": "#/definitions/principalAWSAccountArn"
+                            }
+                        },
+                        {
+                            "type": "array",
+                            "minItems": 1,
+                            "items": {
+                                "$ref": "#/definitions/principalAWSRoleArn"
+                            }
+                        },
+                        {
+                            "type": "array",
+                            "minItems": 1,
+                            "items": {
+                                "$ref": "#/definitions/principalAWSUserArn"
+                            }
+                        }
+                    ]
+                }
+            },
+            "additionalProperties": false
+        },
+        "principalFederatedItem": {
+            "type": "object",
+            "properties": {
+                "Federated": {
+                    "oneOf": [
+                        { "$ref": "#/definitions/principalFederatedSamlIdp" }
+                    ]
+                }
+            },
+            "additionalProperties": false
+        },
+        "principalItem": {
+            "oneOf": [
+                { "$ref": "#/definitions/principalAWSItem" },
+                { "$ref": "#/definitions/principalAnonymous" },
+                { "$ref": "#/definitions/principalFederatedItem" },
+                { "$ref": "#/definitions/principalService" }
+            ]
+        },
         "actionItem": {
             "type": "string",
             "pattern": "^[^*:]+:([^:])+|^\\*{1}$"
@@ -212,6 +310,12 @@
                                     "Deny"
                                 ]
                             },
+                            "Principal": {
+                                "$ref": "#/definitions/principalItem"
+                            },
+                            "NotPrincipal": {
+                                "$ref": "#/definitions/principalItem"
+                            },
                             "Action": {
                                 "oneOf": [
                                     {
@@ -295,6 +399,18 @@
                                     "NotAction",
                                     "NotResource"
                                 ]
+                            }, {
+                                "required": [
+                                    "Effect",
+                                    "Action",
+                                    "Principal"
+                                ]
+                            }, {
+                                "required": [
+                                    "Effect",
+                                    "Action",
+                                    "NotPrincipal"
+                                ]
                             }
                         ]
                     }
@@ -314,6 +430,9 @@
                                 "Allow",
                                 "Deny"
                             ]
+                        },
+                        "Principal": {
+                            "$ref": "#/definitions/principalItem"
                         },
                         "Action": {
                             "oneOf": [
@@ -397,6 +516,18 @@
                                 "Effect",
                                 "NotAction",
                                 "NotResource"
+                            ]
+                        }, {
+                            "required": [
+                                "Effect",
+                                "Action",
+                                "Principal"
+                            ]
+                        }, {
+                            "required": [
+                                "Effect",
+                                "Action",
+                                "NotPrincipal"
                             ]
                         }
                     ]
