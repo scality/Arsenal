@@ -142,6 +142,19 @@
 		}
 	   ]
    },
+   "utapi list metrics with account ID": {
+       "Version": "2012-10-17",
+         "Statement": [
+       {
+           "Sid": "utapiListing",
+           "Action": [
+           "utapi:ListMetrics"
+           ],
+           "Effect": "Allow",
+           "Resource": "arn:scality:utapi::012345678901:buckets/mine"
+       }
+      ]
+   },
    "lowercase action": {
        "Version": "2012-10-17",
        "Statement": [

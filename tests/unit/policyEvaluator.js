@@ -1176,6 +1176,7 @@ describe('policyEvaluator for utapi', () => {
         () => {
             const requestContext = new RequestContext({}, {}, 'buckets', 'mine',
                 undefined, undefined, 'ListMetrics', 'utapi');
+            requestContext.setRequesterInfo({});
             check(requestContext, {},
             samples['utapi list metrics'], 'Allow');
         });
@@ -1184,8 +1185,35 @@ describe('policyEvaluator for utapi', () => {
         'named in policy', () => {
         const requestContext = new RequestContext({}, {}, 'buckets', 'notMine',
             undefined, undefined, 'ListMetrics', 'utapi');
+        requestContext.setRequesterInfo({});
         check(requestContext, {},
             samples['utapi list metrics'], 'Neutral');
+    });
+
+    it('should permit access to list metrics for bucket when accountid in ' +
+        'requestContext', () => {
+        const requestContext = new RequestContext({}, {}, 'buckets', 'mine',
+            undefined, undefined, 'ListMetrics', 'utapi');
+        requestContext.setRequesterInfo({ accountid: '012345678901' });
+        check(requestContext, {}, samples['utapi list metrics'], 'Allow');
+    });
+
+    it('should permit access to list metrics for bucket and account ID named ' +
+        'in policy', () => {
+        const requestContext = new RequestContext({}, {}, 'buckets', 'mine',
+            undefined, undefined, 'ListMetrics', 'utapi');
+        requestContext.setRequesterInfo({ accountid: '012345678901' });
+        check(requestContext, {},
+        samples['utapi list metrics with account ID'], 'Allow');
+    });
+
+    it('should be neutral on access to list metrics when accountid in ' +
+    'policy differs from accountid in requestContext', () => {
+        const requestContext = new RequestContext({}, {}, 'buckets', 'mine',
+            undefined, undefined, 'ListMetrics', 'utapi');
+        requestContext.setRequesterInfo({ accountid: '000000000000' });
+        check(requestContext, {},
+        samples['utapi list metrics with account ID'], 'Neutral');
     });
 });
 
