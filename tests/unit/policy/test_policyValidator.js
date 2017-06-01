@@ -15,6 +15,7 @@ const samplePolicy = {
         Condition: { NumericLessThanEquals: { 's3:max-keys': '10' } },
     },
 };
+
 const errDict = {
     required: {
         Version: 'Policy document must be version 2012-10-17 or greater.',
@@ -68,6 +69,192 @@ describe('Policies validation - Version', () => {
     it('should return error if Version field is missing', () => {
         policy.Version = undefined;
         check(policy, failRes(errDict.required.Version));
+    });
+});
+
+describe('Policies validation - Principal', () => {
+    [
+        {
+            name: 'an account id',
+            value: { AWS: '111111111111' },
+        },
+        {
+            name: 'anonymous user AWS form',
+            value: { AWS: '*' },
+        },
+        {
+            name: 'an account arn',
+            value: { AWS: 'arn:aws:iam::111111111111:root' },
+        },
+        {
+            name: 'multiple account id',
+            value: {
+                AWS: ['111111111111', '111111111112'],
+            },
+        },
+        {
+            name: 'multiple account arn',
+            value: {
+                AWS: [
+                    'arn:aws:iam::111111111111:root',
+                    'arn:aws:iam::111111111112:root',
+                ],
+            },
+        },
+        {
+            name: 'anonymous user as string',
+            value: '*',
+        },
+        {
+            name: 'user arn',
+            value: { AWS: 'arn:aws:iam::111111111111:user/alex' },
+        },
+        {
+            name: 'multiple user arns',
+            value: {
+                AWS: [
+                    'arn:aws:iam::111111111111:user/alex',
+                    'arn:aws:iam::111111111111:user/thibault',
+                ],
+            },
+        },
+        {
+            name: 'role arn',
+            value: {
+                AWS: 'arn:aws:iam::111111111111:role/dev',
+            },
+        },
+        {
+            name: 'multiple role arn',
+            value: {
+                AWS: [
+                    'arn:aws:iam::111111111111:role/dev',
+                    'arn:aws:iam::111111111111:role/prod',
+                ],
+            },
+        },
+        {
+            name: 'saml provider',
+            value: {
+                Federated:
+                    'arn:aws:iam::111111111111:saml-provider/mysamlprovider',
+            },
+        },
+        {
+            name: 'with backbeat service',
+            value: { Service: 'backbeat' },
+        },
+    ].forEach(test => {
+        it(`should allow principal field with ${test.name}`, () => {
+            policy.Statement.Principal = test.value;
+            delete policy.Statement.Resource;
+            check(policy, successRes);
+        });
+
+        it(`shoud allow notPrincipal field with ${test.name}`, () => {
+            policy.Statement.NotPrincipal = test.value;
+            delete policy.Statement.Resource;
+            check(policy, successRes);
+        });
+    });
+
+    [
+        {
+            name: 'wrong format account id',
+            value: { AWS: '11111111111z' },
+        },
+        {
+            name: 'empty string',
+            value: '',
+        },
+        {
+            name: 'anonymous user federated form',
+            value: { federated: '*' },
+        },
+        {
+            name: 'wildcard in ressource',
+            value: { AWS: 'arn:aws:iam::111111111111:user/*' },
+        },
+        {
+            name: 'a malformed account arn',
+            value: { AWS: 'arn:aws:iam::111111111111:' },
+        },
+        {
+            name: 'multiple malformed account id',
+            value: {
+                AWS: ['1111111111z1', '1111z1111112'],
+            },
+        },
+        {
+            name: 'multiple anonymous',
+            value: {
+                AWS: ['*', '*'],
+            },
+        },
+        {
+            name: 'multiple malformed account arn',
+            value: {
+                AWS: [
+                    'arn:aws:iam::111111111111:root',
+                    'arn:aws:iam::111111111112:',
+                ],
+            },
+        },
+        {
+            name: 'account id as a string',
+            value: '111111111111',
+        },
+        {
+            name: 'account arn as a string',
+            value: 'arn:aws:iam::111111111111:root',
+        },
+        {
+            name: 'user arn as a string',
+            value: 'arn:aws:iam::111111111111:user/alex',
+        },
+        {
+            name: 'multiple malformed user arns',
+            value: {
+                AWS: [
+                    'arn:aws:iam::111111111111:user/alex',
+                    'arn:aws:iam::111111111111:user/',
+                ],
+            },
+        },
+        {
+            name: 'malformed role arn',
+            value: {
+                AWS: 'arn:aws:iam::111111111111:role/',
+            },
+        },
+        {
+            name: 'multiple malformed role arn',
+            value: {
+                AWS: [
+                    'arn:aws:iam::111111111111:role/dev',
+                    'arn:aws:iam::11111111z111:role/prod',
+                ],
+            },
+        },
+        {
+            name: 'saml provider as a string',
+            value: 'arn:aws:iam::111111111111:saml-provider/mysamlprovider',
+        },
+        {
+            name: 'with other service than backbeat',
+            value: { Service: 'non-existent-service' },
+        },
+    ].forEach(test => {
+        it(`should fail with ${test.name}`, () => {
+            policy.Statement.Principal = test.value;
+            delete policy.Statement.Resource;
+            check(policy, failRes());
+        });
+    });
+
+    it('should not allow Resource field', () => {
+        policy.Statement.Principal = '*';
+        check(policy, failRes());
     });
 });
 
