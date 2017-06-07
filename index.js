@@ -64,6 +64,8 @@ module.exports = {
             require('./lib/storage/metadata/file/MetadataFileServer'),
             MetadataFileClient:
             require('./lib/storage/metadata/file/MetadataFileClient'),
+            LogConsumer:
+            require('./lib/storage/metadata/bucketclient/LogConsumer'),
         },
         data: {
             file: {
