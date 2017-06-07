@@ -256,6 +256,10 @@
     "code": 404,
     "description": "Indicates that the version ID specified in the request does not match an existing version."
   },
+  "ReplicationConfigurationNotFoundError": {
+    "code": 404,
+    "description": "The replication configuration was not found"
+  },
   "NotImplemented": {
     "code": 501,
     "description": "A header you provided implies functionality that is not implemented."
