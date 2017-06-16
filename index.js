@@ -49,6 +49,10 @@ module.exports = {
             RESTClient: require('./lib/network/rest/RESTClient'),
         },
     },
+    s3routes: {
+        routes: require('./lib/s3routes/routes'),
+        routesUtils: require('./lib/s3routes/routesUtils'),
+    },
     storage: {
         metadata: {
             MetadataFileServer:
