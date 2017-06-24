@@ -1,0 +1,109 @@
+[
+    {
+        "bucket": true,
+        "object": false,
+        "method": "PUT",
+        "controller": "BucketController",
+        "action": "bucketPutACL",
+        "query": [ "acl" ],
+        "auth": [ "bucket" ]
+    },
+    {
+        "bucket": true,
+        "object": false,
+        "method": "PUT",
+        "controller": "BucketController",
+        "action": "bucketPutVersioning",
+        "query": [ "versioning" ],
+        "auth": [ "bucket" ]
+    },
+    {
+        "bucket": true,
+        "object": false,
+        "method": "PUT",
+        "controller": "BucketController",
+        "action": "bucketPutWebsite",
+        "query": [ "website" ],
+        "auth": [ "bucket" ]
+    },
+    {
+        "bucket": true,
+        "object": false,
+        "method": "PUT",
+        "controller": "BucketController",
+        "action": "bucketPutCors",
+        "query": [ "cors" ],
+        "auth": [ "bucket" ]
+    },
+    {
+        "bucket": true,
+        "object": false,
+        "method": "PUT",
+        "controller": "BucketController",
+        "action": "bucketPutReplication",
+        "query": [ "replication" ],
+        "auth": [ "bucket" ]
+    },
+    {
+        "bucket": true,
+        "object": false,
+        "method": "PUT",
+        "controller": "BucketController",
+        "action": "bucketPut",
+        "auth": [ "bucket" ]
+    },
+    {
+        "bucket": true,
+        "object": true,
+        "method": "PUT",
+        "controller": "BucketController",
+        "action": "objectPutCopyPart",
+        "headers": [ "x-amz-copy-source" ],
+        "query": [ "partNumber" ],
+        "auth": [ "bucket" ]
+    },
+    {
+        "bucket": true,
+        "object": true,
+        "method": "PUT",
+        "controller": "BucketController",
+        "action": "objectPutPart",
+        "query": [ "partNumber" ],
+        "auth": [ "bucket" ]
+    },
+    {
+        "bucket": true,
+        "object": true,
+        "method": "PUT",
+        "controller": "BucketController",
+        "action": "objectPutACL",
+        "query": [ "acl" ],
+        "auth": [ "bucket" ]
+    },
+    {
+        "bucket": true,
+        "object": true,
+        "method": "PUT",
+        "controller": "BucketController",
+        "action": "objectPutTagging",
+        "query": [ "tagging" ],
+        "auth": [ "bucket" ]
+    },
+    {
+        "bucket": true,
+        "object": true,
+        "method": "PUT",
+        "controller": "BucketController",
+        "action": "objectCopy",
+        "headers": [ "x-amz-copy-source" ],
+        "auth": [ "bucket" ]
+    },
+    {
+        "bucket": true,
+        "object": true,
+        "method": "PUT",
+        "controller": "BucketController",
+        "action": "objectPut",
+        "auth": [ "bucket" ]
+    }
+]
