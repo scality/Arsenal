@@ -98,6 +98,6 @@
         "method": "PUT",
         "controller": "ObjectController",
         "action": "objectPut",
-        "auth": [ "objectPut" ]
+        "auth": [ "objectPutAction", "objectPut" ]
     }
 ]
