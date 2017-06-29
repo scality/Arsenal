@@ -57,6 +57,9 @@ module.exports = {
         userMetadata: require('./lib/s3middleware/userMetadata'),
         escapeForXml: require('./lib/s3middleware/escapeForXml'),
         tagging: require('./lib/s3middleware/tagging'),
+        validateConditionalHeaders:
+            require('./lib/s3middleware/validateConditionalHeaders')
+            .validateConditionalHeaders,
     },
     storage: {
         metadata: {
