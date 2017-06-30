@@ -53,8 +53,10 @@ module.exports = {
         routes: require('./lib/s3routes/routes'),
         routesUtils: require('./lib/s3routes/routesUtils'),
     },
-    s3validators: {
-        userMetadata: require('./lib/s3validators/userMetadata'),
+    s3middleware: {
+        userMetadata: require('./lib/s3middleware/userMetadata'),
+        escapeForXml: require('./lib/s3middleware/escapeForXml'),
+        tagging: require('./lib/s3middleware/tagging'),
     },
     storage: {
         metadata: {
