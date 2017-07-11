@@ -71,7 +71,16 @@ const dataVersioned = [
     { key: 'notes/yore.rs', value },
     { key: 'notes/zaphod/Beeblebrox.txt', value },
 ];
+const nonAlphabeticalData = [
+    { key: 'zzz', value },
+    { key: 'aaa', value },
+];
+
 const receivedData = data.map(item => ({ key: item.key, value: item.value }));
+const receivedNonAlphaData = nonAlphabeticalData.map(
+    item => ({ key: item.key, value: item.value })
+);
+
 const tests = [
     new Test('all elements', {}, {
         Contents: receivedData,
@@ -264,6 +273,29 @@ const tests = [
     }, (e, input) => e.key > input.marker),
 ];
 
+const alphabeticalOrderTests = [
+    {
+        params: {},
+        expectedValue: true,
+    }, {
+        params: {
+            alphabeticalOrder: undefined,
+        },
+        expectedValue: true,
+    }, {
+        params: {
+            alphabeticalOrder: true,
+        },
+        expectedValue: true,
+    }, {
+        params: {
+            alphabeticalOrder: false,
+        },
+        expectedValue: false,
+    },
+];
+
+
 describe('Delimiter listing algorithm', () => {
     it('Should return good skipping value for DelimiterMaster', done => {
         const delimiter = new DelimiterMaster({ delimiter: '/' });
@@ -273,6 +305,16 @@ describe('Delimiter listing algorithm', () => {
         assert.strictEqual(delimiter.skipping(), 'foo/');
         done();
     });
+
+    it('Should set Delimiter alphabeticalOrder field to the expected value',
+       () => {
+           alphabeticalOrderTests.forEach(test => {
+               const delimiter = new Delimiter(test.params);
+               assert.strictEqual(delimiter.alphabeticalOrder,
+                                  test.expectedValue,
+                                  `${JSON.stringify(test.params)}`);
+           });
+       });
 
     tests.forEach(test => {
         it(`Should list ${test.name}`, done => {
@@ -293,4 +335,40 @@ describe('Delimiter listing algorithm', () => {
             done();
         });
     });
+
+    it('Should filter values according to alphabeticalOrder parameter',
+       () => {
+           let test = new Test('alphabeticalOrder parameter set', {
+               delimiter: '/',
+               alphabeticalOrder: true,
+           }, {
+               Contents: [
+                   receivedNonAlphaData[0],
+               ],
+               Delimiter: '/',
+               CommonPrefixes: [],
+               IsTruncated: false,
+               NextMarker: undefined,
+           });
+           let d = nonAlphabeticalData.filter(e => test.filter(e, test.input));
+           let res = performListing(d, Delimiter, test.input, logger);
+           assert.deepStrictEqual(res, test.output);
+
+           test = new Test('alphabeticalOrder parameter set', {
+               delimiter: '/',
+               alphabeticalOrder: false,
+           }, {
+               Contents: [
+                   receivedNonAlphaData[0],
+                   receivedNonAlphaData[1],
+               ],
+               Delimiter: '/',
+               CommonPrefixes: [],
+               IsTruncated: false,
+               NextMarker: undefined,
+           });
+           d = nonAlphabeticalData.filter(e => test.filter(e, test.input));
+           res = performListing(d, Delimiter, test.input, logger);
+           assert.deepStrictEqual(res, test.output);
+       });
 });
