@@ -19,6 +19,7 @@ module.exports = {
                 .DelimiterVersions,
             DelimiterMaster: require('./lib/algos/list/delimiterMaster')
                 .DelimiterMaster,
+            DelimiterTools: require('./lib/algos/list/tools'),
             MPU: require('./lib/algos/list/MPU').MultipartUploads,
         },
     },
