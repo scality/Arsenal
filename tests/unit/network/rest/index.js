@@ -97,6 +97,19 @@ describe('REST interface for blob data storage', () => {
                         assert(err.code === 404);
                         subDone();
                     });
+                },
+                subDone => {
+                    client.getAction('diskUsage', null, (err, res) => {
+                        assert.ifError(err);
+                        const usage = JSON.parse(res);
+                        assert(Number.isSafeInteger(usage.free));
+                        assert(usage.free > 0);
+                        assert(Number.isSafeInteger(usage.available));
+                        assert(usage.available > 0);
+                        assert(Number.isSafeInteger(usage.total));
+                        assert(usage.total > 0);
+                        subDone();
+                    });
                 }],
                          err => {
                              done(err);
