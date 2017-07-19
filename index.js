@@ -78,4 +78,12 @@ module.exports = {
         },
         utils: require('./lib/storage/utils'),
     },
+
+    models: {
+        BucketInfo: require('./lib/models/BucketInfo'),
+        ObjectMD: require('./lib/models/ObjectMD'),
+        WebsiteConfiguration: require('./lib/models/WebsiteConfiguration'),
+        ReplicationConfiguration:
+          require('./lib/models/ReplicationConfiguration'),
+    },
 };
