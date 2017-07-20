@@ -104,7 +104,7 @@ You can handle exit event on both master and workers by calling the
 'onExit' method and setting the callback. This allows release of resources
 or save state before exiting the process.
 
-#### Silencing a singnal
+#### Silencing a signal
 
 ```
 import { Clustering } from 'arsenal';
