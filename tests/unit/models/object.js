@@ -78,12 +78,15 @@ describe('ObjectMD class setters/getters', () => {
             content: [],
             destination: '',
             storageClass: '',
+            role: '',
         }],
         ['ReplicationInfo', {
             status: 'PENDING',
             content: ['DATA', 'METADATA'],
             destination: 'destination-bucket',
             storageClass: 'STANDARD',
+            role: 'arn:aws:iam::account-id:role/src-resource,' +
+                'arn:aws:iam::account-id:role/dest-resource',
         }],
     ].forEach(test => {
         const property = test[0];
