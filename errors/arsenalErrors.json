@@ -120,6 +120,10 @@
     "code": 400,
     "description": "The list of parts was not in ascending order.Parts list must specified in order by part number."
   },
+  "InvalidPartNumber": {
+    "code": 416,
+    "description": "The requested partnumber is not satisfiable."
+  },
   "InvalidPayer": {
     "code": 403,
     "description": "All access to this object has been disabled."
