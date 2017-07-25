@@ -10,7 +10,7 @@ describe('ObjectMD class setters/getters', () => {
 
     [
         // In order: data property, value to set/get, default value
-        ['ModelVersion', null, 2],
+        ['ModelVersion', null, 3],
         ['OwnerDisplayName', null, ''],
         ['OwnerDisplayName', 'owner-display-name'],
         ['OwnerId', null, ''],
@@ -88,6 +88,7 @@ describe('ObjectMD class setters/getters', () => {
             role: 'arn:aws:iam::account-id:role/src-resource,' +
                 'arn:aws:iam::account-id:role/dest-resource',
         }],
+        ['DataStoreName', null, ''],
     ].forEach(test => {
         const property = test[0];
         const testValue = test[1];
