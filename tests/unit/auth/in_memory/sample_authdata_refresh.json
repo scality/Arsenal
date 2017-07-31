@@ -1,0 +1,14 @@
+{
+    "accounts": [{
+        "name": "Zenko",
+        "email": "sampleaccount4@sampling.com",
+        "arn": "aws::iam:accessKeyZenko:user/Zenko",
+        "canonicalID": "newCanId",
+        "shortid": "123456789012",
+        "keys": [{
+            "access": "accessKeyZenko",
+            "secret": "verySecretKeyZenko"
+        }],
+        "sasToken": "test2"
+    }]
+}
