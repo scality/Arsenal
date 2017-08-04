@@ -6,12 +6,13 @@ const http = require('http');
 const https = require('https');
 const dhparam = require('../../../../lib/https/dh2048').dhparam;
 const ciphers = require('../../../../lib/https/ciphers').ciphers;
-const Logger = require('werelogs').Logger;
+const werelogs = require('werelogs');
 const Server = require('../../../../lib/network/http/server');
-const log = new Logger({
+werelogs.configure({
     level: 'info',
     dump: 'error',
 });
+const log = new werelogs.Logger('TestHTTPServer');
 
 function request(server, uri, cb, unsafeCa, cert, key) {
     const transport = server.isHttps() ? https : http;
