@@ -63,6 +63,7 @@ module.exports = {
         validateConditionalHeaders:
             require('./lib/s3middleware/validateConditionalHeaders')
             .validateConditionalHeaders,
+        MD5Sum: require('./lib/s3middleware/MD5Sum'),
     },
     storage: {
         metadata: {
