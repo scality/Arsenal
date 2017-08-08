@@ -1,13 +1,14 @@
 const assert = require('assert');
+const werelogs = require('werelogs');
 
 const validateAuthConfig
     = require('../../../../lib/auth/auth').inMemory.validateAuthConfig;
 const ref = require('./sample_authdata.json');
 
-const loggerConfig = {
+werelogs.configure({
     level: 'info',
     dump: 'error',
-};
+});
 
 function getParentField(obj, field) {
     const fields = field.split('.');
@@ -29,13 +30,13 @@ function getFieldName(field) {
 }
 
 function shouldFail(obj, checkSas, done) {
-    const res = validateAuthConfig(obj, loggerConfig, checkSas);
+    const res = validateAuthConfig(obj, werelogs, checkSas);
     assert.strictEqual(res, true);
     done();
 }
 
 function shouldSuccess(obj, checkSas, done) {
-    const res = validateAuthConfig(obj, loggerConfig, checkSas);
+    const res = validateAuthConfig(obj, werelogs, checkSas);
     assert.strictEqual(res, false);
     done();
 }

@@ -4,6 +4,7 @@ const temp = require('temp');
 const assert = require('assert');
 const async = require('async');
 const stream = require('stream');
+const werelogs = require('werelogs');
 
 const DataFileStore = require(
     '../../../../lib/storage/data/file/DataFileStore');
@@ -20,6 +21,11 @@ function createReadStream(contents) {
     return rs;
 }
 
+const clientLogApi = new werelogs.Werelogs({
+    level: 'info',
+    dump: 'error',
+});
+
 describe('REST interface for blob data storage', () => {
     let dataStore;
     let server;
@@ -29,8 +35,7 @@ describe('REST interface for blob data storage', () => {
         temp.mkdir('test-REST-data-dir', (err, tempDir) => {
             dataStore = new DataFileStore({ dataPath: tempDir,
                                             noSync: true,
-                                            log: { logLevel: 'info',
-                                                   dumpLevel: 'error' },
+                                            logApi: clientLogApi,
                                           });
             server = new RESTServer({ port: 6677,
                                       dataStore,
@@ -41,8 +46,7 @@ describe('REST interface for blob data storage', () => {
                 server.start();
                 client = new RESTClient({ host: 'localhost',
                                           port: 6677,
-                                          log: { logLevel: 'info',
-                                                 dumpLevel: 'error' },
+                                          logApi: clientLogApi,
                                         });
                 done();
             });
