@@ -27,7 +27,7 @@
     "socket.io-client": "~1.7.3",
     "utf8": "2.1.2",
     "uuid": "~3.0.1",
-    "werelogs": "scality/werelogs"
+    "werelogs": "scality/werelogs#rel/7.0"
   },
   "optionalDependencies": {
       "ioctl": "2.0.0"
@@ -36,7 +36,7 @@
     "eslint": "2.13.1",
     "eslint-plugin-react": "^4.3.0",
     "eslint-config-airbnb": "6.2.0",
-    "eslint-config-scality": "scality/Guidelines",
+    "eslint-config-scality": "scality/Guidelines#rel/7.0",
     "lolex": "1.5.2",
     "mocha": "2.5.3",
     "temp": "0.8.3"
