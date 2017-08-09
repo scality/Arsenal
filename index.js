@@ -51,6 +51,7 @@ module.exports = {
             RESTServer: require('./lib/network/rest/RESTServer'),
             RESTClient: require('./lib/network/rest/RESTClient'),
         },
+        RoundRobin: require('./lib/network/RoundRobin'),
     },
     s3routes: {
         routes: require('./lib/s3routes/routes'),
