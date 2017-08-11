@@ -7,6 +7,7 @@ module.exports = {
     stringHash: require('./lib/stringHash'),
     ipCheck: require('./lib/ipCheck'),
     jsutil: require('./lib/jsutil'),
+    LivyClient: require('./lib/livyClient/lib/client.js'),
     https: {
         ciphers: require('./lib/https/ciphers.js'),
         dhparam: require('./lib/https/dh2048.js'),
