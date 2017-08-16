@@ -1,5 +1,6 @@
 const assert = require('assert');
 const ObjectMD = require('../../../lib/models/ObjectMD');
+const constants = require('../../../lib/constants');
 
 describe('ObjectMD class setters/getters', () => {
     let md = null;
@@ -10,7 +11,6 @@ describe('ObjectMD class setters/getters', () => {
 
     [
         // In order: data property, value to set/get, default value
-        ['ModelVersion', null, 3],
         ['OwnerDisplayName', null, ''],
         ['OwnerDisplayName', 'owner-display-name'],
         ['OwnerId', null, ''],
@@ -110,5 +110,67 @@ describe('ObjectMD class setters/getters', () => {
                 assert.strictEqual(value, defaultValue);
             }
         });
+    });
+});
+
+describe('ObjectMD import from stored blob', () => {
+    it('should export and import correctly the latest model version', () => {
+        const md = new ObjectMD();
+        const jsonMd = md.getSerialized();
+        const importedRes = ObjectMD.createFromBlob(jsonMd);
+        assert.ifError(importedRes.error);
+        const importedMd = importedRes.result;
+        assert.deepStrictEqual(md, importedMd);
+    });
+
+    it('should convert old location to new location', () => {
+        const md = new ObjectMD();
+        const value = md.getValue();
+        value['md-model-version'] = 1;
+        value.location = 'stringLocation';
+        const jsonMd = JSON.stringify(value);
+        const importedRes = ObjectMD.createFromBlob(jsonMd);
+        assert.strictEqual(importedRes.error, undefined);
+        const importedMd = importedRes.result;
+        const valueImported = importedMd.getValue();
+        assert.strictEqual(valueImported['md-model-version'],
+                           constants.mdModelVersion);
+        assert.deepStrictEqual(valueImported.location,
+                               [{ key: 'stringLocation' }]);
+    });
+
+    it('should keep null location as is', () => {
+        const md = new ObjectMD();
+        const value = md.getValue();
+        value.location = null;
+        const jsonMd = JSON.stringify(value);
+        const importedRes = ObjectMD.createFromBlob(jsonMd);
+        assert.strictEqual(importedRes.error, undefined);
+        const importedMd = importedRes.result;
+        const valueImported = importedMd.getValue();
+        assert.deepStrictEqual(valueImported.location, null);
+        importedMd.setLocation([]);
+        assert.deepStrictEqual(importedMd.getValue().location, null);
+    });
+
+    it('should add dataStoreName attribute if missing', () => {
+        const md = new ObjectMD();
+        const value = md.getValue();
+        value['md-model-version'] = 2;
+        delete value.dataStoreName;
+        const jsonMd = JSON.stringify(value);
+        const importedRes = ObjectMD.createFromBlob(jsonMd);
+        assert.strictEqual(importedRes.error, undefined);
+        const importedMd = importedRes.result;
+        const valueImported = importedMd.getValue();
+        assert.strictEqual(valueImported['md-model-version'],
+                           constants.mdModelVersion);
+        assert.notStrictEqual(valueImported.dataStoreName, undefined);
+    });
+
+    it('should return an error if blob is malformed JSON', () => {
+        const importedRes = ObjectMD.createFromBlob('{BAD JSON}');
+        assert.notStrictEqual(importedRes.error, undefined);
+        assert.strictEqual(importedRes.result, undefined);
     });
 });
