@@ -65,6 +65,15 @@ module.exports = {
             require('./lib/s3middleware/validateConditionalHeaders')
             .validateConditionalHeaders,
         MD5Sum: require('./lib/s3middleware/MD5Sum'),
+        objectUtils: require('./lib/s3middleware/objectUtils'),
+        azureHelper: {
+            mpuUtils:
+                require('./lib/s3middleware/azureHelpers/mpuUtils'),
+            ResultsCollector:
+                require('./lib/s3middleware/azureHelpers/ResultsCollector'),
+            SubStreamInterface:
+                require('./lib/s3middleware/azureHelpers/SubStreamInterface'),
+        },
     },
     storage: {
         metadata: {
