@@ -29,6 +29,7 @@ module.exports = {
         evaluators: require('./lib/policyEvaluator/evaluator.js'),
         validateUserPolicy: require('./lib/policy/policyValidator')
             .validateUserPolicy,
+        evaluatePrincipal: require('./lib/policyEvaluator/principal'),
         RequestContext: require('./lib/policyEvaluator/RequestContext.js'),
     },
     Clustering: require('./lib/Clustering'),
