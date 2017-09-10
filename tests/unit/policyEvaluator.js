@@ -252,10 +252,10 @@ describe('policyEvaluator', () => {
                     () => {
                         policy.Statement.Action = 's3:ListBucket';
                         policy.Statement.Condition = { StringEquals:
-                            { 's3:prefix': [
-                                'home/${aws:username}/*${?}${*}${$}${}?',
-                                'home/',
-                            ] } };
+                        { 's3:prefix': [
+                            'home/${aws:username}/*${?}${*}${$}${}?',
+                            'home/',
+                        ] } };
                         const rcModifiers = {
                             _query: {
                                 prefix: 'home/Roger/*?*$${}?',
@@ -385,7 +385,7 @@ describe('policyEvaluator', () => {
                 () => {
                     policy.Statement.Resource = 'arn:aws:s3:::bucket/*';
                     policy.Statement.Condition = { StringNotEquals:
-                        { 's3:x-amz-acl':
+                    { 's3:x-amz-acl':
                             ['public-read', 'public-read-write'] } };
                     const rcModifiers = {
                         _generalResource: 'bucket',
@@ -402,7 +402,7 @@ describe('policyEvaluator', () => {
                 () => {
                     policy.Statement.Resource = 'arn:aws:s3:::bucket/*';
                     policy.Statement.Condition = { StringNotEquals:
-                        { 's3:x-amz-acl':
+                    { 's3:x-amz-acl':
                             ['public-read', 'public-read-write'] } };
                     const rcModifiers = {
                         _generalResource: 'bucket',
@@ -419,7 +419,7 @@ describe('policyEvaluator', () => {
                 () => {
                     policy.Statement.Resource = 'arn:aws:s3:::bucket/*';
                     policy.Statement.Condition = { StringNotEquals:
-                        { 's3:x-amz-acl':
+                    { 's3:x-amz-acl':
                             ['public-read', 'public-read-write'] } };
                     const rcModifiers = {
                         _generalResource: 'bucket',
@@ -432,7 +432,7 @@ describe('policyEvaluator', () => {
                 'if do not meet condition',
                 () => {
                     policy.Statement.Condition = { StringEqualsIgnoreCase:
-                        { 'aws:UserAgent':
+                    { 'aws:UserAgent':
                             ['CyberSquaw', 's3Sergeant', 'jetSetter'] } };
                     // Not one of the options
                     const rcModifiers = {
@@ -447,7 +447,7 @@ describe('policyEvaluator', () => {
                 'if meet condition',
                 () => {
                     policy.Statement.Condition = { StringEqualsIgnoreCase:
-                        { 'aws:UserAgent':
+                    { 'aws:UserAgent':
                             ['CyberSquaw', 's3Sergeant', 'jetSetter'] } };
                     const rcModifiers = {
                         _headers: {
@@ -461,7 +461,7 @@ describe('policyEvaluator', () => {
                 'if do not meet condition',
                 () => {
                     policy.Statement.Condition = { StringNotEqualsIgnoreCase:
-                        { 'aws:UserAgent':
+                    { 'aws:UserAgent':
                             ['CyberSquaw', 's3Sergeant', 'jetSetter'] } };
                     const rcModifiers = {
                         _headers: {
@@ -475,7 +475,7 @@ describe('policyEvaluator', () => {
                 'if meet condition',
                 () => {
                     policy.Statement.Condition = { StringNotEqualsIgnoreCase:
-                        { 'aws:UserAgent':
+                    { 'aws:UserAgent':
                             ['CyberSquaw', 's3Sergeant', 'jetSetter'] } };
                     const rcModifiers = {
                         _headers: {
@@ -488,7 +488,7 @@ describe('policyEvaluator', () => {
                 'if condition parameter is completely missing from request',
                 () => {
                     policy.Statement.Condition = { StringNotEqualsIgnoreCase:
-                        { 'aws:UserAgent':
+                    { 'aws:UserAgent':
                             ['CyberSquaw', 's3Sergeant', 'jetSetter'] } };
                     const rcModifiers = {};
                     check(requestContext, rcModifiers, policy, 'Allow');
@@ -621,7 +621,7 @@ describe('policyEvaluator', () => {
                 'if do not meet condition',
                 () => {
                     policy.Statement.Condition = { DateEquals:
-                        { 'aws:TokenIssueTime':
+                    { 'aws:TokenIssueTime':
                         '2016-06-30T19:42:23.531Z' } };
                     let rcModifiers =
                         { _tokenIssueTime: '2016-06-30T19:42:23.431Z' };
@@ -635,7 +635,7 @@ describe('policyEvaluator', () => {
                 'if do not meet condition',
                 () => {
                     policy.Statement.Condition =
-                        { 'aws:EpochTime':
+                    { 'aws:EpochTime':
                         '1467315743531' };
                     const rcModifiers =
                             { _tokenIssueTime: '1467315743431' };
@@ -646,7 +646,7 @@ describe('policyEvaluator', () => {
                 'if meet condition',
                 () => {
                     policy.Statement.Condition = { DateEquals:
-                        { 'aws:TokenIssueTime':
+                    { 'aws:TokenIssueTime':
                         '2016-06-30T19:42:23.431Z' } };
                     let rcModifiers =
                         { _tokenIssueTime: '2016-06-30T19:42:23.431Z' };
@@ -661,7 +661,7 @@ describe('policyEvaluator', () => {
                 () => {
                     const clock = lolex.install(1467315743431);
                     policy.Statement.Condition = { DateEquals:
-                        { 'aws:EpochTime':
+                    { 'aws:EpochTime':
                         '1467315743431' } };
                     check(requestContext, {}, policy, 'Allow');
                     clock.uninstall();
@@ -671,7 +671,7 @@ describe('policyEvaluator', () => {
                 'if do not meet condition',
                 () => {
                     policy.Statement.Condition = { DateNotEquals:
-                        { 'aws:TokenIssueTime':
+                    { 'aws:TokenIssueTime':
                         '2016-06-30T19:42:23.431Z' } };
                     let rcModifiers =
                         { _tokenIssueTime: '2016-06-30T19:42:23.431Z' };
@@ -686,7 +686,7 @@ describe('policyEvaluator', () => {
                 () => {
                     const clock = lolex.install(1467315743431);
                     policy.Statement.Condition = { DateNotEquals:
-                        { 'aws:EpochTime':
+                    { 'aws:EpochTime':
                         '1467315743431' } };
                     check(requestContext, {}, policy, 'Neutral');
                     clock.uninstall();
@@ -696,7 +696,7 @@ describe('policyEvaluator', () => {
                 'if meet condition',
                 () => {
                     policy.Statement.Condition = { DateNotEquals:
-                        { 'aws:TokenIssueTime':
+                    { 'aws:TokenIssueTime':
                         '2016-06-30T19:42:23.531Z' } };
                     let rcModifiers =
                         { _tokenIssueTime: '2016-06-30T19:42:23.431Z' };
@@ -710,7 +710,7 @@ describe('policyEvaluator', () => {
             'time if meet condition',
                 () => {
                     policy.Statement.Condition = { DateNotEquals:
-                        { 'aws:EpochTime':
+                    { 'aws:EpochTime':
                         '1467315743531' } };
                     check(requestContext, {}, policy, 'Allow');
                 });
@@ -719,7 +719,7 @@ describe('policyEvaluator', () => {
             'condition with ISO time if do not meet condition',
                 () => {
                     policy.Statement.Condition = { DateLessThan:
-                        { 'aws:TokenIssueTime':
+                    { 'aws:TokenIssueTime':
                         '2016-06-30T19:42:23.431Z' } };
                     let rcModifiers =
                         { _tokenIssueTime: '2016-06-30T19:42:23.531Z' };
@@ -733,7 +733,7 @@ describe('policyEvaluator', () => {
                 'with ISO time if do not meet condition',
                 () => {
                     policy.Statement.Condition = { DateLessThan:
-                        { 'aws:CurrentTime':
+                    { 'aws:CurrentTime':
                         '2016-06-30T19:42:23.431Z' } };
                     check(requestContext, {}, policy, 'Neutral');
                 });
@@ -742,7 +742,7 @@ describe('policyEvaluator', () => {
                 'with epoch time if do not meet condition',
                 () => {
                     policy.Statement.Condition = { DateLessThan:
-                        { 'aws:EpochTime':
+                    { 'aws:EpochTime':
                         '1467315743431' } };
                     check(requestContext, {}, policy, 'Neutral');
                 });
@@ -751,8 +751,8 @@ describe('policyEvaluator', () => {
                 'condition if meet condition',
                 () => {
                     policy.Statement.Condition = { DateLessThan:
-                        { 'aws:TokenIssueTime':
-                        ['2016-06-30T19:42:23.431Z', '2017-06-30T19:42:23.431Z',
+                    { 'aws:TokenIssueTime':
+                    ['2016-06-30T19:42:23.431Z', '2017-06-30T19:42:23.431Z',
                         '2018-06-30T19:42:23.431Z'] },
                     };
                     const rcModifiers =
@@ -764,7 +764,7 @@ describe('policyEvaluator', () => {
                 'condition if meet condition',
                 () => {
                     policy.Statement.Condition = { DateLessThan:
-                        { 'aws:CurrentTime':
+                    { 'aws:CurrentTime':
                         '2099-06-30T19:42:23.431Z' } };
                     check(requestContext, {}, policy, 'Allow');
                     const rcModifiers = { _tokenIssueTime: '1467315743331' };
@@ -775,7 +775,7 @@ describe('policyEvaluator', () => {
                 'condition if meet condition',
                 () => {
                     policy.Statement.Condition = { DateLessThan:
-                        { 'aws:EpochTime':
+                    { 'aws:EpochTime':
                         '4086531743431' } };
                     check(requestContext, {}, policy, 'Allow');
                 });
@@ -784,7 +784,7 @@ describe('policyEvaluator', () => {
                 'with ISO time if do not meet condition',
                 () => {
                     policy.Statement.Condition = { DateLessThanEquals:
-                        { 'aws:TokenIssueTime':
+                    { 'aws:TokenIssueTime':
                         '2016-06-30T19:42:23.431Z' } };
                     const rcModifiers =
                         { _tokenIssueTime: '2016-06-30T19:42:23.531Z' };
@@ -795,7 +795,7 @@ describe('policyEvaluator', () => {
                 'condition with ISO time if do not meet condition',
                 () => {
                     policy.Statement.Condition = { DateLessThanEquals:
-                        { 'aws:CurrentTime':
+                    { 'aws:CurrentTime':
                         '2016-06-30T19:42:23.431Z' } };
                     check(requestContext, {}, policy, 'Neutral');
                 });
@@ -804,7 +804,7 @@ describe('policyEvaluator', () => {
                 'with ISO time if meet condition',
                 () => {
                     policy.Statement.Condition = { DateLessThanEquals:
-                        { 'aws:TokenIssueTime':
+                    { 'aws:TokenIssueTime':
                         '2016-06-30T19:42:23.431Z' } };
                     const rcModifiers =
                         { _tokenIssueTime: '2016-06-30T19:42:23.431Z' };
@@ -815,7 +815,7 @@ describe('policyEvaluator', () => {
                 'condition with ISO time if meet condition',
                 () => {
                     policy.Statement.Condition = { DateLessThanEquals:
-                        { 'aws:CurrentTime':
+                    { 'aws:CurrentTime':
                         '2099-06-30T19:42:23.431Z' } };
                     check(requestContext, {}, policy, 'Allow');
                 });
@@ -824,7 +824,7 @@ describe('policyEvaluator', () => {
                 'with ISO time if do not meet condition',
                 () => {
                     policy.Statement.Condition = { DateGreaterThan:
-                        { 'aws:TokenIssueTime':
+                    { 'aws:TokenIssueTime':
                         '2016-06-30T19:42:23.431Z' } };
                     const rcModifiers =
                         { _tokenIssueTime: '2016-06-30T19:42:23.331Z' };
@@ -835,7 +835,7 @@ describe('policyEvaluator', () => {
                 'condition with ISO time if do not meet condition',
                 () => {
                     policy.Statement.Condition = { DateGreaterThan:
-                        { 'aws:CurrentTime':
+                    { 'aws:CurrentTime':
                         '2099-06-30T19:42:23.431Z' } };
                     check(requestContext, {}, policy, 'Neutral');
                 });
@@ -844,7 +844,7 @@ describe('policyEvaluator', () => {
                 'with ISO time if meet condition',
                 () => {
                     policy.Statement.Condition = { DateGreaterThan:
-                        { 'aws:TokenIssueTime':
+                    { 'aws:TokenIssueTime':
                         '2016-06-30T19:42:23.431Z' } };
                     const rcModifiers =
                         { _tokenIssueTime: '2016-06-30T19:42:23.531Z' };
@@ -855,7 +855,7 @@ describe('policyEvaluator', () => {
                 'condition with ISO time if meet condition',
                 () => {
                     policy.Statement.Condition = { DateGreaterThan:
-                        { 'aws:CurrentTime':
+                    { 'aws:CurrentTime':
                         '2016-06-30T19:42:23.431Z' } };
                     check(requestContext, {}, policy, 'Allow');
                 });
@@ -864,7 +864,7 @@ describe('policyEvaluator', () => {
                 'with ISO time if do not meet condition',
                 () => {
                     policy.Statement.Condition = { DateGreaterThanEquals:
-                        { 'aws:TokenIssueTime':
+                    { 'aws:TokenIssueTime':
                         '2016-06-30T19:42:23.431Z' } };
                     const rcModifiers =
                         { _tokenIssueTime: '2016-06-30T19:42:23.331Z' };
@@ -875,7 +875,7 @@ describe('policyEvaluator', () => {
                 'condition with ISO time if do not meet condition',
                 () => {
                     policy.Statement.Condition = { DateGreaterThanEquals:
-                        { 'aws:CurrentTime':
+                    { 'aws:CurrentTime':
                         '2099-06-30T19:42:23.431Z' } };
                     check(requestContext, {}, policy, 'Neutral');
                 });
@@ -884,7 +884,7 @@ describe('policyEvaluator', () => {
                 'condition with ISO time if meet condition',
                 () => {
                     policy.Statement.Condition = { DateGreaterThanEquals:
-                        { 'aws:TokenIssueTime':
+                    { 'aws:TokenIssueTime':
                         '2016-06-30T19:42:23.431Z' } };
                     const rcModifiers =
                         { _tokenIssueTime: '2016-06-30T19:42:23.431Z' };
@@ -895,7 +895,7 @@ describe('policyEvaluator', () => {
                 'time condition with ISO time if meet condition',
                 () => {
                     policy.Statement.Condition = { DateGreaterThanEquals:
-                        { 'aws:CurrentTime':
+                    { 'aws:CurrentTime':
                         '2016-06-30T19:42:23.431Z' } };
                     check(requestContext, {}, policy, 'Allow');
                 });
@@ -1142,7 +1142,7 @@ describe('policyEvaluator', () => {
             requestContext.setRequesterInfo({});
             const result = evaluateAllPolicies(requestContext,
                 [samples['arn:aws:iam::aws:policy/AmazonS3FullAccess'],
-                samples['Deny Bucket Policy']], log);
+                    samples['Deny Bucket Policy']], log);
             assert.strictEqual(result, 'Deny');
         });
 
@@ -1153,7 +1153,7 @@ describe('policyEvaluator', () => {
             requestContext.setRequesterInfo({});
             const result = evaluateAllPolicies(requestContext,
                 [samples['Multi-Statement Policy'],
-                samples['Variable Bucket Policy']], log);
+                    samples['Variable Bucket Policy']], log);
             assert.strictEqual(result, 'Deny');
         });
 
@@ -1165,7 +1165,7 @@ describe('policyEvaluator', () => {
                 requestContext.setRequesterInfo({});
                 const result = evaluateAllPolicies(requestContext,
                     [samples['Multi-Statement Policy'],
-                    samples['Variable Bucket Policy']], log);
+                        samples['Variable Bucket Policy']], log);
                 assert.strictEqual(result, 'Deny');
             });
     });
@@ -1232,11 +1232,13 @@ describe('handleWildcards', () => {
         assert.deepStrictEqual(result, '^abc\\*abc\\?abc\\$$');
     });
 
+    /* eslint-disable no-useless-escape */
     it('should escape other regular expression special characters', () => {
         const result = handleWildcards('*^.+?()|[\]{}');
         assert.deepStrictEqual(result,
             '^.*?\\^\\.\\+.{1}\\(\\)\\|\\[\\\]\\{\\}$');
     });
+    /* eslint-enable */
 });
 
 describe('substituteVariables', () => {

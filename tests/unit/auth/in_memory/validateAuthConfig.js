@@ -16,7 +16,7 @@ function getParentField(obj, field) {
     for (let i = 0; i < fields.length - 1; ++i) {
         const cur = fields[i];
         const n = Number(cur, 10);
-        if (isNaN(n)) {
+        if (Number.isNaN(n)) {
             parent = parent[cur];
         } else {
             parent = parent[n];

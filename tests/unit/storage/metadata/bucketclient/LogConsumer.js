@@ -77,7 +77,7 @@ describe('raft record log client', () => {
     function setup(done) {
         bucketClient = new BucketClientMock();
         logClient = new LogConsumer({ bucketClient,
-                                      raftSession: 0 });
+            raftSession: 0 });
         done();
     }
 
@@ -126,7 +126,7 @@ describe('raft record log client', () => {
     describe('error cases', () => {
         it('should handle 404 error gracefully', done => {
             const logClient = new LogConsumer({ bucketClient,
-                                                raftSession: 1 });
+                raftSession: 1 });
             logClient.readRecords({}, (err, info) => {
                 assert.ifError(err);
                 assert.deepStrictEqual(info, {
@@ -136,7 +136,7 @@ describe('raft record log client', () => {
         });
         it('should handle 416 error gracefully', done => {
             const logClient = new LogConsumer({ bucketClient,
-                                                raftSession: 2 });
+                raftSession: 2 });
             logClient.readRecords({}, (err, info) => {
                 assert.ifError(err);
                 assert.deepStrictEqual(info, {
@@ -146,7 +146,7 @@ describe('raft record log client', () => {
         });
         it('should handle other errors correctly', done => {
             const logClient = new LogConsumer({ bucketClient,
-                                                raftSession: 3 });
+                raftSession: 3 });
             logClient.readRecords({}, err => {
                 assert(err);
                 assert(err.InternalError);
@@ -155,7 +155,7 @@ describe('raft record log client', () => {
         });
         it('should not crash with malformed log response', done => {
             const logClient = new LogConsumer({ bucketClient,
-                                                raftSession: 4 });
+                raftSession: 4 });
             logClient.readRecords({}, err => {
                 assert(err);
                 assert(err.InternalError);

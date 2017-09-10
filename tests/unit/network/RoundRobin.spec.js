@@ -13,13 +13,13 @@ describe('round robin hosts', () => {
     }, {
         caption: 'with "host:port" strings in list',
         hostsList: ['1.2.3.0:1000',
-                    '1.2.3.1:1001',
-                    '1.2.3.2'],
+            '1.2.3.1:1001',
+            '1.2.3.2'],
     }].forEach(testCase => describe(testCase.caption, () => {
         beforeEach(() => {
             roundRobin = new RoundRobin(testCase.hostsList,
-                                        { stickyCount: 10,
-                                          defaultPort: 1002 });
+                { stickyCount: 10,
+                    defaultPort: 1002 });
         });
 
         it('should pick all hosts in turn', () => {
@@ -32,8 +32,7 @@ describe('round robin hosts', () => {
             // expect 3 loops of 10 times each of the 3 hosts
             for (let i = 0; i < 90; ++i) {
                 const hostItem = roundRobin.pickHost();
-                hostsPickCount[hostItem.host] =
-                    hostsPickCount[hostItem.host] + 1;
+                hostsPickCount[hostItem.host] += 1;
             }
             assert.strictEqual(hostsPickCount['1.2.3.0'], 30);
             assert.strictEqual(hostsPickCount['1.2.3.1'], 30);
@@ -52,8 +51,7 @@ describe('round robin hosts', () => {
             const curHost = roundRobin.getCurrentHost();
             for (let i = 0; i < 10; ++i) {
                 const hostItem = roundRobin.pickHost();
-                hostsPickCount[hostItem.host] =
-                    hostsPickCount[hostItem.host] + 1;
+                hostsPickCount[hostItem.host] += 1;
             }
             assert.strictEqual(hostsPickCount[curHost.host], 10);
         });
@@ -68,8 +66,7 @@ describe('round robin hosts', () => {
             // expect each host to be picked up 3 times
             for (let i = 0; i < 9; ++i) {
                 const hostItem = roundRobin.pickNextHost();
-                hostsPickCount[hostItem.host] =
-                    hostsPickCount[hostItem.host] + 1;
+                hostsPickCount[hostItem.host] += 1;
             }
             assert.strictEqual(hostsPickCount['1.2.3.0'], 3);
             assert.strictEqual(hostsPickCount['1.2.3.1'], 3);

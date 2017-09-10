@@ -11,7 +11,7 @@ describe('Matrix', () => {
         password: 'nopassword',
         delimiter: [undefined, '/', '', '|', 'abcd'],
         prefix: [undefined, '/validPrefix/ThatIsNot/InTheSet',
-        '/validPrefix/ThatIsPresent/InTheTestSet', 'InvalidPrefix'],
+            '/validPrefix/ThatIsPresent/InTheTestSet', 'InvalidPrefix'],
     };
 
     /**
@@ -58,7 +58,7 @@ describe('Matrix', () => {
                 ++numberOfCallV2;
                 done();
             }, 'should use v2 auth').testSpecialCase(ifParams, (testMatrix,
-								done) => {
+                done) => {
                 assert.equal(testMatrix.params.auth === 'v4', true);
                 ++numberOfCallV4;
                 done();
