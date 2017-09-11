@@ -1,5 +1,6 @@
 const assert = require('assert');
 const Principal = require('../../../lib/policyEvaluator/principal');
+const RequestContext = require('../../../lib/policyEvaluator/RequestContext');
 
 const defaultAccountId = '123456789012';
 const anotherAccountId = '098765432112';
@@ -23,6 +24,7 @@ const defaultValids = {
 
 const defaultParams = {
     log: {
+        trace: () => {},
         debug: () => {},
         info: () => {},
     },
@@ -375,7 +377,7 @@ describe('Principal evaluator', () => {
                 accountId: defaultAccountId,
                 arn: defaultUserArn,
                 parentArn: null,
-                userType: 'user',
+                userType: 'User',
             },
             target: {
                 accountId: defaultAccountId,
@@ -399,7 +401,7 @@ describe('Principal evaluator', () => {
                 accountId: defaultAccountId,
                 arn: `arn:aws:iam::${defaultAccountId}:user/anotherUser`,
                 parentArn: null,
-                userType: 'user',
+                userType: 'User',
             },
             target: {
                 accountId: defaultAccountId,
@@ -429,7 +431,7 @@ describe('Principal evaluator', () => {
                 accountId: defaultAccountId,
                 arn: defaultUserArn,
                 parentArn: null,
-                userType: 'user',
+                userType: 'User',
             },
             target: {
                 accountId: defaultAccountId,
@@ -459,7 +461,7 @@ describe('Principal evaluator', () => {
                 accountId: defaultAccountId,
                 arn: defaultAssumedRole,
                 parentArn: defaultRole,
-                userType: 'assume-role',
+                userType: 'AssumedRole',
             },
             target: {
                 accountId: defaultAccountId,
@@ -483,7 +485,7 @@ describe('Principal evaluator', () => {
                 accountId: anotherAccountId,
                 arn: anotherUserArn,
                 parentArn: null,
-                userType: 'user',
+                userType: 'User',
             },
             target: {
                 accountId: defaultAccountId,
@@ -507,7 +509,7 @@ describe('Principal evaluator', () => {
                 accountId: anotherAccountId,
                 arn: anotherUserArn,
                 parentArn: null,
-                userType: 'user',
+                userType: 'User',
             },
             target: {
                 accountId: defaultAccountId,
@@ -531,7 +533,7 @@ describe('Principal evaluator', () => {
                 accountId: defaultAccountId,
                 arn: 'backbeat',
                 parentArn: null,
-                userType: 'service',
+                userType: 'Service',
             },
             target: {
                 accountId: defaultAccountId,
@@ -555,7 +557,7 @@ describe('Principal evaluator', () => {
                 accountId: defaultAccountId,
                 arn: defaultFederatedUser,
                 parentArn: defaultSamlProvider,
-                userType: 'federated',
+                userType: 'Federated',
             },
             target: {
                 accountId: defaultAccountId,
@@ -565,18 +567,78 @@ describe('Principal evaluator', () => {
                 checkAction: false,
             },
         },
+        {
+            name: 'should not allow when external id not matching',
+            statement: [
+                {
+                    Principal: {
+                        AWS: anotherAccountId,
+                    },
+                    Effect: 'Allow',
+                    Condition: {
+                        StringEquals: { 'sts:ExternalId': '12345' },
+                    },
+                },
+            ],
+            requester: {
+                accountId: anotherAccountId,
+                arn: anotherUserArn,
+                parentArn: null,
+                userType: 'User',
+            },
+            target: {
+                accountId: defaultAccountId,
+            },
+            result: {
+                result: 'Deny',
+                checkAction: true,
+            },
+        },
+        {
+            name: 'should allow when external id matching',
+            statement: [
+                {
+                    Principal: {
+                        AWS: anotherAccountId,
+                    },
+                    Effect: 'Allow',
+                    Condition: {
+                        StringEquals: { 'sts:ExternalId': '4321' },
+                    },
+                },
+            ],
+            requester: {
+                accountId: anotherAccountId,
+                arn: anotherUserArn,
+                parentArn: null,
+                userType: 'User',
+            },
+            target: {
+                accountId: defaultAccountId,
+            },
+            result: {
+                result: 'Allow',
+                checkAction: true,
+            },
+        },
     ].forEach(test => {
         it(`evaluatePrincipal(): ${test.name}`, () => {
+            const rc = new RequestContext({}, {}, '', '', '127.0.0.1',
+                false, 'assumeRole', 'sts', null, {
+                    accountid: test.requester.accountId,
+                    arn: test.requester.arn,
+                    parentArn: test.requester.parentArn,
+                    principalType: test.requester.userType,
+                    externalId: '4321',
+                }, 'v4', 'V4');
+
             const params = {
                 log: defaultParams.log,
                 trustedPolicy: {
                     Statement: test.statement,
                 },
-                requesterAccountId: test.requester.accountId,
+                rc,
                 targetAccountId: test.target.accountId,
-                requesterArn: test.requester.arn,
-                requesterParentArn: test.requester.parentArn,
-                requesterType: test.requester.userType,
             };
             const result = Principal.evaluatePrincipal(params);
             assert.deepStrictEqual(result, test.result);
