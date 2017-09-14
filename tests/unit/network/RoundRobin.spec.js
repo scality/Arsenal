@@ -9,7 +9,7 @@ describe('round robin hosts', () => {
         caption: 'with { host, port } objects in list',
         hostsList: [{ host: '1.2.3.0', port: 1000 },
                     { host: '1.2.3.1', port: 1001 },
-                    { host: '1.2.3.2', port: 1002 }],
+                    { host: '1.2.3.2' }],
     }, {
         caption: 'with "host:port" strings in list',
         hostsList: ['1.2.3.0:1000',
@@ -18,7 +18,8 @@ describe('round robin hosts', () => {
     }].forEach(testCase => describe(testCase.caption, () => {
         beforeEach(() => {
             roundRobin = new RoundRobin(testCase.hostsList,
-                                        { stickyCount: 10 });
+                                        { stickyCount: 10,
+                                          defaultPort: 1002 });
         });
 
         it('should pick all hosts in turn', () => {
@@ -100,6 +101,19 @@ describe('round robin hosts', () => {
             new RoundRobin(['zenko.io:42']);
             // eslint-disable-next-line no-new
             new RoundRobin(['zenko.io', 'zenka.ia']);
+        });
+
+        it('should have set default port if not in bootstrap list', () => {
+            // the current host should be picked 10 times in a row
+            const portMap = {
+                '1.2.3.0': 1000,
+                '1.2.3.1': 1001,
+                '1.2.3.2': 1002,
+            };
+            for (let i = 0; i < 100; ++i) {
+                const hostItem = roundRobin.pickHost();
+                assert.strictEqual(hostItem.port, portMap[hostItem.host]);
+            }
         });
     }));
 });
