@@ -19,6 +19,7 @@
   "dependencies": {
     "ajv": "4.10.0",
     "async": "~2.1.5",
+    "backo": "^1.1.0",
     "debug": "~2.3.3",
     "diskusage": "^0.2.2",
     "ioredis": "2.4.0",
