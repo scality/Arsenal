@@ -60,6 +60,7 @@ module.exports = {
     },
     s3middleware: {
         userMetadata: require('./lib/s3middleware/userMetadata'),
+        convertToXml: require('./lib/s3middleware/convertToXml'),
         escapeForXml: require('./lib/s3middleware/escapeForXml'),
         tagging: require('./lib/s3middleware/tagging'),
         validateConditionalHeaders:
