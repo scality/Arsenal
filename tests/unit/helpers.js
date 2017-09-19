@@ -111,4 +111,4 @@ class DummyRequestLogger {
 }
 
 module.exports = { makeid, timeDiff, makeAuthInfo,
-                   createAlteredRequest, zpad, DummyRequestLogger };
+    createAlteredRequest, zpad, DummyRequestLogger };

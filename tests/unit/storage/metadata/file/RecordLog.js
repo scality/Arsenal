@@ -116,14 +116,14 @@ describe('record log - persistent log of metadata operations', () => {
         it('should be able to add records and list them thereafter', done => {
             debug('going to append records');
             const ops = [{ type: 'put', key: 'foo', value: 'bar',
-                           prefix: ['foobucket'] },
-                         { type: 'del', key: 'baz',
-                           prefix: ['foobucket'] },
-                         { type: 'put',
-                           key: 'Pâtisserie=中文-español-English',
-                           value: 'yummy',
-                           prefix: ['foobucket'] },
-                        ];
+                prefix: ['foobucket'] },
+            { type: 'del', key: 'baz',
+                prefix: ['foobucket'] },
+            { type: 'put',
+                key: 'Pâtisserie=中文-español-English',
+                value: 'yummy',
+                prefix: ['foobucket'] },
+            ];
             logProxy.createLogRecordOps(ops, (err, logEntries) => {
                 assert.ifError(err);
                 db.batch(ops.concat(logEntries), err => {
@@ -198,7 +198,7 @@ describe('record log - persistent log of metadata operations', () => {
                 for (let i = 1; i <= 1000; ++i) {
                     recordsToAdd.push(
                         { type: 'put', key: `foo${i}`, value: `bar${i}`,
-                          prefix: ['foobucket'] });
+                            prefix: ['foobucket'] });
                 }
                 logProxy.createLogRecordOps(recordsToAdd, (err, logRecs) => {
                     assert.ifError(err);

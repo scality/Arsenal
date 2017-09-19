@@ -16,21 +16,21 @@ const levelNet = require('../../../../lib/network/rpc/level-net');
 // simply forward the API calls to the db as-is
 const dbAsyncAPI = {
     put: (env, ...args) => {
-        env.subDb.put.apply(env.subDb, args);
+        env.subDb.put(...args);
     },
     del: (env, ...args) => {
-        env.subDb.del.apply(env.subDb, args);
+        env.subDb.del(...args);
     },
     get: (env, ...args) => {
-        env.subDb.get.apply(env.subDb, args);
+        env.subDb.get(...args);
     },
     batch: (env, ...args) => {
-        env.subDb.batch.apply(env.subDb, args);
+        env.subDb.batch(...args);
     },
 };
 const dbSyncAPI = {
     createReadStream:
-    (env, ...args) => env.subDb.createReadStream.apply(env.subDb, args),
+    (env, ...args) => env.subDb.createReadStream(args),
 };
 
 describe('level-net - LevelDB over network', () => {

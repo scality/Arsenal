@@ -34,20 +34,20 @@ describe('REST interface for blob data storage', () => {
     function setup(done) {
         temp.mkdir('test-REST-data-dir', (err, tempDir) => {
             dataStore = new DataFileStore({ dataPath: tempDir,
-                                            noSync: true,
-                                            logApi: clientLogApi,
-                                          });
+                noSync: true,
+                logApi: clientLogApi,
+            });
             server = new RESTServer({ port: 6677,
-                                      dataStore,
-                                      log: { logLevel: 'info',
-                                             dumpLevel: 'error' },
-                                    });
+                dataStore,
+                log: { logLevel: 'info',
+                    dumpLevel: 'error' },
+            });
             server.setup(() => {
                 server.start();
                 client = new RESTClient({ host: 'localhost',
-                                          port: 6677,
-                                          logApi: clientLogApi,
-                                        });
+                    port: 6677,
+                    logApi: clientLogApi,
+                });
                 done();
             });
         });
@@ -150,20 +150,20 @@ describe('REST interface for blob data storage', () => {
         // successful range queries
 
         [{ range: [10, 20],
-           sliceArgs: [10, 21], contentRange: [10, 20] },
-         { range: [10, undefined],
-           sliceArgs: [10], contentRange: [10, contents.length - 1] },
-         { range: [10, 1000],
-           sliceArgs: [10], contentRange: [10, contents.length - 1] },
-         { range: [undefined, 10],
-           sliceArgs: [-10], contentRange: [contents.length - 10,
-                                            contents.length - 1] },
-         { range: [undefined, contents.length + 2],
-           sliceArgs: [-(contents.length + 2)],
-           contentRange: [0, contents.length - 1] },
-         { range: [contents.length - 1, undefined],
-           sliceArgs: [-1], contentRange: [contents.length - 1,
-                                           contents.length - 1] }]
+            sliceArgs: [10, 21], contentRange: [10, 20] },
+        { range: [10, undefined],
+            sliceArgs: [10], contentRange: [10, contents.length - 1] },
+        { range: [10, 1000],
+            sliceArgs: [10], contentRange: [10, contents.length - 1] },
+        { range: [undefined, 10],
+            sliceArgs: [-10], contentRange: [contents.length - 10,
+                contents.length - 1] },
+        { range: [undefined, contents.length + 2],
+            sliceArgs: [-(contents.length + 2)],
+            contentRange: [0, contents.length - 1] },
+        { range: [contents.length - 1, undefined],
+            sliceArgs: [-1], contentRange: [contents.length - 1,
+                contents.length - 1] }]
             .forEach((test, i) => {
                 const { range, sliceArgs, contentRange } = test;
                 it(`should get the correct range ${range[0]}-${range[1]}`,
@@ -175,7 +175,7 @@ describe('REST interface for blob data storage', () => {
                                const value = resp.read();
                                assert.strictEqual(
                                    value.toString(),
-                                   contents.slice.apply(contents, sliceArgs));
+                                   contents.slice(...sliceArgs));
                                checkContentRange(resp, contentRange[0],
                                                  contentRange[1]);
                                done();
