@@ -1,8 +1,7 @@
 const assert = require('assert');
 const werelogs = require('werelogs');
 
-const validateAuthConfig
-    = require('../../../../lib/auth/auth').inMemory.validateAuthConfig;
+const AuthLoader = require('../../../../lib/auth/auth').inMemory.AuthLoader;
 const ref = require('./sample_authdata.json');
 
 werelogs.configure({
@@ -29,15 +28,19 @@ function getFieldName(field) {
     return field.split('.').pop();
 }
 
-function shouldFail(obj, checkSas, done) {
-    const res = validateAuthConfig(obj, werelogs, checkSas);
-    assert.strictEqual(res, true);
+function shouldFail(obj, done) {
+    const authLoader = new AuthLoader(werelogs);
+    authLoader.addAccounts(obj);
+    const res = authLoader.validate();
+    assert.strictEqual(res, false);
     done();
 }
 
-function shouldSuccess(obj, checkSas, done) {
-    const res = validateAuthConfig(obj, werelogs, checkSas);
-    assert.strictEqual(res, false);
+function shouldSucceed(obj, done) {
+    const authLoader = new AuthLoader(werelogs);
+    authLoader.addAccounts(obj);
+    const res = authLoader.validate();
+    assert.strictEqual(res, true);
     done();
 }
 
@@ -45,15 +48,15 @@ const should = {
     _exec: undefined,
     missingField: (obj, field, done) => {
         delete getParentField(obj, field)[getFieldName(field)];
-        should._exec(obj, true, done);
+        should._exec(obj, done);
     },
     modifiedField: (obj, field, value, done) => {
         getParentField(obj, field)[getFieldName(field)] = value;
-        should._exec(obj, true, done);
+        should._exec(obj, done);
     },
 };
 
-describe('S3 AuthData Checker', () => {
+describe('AuthLoader class', () => {
     let obj = {};
 
     beforeEach(done => {
@@ -71,18 +74,10 @@ describe('S3 AuthData Checker', () => {
         ['accounts.0.email', 64],
         ['accounts.0.arn', undefined],
         ['accounts.0.arn', 64],
-        ['accounts.0.sasToken', undefined],
-        ['accounts.0.sasToken', 64],
         ['accounts.0.canonicalID', undefined],
         ['accounts.0.canonicalID', 64],
-        ['accounts.0.users', 'not an object'],
-        ['accounts.0.users.0.arn', undefined],
-        ['accounts.0.users.0.arn', 64],
-        ['accounts.0.users.0.email', undefined],
-        ['accounts.0.users.0.email', 64],
-        ['accounts.0.users.0.keys', undefined],
-        ['accounts.0.users.0.keys', 'not an Array'],
         ['accounts.0.keys', 'not an Array'],
+        ['accounts.0.keys', undefined],
     ].forEach(test => {
         if (test[1] === undefined) {
             // Check a failure when deleting required fields
@@ -93,7 +88,8 @@ describe('S3 AuthData Checker', () => {
         } else {
             // Check a failure when the type of field is different than
             // expected
-            it(`should fail when modified field ${test[0]}${test[1]}`, done => {
+            it(`should fail when modified field ${test[0]} ${test[1]}`,
+            done => {
                 should._exec = shouldFail;
                 should.modifiedField(obj, test[0], test[1], done);
             });
@@ -109,52 +105,30 @@ describe('S3 AuthData Checker', () => {
         'accounts.0.users',
     ].forEach(test => {
         // Check a success when deleting optional fields
-        it(`should success when missing field ${test[0]}`, done => {
-            should._exec = shouldSuccess;
+        it(`should return success when missing field ${test}`, done => {
+            should._exec = shouldSucceed;
             should.missingField(obj, test[0], done);
         });
     });
 
-    it('Should return success if no sasToken and checkSas false', done => {
-        obj.accounts[0].sasToken = undefined;
-        shouldSuccess(obj, false, done);
-    });
-
-    it('Should return error on two same sasTokens and checkSas true', done => {
-        obj.accounts[0].sasToken = obj.accounts[1].sasToken;
-        shouldFail(obj, true, done);
-    });
-
-    it('Should return success on two same sasTokens and checkSas false',
-    done => {
-        obj.accounts[0].sasToken = obj.accounts[1].sasToken;
-        shouldSuccess(obj, false, done);
-    });
-
     it('Should return error on two same canonicalID', done => {
         obj.accounts[0].canonicalID = obj.accounts[1].canonicalID;
-        shouldFail(obj, null, done);
+        shouldFail(obj, done);
     });
 
-    it('Should return error on two same emails, account-account', done => {
+    it('Should return error on two same emails', done => {
         obj.accounts[0].email = obj.accounts[1].email;
-        shouldFail(obj, null, done);
-    });
-
-    it('Should return error on two same emails account-user', done => {
-        obj.accounts[0].users[0].email = obj.accounts[1].email;
-        shouldFail(obj, null, done);
+        shouldFail(obj, done);
     });
 
     it('Should return error on two same arn', done => {
-        obj.accounts[0].arn = obj.accounts[0].users[0].arn;
-        shouldFail(obj, null, done);
+        obj.accounts[0].arn = obj.accounts[1].arn;
+        shouldFail(obj, done);
     });
 
     it('Should return error on two same access key', done => {
-        obj.accounts[0].keys[0].access =
-            obj.accounts[0].users[0].keys[0].access;
-        shouldFail(obj, null, done);
+        obj.accounts[0].keys[0].access = obj.accounts[1].keys[0].access;
+        shouldFail(obj, done);
     });
 });
 
