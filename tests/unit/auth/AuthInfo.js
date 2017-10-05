@@ -72,4 +72,20 @@ describe('AuthInfo class constructor', () => {
         const publicUser = new AuthInfo({ canonicalID: constants.publicId });
         assert.strictEqual(publicUser.isRequesterPublicUser(), true);
     });
+
+    it('should have a working isRequesterAServiceAccount() method', () => {
+        assert.strictEqual(authInfo.isRequesterAServiceAccount(), false);
+        const serviceAccount = new AuthInfo({
+            canonicalID: `${constants.zenkoServiceAccount}/clueso` });
+        assert.strictEqual(serviceAccount.isRequesterAServiceAccount(), true);
+    });
+
+    it('should have a working isRequesterThisServiceAccount() method', () => {
+        const serviceAccount = new AuthInfo({
+            canonicalID: `${constants.zenkoServiceAccount}/clueso` });
+        assert.strictEqual(
+            serviceAccount.isRequesterThisServiceAccount('backbeat'), false);
+        assert.strictEqual(
+            serviceAccount.isRequesterThisServiceAccount('clueso'), true);
+    });
 });
