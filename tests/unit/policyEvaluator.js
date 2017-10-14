@@ -1078,6 +1078,36 @@ describe('policyEvaluator', () => {
                     check(requestContext, {}, policy, 'Allow');
                 });
 
+            it('should allow policy arn if meet condition',
+                () => {
+                    policy.Statement.Condition = {
+                        ArnLike: { 'iam:PolicyArn':
+                           ['arn:aws:iam::012345678901:policy/dev/*'] },
+                    };
+                    requestContext.setRequesterInfo(
+                        { accountid: '012345678901' });
+                    const rcModifiers = {
+                        _policyArn:
+                            'arn:aws:iam::012345678901:policy/dev/devMachine1',
+                    };
+                    check(requestContext, rcModifiers, policy, 'Allow');
+                });
+
+            it('should not allow policy arn if do not meet condition',
+                () => {
+                    policy.Statement.Condition = {
+                        ArnLike: { 'iam:PolicyArn':
+                            ['arn:aws:iam::012345678901:policy/dev/*'] },
+                    };
+                    requestContext.setRequesterInfo(
+                        { accountid: '012345678901' });
+                    const rcModifiers = {
+                        _policyArn:
+                            'arn:aws:iam::012345678901:policy/admin/deleteUser',
+                    };
+                    check(requestContext, rcModifiers, policy, 'Neutral');
+                });
+
             it('should allow access with multiple operator conditions ' +
             'and multiple conditions under an operator',
                 () => {
