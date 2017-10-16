@@ -94,7 +94,6 @@ module.exports = {
         },
         utils: require('./lib/storage/utils'),
     },
-
     models: {
         BucketInfo: require('./lib/models/BucketInfo'),
         ObjectMD: require('./lib/models/ObjectMD'),
@@ -102,5 +101,9 @@ module.exports = {
         WebsiteConfiguration: require('./lib/models/WebsiteConfiguration'),
         ReplicationConfiguration:
           require('./lib/models/ReplicationConfiguration'),
+    },
+    metrics: {
+        StatsClient: require('./lib/metrics/StatsClient'),
+        RedisClient: require('./lib/metrics/RedisClient'),
     },
 };
