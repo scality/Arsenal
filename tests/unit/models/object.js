@@ -91,6 +91,7 @@ describe('ObjectMD class setters/getters', () => {
             storageType: 'aws_s3',
         }],
         ['DataStoreName', null, ''],
+        ['DataStoreVersionId', 'data-store-version-id', undefined],
     ].forEach(test => {
         const property = test[0];
         const testValue = test[1];
