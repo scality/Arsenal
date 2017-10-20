@@ -2,7 +2,7 @@ const assert = require('assert');
 
 const Indexer = require('../../../../lib/auth/in_memory/Indexer');
 const ref = require('./sample_authdata.json');
-const { should } = require('./validateAuthConfig');
+const { should } = require('./AuthLoader.spec');
 
 describe('S3 AuthData Indexer', () => {
     let obj = {};
@@ -28,29 +28,10 @@ describe('S3 AuthData Indexer', () => {
         done();
     });
 
-    it('Should return user from email', done => {
-        const res = index.getEntityByEmail(obj.accounts[0].users[0].email);
-        assert.strictEqual(typeof res, 'object');
-        assert.strictEqual(res.arn, obj.accounts[0].arn);
-        assert.strictEqual(res.IAMdisplayName,
-            obj.accounts[0].users[0].name);
-        done();
-    });
-
     it('Should return account from key', done => {
         const res = index.getEntityByKey(obj.accounts[0].keys[0].access);
         assert.strictEqual(typeof res, 'object');
         assert.strictEqual(res.arn, obj.accounts[0].arn);
-        done();
-    });
-
-    it('Should return user from key', done => {
-        const res = index.getEntityByKey(obj.accounts[0].users[0].keys[0]
-            .access);
-        assert.strictEqual(typeof res, 'object');
-        assert.strictEqual(res.arn, obj.accounts[0].arn);
-        assert.strictEqual(res.IAMdisplayName,
-            obj.accounts[0].users[0].name);
         done();
     });
 
