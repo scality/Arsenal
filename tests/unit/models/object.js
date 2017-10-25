@@ -168,6 +168,32 @@ describe('ObjectMD import from stored blob', () => {
         assert.notStrictEqual(valueImported.dataStoreName, undefined);
     });
 
+    it('should return undefined for dataStoreVersionId if no object location',
+    () => {
+        const md = new ObjectMD();
+        const value = md.getValue();
+        const jsonMd = JSON.stringify(value);
+        const importedRes = ObjectMD.createFromBlob(jsonMd);
+        assert.strictEqual(importedRes.error, undefined);
+        const importedMd = importedRes.result;
+        assert.strictEqual(importedMd.getDataStoreVersionId(), undefined);
+    });
+
+    it('should get dataStoreVersionId if saved in object location', () => {
+        const md = new ObjectMD();
+        const dummyLocation = {
+            dataStoreVersionId: 'data-store-version-id',
+        };
+        md.setLocation([dummyLocation]);
+        const value = md.getValue();
+        const jsonMd = JSON.stringify(value);
+        const importedRes = ObjectMD.createFromBlob(jsonMd);
+        assert.strictEqual(importedRes.error, undefined);
+        const importedMd = importedRes.result;
+        assert.strictEqual(importedMd.getDataStoreVersionId(),
+            dummyLocation.dataStoreVersionId);
+    });
+
     it('should return an error if blob is malformed JSON', () => {
         const importedRes = ObjectMD.createFromBlob('{BAD JSON}');
         assert.notStrictEqual(importedRes.error, undefined);
