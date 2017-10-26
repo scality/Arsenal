@@ -80,6 +80,7 @@ describe('ObjectMD class setters/getters', () => {
             storageClass: '',
             role: '',
             storageType: '',
+            dataStoreVersionId: '',
         }],
         ['ReplicationInfo', {
             status: 'PENDING',
@@ -89,6 +90,7 @@ describe('ObjectMD class setters/getters', () => {
             role: 'arn:aws:iam::account-id:role/src-resource,' +
                 'arn:aws:iam::account-id:role/dest-resource',
             storageType: 'aws_s3',
+            dataStoreVersionId: 'QWY1QQwWn9xJcoz0EgJjJ_t8g4nMYsxo',
         }],
         ['DataStoreName', null, ''],
     ].forEach(test => {
