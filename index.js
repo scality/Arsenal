@@ -67,6 +67,7 @@ module.exports = {
             require('./lib/s3middleware/validateConditionalHeaders')
             .validateConditionalHeaders,
         MD5Sum: require('./lib/s3middleware/MD5Sum'),
+        NullStream: require('./lib/s3middleware/nullStream'),
         objectUtils: require('./lib/s3middleware/objectUtils'),
         azureHelper: {
             mpuUtils:
