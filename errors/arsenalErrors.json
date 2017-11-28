@@ -711,5 +711,10 @@
   "NotEnoughMapsInConfig:": {
     "description": "NotEnoughMapsInConfig",
     "code": 400
+  },
+  "_comment": "----------------------- cdmiclient -----------------------",
+  "ReadOnly": {
+    "description": "trying to write to read only back-end",
+    "code": 403
   }
 }
