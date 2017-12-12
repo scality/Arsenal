@@ -1,6 +1,7 @@
 'use strict'; // eslint-disable-line strict
 
 const assert = require('assert');
+const async = require('async');
 
 const RedisClient = require('../../../lib/metrics/RedisClient');
 const StatsClient = require('../../../lib/metrics/StatsClient');
@@ -27,52 +28,101 @@ describe('StatsClient class', () => {
 
     afterEach(() => redisClient.clear(() => {}));
 
-    it('should correctly record a new request', () => {
-        statsClient.reportNewRequest(id, (err, res) => {
-            assert.ifError(err);
-            assert(Array.isArray(res));
-            assert.equal(res.length, 2);
+    it('should correctly record a new request by default one increment',
+    done => {
+        async.series([
+            next => {
+                statsClient.reportNewRequest(id, (err, res) => {
+                    assert.ifError(err);
 
-            const expected = [[null, 1], [null, 1]];
-            assert.deepEqual(res, expected);
-        });
+                    const expected = [[null, 1], [null, 1]];
+                    assert.deepEqual(res, expected);
+                    next();
+                });
+            },
+            next => {
+                statsClient.reportNewRequest(id, (err, res) => {
+                    assert.ifError(err);
 
-        statsClient.reportNewRequest(id, (err, res) => {
-            assert.ifError(err);
-            assert(Array.isArray(res));
-            assert.equal(res.length, 2);
-
-            const expected = [[null, 2], [null, 1]];
-            assert.deepEqual(res, expected);
-        });
+                    const expected = [[null, 2], [null, 1]];
+                    assert.deepEqual(res, expected);
+                    next();
+                });
+            },
+        ], done);
     });
 
-    it('should correctly record a 500 on the server', () => {
+    it('should record new requests by defined amount increments', done => {
+        function noop() {}
+
+        async.series([
+            next => {
+                statsClient.reportNewRequest(id, 9);
+                statsClient.getStats(fakeLogger, id, (err, res) => {
+                    assert.ifError(err);
+
+                    assert.equal(res.requests, 9);
+                    next();
+                });
+            },
+            next => {
+                statsClient.reportNewRequest(id);
+                statsClient.getStats(fakeLogger, id, (err, res) => {
+                    assert.ifError(err);
+
+                    assert.equal(res.requests, 10);
+                    next();
+                });
+            },
+            next => {
+                statsClient.reportNewRequest(id, noop);
+                statsClient.getStats(fakeLogger, id, (err, res) => {
+                    assert.ifError(err);
+
+                    assert.equal(res.requests, 11);
+                    next();
+                });
+            },
+        ], done);
+    });
+
+    it('should correctly record a 500 on the server', done => {
         statsClient.report500(id, (err, res) => {
             assert.ifError(err);
-            assert(Array.isArray(res));
-            assert.equal(res.length, 2);
 
             const expected = [[null, 1], [null, 1]];
             assert.deepEqual(res, expected);
+            done();
         });
     });
 
-    it('should respond back with total requests', () => {
-        statsClient.reportNewRequest(id, err => {
-            assert.ifError(err);
-        });
-        statsClient.report500(id, err => {
-            assert.ifError(err);
-        });
-        statsClient.getStats(fakeLogger, id, (err, res) => {
-            assert.ifError(err);
-            assert.equal(typeof res, 'object');
-            assert.equal(Object.keys(res).length, 3);
-            assert.equal(res.sampleDuration, STATS_EXPIRY);
+    it('should respond back with total requests', done => {
+        async.series([
+            next => {
+                statsClient.reportNewRequest(id, err => {
+                    assert.ifError(err);
+                    next();
+                });
+            },
+            next => {
+                statsClient.report500(id, err => {
+                    assert.ifError(err);
+                    next();
+                });
+            },
+            next => {
+                statsClient.getStats(fakeLogger, id, (err, res) => {
+                    assert.ifError(err);
 
-            const expected = { 'requests': 1, '500s': 1, 'sampleDuration': 30 };
-            assert.deepEqual(res, expected);
-        });
+                    const expected = {
+                        'requests': 1,
+                        '500s': 1,
+                        'sampleDuration': STATS_EXPIRY,
+                    };
+                    assert.deepStrictEqual(res, expected);
+                    next();
+                });
+            },
+        ], done);
     });
 });
