@@ -103,6 +103,8 @@ module.exports = {
         WebsiteConfiguration: require('./lib/models/WebsiteConfiguration'),
         ReplicationConfiguration:
           require('./lib/models/ReplicationConfiguration'),
+        LifecycleConfiguration:
+            require('./lib/models/LifecycleConfiguration'),
     },
     metrics: {
         StatsClient: require('./lib/metrics/StatsClient'),
