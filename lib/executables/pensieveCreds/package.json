@@ -1,0 +1,13 @@
+{
+  "name": "pensievecreds",
+  "version": "1.0.0",
+  "description": "Executable tool for Pensieve",
+  "main": "getPensieveCreds.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "async": "^2.6.0",
+    "node-forge": "^0.7.1"
+  }
+}
