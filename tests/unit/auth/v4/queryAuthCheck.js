@@ -199,4 +199,30 @@ describe('v4 queryAuthCheck', () => {
         assert.strictEqual(res.params.version, 4);
         done();
     });
+
+    it('should successfully return v4 and no error if X-Amz-Expires param ' +
+    'is 604800 (7 days)', done => {
+        // Freezes time so date created within function will be Feb 8, 2016
+        const clock = lolex.install(1454974984001);
+        const alteredRequest = createAlteredRequest({ 'X-Amz-Expires':
+        604800 }, 'query', request, query);
+        const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
+        clock.uninstall();
+        assert.deepStrictEqual(res.err, null);
+        assert.strictEqual(res.params.version, 4);
+        done();
+    });
+
+    it('should successfully return v4 and no error if X-Amz-Expires param ' +
+    'is less thant 604800 (7 days)', done => {
+        // Freezes time so date created within function will be Feb 8, 2016
+        const clock = lolex.install(1454974984001);
+        const alteredRequest = createAlteredRequest({ 'X-Amz-Expires':
+        604799 }, 'query', request, query);
+        const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
+        clock.uninstall();
+        assert.deepStrictEqual(res.err, null);
+        assert.strictEqual(res.params.version, 4);
+        done();
+    });
 });
