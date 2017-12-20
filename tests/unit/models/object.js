@@ -75,6 +75,7 @@ describe('ObjectMD class setters/getters', () => {
         ['Tags', null, {}],
         ['ReplicationInfo', null, {
             status: '',
+            backends: [],
             content: [],
             destination: '',
             storageClass: '',
@@ -84,13 +85,18 @@ describe('ObjectMD class setters/getters', () => {
         }],
         ['ReplicationInfo', {
             status: 'PENDING',
+            backends: [{
+                site: 'zenko',
+                status: 'PENDING',
+                dataStoreVersionId: 'a',
+            }],
             content: ['DATA', 'METADATA'],
             destination: 'destination-bucket',
             storageClass: 'STANDARD',
             role: 'arn:aws:iam::account-id:role/src-resource,' +
                 'arn:aws:iam::account-id:role/dest-resource',
             storageType: 'aws_s3',
-            dataStoreVersionId: 'QWY1QQwWn9xJcoz0EgJjJ_t8g4nMYsxo',
+            dataStoreVersionId: '',
         }],
         ['DataStoreName', null, ''],
     ].forEach(test => {
@@ -112,6 +118,33 @@ describe('ObjectMD class setters/getters', () => {
                 assert.strictEqual(value, defaultValue);
             }
         });
+    });
+
+    it('ObjectMD::setReplicationSiteStatus', () => {
+        md.setReplicationInfo({
+            backends: [{
+                site: 'zenko',
+                status: 'PENDING',
+                dataStoreVersionId: 'a',
+            }],
+        });
+        md.setReplicationSiteStatus('zenko', 'COMPLETED');
+        assert.deepStrictEqual(md.getReplicationInfo().backends, [{
+            site: 'zenko',
+            status: 'COMPLETED',
+            dataStoreVersionId: 'a',
+        }]);
+    });
+
+    it('ObjectMD::getReplicationSiteStatus', () => {
+        md.setReplicationInfo({
+            backends: [{
+                site: 'zenko',
+                status: 'PENDING',
+                dataStoreVersionId: 'a',
+            }],
+        });
+        assert.strictEqual(md.getReplicationSiteStatus('zenko'), 'PENDING');
     });
 });
 
