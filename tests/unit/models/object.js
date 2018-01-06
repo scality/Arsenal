@@ -146,6 +146,34 @@ describe('ObjectMD class setters/getters', () => {
         });
         assert.strictEqual(md.getReplicationSiteStatus('zenko'), 'PENDING');
     });
+
+    it('ObjectMD::setReplicationSiteDataStoreVersionId', () => {
+        md.setReplicationInfo({
+            backends: [{
+                site: 'zenko',
+                status: 'PENDING',
+                dataStoreVersionId: 'a',
+            }],
+        });
+        md.setReplicationSiteDataStoreVersionId('zenko', 'b');
+        assert.deepStrictEqual(md.getReplicationInfo().backends, [{
+            site: 'zenko',
+            status: 'PENDING',
+            dataStoreVersionId: 'b',
+        }]);
+    });
+
+    it('ObjectMD::getReplicationSiteDataStoreVersionId', () => {
+        md.setReplicationInfo({
+            backends: [{
+                site: 'zenko',
+                status: 'PENDING',
+                dataStoreVersionId: 'a',
+            }],
+        });
+        assert.strictEqual(
+            md.getReplicationSiteDataStoreVersionId('zenko'), 'a');
+    });
 });
 
 describe('ObjectMD import from stored blob', () => {
