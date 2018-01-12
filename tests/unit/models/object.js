@@ -263,3 +263,39 @@ describe('ObjectMD import from stored blob', () => {
         assert.strictEqual(importedRes.result, undefined);
     });
 });
+
+describe('getAttributes static method', () => {
+    it('should return object metadata attributes', () => {
+        const attributes = ObjectMD.getAttributes();
+        const expectedResult = {
+            'owner-display-name': true,
+            'owner-id': true,
+            'cache-control': true,
+            'content-disposition': true,
+            'content-encoding': true,
+            'expires': true,
+            'content-length': true,
+            'content-type': true,
+            'content-md5': true,
+            'x-amz-version-id': true,
+            'x-amz-server-version-id': true,
+            'x-amz-storage-class': true,
+            'x-amz-server-side-encryption': true,
+            'x-amz-server-side-encryption-aws-kms-key-id': true,
+            'x-amz-server-side-encryption-customer-algorithm': true,
+            'x-amz-website-redirect-location': true,
+            'acl': true,
+            'key': true,
+            'location': true,
+            'isNull': true,
+            'nullVersionId': true,
+            'isDeleteMarker': true,
+            'versionId': true,
+            'tags': true,
+            'replicationInfo': true,
+            'dataStoreName': true,
+            'last-modified': true,
+            'md-model-version': true };
+        assert.deepStrictEqual(attributes, expectedResult);
+    });
+});
