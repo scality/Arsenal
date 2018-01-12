@@ -26,6 +26,7 @@
     "joi": "^10.6",
     "level": "~1.6.0",
     "level-sublevel": "~6.6.1",
+    "node-forge": "^0.7.1",
     "simple-glob": "^0.1",
     "socket.io": "~1.7.3",
     "socket.io-client": "~1.7.3",
