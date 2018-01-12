@@ -20,10 +20,18 @@ describe('routesUtils.isValidBucketName', () => {
         assert.strictEqual(result, false);
     });
 
-    it('should return false if bucketname contains capital letters', () => {
+    it('should return false if bucketname contains capital letters ' +
+        'and is not whitelisted', () => {
         const result =
             routesUtils.isValidBucketName('noSHOUTING', prefixBlacklist);
         assert.strictEqual(result, false);
+    });
+
+    it('should return true if bucketname contains capital letters ' +
+        'but is whitelisted', () => {
+        const result =
+            routesUtils.isValidBucketName('METADATA', prefixBlacklist);
+        assert.strictEqual(result, true);
     });
 
     it('should return false if bucketname starts w/ blacklisted prefix', () => {
