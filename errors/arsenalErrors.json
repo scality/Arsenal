@@ -712,6 +712,10 @@
     "description": "NotEnoughMapsInConfig",
     "code": 400
   },
+  "TooManyRequests": {
+    "description": "TooManyRequests",
+    "code": 429
+  },
   "_comment": "----------------------- cdmiclient -----------------------",
   "ReadOnly": {
     "description": "trying to write to read only back-end",
