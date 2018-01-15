@@ -23,3 +23,4 @@ test:
     - npm run --silent lint_md
     - npm run --silent test
     - npm run ft_test
+    - cd lib/executables/pensieveCreds && npm install && npm test

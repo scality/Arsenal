@@ -3,3 +3,10 @@
 
 # Dependency directory
 node_modules/
+*/node_modules/
+
+# Build executables
+*-win.exe
+*-linux
+*-macos
+

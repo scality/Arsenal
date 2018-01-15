@@ -108,4 +108,7 @@ module.exports = {
         StatsClient: require('./lib/metrics/StatsClient'),
         RedisClient: require('./lib/metrics/RedisClient'),
     },
+    pensieve: {
+        credentialUtils: require('./lib/executables/pensieveCreds/utils'),
+    },
 };
