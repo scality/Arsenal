@@ -78,6 +78,8 @@ module.exports = {
             require('./lib/storage/metadata/file/MetadataFileClient'),
             LogConsumer:
             require('./lib/storage/metadata/bucketclient/LogConsumer'),
+            MongoClientInterface:
+            require('./lib/storage/metadata/mongoclient/MongoClientInterface'),
         },
         data: {
             file: {
