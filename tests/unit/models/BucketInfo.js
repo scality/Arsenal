@@ -85,6 +85,36 @@ const testReplicationConfiguration = {
         },
     ],
 };
+
+const testLifecycleConfiguration = {
+    rules: [
+        {
+            ruleID: 'STRING_VALUE',
+            ruleStatus: 'Enabled',
+            filter: {
+                rulePrefix: 'STRING_VALUE',
+                tag: [
+                    {
+                        key: 'STRING_VALUE',
+                        val: 'STRING_VALUE',
+                    },
+                    {
+                        key: 'STRING_VALUE',
+                        val: 'STRING_VALUE',
+                    },
+                ],
+            },
+            actions: [
+                {
+                    actionName: 'Expiration',
+                    days: 5,
+                    date: '2016-01-01T00:00:00.000Z',
+                    deleteMarker: 'true',
+                },
+            ],
+        },
+    ],
+};
 // create a dummy bucket to test getters and setters
 
 Object.keys(acl).forEach(
@@ -101,7 +131,8 @@ Object.keys(acl).forEach(
             testLocationConstraint,
             testWebsiteConfiguration,
             testCorsConfiguration,
-            testReplicationConfiguration);
+            testReplicationConfiguration,
+            testLifecycleConfiguration);
 
         describe('serialize/deSerialize on BucketInfo class', () => {
             const serialized = dummyBucket.serialize();
@@ -125,6 +156,8 @@ Object.keys(acl).forEach(
                     cors: dummyBucket._cors,
                     replicationConfiguration:
                         dummyBucket._replicationConfiguration,
+                    lifecycleConfiguration:
+                        dummyBucket._lifecycleConfiguration,
                 };
                 assert.strictEqual(serialized, JSON.stringify(bucketInfos));
                 done();
@@ -219,6 +252,10 @@ Object.keys(acl).forEach(
             it('getCors should return CORS configuration', () => {
                 assert.deepStrictEqual(dummyBucket.getCors(),
                         testCorsConfiguration);
+            });
+            it('getLifeCycleConfiguration should return configuration', () => {
+                assert.deepStrictEqual(dummyBucket.getLifecycleConfiguration(),
+                    testLifecycleConfiguration);
             });
         });
 
@@ -319,6 +356,27 @@ Object.keys(acl).forEach(
                     ],
                 };
                 dummyBucket.setReplicationConfiguration(newReplicationConfig);
+            });
+            it('setLifecycleConfiguration should set lifecycle ' +
+                'configuration', () => {
+                const newLifecycleConfig = {
+                    rules: [
+                        {
+                            ruleID: 'new-rule',
+                            ruleStatus: 'Enabled',
+                            filter: {
+                                rulePrefix: 'test-prefix',
+                            },
+                            action: {
+                                actionName: 'NoncurrentVersionExpiration',
+                                days: 0,
+                            },
+                        },
+                    ],
+                };
+                dummyBucket.setLifecycleConfiguration(newLifecycleConfig);
+                assert.deepStrictEqual(dummyBucket.getLifecycleConfiguration(),
+                    newLifecycleConfig);
             });
         });
     })
