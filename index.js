@@ -12,15 +12,7 @@ module.exports = {
         dhparam: require('./lib/https/dh2048.js'),
     },
     algorithms: {
-        list: {
-            Basic: require('./lib/algos/list/basic').List,
-            Delimiter: require('./lib/algos/list/delimiter').Delimiter,
-            DelimiterVersions: require('./lib/algos/list/delimiterVersions')
-                .DelimiterVersions,
-            DelimiterMaster: require('./lib/algos/list/delimiterMaster')
-                .DelimiterMaster,
-            MPU: require('./lib/algos/list/MPU').MultipartUploads,
-        },
+        list: require('./lib/algos/list/exportAlgos'),
         listTools: {
             DelimiterTools: require('./lib/algos/list/tools'),
         },
@@ -86,6 +78,8 @@ module.exports = {
             require('./lib/storage/metadata/file/MetadataFileClient'),
             LogConsumer:
             require('./lib/storage/metadata/bucketclient/LogConsumer'),
+            MongoClientInterface:
+            require('./lib/storage/metadata/mongoclient/MongoClientInterface'),
         },
         data: {
             file: {
