@@ -5,11 +5,15 @@ general:
       - /^ultron\/.*/ # Ignore ultron/* branches
 
 machine:
+  environment:
+    CXX: g++-4.9
   node:
     version: 4.5.0
 
 dependencies:
-  pre:
+  override:
+    - rm -rf node_modules
+    - npm install
     - sudo pip install yamllint
 
 test:
