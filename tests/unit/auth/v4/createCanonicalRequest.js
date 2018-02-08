@@ -1,7 +1,8 @@
 'use strict'; // eslint-disable-line strict
 
 const assert = require('assert');
-
+const awsURIencode =
+    require('../../../../lib/auth/v4/awsURIencode');
 const createCanonicalRequest =
     require('../../../../lib/auth/v4/createCanonicalRequest');
 
@@ -44,6 +45,50 @@ describe('createCanonicalRequest function', () => {
         const actualOutput = createCanonicalRequest(params);
         assert.strictEqual(actualOutput, expectedOutput);
     });
+
+    const msg = 'S3C-820: aws java sdk should not encode * ' +
+        'character for signature';
+    it(msg, () => {
+        const doc = JSON.stringify({
+            Statement: [{
+                Action: 's3:*',
+            }],
+        });
+        const params = {
+            pHttpVerb: 'POST',
+            pResource: '/',
+            pQuery: {
+                PolicyDocument: doc,
+            },
+            pHeaders: {
+                'host': 'examplebucket.s3.amazonaws.com',
+                'x-amz-date': '20130524T000000Z',
+                'user-agent': 'aws-sdk-java/1.11',
+                'authorization': 'AWS4-HMAC-SHA256 Credential' +
+                    '=AKIAIOSFODNN7EXAMPLE/20130524/us-east-1/' +
+                    's3/aws4_request,SignedHeaders=host;user-agent' +
+                    'x-amz-content-sha256;x-amz-date,Signature=' +
+                    'f0e8bdb87c964420e857bd35b5d6ed310bd44f' +
+                    '0170aba48dd91039c6036bdb41',
+                'x-amz-content-sha256': 'e3b0c44298fc1c149afbf4c' +
+                    '8996fb92427ae41e4649b934ca495991b7852b855',
+            },
+            pSignedHeaders: 'host;user-agent;x-amz-content-sha256;x-amz-date',
+        };
+        const expectedOutput = 'POST\n' +
+            '/\n' +
+            `PolicyDocument=${awsURIencode(doc)}\n` +
+            'host:examplebucket.s3.amazonaws.com\n' +
+            'user-agent:aws-sdk-java/1.11\n' +
+            'x-amz-content-sha256:e3b0c44298fc1c149afbf4c' +
+            '8996fb92427ae41e4649b934ca495991b7852b855\n' +
+            'x-amz-date:20130524T000000Z\n\n' +
+            'host;user-agent;x-amz-content-sha256;x-amz-date\n' +
+            '25775fcf6b536b361aadce0c5f1afb46eb945dbdd6c3a7723b18300234a89588';
+        const actualOutput = createCanonicalRequest(params);
+        assert.strictEqual(actualOutput, expectedOutput);
+    });
+
 
     // Example taken from: http://docs.aws.amazon.com/AmazonS3/
     // latest/API/sig-v4-header-based-auth.html
