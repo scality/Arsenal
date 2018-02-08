@@ -3,11 +3,7 @@
   "engines": {
     "node": "6.9.5"
   },
-<<<<<<< 703aafeb723c77937798b9f0f6dcc89014a8fd39
   "version": "7.4.0",
-=======
-  "version": "7.2.2",
->>>>>>> DROP ME: bump arsenal version
   "description": "Common utilities for the S3 project components",
   "main": "index.js",
   "repository": {
@@ -32,7 +28,6 @@
     "level": "~1.6.0",
     "level-sublevel": "~6.6.1",
     "mongodb": "^3.0.1",
-    "bson": "^1.0.4",
     "node-forge": "^0.7.1",
     "simple-glob": "^0.1",
     "socket.io": "~1.7.3",
