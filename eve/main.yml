@@ -37,3 +37,7 @@ stages:
       - ShellCommand:
           name: run ft_test
           command: npm run ft_test
+      - ShellCommand:
+          name: run executables tests
+          command: npm install && npm test
+          workdir: '%(prop:builddir)s/build/lib/executables/pensieveCreds/'
