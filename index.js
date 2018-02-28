@@ -72,14 +72,34 @@ module.exports = {
     },
     storage: {
         metadata: {
-            MetadataFileServer:
-            require('./lib/storage/metadata/file/MetadataFileServer'),
-            MetadataFileClient:
-            require('./lib/storage/metadata/file/MetadataFileClient'),
-            LogConsumer:
-            require('./lib/storage/metadata/bucketclient/LogConsumer'),
-            MongoClientInterface:
-            require('./lib/storage/metadata/mongoclient/MongoClientInterface'),
+            MetadataWrapper: require('./lib/storage/metadata/MetadataWrapper'),
+            bucketclient: {
+                BucketClientInterface:
+                require('./lib/storage/metadata/bucketclient/' +
+                    'BucketClientInterface'),
+                LogConsumer:
+                require('./lib/storage/metadata/bucketclient/LogConsumer'),
+            },
+            file: {
+                BucketFileInterface:
+                require('./lib/storage/metadata/file/BucketFileInterface'),
+                MetadataFileServer:
+                require('./lib/storage/metadata/file/MetadataFileServer'),
+                MetadataFileClient:
+                require('./lib/storage/metadata/file/MetadataFileClient'),
+            },
+            inMemory: {
+                metastore:
+                require('./lib/storage/metadata/in_memory/metastore'),
+                metadata: require('./lib/storage/metadata/in_memory/metadata'),
+                bucketUtilities:
+                require('./lib/storage/metadata/in_memory/bucket_utilities'),
+            },
+            mongoclient: {
+                MongoClientInterface:
+                require('./lib/storage/metadata/mongoclient/' +
+                    'MongoClientInterface'),
+            },
         },
         data: {
             file: {
