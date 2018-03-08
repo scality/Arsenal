@@ -99,6 +99,8 @@ module.exports = {
                 MongoClientInterface:
                 require('./lib/storage/metadata/mongoclient/' +
                     'MongoClientInterface'),
+                LogConsumer:
+                require('./lib/storage/metadata/mongoclient/LogConsumer'),
             },
         },
         data: {
