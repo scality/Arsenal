@@ -107,4 +107,7 @@ module.exports = {
         StatsClient: require('./lib/metrics/StatsClient'),
         RedisClient: require('./lib/metrics/RedisClient'),
     },
+    monitoring: {
+        LiveMonitoring: require('./lib/monitoring/monitoringClientInterface'),
+    },
 };
