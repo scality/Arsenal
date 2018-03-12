@@ -2,7 +2,7 @@
 general:
   branches:
     ignore:
-      - /^ultron\/.*/ # Ignore ultron/* branches
+      - /^ultron\/.*/  # Ignore ultron/* branches
 
 machine:
   node:
@@ -13,7 +13,9 @@ machine:
     CXX: g++-4.9
 
 dependencies:
-  pre:
+  override:
+    - rm -rf node_modules
+    - npm install
     - sudo pip install yamllint
 
 test:
@@ -23,3 +25,4 @@ test:
     - npm run --silent lint_md
     - npm run --silent test
     - npm run ft_test
+    - cd lib/executables/pensieveCreds && npm install && npm test

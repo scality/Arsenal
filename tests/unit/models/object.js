@@ -75,6 +75,7 @@ describe('ObjectMD class setters/getters', () => {
         ['Tags', null, {}],
         ['ReplicationInfo', null, {
             status: '',
+            backends: [],
             content: [],
             destination: '',
             storageClass: '',
@@ -84,13 +85,18 @@ describe('ObjectMD class setters/getters', () => {
         }],
         ['ReplicationInfo', {
             status: 'PENDING',
+            backends: [{
+                site: 'zenko',
+                status: 'PENDING',
+                dataStoreVersionId: 'a',
+            }],
             content: ['DATA', 'METADATA'],
             destination: 'destination-bucket',
             storageClass: 'STANDARD',
             role: 'arn:aws:iam::account-id:role/src-resource,' +
                 'arn:aws:iam::account-id:role/dest-resource',
             storageType: 'aws_s3',
-            dataStoreVersionId: 'QWY1QQwWn9xJcoz0EgJjJ_t8g4nMYsxo',
+            dataStoreVersionId: '',
         }],
         ['DataStoreName', null, ''],
     ].forEach(test => {
@@ -112,6 +118,61 @@ describe('ObjectMD class setters/getters', () => {
                 assert.strictEqual(value, defaultValue);
             }
         });
+    });
+
+    it('ObjectMD::setReplicationSiteStatus', () => {
+        md.setReplicationInfo({
+            backends: [{
+                site: 'zenko',
+                status: 'PENDING',
+                dataStoreVersionId: 'a',
+            }],
+        });
+        md.setReplicationSiteStatus('zenko', 'COMPLETED');
+        assert.deepStrictEqual(md.getReplicationInfo().backends, [{
+            site: 'zenko',
+            status: 'COMPLETED',
+            dataStoreVersionId: 'a',
+        }]);
+    });
+
+    it('ObjectMD::getReplicationSiteStatus', () => {
+        md.setReplicationInfo({
+            backends: [{
+                site: 'zenko',
+                status: 'PENDING',
+                dataStoreVersionId: 'a',
+            }],
+        });
+        assert.strictEqual(md.getReplicationSiteStatus('zenko'), 'PENDING');
+    });
+
+    it('ObjectMD::setReplicationSiteDataStoreVersionId', () => {
+        md.setReplicationInfo({
+            backends: [{
+                site: 'zenko',
+                status: 'PENDING',
+                dataStoreVersionId: 'a',
+            }],
+        });
+        md.setReplicationSiteDataStoreVersionId('zenko', 'b');
+        assert.deepStrictEqual(md.getReplicationInfo().backends, [{
+            site: 'zenko',
+            status: 'PENDING',
+            dataStoreVersionId: 'b',
+        }]);
+    });
+
+    it('ObjectMD::getReplicationSiteDataStoreVersionId', () => {
+        md.setReplicationInfo({
+            backends: [{
+                site: 'zenko',
+                status: 'PENDING',
+                dataStoreVersionId: 'a',
+            }],
+        });
+        assert.strictEqual(
+            md.getReplicationSiteDataStoreVersionId('zenko'), 'a');
     });
 });
 
@@ -200,5 +261,41 @@ describe('ObjectMD import from stored blob', () => {
         const importedRes = ObjectMD.createFromBlob('{BAD JSON}');
         assert.notStrictEqual(importedRes.error, undefined);
         assert.strictEqual(importedRes.result, undefined);
+    });
+});
+
+describe('getAttributes static method', () => {
+    it('should return object metadata attributes', () => {
+        const attributes = ObjectMD.getAttributes();
+        const expectedResult = {
+            'owner-display-name': true,
+            'owner-id': true,
+            'cache-control': true,
+            'content-disposition': true,
+            'content-encoding': true,
+            'expires': true,
+            'content-length': true,
+            'content-type': true,
+            'content-md5': true,
+            'x-amz-version-id': true,
+            'x-amz-server-version-id': true,
+            'x-amz-storage-class': true,
+            'x-amz-server-side-encryption': true,
+            'x-amz-server-side-encryption-aws-kms-key-id': true,
+            'x-amz-server-side-encryption-customer-algorithm': true,
+            'x-amz-website-redirect-location': true,
+            'acl': true,
+            'key': true,
+            'location': true,
+            'isNull': true,
+            'nullVersionId': true,
+            'isDeleteMarker': true,
+            'versionId': true,
+            'tags': true,
+            'replicationInfo': true,
+            'dataStoreName': true,
+            'last-modified': true,
+            'md-model-version': true };
+        assert.deepStrictEqual(attributes, expectedResult);
     });
 });

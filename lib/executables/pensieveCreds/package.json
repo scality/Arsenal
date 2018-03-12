@@ -1,0 +1,14 @@
+{
+  "name": "pensievecreds",
+  "version": "1.0.0",
+  "description": "Executable tool for Pensieve",
+  "main": "getPensieveCreds.js",
+  "scripts": {
+    "test": "mocha --recursive --timeout 5500 tests/unit"
+  },
+  "dependencies": {
+    "mocha": "2.5.3",
+    "async": "^2.6.0",
+    "node-forge": "^0.7.1"
+  }
+}

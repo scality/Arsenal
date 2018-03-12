@@ -1,13 +1,14 @@
 'use strict'; //eslint-disable-line
 
 const assert = require('assert');
+const stream = require('stream');
 const errors = require('../../../../../lib/errors');
 
 const LogConsumer = require(
     '../../../../../lib/storage/metadata/bucketclient/LogConsumer.js');
 
 /* eslint-disable max-len */
-const mockedLogResponse = `{
+const mockedLogResponseData = `{
     "info": { "start": 10, "end": 11, "prune": 10, "cseq": 11 },
     "log": [
         {
@@ -41,11 +42,43 @@ const mockedLogResponse = `{
     ]
 }`;
 
-const malformedLogResponse = `{
+const malformedLogResponseData = `{
     "info": not json!,
     "log": []
 }`;
+
+const malformedLogEntryData = `{
+    "info": { "start": 10, "end": 11, "prune": 10, "cseq": 11 },
+    "log": [
+        {
+            "db": "funbucket",
+            "entries": [
+                {
+                    "key": "coolkey0",
+                    "value": "42"
+                }
+            ],
+            "method": 8
+        },
+        {{{
+    ]
+}`;
 /* eslint-enable max-len */
+
+class MockStream extends stream.Readable {
+    constructor(dataSource) {
+        super();
+        this._dataSource = dataSource;
+    }
+    _read() {
+        this.push(this._dataSource);
+        this.push(null);
+    }
+}
+
+const mockedLogResponse = new MockStream(mockedLogResponseData);
+const malformedLogResponse = new MockStream(malformedLogResponseData);
+const malformedLogEntry = new MockStream(malformedLogEntryData);
 
 // mock a simple bucketclient to get a fake raft log
 class BucketClientMock {
@@ -63,6 +96,9 @@ class BucketClientMock {
         case 4:
             return process.nextTick(() => callback(null,
                                                    malformedLogResponse));
+        case 5:
+            return process.nextTick(() => callback(null,
+                                                   malformedLogEntry));
         default:
             assert.fail();
         }
@@ -153,13 +189,26 @@ describe('raft record log client', () => {
                 done();
             });
         });
-        it('should not crash with malformed log response', done => {
+        it('should return error with malformed log response', done => {
             const logClient = new LogConsumer({ bucketClient,
                 raftSession: 4 });
             logClient.readRecords({}, err => {
                 assert(err);
                 assert(err.InternalError);
                 done();
+            });
+        });
+        it('should emit error event if a log entry is malformed', done => {
+            const logClient = new LogConsumer({ bucketClient,
+                raftSession: 5 });
+            logClient.readRecords({}, (err, res) => {
+                assert.ifError(err);
+                assert(res.info);
+                assert(res.log);
+                res.log.on('error', err => {
+                    assert(err);
+                    done();
+                });
             });
         });
     });

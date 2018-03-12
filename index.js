@@ -12,15 +12,7 @@ module.exports = {
         dhparam: require('./lib/https/dh2048.js'),
     },
     algorithms: {
-        list: {
-            Basic: require('./lib/algos/list/basic').List,
-            Delimiter: require('./lib/algos/list/delimiter').Delimiter,
-            DelimiterVersions: require('./lib/algos/list/delimiterVersions')
-                .DelimiterVersions,
-            DelimiterMaster: require('./lib/algos/list/delimiterMaster')
-                .DelimiterMaster,
-            MPU: require('./lib/algos/list/MPU').MultipartUploads,
-        },
+        list: require('./lib/algos/list/exportAlgos'),
         listTools: {
             DelimiterTools: require('./lib/algos/list/tools'),
         },
@@ -67,6 +59,7 @@ module.exports = {
             require('./lib/s3middleware/validateConditionalHeaders')
             .validateConditionalHeaders,
         MD5Sum: require('./lib/s3middleware/MD5Sum'),
+        NullStream: require('./lib/s3middleware/nullStream'),
         objectUtils: require('./lib/s3middleware/objectUtils'),
         azureHelper: {
             mpuUtils:
@@ -79,12 +72,36 @@ module.exports = {
     },
     storage: {
         metadata: {
-            MetadataFileServer:
-            require('./lib/storage/metadata/file/MetadataFileServer'),
-            MetadataFileClient:
-            require('./lib/storage/metadata/file/MetadataFileClient'),
-            LogConsumer:
-            require('./lib/storage/metadata/bucketclient/LogConsumer'),
+            MetadataWrapper: require('./lib/storage/metadata/MetadataWrapper'),
+            bucketclient: {
+                BucketClientInterface:
+                require('./lib/storage/metadata/bucketclient/' +
+                    'BucketClientInterface'),
+                LogConsumer:
+                require('./lib/storage/metadata/bucketclient/LogConsumer'),
+            },
+            file: {
+                BucketFileInterface:
+                require('./lib/storage/metadata/file/BucketFileInterface'),
+                MetadataFileServer:
+                require('./lib/storage/metadata/file/MetadataFileServer'),
+                MetadataFileClient:
+                require('./lib/storage/metadata/file/MetadataFileClient'),
+            },
+            inMemory: {
+                metastore:
+                require('./lib/storage/metadata/in_memory/metastore'),
+                metadata: require('./lib/storage/metadata/in_memory/metadata'),
+                bucketUtilities:
+                require('./lib/storage/metadata/in_memory/bucket_utilities'),
+            },
+            mongoclient: {
+                MongoClientInterface:
+                require('./lib/storage/metadata/mongoclient/' +
+                    'MongoClientInterface'),
+                LogConsumer:
+                require('./lib/storage/metadata/mongoclient/LogConsumer'),
+            },
         },
         data: {
             file: {
@@ -102,12 +119,17 @@ module.exports = {
         WebsiteConfiguration: require('./lib/models/WebsiteConfiguration'),
         ReplicationConfiguration:
           require('./lib/models/ReplicationConfiguration'),
+        LifecycleConfiguration:
+            require('./lib/models/LifecycleConfiguration'),
     },
     metrics: {
         StatsClient: require('./lib/metrics/StatsClient'),
         RedisClient: require('./lib/metrics/RedisClient'),
     },
+    pensieve: {
+        credentialUtils: require('./lib/executables/pensieveCreds/utils'),
+        forward/orbit
+    },
     monitoring: {
         LiveMonitoring: require('./lib/monitoring/monitoringClientInterface'),
-    },
 };
