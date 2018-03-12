@@ -128,7 +128,6 @@ module.exports = {
     },
     pensieve: {
         credentialUtils: require('./lib/executables/pensieveCreds/utils'),
-        forward/orbit
     },
     monitoring: {
         LiveMonitoring: require('./lib/monitoring/monitoringClientInterface'),
