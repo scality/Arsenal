@@ -131,4 +131,5 @@ module.exports = {
     },
     monitoring: {
         LiveMonitoring: require('./lib/monitoring/monitoringClientInterface'),
+    },
 };
