@@ -220,6 +220,10 @@
     "code": 400,
     "description": "Request body is empty"
   },
+  "MissingRequiredParameter": {
+    "code": 400,
+    "description": "Your request is missing a required parameter."
+  },
   "MissingSecurityElement": {
     "code": 400,
     "description": "The SOAP 1.1 request is missing a security element."
