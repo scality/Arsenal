@@ -115,6 +115,8 @@ const testLifecycleConfiguration = {
         },
     ],
 };
+
+const testUid = '0e951060-6647-49cb-9852-42f9808b89c5';
 // create a dummy bucket to test getters and setters
 
 Object.keys(acl).forEach(
@@ -132,7 +134,8 @@ Object.keys(acl).forEach(
             testWebsiteConfiguration,
             testCorsConfiguration,
             testReplicationConfiguration,
-            testLifecycleConfiguration);
+            testLifecycleConfiguration,
+            testUid);
 
         describe('serialize/deSerialize on BucketInfo class', () => {
             const serialized = dummyBucket.serialize();
@@ -158,6 +161,7 @@ Object.keys(acl).forEach(
                         dummyBucket._replicationConfiguration,
                     lifecycleConfiguration:
                         dummyBucket._lifecycleConfiguration,
+                    uid: dummyBucket._uid,
                 };
                 assert.strictEqual(serialized, JSON.stringify(bucketInfos));
                 done();
@@ -182,6 +186,7 @@ Object.keys(acl).forEach(
                                       'string');
                    assert.strictEqual(typeof dummyBucket.getCreationDate(),
                                       'string');
+                   assert.strictEqual(typeof dummyBucket.getUid(), 'string');
                });
             it('this should have the right acl\'s types', () => {
                 assert.strictEqual(typeof dummyBucket.getAcl(), 'object');
@@ -256,6 +261,9 @@ Object.keys(acl).forEach(
             it('getLifeCycleConfiguration should return configuration', () => {
                 assert.deepStrictEqual(dummyBucket.getLifecycleConfiguration(),
                     testLifecycleConfiguration);
+            });
+            it('getUid should return the correct uid', () => {
+                assert.deepStrictEqual(dummyBucket.getUid(), testUid);
             });
         });
 
@@ -381,3 +389,25 @@ Object.keys(acl).forEach(
         });
     })
 );
+
+describe('uid default', () => {
+    it('should not set uid if none is specified by constructor params', () => {
+        const dummyBucket = new BucketInfo(
+            bucketName, owner, ownerDisplayName, testDate,
+            BucketInfo.currentModelVersion(), acl[emptyAcl],
+            false, false, {
+                cryptoScheme: 1,
+                algorithm: 'sha1',
+                masterKeyId: 'somekey',
+                mandatory: true,
+            }, testVersioningConfiguration,
+            testLocationConstraint,
+            testWebsiteConfiguration,
+            testCorsConfiguration,
+            testReplicationConfiguration,
+            testLifecycleConfiguration);
+
+        const defaultUid = dummyBucket.getUid();
+        assert.strictEqual(defaultUid, undefined);
+    });
+});
