@@ -136,6 +136,24 @@ describe('ObjectMD class setters/getters', () => {
         }]);
     });
 
+    it('ObjectMD::setReplicationBackends', () => {
+        md.setReplicationBackends([{
+            site: 'a',
+            status: 'b',
+            dataStoreVersionId: 'c',
+        }]);
+        assert.deepStrictEqual(md.getReplicationBackends(), [{
+            site: 'a',
+            status: 'b',
+            dataStoreVersionId: 'c',
+        }]);
+    });
+
+    it('ObjectMD::setReplicationStorageClass', () => {
+        md.setReplicationStorageClass('a');
+        assert.strictEqual(md.getReplicationStorageClass(), 'a');
+    });
+
     it('ObjectMD::getReplicationSiteStatus', () => {
         md.setReplicationInfo({
             backends: [{
