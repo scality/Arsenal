@@ -387,6 +387,10 @@
     "code": 409,
     "description": "The request was rejected because it attempted to create a resource that already exists."
   },
+  "KeyAlreadyExists": {
+    "code": 409,
+    "description": "The request was rejected because it attempted to create a resource that already exists."
+  },
   "ServiceFailure": {
     "code": 500,
     "description": "Server error: the request processing has failed because of an unknown error, exception or failure."
