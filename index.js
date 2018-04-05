@@ -105,6 +105,9 @@ module.exports = {
                 LogConsumer:
                 require('./lib/storage/metadata/mongoclient/LogConsumer'),
             },
+            proxy: {
+                Server: require('./lib/storage/metadata/proxy/Server'),
+            },
         },
         data: {
             file: {
