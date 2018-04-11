@@ -7,6 +7,7 @@ const {
     _checkEtagNoneMatch,
     _checkModifiedSince,
     _checkUnmodifiedSince,
+    checkDateModifiedHeaders,
     validateConditionalHeaders,
 } = require('../../../lib/s3middleware/validateConditionalHeaders');
 
@@ -169,6 +170,59 @@ describe('validateConditionalHeaders util function ::', () => {
         combinedCases.forEach(testCase => {
             checkCaseResult(testCase);
         });
+    });
+});
+
+describe('checkDateModifiedHeaders util function: ', () => {
+    const expectedSuccess = {
+        present: true,
+        error: null,
+    };
+
+    const expectedAbsense = {
+        present: false,
+        error: null,
+    };
+
+    it('should return NotModified error for \'if-modified-since\' header',
+    () => {
+        const header = {};
+        header['if-modified-since'] = afterLastModified;
+        const { modifiedSinceRes, unmodifiedSinceRes } =
+            checkDateModifiedHeaders(header, lastModified);
+        assert.deepStrictEqual(modifiedSinceRes.error, errors.NotModified);
+        assert.deepStrictEqual(unmodifiedSinceRes, expectedAbsense);
+    });
+
+    it('should return PreconditionFailed error for \'if-unmodified-since\' ' +
+    'header', () => {
+        const header = {};
+        header['if-unmodified-since'] = beforeLastModified;
+        const { modifiedSinceRes, unmodifiedSinceRes } =
+            checkDateModifiedHeaders(header, lastModified);
+        assert.deepStrictEqual(unmodifiedSinceRes.error,
+            errors.PreconditionFailed);
+        assert.deepStrictEqual(modifiedSinceRes, expectedAbsense);
+    });
+
+    it('should succeed if \'if-modified-since\' header value is earlier ' +
+    'than last modified', () => {
+        const header = {};
+        header['if-modified-since'] = beforeLastModified;
+        const { modifiedSinceRes, unmodifiedSinceRes } =
+            checkDateModifiedHeaders(header, lastModified);
+        assert.deepStrictEqual(modifiedSinceRes, expectedSuccess);
+        assert.deepStrictEqual(unmodifiedSinceRes, expectedAbsense);
+    });
+
+    it('should succeed if \'if-unmodified-since\' header value is later ' +
+    'than last modified', () => {
+        const header = {};
+        header['if-unmodified-since'] = afterLastModified;
+        const { modifiedSinceRes, unmodifiedSinceRes } =
+            checkDateModifiedHeaders(header, lastModified);
+        assert.deepStrictEqual(unmodifiedSinceRes, expectedSuccess);
+        assert.deepStrictEqual(modifiedSinceRes, expectedAbsense);
     });
 });
 

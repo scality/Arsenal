@@ -63,6 +63,9 @@ module.exports = {
         convertToXml: require('./lib/s3middleware/convertToXml'),
         escapeForXml: require('./lib/s3middleware/escapeForXml'),
         tagging: require('./lib/s3middleware/tagging'),
+        checkDateModifiedHeaders:
+            require('./lib/s3middleware/validateConditionalHeaders')
+            .checkDateModifiedHeaders,
         validateConditionalHeaders:
             require('./lib/s3middleware/validateConditionalHeaders')
             .validateConditionalHeaders,
