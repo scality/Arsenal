@@ -127,9 +127,14 @@ module.exports = {
     },
     metrics: {
         StatsClient: require('./lib/metrics/StatsClient'),
+        StatsModel: require('./lib/metrics/StatsModel'),
         RedisClient: require('./lib/metrics/RedisClient'),
     },
     pensieve: {
         credentialUtils: require('./lib/executables/pensieveCreds/utils'),
+    },
+    backbeat: {
+        Metrics: require('./lib/backbeat/Metrics'),
+        routes: require('./lib/backbeat/routes'),
     },
 };
