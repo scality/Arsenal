@@ -116,7 +116,7 @@ const testLifecycleConfiguration = {
     ],
 };
 
-const testUid = '0e951060-6647-49cb-9852-42f9808b89c5';
+const testUid = '99ae3446-7082-4c17-ac97-52965dc004ec';
 // create a dummy bucket to test getters and setters
 
 Object.keys(acl).forEach(
@@ -262,7 +262,7 @@ Object.keys(acl).forEach(
                 assert.deepStrictEqual(dummyBucket.getLifecycleConfiguration(),
                     testLifecycleConfiguration);
             });
-            it('getUid should return the correct uid', () => {
+            it('getUid should return unique id of bucket', () => {
                 assert.deepStrictEqual(dummyBucket.getUid(), testUid);
             });
         });
@@ -336,8 +336,7 @@ Object.keys(acl).forEach(
                         protocol: 'https',
                     },
                 };
-                dummyBucket
-                    .setWebsiteConfiguration(newWebsiteConfiguration);
+                dummyBucket.setWebsiteConfiguration(newWebsiteConfiguration);
                 assert.deepStrictEqual(dummyBucket.getWebsiteConfiguration(),
                     newWebsiteConfiguration);
             });
@@ -391,7 +390,7 @@ Object.keys(acl).forEach(
 );
 
 describe('uid default', () => {
-    it('should not set uid if none is specified by constructor params', () => {
+    it('should set uid if none is specified by constructor params', () => {
         const dummyBucket = new BucketInfo(
             bucketName, owner, ownerDisplayName, testDate,
             BucketInfo.currentModelVersion(), acl[emptyAcl],
@@ -408,6 +407,7 @@ describe('uid default', () => {
             testLifecycleConfiguration);
 
         const defaultUid = dummyBucket.getUid();
-        assert.strictEqual(defaultUid, undefined);
+        assert(defaultUid);
+        assert.strictEqual(defaultUid.length, 36);
     });
 });
