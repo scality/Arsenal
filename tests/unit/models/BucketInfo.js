@@ -59,6 +59,7 @@ const testWebsiteConfiguration = new WebsiteConfiguration({
 });
 
 const testLocationConstraint = 'us-west-1';
+const testReadLocationConstraint = 'us-west-2';
 
 const testCorsConfiguration = [
     { id: 'test',
@@ -154,6 +155,7 @@ Object.keys(acl).forEach(
                     versioningConfiguration:
                         dummyBucket._versioningConfiguration,
                     locationConstraint: dummyBucket._locationConstraint,
+                    readLocationConstraint: dummyBucket._readLocationConstraint,
                     websiteConfiguration: dummyBucket._websiteConfiguration
                         .getConfig(),
                     cors: dummyBucket._cors,
@@ -253,6 +255,18 @@ Object.keys(acl).forEach(
             it('getLocationConstraint should return locationConstraint', () => {
                 assert.deepStrictEqual(dummyBucket.getLocationConstraint(),
                 testLocationConstraint);
+            });
+            it('getReadLocationConstraint should return locationConstraint ' +
+            'if readLocationConstraint hasn\'t been set', () => {
+                assert.deepStrictEqual(dummyBucket.getReadLocationConstraint(),
+                testLocationConstraint);
+            });
+            it('getReadLocationConstraint should return readLocationConstraint',
+            () => {
+                dummyBucket._readLocationConstraint =
+                    testReadLocationConstraint;
+                assert.deepStrictEqual(dummyBucket.getReadLocationConstraint(),
+                testReadLocationConstraint);
             });
             it('getCors should return CORS configuration', () => {
                 assert.deepStrictEqual(dummyBucket.getCors(),
