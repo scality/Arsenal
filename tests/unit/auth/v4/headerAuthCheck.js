@@ -282,4 +282,20 @@ describe('v4 headerAuthCheck', () => {
         assert.strictEqual(res.err, null);
         done();
     });
+
+    it('should return InvalidRequest error if proxy_path header is invalid',
+    done => {
+        // Freezes time so date created within function will be Feb 8, 2016
+        const clock = lolex.install(1454962445000);
+        /* eslint-disable camelcase */
+        const alteredRequest = createAlteredRequest({
+            proxy_path: 'absc%2proxy/1234' }, 'headers', request, headers);
+        /* eslint-enable camelcase */
+        const res = headerAuthCheck(alteredRequest, log);
+        clock.uninstall();
+        assert.deepStrictEqual(res.err,
+            errors.InvalidArgument.customizeDescription(
+            'invalid proxy_path header'));
+        done();
+    });
 });

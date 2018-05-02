@@ -225,4 +225,34 @@ describe('v4 queryAuthCheck', () => {
         assert.strictEqual(res.params.version, 4);
         done();
     });
+
+    it('should successfully return no error if proxy_path header is added',
+    done => {
+        // Freezes time so date created within function will be Feb 8, 2016
+        const clock = lolex.install(1454974984001);
+        /* eslint-disable camelcase */
+        const alteredRequest = createAlteredRequest({ proxy_path:
+        'proxy/1234' }, 'headers', request, query);
+        /* eslint-enable camelcase */
+        const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
+        clock.uninstall();
+        assert.deepStrictEqual(res.err, null);
+        done();
+    });
+
+    it('should return InvalidRequest error if proxy_path header is invalid',
+    done => {
+        // Freezes time so date created within function will be Feb 8, 2016
+        const clock = lolex.install(1454974984001);
+        /* eslint-disable camelcase */
+        const alteredRequest = createAlteredRequest({ proxy_path:
+        'absc%2proxy/1234' }, 'headers', request, query);
+        /* eslint-enable camelcase */
+        const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
+        clock.uninstall();
+        assert.deepStrictEqual(res.err,
+            errors.InvalidArgument.customizeDescription(
+            'invalid proxy_path header'));
+        done();
+    });
 });
