@@ -68,8 +68,8 @@ describe('Metrics class', () => {
                         ' operations in ops/sec (count) and bytes/sec (size) ' +
                         'in the last 900 seconds',
                     results: {
-                        count: 'NaN',
-                        size: 'NaN',
+                        count: '0.00',
+                        size: '0.00',
                     },
                 },
             };
