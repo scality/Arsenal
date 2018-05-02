@@ -67,8 +67,8 @@ describe('Metrics class', () => {
                     description: 'Current throughput for replication' +
                         ' operations in ops/sec (count) and MB/sec (size)',
                     results: {
-                        count: 'NaN',
-                        size: 'NaN',
+                        count: '0.00',
+                        size: '0.00',
                     },
                 },
             };
