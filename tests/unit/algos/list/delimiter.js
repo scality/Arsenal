@@ -372,34 +372,3 @@ describe('Delimiter listing algorithm', () => {
            assert.deepStrictEqual(res, test.output);
        });
 });
-
-describe('delimiter::genMDParams', () => {
-    const tests = [
-        {
-            msg: 'should return correct MD listing params, ' +
-            'without specifying maxKeys',
-            params: {},
-            output: { limit: 1000 },
-        },
-        {
-            msg: 'should return correct MD listing params, with maxKeys < 1000',
-            params: { maxKeys: 100 },
-            output: { limit: 100 },
-        },
-        {
-            msg: 'shoud return correct MD listing params, with maxKeys > 1000',
-            params: { maxKeys: 1001 },
-            output: { limit: 1001 },
-        },
-        {
-            msg: 'should return correct MD listing params, ' +
-            'with maxKeys > 10000, listing hard limit',
-            params: { maxKeys: 10001 },
-            output: { limit: 10000 },
-        },
-    ];
-    tests.forEach(test => it(test.msg, () => {
-        const delimiter = new Delimiter(test.params);
-        assert.deepStrictEqual(delimiter.genMDParams(), test.output);
-    }));
-});
