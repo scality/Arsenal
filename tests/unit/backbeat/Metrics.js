@@ -47,25 +47,26 @@ describe('Metrics class', () => {
             const expected = {
                 backlog: {
                     description: 'Number of incomplete replication operations' +
-                        ' (count) and number of incomplete MB transferred' +
+                        ' (count) and number of incomplete bytes transferred' +
                         ' (size)',
                     results: {
                         count: 0,
-                        size: '0.00',
+                        size: 0,
                     },
                 },
                 completions: {
                     description: 'Number of completed replication operations' +
-                        ' (count) and number of MB transferred (size) in the ' +
-                        'last 900 seconds',
+                        ' (count) and number of bytes transferred (size) in ' +
+                        'the last 900 seconds',
                     results: {
                         count: 0,
-                        size: '0.00',
+                        size: 0,
                     },
                 },
                 throughput: {
                     description: 'Current throughput for replication' +
-                        ' operations in ops/sec (count) and MB/sec (size)',
+                        ' operations in ops/sec (count) and bytes/sec (size) ' +
+                        'in the last 900 seconds',
                     results: {
                         count: 'NaN',
                         size: 'NaN',
