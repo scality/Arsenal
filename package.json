@@ -3,7 +3,7 @@
   "engines": {
     "node": ">=6.9.5"
   },
-  "version": "1.0.0-zenko",
+  "version": "8.0.0",
   "description": "Common utilities for the S3 project components",
   "main": "index.js",
   "repository": {
@@ -35,7 +35,7 @@
     "socket.io-client": "~1.7.3",
     "utf8": "2.1.2",
     "uuid": "^3.0.1",
-    "werelogs": "scality/werelogs",
+    "werelogs": "scality/werelogs#development/8.0",
     "xml2js": "~0.4.16"
   },
   "optionalDependencies": {
@@ -45,7 +45,7 @@
     "eslint": "2.13.1",
     "eslint-plugin-react": "^4.3.0",
     "eslint-config-airbnb": "6.2.0",
-    "eslint-config-scality": "scality/Guidelines",
+    "eslint-config-scality": "scality/Guidelines#development/8.0",
     "lolex": "1.5.2",
     "mocha": "2.5.3",
     "temp": "0.8.3"
