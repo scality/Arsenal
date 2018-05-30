@@ -3,14 +3,14 @@
   "engines": {
     "node": ">=6.9.5"
   },
-  "version": "7.4.0",
+  "version": "1.0.0-zenko",
   "description": "Common utilities for the S3 project components",
   "main": "index.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/scality/Arsenal.git"
   },
-  "author": "Giorgio Regni",
+  "author": "Scality Inc.",
   "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/scality/Arsenal/issues"
