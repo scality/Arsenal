@@ -7,7 +7,8 @@ const DelimiterMaster =
     require('../../../../lib/algos/list/delimiterMaster').DelimiterMaster;
 const Werelogs = require('werelogs').Logger;
 const logger = new Werelogs('listTest');
-const performListing = require('../../../utils/performListing');
+const { performListing, performListingExtended } =
+    require('../../../utils/performListing');
 const zpad = require('../../helpers').zpad;
 
 class Test {
@@ -371,4 +372,47 @@ describe('Delimiter listing algorithm', () => {
            res = performListing(d, Delimiter, test.input, logger);
            assert.deepStrictEqual(res, test.output);
        });
+
+    it('Should interrupt listing if greater value than the prefix is found',
+        done => {
+            const data = [
+                { key: '/tata.txt', value },
+                { key: '/toto/titi/doggy', value },
+                { key: '/toto/titi/tata', value },
+                { key: '/toto/titi/tutu', value },
+                { key: '/toto/tutu', value },
+                { key: '/tutu.txt', value },
+            ];
+            const test = new Test('interrupt on greater than prefix', {
+                delimiter: '/',
+                alphabeticalOrder: true,
+                prefix: '/toto/titi/',
+                // This marker simulates the bug from MD-653,
+                // Where a marker is set to a wrong, further-on value, and
+                // the listing was not interrupted despite that.
+                marker: '/toto/titi',
+                maxKeys: 10,
+            }, {
+                CommonPrefixes: [],
+                Contents: [
+                    { key: '/toto/titi/doggy', value },
+                    { key: '/toto/titi/tata', value },
+                    { key: '/toto/titi/tutu', value },
+                ],
+                Delimiter: '/',
+                IsTruncated: false,
+                NextMarker: undefined,
+            });
+
+            const { res, counters } =
+                performListingExtended(data, Delimiter, test.input, logger);
+            assert.deepStrictEqual(res, test.output);
+            assert.strictEqual(counters.accepted, 3,
+                               'Expected 3 accepted entries');
+            assert.strictEqual(counters.skipped, 1,
+                               'Expected 1 skipped entries');
+            assert.strictEqual(counters.ended, 1,
+                               'Expected 1 ended event');
+            return done();
+        });
 });
