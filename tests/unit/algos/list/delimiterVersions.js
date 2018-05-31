@@ -5,7 +5,7 @@ const DelimiterVersions =
     require('../../../../lib/algos/list/delimiterVersions').DelimiterVersions;
 const Werelogs = require('werelogs').Logger;
 const logger = new Werelogs('listTest');
-const performListing = require('../../../utils/performListing');
+const { performListing } = require('../../../utils/performListing');
 const zpad = require('../../helpers').zpad;
 
 class Test {
