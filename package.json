@@ -1,59 +1,59 @@
 {
-  "name": "arsenal",
-  "engines": {
-    "node": ">=6.9.5"
-  },
-  "version": "7.4.0",
-  "description": "Common utilities for the S3 project components",
-  "main": "index.js",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/scality/Arsenal.git"
-  },
-  "author": "Giorgio Regni",
-  "license": "Apache-2.0",
-  "bugs": {
-    "url": "https://github.com/scality/Arsenal/issues"
-  },
-  "homepage": "https://github.com/scality/Arsenal#readme",
-  "dependencies": {
-    "ajv": "4.10.0",
-    "async": "~2.1.5",
-    "debug": "~2.3.3",
-    "diskusage": "^0.2.2",
-    "ioredis": "2.4.0",
-    "ipaddr.js": "1.2.0",
-    "joi": "^10.6",
-    "JSONStream": "^1.0.0",
-    "level": "~1.6.0",
-    "level-sublevel": "~6.6.1",
-    "node-forge": "^0.7.1",
-    "simple-glob": "^0.1",
-    "socket.io": "~1.7.3",
-    "socket.io-client": "~1.7.3",
-    "utf8": "2.1.2",
-    "uuid": "^3.0.1",
-    "werelogs": "scality/werelogs#rel/7.4",
-    "xml2js": "~0.4.16"
-  },
-  "optionalDependencies": {
-    "ioctl": "2.0.0"
-  },
-  "devDependencies": {
-    "eslint": "2.13.1",
-    "eslint-plugin-react": "^4.3.0",
-    "eslint-config-airbnb": "6.2.0",
-    "eslint-config-scality": "scality/Guidelines#rel/7.4",
-    "lolex": "1.5.2",
-    "mocha": "2.5.3",
-    "temp": "0.8.3"
-  },
-  "scripts": {
-    "lint": "eslint $(git ls-files '*.js')",
-    "lint_md": "mdlint $(git ls-files '*.md')",
-    "lint_yml": "yamllint $(git ls-files '*.yml')",
-    "test": "mocha --recursive --timeout 5500 tests/unit",
-    "ft_test": "find tests/functional -name \"*.js\" | grep -v \"utils/\" | xargs mocha --timeout 120000"
-  },
-  "private": true
+    "name": "arsenal",
+    "engines": {
+        "node": ">=6.9.5"
+    },
+    "version": "7.4.0.1",
+    "description": "Common utilities for the S3 project components",
+    "main": "index.js",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/scality/Arsenal.git"
+    },
+    "author": "Giorgio Regni",
+    "license": "Apache-2.0",
+    "bugs": {
+        "url": "https://github.com/scality/Arsenal/issues"
+    },
+    "homepage": "https://github.com/scality/Arsenal#readme",
+    "dependencies": {
+        "ajv": "4.10.0",
+        "async": "~2.1.5",
+        "debug": "~2.3.3",
+        "diskusage": "^0.2.2",
+        "ioredis": "2.4.0",
+        "ipaddr.js": "1.2.0",
+        "joi": "^10.6",
+        "JSONStream": "^1.0.0",
+        "level": "~1.6.0",
+        "level-sublevel": "~6.6.1",
+        "node-forge": "^0.7.1",
+        "simple-glob": "^0.1",
+        "socket.io": "~1.7.3",
+        "socket.io-client": "~1.7.3",
+        "utf8": "2.1.2",
+        "uuid": "^3.0.1",
+        "werelogs": "scality/werelogs#hotfix/7.4.0",
+        "xml2js": "~0.4.16"
+    },
+    "optionalDependencies": {
+        "ioctl": "2.0.0"
+    },
+    "devDependencies": {
+        "eslint": "2.13.1",
+        "eslint-plugin-react": "^4.3.0",
+        "eslint-config-airbnb": "6.2.0",
+        "eslint-config-scality": "scality/Guidelines#hotfix/7.4.0",
+        "lolex": "1.5.2",
+        "mocha": "2.5.3",
+        "temp": "0.8.3"
+    },
+    "scripts": {
+        "lint": "eslint $(git ls-files '*.js')",
+        "lint_md": "mdlint $(git ls-files '*.md')",
+        "lint_yml": "yamllint $(git ls-files '*.yml')",
+        "test": "mocha --recursive --timeout 5500 tests/unit",
+        "ft_test": "find tests/functional -name \"*.js\" | grep -v \"utils/\" | xargs mocha --timeout 120000"
+    },
+    "private": true
 }
