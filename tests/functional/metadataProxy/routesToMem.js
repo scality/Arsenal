@@ -229,4 +229,48 @@ describe('Basic Metadata Proxy Server CRUD test', function bindToThis() {
             done(err);
         });
     });
+
+    it('Should update bucket properties', done => {
+        dispatcher.get(
+            `/default/attributes/${Bucket}`, (err, response, body) => {
+                assert.strictEqual(err, null);
+                const bucketInfo = body;
+                const newOwnerDisplayName = 'divertedfrom';
+                bucketInfo.ownerDisplayName = newOwnerDisplayName;
+                dispatcher.post(
+                    `/default/attributes/${Bucket}`, bucketInfo, err => {
+                        assert.strictEqual(err, null);
+                        dispatcher.get(
+                            `/default/attributes/${Bucket}`,
+                            (err, response, body) => {
+                                assert.strictEqual(err, null);
+                                const newBucketInfo = body;
+                                assert.strictEqual(
+                                    newBucketInfo.ownerDisplayName,
+                                    newOwnerDisplayName);
+                                done(null);
+                            });
+                    });
+            });
+    });
+
+    it('Should fail to list a non existing bucket', done => {
+        dispatcher.get('/default/bucket/nonexisting',
+                       (err, response) => {
+                           assert.strictEqual(
+                               response.responseHead.statusCode,
+                               404);
+                           done(err);
+                       });
+    });
+
+    it('Should fail to get attributes from a non existing bucket', done => {
+        dispatcher.get('/default/attributes/nonexisting',
+                       (err, response) => {
+                           assert.strictEqual(
+                               response.responseHead.statusCode,
+                               404);
+                           done(err);
+                       });
+    });
 });
