@@ -136,7 +136,7 @@ Object.keys(acl).forEach(
             testCorsConfiguration,
             testReplicationConfiguration,
             testLifecycleConfiguration,
-            testUid);
+            testUid, undefined, true);
 
         describe('serialize/deSerialize on BucketInfo class', () => {
             const serialized = dummyBucket.serialize();
@@ -164,6 +164,7 @@ Object.keys(acl).forEach(
                     lifecycleConfiguration:
                         dummyBucket._lifecycleConfiguration,
                     uid: dummyBucket._uid,
+                    isNFS: dummyBucket._isNFS,
                 };
                 assert.strictEqual(serialized, JSON.stringify(bucketInfos));
                 done();
@@ -278,6 +279,13 @@ Object.keys(acl).forEach(
             });
             it('getUid should return unique id of bucket', () => {
                 assert.deepStrictEqual(dummyBucket.getUid(), testUid);
+            });
+            it('isNFS should return whether bucket is on NFS', () => {
+                assert.deepStrictEqual(dummyBucket.isNFS(), true);
+            });
+            it('setIsNFS should set whether bucket is on NFS', () => {
+                dummyBucket.setIsNFS(false);
+                assert.deepStrictEqual(dummyBucket.isNFS(), false);
             });
         });
 

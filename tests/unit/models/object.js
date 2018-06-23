@@ -82,6 +82,7 @@ describe('ObjectMD class setters/getters', () => {
             role: '',
             storageType: '',
             dataStoreVersionId: '',
+            isNFS: null,
         }],
         ['ReplicationInfo', {
             status: 'PENDING',
@@ -97,8 +98,11 @@ describe('ObjectMD class setters/getters', () => {
                 'arn:aws:iam::account-id:role/dest-resource',
             storageType: 'aws_s3',
             dataStoreVersionId: '',
+            isNFS: null,
         }],
         ['DataStoreName', null, ''],
+        ['ReplicationIsNFS', null, null],
+        ['ReplicationIsNFS', true],
     ].forEach(test => {
         const property = test[0];
         const testValue = test[1];
