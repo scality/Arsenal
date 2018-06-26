@@ -45,6 +45,10 @@ module.exports = {
             RESTClient: require('./lib/network/rest/RESTClient'),
         },
         RoundRobin: require('./lib/network/RoundRobin'),
+        probe: {
+            HealthProbeServer:
+                require('./lib/network/probe/HealthProbeServer.js'),
+        },
     },
     s3routes: {
         routes: require('./lib/s3routes/routes'),
