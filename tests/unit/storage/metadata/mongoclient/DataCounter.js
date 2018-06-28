@@ -76,26 +76,35 @@ const refMultiObj = {
     },
 };
 
-// eslint-disable-next-line quote-props
 const singleSite = size => ({
     'content-length': size,
-    dataStoreName: 'locationOne',
-    replicationInfo: {
+    'dataStoreName': 'locationOne',
+    'replicationInfo': {
         backends: [],
     },
 });
 
-// eslint-disable-next-line quote-props
 const multiSite = (size, isComplete) => ({
     'content-length': size,
-    dataStoreName: 'locationOne',
-    replicationInfo: {
+    'dataStoreName': 'locationOne',
+    'replicationInfo': {
         backends: [{
             site: 'locationTwo',
             status: isComplete ? 'COMPLETED' : 'PENDING',
         }],
     },
 });
+
+const transientSite = (size, status, backends) => ({
+    'content-length': size,
+    'dataStoreName': 'locationOne',
+    'replicationInfo': { status, backends },
+});
+
+const locationConstraints = {
+    locationOne: { isTransient: true },
+    locationTwo: { isTransient: false },
+};
 
 const dataCounter = new DataCounter();
 
@@ -109,6 +118,16 @@ describe('DataCounter Class', () => {
         const testCounter = new DataCounter();
         testCounter.addObject(singleSite(100), null, NEW_OBJ);
         assert.deepStrictEqual(testCounter.results(), refZeroObj);
+    });
+});
+
+describe('DateCounter::updateTransientList', () => {
+    afterEach(() => dataCounter.updateTransientList({}));
+    it('should set transient list', () => {
+        assert.deepStrictEqual(dataCounter.transientList, {});
+        dataCounter.updateTransientList(locationConstraints);
+        const expectedRes = { locationOne: true, locationTwo: false };
+        assert.deepStrictEqual(dataCounter.transientList, expectedRes);
     });
 });
 
@@ -265,6 +284,106 @@ describe('DataCounter::addObject', () => {
         },
     ];
     tests.forEach(test => it(test.it, () => {
+        const { expectedRes, input, init } = test;
+        dataCounter.set(init);
+        dataCounter.addObject(...input);
+        const testResults = dataCounter.results();
+        Object.keys(expectedRes).forEach(key => {
+            if (typeof expectedRes[key] === 'object') {
+                assert.deepStrictEqual(testResults[key], expectedRes[key]);
+            } else {
+                assert.strictEqual(testResults[key], expectedRes[key]);
+            }
+        });
+    }));
+});
+
+describe('DataCounter, update with transient location', () => {
+    before(() => dataCounter.updateTransientList(locationConstraints));
+    after(() => dataCounter.updateTransientList({}));
+
+    const pCurrMD = transientSite(100, 'PENDING', [
+        { site: 'site1', status: 'PENDING' },
+        { site: 'site2', status: 'COMPLETED' },
+    ]);
+    const cCurrMD = transientSite(100, 'COMPLETED', [
+        { site: 'site1', status: 'COMPLETED' },
+        { site: 'site2', status: 'COMPLETED' },
+    ]);
+    const prevMD = transientSite(100, 'PENDING', [
+        { site: 'site1', status: 'PENDING' },
+        { site: 'site2', status: 'PENDING' },
+    ]);
+    const transientTest = [
+        {
+            it: 'should correctly update DataCounter, ' +
+            'version object, replication status = PENDING',
+            init: refSingleObjVer,
+            input: [pCurrMD, prevMD, UPDATE_VER],
+            expectedRes: {
+                objects: 1, versions: 1,
+                dataManaged: {
+                    total: { curr: 100, prev: 200 },
+                    byLocation: {
+                        locationOne: { curr: 100, prev: 100 },
+                        site2: { curr: 0, prev: 100 },
+                    },
+                },
+            },
+        },
+        {
+            it: 'should correctly update DataCounter, ' +
+            'version object, replication status = COMPLETED',
+            init: refSingleObjVer,
+            input: [cCurrMD, prevMD, UPDATE_VER],
+            expectedRes: {
+                objects: 1, versions: 1,
+                dataManaged: {
+                    total: { curr: 100, prev: 200 },
+                    byLocation: {
+                        locationOne: { curr: 100, prev: 0 },
+                        site1: { curr: 0, prev: 100 },
+                        site2: { curr: 0, prev: 100 },
+                    },
+                },
+            },
+        },
+        {
+            it: 'should correctly update DataCounter, ' +
+            'master object, replication status = PENDING',
+            init: refSingleObjVer,
+            input: [pCurrMD, prevMD, UPDATE_MST],
+            expectedRes: {
+                objects: 1, versions: 1,
+                dataManaged: {
+                    total: { curr: 200, prev: 100 },
+                    byLocation: {
+                        locationOne: { curr: 100, prev: 100 },
+                        site2: { curr: 100, prev: 0 },
+                    },
+                },
+            },
+        },
+        {
+            it: 'should correctly update DataCounter, ' +
+            'master object, replication status = COMPLETED',
+            init: refSingleObjVer,
+            input: [cCurrMD, prevMD, UPDATE_MST],
+            expectedRes: {
+                objects: 1, versions: 1,
+                dataManaged: {
+                    total: { curr: 200, prev: 100 },
+                    byLocation: {
+                        locationOne: { curr: 0, prev: 100 },
+                        site1: { curr: 100, prev: 0 },
+                        site2: { curr: 100, prev: 0 },
+                    },
+                },
+            },
+        },
+    ];
+
+    transientTest.forEach(test => it(test.it, () => {
         const { expectedRes, input, init } = test;
         dataCounter.set(init);
         dataCounter.addObject(...input);

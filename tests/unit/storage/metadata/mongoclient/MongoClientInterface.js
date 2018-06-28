@@ -3,6 +3,7 @@ const assert = require('assert');
 const MongoClientInterface = require(
     '../../../../../lib/storage/metadata/mongoclient/MongoClientInterface');
 const DummyMongoDB = require('./utils/DummyMongoDB');
+const DummyConfigObject = require('./utils/DummyConfigObject');
 const DummyRequestLogger = require('./utils/DummyRequestLogger');
 const { generateMD } = require('./utils/helper');
 
@@ -65,6 +66,40 @@ function assertFailureResults(testParams, cb) {
         cb();
     });
 }
+
+describe('MongoClientInterface, init behavior', () => {
+    let s3ConfigObj;
+    const locationConstraints = {
+        locationOne: { isTransient: true },
+        locationTwo: { isTransient: false },
+    };
+
+    beforeEach(() => {
+        s3ConfigObj = new DummyConfigObject();
+    });
+
+    it('should set DataCounter transientList when declaring a ' +
+    'new MongoClientInterface object', () => {
+        s3ConfigObj.setLocationConstraints(locationConstraints);
+        const mongoClient = new MongoClientInterface({ config: s3ConfigObj });
+        const expectedRes = { locationOne: true, locationTwo: false };
+        assert.deepStrictEqual(
+            mongoClient.dataCount.transientList, expectedRes);
+    });
+
+    it('should update DataCounter transientList if location constraints ' +
+    'are updated', done => {
+        const mongoClient = new MongoClientInterface({ config: s3ConfigObj });
+        assert.deepStrictEqual(mongoClient.dataCount.transientList, {});
+        const expectedRes = { locationOne: true, locationTwo: false };
+        s3ConfigObj.once('MongoClientTestDone', () => {
+            assert.deepStrictEqual(
+                mongoClient.dataCount.transientList, expectedRes);
+            return done();
+        });
+        s3ConfigObj.setLocationConstraints(locationConstraints);
+    });
+});
 
 describe('MongoClientInterface::dataCount', () => {
     describe('MongoClientInterface::putObject', () => {
@@ -395,7 +430,7 @@ describe('MongoClientInterface::_handleMongo', () => {
         const retValues = [new Error('testError')];
         mongoTestClient.db.setReturnValues(retValues);
         const testCollection = mongoTestClient.db.collection('test');
-        mongoTestClient._handleMongo(testCollection, {}, log, err => {
+        mongoTestClient._handleMongo(testCollection, {}, false, log, err => {
             assert(err, 'Expected error, but got success');
             return done();
         });
@@ -403,7 +438,8 @@ describe('MongoClientInterface::_handleMongo', () => {
 
     it('should return empty object if mongo aggregate has no results', done => {
         const testCollection = mongoTestClient.db.collection('test');
-        mongoTestClient._handleMongo(testCollection, {}, log, (err, res) => {
+        mongoTestClient._handleMongo(testCollection, {}, false, log,
+        (err, res) => {
             assert.ifError(err, `Expected success, but got error ${err}`);
             assert.deepStrictEqual(res, {});
             return done();
@@ -419,35 +455,62 @@ describe('MongoClientInterface::_handleMongo', () => {
         }]];
         mongoTestClient.db.setReturnValues(retValues);
         const testCollection = mongoTestClient.db.collection('test');
-        mongoTestClient._handleMongo(testCollection, {}, log, (err, res) => {
+        mongoTestClient._handleMongo(testCollection, {}, false, log,
+        (err, res) => {
             assert.ifError(err, `Expected success, but got error ${err}`);
             assert.deepStrictEqual(res, {});
             return done();
         });
     });
 
-    it('should return correct results', done => {
-        const retValues = [[{
-            count: [{ _id: null, count: 100 }],
-            data: [
-                { _id: 'locationone', bytes: 1000 },
-                { _id: 'locationtwo', bytes: 1000 },
-            ],
-            repData: [
-                { _id: 'awsbackend', bytes: 500 },
-                { _id: 'azurebackend', bytes: 500 },
-                { _id: 'gcpbackend', bytes: 500 },
-            ],
-        }]];
-        mongoTestClient.db.setReturnValues(retValues);
+    const testRetValues = [[{
+        count: [{ _id: null, count: 100 }],
+        data: [
+            { _id: 'locationone', bytes: 1000 },
+            { _id: 'locationtwo', bytes: 1000 },
+        ],
+        repData: [
+            { _id: 'awsbackend', bytes: 500 },
+            { _id: 'azurebackend', bytes: 500 },
+            { _id: 'gcpbackend', bytes: 500 },
+        ],
+        compData: [
+            { _id: 'locationone', bytes: 500 },
+            { _id: 'locationtwo', bytes: 500 },
+        ],
+    }]];
+
+    it('should return correct results, transient false', done => {
+        mongoTestClient.db.setReturnValues(testRetValues);
         const testCollection = mongoTestClient.db.collection('test');
-        mongoTestClient._handleMongo(testCollection, {}, log, (err, res) => {
+        mongoTestClient._handleMongo(testCollection, {}, false, log,
+        (err, res) => {
             assert.ifError(err, `Expected success, but got error ${err}`);
             assert.deepStrictEqual(res, {
                 count: 100,
                 data: {
                     locationone: 1000,
                     locationtwo: 1000,
+                    awsbackend: 500,
+                    azurebackend: 500,
+                    gcpbackend: 500,
+                },
+            });
+            return done();
+        });
+    });
+
+    it('should return correct results, transient true', done => {
+        mongoTestClient.db.setReturnValues(testRetValues);
+        const testCollection = mongoTestClient.db.collection('test');
+        mongoTestClient._handleMongo(testCollection, {}, true, log,
+        (err, res) => {
+            assert.ifError(err, `Expected success, but got error ${err}`);
+            assert.deepStrictEqual(res, {
+                count: 100,
+                data: {
+                    locationone: 500,
+                    locationtwo: 500,
                     awsbackend: 500,
                     azurebackend: 500,
                     gcpbackend: 500,
