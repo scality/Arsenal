@@ -21,12 +21,12 @@
   "devDependencies": {
     "eslint": "2.13.1",
     "eslint-config-airbnb": "6.2.0",
-    "eslint-config-scality": "scality/Guidelines#GA6.4.7",
+    "eslint-config-scality": "scality/Guidelines#71a059ad",
     "level": "1.6.0",
     "lolex": "1.5.2",
     "mocha": "2.5.3",
     "temp": "0.8.3",
-    "werelogs": "scality/werelogs#GA6.4.7"
+    "werelogs": "scality/werelogs#40b92c54"
   },
   "scripts": {
     "lint": "eslint $(git ls-files '*.js')",
