@@ -13,6 +13,22 @@ class DummyCollection {
         this.retQueue.push(...retArray);
     }
 
+    aggregate() {
+        return {
+            toArray: cb => {
+                if (this.retQueue.length <= 0) {
+                    return cb(null, []);
+                }
+                const retVal = this.retQueue[0];
+                this.retQueue = this.retQueue.slice(1);
+                if (retVal instanceof Error) {
+                    return cb(retVal);
+                }
+                return cb(null, retVal);
+            },
+        };
+    }
+
     bulkWrite(cmds, opt, cb) {
         process.stdout.write('mock mongodb.bulkWrite call\n');
         if (this.fail) {

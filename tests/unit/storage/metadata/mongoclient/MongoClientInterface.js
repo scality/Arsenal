@@ -387,3 +387,73 @@ describe('MongoClientInterface::_handleResults', () => {
         assert.deepStrictEqual(testResults, expectedRes);
     });
 });
+
+describe('MongoClientInterface::_handleMongo', () => {
+    beforeEach(() => mongoTestClient.db.reset());
+
+    it('should return error if mongo aggregate fails', done => {
+        const retValues = [new Error('testError')];
+        mongoTestClient.db.setReturnValues(retValues);
+        const testCollection = mongoTestClient.db.collection('test');
+        mongoTestClient._handleMongo(testCollection, {}, log, err => {
+            assert(err, 'Expected error, but got success');
+            return done();
+        });
+    });
+
+    it('should return empty object if mongo aggregate has no results', done => {
+        const testCollection = mongoTestClient.db.collection('test');
+        mongoTestClient._handleMongo(testCollection, {}, log, (err, res) => {
+            assert.ifError(err, `Expected success, but got error ${err}`);
+            assert.deepStrictEqual(res, {});
+            return done();
+        });
+    });
+
+    it('should return empty object if mongo aggregate has missing results',
+    done => {
+        const retValues = [[{
+            count: undefined,
+            data: undefined,
+            repData: undefined,
+        }]];
+        mongoTestClient.db.setReturnValues(retValues);
+        const testCollection = mongoTestClient.db.collection('test');
+        mongoTestClient._handleMongo(testCollection, {}, log, (err, res) => {
+            assert.ifError(err, `Expected success, but got error ${err}`);
+            assert.deepStrictEqual(res, {});
+            return done();
+        });
+    });
+
+    it('should return correct results', done => {
+        const retValues = [[{
+            count: [{ _id: null, count: 100 }],
+            data: [
+                { _id: 'locationone', bytes: 1000 },
+                { _id: 'locationtwo', bytes: 1000 },
+            ],
+            repData: [
+                { _id: 'awsbackend', bytes: 500 },
+                { _id: 'azurebackend', bytes: 500 },
+                { _id: 'gcpbackend', bytes: 500 },
+            ],
+        }]];
+        mongoTestClient.db.setReturnValues(retValues);
+        const testCollection = mongoTestClient.db.collection('test');
+        mongoTestClient._handleMongo(testCollection, {}, log, (err, res) => {
+            assert.ifError(err, `Expected success, but got error ${err}`);
+            assert.deepStrictEqual(res, {
+                count: 100,
+                data: {
+                    locationone: 1000,
+                    locationtwo: 1000,
+                    awsbackend: 500,
+                    azurebackend: 500,
+                    gcpbackend: 500,
+                },
+            });
+            return done();
+        });
+    });
+});
