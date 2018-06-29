@@ -63,6 +63,14 @@ describe('Metrics class', () => {
                         size: 0,
                     },
                 },
+                failures: {
+                    description: 'Number of failed replication operations ' +
+                        '(count) and bytes (size) in the last 900 seconds',
+                    results: {
+                        count: 0,
+                        size: 0,
+                    },
+                },
                 throughput: {
                     description: 'Current throughput for replication' +
                         ' operations in ops/sec (count) and bytes/sec (size) ' +
