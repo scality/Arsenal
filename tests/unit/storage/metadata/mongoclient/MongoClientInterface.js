@@ -519,4 +519,40 @@ describe('MongoClientInterface::_handleMongo', () => {
             return done();
         });
     });
+
+    const testRetValuesNeg = [[{
+        count: [{ _id: null, count: 100 }],
+        data: [
+            { _id: 'locationone', bytes: 100 },
+            { _id: 'locationtwo', bytes: 100 },
+        ],
+        repData: [
+            { _id: 'awsbackend', bytes: 500 },
+            { _id: 'azurebackend', bytes: 500 },
+            { _id: 'gcpbackend', bytes: 500 },
+        ],
+        compData: [
+            { _id: 'locationone', bytes: 500 },
+            { _id: 'locationtwo', bytes: 500 },
+        ],
+    }]];
+    it('should return clamp negative values to 0', done => {
+        mongoTestClient.db.setReturnValues(testRetValuesNeg);
+        const testCollection = mongoTestClient.db.collection('test');
+        mongoTestClient._handleMongo(testCollection, {}, true, log,
+        (err, res) => {
+            assert.ifError(err, `Expected success, but got error ${err}`);
+            assert.deepStrictEqual(res, {
+                count: 100,
+                data: {
+                    locationone: 0,
+                    locationtwo: 0,
+                    awsbackend: 500,
+                    azurebackend: 500,
+                    gcpbackend: 500,
+                },
+            });
+            return done();
+        });
+    });
 });

@@ -464,6 +464,36 @@ describe('DataCounter::delObject', () => {
                 },
             },
         },
+        {
+            it: 'should clamp negative values to 0, master object',
+            init: refMultiObjVer,
+            input: [multiSite(300, true), DEL_MST],
+            expectedRes: {
+                objects: 0, versions: 1,
+                dataManaged: {
+                    total: { curr: 0, prev: 200 },
+                    byLocation: {
+                        locationOne: { curr: 0, prev: 100 },
+                        locationTwo: { curr: 0, prev: 100 },
+                    },
+                },
+            },
+        },
+        {
+            it: 'should clamp negative values to 0, versioned object',
+            init: refMultiObjVer,
+            input: [multiSite(300, true), DEL_VER],
+            expectedRes: {
+                objects: 1, versions: 0,
+                dataManaged: {
+                    total: { curr: 200, prev: 0 },
+                    byLocation: {
+                        locationOne: { curr: 100, prev: 0 },
+                        locationTwo: { curr: 100, prev: 0 },
+                    },
+                },
+            },
+        },
     ];
 
     tests.forEach(test => it(test.it, () => {
