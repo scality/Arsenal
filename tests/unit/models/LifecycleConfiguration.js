@@ -187,6 +187,10 @@ function generateFilter(errorTag, tagObj) {
             middleTags = '<Prefix>foo</Prefix><Prefix>bar</Prefix>' +
                 `<Prefix>${tagObj.lastPrefix}</Prefix>`;
         }
+        if (tagObj.label === 'mult-tags') {
+            middleTags = '<And><Tag><Key>color</Key><Value>blue</Value></Tag>' +
+                '<Tag><Key>shape</Key><Value>circle</Value></Tag></And>';
+        }
         Filter = `<Filter>${middleTags}</Filter>`;
         if (tagObj.label === 'also-prefix') {
             Filter = '<Filter></Filter><Prefix></Prefix>';
@@ -358,6 +362,18 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
                 getLifecycleConfiguration();
             assert.strictEqual(tagObj.lastPrefix,
                 lcConfig.rules[0].filter.rulePrefix);
+            done();
+        });
+    });
+
+    it('should apply all unique Key tags if multiple tags included', done => {
+        tagObj.label = 'mult-tags';
+        generateParsedXml('Filter', tagObj, parsedXml => {
+            const lcConfig = new LifecycleConfiguration(parsedXml).
+                getLifecycleConfiguration();
+            const expected = [{ key: 'color', val: 'blue' },
+                { key: 'shape', val: 'circle' }];
+            assert.deepStrictEqual(expected, lcConfig.rules[0].filter.tags);
             done();
         });
     });
