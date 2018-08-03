@@ -15,7 +15,6 @@ const refZeroObj = {
     objects: 0,
     versions: 0,
     buckets: 0,
-    bucketList: [],
     dataManaged: {
         total: { curr: 0, prev: 0 },
         byLocation: {},
@@ -26,7 +25,6 @@ const refSingleObj = {
     objects: 2,
     versions: 0,
     buckets: 0,
-    bucketList: [],
     dataManaged: {
         total: { curr: 200, prev: 0 },
         byLocation: {
@@ -39,7 +37,6 @@ const refSingleObjVer = {
     objects: 1,
     versions: 1,
     buckets: 0,
-    bucketList: [],
     dataManaged: {
         total: { curr: 100, prev: 100 },
         byLocation: {
@@ -52,7 +49,6 @@ const refMultiObjVer = {
     objects: 1,
     versions: 1,
     buckets: 0,
-    bucketList: [],
     dataManaged: {
         total: { curr: 200, prev: 200 },
         byLocation: {
@@ -66,7 +62,6 @@ const refMultiObj = {
     objects: 2,
     versions: 0,
     buckets: 0,
-    bucketList: [],
     dataManaged: {
         total: { curr: 400, prev: 0 },
         byLocation: {
