@@ -18,7 +18,6 @@ const zeroRef = {
     objects: 0,
     versions: 0,
     buckets: 0,
-    bucketList: [],
     dataManaged: {
         total: { curr: 0, prev: 0 },
         byLocation: {},
@@ -29,7 +28,6 @@ const startRef = {
     objects: 10,
     versions: 10,
     buckets: 0,
-    bucketList: [],
     dataManaged: {
         total: { curr: 1000, prev: 1000 },
         byLocation: {
@@ -147,7 +145,6 @@ describe('MongoClientInterface::dataCount', () => {
                 objects: 1,
                 versions: 0,
                 buckets: 0,
-                bucketList: [],
                 dataManaged: {
                     total: { curr: 400, prev: 0 },
                     byLocation: {
@@ -177,7 +174,6 @@ describe('MongoClientInterface::dataCount', () => {
                 objects: 10,
                 versions: 10,
                 buckets: 0,
-                bucketList: [],
                 dataManaged: {
                     total: { curr: 1300, prev: 1000 },
                     byLocation: {
@@ -207,7 +203,6 @@ describe('MongoClientInterface::dataCount', () => {
                 objects: 10,
                 versions: 11,
                 buckets: 0,
-                bucketList: [],
                 dataManaged: {
                     total: { curr: 1300, prev: 1100 },
                     byLocation: {
@@ -237,7 +232,6 @@ describe('MongoClientInterface::dataCount', () => {
                 objects: 10,
                 versions: 10,
                 buckets: 0,
-                bucketList: [],
                 dataManaged: {
                     total: { curr: 1300, prev: 1000 },
                     byLocation: {
@@ -275,7 +269,6 @@ describe('MongoClientInterface::dataCount', () => {
                 objects: 10,
                 versions: 10,
                 buckets: 0,
-                bucketList: [],
                 dataManaged: {
                     total: { curr: 1000, prev: 1100 },
                     byLocation: {
@@ -288,7 +281,6 @@ describe('MongoClientInterface::dataCount', () => {
                 objects: 10,
                 versions: 10,
                 buckets: 0,
-                bucketList: [],
                 dataManaged: {
                     total: { curr: 1000, prev: 1200 },
                     byLocation: {
@@ -329,7 +321,6 @@ describe('MongoClientInterface::dataCount', () => {
                 objects: 10,
                 versions: 10,
                 buckets: 0,
-                bucketList: [],
                 dataManaged: {
                     total: { curr: 1100, prev: 1000 },
                     byLocation: {
@@ -342,7 +333,6 @@ describe('MongoClientInterface::dataCount', () => {
                 objects: 10,
                 versions: 10,
                 buckets: 0,
-                bucketList: [],
                 dataManaged: {
                     total: { curr: 1200, prev: 1000 },
                     byLocation: {
