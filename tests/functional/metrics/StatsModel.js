@@ -20,8 +20,13 @@ const redisClient = new RedisClient(config, fakeLogger);
 
 // setup stats model
 const STATS_INTERVAL = 300; // 5 minutes
-const STATS_EXPIRY = 900; // 15 minutes
+const STATS_EXPIRY = 86400; // 24 hours
 const statsModel = new StatsModel(redisClient, STATS_INTERVAL, STATS_EXPIRY);
+
+function setExpectedStats(expected) {
+    return expected.concat(
+        Array((STATS_EXPIRY / STATS_INTERVAL) - expected.length).fill(0));
+}
 
 // Since many methods were overwritten, these tests should validate the changes
 // made to the original methods
@@ -65,7 +70,7 @@ describe('StatsModel class', () => {
             [null, '2'],
             [null, null],
         ]);
-        assert.deepStrictEqual(res, [1, 2, 0]);
+        assert.deepStrictEqual(res, setExpectedStats([1, 2]));
     });
 
     it('should correctly record a new request by default one increment',
@@ -101,7 +106,9 @@ describe('StatsModel class', () => {
                 statsModel.getStats(fakeLogger, id, (err, res) => {
                     assert.ifError(err);
 
-                    assert.deepStrictEqual(res.requests, [9, 0, 0]);
+                    console.log(res.length)
+
+                    assert.deepStrictEqual(res.requests, setExpectedStats([9]));
                     next();
                 });
             },
@@ -110,7 +117,8 @@ describe('StatsModel class', () => {
                 statsModel.getStats(fakeLogger, id, (err, res) => {
                     assert.ifError(err);
 
-                    assert.deepStrictEqual(res.requests, [10, 0, 0]);
+                    assert.deepStrictEqual(res.requests,
+                        setExpectedStats([10]));
                     next();
                 });
             },
@@ -119,7 +127,8 @@ describe('StatsModel class', () => {
                 statsModel.getStats(fakeLogger, id, (err, res) => {
                     assert.ifError(err);
 
-                    assert.deepStrictEqual(res.requests, [11, 0, 0]);
+                    assert.deepStrictEqual(res.requests,
+                        setExpectedStats([11]));
                     next();
                 });
             },
@@ -155,8 +164,8 @@ describe('StatsModel class', () => {
                     assert.ifError(err);
 
                     const expected = {
-                        'requests': [1, 0, 0],
-                        '500s': [1, 0, 0],
+                        'requests': setExpectedStats([1]),
+                        '500s': setExpectedStats([1]),
                         'sampleDuration': STATS_EXPIRY,
                     };
                     assert.deepStrictEqual(res, expected);
@@ -172,8 +181,8 @@ describe('StatsModel class', () => {
                 statsModel.getStats(fakeLogger, id, (err, res) => {
                     assert.ifError(err);
                     const expected = {
-                        'requests': [0, 0, 0],
-                        '500s': [0, 0, 0],
+                        'requests': setExpectedStats([]),
+                        '500s': setExpectedStats([]),
                         'sampleDuration': STATS_EXPIRY,
                     };
                     assert.deepStrictEqual(res, expected);
@@ -184,8 +193,8 @@ describe('StatsModel class', () => {
                 statsModel.getAllStats(fakeLogger, id, (err, res) => {
                     assert.ifError(err);
                     const expected = {
-                        'requests': [0, 0, 0],
-                        '500s': [0, 0, 0],
+                        'requests': setExpectedStats([]),
+                        '500s': setExpectedStats([]),
                         'sampleDuration': STATS_EXPIRY,
                     };
                     assert.deepStrictEqual(res, expected);
@@ -200,10 +209,8 @@ describe('StatsModel class', () => {
         statsModel.getAllStats(fakeLogger, [], (err, res) => {
             assert.ifError(err);
 
-            const expected = Array(STATS_EXPIRY / STATS_INTERVAL).fill(0);
-
-            assert.deepStrictEqual(res.requests, expected);
-            assert.deepStrictEqual(res['500s'], expected);
+            assert.deepStrictEqual(res.requests, setExpectedStats([]));
+            assert.deepStrictEqual(res['500s'], setExpectedStats([]));
             done();
         });
     });
@@ -231,7 +238,8 @@ describe('StatsModel class', () => {
                     assert.ifError(err);
 
                     assert.equal(res.requests[0], 14);
-                    assert.deepStrictEqual(res.requests, [14, 0, 0]);
+                    assert.deepStrictEqual(res.requests,
+                        setExpectedStats([14]));
                     next();
                 });
             },
