@@ -106,8 +106,6 @@ describe('StatsModel class', () => {
                 statsModel.getStats(fakeLogger, id, (err, res) => {
                     assert.ifError(err);
 
-                    console.log(res.length)
-
                     assert.deepStrictEqual(res.requests, setExpectedStats([9]));
                     next();
                 });
