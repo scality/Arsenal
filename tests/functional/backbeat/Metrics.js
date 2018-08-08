@@ -5,6 +5,10 @@ const assert = require('assert');
 const RedisClient = require('../../../lib/metrics/RedisClient');
 const { backbeat } = require('../../../');
 
+// expirations
+const EXPIRY = 86400; // 24 hours
+const THROUGHPUT_EXPIRY = 900; // 15 minutes
+
 // setup redis client
 const config = {
     host: '127.0.0.1',
@@ -22,7 +26,7 @@ const sites = ['site1', 'site2'];
 const metrics = new backbeat.Metrics({
     redisConfig: config,
     validSites: ['site1', 'site2', 'all'],
-    internalStart: Date.now() - 900000, // 15 minutes ago.
+    internalStart: Date.now() - (EXPIRY * 1000), // 24 hours ago.
 }, fakeLogger);
 
 // Since many methods were overwritten, these tests should validate the changes
@@ -57,7 +61,7 @@ describe('Metrics class', () => {
                 completions: {
                     description: 'Number of completed replication operations' +
                         ' (count) and number of bytes transferred (size) in ' +
-                        'the last 900 seconds',
+                        `the last ${EXPIRY} seconds`,
                     results: {
                         count: 0,
                         size: 0,
@@ -65,7 +69,8 @@ describe('Metrics class', () => {
                 },
                 failures: {
                     description: 'Number of failed replication operations ' +
-                        '(count) and bytes (size) in the last 900 seconds',
+                        `(count) and bytes (size) in the last ${EXPIRY} ` +
+                        'seconds',
                     results: {
                         count: 0,
                         size: 0,
@@ -74,7 +79,7 @@ describe('Metrics class', () => {
                 throughput: {
                     description: 'Current throughput for replication' +
                         ' operations in ops/sec (count) and bytes/sec (size) ' +
-                        'in the last 900 seconds',
+                        `in the last ${THROUGHPUT_EXPIRY} seconds`,
                     results: {
                         count: '0.00',
                         size: '0.00',
