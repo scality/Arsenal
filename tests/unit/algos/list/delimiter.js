@@ -49,6 +49,8 @@ const dataVersioned = [
     { key: 'notes/spring/2.txt', value: valuePHD },
     { key: 'notes/spring/2.txt\0bar', value: valueDeleteMarker },
     { key: 'notes/spring/2.txt\0foo', value },
+    { key: 'notes/spring/3.txt', value: valueDeleteMarker },
+    { key: 'notes/spring/3.txt\0foo', value },
     { key: 'notes/spring/march/1.txt', value },
     { key: 'notes/spring/march/1.txt\0bar', value },
     { key: 'notes/spring/march/1.txt\0foo', value },
