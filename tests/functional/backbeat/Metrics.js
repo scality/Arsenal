@@ -40,7 +40,11 @@ describe('Metrics class', () => {
             bytes: 'bb:crr:bytes',
             opsDone: 'bb:crr:opsdone',
             bytesDone: 'bb:crr:bytesdone',
+            bytesFail: 'bb:crr:bytesfail',
+            opsFail: 'bb:crr:opsfail',
             failedCRR: 'bb:crr:failed',
+            opsPending: 'bb:crr:bytespending',
+            bytesPending: 'bb:crr:opspending',
         };
         const routes = backbeat.routes(redisKeys, sites);
         const details = routes.find(route =>
@@ -49,6 +53,14 @@ describe('Metrics class', () => {
         metrics.getAllMetrics(details, (err, res) => {
             assert.ifError(err);
             const expected = {
+                pending: {
+                    description: 'Number of pending replication operations ' +
+                        '(count) and bytes (size)',
+                    results: {
+                        count: 0,
+                        size: 0,
+                    },
+                },
                 backlog: {
                     description: 'Number of incomplete replication operations' +
                         ' (count) and number of incomplete bytes transferred' +
