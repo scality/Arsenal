@@ -4,7 +4,7 @@ const assert = require('assert');
 const Basic = require('../../../../lib/algos/list/basic').List;
 const Werelogs = require('werelogs').Logger;
 const logger = new Werelogs('listTest');
-const performListing = require('../../../utils/performListing');
+const { performListing } = require('../../../utils/performListing');
 
 class Test {
     constructor(name, input, output) {

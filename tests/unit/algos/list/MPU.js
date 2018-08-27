@@ -6,7 +6,7 @@ const MultipartUploads =
 const werelogs = require('werelogs').Logger;
 // eslint-disable-next-line new-cap
 const logger = new werelogs('listMpuTest');
-const performListing = require('../../../utils/performListing');
+const { performListing } = require('../../../utils/performListing');
 describe('Multipart Uploads listing algorithm', () => {
     const splitter = '**';
     const overviewPrefix = `overview${splitter}`;
