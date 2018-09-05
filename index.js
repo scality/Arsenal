@@ -3,6 +3,7 @@ module.exports = {
     constants: require('./lib/constants'),
     db: require('./lib/db'),
     errors: require('./lib/errors.js'),
+    errorUtils: require('./lib/errorUtils'),
     shuffle: require('./lib/shuffle'),
     stringHash: require('./lib/stringHash'),
     ipCheck: require('./lib/ipCheck'),
