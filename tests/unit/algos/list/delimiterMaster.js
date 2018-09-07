@@ -206,7 +206,7 @@ describe('Delimiter All masters listing algorithm', () => {
             key: versionKey,
             value: 'value',
         }), FILTER_SKIP);
-        assert.strictEqual(delimiter.NextMarker, undefined);
+        assert.strictEqual(delimiter.NextMarker, key);
         assert.strictEqual(delimiter.prvKey, key);
         assert.deepStrictEqual(delimiter.result(), EmptyResult);
     });
