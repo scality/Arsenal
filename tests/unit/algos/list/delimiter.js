@@ -273,6 +273,181 @@ const tests = [
         IsTruncated: false,
         NextMarker: undefined,
     }, (e, input) => e.key > input.marker),
+
+    new Test('all elements v2', {
+        v2: true,
+    }, {
+        Contents: receivedData,
+        CommonPrefixes: [],
+        Delimiter: undefined,
+        IsTruncated: false,
+        NextContinuationToken: undefined,
+    }),
+    new Test('with valid startAfter', {
+        startAfter: receivedData[4].key,
+        v2: true,
+    }, {
+        Contents: [
+            receivedData[5],
+            receivedData[6],
+            receivedData[7],
+            receivedData[8],
+            receivedData[9],
+        ],
+        CommonPrefixes: [],
+        Delimiter: undefined,
+        IsTruncated: false,
+        NextContinuationToken: undefined,
+    }, (e, input) => e.key > input.startAfter),
+    new Test('with bad startAfter', {
+        startAfter: 'zzzz',
+        delimiter: '/',
+        v2: true,
+    }, {
+        Contents: [],
+        CommonPrefixes: [],
+        Delimiter: '/',
+        IsTruncated: false,
+        NextContinuationToken: undefined,
+    }, (e, input) => e.key > input.startAfter),
+    new Test('with valid continuationToken', {
+        continuationToken: receivedData[4].key,
+        v2: true,
+    }, {
+        Contents: [
+            receivedData[5],
+            receivedData[6],
+            receivedData[7],
+            receivedData[8],
+            receivedData[9],
+        ],
+        CommonPrefixes: [],
+        Delimiter: undefined,
+        IsTruncated: false,
+        NextContinuationToken: undefined,
+    }, (e, input) => e.key > input.continuationToken),
+    new Test('with bad continuationToken', {
+        continuationToken: 'zzzz',
+        delimiter: '/',
+        v2: true,
+    }, {
+        Contents: [],
+        CommonPrefixes: [],
+        Delimiter: '/',
+        IsTruncated: false,
+        NextContinuationToken: undefined,
+    }, (e, input) => e.key > input.continuationToken),
+    new Test('bad startAfter and good prefix', {
+        delimiter: '/',
+        prefix: 'notes/summer/',
+        startAfter: 'notes/summer0',
+    }, {
+        Contents: [],
+        CommonPrefixes: [],
+        Delimiter: '/',
+        IsTruncated: false,
+        NextMarker: undefined,
+    }, (e, input) => e.key > input.startAfter),
+    new Test('bad continuation token and good prefix', {
+        delimiter: '/',
+        prefix: 'notes/summer/',
+        continuationToken: 'notes/summer0',
+    }, {
+        Contents: [],
+        CommonPrefixes: [],
+        Delimiter: '/',
+        IsTruncated: false,
+        NextMarker: undefined,
+    }, (e, input) => e.key > input.continuationToken),
+
+    new Test('no delimiter v2', {
+        startAfter: 'notes/year.txt',
+        maxKeys: 1,
+        v2: true,
+    }, {
+        Contents: [
+            receivedData[8],
+        ],
+        CommonPrefixes: [],
+        Delimiter: undefined,
+        IsTruncated: true,
+        NextContinuationToken: 'notes/yore.rs',
+    }, (e, input) => e.key > input.startAfter),
+
+    new Test('all parameters v2 1/6', {
+        delimiter: '/',
+        prefix: 'notes/',
+        startAfter: 'notes/',
+        maxKeys: 1,
+        v2: true,
+    }, {
+        Contents: [],
+        CommonPrefixes: ['notes/spring/'],
+        Delimiter: '/',
+        IsTruncated: true,
+        NextContinuationToken: 'notes/spring/',
+    }, (e, input) => e.key > input.startAfter),
+
+    new Test('all parameters v2 2/6', {
+        delimiter: '/',
+        prefix: 'notes/',
+        continuationToken: 'notes/spring/',
+        maxKeys: 1,
+        v2: true,
+    }, {
+        Contents: [],
+        CommonPrefixes: ['notes/summer/'],
+        Delimiter: '/',
+        IsTruncated: true,
+        NextContinuationToken: 'notes/summer/',
+    }, (e, input) => e.key > input.continuationToken),
+
+    new Test('all parameters v2 3/5', {
+        delimiter: '/',
+        prefix: 'notes/',
+        continuationToken: 'notes/summer/',
+        maxKeys: 1,
+        v2: true,
+    }, {
+        Contents: [
+            receivedData[7],
+        ],
+        CommonPrefixes: [],
+        Delimiter: '/',
+        IsTruncated: true,
+        NextContinuationToken: 'notes/year.txt',
+    }, (e, input) => e.key > input.continuationToken),
+
+    new Test('all parameters v2 4/5', {
+        delimiter: '/',
+        prefix: 'notes/',
+        startAfter: 'notes/year.txt',
+        maxKeys: 1,
+        v2: true,
+    }, {
+        Contents: [
+            receivedData[8],
+        ],
+        CommonPrefixes: [],
+        Delimiter: '/',
+        IsTruncated: true,
+        NextContinuationToken: 'notes/yore.rs',
+    }, (e, input) => e.key > input.startAfter),
+
+    new Test('all parameters v2 5/5', {
+        delimiter: '/',
+        prefix: 'notes/',
+        startAfter: 'notes/yore.rs',
+        maxKeys: 1,
+        v2: true,
+    }, {
+        Contents: [],
+        CommonPrefixes: ['notes/zaphod/'],
+        Delimiter: '/',
+        IsTruncated: false,
+        NextContinuationToken: undefined,
+    }, (e, input) => e.key > input.startAfter),
+
 ];
 
 const alphabeticalOrderTests = [
