@@ -36,13 +36,25 @@ describe('Delimiter All masters listing algorithm', () => {
         assert.strictEqual(delimiter.skipping(), SKIP_NONE);
     });
 
+    it('should return SKIP_NONE for DelimiterMaster when NextMarker is ' +
+       'set to listing marker parameter value', () => {
+        const markerParams = 'marker';
+        const delimiter = new DelimiterMaster({
+            delimiter: '/',
+            marker: markerParams
+        });
+
+        /* When there is no NextMarker, it should return SKIP_NONE. */
+        delimiter.NextMarker = markerParams;
+        assert.strictEqual(delimiter.skipping(), SKIP_NONE);
+    });
+
     it('should return <key><VersionIdSeparator> for DelimiterMaster when ' +
        'NextMarker is set and there is a delimiter', () => {
         const key = 'key';
-        const delimiter = new DelimiterMaster({ delimiter: '/', marker: key });
+        const delimiter = new DelimiterMaster({ delimiter: '/' });
 
         /* Filter a master version to set NextMarker. */
-        // TODO: useless once S3C-1628 is fixed.
         delimiter.filter({ key, value: '' });
         assert.strictEqual(delimiter.NextMarker, key);
 
@@ -58,12 +70,14 @@ describe('Delimiter All masters listing algorithm', () => {
         const keyWithEndingDelimiter = `key${delimiterChar}`;
         const delimiter = new DelimiterMaster({
             delimiter: delimiterChar,
-            marker: keyWithEndingDelimiter,
         });
+
+        /* Filter a master version to set NextMarker. */
+        delimiter.filter({ key: keyWithEndingDelimiter, value: '' });
+        assert.strictEqual(delimiter.NextMarker, keyWithEndingDelimiter);
 
         /* When a delimiter is set and the NextMarker ends with the
          * delimiter it should return the next marker value. */
-        assert.strictEqual(delimiter.NextMarker, keyWithEndingDelimiter);
         assert.strictEqual(delimiter.skipping(), keyWithEndingDelimiter);
     });
 
