@@ -286,14 +286,31 @@ describe('StatsModel class', () => {
         const score = 100;
         const value = 'a-value';
 
+        const now = Date.now();
+        const nearestHour = statsModel._normalizeTimestampByHour(new Date(now));
+
         statsModel.addToSortedSet(key, score, value, (err, res) => {
             assert.ifError(err);
             // check both a "zadd" and "expire" occurred
             assert.equal(res, 1);
-            // check TTL applied
             redisClient.ttl(key, (err, res) => {
                 assert.ifError(err);
+                // assert this new set has a ttl applied
                 assert(res > 0);
+
+                const adjustmentSecs = now - nearestHour;
+                const msInADay = 24 * 60 * 60 * 1000;
+                const msInAnHour = 60 * 60 * 1000;
+                const upperLimitSecs =
+                    Math.ceil((msInADay - adjustmentSecs) / 1000);
+                const lowerLimitSecs =
+                    Math.floor((msInADay - adjustmentSecs - msInAnHour) / 1000);
+
+                // assert new ttl is between 23 and 24 hours adjusted by time
+                // elapsed since normalized hourly time
+                assert(res >= lowerLimitSecs);
+                assert(res <= upperLimitSecs);
+
                 done();
             });
         });
