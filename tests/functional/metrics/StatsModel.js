@@ -244,10 +244,10 @@ describe('StatsModel class', () => {
         ], done);
     });
 
-    it('should normalize to the nearest hour using _normalizeTimestampByHour',
+    it('should normalize to the nearest hour using normalizeTimestampByHour',
     () => {
         const date = new Date('2018-09-13T23:30:59.195Z');
-        const newDate = new Date(statsModel._normalizeTimestampByHour(date));
+        const newDate = new Date(statsModel.normalizeTimestampByHour(date));
 
         assert.strictEqual(date.getHours(), newDate.getHours());
         assert.strictEqual(newDate.getMinutes(), 0);
@@ -269,7 +269,7 @@ describe('StatsModel class', () => {
         const millisecondsInOneHour = 3600000;
 
         const expected = [];
-        let dateInMilliseconds = statsModel._normalizeTimestampByHour(
+        let dateInMilliseconds = statsModel.normalizeTimestampByHour(
             new Date(epoch));
 
         for (let i = 0; i < 24; i++) {
@@ -287,7 +287,7 @@ describe('StatsModel class', () => {
         const value = 'a-value';
 
         const now = Date.now();
-        const nearestHour = statsModel._normalizeTimestampByHour(new Date(now));
+        const nearestHour = statsModel.normalizeTimestampByHour(new Date(now));
 
         statsModel.addToSortedSet(key, score, value, (err, res) => {
             assert.ifError(err);
