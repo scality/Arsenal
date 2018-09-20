@@ -18,6 +18,7 @@ const refZeroObj = {
         total: { curr: 0, prev: 0 },
         byLocation: {},
     },
+    stalled: 0,
 };
 
 const refSingleObj = {
@@ -29,6 +30,7 @@ const refSingleObj = {
             locationOne: { curr: 200, prev: 0 },
         },
     },
+    stalled: 0,
 };
 
 const refSingleObjVer = {
@@ -40,6 +42,7 @@ const refSingleObjVer = {
             locationOne: { curr: 100, prev: 100 },
         },
     },
+    stalled: 0,
 };
 
 const refMultiObjVer = {
@@ -52,6 +55,7 @@ const refMultiObjVer = {
             locationTwo: { curr: 100, prev: 100 },
         },
     },
+    stalled: 0,
 };
 
 const refMultiObj = {
@@ -64,6 +68,7 @@ const refMultiObj = {
             locationTwo: { curr: 200, prev: 0 },
         },
     },
+    stalled: 0,
 };
 
 const singleSite = size => ({
