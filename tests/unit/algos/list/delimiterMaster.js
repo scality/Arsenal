@@ -26,13 +26,14 @@ const EmptyResult = {
 
 
 describe('Delimiter All masters listing algorithm', () => {
-    it('should return SKIP_NONE for DelimiterMaster when NextMarker is ' +
-       'undefined', () => {
+    it('should return SKIP_NONE for DelimiterMaster when both NextMarker ' +
+       'and NextContinuationToken are undefined', () => {
         const delimiter = new DelimiterMaster({ delimiter: '/' });
 
         assert.strictEqual(delimiter.NextMarker, undefined);
 
-        /* When there is no NextMarker, it should return SKIP_NONE. */
+        // When there is no NextMarker or NextContinuationToken, it should
+        // return SKIP_NONE
         assert.strictEqual(delimiter.skipping(), SKIP_NONE);
     });
 
@@ -49,6 +50,19 @@ describe('Delimiter All masters listing algorithm', () => {
         /* With a delimiter skipping should return previous key + VID_SEP
          * (except when a delimiter is set and the NextMarker ends with the
          * delimiter) . */
+        assert.strictEqual(delimiter.skipping(), key + VID_SEP);
+    });
+
+    it('should return <key><VersionIdSeparator> for DelimiterMaster when ' +
+       'NextContinuationToken is set and there is a delimiter', () => {
+        const key = 'key';
+        const delimiter = new DelimiterMaster(
+            { delimiter: '/', startAfter: key, v2: true });
+
+        // Filter a master version to set NextContinuationToken
+        delimiter.filter({ key, value: '' });
+        assert.strictEqual(delimiter.NextContinuationToken, key);
+
         assert.strictEqual(delimiter.skipping(), key + VID_SEP);
     });
 
