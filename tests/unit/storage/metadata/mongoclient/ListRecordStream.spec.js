@@ -170,19 +170,17 @@ describe('mongoclient.ListRecordStream', () => {
         it(`should transform ${entryType}`, done => {
             const lrs = new ListRecordStream(logger,
                                              lastEndIDEntry.h.toString());
-            let dataReceived = false;
-            lrs.on('info', info => {
-                assert(dataReceived);
-                const parsedInfo = info;
-                parsedInfo.end = JSON.parse(parsedInfo.end);
-                assert.deepStrictEqual(parsedInfo, {
-                    end: { ts: 42, uniqID: '-42' },
-                });
-                return done();
-            });
+            let hasReceivedData = false;
             lrs.on('data', entry => {
+                assert.strictEqual(hasReceivedData, false);
+                hasReceivedData = true;
                 assert.deepStrictEqual(entry, expectedStreamEntries[entryType]);
-                dataReceived = true;
+            });
+            lrs.on('end', () => {
+                assert.strictEqual(hasReceivedData, true);
+                assert.deepStrictEqual(JSON.parse(lrs.getOffset()),
+                                       { uniqID: '-42' });
+                done();
             });
             // first write will be ignored by ListRecordStream because
             // of the last end ID (-42), it's needed though to bootstrap it
@@ -193,20 +191,12 @@ describe('mongoclient.ListRecordStream', () => {
     });
     it('should ignore other entry types', done => {
         const lrs = new ListRecordStream(logger, lastEndIDEntry.h.toString());
-        let infoEmitted = false;
-        lrs.on('info', info => {
-            const parsedInfo = info;
-            parsedInfo.end = JSON.parse(parsedInfo.end);
-            assert.deepStrictEqual(parsedInfo, {
-                end: { ts: 42, uniqID: '-42' },
-            });
-            infoEmitted = true;
-        });
         lrs.on('data', entry => {
             assert(false, `ListRecordStream did not ignore entry ${entry}`);
         });
         lrs.on('end', () => {
-            assert(infoEmitted);
+            assert.deepStrictEqual(JSON.parse(lrs.getOffset()),
+                                   { uniqID: '-42' });
             done();
         });
         // first write will be ignored by ListRecordStream because
@@ -217,55 +207,27 @@ describe('mongoclient.ListRecordStream', () => {
         });
         lrs.end();
     });
-    it('should emit info even if no entry consumed', done => {
-        const lrs = new ListRecordStream(logger, lastEndIDEntry.h.toString());
-        let infoEmitted = false;
-        lrs.on('info', info => {
-            const parsedInfo = info;
-            parsedInfo.end = JSON.parse(parsedInfo.end);
-            assert.deepStrictEqual(parsedInfo, {
-                end: { ts: 0, uniqID: null },
-            });
-            infoEmitted = true;
-        });
-        lrs.on('data', () => {
-            assert(false, 'did not expect data from ListRecordStream');
-        });
-        lrs.on('end', () => {
-            assert(infoEmitted);
-            done();
-        });
-        lrs.end();
-    });
     it('should skip entries until uniqID is encountered', done => {
         const logEntries = [
             Object.assign({}, mongoProcessedLogEntries.insert,
-                          { h: 1234 }),
+                          { h: 1234, ts: Timestamp.fromNumber(45) }),
             Object.assign({}, mongoProcessedLogEntries.insert,
-                          { h: 5678 }),
+                          { h: 5678, ts: Timestamp.fromNumber(44) }),
             Object.assign({}, mongoProcessedLogEntries.insert,
-                          { h: -1234 }),
+                          { h: -1234, ts: Timestamp.fromNumber(42) }),
             Object.assign({}, mongoProcessedLogEntries.insert,
-                          { h: 2345 }),
+                          { h: 2345, ts: Timestamp.fromNumber(42) }),
         ];
         const lrs = new ListRecordStream(logger, '5678');
         let nbReceivedEntries = 0;
-        let infoEmitted = false;
-        lrs.on('info', info => {
-            infoEmitted = true;
-            const parsedInfo = info;
-            parsedInfo.end = JSON.parse(parsedInfo.end);
-            assert.deepStrictEqual(parsedInfo, {
-                end: { ts: 42, uniqID: '2345' },
-            });
-        });
         lrs.on('data', entry => {
             assert.deepStrictEqual(entry, expectedStreamEntries.insert);
             ++nbReceivedEntries;
         });
         lrs.on('end', () => {
             assert.strictEqual(nbReceivedEntries, 2);
-            assert(infoEmitted);
+            assert.deepStrictEqual(JSON.parse(lrs.getOffset()),
+                                   { uniqID: '2345' });
             done();
         });
         logEntries.forEach(entry => lrs.write(entry));
