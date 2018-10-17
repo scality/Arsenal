@@ -161,6 +161,32 @@ const expectedStreamEntries = {
     },
 };
 
+class MongoCursorMock {
+    constructor(itemsToYield, errorAtPos) {
+        this.itemsToYield = itemsToYield;
+        this.pos = 0;
+        this.errorAtPos = errorAtPos;
+    }
+
+    next(cb) {
+        // if there's no more item, just hang out there waiting for
+        // items that will never come (this is how the real mongo
+        // tailable cursor would behave)
+        if (this.pos === this.errorAtPos) {
+            return process.nextTick(() => cb(new Error('boo')));
+        }
+        if (!this.hasSentAllItems()) {
+            const pos = this.pos;
+            this.pos += 1;
+            return process.nextTick(() => cb(null, this.itemsToYield[pos]));
+        }
+        return undefined;
+    }
+    hasSentAllItems() {
+        return this.pos === this.itemsToYield.length;
+    }
+}
+
 describe('mongoclient.ListRecordStream', () => {
     const lastEndIDEntry = {
         h: -43,
@@ -168,107 +194,111 @@ describe('mongoclient.ListRecordStream', () => {
     };
     Object.keys(mongoProcessedLogEntries).forEach(entryType => {
         it(`should transform ${entryType}`, done => {
-            const lrs = new ListRecordStream(logger,
-                                             lastEndIDEntry.h.toString());
-            let dataReceived = false;
-            lrs.on('info', info => {
-                assert(dataReceived);
-                const parsedInfo = info;
-                parsedInfo.end = JSON.parse(parsedInfo.end);
-                assert.deepStrictEqual(parsedInfo, {
-                    end: { ts: 42, uniqID: '-42' },
-                });
-                return done();
-            });
-            lrs.on('data', entry => {
-                assert.deepStrictEqual(entry, expectedStreamEntries[entryType]);
-                dataReceived = true;
-            });
             // first write will be ignored by ListRecordStream because
             // of the last end ID (-42), it's needed though to bootstrap it
-            lrs.write(lastEndIDEntry);
-            lrs.write(mongoProcessedLogEntries[entryType]);
-            lrs.end();
+            const cursor = new MongoCursorMock([
+                lastEndIDEntry,
+                mongoProcessedLogEntries[entryType],
+            ]);
+            const lrs = new ListRecordStream(cursor, logger,
+                                             lastEndIDEntry.h.toString());
+            let hasReceivedData = false;
+            lrs.on('data', entry => {
+                assert.strictEqual(hasReceivedData, false);
+                hasReceivedData = true;
+                assert.deepStrictEqual(entry, expectedStreamEntries[entryType]);
+                if (cursor.hasSentAllItems()) {
+                    assert.strictEqual(hasReceivedData, true);
+                    assert.deepStrictEqual(JSON.parse(lrs.getOffset()),
+                                           { uniqID: '-42' });
+                    done();
+                }
+            });
         });
     });
     it('should ignore other entry types', done => {
-        const lrs = new ListRecordStream(logger, lastEndIDEntry.h.toString());
-        let infoEmitted = false;
-        lrs.on('info', info => {
-            const parsedInfo = info;
-            parsedInfo.end = JSON.parse(parsedInfo.end);
-            assert.deepStrictEqual(parsedInfo, {
-                end: { ts: 42, uniqID: '-42' },
-            });
-            infoEmitted = true;
+        // first write will be ignored by ListRecordStream because
+        // of the last end ID (-43), it's needed though to bootstrap it
+        const logEntries = [lastEndIDEntry];
+        Object.keys(mongoIgnoredLogEntries).forEach(entryType => {
+            logEntries.push(mongoIgnoredLogEntries[entryType]);
         });
+        const cursor = new MongoCursorMock(logEntries);
+        const lrs = new ListRecordStream(cursor, logger,
+                                         lastEndIDEntry.h.toString());
         lrs.on('data', entry => {
             assert(false, `ListRecordStream did not ignore entry ${entry}`);
         });
-        lrs.on('end', () => {
-            assert(infoEmitted);
+        setTimeout(() => {
+            assert.strictEqual(cursor.hasSentAllItems(), true);
+            assert.deepStrictEqual(JSON.parse(lrs.getOffset()),
+                                   { uniqID: '-42' });
             done();
-        });
-        // first write will be ignored by ListRecordStream because
-        // of the last end ID (-43), it's needed though to bootstrap it
-        lrs.write(lastEndIDEntry);
-        Object.keys(mongoIgnoredLogEntries).forEach(entryType => {
-            lrs.write(mongoIgnoredLogEntries[entryType]);
-        });
-        lrs.end();
-    });
-    it('should emit info even if no entry consumed', done => {
-        const lrs = new ListRecordStream(logger, lastEndIDEntry.h.toString());
-        let infoEmitted = false;
-        lrs.on('info', info => {
-            const parsedInfo = info;
-            parsedInfo.end = JSON.parse(parsedInfo.end);
-            assert.deepStrictEqual(parsedInfo, {
-                end: { ts: 0, uniqID: null },
-            });
-            infoEmitted = true;
-        });
-        lrs.on('data', () => {
-            assert(false, 'did not expect data from ListRecordStream');
-        });
-        lrs.on('end', () => {
-            assert(infoEmitted);
-            done();
-        });
-        lrs.end();
+        }, 200);
     });
     it('should skip entries until uniqID is encountered', done => {
         const logEntries = [
             Object.assign({}, mongoProcessedLogEntries.insert,
-                          { h: 1234 }),
+                          { h: 1234, ts: Timestamp.fromNumber(45) }),
             Object.assign({}, mongoProcessedLogEntries.insert,
-                          { h: 5678 }),
+                          { h: 5678, ts: Timestamp.fromNumber(44) }),
             Object.assign({}, mongoProcessedLogEntries.insert,
-                          { h: -1234 }),
+                          { h: -1234, ts: Timestamp.fromNumber(42) }),
             Object.assign({}, mongoProcessedLogEntries.insert,
-                          { h: 2345 }),
+                          { h: 2345, ts: Timestamp.fromNumber(42) }),
         ];
-        const lrs = new ListRecordStream(logger, '5678');
+        const cursor = new MongoCursorMock(logEntries);
+        const lrs = new ListRecordStream(cursor, logger, '5678');
+        assert.strictEqual(lrs.reachedUnpublishedListing(), false);
         let nbReceivedEntries = 0;
-        let infoEmitted = false;
-        lrs.on('info', info => {
-            infoEmitted = true;
-            const parsedInfo = info;
-            parsedInfo.end = JSON.parse(parsedInfo.end);
-            assert.deepStrictEqual(parsedInfo, {
-                end: { ts: 42, uniqID: '2345' },
-            });
+        lrs.on('data', entry => {
+            assert.deepStrictEqual(entry, expectedStreamEntries.insert);
+            assert.strictEqual(lrs.reachedUnpublishedListing(), true);
+            ++nbReceivedEntries;
+            if (cursor.hasSentAllItems()) {
+                assert.strictEqual(nbReceivedEntries, 2);
+                assert.deepStrictEqual(JSON.parse(lrs.getOffset()),
+                                       { uniqID: '2345' });
+                assert.strictEqual(lrs.getSkipCount(), 2);
+                assert.strictEqual(lrs.reachedUnpublishedListing(), true);
+                done();
+            }
         });
+    });
+
+    it('should start after latest entry if uniqID is not encountered', done => {
+        const logEntries = [
+            Object.assign({}, mongoProcessedLogEntries.insert,
+                          { h: 1234, ts: Timestamp.fromNumber(45) }),
+            Object.assign({}, mongoProcessedLogEntries.insert,
+                          { h: 5678, ts: Timestamp.fromNumber(44) }),
+            Object.assign({}, mongoProcessedLogEntries.insert,
+                          { h: -1234, ts: Timestamp.fromNumber(42) }),
+            Object.assign({}, mongoProcessedLogEntries.insert,
+                          { h: 2345, ts: Timestamp.fromNumber(42) }),
+        ];
+        const cursor = new MongoCursorMock(logEntries);
+        const lrs = new ListRecordStream(cursor, logger, '4242', '-1234');
+        let nbReceivedEntries = 0;
         lrs.on('data', entry => {
             assert.deepStrictEqual(entry, expectedStreamEntries.insert);
             ++nbReceivedEntries;
+            if (cursor.hasSentAllItems()) {
+                assert.strictEqual(nbReceivedEntries, 1);
+                assert.deepStrictEqual(JSON.parse(lrs.getOffset()),
+                                       { uniqID: '2345' });
+                assert.strictEqual(lrs.getSkipCount(), 3);
+                assert.strictEqual(lrs.reachedUnpublishedListing(), true);
+                done();
+            }
         });
-        lrs.on('end', () => {
-            assert.strictEqual(nbReceivedEntries, 2);
-            assert(infoEmitted);
-            done();
+    });
+    it('should emit an error event when cursor returns an error', done => {
+        const cursor = new MongoCursorMock([], 0);
+        const lrs = new ListRecordStream(cursor, logger, '4242', '-1234');
+        lrs.on('data', () => {
+            assert(false, 'did not expect data');
         });
-        logEntries.forEach(entry => lrs.write(entry));
-        lrs.end();
+        lrs.on('error', () => done());
     });
 });
