@@ -60,6 +60,7 @@ const testWebsiteConfiguration = new WebsiteConfiguration({
 
 const testLocationConstraint = 'us-west-1';
 const testReadLocationConstraint = 'us-west-2';
+const testLocationConstraintIngest = 'us-west-3:ingest';
 
 const testCorsConfiguration = [
     { id: 'test',
@@ -117,6 +118,7 @@ const testLifecycleConfiguration = {
     ],
 };
 
+const testIngestionConfiguration = { status: 'enabled' };
 const testUid = '99ae3446-7082-4c17-ac97-52965dc004ec';
 // create a dummy bucket to test getters and setters
 
@@ -165,6 +167,7 @@ Object.keys(acl).forEach(
                         dummyBucket._lifecycleConfiguration,
                     uid: dummyBucket._uid,
                     isNFS: dummyBucket._isNFS,
+                    ingestion: dummyBucket._ingestion,
                 };
                 assert.strictEqual(serialized, JSON.stringify(bucketInfos));
                 done();
@@ -407,6 +410,16 @@ Object.keys(acl).forEach(
                 assert.deepStrictEqual(dummyBucket.getLifecycleConfiguration(),
                     newLifecycleConfig);
             });
+            it('enableIngestion should set ingestion status to enabled', () => {
+                dummyBucket.enableIngestion();
+                assert.deepStrictEqual(dummyBucket.getIngestion(),
+                    { status: 'enabled' });
+            });
+            it('disableIngestion should set ingestion status to null', () => {
+                dummyBucket.disableIngestion();
+                assert.deepStrictEqual(dummyBucket.getIngestion(),
+                    { status: 'disabled' });
+            });
         });
     })
 );
@@ -431,5 +444,52 @@ describe('uid default', () => {
         const defaultUid = dummyBucket.getUid();
         assert(defaultUid);
         assert.strictEqual(defaultUid.length, 36);
+    });
+});
+
+describe('ingest', () => {
+    it('should enable ingestion if ingestion param sent on bucket creation',
+    () => {
+        const dummyBucket = new BucketInfo(
+            bucketName, owner, ownerDisplayName, testDate,
+            BucketInfo.currentModelVersion(), acl[emptyAcl],
+            false, false, {
+                cryptoScheme: 1,
+                algorithm: 'sha1',
+                masterKeyId: 'somekey',
+                mandatory: true,
+            }, testVersioningConfiguration,
+            testLocationConstraintIngest,
+            testWebsiteConfiguration,
+            testCorsConfiguration,
+            testReplicationConfiguration,
+            testLifecycleConfiguration,
+            testUid, undefined, true, testIngestionConfiguration);
+        assert.deepStrictEqual(dummyBucket.getIngestion(),
+            { status: 'enabled' });
+        assert.strictEqual(dummyBucket.isIngestionBucket(), true);
+        assert.strictEqual(dummyBucket.isIngestionEnabled(), true);
+    });
+
+    it('should have ingestion as null if no ingestion param was sent on' +
+    'bucket creation', () => {
+        const dummyBucket = new BucketInfo(
+            bucketName, owner, ownerDisplayName, testDate,
+            BucketInfo.currentModelVersion(), acl[emptyAcl],
+            false, false, {
+                cryptoScheme: 1,
+                algorithm: 'sha1',
+                masterKeyId: 'somekey',
+                mandatory: true,
+            }, testVersioningConfiguration,
+            testLocationConstraintIngest,
+            testWebsiteConfiguration,
+            testCorsConfiguration,
+            testReplicationConfiguration,
+            testLifecycleConfiguration,
+            testUid, undefined, true);
+        assert.deepStrictEqual(dummyBucket.getIngestion(), null);
+        assert.strictEqual(dummyBucket.isIngestionBucket(), false);
+        assert.strictEqual(dummyBucket.isIngestionEnabled(), false);
     });
 });
