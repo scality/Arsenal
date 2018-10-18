@@ -118,6 +118,8 @@ module.exports = {
             file: {
                 DataFileStore:
                 require('./lib/storage/data/file/DataFileStore'),
+                FsDataFileStore:
+                require('./lib/storage/data/file/FsDataFileStore'),
             },
         },
         utils: require('./lib/storage/utils'),
