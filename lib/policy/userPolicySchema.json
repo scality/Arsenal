@@ -1,5 +1,5 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
+    "id": "http://json-schema.org/draft-04/schema#",
     "type": "object",
     "title": "AWS Policy schema.",
     "description": "This schema describes a user policy per AWS policy grammar rules",
