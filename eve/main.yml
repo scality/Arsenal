@@ -24,16 +24,16 @@ stages:
           command: yarn
       - ShellCommand:
           name: run lint yml
-          command: yarn lint_yml --silent
+          command: yarn lint_yml -o --silent
       - ShellCommand:
           name: run lint
-          command: yarn lint --silent --max-warnings 0
+          command: yarn lint -o --silent -o --max-warnings 0
       - ShellCommand:
           name: run lint_md
-          command: yarn lint_md --silent
+          command: yarn lint_md -o --silent
       - ShellCommand:
           name: run test
-          command: yarn test --silent
+          command: yarn test -o --silent
       - ShellCommand:
           name: run ft_test
           command: yarn ft_test
