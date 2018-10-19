@@ -5,19 +5,18 @@ FROM ubuntu:trusty
 #
 ENV LANG C.UTF-8
 COPY buildbot_worker_packages.list arsenal_packages.list /tmp/
-RUN apt-get -qy install curl apt-transport-https \
+RUN apt-get update -q && apt-get -qy install curl apt-transport-https \
     && apt-get install -qy software-properties-common python-software-properties \
-    && add-apt-repository ppa:ubuntu-toolchain-r/test \
-    && curl -sS http://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
-    && echo "deb http://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list \
-    && apt-get update -q \
     && git clone https://github.com/tj/n.git \
     && make -C ./n \
     && n 8 latest \
+    && curl -sS http://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
+    && echo "deb http://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list \
+    && add-apt-repository ppa:ubuntu-toolchain-r/test \
+    && apt-get update -q \
     && cat /tmp/buildbot_worker_packages.list | xargs apt-get install -qy \
     && cat /tmp/arsenal_packages.list | xargs apt-get install -qy \
     && pip install pip==9.0.1 \
-    && rm -rf ./n \
     && rm -rf /var/lib/apt/lists/* \
     && rm -f /tmp/*_packages.list
 
@@ -25,7 +24,7 @@ RUN apt-get -qy install curl apt-transport-https \
 # Install usefull nodejs dependencies
 #
 
-RUN yarn global add mocha
+RUN npm install mocha -g
 
 #
 # Add user eve
