@@ -16,24 +16,24 @@ stages:
       - Git:
           name: fetch source
           repourl: '%(prop:git_reference)s'
-          shallow: True
-          retryFetch: True
-          haltOnFailure: True
+          shallow: true
+          retryFetch: true
+          haltOnFailure: true
       - ShellCommand:
           name: install dependencies
-          command: yarn 
+          command: yarn
       - ShellCommand:
           name: run lint yml
-          command: yarn --silent lint_yml
+          command: yarn lint_yml --silent
       - ShellCommand:
           name: run lint
-          command: yarn --silent lint -- --max-warnings 0
+          command: yarn lint --silent --max-warnings 0
       - ShellCommand:
           name: run lint_md
-          command: yarn --silent lint_md
+          command: yarn lint_md --silent
       - ShellCommand:
           name: run test
-          command: yarn --silent test
+          command: yarn test --silent
       - ShellCommand:
           name: run ft_test
           command: yarn ft_test
