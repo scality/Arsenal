@@ -5,16 +5,15 @@ FROM ubuntu:trusty
 #
 ENV LANG C.UTF-8
 COPY buildbot_worker_packages.list arsenal_packages.list /tmp/
-RUN add-apt-repository ppa:ubuntu-toolchain-r/test \
-    && apt-get update -q \
-    && apt-get -qy install curl apt-transport-https \
+RUN apt-get -qy install curl apt-transport-https \
     && apt-get install -qy software-properties-common python-software-properties \
+    && add-apt-repository ppa:ubuntu-toolchain-r/test \
+    && curl -sS http://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
+    && echo "deb http://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list \
+    && apt-get update -q \
     && git clone https://github.com/tj/n.git \
     && make -C ./n \
     && n 8 latest \
-    && curl -sS http://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
-    && echo "deb http://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list \
-    && apt-get update \
     && cat /tmp/buildbot_worker_packages.list | xargs apt-get install -qy \
     && cat /tmp/arsenal_packages.list | xargs apt-get install -qy \
     && pip install pip==9.0.1 \
@@ -26,7 +25,7 @@ RUN add-apt-repository ppa:ubuntu-toolchain-r/test \
 # Install usefull nodejs dependencies
 #
 
-RUN npm install mocha -g
+RUN yarn global add mocha
 
 #
 # Add user eve
