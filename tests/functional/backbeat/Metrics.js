@@ -25,7 +25,7 @@ const redisClient = new RedisClient(config, fakeLogger);
 const sites = ['site1', 'site2'];
 const metrics = new backbeat.Metrics({
     redisConfig: config,
-    validSites: ['site1', 'site2', 'all'],
+    crrSites: ['site1', 'site2', 'all'],
     internalStart: Date.now() - (EXPIRY * 1000), // 24 hours ago.
 }, fakeLogger);
 
@@ -46,7 +46,7 @@ describe('Metrics class', () => {
             opsPending: 'bb:crr:bytespending',
             bytesPending: 'bb:crr:opspending',
         };
-        const routes = backbeat.routes(redisKeys, sites);
+        const routes = backbeat.routes(redisKeys, { crr: sites });
         const details = routes.find(route =>
             route.category === 'metrics' && route.type === 'all');
         details.site = 'all';
