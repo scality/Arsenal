@@ -243,4 +243,59 @@ describe('StatsModel class', () => {
             },
         ], done);
     });
+
+    it('should normalize to the nearest hour using _normalizeTimestampByHour',
+    () => {
+        const date = new Date('2018-09-13T23:30:59.195Z');
+        const newDate = new Date(statsModel._normalizeTimestampByHour(date));
+
+        assert.strictEqual(date.getHours(), newDate.getHours());
+        assert.strictEqual(newDate.getMinutes(), 0);
+        assert.strictEqual(newDate.getSeconds(), 0);
+        assert.strictEqual(newDate.getMilliseconds(), 0);
+    });
+
+    it('should get previous hour using _getDatePreviousHour', () => {
+        const date = new Date('2018-09-13T23:30:59.195Z');
+        const newDate = statsModel._getDatePreviousHour(new Date(date));
+
+        const millisecondsInOneHour = 3600000;
+        assert.strictEqual(date - newDate, millisecondsInOneHour);
+    });
+
+    it('should get an array of hourly timestamps using getSortedSetHours',
+    () => {
+        const epoch = 1536882476501;
+        const millisecondsInOneHour = 3600000;
+
+        const expected = [];
+        let dateInMilliseconds = statsModel._normalizeTimestampByHour(
+            new Date(epoch));
+
+        for (let i = 0; i < 24; i++) {
+            expected.push(dateInMilliseconds);
+            dateInMilliseconds -= millisecondsInOneHour;
+        }
+        const res = statsModel.getSortedSetHours(epoch);
+
+        assert.deepStrictEqual(res, expected);
+    });
+
+    it('should apply TTL on a new sorted set using addToSortedSet', done => {
+        const key = 'a-test-key';
+        const score = 100;
+        const value = 'a-value';
+
+        statsModel.addToSortedSet(key, score, value, (err, res) => {
+            assert.ifError(err);
+            // check both a "zadd" and "expire" occurred
+            assert.equal(res, 1);
+            // check TTL applied
+            redisClient.ttl(key, (err, res) => {
+                assert.ifError(err);
+                assert(res > 0);
+                done();
+            });
+        });
+    });
 });
