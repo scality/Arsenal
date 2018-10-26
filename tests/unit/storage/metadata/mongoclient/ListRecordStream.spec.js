@@ -233,4 +233,31 @@ describe('mongoclient.ListRecordStream', () => {
         logEntries.forEach(entry => lrs.write(entry));
         lrs.end();
     });
+
+    it('should start after latest entry if uniqID is not encountered', done => {
+        const logEntries = [
+            Object.assign({}, mongoProcessedLogEntries.insert,
+                          { h: 1234, ts: Timestamp.fromNumber(45) }),
+            Object.assign({}, mongoProcessedLogEntries.insert,
+                          { h: 5678, ts: Timestamp.fromNumber(44) }),
+            Object.assign({}, mongoProcessedLogEntries.insert,
+                          { h: -1234, ts: Timestamp.fromNumber(42) }),
+            Object.assign({}, mongoProcessedLogEntries.insert,
+                          { h: 2345, ts: Timestamp.fromNumber(42) }),
+        ];
+        const lrs = new ListRecordStream(logger, '4242', '-1234');
+        let nbReceivedEntries = 0;
+        lrs.on('data', entry => {
+            assert.deepStrictEqual(entry, expectedStreamEntries.insert);
+            ++nbReceivedEntries;
+        });
+        lrs.on('end', () => {
+            assert.strictEqual(nbReceivedEntries, 1);
+            assert.deepStrictEqual(JSON.parse(lrs.getOffset()),
+                                   { uniqID: '2345' });
+            done();
+        });
+        logEntries.forEach(entry => lrs.write(entry));
+        lrs.end();
+    });
 });
