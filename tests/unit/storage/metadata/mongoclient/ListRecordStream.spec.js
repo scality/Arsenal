@@ -219,15 +219,19 @@ describe('mongoclient.ListRecordStream', () => {
                           { h: 2345, ts: Timestamp.fromNumber(42) }),
         ];
         const lrs = new ListRecordStream(logger, '5678');
+        assert.strictEqual(lrs.reachedUnpublishedListing(), false);
         let nbReceivedEntries = 0;
         lrs.on('data', entry => {
             assert.deepStrictEqual(entry, expectedStreamEntries.insert);
+            assert.strictEqual(lrs.reachedUnpublishedListing(), true);
             ++nbReceivedEntries;
         });
         lrs.on('end', () => {
             assert.strictEqual(nbReceivedEntries, 2);
             assert.deepStrictEqual(JSON.parse(lrs.getOffset()),
                                    { uniqID: '2345' });
+            assert.strictEqual(lrs.getSkipCount(), 2);
+            assert.strictEqual(lrs.reachedUnpublishedListing(), true);
             done();
         });
         logEntries.forEach(entry => lrs.write(entry));
@@ -255,6 +259,8 @@ describe('mongoclient.ListRecordStream', () => {
             assert.strictEqual(nbReceivedEntries, 1);
             assert.deepStrictEqual(JSON.parse(lrs.getOffset()),
                                    { uniqID: '2345' });
+            assert.strictEqual(lrs.getSkipCount(), 3);
+            assert.strictEqual(lrs.reachedUnpublishedListing(), true);
             done();
         });
         logEntries.forEach(entry => lrs.write(entry));
