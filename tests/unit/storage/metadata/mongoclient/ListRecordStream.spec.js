@@ -293,6 +293,33 @@ describe('mongoclient.ListRecordStream', () => {
             }
         });
     });
+    it('should consume from the first entry if there is no saved ID', done => {
+        const logEntries = [
+            Object.assign({}, mongoProcessedLogEntries.insert,
+                          { h: 1234, ts: Timestamp.fromNumber(42) }),
+            Object.assign({}, mongoProcessedLogEntries.insert,
+                          { h: 5678, ts: Timestamp.fromNumber(42) }),
+            Object.assign({}, mongoProcessedLogEntries.insert,
+                          { h: -1234, ts: Timestamp.fromNumber(42) }),
+            Object.assign({}, mongoProcessedLogEntries.insert,
+                          { h: 2345, ts: Timestamp.fromNumber(42) }),
+        ];
+        const cursor = new MongoCursorMock(logEntries);
+        const lrs = new ListRecordStream(cursor, logger, undefined, '-1234');
+        let nbReceivedEntries = 0;
+        lrs.on('data', entry => {
+            assert.deepStrictEqual(entry, expectedStreamEntries.insert);
+            ++nbReceivedEntries;
+            if (cursor.hasSentAllItems()) {
+                assert.strictEqual(nbReceivedEntries, 4);
+                assert.deepStrictEqual(JSON.parse(lrs.getOffset()),
+                                       { uniqID: '2345' });
+                assert.strictEqual(lrs.getSkipCount(), 0);
+                assert.strictEqual(lrs.reachedUnpublishedListing(), true);
+                done();
+            }
+        });
+    });
     it('should emit an error event when cursor returns an error', done => {
         const cursor = new MongoCursorMock([], 0);
         const lrs = new ListRecordStream(cursor, logger, '4242', '-1234');
