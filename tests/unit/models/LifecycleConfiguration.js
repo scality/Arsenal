@@ -119,7 +119,11 @@ const invalidFilters = [
     { tag: 'Tag', label: 'no-value', error: 'MissingRequiredParameter',
         errMessage: 'Tag XML does not contain both Key and Value' },
     { tag: 'Tag', label: 'key-too-long', error: 'InvalidRequest',
-        errMessage: 'Tag Key must be a length between 1 and 128 char' }];
+        errMessage: 'A Tag\'s Key must be a length between 1 and 128' },
+    { tag: 'Tag', label: 'value-too-long', error: 'InvalidRequest',
+        errMessage: 'A Tag\'s Value must be a length between 0 and 256' },
+    { tag: 'Tag', label: 'prefix-too-long', error: 'InvalidRequest',
+        errMessage: 'The maximum size of a prefix is 1024' }];
 
 function generateAction(errorTag, tagObj) {
     const xmlObj = {};
@@ -177,6 +181,14 @@ function generateFilter(errorTag, tagObj) {
         if (tagObj.label === 'key-too-long') {
             const longKey = 'a'.repeat(129);
             middleTags = `<Tag><Key>${longKey}</Key><Value></Value></Tag>`;
+        }
+        if (tagObj.label === 'value-too-long') {
+            const longValue = 'b'.repeat(257);
+            middleTags = `<Tag><Key>a</Key><Value>${longValue}</Value></Tag>`;
+        }
+        if (tagObj.label === 'prefix-too-long') {
+            const longValue = 'a'.repeat(1025);
+            middleTags = `<Prefix>${longValue}</Prefix>`;
         }
         if (tagObj.label === 'mult-prefixes') {
             middleTags = '<Prefix>foo</Prefix><Prefix>bar</Prefix>' +
