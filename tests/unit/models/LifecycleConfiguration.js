@@ -1,5 +1,6 @@
 const assert = require('assert');
 const { parseString } = require('xml2js');
+const errors = require('../../../lib/errors');
 
 const LifecycleConfiguration =
     require('../../../lib/models/LifecycleConfiguration.js');
@@ -10,6 +11,18 @@ const days = {
     Expiration: 'Days',
 };
 
+const mockConfig = {
+    replicationEndpoints: [
+        {
+            site: 'a',
+        },
+        {
+            site: 'b',
+        },
+    ],
+};
+
+const MAX_DAYS = 2147483647; // Max 32-bit signed binary integer.
 const date = new Date();
 date.setUTCHours(0, 0, 0, 0);
 
@@ -57,12 +70,6 @@ const requiredTags = [
         errMessage: 'Rule xml does not include valid Filter or Prefix' },
     { tag: 'Action', error: 'InvalidRequest',
         errMessage: 'Rule does not include valid action' }];
-
-const notImplementedActions = [
-    { tag: 'Transition',
-        errMessage: 'Transition lifecycle action not yet implemented' },
-    { tag: 'NoncurrentVersionTransition',
-        errMessage: 'Transition lifecycle action not yet implemented' }];
 
 const invalidActions = [
     { tag: 'AbortIncompleteMultipartUpload', label: 'no-time',
@@ -255,8 +262,8 @@ function generateParsedXml(errorTag, tagObj, cb) {
 }
 
 function checkError(parsedXml, error, errMessage, cb) {
-    const lcConfig = new LifecycleConfiguration(parsedXml).
-        getLifecycleConfiguration();
+    const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig)
+        .getLifecycleConfiguration();
     assert.strictEqual(lcConfig.error[error], true);
     assert.strictEqual(lcConfig.error.description, errMessage);
     cb();
@@ -278,16 +285,6 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
         done => {
             generateParsedXml(t.tag, null, parsedXml => {
                 checkError(parsedXml, t.error, t.errMessage, done);
-            });
-        });
-    });
-
-    notImplementedActions.forEach(action => {
-        const expError = 'NotImplemented';
-        it(`should return ${expError} error for ${action.tag} action`,
-        done => {
-            generateParsedXml('Action', action, parsedXml => {
-                checkError(parsedXml, expError, action.errMessage, done);
             });
         });
     });
@@ -342,27 +339,320 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
         });
     });
 
-    it('should use last listed Prefix if multiple Prefixes included', done => {
-        tagObj.label = 'mult-prefixes';
-        tagObj.lastPrefix = 'coco';
-        generateParsedXml('Filter', tagObj, parsedXml => {
-            const lcConfig = new LifecycleConfiguration(parsedXml).
-                getLifecycleConfiguration();
-            assert.strictEqual(tagObj.lastPrefix,
-                lcConfig.rules[0].filter.rulePrefix);
-            done();
-        });
-    });
-
     it('should apply all unique Key tags if multiple tags included', done => {
         tagObj.label = 'mult-tags';
         generateParsedXml('Filter', tagObj, parsedXml => {
-            const lcConfig = new LifecycleConfiguration(parsedXml).
-                getLifecycleConfiguration();
+            const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig)
+                .getLifecycleConfiguration();
             const expected = [{ key: 'color', val: 'blue' },
                 { key: 'shape', val: 'circle' }];
             assert.deepStrictEqual(expected, lcConfig.rules[0].filter.tags);
             done();
+        });
+    });
+});
+
+describe('LifecycleConfiguration', () => {
+    const lifecycleConfiguration = new LifecycleConfiguration({}, mockConfig);
+    function getParsedXML() {
+        return {
+            LifecycleConfiguration: {
+                Rule: [{
+                    ID: ['test-id'],
+                    Prefix: [''],
+                    Status: ['Enabled'],
+                    Expiration: [{
+                        Days: 1,
+                    }],
+                }],
+            },
+        };
+    }
+
+    describe('::_getRuleFilter', () => {
+        it('should get Prefix', () => {
+            const rule = getParsedXML().LifecycleConfiguration.Rule[0];
+            const ruleFilter = lifecycleConfiguration._getRuleFilter(rule);
+            assert.strictEqual(ruleFilter, "prefix ''");
+        });
+
+        it('should get Filter.Prefix', () => {
+            const rule = getParsedXML().LifecycleConfiguration.Rule[0];
+            delete rule.Prefix;
+            rule.Filter = [{ Prefix: [''] }];
+            const ruleFilter = lifecycleConfiguration._getRuleFilter(rule);
+            assert.strictEqual(ruleFilter, "filter '(prefix=)'");
+        });
+
+        it('should get Filter.Tag', () => {
+            const rule = getParsedXML().LifecycleConfiguration.Rule[0];
+            delete rule.Prefix;
+            rule.Filter = [{ Tag: [{ Key: ['a'], Value: [''] }] }];
+            const ruleFilter = lifecycleConfiguration._getRuleFilter(rule);
+            assert.strictEqual(ruleFilter, "filter '(tag: key=a, value=)'");
+        });
+
+        it('should get Filter.And', () => {
+            const rule = getParsedXML().LifecycleConfiguration.Rule[0];
+            delete rule.Prefix;
+            rule.Filter = [{
+                And: [{
+                    Prefix: [''],
+                    Tag: [{
+                        Key: ['a'],
+                        Value: ['b'],
+                    },
+                    {
+                        Key: ['c'],
+                        Value: ['d'],
+                    }],
+                }],
+            }];
+            const ruleFilter = lifecycleConfiguration._getRuleFilter(rule);
+            assert.strictEqual(ruleFilter, 'filter ' +
+                "'(prefix= and tag: key=a, value=b and tag: key=c, value=d)'");
+        });
+
+        it('should get Filter.And without Prefix', () => {
+            const rule = getParsedXML().LifecycleConfiguration.Rule[0];
+            delete rule.Prefix;
+            rule.Filter = [{
+                And: [{
+                    Tag: [{
+                        Key: ['a'],
+                        Value: ['b'],
+                    },
+                    {
+                        Key: ['c'],
+                        Value: ['d'],
+                    }],
+                }],
+            }];
+            const ruleFilter = lifecycleConfiguration._getRuleFilter(rule);
+            assert.strictEqual(ruleFilter,
+                "filter '(tag: key=a, value=b and tag: key=c, value=d)'");
+        });
+    });
+
+    describe('::_checkDays', () => {
+        it(`should return no error when days value is 0 - ${MAX_DAYS}`, () => {
+            const error = lifecycleConfiguration._checkDays({
+                days: 0,
+            });
+            assert.strictEqual(error, null);
+        });
+
+        it('should return error when exceeding max value', () => {
+            const error = lifecycleConfiguration._checkDays({
+                days: MAX_DAYS + 1,
+                field: 'a',
+                ancestor: 'b',
+            });
+            const msg = "'a' in b action must not exceed 2147483647";
+            const expected = errors.MalformedXML.customizeDescription(msg);
+            assert.deepStrictEqual(error, expected);
+        });
+
+        it('should return error when negative value', () => {
+            const error = lifecycleConfiguration._checkDays({
+                days: -1,
+                field: 'a',
+                ancestor: 'b',
+            });
+            const msg = "'a' in b action must be nonnegative";
+            const expected = errors.InvalidArgument.customizeDescription(msg);
+            assert.deepStrictEqual(error, expected);
+        });
+    });
+
+    describe('::_checkStorageClasses', () => {
+        it('should return no error when StorageClass is first one used', () => {
+            const error = lifecycleConfiguration._checkStorageClasses({
+                usedStorageClasses: [],
+                storageClass: 'a',
+            });
+            assert.strictEqual(error, null);
+        });
+
+        it('should return no error when StorageClass has not been used', () => {
+            const error = lifecycleConfiguration._checkStorageClasses({
+                usedStorageClasses: ['a'],
+                storageClass: 'b',
+            });
+            assert.strictEqual(error, null);
+        });
+
+        it('should return error when unknown StorageClass is given', () => {
+            const error = lifecycleConfiguration._checkStorageClasses({
+                storageClass: 'c',
+            });
+            const msg = "'StorageClass' must be one of 'a', 'b'";
+            const expected = errors.MalformedXML.customizeDescription(msg);
+            assert.deepStrictEqual(error, expected);
+        });
+
+        it('should return error when StorageClass has been used', () => {
+            const error = lifecycleConfiguration._checkStorageClasses({
+                usedStorageClasses: ['a'],
+                storageClass: 'a',
+                field: 'a',
+                ancestor: 'b',
+                rule: getParsedXML().LifecycleConfiguration.Rule[0],
+            });
+            const msg = "'StorageClass' must be different for 'b' actions " +
+                "in same 'Rule' with prefix ''";
+            const expected = errors.InvalidRequest.customizeDescription(msg);
+            assert.deepStrictEqual(error, expected);
+        });
+    });
+
+    describe('::_checkTimeType', () => {
+        it('should return no error when first time type in rule', () => {
+            const error = lifecycleConfiguration._checkTimeType({
+                usedTimeType: null,
+                currentTimeType: 'Date',
+                rule: {},
+            });
+            assert.strictEqual(error, null);
+        });
+
+        it('should return no error when time type is same as others', () => {
+            const error = lifecycleConfiguration._checkTimeType({
+                usedTimeType: 'Date',
+                currentTimeType: 'Date',
+                rule: {},
+            });
+            assert.strictEqual(error, null);
+        });
+
+        it('should return error when time type differs from others', () => {
+            const error = lifecycleConfiguration._checkTimeType({
+                usedTimeType: 'Date',
+                currentTimeType: 'Days',
+                rule: getParsedXML().LifecycleConfiguration.Rule[0],
+            });
+            const msg = "Found mixed 'Date' and 'Days' based Transition " +
+                "actions in lifecycle rule for prefix ''";
+            const expected = errors.InvalidRequest.customizeDescription(msg);
+            assert.deepStrictEqual(error, expected);
+        });
+
+        it('should return error when time type differs across expiration',
+        () => {
+            const error = lifecycleConfiguration._checkTimeType({
+                usedTimeType: 'Date',
+                currentTimeType: 'Date',
+                rule: getParsedXML().LifecycleConfiguration.Rule[0],
+            });
+            const msg = "Found mixed 'Date' and 'Days' based Expiration and " +
+                "Transition actions in lifecycle rule for prefix ''";
+            const expected = errors.InvalidRequest.customizeDescription(msg);
+            assert.deepStrictEqual(error, expected);
+        });
+    });
+
+    describe('::_checkDate', () => {
+        it('should return no error valid ISO date', () => {
+            const date = '2016-01-01T00:00:00.000Z';
+            const error = lifecycleConfiguration._checkDate(date);
+            assert.strictEqual(error, null);
+        });
+
+        it('should return error when invalid ISO date', () => {
+            const date = 'Fri, 01 Jan 2016 00:00:00 GMT';
+            const error = lifecycleConfiguration._checkDate(date);
+            const msg = 'Date must be in ISO 8601 format';
+            const expected = errors.InvalidArgument.customizeDescription(msg);
+            assert.deepStrictEqual(error, expected);
+        });
+    });
+
+    describe('::_parseNoncurrentVersionTransition', () => {
+        function getRule() {
+            return {
+                NoncurrentVersionTransition: [
+                    {
+                        NoncurrentDays: ['0'],
+                        StorageClass: ['a'],
+                    },
+                    {
+                        NoncurrentDays: ['1'],
+                        StorageClass: ['b'],
+                    },
+                ],
+            };
+        }
+
+        it('should return correctly parsed result object', () => {
+            const rule = getRule();
+            const result =
+                lifecycleConfiguration._parseNoncurrentVersionTransition(rule);
+            assert.deepStrictEqual(result, {
+                nonCurrentVersionTransition: [
+                    {
+                        noncurrentDays: 0,
+                        storageClass: 'a',
+                    },
+                    {
+                        noncurrentDays: 1,
+                        storageClass: 'b',
+                    },
+                ],
+            });
+        });
+
+        it('should return parsed result object with error', () => {
+            const rule = getRule();
+            rule.NoncurrentVersionTransition[0].NoncurrentDays[0] = '-1';
+            const result =
+                lifecycleConfiguration._parseNoncurrentVersionTransition(rule);
+            const msg = "'NoncurrentDays' in NoncurrentVersionTransition " +
+                'action must be nonnegative';
+            const error = errors.InvalidArgument.customizeDescription(msg);
+            assert.deepStrictEqual(result.error, error);
+        });
+    });
+
+    describe('::_parseTransition', () => {
+        function getRule() {
+            return {
+                Transition: [
+                    {
+                        Days: ['0'],
+                        StorageClass: ['a'],
+                    },
+                    {
+                        Days: ['1'],
+                        StorageClass: ['b'],
+                    },
+                ],
+            };
+        }
+
+        it('should return correctly parsed result object', () => {
+            const rule = getRule();
+            const result = lifecycleConfiguration._parseTransition(rule);
+            assert.deepStrictEqual(result, {
+                transition: [
+                    {
+                        days: 0,
+                        storageClass: 'a',
+                    },
+                    {
+                        days: 1,
+                        storageClass: 'b',
+                    },
+                ],
+            });
+        });
+
+        it('should return parsed result object with error', () => {
+            const rule = getRule();
+            rule.Transition[0].Days[0] = '-1';
+            const result = lifecycleConfiguration._parseTransition(rule);
+            const msg = "'Days' in Transition action must be nonnegative";
+            const error = errors.InvalidArgument.customizeDescription(msg);
+            assert.deepStrictEqual(result.error, error);
         });
     });
 });
