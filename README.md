@@ -1,5 +1,7 @@
 # Arsenal
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/scality/Arsenal.svg)](https://greenkeeper.io/)
+
 [![CircleCI][badgepub]](https://circleci.com/gh/scality/Arsenal)
 [![Scality CI][badgepriv]](http://ci.ironmann.io/gh/scality/Arsenal)
 
