@@ -153,6 +153,11 @@ describe('ObjectMD class setters/getters', () => {
         }]);
     });
 
+    it('ObjectMD::setReplicationStorageType', () => {
+        md.setReplicationStorageType('a');
+        assert.strictEqual(md.getReplicationStorageType(), 'a');
+    });
+
     it('ObjectMD::setReplicationStorageClass', () => {
         md.setReplicationStorageClass('a');
         assert.strictEqual(md.getReplicationStorageClass(), 'a');
