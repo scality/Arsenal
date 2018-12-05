@@ -58,5 +58,18 @@
     "test": "mocha --recursive --timeout 5500 tests/unit",
     "ft_test": "find tests/functional -name \"*.js\" | grep -v \"utils/\" | xargs mocha --timeout 120000"
   },
-  "private": true
+  "private": true,
+  "greenkeeper": {
+    "branchPrefix": "improvement/",
+    "commitMessages": {
+      "initialBadge": "docs(readme): add Greenkeeper badge",
+      "initialDependencies": "chore(package): update dependencies",
+      "initialBranches": "chore(bert-e): whitelist greenkeeper branches",
+      "dependencyUpdate": "fix(package): update ${dependency} to version ${version}",
+      "devDependencyUpdate": "chore(package): update ${dependency} to version ${version}",
+      "dependencyPin" : "fix: pin ${dependency} to ${oldVersionResolved}",
+      "devDependencyPin": "chore: pin ${dependency} to ${oldVersionResolved}",
+      "closes": "\n\nCloses #${number}"
+    }
+  }
 }
