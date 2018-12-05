@@ -6,5 +6,24 @@
         "package.json"
       ]
     }
-  }
+  },
+  "branchPrefix": "improvement/greenkeeper.io/",
+  "commitMessages": {
+    "initialBadge": "docs(readme): add Greenkeeper badge",
+    "initialDependencies": "chore(package): update dependencies",
+    "initialBranches": "chore(bert-e): whitelist greenkeeper branches",
+    "dependencyUpdate": "fix(package): update ${dependency} to version ${version}",
+    "devDependencyUpdate": "chore(package): update ${dependency} to version ${version}",
+    "dependencyPin": "fix: pin ${dependency} to ${oldVersionResolved}",
+    "devDependencyPin": "chore: pin ${dependency} to ${oldVersionResolved}",
+    "closes": "\n\nCloses #${number}"
+  },
+  "ignore": [
+    "ajv",
+    "eslint",
+    "eslint-plugin-react",
+    "eslint-config-airbnb",
+    "eslint-config-scality",
+    "lolex"
+  ]
 }

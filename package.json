@@ -18,7 +18,7 @@
   "homepage": "https://github.com/scality/Arsenal#readme",
   "dependencies": {
     "JSONStream": "^1.0.0",
-    "ajv": "6.6.1",
+    "ajv": "4.10.0",
     "async": "~2.6.1",
     "bson": "4.0.0",
     "debug": "~4.1.0",
@@ -43,11 +43,11 @@
     "ioctl": "2.0.1"
   },
   "devDependencies": {
-    "eslint": "5.9.0",
-    "eslint-plugin-react": "^7.11.1",
-    "eslint-config-airbnb": "17.1.0",
+    "eslint": "2.13.1",
+    "eslint-plugin-react": "^4.3.0",
+    "eslint-config-airbnb": "6.2.0",
     "eslint-config-scality": "scality/Guidelines#71a059ad",
-    "lolex": "3.0.0",
+    "lolex": "1.5.2",
     "mocha": "5.2.0",
     "temp": "0.8.3"
   },
@@ -55,21 +55,8 @@
     "lint": "eslint $(git ls-files '*.js')",
     "lint_md": "mdlint $(git ls-files '*.md')",
     "lint_yml": "yamllint $(git ls-files '*.yml')",
-    "test": "mocha --recursive --timeout 5500 tests/unit",
-    "ft_test": "find tests/functional -name \"*.js\" | grep -v \"utils/\" | xargs mocha --timeout 120000"
+    "test": "mocha --recursive --timeout 5500 --exit tests/unit",
+    "ft_test": "find tests/functional -name \"*.js\" | grep -v \"utils/\" | xargs mocha --timeout 120000 --exit"
   },
-  "private": true,
-  "greenkeeper": {
-    "branchPrefix": "improvement/",
-    "commitMessages": {
-      "initialBadge": "docs(readme): add Greenkeeper badge",
-      "initialDependencies": "chore(package): update dependencies",
-      "initialBranches": "chore(bert-e): whitelist greenkeeper branches",
-      "dependencyUpdate": "fix(package): update ${dependency} to version ${version}",
-      "devDependencyUpdate": "chore(package): update ${dependency} to version ${version}",
-      "dependencyPin" : "fix: pin ${dependency} to ${oldVersionResolved}",
-      "devDependencyPin": "chore: pin ${dependency} to ${oldVersionResolved}",
-      "closes": "\n\nCloses #${number}"
-    }
-  }
+  "private": true
 }
