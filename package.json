@@ -20,7 +20,7 @@
     "JSONStream": "^1.0.0",
     "ajv": "4.10.0",
     "async": "~2.6.1",
-    "bson": "4.0.0",
+    "bson": "4.0.1",
     "debug": "~4.1.0",
     "diskusage": "^1.0.0",
     "fcntl": "github:scality/node-fcntl",
