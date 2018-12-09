@@ -24,7 +24,7 @@
     "debug": "~4.1.0",
     "diskusage": "^1.0.0",
     "fcntl": "github:scality/node-fcntl",
-    "ioredis": "4.2.0",
+    "ioredis": "4.3.0",
     "ipaddr.js": "1.8.1",
     "joi": "^14.3.0",
     "level": "~4.0.0",
