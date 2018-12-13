@@ -30,8 +30,8 @@ describe('network.probe.HealthProbeServer', () => {
         let server;
         function setup(done) {
             server = new HealthProbeServer({ port: 4042 });
+            server._cbOnListening = done;
             server.start();
-            done();
         }
 
         before(done => {
