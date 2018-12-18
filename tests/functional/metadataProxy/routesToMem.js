@@ -34,13 +34,13 @@ const bucketInfo = {
     deleted: false,
     serverSideEncryption: null,
     versioningConfiguration: null,
-    websiteConfiguration: null,
     locationConstraint: 'us-east-1',
     readLocationConstraint: 'us-east-1',
     cors: null,
     replicationConfiguration: null,
     lifecycleConfiguration: null,
     uid: 'fea97818-6a9a-11e8-9777-e311618cc5d4',
+    isNFS: null,
 };
 
 const objects = [
@@ -272,5 +272,47 @@ describe('Basic Metadata Proxy Server CRUD test', function bindToThis() {
                                404);
                            done(err);
                        });
+    });
+
+    it('should succeed a health check', done => {
+        dispatcher.get('/_/healthcheck', (err, response, body) => {
+            if (err) {
+                return done(err);
+            }
+            const expectedResponse = {
+                memorybucket: {
+                    code: 200,
+                    message: 'OK',
+                },
+            };
+            assert.strictEqual(response.responseHead.statusCode, 200);
+            assert.deepStrictEqual(body, expectedResponse);
+            return done(err);
+        });
+    });
+
+    it('should work with parallel route', done => {
+        const objectName = 'theObj';
+        async.waterfall([
+            next => _createObjects([objectName], next),
+            next => {
+                dispatcher.get(
+                    `/default/parallel/${Bucket}/${objectName}`,
+                    (err, response, body) => {
+                        if (err) {
+                            return next(err);
+                        }
+                        assert.strictEqual(response.responseHead.statusCode,
+                                           200);
+                        const bucketMD = JSON.parse(body.bucket);
+                        const objectMD = JSON.parse(body.obj);
+                        const expectedObjectMD = { key: objectName };
+                        assert.deepStrictEqual(bucketMD, bucketInfo);
+                        assert.deepStrictEqual(objectMD, expectedObjectMD);
+                        return next(err);
+                    });
+            },
+            next => _deleteObjects([objectName], next),
+        ], done);
     });
 });
