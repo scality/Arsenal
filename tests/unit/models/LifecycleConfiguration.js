@@ -625,7 +625,7 @@ describe('LifecycleConfiguration', () => {
         });
     });
 
-    describe('::_parseTransition', () => {
+    describe('::_parseTransition with Days', () => {
         function getRule() {
             return {
                 Transition: [
@@ -658,13 +658,148 @@ describe('LifecycleConfiguration', () => {
             });
         });
 
-        it('should return parsed result object with error', () => {
+        it('should return parsed result object with error when days is ' +
+        'negative', () => {
             const rule = getRule();
             rule.Transition[0].Days[0] = '-1';
             const result = lifecycleConfiguration._parseTransition(rule);
             const msg = "'Days' in Transition action must be nonnegative";
             const error = errors.InvalidArgument.customizeDescription(msg);
             assert.deepStrictEqual(result.error, error);
+        });
+
+        it('should return parsed result object with error when two ' +
+        'transition days are the same', () => {
+            const rule = getRule();
+            rule.Prefix = ['prefix'];
+            rule.Transition[1].Days[0] = '0';
+            const result = lifecycleConfiguration._parseTransition(rule);
+            const msg = "'Days' in the 'Transition' action for StorageClass " +
+                "'a' for prefix 'prefix' must be at least one day apart from " +
+                "prefix 'prefix' in the 'Transition' action for StorageClass " +
+                "'b'";
+            const error = errors.InvalidArgument.customizeDescription(msg);
+            assert.deepStrictEqual(result.error, error);
+        });
+    });
+
+    describe('::_parseTransition with Date', () => {
+        it('should return parsed result object with error when dates are not ' +
+        'more than one day apart', () => {
+            const rule = {
+                Prefix: ['prefix'],
+                Transition: [
+                    {
+                        Date: ['2019-01-01T00:00:00.000Z'],
+                        StorageClass: ['a'],
+                    },
+                    {
+                        Date: ['2019-01-01T23:59:59.999Z'],
+                        StorageClass: ['b'],
+                    },
+                ],
+            };
+            const result = lifecycleConfiguration._parseTransition(rule);
+            const msg = "'Date' in the 'Transition' action for StorageClass " +
+                "'a' for prefix 'prefix' must be at least one day apart from " +
+                "prefix 'prefix' in the 'Transition' action for StorageClass " +
+                "'b'";
+            const error = errors.InvalidArgument.customizeDescription(msg);
+            assert.deepStrictEqual(result.error, error);
+        });
+    });
+
+    describe('::_checkTimeGap', () => {
+        it('should not return error when only one transition', () => {
+            const params = {
+                rule: {
+                    Transition: [{
+                        Days: ['0'],
+                        StorageClass: ['a'],
+                    }],
+                },
+                days: 0,
+                storageClass: 'a',
+            };
+            const error = lifecycleConfiguration._checkTimeGap(params);
+            assert.strictEqual(error, undefined);
+        });
+
+        it('should not return error when transitions have days greater than ' +
+        '24 hours apart', () => {
+            const params = {
+                rule: {
+                    Transition: [{
+                        Days: ['0'],
+                        StorageClass: ['a'],
+                    }, {
+                        Days: ['1'],
+                        StorageClass: ['b'],
+                    }],
+                },
+                days: 0,
+                storageClass: 'a',
+            };
+            const error = lifecycleConfiguration._checkTimeGap(params);
+            assert.strictEqual(error, undefined);
+        });
+
+        it('should return error when transitions have same day', () => {
+            const params = {
+                rule: {
+                    Prefix: 'prefix',
+                    Transition: [{
+                        Days: ['0'],
+                        StorageClass: ['a'],
+                    }, {
+                        Days: ['0'],
+                        StorageClass: ['b'],
+                    }],
+                },
+                days: 0,
+                storageClass: 'a',
+            };
+            const error = lifecycleConfiguration._checkTimeGap(params);
+            assert(error.InvalidArgument);
+        });
+
+        it('should not return error when transitions have dates greater than ' +
+        '24 hours apart', () => {
+            const params = {
+                rule: {
+                    Transition: [{
+                        Date: ['2019-01-01T00:00:00.000Z'],
+                        StorageClass: ['a'],
+                    }, {
+                        Date: ['2019-01-02T00:00:00.000Z'],
+                        StorageClass: ['b'],
+                    }],
+                },
+                date: '2019-01-01T00:00:00.000Z',
+                storageClass: 'a',
+            };
+            const error = lifecycleConfiguration._checkTimeGap(params);
+            assert.strictEqual(error, undefined);
+        });
+
+        it('should return error when transitions have dates less than 24 ' +
+        'hours apart', () => {
+            const params = {
+                rule: {
+                    Prefix: 'prefix',
+                    Transition: [{
+                        Date: ['2019-01-01T00:00:00.000Z'],
+                        StorageClass: ['a'],
+                    }, {
+                        Date: ['2019-01-01T23:59:59.999Z'],
+                        StorageClass: ['b'],
+                    }],
+                },
+                date: '2019-01-01T00:00:00.000Z',
+                storageClass: 'a',
+            };
+            const error = lifecycleConfiguration._checkTimeGap(params);
+            assert(error.InvalidArgument);
         });
     });
 });
