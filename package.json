@@ -20,6 +20,9 @@
     "JSONStream": "^1.0.0",
     "ajv": "4.10.0",
     "async": "~2.6.1",
+    "aws-sdk": "2.28.0",
+    "azure-storage": "^2.1.0",
+    "backo": "^1.1.0",
     "bson": "4.0.0",
     "debug": "~4.1.0",
     "diskusage": "^1.0.0",
@@ -36,6 +39,7 @@
     "socket.io-client": "~2.2.0",
     "utf8": "3.0.0",
     "uuid": "^3.0.1",
+    "vaultclient": "scality/vaultclient#754b6e1",
     "werelogs": "scality/werelogs#0ff7ec82",
     "xml2js": "~0.4.16"
   },
