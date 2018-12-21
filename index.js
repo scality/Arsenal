@@ -78,6 +78,8 @@ module.exports = {
             SubStreamInterface:
                 require('./lib/s3middleware/azureHelpers/SubStreamInterface'),
         },
+        prepareStream: require('./lib/s3middleware/prepareStream'),
+        processMpuParts: require('./lib/s3middleware/processMpuParts'),
     },
     storage: {
         metadata: {
@@ -119,6 +121,21 @@ module.exports = {
             file: {
                 DataFileStore:
                 require('./lib/storage/data/file/DataFileStore'),
+                DataFileInterface:
+                require('./lib/storage/data/file/DataFileInterface'),
+            },
+            external: {
+                AwsClient: require('./lib/storage/data/external/AwsClient'),
+                AzureClient: require('./lib/storage/data/external/AzureClient'),
+                GcpClient: require('./lib/storage/data/external/GcpClient'),
+                GCP: require('./lib/storage/data/external/GCP/GcpService'),
+                GcpUtils: require('./lib/storage/data/external/GCP/GcpUtils'),
+                GcpSigner: require('./lib/storage/data/external/GCP/GcpSigner'),
+                PfsClient: require('./lib/storage/data/external/PfsClient'),
+                backendUtils: require('./lib/storage/data/external/utils'),
+            },
+            inMemory: {
+                datastore: require('./lib/storage/data/in_memory/datastore'),
             },
         },
         utils: require('./lib/storage/utils'),
