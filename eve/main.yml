@@ -32,6 +32,11 @@ stages:
           name: run lint_md
           command: npm run --silent lint_md
       - ShellCommand:
+          name: add hostname
+          command: sudo sh -c "echo '127.0.0.1 testrequestbucket.localhost' \
+            >> /etc/hosts"
+
+      - ShellCommand:
           name: run test
           command: npm run --silent test
       - ShellCommand:

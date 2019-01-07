@@ -1,4 +1,5 @@
 'use strict'; // eslint-disable-line strict
+const { EventEmitter } = require('events');
 
 const AuthInfo = require('../../lib/auth/AuthInfo');
 const constants = require('../../lib/constants');
@@ -110,5 +111,39 @@ class DummyRequestLogger {
     }
 }
 
+class DummyAuthConfig extends EventEmitter {
+    constructor() {
+        super();
+
+        this.backends = { auth: 'mem' };
+        this.authData = {
+            accounts:
+            [{ name: 'Bart',
+                email: 'sampleaccount1@sampling.com',
+                arn: 'arn:aws:iam::123456789012:root',
+                canonicalID:
+                    '79a59df900b949e55d96a1e698fbacedf' +
+                    'd6e09d98eacf8f8d5218e7cd47ef2be',
+                shortid: '123456789012',
+                keys: [{ access: 'accessKey1', secret: 'verySecretKey1' }] },
+            { name: 'Lisa',
+                email: 'sampleaccount2@sampling.com',
+                arn: 'arn:aws:iam::123456789013:root',
+                canonicalID:
+                    '79a59df900b949e55d96a1e698fbacedf' +
+                    'd6e09d98eacf8f8d5218e7cd47ef2bf',
+                shortid: '123456789013',
+                keys: [{ access: 'accessKey2', secret: 'verySecretKey2' }] },
+            ],
+        };
+    }
+
+    setAuthDataAccounts(accounts) {
+        this.authData.accounts = accounts;
+        this.emit('authdata-update');
+    }
+}
+
 module.exports = { makeid, timeDiff, makeAuthInfo,
-    createAlteredRequest, zpad, DummyRequestLogger };
+    createAlteredRequest, zpad, DummyRequestLogger,
+    DummyAuthConfig };
