@@ -201,6 +201,26 @@ describe('ObjectMD class setters/getters', () => {
         assert.strictEqual(
             md.getReplicationSiteDataStoreVersionId('zenko'), 'a');
     });
+
+    it('ObjectMD::getUserMetadata', () => {
+        md.setUserMetadata({
+            'x-amz-meta-foo': 'bar',
+            'x-amz-meta-baz': 'qux',
+            // this one should be filtered out
+            'x-amz-storage-class': 'STANDARD_IA',
+            // ACLs are updated
+            'acl': {
+                FULL_CONTROL: ['john'],
+            },
+        });
+        assert.deepStrictEqual(JSON.parse(md.getUserMetadata()), {
+            'x-amz-meta-foo': 'bar',
+            'x-amz-meta-baz': 'qux',
+        });
+        assert.deepStrictEqual(md.getAcl(), {
+            FULL_CONTROL: ['john'],
+        });
+    });
 });
 
 describe('ObjectMD import from stored blob', () => {
