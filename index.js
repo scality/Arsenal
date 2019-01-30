@@ -28,6 +28,7 @@ module.exports = {
     Clustering: require('./lib/Clustering'),
     testing: {
         matrix: require('./lib/testing/matrix.js'),
+        MetadataMock: require('./lib/testing/MetadataMock.js'),
     },
     versioning: {
         VersioningConstants: require('./lib/versioning/constants.js')
