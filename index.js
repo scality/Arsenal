@@ -118,6 +118,10 @@ module.exports = {
             },
         },
         data: {
+            DataWrapper: require('./lib/storage/data/DataWrapper'),
+            MultipleBackendGateway:
+            require('./lib/storage/data/MultipleBackendGateway'),
+            parseLC: require('./lib/storage/data/LocationConstraintParser'),
             file: {
                 DataFileStore:
                 require('./lib/storage/data/file/DataFileStore'),
@@ -141,6 +145,7 @@ module.exports = {
         utils: require('./lib/storage/utils'),
     },
     models: {
+        BackendInfo: require('./lib/models/BackendInfo'),
         BucketInfo: require('./lib/models/BucketInfo'),
         ObjectMD: require('./lib/models/ObjectMD'),
         ObjectMDLocation: require('./lib/models/ObjectMDLocation'),
