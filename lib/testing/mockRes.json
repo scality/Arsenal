@@ -11,7 +11,6 @@
             },
             "/default/attributes/bucket1": {
                 "resType": "bucketMD",
-                "content-type": "application/json",
                 "name": "bucket1"
             },
             "/default/attributes/bucket2": {
@@ -40,11 +39,11 @@
             },
             "/_/metadata/admin/raft_sessions/1/log": {
                 "resType": "raftLogs",
-                "name": 1
+                "name": "1"
             },
             "/_/metadata/default/bucket/bucket1": {
                 "resType": "objectList",
-                "name": "objectList"
+                "name": "objectList1"
             }
         }
     },
@@ -52,90 +51,54 @@
         "ok": {}
     },
     "objectList": {
-        "bucketlist": {
-            "Contents": []
+        "objectList1": {
+            "Contents": [
+                {
+                    "key": "testobject1",
+                    "value": {
+                        "owner-display-name": "test_1518720219",
+                        "owner-id": "94224c921648ada653f584f3caf42654ccf3f1cbd2e569a24e88eb460f2f84d8",
+                        "content-length": 0,
+                        "content-md5": "d41d8cd98f00b204e9800998ecf8427e",
+                        "x-amz-version-id": "",
+                        "x-amz-server-version-id": "",
+                        "x-amz-storage-class": "STANDARD",
+                        "x-amz-server-side-encryption": "",
+                        "x-amz-server-side-encryption-aws-kms-key-id": "",
+                        "x-amz-server-side-encryption-customer-algorithm": "",
+                        "x-amz-website-redirect-location": "",
+                        "acl": {
+                            "Canned": "private",
+                            "FULL_CONTROL": [],
+                            "WRITE_ACP": [],
+                            "READ": [],
+                            "READ_ACP": []
+                        },
+                        "key": "",
+                        "location": "",
+                        "isDeleteMarker": false,
+                        "tags": {},
+                        "replicationInfo": {
+                            "status": "",
+                            "backends": [],
+                            "content": [],
+                            "destination": "",
+                            "storageClass": "",
+                            "role": "",
+                            "storageType": "",
+                            "dataStoreVersionId": ""
+                        },
+                        "dataStoreName": "us-east-1",
+                        "last-modified": "2018-02-16T22:43:37.174Z",
+                        "md-model-version": 3
+                    }
+                }
+            ]
         }
     },
     "objectMD": {
         "object1": {
-            "key": "object1",
-            "value": {
-                "owner-display-name": "Bart",
-                "owner-id": "79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2be",
-                "content-length": 0,
-                "content-md5": "d41d8cd98f00b204e9800998ecf8427e",
-                "x-amz-version-id": "null",
-                "x-amz-server-version-id": "",
-                "x-amz-storage-class": "STANDARD",
-                "x-amz-server-side-encryption": "",
-                "x-amz-server-side-encryption-aws-kms-key-id": "",
-                "x-amz-server-side-encryption-customer-algorithm": "",
-                "x-amz-website-redirect-location": "",
-                "acl": {
-                    "Canned": "private",
-                    "FULL_CONTROL": [],
-                    "WRITE_ACP": [],
-                    "READ": [],
-                    "READ_ACP": []
-                },
-                "key": "",
-                "location": null,
-                "isDeleteMarker": false,
-                "tags": {},
-                "replicationInfo": {
-                    "status": "",
-                    "backends": [],
-                    "content": [],
-                    "destination": "",
-                    "storageClass": "",
-                    "role": "",
-                    "storageType": "",
-                    "dataStoreVersionId": ""
-                },
-                "dataStoreName": "us-east-1",
-                "last-modified": "2018-02-16T22:43:37.174Z",
-                "md-model-version": 3
-            }
-        },
-        "object2": {
-            "key": "object2",
-            "value": {
-                "owner-display-name": "Bart",
-                "owner-id": "79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2be",
-                "content-length": 0,
-                "content-md5": "d41d8cd98f00b204e9800998ecf8427e",
-                "x-amz-version-id": "null",
-                "x-amz-server-version-id": "",
-                "x-amz-storage-class": "STANDARD",
-                "x-amz-server-side-encryption": "",
-                "x-amz-server-side-encryption-aws-kms-key-id": "",
-                "x-amz-server-side-encryption-customer-algorithm": "",
-                "x-amz-website-redirect-location": "",
-                "acl": {
-                    "Canned": "private",
-                    "FULL_CONTROL": [],
-                    "WRITE_ACP": [],
-                    "READ": [],
-                    "READ_ACP": []
-                },
-                "key": "",
-                "location": null,
-                "isDeleteMarker": false,
-                "tags": {},
-                "replicationInfo": {
-                    "status": "",
-                    "backends": [],
-                    "content": [],
-                    "destination": "",
-                    "storageClass": "",
-                    "role": "",
-                    "storageType": "",
-                    "dataStoreVersionId": ""
-                },
-                "dataStoreName": "us-east-1",
-                "last-modified": "2018-02-16T22:43:37.174Z",
-                "md-model-version": 3
-            }
+            "key": "dogsAreGood"
         }
     },
     "bucketMD": {
@@ -165,7 +128,7 @@
             "uid": null
         },
         "bucket2": {
-            "_acl": {
+            "acl": {
                 "Canned": "private",
                 "FULL_CONTROL": [],
                 "WRITE": [],
@@ -173,25 +136,228 @@
                 "READ": [],
                 "READ_ACP": []
             },
-            "_name": "bucket2",
-            "_owner": "79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2be",
-            "_ownerDisplayName": "Bart",
-            "_creationDate": "2018-02-16T21:55:16.415Z",
-            "_mdBucketModelVersion": 5,
-            "_transient": false,
-            "_deleted": false,
-            "_serverSideEncryption": null,
-            "_versioningConfiguration": null,
-            "_locationConstraint": "us-east-1",
-            "_websiteConfiguration": null,
-            "_replicationConfiguration": null,
-            "_cors": null,
-            "_lifecycleConfiguration": null,
-            "_uid": null
+            "name": "bucket2",
+            "owner": "79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2be",
+            "ownerDisplayName": "Bart",
+            "creationDate": "2018-02-16T21:55:16.415Z",
+            "mdBucketModelVersion": 5,
+            "transient": false,
+            "deleted": false,
+            "serverSideEncryption": null,
+            "versioningConfiguration": null,
+            "locationConstraint": "us-east-1",
+            "websiteConfiguration": null,
+            "replicationConfiguration": null,
+            "cors": null,
+            "lifecycleConfiguration": null,
+            "uid": null
         }
     },
     "bucketList": [ "bucket1", "bucket2" ],
-    "raftLogs": [],
+    "raftLogs": {
+        "1": {
+            "info": {
+                "start": 1,
+                "cseq": 7,
+                "prune": 1
+            },
+            "log": [
+                {
+                    "db": "friday",
+                    "method": 0,
+                    "entries": [
+                        {
+                            "value": {
+                                "attributes": {
+                                    "name": "friday",
+                                    "owner": "94224c921648ada653f584f3caf42654ccf3f1cbd2e569a24e88eb460f2f84d8",
+                                    "ownerDisplayName": "test_1518720219",
+                                    "creationDate": "2018-02-16T19:59:31.664Z",
+                                    "mdBucketModelVersion": 5,
+                                    "transient": true,
+                                    "deleted": false,
+                                    "serverSideEncryption": "",
+                                    "versioningConfiguration": "",
+                                    "locationConstraint": "us-east-1",
+                                    "cors": "",
+                                    "replicationConfiguration": ""
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "db": "friday",
+                    "method": 7,
+                    "entries": [
+                        {
+                            "value": {
+                                "attributes": {
+                                    "name": "friday",
+                                    "owner": "94224c921648ada653f584f3caf42654ccf3f1cbd2e569a24e88eb460f2f84d8",
+                                    "ownerDisplayName": "test_1518720219",
+                                    "creationDate": "2018-02-16T19:59:31.664Z",
+                                    "mdBucketModelVersion": 5,
+                                    "transient": false,
+                                    "deleted": false,
+                                    "serverSideEncryption": "",
+                                    "versioningConfiguration": "",
+                                    "locationConstraint": "us-east-1",
+                                    "cors": "",
+                                    "replicationConfiguration": ""
+                                    },
+                                "raftSession": 1
+                            }
+                        }
+                    ]
+                },
+                {
+                    "db": "friday7",
+                    "method": 0,
+                    "entries": [
+                        {
+                            "value": {
+                                "attributes": {
+                                    "name": "friday7",
+                                    "owner": "94224c921648ada653f584f3caf42654ccf3f1cbd2e569a24e88eb460f2f84d8",
+                                    "ownerDisplayName": "test_1518720219",
+                                    "creationDate": "2018-02-16T20:41:34.253Z",
+                                    "mdBucketModelVersion": 5,
+                                    "transient": true,
+                                    "deleted": false,
+                                    "serverSideEncryption": "",
+                                    "versioningConfiguration": "",
+                                    "locationConstraint": "us-east-1",
+                                    "cors": "",
+                                    "replicationConfiguration": ""
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "db": "friday7",
+                    "method": 7,
+                    "entries": [
+                        {
+                            "value": {
+                                "attributes": {
+                                    "name": "friday7",
+                                    "owner": "94224c921648ada653f584f3caf42654ccf3f1cbd2e569a24e88eb460f2f84d8",
+                                    "ownerDisplayName": "test_1518720219",
+                                    "creationDate": "2018-02-16T20:41:34.253Z",
+                                    "mdBucketModelVersion":5,
+                                    "transient": false,
+                                    "deleted": false,
+                                    "serverSideEncryption": "",
+                                    "versioningConfiguration": "",
+                                    "locationConstraint": "us-east-1",
+                                    "cors": "",
+                                    "replicationConfiguration": ""
+                                },
+                            "raftSession": 1
+                            }
+                        }
+                    ]
+                },
+                {
+                    "db": "xxxfriday10",
+                    "method": 0,
+                    "entries": [
+                        {
+                            "value": {
+                                "attributes": {
+                                    "name": "xxxfriday10",
+                                    "owner": "94224c921648ada653f584f3caf42654ccf3f1cbd2e569a24e88eb460f2f84d8",
+                                    "ownerDisplayName": "test_1518720219",
+                                    "creationDate": "2018-02-16T21:55:16.415Z",
+                                    "mdBucketModelVersion": 5,
+                                    "transient": true,
+                                    "deleted": false,
+                                    "serverSideEncryption": "",
+                                    "versioningConfiguration": "",
+                                    "locationConstraint": "us-east-1",
+                                    "cors": "",
+                                    "replicationConfiguration": ""
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "db": "xxxfriday10",
+                    "method": 7,
+                    "entries": [
+                        {
+                            "value": {
+                                "attributes": {
+                                    "name": "xxxfriday10",
+                                    "owner": "94224c921648ada653f584f3caf42654ccf3f1cb'd2e569a24e88eb460f2f84d8",
+                                    "ownerDisplayName": "test_1518720219",
+                                    "creationDate": "2018-02-16T21:55:16.415Z",
+                                    "mdBucketModelVersion": 5,
+                                    "transient": false,
+                                    "deleted": false,
+                                    "serverSideEncryption": "",
+                                    "versioningConfiguration": "",
+                                    "locationConstraint": "us-east-1",
+                                    "cors": "",
+                                    "replicationConfiguration": ""
+                                },
+                            "raftSession":1
+                            }
+                        }
+                    ]
+                },
+                {
+                    "db": "testbucket",
+                    "method": 8,
+                    "entries": [
+                        {
+                            "key": "afternoon",
+                            "value": {
+                                "owner-display-name": "test_1518720219",
+                                "owner-id": "94224c921648ada653f584f3caf42654ccf3f1cbd2e569a24e88eb460f2f84d8",
+                                "content-length": 0,
+                                "content-md5": "d41d8cd98f00b204e9800998ecf8427e",
+                                "x-amz-version-id": "",
+                                "x-amz-server-version-id": "",
+                                "x-amz-storage-class": "STANDARD",
+                                "x-amz-server-side-encryption": "",
+                                "x-amz-server-side-encryption-aws-kms-key-id": "",
+                                "x-amz-server-side-encryption-customer-algorithm": "",
+                                "x-amz-website-redirect-location": "",
+                                "acl": {
+                                    "Canned": "private",
+                                    "FULL_CONTROL": [],
+                                    "WRITE_ACP": [],
+                                    "READ": [],
+                                    "READ_ACP": []
+                                },
+                                "key": "",
+                                "location": "",
+                                "isDeleteMarker": false,
+                                "tags": {},
+                                "replicationInfo": {
+                                    "status": "",
+                                    "backends": [],
+                                    "content": [],
+                                    "destination": "",
+                                    "storageClass": "",
+                                    "role": "",
+                                    "storageType": "",
+                                    "dataStoreVersionId": ""
+                                },
+                                "dataStoreName": "us-east-1",
+                                "last-modified": "2018-02-16T21:56:52.690Z",
+                                "md-model-version": 3
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    },
     "raftId": {
         "bucket1": 5,
         "bucket2": 1
