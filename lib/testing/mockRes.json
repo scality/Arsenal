@@ -359,7 +359,7 @@
         }
     },
     "raftId": {
-        "bucket1": 5,
-        "bucket2": 1
+        "bucket1": 1,
+        "bucket2": 5
     }
 }
