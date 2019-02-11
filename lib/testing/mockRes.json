@@ -48,6 +48,10 @@
             "/_/metadata/default/bucket/bucket1": {
                 "resType": "objectList",
                 "name": "objectList1"
+            },
+            "/_/metadata/default/informations/bucket1": {
+                "resType": "raftInformation",
+                "name": "1"
             }
         }
     },
@@ -411,5 +415,12 @@
     "raftId": {
         "bucket1": 1,
         "bucket2": 5
+    },
+    "raftInformation": {
+        "1": {
+            "info": {
+                "cseq": 7
+            }
+        }
     }
 }
