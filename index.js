@@ -53,6 +53,8 @@ module.exports = {
             RESTClient: require('./lib/network/rest/RESTClient'),
         },
         RoundRobin: require('./lib/network/RoundRobin'),
+        kmip: require('./lib/network/kmip'),
+        kmipClient: require('./lib/network/kmip/Client'),
     },
     s3routes: {
         routes: require('./lib/s3routes/routes'),
