@@ -17,9 +17,11 @@ class Test {
 describe('Basic listing algorithm', () => {
     const data = [];
     for (let i = 0; i < 15000; ++i) {
+        // Following the fix for S3C-1985, data is set as a stringified JSON
+        // object, so that the test does not keep logging warnings.
         data.push({
             key: `key${i}`,
-            value: `value${i}`,
+            value: `{"data":"value${i}"}`,
         });
     }
     const tests = [
