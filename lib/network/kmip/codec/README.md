@@ -53,7 +53,7 @@ element carries the length information for varying data types.
     const msg = KMIP.Message(content);
 ```
 
-The static method `KMIP.Message` instanciates an object of the class
+The static method `KMIP.Message` instantiates an object of the class
 `Message`. Message objects wrap the content of the message without
 alteration and offer a `lookup` method to search the message for
 named fields.
