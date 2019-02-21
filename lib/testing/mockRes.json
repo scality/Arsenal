@@ -9,6 +9,10 @@
                 "resType": "objectList",
                 "name": "bucketList"
             },
+            "/default/bucket/bucket1": {
+                "resType": "objectList",
+                "name": "objectList1"
+            },
             "/default/attributes/bucket1": {
                 "resType": "bucketMD",
                 "name": "bucket1"
@@ -47,14 +51,24 @@
             }
         }
     },
+    "POST": {
+        "responses": {}
+    },
     "healthcheck": {
         "ok": {}
     },
     "objectList": {
+        "bucketList": {
+            "CommonPrefixes": [],
+            "Contents": [],
+            "IsTruncated": false,
+            "Delimiter": "/"
+        },
         "objectList1": {
+            "CommonPrefixes": [],
             "Contents": [
                 {
-                    "key": "testobject1",
+                    "key": "object1",
                     "value": {
                         "owner-display-name": "test_1518720219",
                         "owner-id": "94224c921648ada653f584f3caf42654ccf3f1cbd2e569a24e88eb460f2f84d8",
@@ -75,7 +89,7 @@
                             "READ_ACP": []
                         },
                         "key": "",
-                        "location": "",
+                        "location": [],
                         "isDeleteMarker": false,
                         "tags": {},
                         "replicationInfo": {
@@ -93,12 +107,48 @@
                         "md-model-version": 3
                     }
                 }
-            ]
+            ],
+            "IsTruncated": false,
+            "Delimiter": "/"
         }
     },
     "objectMD": {
         "object1": {
-            "key": "dogsAreGood"
+            "owner-display-name": "test_1518720219",
+            "owner-id": "94224c921648ada653f584f3caf42654ccf3f1cbd2e569a24e88eb460f2f84d8",
+            "content-length": 0,
+            "content-md5": "d41d8cd98f00b204e9800998ecf8427e",
+            "x-amz-version-id": "null",
+            "x-amz-server-version-id": "",
+            "x-amz-storage-class": "STANDARD",
+            "x-amz-server-side-encryption": "",
+            "x-amz-server-side-encryption-aws-kms-key-id": "",
+            "x-amz-server-side-encryption-customer-algorithm": "",
+            "x-amz-website-redirect-location": "",
+            "acl": {
+                "Canned": "private",
+                "FULL_CONTROL": [],
+                "WRITE_ACP": [],
+                "READ": [],
+                "READ_ACP": []
+            },
+            "key": "",
+            "location": [],
+            "isDeleteMarker": false,
+            "tags": {},
+            "replicationInfo": {
+                "status": "",
+                "backends": [],
+                "content": [],
+                "destination": "",
+                "storageClass": "",
+                "role": "",
+                "storageType": "",
+                "dataStoreVersionId": ""
+            },
+            "dataStoreName": "us-east-1",
+            "last-modified": "2018-02-16T22:43:37.174Z",
+            "md-model-version": 3
         }
     },
     "bucketMD": {
@@ -335,7 +385,7 @@
                                     "READ_ACP": []
                                 },
                                 "key": "",
-                                "location": "",
+                                "location": [],
                                 "isDeleteMarker": false,
                                 "tags": {},
                                 "replicationInfo": {
