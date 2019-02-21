@@ -18,6 +18,8 @@ const fs = require('fs');
 const tls = require('tls');
 const werelogs = require('werelogs');
 const KMIP = require('arsenal').network.kmip;
+
+const logger = new werelogs.Logger('kmiptest');
 const kmip = new KMIP;
 const options = {
     host: kmipServerHostName,
