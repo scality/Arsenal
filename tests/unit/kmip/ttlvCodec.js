@@ -83,6 +83,46 @@ describe('KMIP TTLV Codec', () => {
         done();
     });
 
+    it('should support non canonical search path', done => {
+        const kmip = new KMIP();
+        const msg = kmip.decodeMessage(logger, ttlvFixtures[1].response);
+
+        const supportedOperations =
+              msg.lookup('/Response Message/Batch Item/' +
+                         'Response Payload/Operation');
+        const supportedObjectTypes =
+              msg.lookup('Response Message/Batch Item/' +
+                         'Response Payload/Object Type/');
+        const protocolVersionMajor =
+              msg.lookup('Response Message//Response Header///' +
+                         'Protocol Version////Protocol Version Major');
+        const protocolVersionMinor =
+              msg.lookup('/Response Message////Response Header///' +
+                         'Protocol Version//Protocol Version Minor/');
+
+        assert(supportedOperations.includes('Encrypt'));
+        assert(supportedOperations.includes('Decrypt'));
+        assert(supportedOperations.includes('Create'));
+        assert(supportedOperations.includes('Destroy'));
+        assert(supportedOperations.includes('Query'));
+        assert(supportedObjectTypes.includes('Symmetric Key'));
+        assert(protocolVersionMajor[0] >= 2 ||
+               (protocolVersionMajor[0] === 1 &&
+                protocolVersionMinor[0] >= 2));
+        done();
+    });
+
+    it('should return nothing with an empty search path', done => {
+        const kmip = new KMIP();
+        const msg = kmip.decodeMessage(logger, ttlvFixtures[2].response);
+
+        const empty1 = msg.lookup('');
+        const empty2 = msg.lookup('////');
+        assert(empty1.length === 0);
+        assert(empty2.length === 0);
+        done();
+    });
+
     it('should encode/decode a bit mask', done => {
         const kmip = new KMIP();
         const usageMask = ['Encrypt', 'Decrypt', 'Export'];

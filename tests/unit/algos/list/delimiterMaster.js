@@ -24,11 +24,19 @@ const EmptyResult = {
     Delimiter: undefined,
 };
 
+const fakeLogger = {
+    trace: () => {},
+    debug: () => {},
+    info: () => {},
+    warn: () => {},
+    error: () => {},
+    fatal: () => {},
+};
 
 describe('Delimiter All masters listing algorithm', () => {
     it('should return SKIP_NONE for DelimiterMaster when both NextMarker ' +
        'and NextContinuationToken are undefined', () => {
-        const delimiter = new DelimiterMaster({ delimiter: '/' });
+        const delimiter = new DelimiterMaster({ delimiter: '/' }, fakeLogger);
 
         assert.strictEqual(delimiter.NextMarker, undefined);
 
@@ -40,7 +48,8 @@ describe('Delimiter All masters listing algorithm', () => {
     it('should return <key><VersionIdSeparator> for DelimiterMaster when ' +
        'NextMarker is set and there is a delimiter', () => {
         const key = 'key';
-        const delimiter = new DelimiterMaster({ delimiter: '/', marker: key });
+        const delimiter = new DelimiterMaster({ delimiter: '/', marker: key },
+                                             fakeLogger);
 
         /* Filter a master version to set NextMarker. */
         // TODO: useless once S3C-1628 is fixed.
@@ -57,7 +66,8 @@ describe('Delimiter All masters listing algorithm', () => {
        'NextContinuationToken is set and there is a delimiter', () => {
         const key = 'key';
         const delimiter = new DelimiterMaster(
-            { delimiter: '/', startAfter: key, v2: true });
+            { delimiter: '/', startAfter: key, v2: true },
+            fakeLogger);
 
         // Filter a master version to set NextContinuationToken
         delimiter.filter({ key, value: '' });
@@ -73,7 +83,7 @@ describe('Delimiter All masters listing algorithm', () => {
         const delimiter = new DelimiterMaster({
             delimiter: delimiterChar,
             marker: keyWithEndingDelimiter,
-        });
+        }, fakeLogger);
 
         /* When a delimiter is set and the NextMarker ends with the
          * delimiter it should return the next marker value. */
@@ -82,7 +92,7 @@ describe('Delimiter All masters listing algorithm', () => {
     });
 
     it('should skip entries not starting with prefix', () => {
-        const delimiter = new DelimiterMaster({ prefix: 'prefix' });
+        const delimiter = new DelimiterMaster({ prefix: 'prefix' }, fakeLogger);
 
         assert.strictEqual(delimiter.filter({ key: 'wrong' }), FILTER_SKIP);
         assert.strictEqual(delimiter.NextMarker, undefined);
@@ -91,7 +101,7 @@ describe('Delimiter All masters listing algorithm', () => {
     });
 
     it('should skip entries superior to next marker', () => {
-        const delimiter = new DelimiterMaster({ marker: 'b' });
+        const delimiter = new DelimiterMaster({ marker: 'b' }, fakeLogger);
 
         assert.strictEqual(delimiter.filter({ key: 'a' }), FILTER_SKIP);
         assert.strictEqual(delimiter.NextMarker, 'b');
@@ -100,7 +110,7 @@ describe('Delimiter All masters listing algorithm', () => {
     });
 
     it('should accept a master version', () => {
-        const delimiter = new DelimiterMaster({});
+        const delimiter = new DelimiterMaster({}, fakeLogger);
         const key = 'key';
         const value = '';
 
@@ -117,7 +127,7 @@ describe('Delimiter All masters listing algorithm', () => {
     });
 
     it('should accept a PHD version as first input', () => {
-        const delimiter = new DelimiterMaster({});
+        const delimiter = new DelimiterMaster({}, fakeLogger);
         const keyPHD = 'keyPHD';
         const objPHD = {
             key: keyPHD,
@@ -134,7 +144,7 @@ describe('Delimiter All masters listing algorithm', () => {
     });
 
     it('should accept a PHD version', () => {
-        const delimiter = new DelimiterMaster({});
+        const delimiter = new DelimiterMaster({}, fakeLogger);
         const key = 'keyA';
         const value = '';
         const keyPHD = 'keyBPHD';
@@ -163,7 +173,7 @@ describe('Delimiter All masters listing algorithm', () => {
     });
 
     it('should accept a version after a PHD', () => {
-        const delimiter = new DelimiterMaster({});
+        const delimiter = new DelimiterMaster({}, fakeLogger);
         const masterKey = 'key';
         const keyVersion = `${masterKey}${VID_SEP}version`;
         const value = '';
@@ -193,7 +203,7 @@ describe('Delimiter All masters listing algorithm', () => {
     });
 
     it('should accept a delete marker', () => {
-        const delimiter = new DelimiterMaster({});
+        const delimiter = new DelimiterMaster({}, fakeLogger);
         const version = new Version({ isDeleteMarker: true });
         const key = 'key';
         const obj = {
@@ -210,7 +220,7 @@ describe('Delimiter All masters listing algorithm', () => {
     });
 
     it('should skip version after a delete marker', () => {
-        const delimiter = new DelimiterMaster({});
+        const delimiter = new DelimiterMaster({}, fakeLogger);
         const version = new Version({ isDeleteMarker: true });
         const key = 'key';
         const versionKey = `${key}${VID_SEP}version`;
@@ -226,7 +236,7 @@ describe('Delimiter All masters listing algorithm', () => {
     });
 
     it('should accept a new key after a delete marker', () => {
-        const delimiter = new DelimiterMaster({});
+        const delimiter = new DelimiterMaster({}, fakeLogger);
         const version = new Version({ isDeleteMarker: true });
         const key1 = 'key1';
         const key2 = 'key2';
@@ -249,7 +259,7 @@ describe('Delimiter All masters listing algorithm', () => {
     });
 
     it('should accept the master version and skip the other ones', () => {
-        const delimiter = new DelimiterMaster({});
+        const delimiter = new DelimiterMaster({}, fakeLogger);
         const masterKey = 'key';
         const masterValue = 'value';
         const versionKey = `${masterKey}${VID_SEP}version`;
@@ -277,7 +287,7 @@ describe('Delimiter All masters listing algorithm', () => {
     });
 
     it('should return good listing result for version', () => {
-        const delimiter = new DelimiterMaster({});
+        const delimiter = new DelimiterMaster({}, fakeLogger);
         const masterKey = 'key';
         const versionKey1 = `${masterKey}${VID_SEP}version1`;
         const versionKey2 = `${masterKey}${VID_SEP}version2`;
@@ -320,7 +330,8 @@ describe('Delimiter All masters listing algorithm', () => {
            const prefix2Key1 = `${commonPrefix2}key1`;
            const value = 'value';
 
-           const delimiter = new DelimiterMaster({ delimiter: delimiterChar });
+           const delimiter = new DelimiterMaster({ delimiter: delimiterChar },
+                                                 fakeLogger);
 
            /* Filter the first entry with a common prefix. It should be
             * accepted and added to the result. */
@@ -373,7 +384,8 @@ describe('Delimiter All masters listing algorithm', () => {
         const prefix2VersionKey1 = `${commonPrefix2}key1${VID_SEP}version`;
         const value = 'value';
 
-        const delimiter = new DelimiterMaster({ delimiter: delimiterChar });
+        const delimiter = new DelimiterMaster({ delimiter: delimiterChar },
+                                              fakeLogger);
 
         /* Filter the two first entries with the same common prefix to add
          * it to the result and reach the state where an entry is skipped
@@ -404,7 +416,8 @@ describe('Delimiter All masters listing algorithm', () => {
         const key = `${commonPrefix}key${VID_SEP}version`;
         const value = 'value';
 
-        const delimiter = new DelimiterMaster({ delimiter: delimiterChar });
+        const delimiter = new DelimiterMaster({ delimiter: delimiterChar },
+                                              fakeLogger);
         /* TODO: should be set to a whole key instead of just a common prefix
          * once ZENKO-1048 is fixed. */
         delimiter.NextMarker = commonPrefix;
