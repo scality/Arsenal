@@ -202,6 +202,15 @@ describe('ObjectMD class setters/getters', () => {
             md.getReplicationSiteDataStoreVersionId('zenko'), 'a');
     });
 
+    it('ObjectMd::isMultipartUpload', () => {
+        md.setContentMd5('68b329da9893e34099c7d8ad5cb9c940');
+        assert.strictEqual(md.isMultipartUpload(), false);
+        md.setContentMd5('741e0f4bad5b093044dc54a74d911094-1');
+        assert.strictEqual(md.isMultipartUpload(), true);
+        md.setContentMd5('bda0c0bed89c8bdb9e409df7ae7073c5-9876');
+        assert.strictEqual(md.isMultipartUpload(), true);
+    });
+
     it('ObjectMD::getUserMetadata', () => {
         md.setUserMetadata({
             'x-amz-meta-foo': 'bar',
