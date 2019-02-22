@@ -1,0 +1,579 @@
+{
+    "420006": {
+        "name": "Asynchronous Correlation Value"
+    },
+    "420007": {
+        "name": "Asynchronous Indicator"
+    },
+    "420008": {
+        "name": "Attribute"
+    },
+    "420009": {
+        "name": "Attribute Index"
+    },
+    "42000a": {
+        "name": "Attribute Name"
+    },
+    "42000b": {
+        "name": "Attribute Value"
+    },
+    "42000c": {
+        "name": "Authentication"
+    },
+    "42000d": {
+        "name": "Batch Count"
+    },
+    "42000f": {
+        "name": "Batch Item"
+    },
+    "420011": {
+        "name": "Block Cipher Mode",
+        "enumeration": {
+            "00000001": "CBC",
+            "00000002": "ECB",
+            "00000003": "PCBC",
+            "00000004": "CFB",
+            "00000005": "OFB",
+            "00000006": "CTR",
+            "00000007": "CMAC",
+            "00000008": "CCM",
+            "00000009": "GCM",
+            "0000000a": "CBC-MAC",
+            "0000000b": "XTS",
+            "0000000c": "AESKeyWrapPadding",
+            "0000000d": "NISTKeyWrap",
+            "0000000e": "X9.102 AESKW",
+            "0000000f": "X9.102 TDKW",
+            "00000010": "X9.102 AKW1",
+            "00000011": "X9.102 AKW2",
+            "00000012": "AEAD"
+        }
+    },
+    "420028": {
+        "name": "Cryptographic Algorithm",
+        "enumeration": {
+            "00000001": "DES",
+            "00000002": "3DES",
+            "00000003": "AES",
+            "00000004": "RSA",
+            "00000005": "DSA",
+            "00000006": "ECDSA",
+            "00000007": "HMAC-SHA1",
+            "00000008": "HMAC-SHA224",
+            "00000009": "HMAC-SHA256",
+            "0000000a": "HMAC-SHA384",
+            "0000000b": "HMAC-SHA512",
+            "0000000c": "HMAC-MD5",
+            "0000000d": "DH",
+            "0000000e": "ECDH",
+            "0000000f": "ECMQV",
+            "00000010": "Blowfish",
+            "00000011": "Camellia",
+            "00000012": "CAST5",
+            "00000013": "IDEA",
+            "00000014": "MARS",
+            "00000015": "RC2",
+            "00000016": "RC4",
+            "00000017": "RC5",
+            "00000018": "SKIPJACK",
+            "00000019": "Twofish",
+            "0000001a": "EC",
+            "0000001b": "One Time Pad",
+            "0000001c": "ChaCha20",
+            "0000001d": "Poly1305",
+            "0000001e": "ChaCha20Poly1305",
+            "0000001f": "SHA3-224",
+            "00000020": "SHA3-256",
+            "00000021": "SHA3-384",
+            "00000022": "SHA3-512",
+            "00000023": "HMAC-SHA3-224",
+            "00000024": "HMAC-SHA3-256",
+            "00000025": "HMAC-SHA3-384",
+            "00000026": "HMAC-SHA3-512",
+            "00000027": "SHAKE-128",
+            "00000028": "SHAKE-256"
+        }
+    },
+    "42002b": {
+        "name": "Cryptographic Parameters"
+    },
+    "42002c": {
+        "name": "Cryptographic Usage Mask",
+        "enumeration": {
+            "00000001": "Sign",
+            "00000002": "Verify",
+            "00000004": "Encrypt",
+            "00000008": "Decrypt",
+            "00000010": "Wrap Key",
+            "00000020": "Unwrap Key",
+            "00000040": "Export",
+            "00000080": "MAC Generate",
+            "00000100": "MAC Verify",
+            "00000200": "Derive Key",
+            "00000400": "Content Commitment",
+            "00000800": "Key Agreement",
+            "00001000": "Certificate Sign",
+            "00002000": "CRL Sign",
+            "00004000": "Generate Cryptogram",
+            "00008000": "Validate Cryptogram",
+            "00010000": "Translate Encrypt",
+            "00020000": "Translate Decrypt",
+            "00040000": "Translate Wrap",
+            "00080000": "Translate Unwrap"
+        }
+    },
+    "42003d": {
+        "name": "IV/Counter/Nonce"
+    },
+    "420050": {
+        "name": "Maximum Response Size"
+    },
+    "420054": {
+        "name": "Name Type",
+        "enumeration": {
+            "00000001": "Uninterpreted Text String",
+            "00000002": "URI"
+        }
+    },
+    "420057": {
+        "name": "Object Type",
+        "enumeration": {
+            "00000001": "Certificate",
+            "00000002": "Symmetric Key",
+            "00000003": "Public Key",
+            "00000004": "Private Key",
+            "00000005": "Split Key",
+            "00000006": "Template",
+            "00000007": "Secret Data",
+            "00000008": "Opaque Object",
+            "00000009": "PGP Key"
+        }
+    },
+    "42005c": {
+        "name": "Operation",
+        "enumeration": {
+            "00000001": "Create",
+            "00000002": "Create Key Pair",
+            "00000003": "Register",
+            "00000004": "Re-key",
+            "00000005": "Derive Key",
+            "00000006": "Certify",
+            "00000007": "Re-certify",
+            "00000008": "Locate",
+            "00000009": "Check",
+            "0000000a": "Get",
+            "0000000b": "Get Attributes",
+            "0000000c": "Get Attribute List",
+            "0000000d": "Add Attribute",
+            "0000000e": "Modify Attribute",
+            "0000000f": "Delete Attribute",
+            "00000010": "Obtain Lease",
+            "00000011": "Get Usage Allocation",
+            "00000012": "Activate",
+            "00000013": "Revoke",
+            "00000014": "Destroy",
+            "00000015": "Archive",
+            "00000016": "Recover",
+            "00000017": "Validate",
+            "00000018": "Query",
+            "00000019": "Cancel",
+            "0000001a": "Poll",
+            "0000001b": "Notify",
+            "0000001c": "Put",
+            "0000001d": "Re-key Key Pair",
+            "0000001e": "Discover Versions",
+            "0000001f": "Encrypt",
+            "00000020": "Decrypt",
+            "00000021": "Sign",
+            "00000022": "Signature Verify",
+            "00000023": "MAC",
+            "00000024": "MAC Verify",
+            "00000025": "RNG Retrieve",
+            "00000026": "RNG Seed",
+            "00000027": "Hash",
+            "00000028": "Create Split Key",
+            "00000029": "Join Split Key",
+            "0000002a": "Import",
+            "0000002b": "Export"
+        }
+    },
+    "42005f": {
+        "name": "Padding Method",
+        "enumeration": {
+            "00000001": "None",
+            "00000002": "OAEP",
+            "00000003": "PKCS5",
+            "00000004": "SSL3",
+            "00000005": "Zeros",
+            "00000006": "ANSI X9.23",
+            "00000007": "ISO 10126",
+            "00000008": "PKCS1 v1.5",
+            "00000009": "X9.31",
+            "0000000a": "PSS"
+        }
+    },
+    "420069": {
+        "name": "Protocol Version"
+    },
+    "42006a": {
+        "name": "Protocol Version Major"
+    },
+    "42006b": {
+        "name": "Protocol Version Minor"
+    },
+    "420074": {
+        "name": "Query Function",
+        "enumeration": {
+            "00000001": "Query Operations",
+            "00000002": "Query Objects",
+            "00000003": "Query Server Information",
+            "00000004": "Query Application Namespaces",
+            "00000005": "Query Extension List",
+            "00000006": "Query Extension Map",
+            "00000007": "Query Attestation Types",
+            "00000008": "Query RNGs",
+            "00000009": "Query Validations",
+            "0000000a": "Query Profiles",
+            "0000000b": "Query Capabilities",
+            "0000000c": "Query Client Registration Methods"
+        }
+    },
+    "420077": {
+        "name": "Request Header"
+    },
+    "420078": {
+        "name": "Request Message"
+    },
+    "420079": {
+        "name": "Request Payload"
+    },
+    "42007a": {
+        "name": "Response Header"
+    },
+    "42007b": {
+        "name": "Response Message"
+    },
+    "42007c": {
+        "name": "Response Payload"
+    },
+    "42007d": {
+        "name": "Result Message"
+    },
+    "42007e": {
+        "name": "Result Reason",
+        "enumeration": {
+            "00000001": "Item Not Found",
+            "00000002": "Response Too Large",
+            "00000003": "Authentication Not Successful",
+            "00000004": "Invalid Message",
+            "00000005": "Operation Not Supported",
+            "00000006": "Missing Data",
+            "00000007": "Invalid Field",
+            "00000008": "Feature Not Supported",
+            "00000009": "Operation Canceled By Requester",
+            "0000000a": "Cryptographic Failure",
+            "0000000b": "Illegal Operation",
+            "0000000c": "Permission Denied",
+            "0000000d": "Object archived",
+            "0000000e": "Index Out of Bounds",
+            "0000000f": "Application Namespace Not Supported",
+            "00000010": "Key Format Type Not Supported",
+            "00000011": "Key Compression Type Not Supported",
+            "00000012": "Encoding Option Error",
+            "00000013": "Key Value Not Present",
+            "00000014": "Attestation Required",
+            "00000015": "Attestation Failed",
+            "00000016": "Sensitive",
+            "00000017": "Not Extractable",
+            "00000018": "Object Already Exists",
+            "00000100": "General Failure"
+        }
+    },
+    "42007f": {
+        "name": "Result Status",
+        "enumeration": {
+            "00000000": "Success",
+            "00000001": "Operation Failed",
+            "00000002": "Operation Pending",
+            "00000003": "Operation Undone"
+        }
+    },
+    "420080": {
+        "name": "Revocation Message"
+    },
+    "420081": {
+        "name": "Revocation Reason"
+    },
+    "420082": {
+        "name": "Revocation Reason Code",
+        "enumeration": {
+            "00000001": "Unspecified",
+            "00000002": "Key Compromise",
+            "00000003": "CA Compromise",
+            "00000004": "Affiliation Changed",
+            "00000005": "Superseded",
+            "00000006": "Cessation of Operation",
+            "00000007": "Privilege Withdrawn"
+        }
+    },
+    "420088": {
+        "name": "Server Information"
+    },
+    "420091": {
+        "name": "Template-Attribute"
+    },
+    "420092": {
+        "name": "Time Stamp"
+    },
+    "420093": {
+        "name": "Unique Batch Item ID"
+    },
+    "420094": {
+        "name": "Unique Identifier"
+    },
+    "42009d": {
+        "name": "Vendor Identification"
+    },
+    "4200a4": {
+        "name": "Extension Information"
+    },
+    "4200a5": {
+        "name": "Extension Name"
+    },
+    "4200a6": {
+        "name": "Extension Tag"
+    },
+    "4200a7": {
+        "name": "Extension Type"
+    },
+    "4200c2": {
+        "name": "Data"
+    },
+    "4200eb": {
+        "name": "Profile Information"
+    },
+    "4200ec": {
+        "name": "Profile Name",
+        "enumeration": {
+            "00000001": "Baseline Server Basic KMIP v1.2",
+            "00000002": "Baseline Server TLS v1.2 KMIP v1.2",
+            "00000003": "Baseline Client Basic KMIP v1.2",
+            "00000004": "Baseline Client TLS v1.2 KMIP v1.2",
+            "00000005": "Complete Server Basic KMIP v1.2",
+            "00000006": "Complete Server TLS v1.2 KMIP v1.2",
+            "00000007": "Tape Library Client KMIP v1.0",
+            "00000008": "Tape Library Client KMIP v1.1",
+            "00000009": "Tape Library Client KMIP v1.2",
+            "0000000a": "Tape Library Server KMIP v1.0",
+            "0000000b": "Tape Library Server KMIP v1.1",
+            "0000000c": "Tape Library Server KMIP v1.2",
+            "0000000d": "Symmetric Key Lifecycle Client KMIP v1.0",
+            "0000000e": "Symmetric Key Lifecycle Client KMIP v1.1",
+            "0000000f": "Symmetric Key Lifecycle Client KMIP v1.2",
+            "00000010": "Symmetric Key Lifecycle Server KMIP v1.0",
+            "00000011": "Symmetric Key Lifecycle Server KMIP v1.1",
+            "00000012": "Symmetric Key Lifecycle Server KMIP v1.2",
+            "00000013": "Asymmetric Key Lifecycle Client KMIP v1.0",
+            "00000014": "Asymmetric Key Lifecycle Client KMIP v1.1",
+            "00000015": "Asymmetric Key Lifecycle Client KMIP v1.2",
+            "00000016": "Asymmetric Key Lifecycle Server KMIP v1.0",
+            "00000017": "Asymmetric Key Lifecycle Server KMIP v1.1",
+            "00000018": "Asymmetric Key Lifecycle Server KMIP v1.2",
+            "00000019": "Basic Cryptographic Client KMIP v1.2",
+            "0000001a": "Basic Cryptographic Server KMIP v1.2",
+            "0000001b": "Advanced Cryptographic Client KMIP v1.2",
+            "0000001c": "Advanced Cryptographic Server KMIP v1.2",
+            "0000001d": "RNG Cryptographic Client KMIP v1.2",
+            "0000001e": "RNG Cryptographic Server KMIP v1.2",
+            "0000001f": "Basic Symmetric Key Foundry Client KMIP v1.0",
+            "00000020": "Intermediate Symmetric Key Foundry Client KMIP v1.0",
+            "00000021": "Advanced Symmetric Key Foundry Client KMIP v1.0",
+            "00000022": "Basic Symmetric Key Foundry Client KMIP v1.1",
+            "00000023": "Intermediate Symmetric Key Foundry Client KMIP v1.1",
+            "00000024": "Advanced Symmetric Key Foundry Client KMIP v1.1",
+            "00000025": "Basic Symmetric Key Foundry Client KMIP v1.2",
+            "00000026": "Intermediate Symmetric Key Foundry Client KMIP v1.2",
+            "00000027": "Advanced Symmetric Key Foundry Client KMIP v1.2",
+            "00000028": "Symmetric Key Foundry Server KMIP v1.0",
+            "00000029": "Symmetric Key Foundry Server KMIP v1.1",
+            "0000002a": "Symmetric Key Foundry Server KMIP v1.2",
+            "0000002b": "Opaque Managed Object Store Client KMIP v1.0",
+            "0000002c": "Opaque Managed Object Store Client KMIP v1.1",
+            "0000002d": "Opaque Managed Object Store Client KMIP v1.2",
+            "0000002e": "Opaque Managed Object Store Server KMIP v1.0",
+            "0000002f": "Opaque Managed Object Store Server KMIP v1.1",
+            "00000030": "Opaque Managed Object Store Server KMIP v1.2",
+            "00000031": "Suite B minLOS_128 Client KMIP v1.0",
+            "00000032": "Suite B minLOS_128 Client KMIP v1.1",
+            "00000033": "Suite B minLOS_128 Client KMIP v1.2",
+            "00000034": "Suite B minLOS_128 Server KMIP v1.0",
+            "00000035": "Suite B minLOS_128 Server KMIP v1.1",
+            "00000036": "Suite B minLOS_128 Server KMIP v1.2",
+            "00000037": "Suite B minLOS_192 Client KMIP v1.0",
+            "00000038": "Suite B minLOS_192 Client KMIP v1.1",
+            "00000039": "Suite B minLOS_192 Client KMIP v1.2",
+            "0000003a": "Suite B minLOS_192 Server KMIP v1.0",
+            "0000003b": "Suite B minLOS_192 Server KMIP v1.1",
+            "0000003c": "Suite B minLOS_192 Server KMIP v1.2",
+            "0000003d": "Storage Array with Self Encrypting Drive Client KMIP v1.0",
+            "0000003e": "Storage Array with Self Encrypting Drive Client KMIP v1.1",
+            "0000003f": "Storage Array with Self Encrypting Drive Client KMIP v1.2",
+            "00000040": "Storage Array with Self Encrypting Drive Server KMIP v1.0",
+            "00000041": "Storage Array with Self Encrypting Drive Server KMIP v1.1",
+            "00000042": "Storage Array with Self Encrypting Drive Server KMIP v1.2",
+            "00000043": "HTTPS Client KMIP v1.0",
+            "00000044": "HTTPS Client KMIP v1.1",
+            "00000045": "HTTPS Client KMIP v1.2",
+            "00000046": "HTTPS Server KMIP v1.0",
+            "00000047": "HTTPS Server KMIP v1.1",
+            "00000048": "HTTPS Server KMIP v1.2",
+            "00000049": "JSON Client KMIP v1.0",
+            "0000004a": "JSON Client KMIP v1.1",
+            "0000004b": "JSON Client KMIP v1.2",
+            "0000004c": "JSON Server KMIP v1.0",
+            "0000004d": "JSON Server KMIP v1.1",
+            "0000004e": "JSON Server KMIP v1.2",
+            "0000004f": "XML Client KMIP v1.0",
+            "00000050": "XML Client KMIP v1.1",
+            "00000051": "XML Client KMIP v1.2",
+            "00000052": "XML Server KMIP v1.0",
+            "00000053": "XML Server KMIP v1.1",
+            "00000054": "XML Server KMIP v1.2",
+            "00000055": "Baseline Server Basic KMIP v1.3",
+            "00000056": "Baseline Server TLS v1.2 KMIP v1.3",
+            "00000057": "Baseline Client Basic KMIP v1.3",
+            "00000058": "Baseline Client TLS v1.2 KMIP v1.3",
+            "00000059": "Complete Server Basic KMIP v1.3",
+            "0000005a": "Complete Server TLS v1.2 KMIP v1.3",
+            "0000005b": "Tape Library Client KMIP v1.3",
+            "0000005c": "Tape Library Server KMIP v1.3",
+            "0000005d": "Symmetric Key Lifecycle Client KMIP v1.3",
+            "0000005e": "Symmetric Key Lifecycle Server KMIP v1.3",
+            "0000005f": "Asymmetric Key Lifecycle Client KMIP v1.3",
+            "00000060": "Asymmetric Key Lifecycle Server KMIP v1.3",
+            "00000061": "Basic Cryptographic Client KMIP v1.3",
+            "00000062": "Basic Cryptographic Server KMIP v1.3",
+            "00000063": "Advanced Cryptographic Client KMIP v1.3",
+            "00000064": "Advanced Cryptographic Server KMIP v1.3",
+            "00000065": "RNG Cryptographic Client KMIP v1.3",
+            "00000066": "RNG Cryptographic Server KMIP v1.3",
+            "00000067": "Basic Symmetric Key Foundry Client KMIP v1.3",
+            "00000068": "Intermediate Symmetric Key Foundry Client KMIP v1.3",
+            "00000069": "Advanced Symmetric Key Foundry Client KMIP v1.3",
+            "0000006a": "Symmetric Key Foundry Server KMIP v1.3",
+            "0000006b": "Opaque Managed Object Store Client KMIP v1.3",
+            "0000006c": "Opaque Managed Object Store Server KMIP v1.3",
+            "0000006d": "Suite B minLOS_128 Client KMIP v1.3",
+            "0000006e": "Suite B minLOS_128 Server KMIP v1.3",
+            "0000006f": "Suite B minLOS_192 Client KMIP v1.3",
+            "00000070": "Suite B minLOS_192 Server KMIP v1.3",
+            "00000071": "Storage Array with Self Encrypting Drive Client KMIP v1.3",
+            "00000072": "Storage Array with Self Encrypting Drive Server KMIP v1.3",
+            "00000073": "HTTPS Client KMIP v1.3",
+            "00000074": "HTTPS Server KMIP v1.3",
+            "00000075": "JSON Client KMIP v1.3",
+            "00000076": "JSON Server KMIP v1.3",
+            "00000077": "XML Client KMIP v1.3",
+            "00000078": "XML Server KMIP v1.3",
+            "00000079": "Baseline Server Basic KMIP v1.4",
+            "0000007a": "Baseline Server TLS v1.2 KMIP v1.4",
+            "0000007b": "Baseline Client Basic KMIP v1.4",
+            "0000007c": "Baseline Client TLS v1.2 KMIP v1.4",
+            "0000007d": "Complete Server Basic KMIP v1.4",
+            "0000007e": "Complete Server TLS v1.2 KMIP v1.4",
+            "0000007f": "Tape Library Client KMIP v1.4",
+            "00000080": "Tape Library Server KMIP v1.4",
+            "00000081": "Symmetric Key Lifecycle Client KMIP v1.4",
+            "00000082": "Symmetric Key Lifecycle Server KMIP v1.4",
+            "00000083": "Asymmetric Key Lifecycle Client KMIP v1.4",
+            "00000084": "Asymmetric Key Lifecycle Server KMIP v1.4",
+            "00000085": "Basic Cryptographic Client KMIP v1.4",
+            "00000086": "Basic Cryptographic Server KMIP v1.4",
+            "00000087": "Advanced Cryptographic Client KMIP v1.4",
+            "00000088": "Advanced Cryptographic Server KMIP v1.4",
+            "00000089": "RNG Cryptographic Client KMIP v1.4",
+            "0000008a": "RNG Cryptographic Server KMIP v1.4",
+            "0000008b": "Basic Symmetric Key Foundry Client KMIP v1.4",
+            "0000008c": "Intermediate Symmetric Key Foundry Client KMIP v1.4",
+            "0000008d": "Advanced Symmetric Key Foundry Client KMIP v1.4",
+            "0000008e": "Symmetric Key Foundry Server KMIP v1.4",
+            "0000008f": "Opaque Managed Object Store Client KMIP v1.4",
+            "00000090": "Opaque Managed Object Store Server KMIP v1.4",
+            "00000091": "Suite B minLOS_128 Client KMIP v1.4",
+            "00000092": "Suite B minLOS_128 Server KMIP v1.4",
+            "00000093": "Suite B minLOS_192 Client KMIP v1.4",
+            "00000094": "Suite B minLOS_192 Server KMIP v1.4",
+            "00000095": "Storage Array with Self Encrypting Drive Client KMIP v1.4",
+            "00000096": "Storage Array with Self Encrypting Drive Server KMIP v1.4",
+            "00000097": "HTTPS Client KMIP v1.4",
+            "00000098": "HTTPS Server KMIP v1.4",
+            "00000099": "JSON Client KMIP v1.4",
+            "0000009a": "JSON Server KMIP v1.4",
+            "0000009b": "XML Client KMIP v1.4",
+            "0000009c": "XML Server KMIP v1.4"
+        }
+    },
+    "4200ed": {
+        "name": "Server URI"
+    },
+    "4200ee": {
+        "name": "Server Port"
+    },
+    "4200ef": {
+        "name": "Streaming Capability"
+    },
+    "4200f0": {
+        "name": "Asynchronous Capability"
+    },
+    "4200f1": {
+        "name": "Attestation Capability"
+    },
+    "4200f2": {
+        "name": "Unwrap Mode",
+        "enumeration": {
+            "00000001": "Unspecified",
+            "00000002": "Processed",
+            "00000003": "Not Processed"
+        }
+    },
+    "4200f3": {
+        "name": "Destroy Action",
+        "enumeration": {
+            "00000001": "Unspecified",
+            "00000002": "Key Material Deleted",
+            "00000003": "Key Material Shredded",
+            "00000004": "Meta Data Deleted",
+            "00000005": "Meta Data Shredded",
+            "00000006": "Deleted",
+            "00000007": "Shredded"
+        }
+    },
+    "4200f4": {
+        "name": "Shredding Algorithm",
+        "enumeration": {
+            "00000001": "Unspecified",
+            "00000002": "Cryptographic",
+            "00000003": "Unsupported"
+        }
+    },
+    "4200f5": {
+        "name": "RNG Mode",
+        "enumeration": {
+            "00000001": "Unspecified",
+            "00000002": "Shared Instantiation",
+            "00000003": "Non-Shared Instantiation"
+        }
+    },
+    "4200f6": {
+        "name": "Client Registration Method"
+    },
+    "4200f7": {
+        "name": "Capability Information"
+    },
+    "420105": {
+        "name": "Client Correlation Value"
+    },
+    "420106": {
+        "name": "Server Correlation Value"
+    }
+}
