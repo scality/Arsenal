@@ -40,4 +40,29 @@ describe('Basic listing algorithm', () => {
             done();
         });
     });
+
+    it('Should support entries with no key', () => {
+        const res1 = performListing([{
+            value: '{"data":"foo"}',
+        }], Basic, { maxKeys: 1 }, logger);
+        assert.deepStrictEqual(res1, [{
+            key: undefined,
+            value: '{"data":"foo"}',
+        }]);
+
+        const res2 = performListing([{
+            key: undefined,
+            value: '{"data":"foo"}',
+        }], Basic, { maxKeys: 1 }, logger);
+        assert.deepStrictEqual(res2, [{
+            key: undefined,
+            value: '{"data":"foo"}',
+        }]);
+    });
+
+    it('Should support key-only listing', () => {
+        const res = performListing(['key1', 'key2'],
+                                   Basic, { maxKeys: 1 }, logger);
+        assert.deepStrictEqual(res, ['key1']);
+    });
 });
