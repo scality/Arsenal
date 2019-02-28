@@ -7,12 +7,7 @@ const KMIP = require('../../../lib/network/kmip');
 const ttlvFixtures = require('../../utils/kmip/ttlvFixtures');
 const badTtlvFixtures = require('../../utils/kmip/badTtlvFixtures');
 const messageFixtures = require('../../utils/kmip/messageFixtures');
-
-const logger = {
-    info: () => {},
-    debug: () => {},
-    error: () => {},
-};
+const { logger } = require('../../utils/kmip/ersatz.js');
 
 describe('KMIP TTLV Codec', () => {
     it('should map, encode and decode an extension', done => {
