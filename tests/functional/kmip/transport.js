@@ -23,7 +23,7 @@ describe('KMIP Transport Template Class', () => {
                                port: 5696,
                            },
                        });
-                   const request = new Buffer(10).fill(6);
+                   const request = Buffer.alloc(10).fill(6);
                    async.times(iterations, (n, next) => {
                        transport.send(logger, request,
                                       (err, conversation, response) => {
@@ -35,9 +35,9 @@ describe('KMIP Transport Template Class', () => {
                                           }
                                           return next();
                                       });
-                   }, () => {
+                   }, err => {
                        transport.end();
-                       done();
+                       done(err);
                    });
                });
 
@@ -55,7 +55,11 @@ describe('KMIP Transport Template Class', () => {
                                    port: 5696,
                                },
                            });
-                       const request = new Buffer(10).fill(6);
+                       const request = Buffer.alloc(10).fill(6);
+                       /* Using a for loop here instead of anything
+                        * asynchronous, the callbacks get stuck in
+                        * the conversation queue and are unwind with
+                        * an error. It is the purpose of this test */
                        for (let i = 0; i < iterations; ++i) {
                            transport.send(
                                logger, request,
