@@ -1,9 +1,12 @@
 'use strict'; // eslint-disable-line strict
 /* eslint new-cap: "off" */
 
+const TTLVCodec = require('../../../lib/network/kmip/codec/ttlv.js');
 const KMIP = require('../../../lib/network/kmip');
 
-const kmip = new KMIP();
+const kmip = new KMIP(TTLVCodec,
+                      class DummyTransport {},
+                      { kmip: {} }, () => {});
 
 module.exports = [
     KMIP.Message([

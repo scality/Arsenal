@@ -3,21 +3,28 @@
 
 const assert = require('assert');
 
+const TTLVCodec = require('../../../lib/network/kmip/codec/ttlv.js');
 const KMIP = require('../../../lib/network/kmip');
 const ttlvFixtures = require('../../utils/kmip/ttlvFixtures');
 const badTtlvFixtures = require('../../utils/kmip/badTtlvFixtures');
 const messageFixtures = require('../../utils/kmip/messageFixtures');
 const { logger } = require('../../utils/kmip/ersatz.js');
 
+function newKMIP() {
+    return new KMIP(TTLVCodec,
+                    class DummyTransport {},
+                    { kmip: {} }, () => {});
+}
+
 describe('KMIP TTLV Codec', () => {
     it('should map, encode and decode an extension', done => {
-        const kmip = new KMIP();
+        const kmip = newKMIP();
         kmip.mapExtension('Dummy Extension', 0x54a000);
         const msg = KMIP.Message([
             KMIP.TextString('Dummy Extension', 'beautiful'),
         ]);
-        const encodedMsg = kmip.encodeMessage(msg);
-        const decodedMsg = kmip.decodeMessage(logger, encodedMsg);
+        const encodedMsg = kmip._encodeMessage(msg);
+        const decodedMsg = kmip._decodeMessage(logger, encodedMsg);
         assert.deepStrictEqual(msg, decodedMsg);
         done();
     });
@@ -25,10 +32,10 @@ describe('KMIP TTLV Codec', () => {
     ttlvFixtures.forEach((item, idx) => {
         ['request', 'response'].forEach(fixture => {
             it(`should decode the TTLV ${fixture} fixture[${idx}]`, done => {
-                const kmip = new KMIP();
-                const msg = kmip.decodeMessage(logger, item[fixture]);
+                const kmip = newKMIP();
+                const msg = kmip._decodeMessage(logger, item[fixture]);
                 if (!item.degenerated) {
-                    const encodedMsg = kmip.encodeMessage(msg);
+                    const encodedMsg = kmip._encodeMessage(msg);
                     assert(encodedMsg.compare(item[fixture]) === 0);
                 }
                 done();
@@ -37,8 +44,8 @@ describe('KMIP TTLV Codec', () => {
     });
 
     it('should validate supported operations', done => {
-        const kmip = new KMIP();
-        const msg = kmip.decodeMessage(logger, ttlvFixtures[1].response);
+        const kmip = newKMIP();
+        const msg = kmip._decodeMessage(logger, ttlvFixtures[1].response);
 
         const supportedOperations =
               msg.lookup('Response Message/Batch Item/' +
@@ -66,8 +73,8 @@ describe('KMIP TTLV Codec', () => {
     });
 
     it('should detect unsupported operations', done => {
-        const kmip = new KMIP();
-        const msg = kmip.decodeMessage(logger, ttlvFixtures[2].response);
+        const kmip = newKMIP();
+        const msg = kmip._decodeMessage(logger, ttlvFixtures[2].response);
 
         const supportedOperations =
               msg.lookup('Response Message/Batch Item/' +
@@ -79,8 +86,8 @@ describe('KMIP TTLV Codec', () => {
     });
 
     it('should support non canonical search path', done => {
-        const kmip = new KMIP();
-        const msg = kmip.decodeMessage(logger, ttlvFixtures[1].response);
+        const kmip = newKMIP();
+        const msg = kmip._decodeMessage(logger, ttlvFixtures[1].response);
 
         const supportedOperations =
               msg.lookup('/Response Message/Batch Item/' +
@@ -108,8 +115,8 @@ describe('KMIP TTLV Codec', () => {
     });
 
     it('should return nothing with an empty search path', done => {
-        const kmip = new KMIP();
-        const msg = kmip.decodeMessage(logger, ttlvFixtures[2].response);
+        const kmip = newKMIP();
+        const msg = kmip._decodeMessage(logger, ttlvFixtures[2].response);
 
         const empty1 = msg.lookup('');
         const empty2 = msg.lookup('////');
@@ -119,7 +126,7 @@ describe('KMIP TTLV Codec', () => {
     });
 
     it('should encode/decode a bit mask', done => {
-        const kmip = new KMIP();
+        const kmip = newKMIP();
         const usageMask = ['Encrypt', 'Decrypt', 'Export'];
         const decodedMask =
               kmip.decodeMask('Cryptographic Usage Mask',
@@ -130,7 +137,7 @@ describe('KMIP TTLV Codec', () => {
     });
 
     it('should detect invalid bit name', done => {
-        const kmip = new KMIP();
+        const kmip = newKMIP();
         const usageMask = ['Encrypt', 'Decrypt', 'Exprot'];
         try {
             kmip.encodeMask('Cryptographic Usage Mask', usageMask);
@@ -142,9 +149,9 @@ describe('KMIP TTLV Codec', () => {
 
     messageFixtures.forEach((item, idx) => {
         it(`should encode the KMIP message fixture[${idx}]`, done => {
-            const kmip = new KMIP();
-            const encodedMessage = kmip.encodeMessage(item);
-            const decodedMessage = kmip.decodeMessage(logger, encodedMessage);
+            const kmip = newKMIP();
+            const encodedMessage = kmip._encodeMessage(item);
+            const decodedMessage = kmip._decodeMessage(logger, encodedMessage);
             assert.deepStrictEqual(item.content, decodedMessage.content);
             done();
         });
@@ -153,9 +160,9 @@ describe('KMIP TTLV Codec', () => {
     badTtlvFixtures.forEach((rawMessage, idx) => {
         it(`should fail to parse invalid TTLV message fixture[${idx}]`,
            done => {
-               const kmip = new KMIP();
+               const kmip = newKMIP();
                try {
-                   kmip.decodeMessage(logger, rawMessage);
+                   kmip._decodeMessage(logger, rawMessage);
                    done(Error('Must not succeed'));
                } catch (e) {
                    done();
