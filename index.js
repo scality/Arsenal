@@ -51,6 +51,8 @@ module.exports = {
             HealthProbeServer:
                 require('./lib/network/probe/HealthProbeServer.js'),
         },
+        kmip: require('./lib/network/kmip'),
+        kmipClient: require('./lib/network/kmip/Client'),
     },
     s3routes: {
         routes: require('./lib/s3routes/routes'),
