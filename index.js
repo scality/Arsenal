@@ -80,6 +80,7 @@ module.exports = {
         },
         prepareStream: require('./lib/s3middleware/prepareStream'),
         processMpuParts: require('./lib/s3middleware/processMpuParts'),
+        replicationInfo: require('./lib/s3middleware/replicationInfo'),
     },
     storage: {
         metadata: {
