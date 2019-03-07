@@ -1,10 +1,5 @@
 # Arsenal
 
-[![Greenkeeper badge](https://badges.greenkeeper.io/scality/Arsenal.svg)](https://greenkeeper.io/)
-
-[![CircleCI][badgepub]](https://circleci.com/gh/scality/Arsenal)
-[![Scality CI][badgepriv]](http://ci.ironmann.io/gh/scality/Arsenal)
-
 Common utilities for the S3 project components
 
 Within this repository, you will be able to find the shared libraries for the
