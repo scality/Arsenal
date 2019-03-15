@@ -50,6 +50,7 @@ describe('Metrics class', () => {
         const details = routes.find(route =>
             route.category === 'metrics' && route.type === 'all');
         details.site = 'all';
+        details.service = 'crr';
         metrics.getAllMetrics(details, (err, res) => {
             assert.ifError(err);
             const expected = {
