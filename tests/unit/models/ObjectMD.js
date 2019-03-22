@@ -30,6 +30,9 @@ describe('ObjectMD class setters/getters', () => {
         ['LastModified', new Date().toJSON()],
         ['ContentMd5', null, ''],
         ['ContentMd5', 'content-md5'],
+        ['ContentLanguage', null, ''],
+        ['ContentLanguage', 'content-language', ''],
+        ['CreationTime', new Date().toJSON()],
         ['AmzVersionId', null, 'null'],
         ['AmzVersionId', 'version-id'],
         ['AmzServerVersionId', null, ''],
@@ -215,8 +218,10 @@ describe('ObjectMD class setters/getters', () => {
         md.setUserMetadata({
             'x-amz-meta-foo': 'bar',
             'x-amz-meta-baz': 'qux',
-            // this one should be filtered out
+            // This one should be filtered out
             'x-amz-storage-class': 'STANDARD_IA',
+            // This one should be changed to 'x-amz-meta-foobar'
+            'x-ms-meta-foobar': 'bar',
             // ACLs are updated
             'acl': {
                 FULL_CONTROL: ['john'],
@@ -225,6 +230,7 @@ describe('ObjectMD class setters/getters', () => {
         assert.deepStrictEqual(JSON.parse(md.getUserMetadata()), {
             'x-amz-meta-foo': 'bar',
             'x-amz-meta-baz': 'qux',
+            'x-amz-meta-foobar': 'bar',
         });
         assert.deepStrictEqual(md.getAcl(), {
             FULL_CONTROL: ['john'],
@@ -333,6 +339,8 @@ describe('getAttributes static method', () => {
             'content-length': true,
             'content-type': true,
             'content-md5': true,
+            'content-language': true,
+            'creation-time': true,
             'x-amz-version-id': true,
             'x-amz-server-version-id': true,
             'x-amz-storage-class': true,
