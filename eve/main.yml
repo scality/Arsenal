@@ -9,11 +9,6 @@ stages:
   pre-merge:
     worker:
       type: local
-      path: eve/workers/pod.yml
-      images:
-        aggressor: eve/workers/master
-      volumes:
-        - '/home/eve/workspace'
     steps:
       - Git:
           name: fetch source
