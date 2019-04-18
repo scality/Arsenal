@@ -18,12 +18,6 @@ RUN apt-get update -q && apt-get -qy install curl apt-transport-https \
     && rm -f /tmp/*_packages.list
 
 #
-# Install usefull nodejs dependencies
-#
-
-RUN npm install mocha -g
-
-#
 # Add user eve
 #
 
