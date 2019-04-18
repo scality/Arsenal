@@ -7,9 +7,11 @@ branches:
 
 stages:
   pre-merge:
-    worker: &master-worker
-      type: docker
-      path: eve/workers/master
+    worker:
+      type: local
+      path: eve/workers/pod.yml
+      images:
+        aggressor: eve/workers/master
       volumes:
         - '/home/eve/workspace'
     steps:
@@ -31,10 +33,6 @@ stages:
       - ShellCommand:
           name: run lint_md
           command: npm run --silent lint_md
-      - ShellCommand:
-          name: add hostname
-          command: sudo sh -c "echo '127.0.0.1 testrequestbucket.localhost' \
-            >> /etc/hosts"
 
       - ShellCommand:
           name: run test

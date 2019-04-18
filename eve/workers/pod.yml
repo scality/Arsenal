@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "arsenal-test-pod"
+spec:
+  restartPolicy: Never
+  terminationGracePeriodSeconds: 10
+  hostAliases:
+  - ip: "127.0.0.1"
+    hostnames:
+    - "testrequestbucket.localhost"
+  containers:
+    - name: mongo
+    image: scality/ci-mongo:3.6.8
+    imagePullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: 100m
+        memory: 1Gi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+    - name: aggressor
+      image: {{ images.aggressor }}
+      imagePullPolicy: IfNotPresent
+      resources:
+        requests:
+          cpu: 100m
+          memory: 1Gi
+        limits:
+          cpu: "1"
+          memory: 2Gi
