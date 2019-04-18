@@ -43,7 +43,6 @@ ENV CXX=g++-4.9
 ENV LANG C.UTF-8
 
 
-WORKDIR /home/eve/workspace
 CMD buildbot-worker create-worker . "$BUILDMASTER:$BUILDMASTER_PORT" "$WORKERNAME" "$WORKERPASS" \
     && sudo service redis-server start \
     && buildbot-worker start --nodaemon
