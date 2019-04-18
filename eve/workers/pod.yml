@@ -11,15 +11,15 @@ spec:
     - "testrequestbucket.localhost"
   containers:
     - name: mongo
-    image: scality/ci-mongo:3.6.8
-    imagePullPolicy: IfNotPresent
-    resources:
-      requests:
-        cpu: 100m
-        memory: 1Gi
-      limits:
-        cpu: 500m
-        memory: 1Gi
+      image: scality/ci-mongo:3.6.8
+      imagePullPolicy: IfNotPresent
+      resources:
+        requests:
+          cpu: 100m
+          memory: 1Gi
+        limits:
+          cpu: 500m
+          memory: 1Gi
     - name: aggressor
       image: {{ images.aggressor }}
       imagePullPolicy: IfNotPresent
