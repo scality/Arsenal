@@ -22,7 +22,7 @@ stages:
       images:
         aggressor: eve/workers/master
     steps:
-      - Git: &git
+      - Git:
           name: fetch source
           repourl: '%(prop:git_reference)s'
           shallow: True
