@@ -10,7 +10,19 @@ stages:
     worker:
       type: local
     steps:
-      - Git:
+    - TriggerStages:
+        name: trigger all the tests
+        stage_names:
+        - run-tests
+
+  run-tests:
+    worker: &workspace
+      type: kube_pod
+      path: eve/workers/pod.yml
+      images:
+        aggressor: eve/workers/master
+    steps:
+      - Git: &git
           name: fetch source
           repourl: '%(prop:git_reference)s'
           shallow: True
