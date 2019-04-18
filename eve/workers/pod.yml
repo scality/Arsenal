@@ -30,3 +30,9 @@ spec:
         limits:
           cpu: "1"
           memory: 2Gi
+      command:
+        - bash
+        - -lc
+        - |
+          buildbot-worker create-worker . $BUILDMASTER:$BUILDMASTER_PORT $WORKERNAME $WORKERPASS
+          buildbot-worker start --nodaemon
