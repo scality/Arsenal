@@ -13,10 +13,12 @@ stages:
     - TriggerStages:
         name: trigger all the tests
         stage_names:
-        - run-tests
+          - run-tests
+        waitForFinish: True
+        haltOnFailure: True
 
   run-tests:
-    worker: &workspace
+    worker:
       type: kube_pod
       path: eve/workers/pod.yml
       images:
@@ -31,6 +33,7 @@ stages:
       - ShellCommand:
           name: install dependencies
           command: npm install
+          haltOnFailure: True
       - ShellCommand:
           name: run lint yml
           command: npm run --silent lint_yml
