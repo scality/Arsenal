@@ -328,4 +328,40 @@ describe('mongoclient.ListRecordStream', () => {
         });
         lrs.on('error', () => done());
     });
+
+    it('should support bucket names with dots', done => {
+        const logEntry = {
+            h: -42,
+            ts: Timestamp.fromNumber(42),
+            op: 'i',
+            ns: 'metadata.some.bucket.with.dots',
+            o: {
+                _id: 'replicated-key\u000098467518084696999999RG001  19.3',
+                value: {
+                    someField: 'someValue',
+                },
+            },
+        };
+        const expectedLogEntry = {
+            db: 'some.bucket.with.dots',
+            entries: [
+                {
+                    key: 'replicated-key\u000098467518084696999999RG001  19.3',
+                    type: 'put',
+                    value: '{"someField":"someValue"}',
+                },
+            ],
+            timestamp: new Date(42000),
+        };
+        const cursor = new MongoCursorMock([
+            lastEndIDEntry,
+            logEntry,
+        ]);
+        const lrs = new ListRecordStream(cursor, logger,
+                                         lastEndIDEntry.h.toString());
+        lrs.on('data', entry => {
+            assert.deepStrictEqual(entry, expectedLogEntry);
+            done();
+        });
+    });
 });
