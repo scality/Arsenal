@@ -381,10 +381,10 @@ describe('LifecycleConfiguration', () => {
         };
     }
 
-    describe('::_getRuleFilter', () => {
+    describe('::_getRuleFilterDesc', () => {
         it('should get Prefix', () => {
             const rule = getParsedXML().LifecycleConfiguration.Rule[0];
-            const ruleFilter = lifecycleConfiguration._getRuleFilter(rule);
+            const ruleFilter = lifecycleConfiguration._getRuleFilterDesc(rule);
             assert.strictEqual(ruleFilter, "prefix ''");
         });
 
@@ -392,7 +392,7 @@ describe('LifecycleConfiguration', () => {
             const rule = getParsedXML().LifecycleConfiguration.Rule[0];
             delete rule.Prefix;
             rule.Filter = [{ Prefix: [''] }];
-            const ruleFilter = lifecycleConfiguration._getRuleFilter(rule);
+            const ruleFilter = lifecycleConfiguration._getRuleFilterDesc(rule);
             assert.strictEqual(ruleFilter, "filter '(prefix=)'");
         });
 
@@ -400,7 +400,7 @@ describe('LifecycleConfiguration', () => {
             const rule = getParsedXML().LifecycleConfiguration.Rule[0];
             delete rule.Prefix;
             rule.Filter = [{ Tag: [{ Key: ['a'], Value: [''] }] }];
-            const ruleFilter = lifecycleConfiguration._getRuleFilter(rule);
+            const ruleFilter = lifecycleConfiguration._getRuleFilterDesc(rule);
             assert.strictEqual(ruleFilter, "filter '(tag: key=a, value=)'");
         });
 
@@ -420,7 +420,7 @@ describe('LifecycleConfiguration', () => {
                     }],
                 }],
             }];
-            const ruleFilter = lifecycleConfiguration._getRuleFilter(rule);
+            const ruleFilter = lifecycleConfiguration._getRuleFilterDesc(rule);
             assert.strictEqual(ruleFilter, 'filter ' +
                 "'(prefix= and tag: key=a, value=b and tag: key=c, value=d)'");
         });
@@ -440,9 +440,35 @@ describe('LifecycleConfiguration', () => {
                     }],
                 }],
             }];
-            const ruleFilter = lifecycleConfiguration._getRuleFilter(rule);
+            const ruleFilter = lifecycleConfiguration._getRuleFilterDesc(rule);
             assert.strictEqual(ruleFilter,
                 "filter '(tag: key=a, value=b and tag: key=c, value=d)'");
+        });
+
+        it('should get Filter with empty object', () => {
+            const rule = {
+                ID: ['test-id'],
+                Status: ['Enabled'],
+                Expiration: [{
+                    Days: 1,
+                }],
+            };
+            rule.Filter = [{}];
+            const ruleFilter = lifecycleConfiguration._getRuleFilterDesc(rule);
+            assert.strictEqual(ruleFilter, 'filter (all)');
+        });
+
+        it('should get empty Filter', () => {
+            const rule = {
+                ID: ['test-id'],
+                Status: ['Enabled'],
+                Expiration: [{
+                    Days: 1,
+                }],
+            };
+            rule.Filter = [];
+            const ruleFilter = lifecycleConfiguration._getRuleFilterDesc(rule);
+            assert.strictEqual(ruleFilter, 'filter (all)');
         });
     });
 
