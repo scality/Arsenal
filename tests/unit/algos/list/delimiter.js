@@ -77,6 +77,14 @@ const nonAlphabeticalData = [
     { key: 'zzz', value },
     { key: 'aaa', value },
 ];
+const data2 = [
+    { key: 'test-obj1', value: valuePHD },
+    { key: 'test-obj10', value: valuePHD },
+    { key: 'test-obj100', value: valuePHD },
+    { key: 'test-obj101', value: valuePHD },
+    { key: 'test-obj2', value: valuePHD },
+    { key: 'test-obj1000', value: valuePHD },
+]
 
 const receivedData = data.map(item => ({ key: item.key, value: item.value }));
 const receivedNonAlphaData = nonAlphabeticalData.map(
@@ -84,6 +92,18 @@ const receivedNonAlphaData = nonAlphabeticalData.map(
 );
 
 const tests = [
+    new Test('testing something', {
+        delimiter: '/',
+    }, {
+        Contents: receivedData,
+        CommonPrefixes: [],
+        Delimiter: '/',
+        IsTruncated: false,
+        NextMarker: undefined,
+    })
+]
+
+const tests2 = [
     new Test('all elements', {}, {
         Contents: receivedData,
         CommonPrefixes: [],
@@ -474,13 +494,47 @@ const alphabeticalOrderTests = [
 
 
 describe('Delimiter listing algorithm', () => {
-    it('Should return good skipping value for DelimiterMaster', done => {
+    it.skip('Should return good skipping value for DelimiterMaster', done => {
         const delimiter = new DelimiterMaster({ delimiter: '/' });
         for (let i = 0; i < 100; i++) {
             delimiter.filter({ key: `foo/${zpad(i)}`, value: '{}' });
         }
         assert.strictEqual(delimiter.skipping(), 'foo/');
         done();
+    });
+
+    it.only('should do something', done => {
+
+        // const delimiter = new DelimiterMaster({ delimiter: '/' });
+        const delimiter = new DelimiterMaster({});
+
+        const arr = [
+            'oob-test-1',
+            'oob-test-10',
+            'oob-test-101',
+            'oob-test-2',
+            'oob-test-20',
+            'oob-test-222',
+            // 'oob-test-2000',
+        ]
+
+        arr.forEach(i => {
+            console.log(`-> START: ${i}`)
+            // '{ "isPHD": "true" }'
+            let a = delimiter.filter({ key: i, value: '{ "isPHD": "true" }' });
+            console.log(a)
+
+            let b = delimiter.filter({ key: `${i}version1`, value: '{}' });
+            let c = delimiter.filter({ key: `${i}version2`, value: '{}' });
+
+            console.log(b)
+            console.log(c)
+        })
+
+        console.log('==== results: ====')
+        console.log(delimiter.skipping())
+        done()
+
     });
 
     it('Should set Delimiter alphabeticalOrder field to the expected value',
@@ -493,25 +547,34 @@ describe('Delimiter listing algorithm', () => {
            });
        });
 
-    tests.forEach(test => {
-        it(`Should list ${test.name}`, done => {
-            // Simulate skip scan done by LevelDB
-            const d = data.filter(e => test.filter(e, test.input));
-            const res = performListing(d, Delimiter, test.input, logger);
-            assert.deepStrictEqual(res, test.output);
-            done();
-        });
-    });
+    // tests.forEach(test => {
+    //     it(`Should list ${test.name}`, done => {
+    //         // Simulate skip scan done by LevelDB
+    //         const d = data.filter(e => test.filter(e, test.input));
+    //         const res = performListing(d, Delimiter, test.input, logger);
+    //         assert.deepStrictEqual(res, test.output);
+    //         done();
+    //     });
+    // });
+    //
+    // tests.forEach(test => {
+    //     it(`Should list master versions ${test.name}`, done => {
+    //         // Simulate skip scan done by LevelDB
+    //         const d = dataVersioned.filter(e => test.filter(e, test.input));
+    //         const res = performListing(d, DelimiterMaster, test.input, logger);
+    //         assert.deepStrictEqual(res, test.output);
+    //         done();
+    //     });
+    // });
 
-    tests.forEach(test => {
-        it(`Should list master versions ${test.name}`, done => {
-            // Simulate skip scan done by LevelDB
-            const d = dataVersioned.filter(e => test.filter(e, test.input));
-            const res = performListing(d, DelimiterMaster, test.input, logger);
-            assert.deepStrictEqual(res, test.output);
-            done();
-        });
-    });
+
+    // it.only('should do something', done => {
+    //     const test = tests[0]
+    //     const delimiter = new DelimiterMaster({ delimiter: '/' });
+    //     let res = performListing(data2, DelimiterMaster, { delimiter: '/' }, logger)
+    //     console.log(res)
+    //     done();
+    // });
 
     it('Should filter values according to alphabeticalOrder parameter',
        () => {

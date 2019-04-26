@@ -286,6 +286,56 @@ describe('Delimiter All masters listing algorithm', () => {
         });
     });
 
+    it.only('should do something', () => {
+        const delimiter = new DelimiterMaster({
+            delimiter: '/',
+        }, fakeLogger);
+        const masterKey = 'key-1';
+        const versionKey1 = `${masterKey}${VID_SEP}version1`;
+        const versionKey2 = `${masterKey}${VID_SEP}version2`;
+
+        const masterKeyB = 'key-10';
+        const versionKeyB1 = `${masterKeyB}${VID_SEP}version1`;
+        const versionKeyB2 = `${masterKeyB}${VID_SEP}version2`;
+
+        const value2 = 'value2';
+
+        /* Filter the PHD version. */
+        assert.strictEqual(delimiter.filter({
+            key: masterKey,
+            value: '{ "isPHD": true, "value": "version" }',
+        }), FILTER_ACCEPT);
+
+        assert.strictEqual(delimiter.filter({
+            key: versionKey1,
+            value: '{ "isDeleteMarker": true }',
+        }), FILTER_ACCEPT);
+
+        assert.strictEqual(delimiter.filter({
+            key: masterKey,
+            value: value2,
+        }), FILTER_ACCEPT);
+
+        console.log(delimiter.result())
+
+        assert.strictEqual(delimiter.filter({
+            key: masterKeyB,
+            value: '{ "isPHD": true, "value": "version" }',
+        }), FILTER_ACCEPT);
+
+        console.log(delimiter.result())
+
+        assert.strictEqual(delimiter.filter({
+            key: masterKey,
+            value: '{ "isDeleteMarker": true }',
+        }), FILTER_ACCEPT);
+
+        assert.strictEqual(delimiter.filter({
+            key: masterKey,
+            value: value2,
+        }), FILTER_ACCEPT);
+    });
+
     it('should return good listing result for version', () => {
         const delimiter = new DelimiterMaster({}, fakeLogger);
         const masterKey = 'key';
