@@ -166,8 +166,4 @@ module.exports = {
     pensieve: {
         credentialUtils: require('./lib/executables/pensieveCreds/utils'),
     },
-    backbeat: {
-        Metrics: require('./lib/backbeat/Metrics'),
-        routes: require('./lib/backbeat/routes'),
-    },
 };
