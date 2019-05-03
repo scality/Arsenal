@@ -21,7 +21,7 @@
     "async": "~2.1.5",
     "debug": "~2.3.3",
     "diskusage": "^0.2.2",
-    "ioredis": "2.4.0",
+    "ioredis": "4.9.0",
     "ipaddr.js": "1.2.0",
     "joi": "^10.6",
     "JSONStream": "^1.0.0",
