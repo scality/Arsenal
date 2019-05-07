@@ -1,7 +1,9 @@
 const assert = require('assert');
 const crypto = require('crypto');
+const { Logger } = require('werelogs');
+const log = new Logger('S3').newRequestLogger();
 
-const { createAggregateETag } =
+const { createAggregateETag, validateAndFilterMpuParts } =
       require('../../../lib/s3middleware/processMpuParts');
 
 describe('createAggregateETag', () => {
@@ -52,5 +54,46 @@ describe('createAggregateETag', () => {
         const aggregateETag = createAggregateETag(partETags);
         assert.strictEqual(
             aggregateETag, 'bff290751e485f06dcc0203c77ed2fd9-10000');
+    });
+});
+
+
+let storedParts;
+let jsonList;
+
+// r - number of parts to remove
+function _buildExpectedResult(r) {
+    const result = [];
+    for (let i = 0; i < r; i++) {
+        jsonList.Part.shift();
+        result.push(...storedParts[i].value.partLocations);
+    }
+    return result;
+}
+
+describe('processMpuParts::validateAndFilterMpuParts', () => {
+    let mpuOverviewKey;
+    let splitter;
+    beforeEach(() => {
+        mpuOverviewKey =
+            '"overview..|..fred..|..8e51eecb51ca4caa96dc4ebd51514f2a"';
+        splitter = '..|..';
+        storedParts = require('./helpers/storedParts');
+        jsonList = require('./helpers/jsonList');
+    });
+    afterEach(() => {
+        mpuOverviewKey = null;
+        splitter = null;
+    });
+
+    [0, 2, 4].forEach(n => {
+        it(`should filter ${n} parts that are not used in complete mpu`,
+            () => {
+                const expected = _buildExpectedResult(n);
+
+                const result = validateAndFilterMpuParts(storedParts, jsonList,
+                    mpuOverviewKey, splitter, log);
+                assert.deepStrictEqual(expected, result.extraPartLocations);
+            });
     });
 });
