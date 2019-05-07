@@ -27,6 +27,7 @@
     "debug": "~4.1.0",
     "diskusage": "^1.0.0",
     "fcntl": "github:scality/node-fcntl",
+    "hdclient": "scality/hdclient#5145e04e5ed33e85106765b1caa90cd245ef482b",
     "https-proxy-agent": "^2.2.0",
     "ioredis": "4.2.0",
     "ipaddr.js": "1.8.1",
