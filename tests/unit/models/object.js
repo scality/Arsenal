@@ -104,7 +104,7 @@ describe('ObjectMD class setters/getters', () => {
         const testValue = test[1];
         const defaultValue = test[2];
         const testName = testValue === null ? 'get default' : 'get/set';
-        it(`${testName}: ${property}`, () => {
+        test(`${testName}: ${property}`, () => {
             if (testValue !== null) {
                 md[`set${property}`](testValue);
             }
@@ -120,7 +120,7 @@ describe('ObjectMD class setters/getters', () => {
         });
     });
 
-    it('ObjectMD::setReplicationSiteStatus', () => {
+    test('ObjectMD::setReplicationSiteStatus', () => {
         md.setReplicationInfo({
             backends: [{
                 site: 'zenko',
@@ -136,7 +136,7 @@ describe('ObjectMD class setters/getters', () => {
         }]);
     });
 
-    it('ObjectMD::setReplicationBackends', () => {
+    test('ObjectMD::setReplicationBackends', () => {
         md.setReplicationBackends([{
             site: 'a',
             status: 'b',
@@ -149,12 +149,12 @@ describe('ObjectMD class setters/getters', () => {
         }]);
     });
 
-    it('ObjectMD::setReplicationStorageClass', () => {
+    test('ObjectMD::setReplicationStorageClass', () => {
         md.setReplicationStorageClass('a');
         assert.strictEqual(md.getReplicationStorageClass(), 'a');
     });
 
-    it('ObjectMD::getReplicationSiteStatus', () => {
+    test('ObjectMD::getReplicationSiteStatus', () => {
         md.setReplicationInfo({
             backends: [{
                 site: 'zenko',
@@ -165,7 +165,7 @@ describe('ObjectMD class setters/getters', () => {
         assert.strictEqual(md.getReplicationSiteStatus('zenko'), 'PENDING');
     });
 
-    it('ObjectMD::setReplicationSiteDataStoreVersionId', () => {
+    test('ObjectMD::setReplicationSiteDataStoreVersionId', () => {
         md.setReplicationInfo({
             backends: [{
                 site: 'zenko',
@@ -181,7 +181,7 @@ describe('ObjectMD class setters/getters', () => {
         }]);
     });
 
-    it('ObjectMD::getReplicationSiteDataStoreVersionId', () => {
+    test('ObjectMD::getReplicationSiteDataStoreVersionId', () => {
         md.setReplicationInfo({
             backends: [{
                 site: 'zenko',
@@ -195,7 +195,7 @@ describe('ObjectMD class setters/getters', () => {
 });
 
 describe('ObjectMD import from stored blob', () => {
-    it('should export and import correctly the latest model version', () => {
+    test('should export and import correctly the latest model version', () => {
         const md = new ObjectMD();
         const jsonMd = md.getSerialized();
         const importedRes = ObjectMD.createFromBlob(jsonMd);
@@ -204,7 +204,7 @@ describe('ObjectMD import from stored blob', () => {
         assert.deepStrictEqual(md, importedMd);
     });
 
-    it('should convert old location to new location', () => {
+    test('should convert old location to new location', () => {
         const md = new ObjectMD();
         const value = md.getValue();
         value['md-model-version'] = 1;
@@ -220,7 +220,7 @@ describe('ObjectMD import from stored blob', () => {
                                [{ key: 'stringLocation' }]);
     });
 
-    it('should keep null location as is', () => {
+    test('should keep null location as is', () => {
         const md = new ObjectMD();
         const value = md.getValue();
         value.location = null;
@@ -234,7 +234,7 @@ describe('ObjectMD import from stored blob', () => {
         assert.deepStrictEqual(importedMd.getValue().location, null);
     });
 
-    it('should add dataStoreName attribute if missing', () => {
+    test('should add dataStoreName attribute if missing', () => {
         const md = new ObjectMD();
         const value = md.getValue();
         value['md-model-version'] = 2;
@@ -249,18 +249,20 @@ describe('ObjectMD import from stored blob', () => {
         assert.notStrictEqual(valueImported.dataStoreName, undefined);
     });
 
-    it('should return undefined for dataStoreVersionId if no object location',
-    () => {
-        const md = new ObjectMD();
-        const value = md.getValue();
-        const jsonMd = JSON.stringify(value);
-        const importedRes = ObjectMD.createFromBlob(jsonMd);
-        assert.strictEqual(importedRes.error, undefined);
-        const importedMd = importedRes.result;
-        assert.strictEqual(importedMd.getDataStoreVersionId(), undefined);
-    });
+    test(
+        'should return undefined for dataStoreVersionId if no object location',
+        () => {
+            const md = new ObjectMD();
+            const value = md.getValue();
+            const jsonMd = JSON.stringify(value);
+            const importedRes = ObjectMD.createFromBlob(jsonMd);
+            assert.strictEqual(importedRes.error, undefined);
+            const importedMd = importedRes.result;
+            assert.strictEqual(importedMd.getDataStoreVersionId(), undefined);
+        }
+    );
 
-    it('should get dataStoreVersionId if saved in object location', () => {
+    test('should get dataStoreVersionId if saved in object location', () => {
         const md = new ObjectMD();
         const dummyLocation = {
             dataStoreVersionId: 'data-store-version-id',
@@ -275,7 +277,7 @@ describe('ObjectMD import from stored blob', () => {
             dummyLocation.dataStoreVersionId);
     });
 
-    it('should return an error if blob is malformed JSON', () => {
+    test('should return an error if blob is malformed JSON', () => {
         const importedRes = ObjectMD.createFromBlob('{BAD JSON}');
         assert.notStrictEqual(importedRes.error, undefined);
         assert.strictEqual(importedRes.result, undefined);
@@ -283,7 +285,7 @@ describe('ObjectMD import from stored blob', () => {
 });
 
 describe('getAttributes static method', () => {
-    it('should return object metadata attributes', () => {
+    test('should return object metadata attributes', () => {
         const attributes = ObjectMD.getAttributes();
         const expectedResult = {
             'owner-display-name': true,

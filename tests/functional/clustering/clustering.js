@@ -35,19 +35,19 @@ describe('Clustering', () => {
         return done();
     });
 
-    it('Should create and stop workers properly', done => {
+    test('Should create and stop workers properly', done => {
         runTest('simple', done);
     });
 
-    it('Should restart workers until clustering stopped', done => {
+    test('Should restart workers until clustering stopped', done => {
         runTest('watchdog', done);
     });
 
-    it('Should shutdown cluster if master killed', done => {
+    test('Should shutdown cluster if master killed', done => {
         runTest('killed', done);
     });
 
-    it('Should timeout shutdown of workers if not exiting properly', done => {
+    test('Should timeout shutdown of workers if not exiting properly', done => {
         runTest('shutdownTimeout', done);
     });
 });

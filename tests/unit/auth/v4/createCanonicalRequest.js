@@ -9,7 +9,7 @@ const createCanonicalRequest =
 describe('createCanonicalRequest function', () => {
     // Example taken from: http://docs.aws.amazon.com/AmazonS3/
     // latest/API/sig-v4-header-based-auth.html
-    it('should construct a canonical request in accordance ' +
+    test('should construct a canonical request in accordance ' +
         'with AWS rules for a get object request (header auth)', () => {
         const params = {
             pHttpVerb: 'GET',
@@ -48,7 +48,7 @@ describe('createCanonicalRequest function', () => {
 
     const msg = 'S3C-820: aws java sdk should not encode * ' +
         'character for signature';
-    it(msg, () => {
+    test(msg, () => {
         const doc = JSON.stringify({
             Statement: [{
                 Action: 's3:*',
@@ -92,7 +92,7 @@ describe('createCanonicalRequest function', () => {
 
     // Example taken from: http://docs.aws.amazon.com/AmazonS3/
     // latest/API/sig-v4-header-based-auth.html
-    it('should construct a canonical request in accordance ' +
+    test('should construct a canonical request in accordance ' +
         'with AWS rules for a put object request (header auth)', () => {
         const params = {
             pHttpVerb: 'PUT',
@@ -134,7 +134,7 @@ describe('createCanonicalRequest function', () => {
 
     // Example taken from: http://docs.aws.amazon.com/AmazonS3/latest/API/
     // sigv4-query-string-auth.html
-    it('should construct a canonical request in accordance ' +
+    test('should construct a canonical request in accordance ' +
         'with AWS rules for a pre-signed get url request (query auth)', () => {
         const params = {
             pHttpVerb: 'GET',
@@ -167,7 +167,7 @@ describe('createCanonicalRequest function', () => {
     });
 
 
-    it('should construct a canonical request that contains upper and ' +
+    test('should construct a canonical request that contains upper and ' +
         'lower case query params and query params treated like headers ' +
         '(x-amz-acl)', () => {
         const params = {
@@ -208,7 +208,7 @@ describe('createCanonicalRequest function', () => {
         assert.strictEqual(actualOutput, expectedOutput);
     });
 
-    it('should construct a canonical request that contains a ' +
+    test('should construct a canonical request that contains a ' +
         'signed header with an empty string value', () => {
         const params = {
             pHttpVerb: 'PUT',
@@ -231,7 +231,7 @@ describe('createCanonicalRequest function', () => {
         assert.strictEqual(actualOutput, expectedOutput);
     });
 
-    it('should construct a canonical request that contains a ' +
+    test('should construct a canonical request that contains a ' +
         'signed expect header even if expect header value was ' +
         'stripped by the load balancer', () => {
         const params = {
@@ -254,7 +254,7 @@ describe('createCanonicalRequest function', () => {
         assert.strictEqual(actualOutput, expectedOutput);
     });
 
-    it('should trim white space in a canonical header value so that ' +
+    test('should trim white space in a canonical header value so that ' +
         'there is no white space before or after a value and any sequential ' +
         'white space becomes a single space', () => {
         const params = {

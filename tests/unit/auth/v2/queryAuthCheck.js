@@ -11,7 +11,7 @@ describe('v2: queryAuthCheck', () => {
         { token: undefined, error: false },
         { token: 'invalid-token', error: true },
         { token: 'a'.repeat(128), error: false },
-    ].forEach(test => it(`test with token(${test.token})`, () => {
+    ].forEach(test => test(`test with token(${test.token})`, () => {
         const request = { method: 'GET' };
         const data = {
             SecurityToken: test.token,

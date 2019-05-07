@@ -14,7 +14,7 @@ const log = new DummyRequestLogger();
     describe(item.desc, () => {
         // Example taken from: http://docs.aws.amazon.com/AmazonS3/
         // latest/API/sig-v4-header-based-auth.html
-        it('should construct a stringToSign in accordance ' +
+        test('should construct a stringToSign in accordance ' +
             'with AWS rules for a get object request (header auth)', () => {
             const path = '/test.txt';
             const params = {
@@ -55,7 +55,7 @@ const log = new DummyRequestLogger();
 
         // Example taken from: http://docs.aws.amazon.com/AmazonS3/
         // latest/API/sig-v4-header-based-auth.html
-        it('should construct a stringToSign in accordance ' +
+        test('should construct a stringToSign in accordance ' +
             'with AWS rules for a put object request (header auth)', () => {
             const path = '/test$file.text';
             const params = {
@@ -98,40 +98,39 @@ const log = new DummyRequestLogger();
 
         // Example taken from: http://docs.aws.amazon.com/AmazonS3/
         // latest/API/sig-v4-header-based-auth.html
-        it('should construct a stringToSign in accordance ' +
-            'with AWS rules for a pre-signed get url request (query auth)',
-            () => {
-                const path = '/test.txt';
-                const params = {
-                    request: {
-                        method: 'GET',
-                        path: `${item.path}${path}`,
-                        headers: {
-                            host: 'examplebucket.s3.amazonaws.com',
-                        },
+        test('should construct a stringToSign in accordance ' +
+            'with AWS rules for a pre-signed get url request (query auth)', () => {
+            const path = '/test.txt';
+            const params = {
+                request: {
+                    method: 'GET',
+                    path: `${item.path}${path}`,
+                    headers: {
+                        host: 'examplebucket.s3.amazonaws.com',
                     },
-                    query: {
-                        'X-Amz-Algorithm': 'AWS4-HMAC-SHA256',
-                        'X-Amz-Credential': 'AKIAIOSFODNN7EXAMPLE/20130524/' +
-                            'us-east-1/s3/aws4_request',
-                        'X-Amz-Date': '20130524T000000Z',
-                        'X-Amz-Expires': '86400',
-                        'X-Amz-SignedHeaders': 'host',
-                    },
-                    signedHeaders: 'host',
-                    payloadChecksum: 'UNSIGNED-PAYLOAD',
-                    credentialScope: '20130524/us-east-1/s3/aws4_request',
-                    timestamp: '20130524T000000Z',
-                    log,
-                    proxyPath: item.path ? path : undefined,
-                };
-                const expectedOutput = 'AWS4-HMAC-SHA256\n' +
-                    '20130524T000000Z\n' +
-                    '20130524/us-east-1/s3/aws4_request\n' +
-                    '3bfa292879f6447bbcda7001decf97f4a54d' +
-                    'c650c8942174ae0a9121cf58ad04';
-                const actualOutput = constructStringToSign(params);
-                assert.strictEqual(actualOutput, expectedOutput);
-            });
+                },
+                query: {
+                    'X-Amz-Algorithm': 'AWS4-HMAC-SHA256',
+                    'X-Amz-Credential': 'AKIAIOSFODNN7EXAMPLE/20130524/' +
+                        'us-east-1/s3/aws4_request',
+                    'X-Amz-Date': '20130524T000000Z',
+                    'X-Amz-Expires': '86400',
+                    'X-Amz-SignedHeaders': 'host',
+                },
+                signedHeaders: 'host',
+                payloadChecksum: 'UNSIGNED-PAYLOAD',
+                credentialScope: '20130524/us-east-1/s3/aws4_request',
+                timestamp: '20130524T000000Z',
+                log,
+                proxyPath: item.path ? path : undefined,
+            };
+            const expectedOutput = 'AWS4-HMAC-SHA256\n' +
+                '20130524T000000Z\n' +
+                '20130524/us-east-1/s3/aws4_request\n' +
+                '3bfa292879f6447bbcda7001decf97f4a54d' +
+                'c650c8942174ae0a9121cf58ad04';
+            const actualOutput = constructStringToSign(params);
+            assert.strictEqual(actualOutput, expectedOutput);
+        });
     });
 });

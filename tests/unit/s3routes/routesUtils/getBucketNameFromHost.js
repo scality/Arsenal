@@ -24,7 +24,7 @@ const validHosts = [
 ];
 
 describe('routesUtils.getBucketNameFromHost', () => {
-    it('should extract valid buckets for one endpoint', () => {
+    test('should extract valid buckets for one endpoint', () => {
         [
             'b', 'mybucket',
             'buck-et', '-buck-et', 'buck-et-',
@@ -40,7 +40,7 @@ describe('routesUtils.getBucketNameFromHost', () => {
         });
     });
 
-    it('should also accept website endpoints', () => {
+    test('should also accept website endpoints', () => {
         [
             'in-french.bucket.is-seau.s3-website-eu-west-1.amazonaws.com',
             'in-french.bucket.is-seau.s3-website-us-east-1.amazonaws.com',
@@ -55,7 +55,7 @@ describe('routesUtils.getBucketNameFromHost', () => {
         });
     });
 
-    it('should return undefined when non dns-style', () => {
+    test('should return undefined when non dns-style', () => {
         [
             's3.amazonaws.com',
         ].forEach(host => {
@@ -66,7 +66,7 @@ describe('routesUtils.getBucketNameFromHost', () => {
         });
     });
 
-    it('should return undefined when IP addresses', () => {
+    test('should return undefined when IP addresses', () => {
         [
             '127.0.0.1',
             '8.8.8.8',
@@ -82,7 +82,7 @@ describe('routesUtils.getBucketNameFromHost', () => {
         });
     });
 
-    it('should throw when bad request', () => {
+    test('should throw when bad request', () => {
         [
             {},
             { host: '' },

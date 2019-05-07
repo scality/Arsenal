@@ -161,7 +161,7 @@ describe('level-net - LevelDB over network', () => {
         async.series(opList, cb);
     }
 
-    before(done => {
+    beforeAll(done => {
         temp.mkdir('level-net-testdb-', (err, dbDir) => {
             const rootDb = level(dbDir);
             db = sublevel(rootDb);
@@ -169,7 +169,7 @@ describe('level-net - LevelDB over network', () => {
         });
     });
 
-    after(done => {
+    afterAll(done => {
         client.once('disconnect', () => {
             server.close();
             done();
@@ -178,17 +178,17 @@ describe('level-net - LevelDB over network', () => {
     });
 
     describe('simple tests', () => {
-        it('should be able to perform a complete CRUD test', done => {
+        test('should be able to perform a complete CRUD test', done => {
             doCRUDTest(client, 'CRUD', 'testkey', done);
         });
     });
     describe('sublevel tests', () => {
-        it('should be able to do CRUD on sublevel', done => {
+        test('should be able to do CRUD on sublevel', done => {
             const subLevel = client.openSub('sub1');
             assert(subLevel);
             doCRUDTest(subLevel, 'CRUD', 'subkey', done);
         });
-        it('should be able to re-open a sublevel', done => {
+        test('should be able to re-open a sublevel', done => {
             const subLevel = client.openSub('sub2');
             doCRUDTest(subLevel, 'C', 'subkey', err => {
                 assert.ifError(err);
@@ -196,7 +196,7 @@ describe('level-net - LevelDB over network', () => {
                 doCRUDTest(subLevel2, 'RD', 'subkey', done);
             });
         });
-        it('should separate sublevel namespaces correctly', done => {
+        test('should separate sublevel namespaces correctly', done => {
             const subLevel = client.openSub('sub3');
             doCRUDTest(subLevel, 'C', 'subkey', err => {
                 assert.ifError(err);
@@ -208,7 +208,7 @@ describe('level-net - LevelDB over network', () => {
                 });
             });
         });
-        it('should be able to nest multiple sub-levels', done => {
+        test('should be able to nest multiple sub-levels', done => {
             const subLevel = client.openSub('sub4');
             const nestedSub1 = subLevel.openSub('sub4-nested1');
             const nestedSub2 = nestedSub1.openSub('nested-nested');
@@ -249,10 +249,10 @@ describe('level-net - LevelDB over network', () => {
                     .put(keyOfIter(i), valueOfIter(i), params, putCb);
             }
         }
-        before(done => {
+        beforeAll(done => {
             prefillKeys(done);
         });
-        it('should be able to read keys back at random', done => {
+        test('should be able to read keys back at random', done => {
             const nbGet = 100;
             let nbGetDone = 0;
 
@@ -272,7 +272,7 @@ describe('level-net - LevelDB over network', () => {
                     .get(keyOfIter(randI), params, getCb);
             }
         });
-        it('should be able to list all keys through a stream and ' +
+        test('should be able to list all keys through a stream and ' +
            'rewrite them on-the-fly', done => {
             client.createReadStream((err, keyStream) => {
                 assert.ifError(err);
@@ -311,7 +311,7 @@ describe('level-net - LevelDB over network', () => {
                 });
             });
         });
-        it('should be able to abort key listing properly when client ' +
+        test('should be able to abort key listing properly when client ' +
            'destroys the stream', done => {
             client.createReadStream((err, keyStream) => {
                 assert.ifError(err);
@@ -344,7 +344,7 @@ describe('level-net - LevelDB over network', () => {
                 });
             });
         });
-        it('should delete all keys successfully', done => {
+        test('should delete all keys successfully', done => {
             let nbDelDone = 0;
 
             function checkAllDeleted(done) {

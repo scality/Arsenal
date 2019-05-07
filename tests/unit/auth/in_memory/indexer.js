@@ -14,28 +14,28 @@ describe('S3 AuthData Indexer', () => {
         done();
     });
 
-    it('Should return account from canonicalID', done => {
+    test('Should return account from canonicalID', done => {
         const res = index.getEntityByCanId(obj.accounts[0].canonicalID);
         assert.strictEqual(typeof res, 'object');
         assert.strictEqual(res.arn, obj.accounts[0].arn);
         done();
     });
 
-    it('Should return account from email', done => {
+    test('Should return account from email', done => {
         const res = index.getEntityByEmail(obj.accounts[1].email);
         assert.strictEqual(typeof res, 'object');
         assert.strictEqual(res.canonicalID, obj.accounts[1].canonicalID);
         done();
     });
 
-    it('Should return account from key', done => {
+    test('Should return account from key', done => {
         const res = index.getEntityByKey(obj.accounts[0].keys[0].access);
         assert.strictEqual(typeof res, 'object');
         assert.strictEqual(res.arn, obj.accounts[0].arn);
         done();
     });
 
-    it('should index account without keys', done => {
+    test('should index account without keys', done => {
         should._exec = () => {
             index = new Indexer(obj);
             const res = index.getEntityByEmail(obj.accounts[0].email);
@@ -46,7 +46,7 @@ describe('S3 AuthData Indexer', () => {
         should.missingField(obj, 'accounts.0.keys');
     });
 
-    it('should index account without users', done => {
+    test('should index account without users', done => {
         should._exec = () => {
             index = new Indexer(obj);
             const res = index.getEntityByEmail(obj.accounts[0].email);

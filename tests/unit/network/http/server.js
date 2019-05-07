@@ -81,35 +81,34 @@ describe('network.Server: ', () => {
         }
 
         describe(test[0], () => {
-            it('should start', done => {
+            test('should start', done => {
                 const ws = createServer().onError(done).onListening(() => {
                     ws.onStop(done);
                     ws.stop();
                 }).start();
             });
 
-            it('should return EADDRINUSE on binding port already taken',
-                done => {
-                    const ws = createServer().onError(done)
-                    .onListening(() => {
-                        const bindingTimeout = setTimeout(() => {
-                            const err =
-                                'Server does not send an binding error';
-                            ws.onStop(() => done(new Error(err))).stop();
-                        }, 5000);
-                        const ws2 = new Server(3000, log).onError(err => {
-                            if (err.code === 'EADDRINUSE') {
-                                clearTimeout(bindingTimeout);
-                                return ws.onStop(done).stop();
-                            }
+            test('should return EADDRINUSE on binding port already taken', done => {
+                const ws = createServer().onError(done)
+                .onListening(() => {
+                    const bindingTimeout = setTimeout(() => {
+                        const err =
+                            'Server does not send an binding error';
+                        ws.onStop(() => done(new Error(err))).stop();
+                    }, 5000);
+                    const ws2 = new Server(3000, log).onError(err => {
+                        if (err.code === 'EADDRINUSE') {
                             clearTimeout(bindingTimeout);
-                            return ws.onStop(() => done(err)).stop();
-                        });
-                        ws2.start();
-                    }).start();
-                });
+                            return ws.onStop(done).stop();
+                        }
+                        clearTimeout(bindingTimeout);
+                        return ws.onStop(() => done(err)).stop();
+                    });
+                    ws2.start();
+                }).start();
+            });
 
-            it('should return InternalError when no request handler', done => {
+            test('should return InternalError when no request handler', done => {
                 const ws = createServer().onError(done).onListening(() => {
                     const requestTimeout = setTimeout(() => {
                         ws.onStop(() => done('No response received')).stop();
@@ -130,7 +129,7 @@ describe('network.Server: ', () => {
                 }).start();
             });
 
-            it('should return 200 OK with "done" as content', done => {
+            test('should return 200 OK with "done" as content', done => {
                 const ws = createServer().onError(done).onListening(() => {
                     const requestTimeout = setTimeout(() => {
                         ws.onStop(() => done('No response received')).stop();
@@ -155,7 +154,7 @@ describe('network.Server: ', () => {
         });
     });
 
-    it('should fail when the server is twoWay', done => {
+    test('should fail when the server is twoWay', done => {
         const ws = new Server(3000, log);
         ws.setHttps(httpsRef.cert, httpsRef.key, httpsRef.ca, true);
         ws.onError(done).onListening(() => {

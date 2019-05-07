@@ -5,7 +5,7 @@ const errors = require('../../index').errors;
 
 describe('Errors: ', () => {
     Object.keys(errors).forEach(index => {
-        it(`should return and instance of ${index} Error`, done => {
+        test(`should return and instance of ${index} Error`, done => {
             assert.strictEqual(errors[index] instanceof Error, true,
                 'should be an instance of Error');
             assert.strictEqual(errors[index].code, errorsJSON[index].code,
@@ -18,7 +18,7 @@ describe('Errors: ', () => {
         });
     });
 
-    it('should allow custom error descriptions', () => {
+    test('should allow custom error descriptions', () => {
         const originDescription = errors.NoSuchEntity.description;
         const error =
             errors.NoSuchEntity.customizeDescription('custom-description');

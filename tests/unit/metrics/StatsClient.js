@@ -28,31 +28,33 @@ describe('StatsClient class', () => {
 
     afterEach(() => redisClient.clear(() => {}));
 
-    it('should correctly record a new request by default one increment',
-    done => {
-        async.series([
-            next => {
-                statsClient.reportNewRequest(id, (err, res) => {
-                    assert.ifError(err);
+    test(
+        'should correctly record a new request by default one increment',
+        done => {
+            async.series([
+                next => {
+                    statsClient.reportNewRequest(id, (err, res) => {
+                        assert.ifError(err);
 
-                    const expected = [[null, 1], [null, 1]];
-                    assert.deepEqual(res, expected);
-                    next();
-                });
-            },
-            next => {
-                statsClient.reportNewRequest(id, (err, res) => {
-                    assert.ifError(err);
+                        const expected = [[null, 1], [null, 1]];
+                        assert.deepEqual(res, expected);
+                        next();
+                    });
+                },
+                next => {
+                    statsClient.reportNewRequest(id, (err, res) => {
+                        assert.ifError(err);
 
-                    const expected = [[null, 2], [null, 1]];
-                    assert.deepEqual(res, expected);
-                    next();
-                });
-            },
-        ], done);
-    });
+                        const expected = [[null, 2], [null, 1]];
+                        assert.deepEqual(res, expected);
+                        next();
+                    });
+                },
+            ], done);
+        }
+    );
 
-    it('should record new requests by defined amount increments', done => {
+    test('should record new requests by defined amount increments', done => {
         function noop() {}
 
         async.series([
@@ -86,7 +88,7 @@ describe('StatsClient class', () => {
         ], done);
     });
 
-    it('should correctly record a 500 on the server', done => {
+    test('should correctly record a 500 on the server', done => {
         statsClient.report500(id, (err, res) => {
             assert.ifError(err);
 
@@ -96,7 +98,7 @@ describe('StatsClient class', () => {
         });
     });
 
-    it('should respond back with total requests', done => {
+    test('should respond back with total requests', done => {
         async.series([
             next => {
                 statsClient.reportNewRequest(id, err => {

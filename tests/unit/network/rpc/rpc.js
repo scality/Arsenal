@@ -53,11 +53,11 @@ describe('rpc - generic client/server RPC system', () => {
         miscClient.connect(done);
     }
 
-    before(done => {
+    beforeAll(done => {
         setupRPC(done);
     });
 
-    after(done => {
+    afterAll(done => {
         miscClient.once('disconnect', () => {
             server.close();
             done();
@@ -66,7 +66,7 @@ describe('rpc - generic client/server RPC system', () => {
     });
 
     describe('simple tests', () => {
-        it('should ping an RPC server (sync on server)', done => {
+        test('should ping an RPC server (sync on server)', done => {
             miscClient.withRequestLogger(reqLogger).ping((err, args) => {
                 if (err) {
                     return done(err);
@@ -75,7 +75,7 @@ describe('rpc - generic client/server RPC system', () => {
                 return done();
             });
         });
-        it('should ping an RPC server (async on server)', done => {
+        test('should ping an RPC server (async on server)', done => {
             miscClient.withRequestLogger(reqLogger).pingAsync((err, args) => {
                 if (err) {
                     return done(err);
@@ -87,7 +87,7 @@ describe('rpc - generic client/server RPC system', () => {
     });
 
     describe('error tests', () => {
-        it('should timeout if command is too long to respond', done => {
+        test('should timeout if command is too long to respond', done => {
             // shorten the timeout to 200ms to speed up the test
             const oldTimeout = miscClient.getCallTimeout();
             miscClient.setCallTimeout(200);
@@ -98,7 +98,7 @@ describe('rpc - generic client/server RPC system', () => {
             });
             miscClient.setCallTimeout(oldTimeout);
         });
-        it('should throw if last argument of call is not a callback', done => {
+        test('should throw if last argument of call is not a callback', done => {
             assert.throws(() => {
                 miscClient.withRequestLogger(reqLogger).pingAsync(
                     'not a callback');

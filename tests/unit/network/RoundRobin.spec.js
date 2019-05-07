@@ -22,7 +22,7 @@ describe('round robin hosts', () => {
                     defaultPort: 1002 });
         });
 
-        it('should pick all hosts in turn', () => {
+        test('should pick all hosts in turn', () => {
             const hostsPickCount = {
                 '1.2.3.0': 0,
                 '1.2.3.1': 0,
@@ -39,7 +39,7 @@ describe('round robin hosts', () => {
             assert.strictEqual(hostsPickCount['1.2.3.2'], 30);
         });
 
-        it('should pick the same current host up to stickyCount ' +
+        test('should pick the same current host up to stickyCount ' +
         'with pickHost()', () => {
             const hostsPickCount = {
                 '1.2.3.0': 0,
@@ -56,7 +56,7 @@ describe('round robin hosts', () => {
             assert.strictEqual(hostsPickCount[curHost.host], 10);
         });
 
-        it('should pick each host in turn with pickNextHost()', () => {
+        test('should pick each host in turn with pickNextHost()', () => {
             const hostsPickCount = {
                 '1.2.3.0': 0,
                 '1.2.3.1': 0,
@@ -73,7 +73,7 @@ describe('round robin hosts', () => {
             assert.strictEqual(hostsPickCount['1.2.3.2'], 3);
         });
 
-        it('should refuse if no valid host/port is given', () => {
+        test('should refuse if no valid host/port is given', () => {
             assert.throws(() => new RoundRobin([]), Error);
             assert.throws(() => new RoundRobin([{}]), Error);
             assert.throws(() => new RoundRobin([
@@ -100,7 +100,7 @@ describe('round robin hosts', () => {
             new RoundRobin(['zenko.io', 'zenka.ia']);
         });
 
-        it('should have set default port if not in bootstrap list', () => {
+        test('should have set default port if not in bootstrap list', () => {
             // the current host should be picked 10 times in a row
             const portMap = {
                 '1.2.3.0': 1000,

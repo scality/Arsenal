@@ -117,16 +117,16 @@ describe('raft record log client', () => {
         done();
     }
 
-    before(done => {
+    beforeAll(done => {
         setup(done);
     });
 
-    after(done => {
+    afterAll(done => {
         done();
     });
 
     describe('readRecords', () => {
-        it('should list all records in a log', done => {
+        test('should list all records in a log', done => {
             let nbRecords = 0;
             logClient.readRecords({}, (err, info) => {
                 const recordStream = info.log;
@@ -160,7 +160,7 @@ describe('raft record log client', () => {
         });
     });
     describe('error cases', () => {
-        it('should handle 404 error gracefully', done => {
+        test('should handle 404 error gracefully', done => {
             const logClient = new LogConsumer({ bucketClient,
                 raftSession: 1 });
             logClient.readRecords({}, (err, info) => {
@@ -170,7 +170,7 @@ describe('raft record log client', () => {
                 done();
             });
         });
-        it('should handle 416 error gracefully', done => {
+        test('should handle 416 error gracefully', done => {
             const logClient = new LogConsumer({ bucketClient,
                 raftSession: 2 });
             logClient.readRecords({}, (err, info) => {
@@ -180,7 +180,7 @@ describe('raft record log client', () => {
                 done();
             });
         });
-        it('should handle other errors correctly', done => {
+        test('should handle other errors correctly', done => {
             const logClient = new LogConsumer({ bucketClient,
                 raftSession: 3 });
             logClient.readRecords({}, err => {
@@ -189,7 +189,7 @@ describe('raft record log client', () => {
                 done();
             });
         });
-        it('should return error with malformed log response', done => {
+        test('should return error with malformed log response', done => {
             const logClient = new LogConsumer({ bucketClient,
                 raftSession: 4 });
             logClient.readRecords({}, err => {
@@ -198,7 +198,7 @@ describe('raft record log client', () => {
                 done();
             });
         });
-        it('should emit error event if a log entry is malformed', done => {
+        test('should emit error event if a log entry is malformed', done => {
             const logClient = new LogConsumer({ bucketClient,
                 raftSession: 5 });
             logClient.readRecords({}, (err, res) => {

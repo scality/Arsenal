@@ -19,14 +19,14 @@ const testRoutingRuleParams = {
 };
 
 describe('RoutingRule class', () => {
-    it('should initialize even if no parameters are provided', done => {
+    test('should initialize even if no parameters are provided', done => {
         const routingRule = new RoutingRule();
         assert.strictEqual(routingRule._redirect, undefined);
         assert.strictEqual(routingRule._condition, undefined);
         done();
     });
 
-    it('should return a new routing rule', done => {
+    test('should return a new routing rule', done => {
         const routingRule = new RoutingRule(testRoutingRuleParams);
         assert.deepStrictEqual(routingRule._redirect,
             testRoutingRuleParams.redirect);
@@ -35,14 +35,14 @@ describe('RoutingRule class', () => {
         done();
     });
 
-    it('getRedirect should fetch the instance\'s redirect', done => {
+    test('getRedirect should fetch the instance\'s redirect', done => {
         const routingRule = new RoutingRule(testRoutingRuleParams);
         assert.deepStrictEqual(routingRule.getRedirect(),
             testRoutingRuleParams.redirect);
         done();
     });
 
-    it('getCondition should fetch the instance\'s condition', done => {
+    test('getCondition should fetch the instance\'s condition', done => {
         const routingRule = new RoutingRule(testRoutingRuleParams);
         assert.deepStrictEqual(routingRule.getCondition(),
             testRoutingRuleParams.condition);
@@ -51,7 +51,7 @@ describe('RoutingRule class', () => {
 });
 
 describe('WebsiteConfiguration class', () => {
-    it('should initialize even if no parameters are provided', done => {
+    test('should initialize even if no parameters are provided', done => {
         const websiteConfig = new WebsiteConfiguration();
         assert.strictEqual(websiteConfig._indexDocument, undefined);
         assert.strictEqual(websiteConfig._errorDocument, undefined);
@@ -60,7 +60,7 @@ describe('WebsiteConfiguration class', () => {
         done();
     });
 
-    it('should initialize indexDocument, errorDocument during construction ' +
+    test('should initialize indexDocument, errorDocument during construction ' +
     'if provided in params', done => {
         const testWebsiteConfigParams = {
             indexDocument: 'index.html',
@@ -72,7 +72,7 @@ describe('WebsiteConfiguration class', () => {
         done();
     });
 
-    it('should initialize redirectAllRequestsTo during construction if ' +
+    test('should initialize redirectAllRequestsTo during construction if ' +
     'provided in params', done => {
         const testWebsiteConfigParams = {
             redirectAllRequestsTo: {
@@ -88,7 +88,7 @@ describe('WebsiteConfiguration class', () => {
         done();
     });
 
-    it('should initialize routingRules properly during construction from ' +
+    test('should initialize routingRules properly during construction from ' +
     'array of RoutingRule class instances', done => {
         const testWebsiteConfigParams = {
             routingRules: [],
@@ -103,7 +103,7 @@ describe('WebsiteConfiguration class', () => {
         done();
     });
 
-    it('should initialize routingRules properly during construction from ' +
+    test('should initialize routingRules properly during construction from ' +
     'array of plain objects', done => {
         const testWebsiteConfigParams = {
             routingRules: [],
@@ -129,21 +129,21 @@ describe('WebsiteConfiguration class', () => {
     });
 
     describe('Getter/setter methods', () => {
-        it('for indexDocument should get/set indexDocument property', done => {
+        test('for indexDocument should get/set indexDocument property', done => {
             const websiteConfig = new WebsiteConfiguration();
             websiteConfig.setIndexDocument('index.html');
             assert.strictEqual(websiteConfig.getIndexDocument(), 'index.html');
             done();
         });
 
-        it('for errorDocument should get/set errorDocument property', done => {
+        test('for errorDocument should get/set errorDocument property', done => {
             const websiteConfig = new WebsiteConfiguration();
             websiteConfig.setErrorDocument('error.html');
             assert.strictEqual(websiteConfig.getErrorDocument(), 'error.html');
             done();
         });
 
-        it('for redirectAllRequestsTo should get/set redirectAllRequestsTo ' +
+        test('for redirectAllRequestsTo should get/set redirectAllRequestsTo ' +
         'object', done => {
             const websiteConfig = new WebsiteConfiguration();
             const redirectAllRequestsTo = {
@@ -156,7 +156,7 @@ describe('WebsiteConfiguration class', () => {
             done();
         });
 
-        it('for routingRules should get/set routingRules', done => {
+        test('for routingRules should get/set routingRules', done => {
             const websiteConfig = new WebsiteConfiguration();
             const routingRules = [testRoutingRuleParams];
             websiteConfig.setRoutingRules(routingRules);
@@ -169,7 +169,7 @@ describe('WebsiteConfiguration class', () => {
         });
     });
 
-    it('addRoutingRule should add a RoutingRule to routingRules', done => {
+    test('addRoutingRule should add a RoutingRule to routingRules', done => {
         const websiteConfig = new WebsiteConfiguration();
         websiteConfig.addRoutingRule(testRoutingRuleParams);
         assert(Array.isArray(websiteConfig._routingRules));

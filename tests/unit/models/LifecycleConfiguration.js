@@ -264,14 +264,13 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
         tagObj = {};
     });
 
-    it('should return MalformedXML error if request xml is empty', done => {
+    test('should return MalformedXML error if request xml is empty', done => {
         const errMessage = 'request xml is undefined or empty';
         checkError('', 'MalformedXML', errMessage, done);
     });
 
     requiredTags.forEach(t => {
-        it(`should return ${t.error} error if ${t.tag} tag is missing`,
-        done => {
+        test(`should return ${t.error} error if ${t.tag} tag is missing`, done => {
             generateParsedXml(t.tag, null, parsedXml => {
                 checkError(parsedXml, t.error, t.errMessage, done);
             });
@@ -280,8 +279,7 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
 
     notImplementedActions.forEach(action => {
         const expError = 'NotImplemented';
-        it(`should return ${expError} error for ${action.tag} action`,
-        done => {
+        test(`should return ${expError} error for ${action.tag} action`, done => {
             generateParsedXml('Action', action, parsedXml => {
                 checkError(parsedXml, expError, action.errMessage, done);
             });
@@ -289,8 +287,7 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
     });
 
     invalidActions.forEach(a => {
-        it(`should return ${a.error} for ${a.label} action error`,
-        done => {
+        test(`should return ${a.error} for ${a.label} action error`, done => {
             generateParsedXml('Action', a, parsedXml => {
                 checkError(parsedXml, a.error, a.errMessage, done);
             });
@@ -298,15 +295,17 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
     });
 
     invalidFilters.forEach(filter => {
-        it(`should return ${filter.error} for ${filter.label} filter error`,
-        done => {
-            generateParsedXml('Filter', filter, parsedXml => {
-                checkError(parsedXml, filter.error, filter.errMessage, done);
-            });
-        });
+        test(
+            `should return ${filter.error} for ${filter.label} filter error`,
+            done => {
+                generateParsedXml('Filter', filter, parsedXml => {
+                    checkError(parsedXml, filter.error, filter.errMessage, done);
+                });
+            }
+        );
     });
 
-    it('should return MalformedXML error if invalid status', done => {
+    test('should return MalformedXML error if invalid status', done => {
         tagObj.status = 'foo';
         const errMessage = 'Status is not valid';
         generateParsedXml('Status', tagObj, parsedXml => {
@@ -314,7 +313,7 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
         });
     });
 
-    it('should return InvalidRequest error if ID not unique', done => {
+    test('should return InvalidRequest error if ID not unique', done => {
         tagObj.rule = 'not-unique-id';
         const errMessage = 'Rule ID must be unique';
         generateParsedXml('Rule', tagObj, parsedXml => {
@@ -322,7 +321,7 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
         });
     });
 
-    it('should return InvalidArgument error if invalid ID', done => {
+    test('should return InvalidArgument error if invalid ID', done => {
         tagObj.id = 'a'.repeat(256);
         const errMessage = 'Rule ID is greater than 255 characters long';
         generateParsedXml('ID', tagObj, parsedXml => {
@@ -330,7 +329,7 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
         });
     });
 
-    it('should return MalformedXML error if over 1000 rules', done => {
+    test('should return MalformedXML error if over 1000 rules', done => {
         tagObj.rule = 'too-many-rules';
         const errMessage = 'request xml includes over max limit of 1000 rules';
         generateParsedXml('Rule', tagObj, parsedXml => {
@@ -338,7 +337,7 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
         });
     });
 
-    it('should use last listed Prefix if multiple Prefixes included', done => {
+    test('should use last listed Prefix if multiple Prefixes included', done => {
         tagObj.label = 'mult-prefixes';
         tagObj.lastPrefix = 'coco';
         generateParsedXml('Filter', tagObj, parsedXml => {

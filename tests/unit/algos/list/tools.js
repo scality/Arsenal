@@ -16,7 +16,7 @@ describe('checkLimit function', () => {
         { input: [0, 0], output: 0 },
     ];
     tests.forEach((test, index) => {
-        it(`test${index}`, done => {
+        test(`test${index}`, done => {
             const res = checkLimit(test.input[0], test.input[1]);
             assert.deepStrictEqual(res, test.output);
             done();

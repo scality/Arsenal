@@ -40,7 +40,7 @@ function checkValueNotInDb(db, k, done) {
 }
 
 describe('IndexTransaction', () => {
-    it('should allow put', done => {
+    test('should allow put', done => {
         const db = createDb();
         const transaction = new IndexTransaction(db);
 
@@ -59,7 +59,7 @@ describe('IndexTransaction', () => {
         });
     });
 
-    it('should allow del', done => {
+    test('should allow del', done => {
         const db = createDb();
         const transaction = new IndexTransaction(db);
 
@@ -83,7 +83,7 @@ describe('IndexTransaction', () => {
         });
     });
 
-    it('should commit put and del combined', done => {
+    test('should commit put and del combined', done => {
         const db = createDb();
         const transaction = new IndexTransaction(db);
 
@@ -124,7 +124,7 @@ describe('IndexTransaction', () => {
             .write(commitTransactionAndCheck);
     });
 
-    it('should refuse types other than del and put', done => {
+    test('should refuse types other than del and put', done => {
         const transaction = new IndexTransaction();
 
         function tryPush() {
@@ -147,7 +147,7 @@ describe('IndexTransaction', () => {
         assert.throws(tryPush, validateError);
     });
 
-    it('should refuse put without key', done => {
+    test('should refuse put without key', done => {
         const transaction = new IndexTransaction();
 
         function tryPush() {
@@ -169,7 +169,7 @@ describe('IndexTransaction', () => {
         assert.throws(tryPush, validateError);
     });
 
-    it('should refuse del without key', done => {
+    test('should refuse del without key', done => {
         const transaction = new IndexTransaction();
 
         function tryPush() {
@@ -190,7 +190,7 @@ describe('IndexTransaction', () => {
         assert.throws(tryPush, validateError);
     });
 
-    it('should refuse put without value', done => {
+    test('should refuse put without value', done => {
         const transaction = new IndexTransaction();
 
         function tryPush() {
@@ -212,7 +212,7 @@ describe('IndexTransaction', () => {
         assert.throws(tryPush, validateError);
     });
 
-    it('should refuse to commit without any ops', done => {
+    test('should refuse to commit without any ops', done => {
         const transaction = new IndexTransaction();
 
         transaction.commit(err => {
@@ -224,7 +224,7 @@ describe('IndexTransaction', () => {
         });
     });
 
-    it('should refuse to commit twice', done => {
+    test('should refuse to commit twice', done => {
         const transaction = new IndexTransaction(createDb());
 
         transaction.push({
@@ -250,7 +250,7 @@ describe('IndexTransaction', () => {
         transaction.commit(tryCommitAgain);
     });
 
-    it('should refuse add an op if already committed', done => {
+    test('should refuse add an op if already committed', done => {
         const transaction = new IndexTransaction(createDb());
 
         function push() {
@@ -282,7 +282,7 @@ describe('IndexTransaction', () => {
         transaction.commit(tryPushAgain);
     });
 
-    it('should have a working put shortcut method', done => {
+    test('should have a working put shortcut method', done => {
         const db = createDb();
         const transaction = new IndexTransaction(db);
 
@@ -297,7 +297,7 @@ describe('IndexTransaction', () => {
         });
     });
 
-    it('should have a working del shortcut method', done => {
+    test('should have a working del shortcut method', done => {
         const db = createDb();
         const transaction = new IndexTransaction(db);
 

@@ -34,14 +34,14 @@ describe('Basic listing algorithm', () => {
         new Test('with bad parameters', 'lala', data.slice(0, 10000)),
     ];
     tests.forEach(test => {
-        it(`Should list ${test.name}`, done => {
+        test(`Should list ${test.name}`, done => {
             const res = performListing(data, Basic, test.input, logger);
             assert.deepStrictEqual(res, test.output);
             done();
         });
     });
 
-    it('Should support entries with no key', () => {
+    test('Should support entries with no key', () => {
         const res1 = performListing([{
             value: '{"data":"foo"}',
         }], Basic, { maxKeys: 1 }, logger);
@@ -60,7 +60,7 @@ describe('Basic listing algorithm', () => {
         }]);
     });
 
-    it('Should support key-only listing', () => {
+    test('Should support key-only listing', () => {
         const res = performListing(['key1', 'key2'],
                                    Basic, { maxKeys: 1 }, logger);
         assert.deepStrictEqual(res, ['key1']);

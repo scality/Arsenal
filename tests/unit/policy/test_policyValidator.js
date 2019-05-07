@@ -48,7 +48,7 @@ beforeEach(() => {
 });
 
 describe('Policies validation - Invalid JSON', () => {
-    it('should return error for invalid JSON', () => {
+    test('should return error for invalid JSON', () => {
         const result = validateUserPolicy('{"Version":"2012-10-17",' +
         '"Statement":{"Effect":"Allow""Action":"s3:PutObject",' +
         '"Resource":"arn:aws:s3*"}}');
@@ -57,16 +57,16 @@ describe('Policies validation - Invalid JSON', () => {
 });
 
 describe('Policies validation - Version', () => {
-    it('should validate with version date 2012-10-17', () => {
+    test('should validate with version date 2012-10-17', () => {
         check(policy, successRes);
     });
 
-    it('should return error for other dates', () => {
+    test('should return error for other dates', () => {
         policy.Version = '2012-11-17';
         check(policy, failRes());
     });
 
-    it('should return error if Version field is missing', () => {
+    test('should return error if Version field is missing', () => {
         policy.Version = undefined;
         check(policy, failRes(errDict.required.Version));
     });
@@ -145,13 +145,13 @@ describe('Policies validation - Principal', () => {
             value: { Service: 'backbeat' },
         },
     ].forEach(test => {
-        it(`should allow principal field with ${test.name}`, () => {
+        test(`should allow principal field with ${test.name}`, () => {
             policy.Statement.Principal = test.value;
             delete policy.Statement.Resource;
             check(policy, successRes);
         });
 
-        it(`shoud allow notPrincipal field with ${test.name}`, () => {
+        test(`shoud allow notPrincipal field with ${test.name}`, () => {
             policy.Statement.NotPrincipal = test.value;
             delete policy.Statement.Resource;
             check(policy, successRes);
@@ -245,25 +245,25 @@ describe('Policies validation - Principal', () => {
             value: { Service: 'non-existent-service' },
         },
     ].forEach(test => {
-        it(`should fail with ${test.name}`, () => {
+        test(`should fail with ${test.name}`, () => {
             policy.Statement.Principal = test.value;
             delete policy.Statement.Resource;
             check(policy, failRes());
         });
     });
 
-    it('should not allow Resource field', () => {
+    test('should not allow Resource field', () => {
         policy.Statement.Principal = '*';
         check(policy, failRes());
     });
 });
 
 describe('Policies validation - Statement', () => {
-    it('should succeed for a valid object', () => {
+    test('should succeed for a valid object', () => {
         check(policy, successRes);
     });
 
-    it('should succeed for a valid array', () => {
+    test('should succeed for a valid array', () => {
         policy.Statement = [
             {
                 Effect: 'Allow',
@@ -279,43 +279,43 @@ describe('Policies validation - Statement', () => {
         check(policy, successRes);
     });
 
-    it('should return an error for undefined', () => {
+    test('should return an error for undefined', () => {
         policy.Statement = undefined;
         check(policy, failRes());
     });
 
-    it('should return an error for an empty list', () => {
+    test('should return an error for an empty list', () => {
         policy.Statement = [];
         check(policy, failRes());
     });
 
-    it('should return an error for an empty object', () => {
+    test('should return an error for an empty object', () => {
         policy.Statement = {};
         check(policy, failRes(errDict.required.Action));
     });
 
-    it('should return an error for missing a required field - Action', () => {
+    test('should return an error for missing a required field - Action', () => {
         delete policy.Statement.Action;
         check(policy, failRes(errDict.required.Action));
     });
 
-    it('should return an error for missing a required field - Effect', () => {
+    test('should return an error for missing a required field - Effect', () => {
         delete policy.Statement.Effect;
         check(policy, failRes());
     });
 
-    it('should return an error for missing a required field - Resource', () => {
+    test('should return an error for missing a required field - Resource', () => {
         delete policy.Statement.Resource;
         check(policy, failRes());
     });
 
-    it('should return an error for missing multiple required fields', () => {
+    test('should return an error for missing multiple required fields', () => {
         delete policy.Statement.Effect;
         delete policy.Statement.Resource;
         check(policy, failRes());
     });
 
-    it('should succeed with optional fields missing - Sid, Condition', () => {
+    test('should succeed with optional fields missing - Sid, Condition', () => {
         delete policy.Statement.Sid;
         delete policy.Statement.Condition;
         check(policy, successRes);
@@ -323,37 +323,37 @@ describe('Policies validation - Statement', () => {
 });
 
 describe('Policies validation - Statement::Sid_block', () => {
-    it('should succeed if Sid is any alphanumeric string', () => {
+    test('should succeed if Sid is any alphanumeric string', () => {
         check(policy, successRes);
     });
 
-    it('should fail if Sid is not a valid format', () => {
+    test('should fail if Sid is not a valid format', () => {
         policy.Statement.Sid = 'foo bar()';
         check(policy, failRes());
     });
 
-    it('should fail if Sid is not a string', () => {
+    test('should fail if Sid is not a string', () => {
         policy.Statement.Sid = 1234;
         check(policy, failRes());
     });
 });
 
 describe('Policies validation - Statement::Effect_block', () => {
-    it('should succeed for Allow', () => {
+    test('should succeed for Allow', () => {
         check(policy, successRes);
     });
 
-    it('should succeed for Deny', () => {
+    test('should succeed for Deny', () => {
         policy.Statement.Effect = 'Deny';
         check(policy, successRes);
     });
 
-    it('should fail for strings other than Allow/Deny', () => {
+    test('should fail for strings other than Allow/Deny', () => {
         policy.Statement.Effect = 'Reject';
         check(policy, failRes());
     });
 
-    it('should fail if Effect is not a string', () => {
+    test('should fail if Effect is not a string', () => {
         policy.Statement.Effect = 1;
         check(policy, failRes());
     });
@@ -366,7 +366,7 @@ describe('Policies validation - Statement::Action_block/' +
         policy.Statement.NotAction = undefined;
     });
 
-    it('should succeed for foo:bar', () => {
+    test('should succeed for foo:bar', () => {
         policy.Statement.Action = 'foo:bar';
         check(policy, successRes);
 
@@ -375,7 +375,7 @@ describe('Policies validation - Statement::Action_block/' +
         check(policy, successRes);
     });
 
-    it('should succeed for foo:*', () => {
+    test('should succeed for foo:*', () => {
         policy.Statement.Action = 'foo:*';
         check(policy, successRes);
 
@@ -384,7 +384,7 @@ describe('Policies validation - Statement::Action_block/' +
         check(policy, successRes);
     });
 
-    it('should succeed for *', () => {
+    test('should succeed for *', () => {
         policy.Statement.Action = '*';
         check(policy, successRes);
 
@@ -393,7 +393,7 @@ describe('Policies validation - Statement::Action_block/' +
         check(policy, successRes);
     });
 
-    it('should fail for **', () => {
+    test('should fail for **', () => {
         policy.Statement.Action = '**';
         check(policy, failRes(errDict.pattern.Action));
 
@@ -402,7 +402,7 @@ describe('Policies validation - Statement::Action_block/' +
         check(policy, failRes(errDict.pattern.Action));
     });
 
-    it('should fail for foobar', () => {
+    test('should fail for foobar', () => {
         policy.Statement.Action = 'foobar';
         check(policy, failRes(errDict.pattern.Action));
 
@@ -419,7 +419,7 @@ describe('Policies validation - Statement::Resource_block' +
         policy.Statement.NotResource = undefined;
     });
 
-    it('should succeed for arn:aws:s3:::*', () => {
+    test('should succeed for arn:aws:s3:::*', () => {
         policy.Statement.Resource = 'arn:aws:s3:::*';
         check(policy, successRes);
 
@@ -428,7 +428,7 @@ describe('Policies validation - Statement::Resource_block' +
         check(policy, successRes);
     });
 
-    it('should succeed for arn:aws:s3:::test/home/${aws:username}', () => {
+    test('should succeed for arn:aws:s3:::test/home/${aws:username}', () => {
         policy.Statement.Resource = 'arn:aws:s3:::test/home/${aws:username}';
         check(policy, successRes);
 
@@ -437,7 +437,7 @@ describe('Policies validation - Statement::Resource_block' +
         check(policy, successRes);
     });
 
-    it('should succeed for arn:aws:ec2:us-west-1:1234567890:vol/*', () => {
+    test('should succeed for arn:aws:ec2:us-west-1:1234567890:vol/*', () => {
         policy.Statement.Resource = 'arn:aws:ec2:us-west-1:1234567890:vol/*';
         check(policy, successRes);
 
@@ -446,7 +446,7 @@ describe('Policies validation - Statement::Resource_block' +
         check(policy, successRes);
     });
 
-    it('should succeed for *', () => {
+    test('should succeed for *', () => {
         policy.Statement.Resource = '*';
         check(policy, successRes);
 
@@ -455,7 +455,7 @@ describe('Policies validation - Statement::Resource_block' +
         check(policy, successRes);
     });
 
-    it('should fail for arn:aws:ec2:us-west-1:vol/* - missing region', () => {
+    test('should fail for arn:aws:ec2:us-west-1:vol/* - missing region', () => {
         policy.Statement.Resource = 'arn:aws:ec2:1234567890:vol/*';
         check(policy, failRes(errDict.pattern.Resource));
 
@@ -464,7 +464,7 @@ describe('Policies validation - Statement::Resource_block' +
         check(policy, failRes(errDict.pattern.Resource));
     });
 
-    it('should fail for arn:aws:ec2:us-west-1:123456789:v/${} - ${}', () => {
+    test('should fail for arn:aws:ec2:us-west-1:123456789:v/${} - ${}', () => {
         policy.Statement.Resource = 'arn:aws:ec2:us-west-1:123456789:v/${}';
         check(policy, failRes(errDict.pattern.Resource));
 
@@ -473,7 +473,7 @@ describe('Policies validation - Statement::Resource_block' +
         check(policy, failRes(errDict.pattern.Resource));
     });
 
-    it('should fail for ec2:us-west-1:qwerty:vol/* - missing arn:aws:', () => {
+    test('should fail for ec2:us-west-1:qwerty:vol/* - missing arn:aws:', () => {
         policy.Statement.Resource = 'ec2:us-west-1:123456789012:vol/*';
         check(policy, failRes(errDict.pattern.Resource));
 
@@ -482,18 +482,18 @@ describe('Policies validation - Statement::Resource_block' +
         check(policy, failRes(errDict.pattern.Resource));
     });
 
-    it('should fail for empty list of resources', () => {
+    test('should fail for empty list of resources', () => {
         policy.Statement.Resource = [];
         check(policy, failRes(errDict.minItems.Resource));
     });
 });
 
 describe('Policies validation - Statement::Condition_block', () => {
-    it('should succeed for single Condition', () => {
+    test('should succeed for single Condition', () => {
         check(policy, successRes);
     });
 
-    it('should succeed for multiple Conditions', () => {
+    test('should succeed for multiple Conditions', () => {
         policy.Statement.Condition = {
             StringNotLike: { 's3:prefix': ['Development/*'] },
             Null: { 's3:prefix': false },
@@ -501,19 +501,19 @@ describe('Policies validation - Statement::Condition_block', () => {
         check(policy, successRes);
     });
 
-    it('should fail when Condition is not an Object', () => {
+    test('should fail when Condition is not an Object', () => {
         policy.Statement.Condition = 'NumericLessThanEquals';
         check(policy, failRes());
     });
 
-    it('should fail for an invalid Condition', () => {
+    test('should fail for an invalid Condition', () => {
         policy.Statement.Condition = {
             SomethingLike: { 's3:prefix': ['Development/*'] },
         };
         check(policy, failRes());
     });
 
-    it('should fail when one of the multiple conditions is invalid', () => {
+    test('should fail when one of the multiple conditions is invalid', () => {
         policy.Statement.Condition = {
             Null: { 's3:prefix': false },
             SomethingLike: { 's3:prefix': ['Development/*'] },
@@ -521,7 +521,7 @@ describe('Policies validation - Statement::Condition_block', () => {
         check(policy, failRes());
     });
 
-    it('should fail when invalid property is assigned', () => {
+    test('should fail when invalid property is assigned', () => {
         policy.Condition = {
             SomethingLike: { 's3:prefix': ['Development/*'] },
         };

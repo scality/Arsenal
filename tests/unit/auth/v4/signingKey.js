@@ -7,7 +7,7 @@ const calculateSigningKey =
         .calculateSigningKey;
 
 describe('v4 signing key calculation', () => {
-    it('should calculate a signing key in accordance with AWS rules', () => {
+    test('should calculate a signing key in accordance with AWS rules', () => {
         const secretKey = 'verySecretKey1';
         const region = 'us-east-1';
         const scopeDate = '20160209';

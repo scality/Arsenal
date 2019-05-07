@@ -13,7 +13,7 @@ const validHosts = [
 ];
 
 describe('routesUtils.normalizeRequest', () => {
-    it('should parse bucket name from path', () => {
+    test('should parse bucket name from path', () => {
         const request = {
             url: `/${bucketName}`,
             headers: { host: 's3.amazonaws.com' },
@@ -23,7 +23,7 @@ describe('routesUtils.normalizeRequest', () => {
         assert.strictEqual(result.parsedHost, 's3.amazonaws.com');
     });
 
-    it('should parse bucket name from path when no slash', () => {
+    test('should parse bucket name from path when no slash', () => {
         const request = {
             url: `${bucketName}`,
             headers: { host: 's3.amazonaws.com' },
@@ -33,7 +33,7 @@ describe('routesUtils.normalizeRequest', () => {
         assert.strictEqual(result.parsedHost, 's3.amazonaws.com');
     });
 
-    it('should parse bucket name from host', () => {
+    test('should parse bucket name from host', () => {
         const request = {
             url: '/',
             headers: { host: `${bucketName}.s3.amazonaws.com` },
@@ -43,7 +43,7 @@ describe('routesUtils.normalizeRequest', () => {
         assert.strictEqual(result.parsedHost, 's3.amazonaws.com');
     });
 
-    it('should parse bucket and object name from path', () => {
+    test('should parse bucket and object name from path', () => {
         const request = {
             url: `/${bucketName}/${objName}`,
             headers: { host: 's3.amazonaws.com' },
@@ -54,7 +54,7 @@ describe('routesUtils.normalizeRequest', () => {
         assert.strictEqual(result.parsedHost, 's3.amazonaws.com');
     });
 
-    it('should parse bucket and object name from path with IP address', () => {
+    test('should parse bucket and object name from path with IP address', () => {
         const request = {
             url: `/${bucketName}/${objName}`,
             headers: { host: '[::1]' },
@@ -65,7 +65,7 @@ describe('routesUtils.normalizeRequest', () => {
         assert.strictEqual(result.parsedHost, '[::1]');
     });
 
-    it('should parse bucket name from host ' +
+    test('should parse bucket name from host ' +
         'and object name from path', () => {
         const request = {
             url: `/${objName}`,

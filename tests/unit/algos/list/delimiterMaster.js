@@ -34,7 +34,7 @@ const fakeLogger = {
 };
 
 describe('Delimiter All masters listing algorithm', () => {
-    it('should return SKIP_NONE for DelimiterMaster when both NextMarker ' +
+    test('should return SKIP_NONE for DelimiterMaster when both NextMarker ' +
        'and NextContinuationToken are undefined', () => {
         const delimiter = new DelimiterMaster({ delimiter: '/' }, fakeLogger);
 
@@ -45,7 +45,7 @@ describe('Delimiter All masters listing algorithm', () => {
         assert.strictEqual(delimiter.skipping(), SKIP_NONE);
     });
 
-    it('should return <key><VersionIdSeparator> for DelimiterMaster when ' +
+    test('should return <key><VersionIdSeparator> for DelimiterMaster when ' +
        'NextMarker is set and there is a delimiter', () => {
         const key = 'key';
         const delimiter = new DelimiterMaster({ delimiter: '/', marker: key },
@@ -62,7 +62,7 @@ describe('Delimiter All masters listing algorithm', () => {
         assert.strictEqual(delimiter.skipping(), key + VID_SEP);
     });
 
-    it('should return <key><VersionIdSeparator> for DelimiterMaster when ' +
+    test('should return <key><VersionIdSeparator> for DelimiterMaster when ' +
        'NextContinuationToken is set and there is a delimiter', () => {
         const key = 'key';
         const delimiter = new DelimiterMaster(
@@ -76,7 +76,7 @@ describe('Delimiter All masters listing algorithm', () => {
         assert.strictEqual(delimiter.skipping(), key + VID_SEP);
     });
 
-    it('should return NextMarker for DelimiterMaster when NextMarker is set' +
+    test('should return NextMarker for DelimiterMaster when NextMarker is set' +
        ', there is a delimiter and the key ends with the delimiter', () => {
         const delimiterChar = '/';
         const keyWithEndingDelimiter = `key${delimiterChar}`;
@@ -91,7 +91,7 @@ describe('Delimiter All masters listing algorithm', () => {
         assert.strictEqual(delimiter.skipping(), keyWithEndingDelimiter);
     });
 
-    it('should skip entries not starting with prefix', () => {
+    test('should skip entries not starting with prefix', () => {
         const delimiter = new DelimiterMaster({ prefix: 'prefix' }, fakeLogger);
 
         assert.strictEqual(delimiter.filter({ key: 'wrong' }), FILTER_SKIP);
@@ -100,7 +100,7 @@ describe('Delimiter All masters listing algorithm', () => {
         assert.deepStrictEqual(delimiter.result(), EmptyResult);
     });
 
-    it('should skip entries superior to next marker', () => {
+    test('should skip entries superior to next marker', () => {
         const delimiter = new DelimiterMaster({ marker: 'b' }, fakeLogger);
 
         assert.strictEqual(delimiter.filter({ key: 'a' }), FILTER_SKIP);
@@ -109,7 +109,7 @@ describe('Delimiter All masters listing algorithm', () => {
         assert.deepStrictEqual(delimiter.result(), EmptyResult);
     });
 
-    it('should accept a master version', () => {
+    test('should accept a master version', () => {
         const delimiter = new DelimiterMaster({}, fakeLogger);
         const key = 'key';
         const value = '';
@@ -126,7 +126,7 @@ describe('Delimiter All masters listing algorithm', () => {
         });
     });
 
-    it('should accept a PHD version as first input', () => {
+    test('should accept a PHD version as first input', () => {
         const delimiter = new DelimiterMaster({}, fakeLogger);
         const keyPHD = 'keyPHD';
         const objPHD = {
@@ -143,7 +143,7 @@ describe('Delimiter All masters listing algorithm', () => {
         assert.deepStrictEqual(delimiter.result(), EmptyResult);
     });
 
-    it('should accept a PHD version', () => {
+    test('should accept a PHD version', () => {
         const delimiter = new DelimiterMaster({}, fakeLogger);
         const key = 'keyA';
         const value = '';
@@ -172,7 +172,7 @@ describe('Delimiter All masters listing algorithm', () => {
         });
     });
 
-    it('should accept a version after a PHD', () => {
+    test('should accept a version after a PHD', () => {
         const delimiter = new DelimiterMaster({}, fakeLogger);
         const masterKey = 'key';
         const keyVersion = `${masterKey}${VID_SEP}version`;
@@ -202,7 +202,7 @@ describe('Delimiter All masters listing algorithm', () => {
         });
     });
 
-    it('should accept a delete marker', () => {
+    test('should accept a delete marker', () => {
         const delimiter = new DelimiterMaster({}, fakeLogger);
         const version = new Version({ isDeleteMarker: true });
         const key = 'key';
@@ -219,7 +219,7 @@ describe('Delimiter All masters listing algorithm', () => {
         assert.deepStrictEqual(delimiter.result(), EmptyResult);
     });
 
-    it('should skip version after a delete marker', () => {
+    test('should skip version after a delete marker', () => {
         const delimiter = new DelimiterMaster({}, fakeLogger);
         const version = new Version({ isDeleteMarker: true });
         const key = 'key';
@@ -235,7 +235,7 @@ describe('Delimiter All masters listing algorithm', () => {
         assert.deepStrictEqual(delimiter.result(), EmptyResult);
     });
 
-    it('should accept a new key after a delete marker', () => {
+    test('should accept a new key after a delete marker', () => {
         const delimiter = new DelimiterMaster({}, fakeLogger);
         const version = new Version({ isDeleteMarker: true });
         const key1 = 'key1';
@@ -258,7 +258,7 @@ describe('Delimiter All masters listing algorithm', () => {
         });
     });
 
-    it('should accept the master version and skip the other ones', () => {
+    test('should accept the master version and skip the other ones', () => {
         const delimiter = new DelimiterMaster({}, fakeLogger);
         const masterKey = 'key';
         const masterValue = 'value';
@@ -286,7 +286,7 @@ describe('Delimiter All masters listing algorithm', () => {
         });
     });
 
-    it('should return good listing result for version', () => {
+    test('should return good listing result for version', () => {
         const delimiter = new DelimiterMaster({}, fakeLogger);
         const masterKey = 'key';
         const versionKey1 = `${masterKey}${VID_SEP}version1`;
@@ -320,61 +320,63 @@ describe('Delimiter All masters listing algorithm', () => {
         });
     });
 
-    it('should return good values for entries with different common prefixes',
-       () => {
-           const delimiterChar = '/';
-           const commonPrefix1 = `commonPrefix1${delimiterChar}`;
-           const commonPrefix2 = `commonPrefix2${delimiterChar}`;
-           const prefix1Key1 = `${commonPrefix1}key1`;
-           const prefix1Key2 = `${commonPrefix1}key2`;
-           const prefix2Key1 = `${commonPrefix2}key1`;
-           const value = 'value';
+    test(
+        'should return good values for entries with different common prefixes',
+        () => {
+            const delimiterChar = '/';
+            const commonPrefix1 = `commonPrefix1${delimiterChar}`;
+            const commonPrefix2 = `commonPrefix2${delimiterChar}`;
+            const prefix1Key1 = `${commonPrefix1}key1`;
+            const prefix1Key2 = `${commonPrefix1}key2`;
+            const prefix2Key1 = `${commonPrefix2}key1`;
+            const value = 'value';
 
-           const delimiter = new DelimiterMaster({ delimiter: delimiterChar },
-                                                 fakeLogger);
+            const delimiter = new DelimiterMaster({ delimiter: delimiterChar },
+                                                  fakeLogger);
 
-           /* Filter the first entry with a common prefix. It should be
-            * accepted and added to the result. */
-           assert.strictEqual(delimiter.filter({ key: prefix1Key1, value }),
-                              FILTER_ACCEPT);
-           assert.deepStrictEqual(delimiter.result(), {
-               CommonPrefixes: [commonPrefix1],
-               Contents: [],
-               IsTruncated: false,
-               NextMarker: undefined,
-               Delimiter: delimiterChar,
-           });
+            /* Filter the first entry with a common prefix. It should be
+             * accepted and added to the result. */
+            assert.strictEqual(delimiter.filter({ key: prefix1Key1, value }),
+                               FILTER_ACCEPT);
+            assert.deepStrictEqual(delimiter.result(), {
+                CommonPrefixes: [commonPrefix1],
+                Contents: [],
+                IsTruncated: false,
+                NextMarker: undefined,
+                Delimiter: delimiterChar,
+            });
 
-           /* Filter the second entry with the same common prefix than the
-            * first entry. It should be skipped and not added to the result. */
-           assert.strictEqual(delimiter.filter({ key: prefix1Key2, value }),
-                              FILTER_SKIP);
-           assert.deepStrictEqual(delimiter.result(), {
-               CommonPrefixes: [commonPrefix1],
-               Contents: [],
-               IsTruncated: false,
-               NextMarker: undefined,
-               Delimiter: delimiterChar,
-           });
+            /* Filter the second entry with the same common prefix than the
+             * first entry. It should be skipped and not added to the result. */
+            assert.strictEqual(delimiter.filter({ key: prefix1Key2, value }),
+                               FILTER_SKIP);
+            assert.deepStrictEqual(delimiter.result(), {
+                CommonPrefixes: [commonPrefix1],
+                Contents: [],
+                IsTruncated: false,
+                NextMarker: undefined,
+                Delimiter: delimiterChar,
+            });
 
-           /* Filter an entry with a new common prefix. It should be accepted
-            * and not added to the result. */
-           assert.strictEqual(delimiter.filter({ key: prefix2Key1, value }),
-                              FILTER_ACCEPT);
-           assert.deepStrictEqual(delimiter.result(), {
-               CommonPrefixes: [commonPrefix1, commonPrefix2],
-               Contents: [],
-               IsTruncated: false,
-               NextMarker: undefined,
-               Delimiter: delimiterChar,
-           });
-       });
+            /* Filter an entry with a new common prefix. It should be accepted
+             * and not added to the result. */
+            assert.strictEqual(delimiter.filter({ key: prefix2Key1, value }),
+                               FILTER_ACCEPT);
+            assert.deepStrictEqual(delimiter.result(), {
+                CommonPrefixes: [commonPrefix1, commonPrefix2],
+                Contents: [],
+                IsTruncated: false,
+                NextMarker: undefined,
+                Delimiter: delimiterChar,
+            });
+        }
+    );
 
     /* We test here the internal management of the prvKey field of the
      * DelimiterMaster class, in particular once it has been set to an entry
      * key before to finally skip this entry because of an already present
      * common prefix. */
-    it('should accept a version after skipping an object because of its ' +
+    test('should accept a version after skipping an object because of its ' +
        'commonPrefix', () => {
         const delimiterChar = '/';
         const commonPrefix1 = `commonPrefix1${delimiterChar}`;
@@ -409,7 +411,7 @@ describe('Delimiter All masters listing algorithm', () => {
         });
     });
 
-    it('should skip a versioned entry when there is a delimiter and the key ' +
+    test('should skip a versioned entry when there is a delimiter and the key ' +
        'starts with the NextMarker value', () => {
         const delimiterChar = '/';
         const commonPrefix = `commonPrefix${delimiterChar}`;

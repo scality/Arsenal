@@ -22,10 +22,10 @@ describe('s3middleware.NullStream', () => {
     for (let i = 0; i < nullChunks.length; ++i) {
         const size = nullChunks[i].size;
         const md5sum = nullChunks[i].md5sum;
-        it(`should generate ${size} null bytes by size`, done => {
+        test(`should generate ${size} null bytes by size`, done => {
             testNullChunk(size, null, md5sum, done);
         });
-        it(`should generate ${size} null bytes by range`, done => {
+        test(`should generate ${size} null bytes by range`, done => {
             const dummyOffset = 9320954;
             testNullChunk(0, [dummyOffset, dummyOffset + size - 1],
                           md5sum, done);

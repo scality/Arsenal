@@ -93,12 +93,12 @@ function batch(callback) {
 describe('test VSP', () => {
     afterEach(() => _cleanupKeyValueStore());
 
-    it('should run a batch of operations correctly', done => {
+    test('should run a batch of operations correctly', done => {
         async.times(THREADS,
             (i, next) => setTimeout(() => batch(next), i), done);
     });
 
-    it('should be able to repair a PHD master version', done => {
+    test('should be able to repair a PHD master version', done => {
         const putRequest = {
             db: 'foo',
             key: 'bar',
@@ -150,7 +150,7 @@ describe('test VSP', () => {
             }),
         ], done);
     });
-    it('should allow to write a specific version + update master', done => {
+    test('should allow to write a specific version + update master', done => {
         let v1;
         let v2;
 

@@ -17,7 +17,7 @@ describe('test generating versionIds', () => {
     }
     process.env.VID_CRYPTO_PASSWORD = randkey(64);
 
-    it('sorted in reversed chronological and alphabetical order', () => {
+    test('sorted in reversed chronological and alphabetical order', () => {
         for (let i = 0; i < count; i++) {
             if (i !== 0) {
                 assert(vids[i - 1] > vids[i],
@@ -26,13 +26,13 @@ describe('test generating versionIds', () => {
         }
     });
 
-    it('should return error decoding non-hex string versionIds', () => {
+    test('should return error decoding non-hex string versionIds', () => {
         const encoded = vids.map(vid => VID.encode(vid));
         const decoded = encoded.map(vid => VID.decode(`${vid}foo`));
         decoded.forEach(result => assert(result instanceof Error));
     });
 
-    it('should encode and decode versionIds', () => {
+    test('should encode and decode versionIds', () => {
         const encoded = vids.map(vid => VID.encode(vid));
         const decoded = encoded.map(vid => VID.decode(vid));
         assert.strictEqual(vids.length, count);

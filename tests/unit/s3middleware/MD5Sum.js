@@ -19,15 +19,15 @@ function testMD5(payload, expectedMD5, done) {
 }
 
 describe('utilities.MD5Sum', () => {
-    it('should work on empty request', done => {
+    test('should work on empty request', done => {
         testMD5('', constants.emptyFileMd5, done);
     });
 
-    it('should work on SAY GRRRR!!! request', done => {
+    test('should work on SAY GRRRR!!! request', done => {
         testMD5('SAY GRRRR!!!', '986eb4a201192e8b1723a42c1468fb4e', done);
     });
 
-    it('should work on multiple MiB data stream', done => {
+    test('should work on multiple MiB data stream', done => {
         /*
          * relies on a zero filled buffer and
          * split content in order to get multiple calls of _transform()

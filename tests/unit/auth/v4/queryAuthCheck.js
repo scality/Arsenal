@@ -35,7 +35,7 @@ const request = {
 };
 
 describe('v4 queryAuthCheck', () => {
-    it('should return error if algorithm param incorrect', done => {
+    test('should return error if algorithm param incorrect', done => {
         const alteredRequest = createAlteredRequest({ 'X-Amz-Algorithm':
             'AWS4-HMAC-SHA1' }, 'query', request, query);
         const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
@@ -43,7 +43,7 @@ describe('v4 queryAuthCheck', () => {
         done();
     });
 
-    it('should return error if X-Amz-Credential param is undefined', done => {
+    test('should return error if X-Amz-Credential param is undefined', done => {
         const alteredRequest = createAlteredRequest({ 'X-Amz-Credential':
             undefined }, 'query', request, query);
         const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
@@ -51,7 +51,7 @@ describe('v4 queryAuthCheck', () => {
         done();
     });
 
-    it('should return error if credential param format incorrect', done => {
+    test('should return error if credential param format incorrect', done => {
         const alteredRequest = createAlteredRequest({ 'X-Amz-Credential':
             'incorrectformat' }, 'query', request, query);
         const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
@@ -59,7 +59,7 @@ describe('v4 queryAuthCheck', () => {
         done();
     });
 
-    it('should return error if service set forth in ' +
+    test('should return error if service set forth in ' +
         'credential param is not s3', done => {
         const alteredRequest = createAlteredRequest({ 'X-Amz-Credential':
         'accessKey1/20160208/us-east-1/EC2/aws4_request' },
@@ -69,7 +69,7 @@ describe('v4 queryAuthCheck', () => {
         done();
     });
 
-    it('should return error if requestType set forth in ' +
+    test('should return error if requestType set forth in ' +
         'credential param is not aws4_request', done => {
         const alteredRequest = createAlteredRequest({ 'X-Amz-Credential':
         'accessKey1/20160208/us-east-1/s3/aws2_request' },
@@ -79,7 +79,7 @@ describe('v4 queryAuthCheck', () => {
         done();
     });
 
-    it('should return error if undefined X-Amz-SignedHeaders param', done => {
+    test('should return error if undefined X-Amz-SignedHeaders param', done => {
         const alteredRequest = createAlteredRequest({ 'X-Amz-SignedHeaders':
         undefined }, 'query', request, query);
         const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
@@ -87,7 +87,7 @@ describe('v4 queryAuthCheck', () => {
         done();
     });
 
-    it('should return error if undefined X-Amz-Signature param', done => {
+    test('should return error if undefined X-Amz-Signature param', done => {
         const alteredRequest = createAlteredRequest({ 'X-Amz-Signature':
         undefined }, 'query', request, query);
         const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
@@ -95,7 +95,7 @@ describe('v4 queryAuthCheck', () => {
         done();
     });
 
-    it('should return error if host is not included as signed header', done => {
+    test('should return error if host is not included as signed header', done => {
         const alteredRequest = createAlteredRequest({ 'X-Amz-SignedHeaders':
             'none' }, 'query', request, query);
         const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
@@ -103,7 +103,7 @@ describe('v4 queryAuthCheck', () => {
         done();
     });
 
-    it('should return error if an x-amz header is not included as signed ' +
+    test('should return error if an x-amz header is not included as signed ' +
         'header but is in request', done => {
         const alteredRequest = createAlteredRequest({
             'x-amz-acl': 'public' }, 'headers', request, headers);
@@ -112,7 +112,7 @@ describe('v4 queryAuthCheck', () => {
         done();
     });
 
-    it('should return error if an x-scal header is not included as signed ' +
+    test('should return error if an x-scal header is not included as signed ' +
         'header but is in request', done => {
         const alteredRequest = createAlteredRequest({
             'x-scal-encryption': 'true' }, 'headers', request, headers);
@@ -121,7 +121,7 @@ describe('v4 queryAuthCheck', () => {
         done();
     });
 
-    it('should return error if undefined X-Amz-Date param', done => {
+    test('should return error if undefined X-Amz-Date param', done => {
         const alteredRequest = createAlteredRequest({ 'X-Amz-Date':
         undefined }, 'query', request, query);
         const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
@@ -129,7 +129,7 @@ describe('v4 queryAuthCheck', () => {
         done();
     });
 
-    it('should return error if undefined X-Amz-Expires param', done => {
+    test('should return error if undefined X-Amz-Expires param', done => {
         const alteredRequest = createAlteredRequest({ 'X-Amz-Expires':
         undefined }, 'query', request, query);
         const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
@@ -137,7 +137,7 @@ describe('v4 queryAuthCheck', () => {
         done();
     });
 
-    it('should return error if X-Amz-Expires param ' +
+    test('should return error if X-Amz-Expires param ' +
     'is less than 1', done => {
         const alteredRequest = createAlteredRequest({ 'X-Amz-Expires':
         0 }, 'query', request, query);
@@ -146,7 +146,7 @@ describe('v4 queryAuthCheck', () => {
         done();
     });
 
-    it('should return error if X-Amz-Expires param ' +
+    test('should return error if X-Amz-Expires param ' +
     'is greater than 604800', done => {
         // Greater than 604800 seconds (7 days)
         const alteredRequest = createAlteredRequest({ 'X-Amz-Expires':
@@ -156,7 +156,7 @@ describe('v4 queryAuthCheck', () => {
         done();
     });
 
-    it('should return error if X-Amz-Date param is in the future', done => {
+    test('should return error if X-Amz-Date param is in the future', done => {
         // 2095 instead of 2016
         const alteredRequest = createAlteredRequest({
             'X-Amz-Date': '20950208T234304Z',
@@ -167,7 +167,7 @@ describe('v4 queryAuthCheck', () => {
         done();
     });
 
-    it('should return error if X-Amz-Date param is too old', done => {
+    test('should return error if X-Amz-Date param is too old', done => {
         const alteredRequest = createAlteredRequest({
             'X-Amz-Date': '20160208T234304Z',
         }, 'query', request, query);
@@ -176,7 +176,7 @@ describe('v4 queryAuthCheck', () => {
         done();
     });
 
-    it('should return error if scope date from X-Amz-Credential param' +
+    test('should return error if scope date from X-Amz-Credential param' +
         'does not match date from X-Amz-Date param', done => {
         const clock = lolex.install(1454974984001);
         const alteredRequest = createAlteredRequest({
@@ -189,7 +189,7 @@ describe('v4 queryAuthCheck', () => {
         done();
     });
 
-    it('should successfully return v4 and no error', done => {
+    test('should successfully return v4 and no error', done => {
         // Freezes time so date created within function will be Feb 8, 2016
         // (within 15 minutes of timestamp in request)
         const clock = lolex.install(1454974984001);
@@ -200,7 +200,7 @@ describe('v4 queryAuthCheck', () => {
         done();
     });
 
-    it('should successfully return v4 and no error if X-Amz-Expires param ' +
+    test('should successfully return v4 and no error if X-Amz-Expires param ' +
     'is 604800 (7 days)', done => {
         // Freezes time so date created within function will be Feb 8, 2016
         const clock = lolex.install(1454974984001);
@@ -213,7 +213,7 @@ describe('v4 queryAuthCheck', () => {
         done();
     });
 
-    it('should successfully return v4 and no error if X-Amz-Expires param ' +
+    test('should successfully return v4 and no error if X-Amz-Expires param ' +
     'is less thant 604800 (7 days)', done => {
         // Freezes time so date created within function will be Feb 8, 2016
         const clock = lolex.install(1454974984001);

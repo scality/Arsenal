@@ -117,7 +117,7 @@ function _addCases(dominantHeader, recessiveHeader) {
 _addCases('if-none-match', 'if-modified-since');
 
 function checkSuccess(h) {
-    it('should succeed when value meets condition', () => {
+    test('should succeed when value meets condition', () => {
         const headers = {};
         headers[h] = basicTestCases[h].success;
         const result =
@@ -127,7 +127,7 @@ function checkSuccess(h) {
 }
 
 function checkFailure(h) {
-    it('should fail when value does not meet condition', () => {
+    test('should fail when value does not meet condition', () => {
         const headers = {};
         headers[h] = basicTestCases[h].fail;
         const result =
@@ -140,7 +140,7 @@ function checkFailure(h) {
 
 function checkCaseResult(testCase) {
     const h = Object.keys(testCase.headers);
-    it(`"${h[0]}" ${testCase.headers[h[0]]} and "${h[1]}" ` +
+    test(`"${h[0]}" ${testCase.headers[h[0]]} and "${h[1]}" ` +
     `${testCase.headers[h[1]]}: should return ${testCase.result}`, () => {
         const testHeaders = {};
         h.forEach(key => {
@@ -179,25 +179,26 @@ describe('_checkEtagMatch function :', () => {
     };
     const listOfValues = eTagMatchValues.map(item => item.value).join();
     eTagMatchValues.forEach(item => {
-        it(`should return success for ${item.desc}`, () => {
+        test(`should return success for ${item.desc}`, () => {
             const result = _checkEtagMatch(item.value, contentMD5);
             assert.deepStrictEqual(result, expectedSuccess);
         });
     });
 
-    it('should return success for multiple valid values', () => {
+    test('should return success for multiple valid values', () => {
         const result = _checkEtagMatch(listOfValues, contentMD5);
         assert.deepStrictEqual(result, expectedSuccess);
     });
 
-    it('should return success for multiple valid values with comma at index 0',
-    () => {
-        const result = _checkEtagMatch(`,${listOfValues}`, contentMD5);
-        assert.deepStrictEqual(result, expectedSuccess);
-    });
+    test(
+        'should return success for multiple valid values with comma at index 0',
+        () => {
+            const result = _checkEtagMatch(`,${listOfValues}`, contentMD5);
+            assert.deepStrictEqual(result, expectedSuccess);
+        }
+    );
 
-    it('should return success as long as one value in list is valid',
-    () => {
+    test('should return success as long as one value in list is valid', () => {
         const result = _checkEtagMatch(`${listOfValues},aaa`, contentMD5);
         assert.deepStrictEqual(result, expectedSuccess);
     });
@@ -207,7 +208,7 @@ describe('_checkEtagMatch function :', () => {
         { desc: 'for list of non-matching values', value: 'aaa,bbb,ccc' },
     ];
     failTests.forEach(test => {
-        it(`should return PreconditionFailed ${test.desc}`, () => {
+        test(`should return PreconditionFailed ${test.desc}`, () => {
             const result = _checkEtagMatch(test.value, contentMD5);
             assert.deepStrictEqual(result.error, errors.PreconditionFailed);
         });
@@ -216,26 +217,25 @@ describe('_checkEtagMatch function :', () => {
 
 describe('_checkEtagNoneMatch function :', () => {
     eTagMatchValues.forEach(item => {
-        it(`should return NotModified for ${item.desc}`, () => {
+        test(`should return NotModified for ${item.desc}`, () => {
             const result = _checkEtagNoneMatch(item.value, contentMD5);
             assert.deepStrictEqual(result.error, errors.NotModified);
         });
 
-        it(`should return NotModified if ${item.desc} is in a list of ` +
-          'otherwise non-matching values',
-        () => {
+        test(`should return NotModified if ${item.desc} is in a list of ` +
+          'otherwise non-matching values', () => {
             const result = _checkEtagNoneMatch(`aaa,${item.value},bbb`,
                 contentMD5);
             assert.deepStrictEqual(result.error, errors.NotModified);
         });
     });
 
-    it('should return success for multiple non-matching values', () => {
+    test('should return success for multiple non-matching values', () => {
         const result = _checkEtagNoneMatch('aaa,bbb,ccc', contentMD5);
         assert.deepStrictEqual(result, expectedSuccess);
     });
 
-    it('should return success for multiple non-matching values ' +
+    test('should return success for multiple non-matching values ' +
     'with comma at index 0', () => {
         const result = _checkEtagNoneMatch(',aaa,bbb,ccc', contentMD5);
         assert.deepStrictEqual(result, expectedSuccess);
@@ -243,50 +243,57 @@ describe('_checkEtagNoneMatch function :', () => {
 });
 
 describe('_checkModifiedSince function :', () => {
-    it('should return InvalidArgument if header has invalid value', () => {
+    test('should return InvalidArgument if header has invalid value', () => {
         const result = _checkModifiedSince('aaaa', lastModified);
         assert.deepStrictEqual(result.error, errors.InvalidArgument);
     });
 
-    it('should return success if header value is earlier to than last modified',
-    () => {
-        const result = _checkModifiedSince(beforeLastModified, lastModified);
-        assert.deepStrictEqual(result, expectedSuccess);
-    });
+    test(
+        'should return success if header value is earlier to than last modified',
+        () => {
+            const result = _checkModifiedSince(beforeLastModified, lastModified);
+            assert.deepStrictEqual(result, expectedSuccess);
+        }
+    );
 
-    it('should return NotModified if header value is later than last modified',
-    () => {
-        const result = _checkModifiedSince(afterLastModified, lastModified);
-        assert.deepStrictEqual(result.error, errors.NotModified);
-    });
+    test(
+        'should return NotModified if header value is later than last modified',
+        () => {
+            const result = _checkModifiedSince(afterLastModified, lastModified);
+            assert.deepStrictEqual(result.error, errors.NotModified);
+        }
+    );
 
-    it('should return NotModified if header value is equal to last modified',
-    () => {
-        const result = _checkModifiedSince(lastModified, lastModified);
-        assert.deepStrictEqual(result.error, errors.NotModified);
-    });
+    test(
+        'should return NotModified if header value is equal to last modified',
+        () => {
+            const result = _checkModifiedSince(lastModified, lastModified);
+            assert.deepStrictEqual(result.error, errors.NotModified);
+        }
+    );
 });
 
 describe('_checkUnmodifiedSince function :', () => {
-    it('should return InvalidArgument if header has invalid value', () => {
+    test('should return InvalidArgument if header has invalid value', () => {
         const result = _checkUnmodifiedSince('aaaa', lastModified);
         assert.deepStrictEqual(result.error, errors.InvalidArgument);
     });
 
-    it('should return PreconditionFailed if header value is earlier than ' +
+    test('should return PreconditionFailed if header value is earlier than ' +
     'last modified', () => {
         const result = _checkUnmodifiedSince(beforeLastModified, lastModified);
         assert.deepStrictEqual(result.error, errors.PreconditionFailed);
     });
 
-    it('should return success if header value is later to than last modified',
-    () => {
-        const result = _checkUnmodifiedSince(afterLastModified, lastModified);
-        assert.deepStrictEqual(result, expectedSuccess);
-    });
+    test(
+        'should return success if header value is later to than last modified',
+        () => {
+            const result = _checkUnmodifiedSince(afterLastModified, lastModified);
+            assert.deepStrictEqual(result, expectedSuccess);
+        }
+    );
 
-    it('should return success if header value is equal to last modified',
-    () => {
+    test('should return success if header value is equal to last modified', () => {
         const result = _checkUnmodifiedSince(lastModified, lastModified);
         assert.deepStrictEqual(result, expectedSuccess);
     });

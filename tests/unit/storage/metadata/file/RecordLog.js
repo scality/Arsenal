@@ -66,7 +66,7 @@ describe('record log - persistent log of metadata operations', () => {
         done();
     }
 
-    before(done => {
+    beforeAll(done => {
         temp.mkdir('record-log-testdir-', (err, dbDir) => {
             const rootDb = level(dbDir);
             db = sublevel(rootDb);
@@ -74,7 +74,7 @@ describe('record log - persistent log of metadata operations', () => {
         });
     });
 
-    after(done => {
+    afterAll(done => {
         server.close();
         done();
     });
@@ -97,7 +97,7 @@ describe('record log - persistent log of metadata operations', () => {
             }
         });
 
-        it('should list an empty record log', done => {
+        test('should list an empty record log', done => {
             logProxy.readRecords({}, (err, res) => {
                 assert.ifError(err);
                 const info = res.info;
@@ -113,7 +113,7 @@ describe('record log - persistent log of metadata operations', () => {
                 recordStream.on('end', done);
             });
         });
-        it('should be able to add records and list them thereafter', done => {
+        test('should be able to add records and list them thereafter', done => {
             debug('going to append records');
             const ops = [{ type: 'put', key: 'foo', value: 'bar',
                 prefix: ['foobucket'] },
@@ -189,7 +189,7 @@ describe('record log - persistent log of metadata operations', () => {
     describe('readRecords', () => {
         let logProxy;
 
-        before(done => {
+        beforeAll(done => {
             logProxy = createScratchRecordLog(cliLogger, err => {
                 assert.ifError(err);
                 // fill the log with 1000 entries
@@ -238,28 +238,28 @@ describe('record log - persistent log of metadata operations', () => {
                 done();
             });
         }
-        it('should list all entries', done => {
+        test('should list all entries', done => {
             logProxy.readRecords({}, (err, res) => {
                 assert.ifError(err);
                 checkReadRecords(res, { startSeq: 1, endSeq: 1000 }, done);
             });
         });
 
-        it('should list all entries from a given startSeq', done => {
+        test('should list all entries from a given startSeq', done => {
             logProxy.readRecords({ startSeq: 500 }, (err, res) => {
                 assert.ifError(err);
                 checkReadRecords(res, { startSeq: 500, endSeq: 1000 }, done);
             });
         });
 
-        it('should list all entries up to a given endSeq', done => {
+        test('should list all entries up to a given endSeq', done => {
             logProxy.readRecords({ endSeq: 500 }, (err, res) => {
                 assert.ifError(err);
                 checkReadRecords(res, { startSeq: 1, endSeq: 500 }, done);
             });
         });
 
-        it('should list all entries in a seq range', done => {
+        test('should list all entries in a seq range', done => {
             logProxy.readRecords(
                 { startSeq: 100, endSeq: 500 }, (err, res) => {
                     assert.ifError(err);
@@ -268,8 +268,7 @@ describe('record log - persistent log of metadata operations', () => {
                 });
         });
 
-        it('should list all entries from a given startSeq up to a limit',
-        done => {
+        test('should list all entries from a given startSeq up to a limit', done => {
             logProxy.readRecords(
                 { startSeq: 100, limit: 100 }, (err, res) => {
                     assert.ifError(err);

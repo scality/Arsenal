@@ -25,14 +25,15 @@ function check(array) {
 }
 
 describe('StringHash', () => {
-    it('Should compute a string hash', done => {
+    test('Should compute a string hash', done => {
         const hash1 = stringHash('Hello!');
         const hash2 = stringHash('Hello?');
         assert.notDeepStrictEqual(hash1, hash2);
         done();
     });
-    it(`Should distribute uniformly with a maximum of ${ERROR}% of deviation`,
-        function f(done) {
+    test(
+        `Should distribute uniformly with a maximum of ${ERROR}% of deviation`,
+        done => {
             this.timeout(20000);
             const strings = new Array(STRING_COUNT).fill('')
                                 .map(() => randomString(10));
@@ -42,5 +43,6 @@ describe('StringHash', () => {
                 ++arr[ind];
             });
             done(check(arr));
-        });
+        }
+    );
 });

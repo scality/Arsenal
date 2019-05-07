@@ -40,7 +40,7 @@ describe('v4 headerAuthCheck', () => {
         { token: undefined, error: false },
         { token: 'invalid-token', error: true },
         { token: 'a'.repeat(128), error: false },
-    ].forEach(test => it(`test with token(${test.token})`, () => {
+    ].forEach(test => test(`test with token(${test.token})`, () => {
         const alteredRequest = createAlteredRequest({
             'x-amz-security-token': test.token }, 'headers', request, headers);
         const res = headerAuthCheck(alteredRequest, log);
@@ -52,7 +52,7 @@ describe('v4 headerAuthCheck', () => {
         }
     }));
 
-    it('should return error if undefined authorization header', done => {
+    test('should return error if undefined authorization header', done => {
         const alteredRequest = createAlteredRequest({
             authorization: undefined }, 'headers', request, headers);
         const res = headerAuthCheck(alteredRequest, log);
@@ -60,7 +60,7 @@ describe('v4 headerAuthCheck', () => {
         done();
     });
 
-    it('should return error if undefined sha256 header', done => {
+    test('should return error if undefined sha256 header', done => {
         const alteredRequest = createAlteredRequest({
             'x-amz-content-sha256': undefined }, 'headers', request, headers);
         const res = headerAuthCheck(alteredRequest, log);
@@ -68,7 +68,7 @@ describe('v4 headerAuthCheck', () => {
         done();
     });
 
-    it('should return error if host is not included as signed header', done => {
+    test('should return error if host is not included as signed header', done => {
         const alteredRequest = createAlteredRequest({
             authorization: 'AWS4-HMAC-SHA256 Credential=accessKey1/20160208' +
                 '/us-east-1/s3/aws4_request, ' +
@@ -81,7 +81,7 @@ describe('v4 headerAuthCheck', () => {
         done();
     });
 
-    it('should return error if an x-amz header is not included as signed ' +
+    test('should return error if an x-amz header is not included as signed ' +
         'header but is in request', done => {
         const alteredRequest = createAlteredRequest({
             'x-amz-acl': 'public' }, 'headers', request, headers);
@@ -90,7 +90,7 @@ describe('v4 headerAuthCheck', () => {
         done();
     });
 
-    it('should return error if an x-scal header is not included as signed ' +
+    test('should return error if an x-scal header is not included as signed ' +
         'header but is in request', done => {
         const alteredRequest = createAlteredRequest({
             'x-scal-encryption': 'true' }, 'headers', request, headers);
@@ -99,7 +99,7 @@ describe('v4 headerAuthCheck', () => {
         done();
     });
 
-    it('should return error if missing credentials', done => {
+    test('should return error if missing credentials', done => {
         const alteredRequest = createAlteredRequest({
             authorization: 'AWS4-HMAC-SHA256 SignedHeaders=host;' +
                 'x-amz-content-sha256;x-amz-date, Signature=abed9' +
@@ -110,7 +110,7 @@ describe('v4 headerAuthCheck', () => {
         done();
     });
 
-    it('should return error if missing SignedHeaders', done => {
+    test('should return error if missing SignedHeaders', done => {
         // 'Sigheaders' instead of SignedHeaders in authorization
         const alteredRequest = createAlteredRequest({
             authorization: 'AWS4-HMAC-SHA256 Credential=accessKey1' +
@@ -124,7 +124,7 @@ describe('v4 headerAuthCheck', () => {
         done();
     });
 
-    it('should return error if missing Signature', done => {
+    test('should return error if missing Signature', done => {
         // Sig instead of 'Signature' in authorization
         const alteredRequest = createAlteredRequest({
             authorization: 'AWS4-HMAC-SHA256 Credential=accessKey1' +
@@ -138,7 +138,7 @@ describe('v4 headerAuthCheck', () => {
         done();
     });
 
-    it('should return error if missing timestamp', done => {
+    test('should return error if missing timestamp', done => {
         const alteredRequest = createAlteredRequest({
             'x-amz-date': undefined }, 'headers', request, headers);
         const res = headerAuthCheck(alteredRequest, log);
@@ -148,7 +148,7 @@ describe('v4 headerAuthCheck', () => {
         done();
     });
 
-    it('should return error if scope date does not ' +
+    test('should return error if scope date does not ' +
         'match timestamp date', done => {
         // Different timestamp (2015 instead of 2016)
         const alteredRequest = createAlteredRequest({
@@ -158,7 +158,7 @@ describe('v4 headerAuthCheck', () => {
         done();
     });
 
-    it('should return error if timestamp from x-amz-date header' +
+    test('should return error if timestamp from x-amz-date header' +
         'is before epochTime', done => {
         // Different date (2095 instead of 2016)
         const alteredRequest = createAlteredRequest({
@@ -176,7 +176,7 @@ describe('v4 headerAuthCheck', () => {
         done();
     });
 
-    it('should return error if timestamp from x-amz-date header' +
+    test('should return error if timestamp from x-amz-date header' +
         'is in the future', done => {
         // Different date (2095 instead of 2016)
         const alteredRequest = createAlteredRequest({
@@ -192,7 +192,7 @@ describe('v4 headerAuthCheck', () => {
         done();
     });
 
-    it('should return error if timestamp from date header' +
+    test('should return error if timestamp from date header' +
         ' is in the future (and there is no x-amz-date header)', done => {
         const alteredRequest = createAlteredRequest({
             date: 'Tue, 08 Feb 2095 20:14:05 GMT',
@@ -209,7 +209,7 @@ describe('v4 headerAuthCheck', () => {
         done();
     });
 
-    it('should return error if timestamp from x-amz-date header' +
+    test('should return error if timestamp from x-amz-date header' +
         'is too old', done => {
         // Different scope date and x-amz-date (2015 instead of 2016)
         const alteredRequest = createAlteredRequest({
@@ -226,7 +226,7 @@ describe('v4 headerAuthCheck', () => {
         done();
     });
 
-    it('should return error if timestamp from date header' +
+    test('should return error if timestamp from date header' +
         'is too old (and there is no x-amz-date header)', done => {
         // Different scope date (2015 instead of 2016) and date in 2015
         const alteredRequest = createAlteredRequest({
@@ -244,7 +244,7 @@ describe('v4 headerAuthCheck', () => {
         done();
     });
 
-    it('should not return error due to unknown region', done => {
+    test('should not return error due to unknown region', done => {
         // Returning an error causes an issue for certain clients.
         const alteredRequest = createAlteredRequest({
             authorization: 'AWS4-HMAC-SHA256 Credential=accessKey1/20160208' +
@@ -260,7 +260,7 @@ describe('v4 headerAuthCheck', () => {
         done();
     });
 
-    it('should successfully return v4 and no error', done => {
+    test('should successfully return v4 and no error', done => {
         // Freezes time so date created within function will be Feb 8, 2016
         const clock = lolex.install(1454962445000);
         const res = headerAuthCheck(request, log);

@@ -8,7 +8,7 @@ const awsURIencode = require('../../../../lib/auth/v4/awsURIencode');
 // AWS.util.uriEscapePath and AWS.util.uriEscape functions
 // (see aws-sdk lib/signers/v4.js)
 describe('should URIencode in accordance with AWS rules', () => {
-    it('should not encode / if give false argument', () => {
+    test('should not encode / if give false argument', () => {
         const input1 = '/s3amazonaws.com/?$*@whateverASFEFWE()@)(*#@+  )';
         const expectedOutput1 = '/s3amazonaws.com/%3F%24%2A%40whatever' +
             'ASFEFWE%28%29%40%29%28%2A%23%40%2B%20%20%29';
@@ -24,7 +24,7 @@ describe('should URIencode in accordance with AWS rules', () => {
         assert.strictEqual(actualOutput2, expectedOutput2);
     });
 
-    it('should encode / if no second argument given', () => {
+    test('should encode / if no second argument given', () => {
         const input1 = '/s3amazonaws.com/?$*@whateverASFEFWE()@)(*#@+  )';
         const expectedOutput1 = '%2Fs3amazonaws.com%2F%3F%24%2A%40whatever' +
             'ASFEFWE%28%29%40%29%28%2A%23%40%2B%20%20%29';
@@ -40,7 +40,7 @@ describe('should URIencode in accordance with AWS rules', () => {
         assert.strictEqual(actualOutput2, expectedOutput2);
     });
 
-    it('should encode native language characters', () => {
+    test('should encode native language characters', () => {
         const input = '/s3amazonaws.com/Pâtisserie=中文-español-English' +
         '-हिन्दी-العربية-português-বাংলা-русский-日本語-ਪੰਜਾਬੀ-한국어-தமிழ்';
         const expectedOutput = '%2Fs3amazonaws.com%2FP%C3%A2tisserie%3D%E4' +

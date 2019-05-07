@@ -13,7 +13,7 @@ const RequestContext =
 const logger = new DummyRequestLogger();
 
 describe('Public Access', () => {
-    it('should grant access to a user that provides absolutely' +
+    test('should grant access to a user that provides absolutely' +
         'no authentication information and should assign that user the ' +
         'All Users Group accessKey', done => {
         const request = {
@@ -38,7 +38,7 @@ describe('Public Access', () => {
         }, 's3', requestContext);
     });
 
-    it('should not grant access to a request that contains ' +
+    test('should not grant access to a request that contains ' +
     'an authorization header without proper credentials', done => {
         const request = {
             method: 'GET',

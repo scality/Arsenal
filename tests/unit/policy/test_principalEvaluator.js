@@ -290,7 +290,7 @@ describe('Principal evaluator', () => {
             result: 'Deny',
         },
     ].forEach(test => {
-        it(`_evaluatePrincipalField(): ${test.name}`, () => {
+        test(`_evaluatePrincipalField(): ${test.name}`, () => {
             assert.strictEqual(Principal._evaluatePrincipalField(defaultParams,
                 test.statement, test.valids), test.result);
         });
@@ -349,7 +349,7 @@ describe('Principal evaluator', () => {
             result: 'Deny',
         },
     ].forEach(test => {
-        it(`_evaluatePrincipal(): ${test.name}`, () => {
+        test(`_evaluatePrincipal(): ${test.name}`, () => {
             const params = {
                 log: defaultParams.log,
                 trustedPolicy: {
@@ -622,7 +622,7 @@ describe('Principal evaluator', () => {
             },
         },
     ].forEach(test => {
-        it(`evaluatePrincipal(): ${test.name}`, () => {
+        test(`evaluatePrincipal(): ${test.name}`, () => {
             const rc = new RequestContext({}, {}, '', '', '127.0.0.1',
                 false, 'assumeRole', 'sts', null, {
                     accountid: test.requester.accountId,

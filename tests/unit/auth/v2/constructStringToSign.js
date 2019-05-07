@@ -9,7 +9,7 @@ const DummyRequestLogger = require('../../helpers').DummyRequestLogger;
 const log = new DummyRequestLogger();
 
 describe('v2 constructStringToSign function', () => {
-    it('should construct a stringToSign with query params treated ' +
+    test('should construct a stringToSign with query params treated ' +
         'like headers (e.g. x-amz-acl) for AWS', () => {
         const request = {
             url: '/noderocks/cuteotter.jpeg?AWSAccessKeyId' +
@@ -45,7 +45,7 @@ describe('v2 constructStringToSign function', () => {
         assert.strictEqual(actualOutput, expectedOutput);
     });
 
-    it('should construct a stringToSign with query params treated ' +
+    test('should construct a stringToSign with query params treated ' +
         'like headers (e.g. x-goog-acl) for GCP', () => {
         const request = {
             url: '/noderocks/cuteotter.jpeg?AWSAccessKeyId' +

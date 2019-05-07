@@ -474,7 +474,7 @@ const alphabeticalOrderTests = [
 
 
 describe('Delimiter listing algorithm', () => {
-    it('Should return good skipping value for DelimiterMaster', done => {
+    test('Should return good skipping value for DelimiterMaster', done => {
         const delimiter = new DelimiterMaster({ delimiter: '/' });
         for (let i = 0; i < 100; i++) {
             delimiter.filter({ key: `foo/${zpad(i)}`, value: '{}' });
@@ -483,18 +483,20 @@ describe('Delimiter listing algorithm', () => {
         done();
     });
 
-    it('Should set Delimiter alphabeticalOrder field to the expected value',
-       () => {
-           alphabeticalOrderTests.forEach(test => {
-               const delimiter = new Delimiter(test.params);
-               assert.strictEqual(delimiter.alphabeticalOrder,
-                                  test.expectedValue,
-                                  `${JSON.stringify(test.params)}`);
-           });
-       });
+    test(
+        'Should set Delimiter alphabeticalOrder field to the expected value',
+        () => {
+            alphabeticalOrderTests.forEach(test => {
+                const delimiter = new Delimiter(test.params);
+                assert.strictEqual(delimiter.alphabeticalOrder,
+                                   test.expectedValue,
+                                   `${JSON.stringify(test.params)}`);
+            });
+        }
+    );
 
     tests.forEach(test => {
-        it(`Should list ${test.name}`, done => {
+        test(`Should list ${test.name}`, done => {
             // Simulate skip scan done by LevelDB
             const d = data.filter(e => test.filter(e, test.input));
             const res = performListing(d, Delimiter, test.input, logger);
@@ -504,7 +506,7 @@ describe('Delimiter listing algorithm', () => {
     });
 
     tests.forEach(test => {
-        it(`Should list master versions ${test.name}`, done => {
+        test(`Should list master versions ${test.name}`, done => {
             // Simulate skip scan done by LevelDB
             const d = dataVersioned.filter(e => test.filter(e, test.input));
             const res = performListing(d, DelimiterMaster, test.input, logger);
@@ -513,39 +515,38 @@ describe('Delimiter listing algorithm', () => {
         });
     });
 
-    it('Should filter values according to alphabeticalOrder parameter',
-       () => {
-           let test = new Test('alphabeticalOrder parameter set', {
-               delimiter: '/',
-               alphabeticalOrder: true,
-           }, {
-               Contents: [
-                   receivedNonAlphaData[0],
-               ],
-               Delimiter: '/',
-               CommonPrefixes: [],
-               IsTruncated: false,
-               NextMarker: undefined,
-           });
-           let d = nonAlphabeticalData.filter(e => test.filter(e, test.input));
-           let res = performListing(d, Delimiter, test.input, logger);
-           assert.deepStrictEqual(res, test.output);
+    test('Should filter values according to alphabeticalOrder parameter', () => {
+        let test = new Test('alphabeticalOrder parameter set', {
+            delimiter: '/',
+            alphabeticalOrder: true,
+        }, {
+            Contents: [
+                receivedNonAlphaData[0],
+            ],
+            Delimiter: '/',
+            CommonPrefixes: [],
+            IsTruncated: false,
+            NextMarker: undefined,
+        });
+        let d = nonAlphabeticalData.filter(e => test.filter(e, test.input));
+        let res = performListing(d, Delimiter, test.input, logger);
+        assert.deepStrictEqual(res, test.output);
 
-           test = new Test('alphabeticalOrder parameter set', {
-               delimiter: '/',
-               alphabeticalOrder: false,
-           }, {
-               Contents: [
-                   receivedNonAlphaData[0],
-                   receivedNonAlphaData[1],
-               ],
-               Delimiter: '/',
-               CommonPrefixes: [],
-               IsTruncated: false,
-               NextMarker: undefined,
-           });
-           d = nonAlphabeticalData.filter(e => test.filter(e, test.input));
-           res = performListing(d, Delimiter, test.input, logger);
-           assert.deepStrictEqual(res, test.output);
-       });
+        test = new Test('alphabeticalOrder parameter set', {
+            delimiter: '/',
+            alphabeticalOrder: false,
+        }, {
+            Contents: [
+                receivedNonAlphaData[0],
+                receivedNonAlphaData[1],
+            ],
+            Delimiter: '/',
+            CommonPrefixes: [],
+            IsTruncated: false,
+            NextMarker: undefined,
+        });
+        d = nonAlphabeticalData.filter(e => test.filter(e, test.input));
+        res = performListing(d, Delimiter, test.input, logger);
+        assert.deepStrictEqual(res, test.output);
+    });
 });

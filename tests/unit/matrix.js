@@ -30,7 +30,7 @@ describe('Matrix', () => {
         }).execute();
 
         describe('Check if matrix was well generated', () => {
-            it('Has generated 40 matrix', done => {
+            test('Has generated 40 matrix', done => {
                 const callback = () => {
                     if (numberOfCall === 40) {
                         done();
@@ -66,7 +66,7 @@ describe('Matrix', () => {
         }).execute();
 
         describe('Check if matrix was well generated', () => {
-            it('Should was call 20 times per auth value', done => {
+            test('Should was call 20 times per auth value', done => {
                 const callback = () => {
                     if (numberOfCallV2 === 20 && numberOfCallV4 === 20) {
                         done();
@@ -107,7 +107,7 @@ describe('Matrix', () => {
         }).execute();
 
         describe('Check if matrix was well generated', () => {
-            it('All exception was called', done => {
+            test('All exception was called', done => {
                 const callback = () => {
                     if (callAbcd === true && callUndefined === true) {
                         done();
@@ -150,7 +150,7 @@ describe('Matrix', () => {
         }).execute();
 
         describe('Check if matrix was well generated', () => {
-            it('All exception was called', done => {
+            test('All exception was called', done => {
                 const callback = () => {
                     if (callAbcd === true && callUndefined === true) {
                         done();
@@ -182,7 +182,7 @@ describe('Matrix', () => {
         }, 'should generate matrix').execute();
 
         describe('Check if matrix was well generated', () => {
-            it('Has been called', done => {
+            test('Has been called', done => {
                 const callback = () => {
                     if (hasBeenCalled === true) {
                         done();
@@ -207,7 +207,7 @@ describe('Matrix', () => {
         } catch (e) {
             anExceptionWasFound = true;
         }
-        it('An exception was launched', done => {
+        test('An exception was launched', done => {
             assert.equal(anExceptionWasFound, true);
             done();
         });
@@ -226,7 +226,7 @@ describe('Matrix', () => {
         } catch (e) {
             anExceptionWasFound = true;
         }
-        it('An exception was launched', done => {
+        test('An exception was launched', done => {
             assert.equal(anExceptionWasFound, true);
             done();
         });

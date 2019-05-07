@@ -78,20 +78,19 @@ describe('AuthLoader class', () => {
         ['accounts.0.canonicalID', 64],
         ['accounts.0.keys', 'not an Array'],
         ['accounts.0.keys', undefined],
-    ].forEach(test => {
-        if (test[1] === undefined) {
+    ].forEach(t => {
+        if (t[1] === undefined) {
             // Check a failure when deleting required fields
-            it(`should fail when missing field ${test[0]}`, done => {
+            test(`should fail when missing field ${t[0]}`, done => {
                 should._exec = shouldFail;
-                should.missingField(obj, test[0], done);
+                should.missingField(obj, t[0], done);
             });
         } else {
             // Check a failure when the type of field is different than
             // expected
-            it(`should fail when modified field ${test[0]} ${test[1]}`,
-            done => {
+            test(`should fail when modified field ${t[0]} ${t[1]}`, done => {
                 should._exec = shouldFail;
-                should.modifiedField(obj, test[0], test[1], done);
+                should.modifiedField(obj, t[0], t[1], done);
             });
         }
     });
@@ -103,30 +102,30 @@ describe('AuthLoader class', () => {
     [
         'accounts.0.keys',
         'accounts.0.users',
-    ].forEach(test => {
+    ].forEach(t => {
         // Check a success when deleting optional fields
-        it(`should return success when missing field ${test}`, done => {
+        test(`should return success when missing field ${t}`, done => {
             should._exec = shouldSucceed;
-            should.missingField(obj, test[0], done);
+            should.missingField(obj, t[0], done);
         });
     });
 
-    it('Should return error on two same canonicalID', done => {
+    test('Should return error on two same canonicalID', done => {
         obj.accounts[0].canonicalID = obj.accounts[1].canonicalID;
         shouldFail(obj, done);
     });
 
-    it('Should return error on two same emails', done => {
+    test('Should return error on two same emails', done => {
         obj.accounts[0].email = obj.accounts[1].email;
         shouldFail(obj, done);
     });
 
-    it('Should return error on two same arn', done => {
+    test('Should return error on two same arn', done => {
         obj.accounts[0].arn = obj.accounts[1].arn;
         shouldFail(obj, done);
     });
 
-    it('Should return error on two same access key', done => {
+    test('Should return error on two same access key', done => {
         obj.accounts[0].keys[0].access = obj.accounts[1].keys[0].access;
         shouldFail(obj, done);
     });

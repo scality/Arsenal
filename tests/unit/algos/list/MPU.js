@@ -122,14 +122,14 @@ describe('Multipart Uploads listing algorithm', () => {
         done();
     });
 
-    it('should perform a listing of all keys', done => {
+    test('should perform a listing of all keys', done => {
         const listingResult = performListing(keys, MultipartUploads,
             listingParams, logger);
         assert.deepStrictEqual(listingResult, expectedResult);
         done();
     });
 
-    it('should perform a listing with delimiter', done => {
+    test('should perform a listing with delimiter', done => {
         const delimiter = '/';
         listingParams.delimiter = delimiter;
         // format result
@@ -146,7 +146,7 @@ describe('Multipart Uploads listing algorithm', () => {
         done();
     });
 
-    it('should perform a listing with max keys', done => {
+    test('should perform a listing with max keys', done => {
         listingParams.maxKeys = 3;
         // format result
         expectedResult.Uploads.pop();

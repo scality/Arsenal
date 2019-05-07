@@ -136,7 +136,7 @@ Object.keys(acl).forEach(
 
         describe('serialize/deSerialize on BucketInfo class', () => {
             const serialized = dummyBucket.serialize();
-            it('should serialize', done => {
+            test('should serialize', done => {
                 assert.strictEqual(typeof serialized, 'string');
                 const bucketInfos = {
                     acl: dummyBucket._acl,
@@ -163,7 +163,7 @@ Object.keys(acl).forEach(
                 done();
             });
 
-            it('should deSerialize into an instance of BucketInfo', done => {
+            test('should deSerialize into an instance of BucketInfo', done => {
                 const serialized = dummyBucket.serialize();
                 const deSerialized = BucketInfo.deSerialize(serialized);
                 assert.strictEqual(typeof deSerialized, 'object');
@@ -174,16 +174,15 @@ Object.keys(acl).forEach(
         });
 
         describe('constructor', () => {
-            it('this should have the right BucketInfo types',
-               () => {
-                   assert.strictEqual(typeof dummyBucket.getName(), 'string');
-                   assert.strictEqual(typeof dummyBucket.getOwner(), 'string');
-                   assert.strictEqual(typeof dummyBucket.getOwnerDisplayName(),
-                                      'string');
-                   assert.strictEqual(typeof dummyBucket.getCreationDate(),
-                                      'string');
-               });
-            it('this should have the right acl\'s types', () => {
+            test('this should have the right BucketInfo types', () => {
+                assert.strictEqual(typeof dummyBucket.getName(), 'string');
+                assert.strictEqual(typeof dummyBucket.getOwner(), 'string');
+                assert.strictEqual(typeof dummyBucket.getOwnerDisplayName(),
+                                   'string');
+                assert.strictEqual(typeof dummyBucket.getCreationDate(),
+                                   'string');
+            });
+            test('this should have the right acl\'s types', () => {
                 assert.strictEqual(typeof dummyBucket.getAcl(), 'object');
                 assert.strictEqual(
                     typeof dummyBucket.getAcl().Canned, 'string');
@@ -193,11 +192,11 @@ Object.keys(acl).forEach(
                 assert(Array.isArray(dummyBucket.getAcl().READ));
                 assert(Array.isArray(dummyBucket.getAcl().READ_ACP));
             });
-            it('this should have the right acls', () => {
+            test('this should have the right acls', () => {
                 assert.deepStrictEqual(dummyBucket.getAcl(),
                                        acl[aclObj] || emptyAcl);
             });
-            it('this should have the right website config types', () => {
+            test('this should have the right website config types', () => {
                 const websiteConfig = dummyBucket.getWebsiteConfiguration();
                 assert.strictEqual(typeof websiteConfig, 'object');
                 assert.strictEqual(typeof websiteConfig._indexDocument,
@@ -206,7 +205,7 @@ Object.keys(acl).forEach(
                     'string');
                 assert(Array.isArray(websiteConfig._routingRules));
             });
-            it('this should have the right cors config types', () => {
+            test('this should have the right cors config types', () => {
                 const cors = dummyBucket.getCors();
                 assert(Array.isArray(cors));
                 assert(Array.isArray(cors[0].allowedMethods));
@@ -220,62 +219,61 @@ Object.keys(acl).forEach(
         });
 
         describe('getters on BucketInfo class', () => {
-            it('getACl should return the acl', () => {
+            test('getACl should return the acl', () => {
                 assert.deepStrictEqual(dummyBucket.getAcl(),
                                        acl[aclObj] || emptyAcl);
             });
-            it('getName should return name', () => {
+            test('getName should return name', () => {
                 assert.deepStrictEqual(dummyBucket.getName(), bucketName);
             });
-            it('getOwner should return owner', () => {
+            test('getOwner should return owner', () => {
                 assert.deepStrictEqual(dummyBucket.getOwner(), owner);
             });
-            it('getOwnerDisplayName should return ownerDisplayName', () => {
+            test('getOwnerDisplayName should return ownerDisplayName', () => {
                 assert.deepStrictEqual(dummyBucket.getOwnerDisplayName(),
                                        ownerDisplayName);
             });
-            it('getCreationDate should return creationDate', () => {
+            test('getCreationDate should return creationDate', () => {
                 assert.deepStrictEqual(dummyBucket.getCreationDate(), testDate);
             });
-            it('getVersioningConfiguration should return configuration', () => {
+            test('getVersioningConfiguration should return configuration', () => {
                 assert.deepStrictEqual(dummyBucket.getVersioningConfiguration(),
                         testVersioningConfiguration);
             });
-            it('getWebsiteConfiguration should return configuration', () => {
+            test('getWebsiteConfiguration should return configuration', () => {
                 assert.deepStrictEqual(dummyBucket.getWebsiteConfiguration(),
                         testWebsiteConfiguration);
             });
-            it('getLocationConstraint should return locationConstraint', () => {
+            test('getLocationConstraint should return locationConstraint', () => {
                 assert.deepStrictEqual(dummyBucket.getLocationConstraint(),
                 testLocationConstraint);
             });
-            it('getCors should return CORS configuration', () => {
+            test('getCors should return CORS configuration', () => {
                 assert.deepStrictEqual(dummyBucket.getCors(),
                         testCorsConfiguration);
             });
-            it('getLifeCycleConfiguration should return configuration', () => {
+            test('getLifeCycleConfiguration should return configuration', () => {
                 assert.deepStrictEqual(dummyBucket.getLifecycleConfiguration(),
                     testLifecycleConfiguration);
             });
         });
 
         describe('setters on BucketInfo class', () => {
-            it('setCannedAcl should set acl.Canned', () => {
+            test('setCannedAcl should set acl.Canned', () => {
                 const testAclCanned = 'public-read';
                 dummyBucket.setCannedAcl(testAclCanned);
                 assert.deepStrictEqual(
                     dummyBucket.getAcl().Canned, testAclCanned);
             });
-            it('setSpecificAcl should set the acl of a specified bucket',
-               () => {
-                   const typeOfGrant = 'WRITE';
-                   dummyBucket.setSpecificAcl(owner, typeOfGrant);
-                   const lastIndex =
-                             dummyBucket.getAcl()[typeOfGrant].length - 1;
-                   assert.deepStrictEqual(
-                       dummyBucket.getAcl()[typeOfGrant][lastIndex], owner);
-               });
-            it('setFullAcl should set full set of ACLs', () => {
+            test('setSpecificAcl should set the acl of a specified bucket', () => {
+                const typeOfGrant = 'WRITE';
+                dummyBucket.setSpecificAcl(owner, typeOfGrant);
+                const lastIndex =
+                          dummyBucket.getAcl()[typeOfGrant].length - 1;
+                assert.deepStrictEqual(
+                    dummyBucket.getAcl()[typeOfGrant][lastIndex], owner);
+            });
+            test('setFullAcl should set full set of ACLs', () => {
                 const newACLs = {
                     Canned: '',
                     FULL_CONTROL: ['someOtherAccount'],
@@ -290,30 +288,29 @@ Object.keys(acl).forEach(
                 assert.deepStrictEqual(dummyBucket.getAcl().WRITE_ACP,
                                        ['yetAnotherAccount']);
             });
-            it('setName should set the bucket name', () => {
+            test('setName should set the bucket name', () => {
                 const newName = 'newName';
                 dummyBucket.setName(newName);
                 assert.deepStrictEqual(dummyBucket.getName(), newName);
             });
-            it('setOwner should set the owner', () => {
+            test('setOwner should set the owner', () => {
                 const newOwner = 'newOwner';
                 dummyBucket.setOwner(newOwner);
                 assert.deepStrictEqual(dummyBucket.getOwner(), newOwner);
             });
-            it('getOwnerDisplayName should return ownerDisplayName', () => {
+            test('getOwnerDisplayName should return ownerDisplayName', () => {
                 const newOwnerDisplayName = 'newOwnerDisplayName';
                 dummyBucket.setOwnerDisplayName(newOwnerDisplayName);
                 assert.deepStrictEqual(dummyBucket.getOwnerDisplayName(),
                                        newOwnerDisplayName);
             });
-            it('setLocationConstraint should set the locationConstraint',
-               () => {
-                   const newLocation = 'newLocation';
-                   dummyBucket.setLocationConstraint(newLocation);
-                   assert.deepStrictEqual(
-                       dummyBucket.getLocationConstraint(), newLocation);
-               });
-            it('setVersioningConfiguration should set configuration', () => {
+            test('setLocationConstraint should set the locationConstraint', () => {
+                const newLocation = 'newLocation';
+                dummyBucket.setLocationConstraint(newLocation);
+                assert.deepStrictEqual(
+                    dummyBucket.getLocationConstraint(), newLocation);
+            });
+            test('setVersioningConfiguration should set configuration', () => {
                 const newVersioningConfiguration =
                     { Status: 'Enabled', MfaDelete: 'Enabled' };
                 dummyBucket
@@ -321,7 +318,7 @@ Object.keys(acl).forEach(
                 assert.deepStrictEqual(dummyBucket.getVersioningConfiguration(),
                     newVersioningConfiguration);
             });
-            it('setWebsiteConfiguration should set configuration', () => {
+            test('setWebsiteConfiguration should set configuration', () => {
                 const newWebsiteConfiguration = {
                     redirectAllRequestsTo: {
                         hostName: 'www.example.com',
@@ -333,14 +330,14 @@ Object.keys(acl).forEach(
                 assert.deepStrictEqual(dummyBucket.getWebsiteConfiguration(),
                     newWebsiteConfiguration);
             });
-            it('setCors should set CORS configuration', () => {
+            test('setCors should set CORS configuration', () => {
                 const newCorsConfiguration =
                     [{ allowedMethods: ['PUT'], allowedOrigins: ['*'] }];
                 dummyBucket.setCors(newCorsConfiguration);
                 assert.deepStrictEqual(dummyBucket.getCors(),
                     newCorsConfiguration);
             });
-            it('setReplicationConfiguration should set replication ' +
+            test('setReplicationConfiguration should set replication ' +
                 'configuration', () => {
                 const newReplicationConfig = {
                     Role: 'arn:aws:iam::123456789012:role/src-resource,' +
@@ -357,7 +354,7 @@ Object.keys(acl).forEach(
                 };
                 dummyBucket.setReplicationConfiguration(newReplicationConfig);
             });
-            it('setLifecycleConfiguration should set lifecycle ' +
+            test('setLifecycleConfiguration should set lifecycle ' +
                 'configuration', () => {
                 const newLifecycleConfig = {
                     rules: [

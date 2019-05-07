@@ -108,7 +108,7 @@ describe('ARN object model', () => {
            isIAMUser: false,
            isIAMRole: false,
          },
-        ].forEach(arnTest => it(`should accept ARN "${arnTest.arn}"`, () => {
+        ].forEach(arnTest => test(`should accept ARN "${arnTest.arn}"`, () => {
             const arnObj = ARN.createFromString(arnTest.arn);
             assert(arnObj instanceof ARN);
             assert.strictEqual(arnObj.getService(), arnTest.service);
@@ -128,7 +128,7 @@ describe('ARN object model', () => {
          'arn:aws:xxx::123456789012:role/backbeat',
          'arn:aws:s3::123456789012345:role/backbeat',
          'arn:aws:s3::12345678901b:role/backbeat',
-        ].forEach(arn => it(`should fail with invalid ARN "${arn}"`, () => {
+        ].forEach(arn => test(`should fail with invalid ARN "${arn}"`, () => {
             const res = ARN.createFromString(arn);
             assert.notStrictEqual(res.error, undefined);
         }));

@@ -38,7 +38,7 @@ describe('s3middleware SubStreamInterface.stopStreaming()', () => {
     subStreamInterface._currentStream.on('finish', () => {
         eventsEmitted.currentStreamEnded = eventSequence++;
     });
-    it('should stop streaming data and end current stream', done => {
+    test('should stop streaming data and end current stream', done => {
         sourceStream.on('data', chunk => {
             const currentLength = subStreamInterface.getLengthCounter();
             if (currentLength === 10) {

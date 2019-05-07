@@ -17,7 +17,7 @@ const searchEmail2 = 'sampleaccount4@sampling.com';
 const expectCanId2 = 'newCanId';
 
 describe('S3 in_memory auth backend', () => {
-    it('should find an account', done => {
+    test('should find an account', done => {
         const backend = new Backend(JSON.parse(JSON.stringify(ref)));
         backend.getCanonicalIds([searchEmail], log, (err, res) => {
             assert.strictEqual(res.message.body[searchEmail],
@@ -26,7 +26,7 @@ describe('S3 in_memory auth backend', () => {
         });
     });
 
-    it('should clear old account authdata on refresh', done => {
+    test('should clear old account authdata on refresh', done => {
         const backend = new Backend(JSON.parse(JSON.stringify(ref)));
         backend.refreshAuthData(obj2);
         backend.getCanonicalIds([searchEmail], log, (err, res) => {
@@ -35,7 +35,7 @@ describe('S3 in_memory auth backend', () => {
         });
     });
 
-    it('should add new account authdata on refresh', done => {
+    test('should add new account authdata on refresh', done => {
         const backend = new Backend(JSON.parse(JSON.stringify(ref)));
         backend.refreshAuthData(obj2);
         backend.getCanonicalIds([searchEmail2], log, (err, res) => {

@@ -284,7 +284,7 @@ const tests = [
 ];
 
 describe('Delimiter All Versions listing algorithm', () => {
-    it('Should return good skipping value for DelimiterVersions', done => {
+    test('Should return good skipping value for DelimiterVersions', done => {
         const delimiter = new DelimiterVersions({ delimiter: '/' });
         for (let i = 0; i < 100; i++) {
             delimiter.filter({ key: `foo/${zpad(i)}`, value: '{}' });
@@ -294,7 +294,7 @@ describe('Delimiter All Versions listing algorithm', () => {
     });
 
     tests.forEach(test => {
-        it(`Should list ${test.name}`, done => {
+        test(`Should list ${test.name}`, done => {
             // Simulate skip scan done by LevelDB
             const d = dataVersioned.filter(e => test.filter(e, test.input));
             const res =
