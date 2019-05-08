@@ -164,8 +164,8 @@ describe('REST interface for blob data storage', () => {
         { range: [contents.length - 1, undefined],
             sliceArgs: [-1], contentRange: [contents.length - 1,
                 contents.length - 1] }]
-            .forEach((test, i) => {
-                const { range, sliceArgs, contentRange } = test;
+            .forEach((t, i) => {
+                const { range, sliceArgs, contentRange } = t;
                 test(`should get the correct range ${range[0]}-${range[1]}`, done => {
                     client.get(
                         objKey, range,
@@ -189,8 +189,8 @@ describe('REST interface for blob data storage', () => {
          { range: [0, undefined], emptyObject: true },
          { range: [0, 10], emptyObject: true },
          { range: [undefined, 0], emptyObject: true }]
-            .forEach((test, i) => {
-                const { range, emptyObject } = test;
+            .forEach((t, i) => {
+                const { range, emptyObject } = t;
                 test(`should get error 416 on ${range[0]}-${range[1]}` +
                    `${emptyObject ? ' (empty object)' : ''}`, done => {
                     const key = (emptyObject ? emptyObjKey : objKey);

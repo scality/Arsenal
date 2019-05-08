@@ -29,7 +29,10 @@ describe('test generating versionIds', () => {
     test('should return error decoding non-hex string versionIds', () => {
         const encoded = vids.map(vid => VID.encode(vid));
         const decoded = encoded.map(vid => VID.decode(`${vid}foo`));
-        decoded.forEach(result => assert(result instanceof Error));
+        decoded.forEach(result => {
+            console.log(result)
+            assert(result instanceof Error);
+        });
     });
 
     test('should encode and decode versionIds', () => {

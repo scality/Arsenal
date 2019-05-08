@@ -11,13 +11,13 @@ describe('v2: queryAuthCheck', () => {
         { token: undefined, error: false },
         { token: 'invalid-token', error: true },
         { token: 'a'.repeat(128), error: false },
-    ].forEach(test => test(`test with token(${test.token})`, () => {
+    ].forEach(t => test(`test with token(${t.token})`, () => {
         const request = { method: 'GET' };
         const data = {
-            SecurityToken: test.token,
+            SecurityToken: t.token,
         };
         const res = queryAuthCheck(request, log, data);
-        if (test.error) {
+        if (t.error) {
             assert.notStrictEqual(res.err, undefined);
             assert.strictEqual(res.err.InvalidToken, true);
         } else {

@@ -289,10 +289,10 @@ describe('Principal evaluator', () => {
             },
             result: 'Deny',
         },
-    ].forEach(test => {
-        test(`_evaluatePrincipalField(): ${test.name}`, () => {
+    ].forEach(t => {
+        test(`_evaluatePrincipalField(): ${t.name}`, () => {
             assert.strictEqual(Principal._evaluatePrincipalField(defaultParams,
-                test.statement, test.valids), test.result);
+                t.statement, t.valids), t.result);
         });
     });
 
@@ -348,17 +348,17 @@ describe('Principal evaluator', () => {
             valids: defaultValids,
             result: 'Deny',
         },
-    ].forEach(test => {
-        test(`_evaluatePrincipal(): ${test.name}`, () => {
+    ].forEach(t => {
+        test(`_evaluatePrincipal(): ${t.name}`, () => {
             const params = {
                 log: defaultParams.log,
                 trustedPolicy: {
-                    Statement: test.statement,
+                    Statement: t.statement,
                 },
             };
-            const valids = test.valids;
+            const valids = t.valids;
             assert.strictEqual(Principal._evaluatePrincipal(params, valids),
-                test.result);
+                t.result);
         });
     });
 
@@ -621,27 +621,27 @@ describe('Principal evaluator', () => {
                 checkAction: true,
             },
         },
-    ].forEach(test => {
-        test(`evaluatePrincipal(): ${test.name}`, () => {
+    ].forEach(t => {
+        test(`evaluatePrincipal(): ${t.name}`, () => {
             const rc = new RequestContext({}, {}, '', '', '127.0.0.1',
                 false, 'assumeRole', 'sts', null, {
-                    accountid: test.requester.accountId,
-                    arn: test.requester.arn,
-                    parentArn: test.requester.parentArn,
-                    principalType: test.requester.userType,
+                    accountid: t.requester.accountId,
+                    arn: t.requester.arn,
+                    parentArn: t.requester.parentArn,
+                    principalType: t.requester.userType,
                     externalId: '4321',
                 }, 'v4', 'V4');
 
             const params = {
                 log: defaultParams.log,
                 trustedPolicy: {
-                    Statement: test.statement,
+                    Statement: t.statement,
                 },
                 rc,
-                targetAccountId: test.target.accountId,
+                targetAccountId: t.target.accountId,
             };
             const result = Principal.evaluatePrincipal(params);
-            assert.deepStrictEqual(result, test.result);
+            assert.deepStrictEqual(result, t.result);
         });
     });
 });

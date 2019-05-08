@@ -49,18 +49,18 @@ const subPartInfoTests = [
 ];
 
 describe('s3middleware Azure MPU helper utility function', () => {
-    padStringTests.forEach(test => {
-        test(`padString should pad a ${test.category}`, done => {
-            const result = test.strings.map(str =>
-                padString(str, test.category));
-            assert.deepStrictEqual(result, test.expectedResults);
+    padStringTests.forEach(t => {
+        test(`padString should pad a ${t.category}`, done => {
+            const result = t.strings.map(str =>
+                padString(str, t.category));
+            assert.deepStrictEqual(result, t.expectedResults);
             done();
         });
     });
 
-    subPartInfoTests.forEach(test => {
+    subPartInfoTests.forEach(t => {
         const { desc, size, expectedNumberSubParts, expectedLastPartSize }
-            = test;
+            = t;
         test('getSubPartInfo should return correct result for ' +
         `dataContentLength of ${desc}`, done => {
             const result = getSubPartInfo(size);

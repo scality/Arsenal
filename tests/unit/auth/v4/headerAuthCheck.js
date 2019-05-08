@@ -40,11 +40,11 @@ describe('v4 headerAuthCheck', () => {
         { token: undefined, error: false },
         { token: 'invalid-token', error: true },
         { token: 'a'.repeat(128), error: false },
-    ].forEach(test => test(`test with token(${test.token})`, () => {
+    ].forEach(t => test(`test with token(${t.token})`, () => {
         const alteredRequest = createAlteredRequest({
-            'x-amz-security-token': test.token }, 'headers', request, headers);
+            'x-amz-security-token': t.token }, 'headers', request, headers);
         const res = headerAuthCheck(alteredRequest, log);
-        if (test.error) {
+        if (t.error) {
             assert.notStrictEqual(res.err, undefined);
             assert.strictEqual(res.err.InvalidToken, true);
         } else {

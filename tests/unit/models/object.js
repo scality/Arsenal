@@ -99,10 +99,10 @@ describe('ObjectMD class setters/getters', () => {
             dataStoreVersionId: '',
         }],
         ['DataStoreName', null, ''],
-    ].forEach(test => {
-        const property = test[0];
-        const testValue = test[1];
-        const defaultValue = test[2];
+    ].forEach(t => {
+        const property = t[0];
+        const testValue = t[1];
+        const defaultValue = t[2];
         const testName = testValue === null ? 'get default' : 'get/set';
         test(`${testName}: ${property}`, () => {
             if (testValue !== null) {

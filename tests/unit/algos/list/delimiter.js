@@ -495,28 +495,28 @@ describe('Delimiter listing algorithm', () => {
         }
     );
 
-    tests.forEach(test => {
-        test(`Should list ${test.name}`, done => {
+    tests.forEach(t => {
+        test(`Should list ${t.name}`, done => {
             // Simulate skip scan done by LevelDB
-            const d = data.filter(e => test.filter(e, test.input));
-            const res = performListing(d, Delimiter, test.input, logger);
-            assert.deepStrictEqual(res, test.output);
+            const d = data.filter(e => t.filter(e, t.input));
+            const res = performListing(d, Delimiter, t.input, logger);
+            assert.deepStrictEqual(res, t.output);
             done();
         });
     });
 
-    tests.forEach(test => {
-        test(`Should list master versions ${test.name}`, done => {
+    tests.forEach(t => {
+        test(`Should list master versions ${t.name}`, done => {
             // Simulate skip scan done by LevelDB
-            const d = dataVersioned.filter(e => test.filter(e, test.input));
-            const res = performListing(d, DelimiterMaster, test.input, logger);
-            assert.deepStrictEqual(res, test.output);
+            const d = dataVersioned.filter(e => t.filter(e, t.input));
+            const res = performListing(d, DelimiterMaster, t.input, logger);
+            assert.deepStrictEqual(res, t.output);
             done();
         });
     });
 
     test('Should filter values according to alphabeticalOrder parameter', () => {
-        let test = new Test('alphabeticalOrder parameter set', {
+        let t = new Test('alphabeticalOrder parameter set', {
             delimiter: '/',
             alphabeticalOrder: true,
         }, {
@@ -528,11 +528,11 @@ describe('Delimiter listing algorithm', () => {
             IsTruncated: false,
             NextMarker: undefined,
         });
-        let d = nonAlphabeticalData.filter(e => test.filter(e, test.input));
-        let res = performListing(d, Delimiter, test.input, logger);
-        assert.deepStrictEqual(res, test.output);
+        let d = nonAlphabeticalData.filter(e => t.filter(e, t.input));
+        let res = performListing(d, Delimiter, t.input, logger);
+        assert.deepStrictEqual(res, t.output);
 
-        test = new Test('alphabeticalOrder parameter set', {
+        t = new Test('alphabeticalOrder parameter set', {
             delimiter: '/',
             alphabeticalOrder: false,
         }, {
@@ -545,8 +545,8 @@ describe('Delimiter listing algorithm', () => {
             IsTruncated: false,
             NextMarker: undefined,
         });
-        d = nonAlphabeticalData.filter(e => test.filter(e, test.input));
-        res = performListing(d, Delimiter, test.input, logger);
-        assert.deepStrictEqual(res, test.output);
+        d = nonAlphabeticalData.filter(e => t.filter(e, t.input));
+        res = performListing(d, Delimiter, t.input, logger);
+        assert.deepStrictEqual(res, t.output);
     });
 });

@@ -73,14 +73,14 @@ describe('network.Server: ', () => {
             key: httpsRef.key,
             ca: httpsRef.ca,
         }],
-    ].forEach(test => {
+    ].forEach(t => {
         function createServer() {
             const ws = new Server(3000, log);
-            ws.setHttps(test[1].cert, test[1].key, test[1].ca, false);
+            ws.setHttps(t[1].cert, t[1].key, t[1].ca, false);
             return ws;
         }
 
-        describe(test[0], () => {
+        describe(t[0], () => {
             test('should start', done => {
                 const ws = createServer().onError(done).onListening(() => {
                     ws.onStop(done);

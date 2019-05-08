@@ -33,10 +33,10 @@ describe('Basic listing algorithm', () => {
         new Test('without parameters', undefined, data.slice(0, 10000)),
         new Test('with bad parameters', 'lala', data.slice(0, 10000)),
     ];
-    tests.forEach(test => {
-        test(`Should list ${test.name}`, done => {
-            const res = performListing(data, Basic, test.input, logger);
-            assert.deepStrictEqual(res, test.output);
+    tests.forEach(t => {
+        test(`Should list ${t.name}`, done => {
+            const res = performListing(data, Basic, t.input, logger);
+            assert.deepStrictEqual(res, t.output);
             done();
         });
     });

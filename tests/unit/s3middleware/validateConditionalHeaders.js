@@ -207,9 +207,9 @@ describe('_checkEtagMatch function :', () => {
         { desc: 'if only value does not match', value: 'aaa' },
         { desc: 'for list of non-matching values', value: 'aaa,bbb,ccc' },
     ];
-    failTests.forEach(test => {
-        test(`should return PreconditionFailed ${test.desc}`, () => {
-            const result = _checkEtagMatch(test.value, contentMD5);
+    failTests.forEach(t => {
+        test(`should return PreconditionFailed ${t.desc}`, () => {
+            const result = _checkEtagMatch(t.value, contentMD5);
             assert.deepStrictEqual(result.error, errors.PreconditionFailed);
         });
     });

@@ -34,7 +34,6 @@ describe('StringHash', () => {
     test(
         `Should distribute uniformly with a maximum of ${ERROR}% of deviation`,
         done => {
-            this.timeout(20000);
             const strings = new Array(STRING_COUNT).fill('')
                                 .map(() => randomString(10));
             const arr = new Array(ARRAY_LENGTH).fill(0);

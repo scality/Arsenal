@@ -293,13 +293,13 @@ describe('Delimiter All Versions listing algorithm', () => {
         done();
     });
 
-    tests.forEach(test => {
-        test(`Should list ${test.name}`, done => {
+    tests.forEach(t => {
+        test(`Should list ${t.name}`, done => {
             // Simulate skip scan done by LevelDB
-            const d = dataVersioned.filter(e => test.filter(e, test.input));
+            const d = dataVersioned.filter(e => t.filter(e, t.input));
             const res =
-                performListing(d, DelimiterVersions, test.input, logger);
-            assert.deepStrictEqual(res, test.output);
+                performListing(d, DelimiterVersions, t.input, logger);
+            assert.deepStrictEqual(res, t.output);
             done();
         });
     });

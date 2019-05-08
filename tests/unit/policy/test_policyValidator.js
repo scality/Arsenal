@@ -144,15 +144,15 @@ describe('Policies validation - Principal', () => {
             name: 'with backbeat service',
             value: { Service: 'backbeat' },
         },
-    ].forEach(test => {
-        test(`should allow principal field with ${test.name}`, () => {
-            policy.Statement.Principal = test.value;
+    ].forEach(t => {
+        test(`should allow principal field with ${t.name}`, () => {
+            policy.Statement.Principal = t.value;
             delete policy.Statement.Resource;
             check(policy, successRes);
         });
 
-        test(`shoud allow notPrincipal field with ${test.name}`, () => {
-            policy.Statement.NotPrincipal = test.value;
+        test(`shoud allow notPrincipal field with ${t.name}`, () => {
+            policy.Statement.NotPrincipal = t.value;
             delete policy.Statement.Resource;
             check(policy, successRes);
         });
@@ -244,9 +244,9 @@ describe('Policies validation - Principal', () => {
             name: 'with other service than backbeat',
             value: { Service: 'non-existent-service' },
         },
-    ].forEach(test => {
-        test(`should fail with ${test.name}`, () => {
-            policy.Statement.Principal = test.value;
+    ].forEach(t => {
+        test(`should fail with ${t.name}`, () => {
+            policy.Statement.Principal = t.value;
             delete policy.Statement.Resource;
             check(policy, failRes());
         });
