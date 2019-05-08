@@ -53,7 +53,7 @@
     "lint": "eslint $(git ls-files '*.js')",
     "lint_md": "mdlint $(git ls-files '*.md')",
     "lint_yml": "yamllint $(git ls-files '*.yml')",
-    "test": "jest tests/unit",
+    "test": "jest --projects jest.config.js --coverage --testPathPattern='tests/unit/[\\w/-]+\\.[tj]s' tests/unit",
     "ft_test": "jest tests/functional"
   },
   "private": true
