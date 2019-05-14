@@ -320,6 +320,66 @@ describe('Delimiter All masters listing algorithm', () => {
         });
     });
 
+    it('should return a good listing result where following versions ' +
+    'will start with the same characters as the prior version', () => {
+        const delimiter = new DelimiterMaster({ delimiter: '/' }, fakeLogger);
+        const key1 = 'key1';
+        const key2 = 'key1/';
+        const key3 = 'key10';
+        const versionKey1 = `${key1}${VID_SEP}version1`;
+        const versionKey2 = `${key1}${VID_SEP}version2`;
+        const versionKey3a = `${key3}${VID_SEP}version3a`;
+        const versionKey3b = `${key3}${VID_SEP}version3b`;
+        const value = 'some-value';
+
+        // Filter isPHD master
+        assert.strictEqual(delimiter.filter({
+            key: key1,
+            value: '{ "isPHD": true, "value": "version" }',
+        }), FILTER_ACCEPT);
+
+        // Accept and store valid version
+        assert.strictEqual(delimiter.filter({
+            key: versionKey1,
+            value,
+        }), FILTER_ACCEPT);
+
+        // Filter isPHD master
+        assert.strictEqual(delimiter.filter({
+            key: key2,
+            value: '{ "isPHD": true, "value": "version" }',
+        }), FILTER_ACCEPT);
+
+        // Filter because of specified delimiter
+        assert.strictEqual(delimiter.filter({
+            key: versionKey2,
+            value,
+        }), FILTER_SKIP);
+
+        // Accept and store valid version
+        assert.strictEqual(delimiter.filter({
+            key: versionKey3a,
+            value,
+        }), FILTER_ACCEPT);
+
+        // Filter skip since we already saved valid version for this key
+        assert.strictEqual(delimiter.filter({
+            key: versionKey3b,
+            value,
+        }), FILTER_SKIP);
+
+        assert.deepStrictEqual(delimiter.result(), {
+            CommonPrefixes: [],
+            Contents: [
+                { key: key1, value },
+                { key: key3, value },
+            ],
+            IsTruncated: false,
+            NextMarker: undefined,
+            Delimiter: '/',
+        });
+    });
+
     it('should return good values for entries with different common prefixes',
        () => {
            const delimiterChar = '/';
