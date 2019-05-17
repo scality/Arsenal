@@ -29,7 +29,7 @@
     "fcntl": "github:scality/node-fcntl",
     "hdclient": "scality/hdclient#5145e04e5ed33e85106765b1caa90cd245ef482b",
     "https-proxy-agent": "^2.2.0",
-    "ioredis": "4.2.0",
+    "ioredis": "4.9.0",
     "ipaddr.js": "1.8.1",
     "joi": "^14.3.0",
     "level": "~4.0.0",
