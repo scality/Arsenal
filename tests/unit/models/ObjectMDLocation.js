@@ -10,6 +10,7 @@ describe('ObjectMDLocation', () => {
             dataStoreName: 'awsbackend',
             dataStoreETag: '2:abcdefghi',
             dataStoreVersionId: 'someversion',
+            blockId: 'someBlockId',
         };
         const location = new ObjectMDLocation(locValue);
         assert.strictEqual(location.getKey(), 'fookey');
@@ -20,6 +21,7 @@ describe('ObjectMDLocation', () => {
         assert.strictEqual(location.getPartETag(), 'abcdefghi');
         assert.strictEqual(location.getPartStart(), 42);
         assert.strictEqual(location.getPartSize(), 100);
+        assert.strictEqual(location.getBlockId(), 'someBlockId');
 
         assert.deepStrictEqual(location.getValue(), locValue);
 
@@ -35,6 +37,7 @@ describe('ObjectMDLocation', () => {
             dataStoreName: 'awsbackend',
             dataStoreETag: '2:abcdefghi',
             dataStoreVersionId: 'someversion',
+            blockId: 'someBlockId',
         });
         location.setDataLocation({ key: 'secondkey',
                                    dataStoreName: 'gcpbackend' });
@@ -47,5 +50,7 @@ describe('ObjectMDLocation', () => {
         assert.strictEqual(location.getKey(), 'thirdkey');
         assert.strictEqual(location.getDataStoreName(), 'azurebackend');
         assert.strictEqual(location.getDataStoreVersionId(), 'newversion');
+        location.setBlockId('otherBlockId');
+        assert.strictEqual(location.getBlockId(), 'otherBlockId');
     });
 });

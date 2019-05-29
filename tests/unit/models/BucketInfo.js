@@ -120,6 +120,24 @@ const testLifecycleConfiguration = {
 
 const testIngestionConfiguration = { status: 'enabled' };
 const testUid = '99ae3446-7082-4c17-ac97-52965dc004ec';
+const testAzureInfo = {
+    sku: 'skuname',
+    accessTier: 'accessTierName',
+    kind: 'kindName',
+    systemKeys: ['key1', 'key2'],
+    tenantKeys: ['key1', 'key2'],
+    subscriptionId: 'subscriptionIdName',
+    resourceGroup: 'resourceGroupName',
+    deleteRetentionPolicy: { enabled: true, days: 14 },
+    managementPolicies: [],
+    httpsOnly: false,
+    tags: { foo: 'bar' },
+    networkACL: [],
+    cname: 'www.example.com',
+    azureFilesAADIntegration: false,
+    hnsEnabled: false,
+};
+
 // create a dummy bucket to test getters and setters
 
 Object.keys(acl).forEach(
@@ -138,7 +156,8 @@ Object.keys(acl).forEach(
             testCorsConfiguration,
             testReplicationConfiguration,
             testLifecycleConfiguration,
-            testUid, undefined, true);
+            testUid, undefined, true,
+            undefined, testAzureInfo);
 
         describe('serialize/deSerialize on BucketInfo class', () => {
             const serialized = dummyBucket.serialize();
@@ -168,6 +187,7 @@ Object.keys(acl).forEach(
                     uid: dummyBucket._uid,
                     isNFS: dummyBucket._isNFS,
                     ingestion: dummyBucket._ingestion,
+                    azureInfo: dummyBucket._azureInfo,
                 };
                 assert.strictEqual(serialized, JSON.stringify(bucketInfos));
                 done();
@@ -289,6 +309,10 @@ Object.keys(acl).forEach(
             it('setIsNFS should set whether bucket is on NFS', () => {
                 dummyBucket.setIsNFS(false);
                 assert.deepStrictEqual(dummyBucket.isNFS(), false);
+            });
+            it('getAzureInfo should return the expected structure', () => {
+                const azureInfo = dummyBucket.getAzureInfo();
+                assert.deepStrictEqual(azureInfo, testAzureInfo);
             });
         });
 
@@ -419,6 +443,12 @@ Object.keys(acl).forEach(
                 dummyBucket.disableIngestion();
                 assert.deepStrictEqual(dummyBucket.getIngestion(),
                     { status: 'disabled' });
+            });
+            it('setAzureInfo should work', () => {
+                const dummyAzureInfo = {};
+                dummyBucket.setAzureInfo(dummyAzureInfo);
+                const azureInfo = dummyBucket.getAzureInfo();
+                assert.deepStrictEqual(azureInfo, dummyAzureInfo);
             });
         });
     })
