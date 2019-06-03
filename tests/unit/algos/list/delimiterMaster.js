@@ -320,6 +320,186 @@ describe('Delimiter All masters listing algorithm', () => {
         });
     });
 
+    it('should not return key in listing if delete marker is master', () => {
+        const delimiter = new DelimiterMaster({}, fakeLogger);
+        const masterKey = 'key';
+        const versionKey1 = `${masterKey}${VID_SEP}version1`;
+        const versionKey2 = `${masterKey}${VID_SEP}version2`;
+        const value1 = 'value1'
+        const value2 = 'value2';
+
+        delimiter.filter({
+            key: masterKey,
+            value: '{ "isPHD": true, "value": "version" }',
+        });
+
+        /* Filter a delete marker version. */
+        delimiter.filter({
+            key: versionKey1,
+            value: '{ "isDeleteMarker": true }',
+        });
+
+        /* Filter a last version with a specific value. */
+        delimiter.filter({
+            key: versionKey2,
+            value: value2,
+        });
+
+        console.log(delimiter.result())
+
+        assert.strictEqual(delimiter.result().Contents.length, 0);
+
+        // assert.deepStrictEqual(delimiter.result(), {
+        //     CommonPrefixes: [],
+        //     Contents: [{ key: masterKey, value: value2 }],
+        //     IsTruncated: false,
+        //     NextMarker: undefined,
+        //     Delimiter: undefined,
+        // });
+    });
+
+    it('should return key in listing if version is master', () => {
+        const delimiter = new DelimiterMaster({}, fakeLogger);
+        const masterKey = 'key';
+        const versionKey1 = `${masterKey}${VID_SEP}version1`;
+        const versionKey2 = `${masterKey}${VID_SEP}version2`;
+        const value1 = 'value1'
+        const value2 = 'value2';
+
+        /* Filter the PHD version. */
+        delimiter.filter({
+            key: masterKey,
+            value: '{ "isPHD": true, "value": "version" }',
+        });
+
+        /* Filter a last version with a specific value. */
+        delimiter.filter({
+            key: versionKey1,
+            value: value2,
+        });
+
+        /* Filter a delete marker version. */
+        delimiter.filter({
+            key: versionKey2,
+            value: '{ "isDeleteMarker": true }',
+        });
+
+        console.log(delimiter.result())
+
+        assert.strictEqual(delimiter.result().Contents.length, 1);
+
+        // assert.deepStrictEqual(delimiter.result(), {
+        //     CommonPrefixes: [],
+        //     Contents: [{ key: masterKey, value: value2 }],
+        //     IsTruncated: false,
+        //     NextMarker: undefined,
+        //     Delimiter: undefined,
+        // });
+    });
+
+    it('should test based on comments', () => {
+        /*
+        * - or a deleteMarker following a PHD (setting prvKey to undefined
+        *   when an entry is a PHD avoids the skip on version for the
+        *   next entry). In that case we expect the master version to
+        *   follow.
+        */
+
+        const delimiter = new DelimiterMaster({}, fakeLogger);
+        const masterKey = 'key1';
+        const masterKey2 = 'key2';
+        const masterKey3 = 'key3';
+        const versionKey1 = `${masterKey}${VID_SEP}version1`;
+        const versionKey2 = `${masterKey}${VID_SEP}version2`;
+        const value1 = 'value1';
+        const value2 = 'value2';
+
+        delimiter.filter({
+            key: masterKey,
+            value: '{ "isPHD": true, "value": "version" }',
+        });
+
+        delimiter.filter({
+            key: versionKey1,
+            value: value2,
+        });
+
+        delimiter.filter({
+            key: versionKey2,
+            value: '{ "isDeleteMarker": true }',
+        });
+
+        delimiter.filter({
+            key: `${masterKey}${VID_SEP}version3`,
+            value: value2,
+        });
+
+        assert.strictEqual(delimiter.result().Contents.length, 1);
+
+        // another master..
+
+        delimiter.filter({
+            key: masterKey2,
+            value: '{ "isPHD": true, "value": "version" }',
+        });
+
+        delimiter.filter({
+            key: `${masterKey2}${VID_SEP}version1`,
+            value: '{ "isDeleteMarker": true }',
+        });
+
+        delimiter.filter({
+            key: `${masterKey2}${VID_SEP}version2`,
+            value: '{ "isDeleteMarker": true }',
+        });
+
+        assert.strictEqual(delimiter.result().Contents.length, 1);
+
+        // since master isn't PHD, it is it's own master
+        delimiter.filter({
+            key: masterKey3,
+            value: value1,
+        })
+
+        delimiter.filter({
+            key: `${masterKey3}${VID_SEP}version1`,
+            value: '{ "isDeleteMarker": true }',
+        });
+
+        assert.strictEqual(delimiter.result().Contents.length, 2);
+        // assert.strictEqual(delimiter.result().Contents.length, 2);
+
+        delimiter.filter({
+            key: 'key4',
+            value: '{ "isPHD": true, "value": "version" }',
+        });
+
+        delimiter.filter({
+            key: `key4${VID_SEP}version1`,
+            value: '{ "isDeleteMarker": true }',
+        });
+
+        assert.strictEqual(delimiter.result().Contents.length, 2);
+
+        delimiter.filter({
+            key: `key4${VID_SEP}version2`,
+            value: value1,
+        });
+
+        console.log(`Final test?: ${delimiter.result().Contents.length === 2}`)
+        assert.strictEqual(delimiter.result().Contents.length, 2);
+
+        // Also
+
+        // assert.deepStrictEqual(delimiter.result(), {
+        //     CommonPrefixes: [],
+        //     Contents: [{ key: masterKey, value: value2 }],
+        //     IsTruncated: false,
+        //     NextMarker: undefined,
+        //     Delimiter: undefined,
+        // });
+    });
+
     it('should return good values for entries with different common prefixes',
        () => {
            const delimiterChar = '/';
