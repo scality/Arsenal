@@ -106,6 +106,19 @@ describe('ObjectMD class setters/getters', () => {
         ['DataStoreName', null, ''],
         ['ReplicationIsNFS', null, null],
         ['ReplicationIsNFS', true],
+        ['AzureInfo', {
+            containerPublicAccess: 'container',
+            containerStoredAccessPolicies: [],
+            containerImmutabilityPolicy: {},
+            containerLegalHoldStatus: false,
+            containerDeletionInProgress: false,
+            blobType: 'BlockBlob',
+            blobContentMD5: 'ABCDEF==',
+            blobCopyInfo: {},
+            blobSequenceNumber: 42,
+            blobAccessTierChangeTime: 'abcdef',
+            blobUncommitted: false,
+        }],
     ].forEach(test => {
         const property = test[0];
         const testValue = test[1];
@@ -351,6 +364,7 @@ describe('getAttributes static method', () => {
             'acl': true,
             'key': true,
             'location': true,
+            'azureInfo': true,
             'isNull': true,
             'nullVersionId': true,
             'isDeleteMarker': true,
