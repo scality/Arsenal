@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/scality/Arsenal#readme",
   "dependencies": {
-    "ajv": "6.10.0",
+    "ajv": "4.10.0",
     "async": "~3.0.1",
     "debug": "~4.1.1",
     "diskusage": "^1.1.2",
