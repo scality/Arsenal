@@ -8,7 +8,7 @@ COPY buildbot_worker_packages.list arsenal_packages.list /tmp/
 RUN apt-get update -q && apt-get -qy install curl apt-transport-https \
     && apt-get install -qy software-properties-common python-software-properties \
     && curl --silent https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add - \
-    && echo "deb https://deb.nodesource.com/node_6.x trusty main" > /etc/apt/sources.list.d/nodesource.list \
+    && echo "deb https://deb.nodesource.com/node_10.x trusty main" > /etc/apt/sources.list.d/nodesource.list \
     && add-apt-repository ppa:ubuntu-toolchain-r/test \
     && apt-get update -q \
     && cat /tmp/buildbot_worker_packages.list | xargs apt-get install -qy \
