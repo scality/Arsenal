@@ -1,0 +1,497 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "title": "AWS Bucket Policy schema.",
+    "description": "This schema describes a bucket policy per AWS policy grammar rules",
+    "definitions": {
+        "principalAnonymous": {
+            "type": "string",
+            "pattern": "^\\*$"
+        },
+        "principalAWSAccountID": {
+            "type": "string",
+            "pattern": "^[0-9]{12}$"
+        },
+        "principalAWSAccountArn": {
+            "type": "string",
+            "pattern": "^arn:aws:iam::[0-9]{12}:root$"
+        },
+        "principalAWSUserArn": {
+            "type": "string",
+            "pattern": "^arn:aws:iam::[0-9]{12}:user/[\\w+=,.@ -]{1,64}$"
+        },
+        "principalAWSItem": {
+            "type": "object",
+            "properties": {
+                "AWS": {
+                    "oneOf": [
+                        { "$ref": "#/definitions/principalAWSAccountID" },
+                        { "$ref": "#/definitions/principalAnonymous" },
+                        { "$ref": "#/definitions/principalAWSAccountArn" },
+                        { "$ref": "#/definitions/principalAWSUserArn" },
+                        { "$ref": "#/definitions/principalAWSRoleArn" },
+                        {
+                            "type": "array",
+                            "minItems": 1,
+                            "items": {
+                                "$ref": "#/definitions/principalAWSAccountID"
+                            }
+                        },
+                        {
+                            "type": "array",
+                            "minItems": 1,
+                            "items": {
+                                "$ref": "#/definitions/principalAWSAccountArn"
+                            }
+                        },
+                        {
+                            "type": "array",
+                            "minItems": 1,
+                            "items": {
+                                "$ref": "#/definitions/principalAWSUserArn"
+                            }
+                        }
+                    ]
+                }
+            },
+            "additionalProperties": false
+        },
+        "principalItem": {
+            "oneOf": [
+                { "$ref": "#/definitions/principalAWSItem" },
+                { "$ref": "#/definitions/principalAnonymous" }
+            ]
+        },
+        "actionItem": {
+            "type": "string",
+            "pattern": "^[s3:]+:([^:])+|^\\*$"
+        },
+        "resourceItem": {
+            "type": "string",
+            "pattern": "^\\*|arn:(aws|scality)(:(\\*{1}|[a-z0-9\\*\\-]{2,})*?){3}:((?!\\$\\{\\}).)*?$"
+        },
+        "conditionKeys" : {
+            "properties": {
+                "aws:CurrentTime": {},
+                "aws:EpochTime": {},
+                "aws:MultiFactorAuthAge": {},
+                "aws:MultiFactorAuthPresent": {},
+                "aws:PrincipalArn": {},
+                "aws:PrincipalOrgId": {},
+                "aws:PrincipalTag/${TagKey}": {},
+                "aws:PrincipalType": {},
+                "aws:Referer": {},
+                "aws:RequestTag/${TagKey}": {},
+                "aws:RequestedRegion": {},
+                "aws:SecureTransport": {},
+                "aws:SourceAccount": {},
+                "aws:SourceArn": {},
+                "aws:SourceIp": {},
+                "aws:SourceVpc": {},
+                "aws:SourceVpce": {},
+                "aws:TagKeys": {},
+                "aws:TokenIssueTime": {},
+                "aws:UserAgent": {},
+                "aws:userid": {},
+                "aws:username": {},
+                "s3:ExistingJobOperation": {},
+                "s3:ExistingJobPriority": {},
+                "s3:ExistingObjectTag/<key>": {},
+                "s3:JobSuspendedCause": {},
+                "s3:LocationConstraint": {},
+                "s3:RequestJobOperation": {},
+                "s3:RequestJobPriority": {},
+                "s3:RequestObjectTag/<key>": {},
+                "s3:RequestObjectTagKeys": {},
+                "s3:VersionId": {},
+                "s3:authtype": {},
+                "s3:delimiter": {},
+                "s3:locationconstraint": {},
+                "s3:max-keys": {},
+                "s3:object-lock-legal-hold": {},
+                "s3:object-lock-mode": {},
+                "s3:object-lock-remaining-retention-days": {},
+                "s3:object-lock-retain-until-date": {},
+                "s3:prefix": {},
+                "s3:signatureage": {},
+                "s3:signatureversion": {},
+                "s3:versionid": {},
+                "s3:x-amz-acl": {},
+                "s3:x-amz-content-sha256": {},
+                "s3:x-amz-copy-source": {},
+                "s3:x-amz-grant-full-control": {},
+                "s3:x-amz-grant-read": {},
+                "s3:x-amz-grant-read-acp": {},
+                "s3:x-amz-grant-write": {},
+                "s3:x-amz-grant-write-acp": {},
+                "s3:x-amz-metadata-directive": {},
+                "s3:x-amz-server-side-encryption": {},
+                "s3:x-amz-server-side-encryption-aws-kms-key-id": {},
+                "s3:x-amz-storage-class": {},
+                "s3:x-amz-website-redirect-location": {}
+               },
+               "additionalProperties": false
+        },
+        "conditions": {
+            "type": "object",
+            "properties": {
+                "ArnEquals": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "ArnEqualsIfExists": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "ArnLike": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "ArnLikeIfExists": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "ArnNotEquals": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "ArnNotEqualsIfExists": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "ArnNotLike": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "ArnNotLikeIfExists": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "BinaryEquals": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "BinaryEqualsIfExists": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "BinaryNotEquals": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "BinaryNotEqualsIfExists": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "Bool": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "BoolIfExists": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "DateEquals": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "DateEqualsIfExists": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "DateGreaterThan": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "DateGreaterThanEquals": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "DateGreaterThanEqualsIfExists": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "DateGreaterThanIfExists": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "DateLessThan": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "DateLessThanEquals": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "DateLessThanEqualsIfExists": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "DateLessThanIfExists": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "DateNotEquals": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "DateNotEqualsIfExists": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "IpAddress": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "IpAddressIfExists": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "NotIpAddress": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "NotIpAddressIfExists": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "Null": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "NumericEquals": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "NumericEqualsIfExists": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "NumericGreaterThan": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "NumericGreaterThanEquals": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "NumericGreaterThanEqualsIfExists": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "NumericGreaterThanIfExists": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "NumericLessThan": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "NumericLessThanEquals": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "NumericLessThanEqualsIfExists": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "NumericLessThanIfExists": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "NumericNotEquals": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "NumericNotEqualsIfExists": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "StringEquals": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "StringEqualsIfExists": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "StringEqualsIgnoreCase": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "StringEqualsIgnoreCaseIfExists": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "StringLike": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "StringLikeIfExists": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "StringNotEquals": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "StringNotEqualsIfExists": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "StringNotEqualsIgnoreCase": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "StringNotEqualsIgnoreCaseIfExists": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "StringNotLike": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                },
+                "StringNotLikeIfExists": {
+                    "type": "object",
+                    "$ref": "#/definitions/conditionKeys"
+                }
+            },
+            "additionalProperties": false
+        }
+    },
+    "properties": {
+        "Version": {
+            "type": "string",
+            "enum": [
+                "2012-10-17"
+            ]
+        },
+        "Statement": {
+            "oneOf": [
+                {
+                    "type": [
+                        "array"
+                    ],
+                    "minItems": 1,
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "Sid": {
+                                "type": "string",
+                                "pattern": "^[a-zA-Z0-9]+$"
+                            },
+                            "Effect": {
+                                "type": "string",
+                                "enum": [
+                                    "Allow",
+                                    "Deny"
+                                ]
+                            },
+                            "Principal": {
+                                "$ref": "#/definitions/principalItem"
+                            },
+                            "Action": {
+                                "oneOf": [
+                                    {
+                                        "$ref": "#/definitions/actionItem"
+                                    },
+                                    {
+                                        "type": "array",
+                                        "items": {
+                                            "$ref": "#/definitions/actionItem"
+                                        }
+                                    }
+                                ]
+                            },
+                            "Resource": {
+                                "oneOf": [
+                                    {
+                                        "$ref": "#/definitions/resourceItem"
+                                    },
+                                    {
+                                        "type": "array",
+                                        "items": {
+                                            "$ref": "#/definitions/resourceItem"
+                                        },
+                                        "minItems": 1
+                                    }
+                                ]
+                            },
+                            "Condition": {
+                                "$ref": "#/definitions/conditions"
+                            }
+                        },
+                        "required": [
+                            "Effect",
+                            "Action",
+                            "Principal",
+                            "Resource"
+                        ]
+                    }
+                },
+                {
+                    "type": [
+                        "object"
+                    ],
+                    "properties": {
+                        "Sid": {
+                            "type": "string",
+                            "pattern": "^[a-zA-Z0-9]+$"
+                        },
+                        "Effect": {
+                            "type": "string",
+                            "enum": [
+                                "Allow",
+                                "Deny"
+                            ]
+                        },
+                        "Principal": {
+                            "$ref": "#/definitions/principalItem"
+                        },
+                        "Action": {
+                            "oneOf": [
+                                {
+                                    "$ref": "#/definitions/actionItem"
+                                },
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/actionItem"
+                                    }
+                                }
+                            ]
+                        },
+                        "Resource": {
+                            "oneOf": [
+                                {
+                                    "$ref": "#/definitions/resourceItem"
+                                },
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/resourceItem"
+                                    },
+                                    "minItems": 1
+                                }
+                            ]
+                        },
+                        "Condition": {
+                            "$ref": "#/definitions/conditions"
+                        }
+                    },
+                    "required": [
+                        "Action",
+                        "Effect",
+                        "Resource",
+                        "Principal"
+                    ]
+                }
+            ]
+        }
+    },
+    "required": [
+        "Version",
+        "Statement"
+    ],
+    "additionalProperties": false
+}
