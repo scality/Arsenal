@@ -115,6 +115,18 @@ const testLifecycleConfiguration = {
         },
     ],
 };
+
+const testBucketPolicy = {
+    Version: '2012-10-17',
+    Statement: [
+        {
+            Effect: 'Allow',
+            Principal: '*',
+            Resource: 'arn:aws:s3:::examplebucket',
+            Action: 's3:*',
+        },
+    ],
+};
 // create a dummy bucket to test getters and setters
 
 Object.keys(acl).forEach(
@@ -132,7 +144,8 @@ Object.keys(acl).forEach(
             testWebsiteConfiguration,
             testCorsConfiguration,
             testReplicationConfiguration,
-            testLifecycleConfiguration);
+            testLifecycleConfiguration,
+            JSON.stringify(testBucketPolicy));
 
         describe('serialize/deSerialize on BucketInfo class', () => {
             const serialized = dummyBucket.serialize();
@@ -158,6 +171,7 @@ Object.keys(acl).forEach(
                         dummyBucket._replicationConfiguration,
                     lifecycleConfiguration:
                         dummyBucket._lifecycleConfiguration,
+                    bucketPolicy: dummyBucket._bucketPolicy,
                 };
                 assert.strictEqual(serialized, JSON.stringify(bucketInfos));
                 done();
@@ -256,6 +270,11 @@ Object.keys(acl).forEach(
             it('getLifeCycleConfiguration should return configuration', () => {
                 assert.deepStrictEqual(dummyBucket.getLifecycleConfiguration(),
                     testLifecycleConfiguration);
+            });
+            it('getBucketPolicy should return policy', () => {
+                assert.deepStrictEqual(
+                    JSON.parse(dummyBucket.getBucketPolicy()),
+                    testBucketPolicy);
             });
         });
 
@@ -377,6 +396,23 @@ Object.keys(acl).forEach(
                 dummyBucket.setLifecycleConfiguration(newLifecycleConfig);
                 assert.deepStrictEqual(dummyBucket.getLifecycleConfiguration(),
                     newLifecycleConfig);
+            });
+            it('setBucketPolicy should set bucket policy', () => {
+                const newBucketPolicy = {
+                    Version: '2012-10-17',
+                    Statement: [
+                        {
+                            Effect: 'Deny',
+                            Principal: '*',
+                            Resource: 'arn:aws:s3:::examplebucket',
+                            Action: 's3:*',
+                        },
+                    ],
+                };
+                dummyBucket.setBucketPolicy(JSON.stringify(newBucketPolicy));
+                assert.deepStrictEqual(
+                    JSON.parse(dummyBucket.getBucketPolicy()),
+                    newBucketPolicy);
             });
         });
     })
