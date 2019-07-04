@@ -44,7 +44,8 @@
     "utf8": "3.0.0",
     "uuid": "^3.0.1",
     "werelogs": "scality/werelogs#0ff7ec82",
-    "xml2js": "~0.4.16"
+    "xml2js": "~0.4.16",
+    "snyk": "^1.189.0"
   },
   "optionalDependencies": {
     "ioctl": "2.0.1"
@@ -63,7 +64,10 @@
     "lint_md": "mdlint $(git ls-files '*.md')",
     "lint_yml": "yamllint $(git ls-files '*.yml')",
     "test": "mocha --recursive --timeout 5500 --exit tests/unit",
-    "ft_test": "find tests/functional -name \"*.js\" | grep -v \"utils/\" | xargs mocha --timeout 120000 --exit"
+    "ft_test": "find tests/functional -name \"*.js\" | grep -v \"utils/\" | xargs mocha --timeout 120000 --exit",
+    "snyk-protect": "snyk protect",
+    "prepare": "npm run snyk-protect"
   },
-  "private": true
+  "private": true,
+  "snyk": true
 }
