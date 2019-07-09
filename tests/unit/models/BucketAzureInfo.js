@@ -1,5 +1,5 @@
 const assert = require('assert');
-const BucketAzureInfo = require('../../../lib/models/BucketAzureInfo');
+const BucketAzureInfo = require('../../../index').models.BucketAzureInfo;
 
 
 const testAzureInfoObj = {

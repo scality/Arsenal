@@ -148,8 +148,10 @@ module.exports = {
     models: {
         BackendInfo: require('./lib/models/BackendInfo'),
         BucketInfo: require('./lib/models/BucketInfo'),
+        BucketAzureInfo: require('./lib/models/BucketAzureInfo'),
         ObjectMD: require('./lib/models/ObjectMD'),
         ObjectMDLocation: require('./lib/models/ObjectMDLocation'),
+        ObjectMDAzureInfo: require('./lib/models/ObjectMDAzureInfo'),
         ARN: require('./lib/models/ARN'),
         WebsiteConfiguration: require('./lib/models/WebsiteConfiguration'),
         ReplicationConfiguration:

@@ -1,5 +1,5 @@
 const assert = require('assert');
-const ObjectMDAzureInfo = require('../../../lib/models/ObjectMDAzureInfo');
+const ObjectMDAzureInfo = require('../../../index').models.ObjectMDAzureInfo;
 
 const testAzureInfoObj = {
     containerPublicAccess: 'container',
