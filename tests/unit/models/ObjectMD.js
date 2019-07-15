@@ -249,6 +249,14 @@ describe('ObjectMD class setters/getters', () => {
             FULL_CONTROL: ['john'],
         });
     });
+
+    it('ObjectMD:clearMetadataValues', () => {
+        md.setUserMetadata({
+            'x-amz-meta-foo': 'bar',
+        });
+        md.clearMetadataValues();
+        assert.strictEqual(md.getUserMetadata(), undefined);
+    });
 });
 
 describe('ObjectMD import from stored blob', () => {
