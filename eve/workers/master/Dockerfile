@@ -23,7 +23,7 @@ RUN apt-get update -q && apt-get -qy install curl apt-transport-https \
 # Install usefull nodejs dependencies
 #
 
-RUN npm install mocha -g
+RUN yarn global add mocha
 
 #
 # Add user eve
