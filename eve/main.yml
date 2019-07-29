@@ -21,23 +21,23 @@ stages:
           haltOnFailure: True
       - ShellCommand:
           name: install dependencies
-          command: npm install
+          command: yarn install
       - ShellCommand:
           name: run lint yml
-          command: npm run --silent lint_yml
+          command: yarn run --silent lint_yml
       - ShellCommand:
           name: run lint
-          command: npm run --silent lint -- --max-warnings 0
+          command: yarn run --silent lint -- --max-warnings 0
       - ShellCommand:
           name: run lint_md
-          command: npm run --silent lint_md
+          command: yarn run --silent lint_md
       - ShellCommand:
           name: run test
-          command: npm run --silent test
+          command: yarn run --silent test
       - ShellCommand:
           name: run ft_test
-          command: npm run ft_test
+          command: yarn run ft_test
       - ShellCommand:
           name: run executables tests
-          command: npm install && npm test
+          command: yarn install && yarn test
           workdir: '%(prop:builddir)s/build/lib/executables/pensieveCreds/'
