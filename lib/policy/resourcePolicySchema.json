@@ -1,8 +1,8 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
-    "title": "AWS IAM Policy schema.",
-    "description": "This schema describes a user policy per AWS policy grammar rules",
+    "title": "AWS Bucket Policy schema.",
+    "description": "This schema describes a bucket policy per AWS policy grammar rules",
     "definitions": {
         "principalService": {
             "type": "object",
@@ -12,6 +12,16 @@
                     "enum": [
                         "backbeat"
                     ]
+                }
+            },
+            "additionalProperties": false
+        },
+        "principalCanonicalUser": {
+            "type": "object",
+            "properties": {
+                "CanonicalUser": {
+                    "type": "string",
+                    "pattern": "^[0-9a-z]{64}$"
                 }
             },
             "additionalProperties": false
@@ -35,10 +45,6 @@
         "principalAWSRoleArn": {
             "type": "string",
             "pattern": "^arn:aws:iam::[0-9]{12}:role/[\\w+=,.@ -]{1,64}$"
-        },
-        "principalFederatedSamlIdp": {
-            "type": "string",
-            "pattern": "^arn:aws:iam::[0-9]{12}:saml-provider/[\\w._-]{1,128}$"
         },
         "principalAWSItem": {
             "type": "object",
@@ -83,82 +89,133 @@
             },
             "additionalProperties": false
         },
-        "principalFederatedItem": {
-            "type": "object",
-            "properties": {
-                "Federated": {
-                    "oneOf": [
-                        { "$ref": "#/definitions/principalFederatedSamlIdp" }
-                    ]
-                }
-            },
-            "additionalProperties": false
-        },
         "principalItem": {
             "oneOf": [
                 { "$ref": "#/definitions/principalAWSItem" },
                 { "$ref": "#/definitions/principalAnonymous" },
-                { "$ref": "#/definitions/principalFederatedItem" },
-                { "$ref": "#/definitions/principalService" }
+                { "$ref": "#/definitions/principalService" },
+                { "$ref": "#/definitions/principalCanonicalUser" }
             ]
         },
         "actionItem": {
             "type": "string",
-            "pattern": "^[^*:]+:([^:])+|^\\*{1}$"
+            "pattern": "^[^*:]+:([^:])+|^\\*$"
         },
         "resourceItem": {
             "type": "string",
             "pattern": "^\\*|arn:(aws|scality)(:(\\*{1}|[a-z0-9\\*\\-]{2,})*?){3}:((?!\\$\\{\\}).)*?$"
         },
+        "conditionKeys" : {
+            "properties": {
+                "aws:CurrentTime": {},
+                "aws:EpochTime": {},
+                "aws:MultiFactorAuthAge": {},
+                "aws:MultiFactorAuthPresent": {},
+                "aws:PrincipalArn": {},
+                "aws:PrincipalOrgId": {},
+                "aws:PrincipalTag/${TagKey}": {},
+                "aws:PrincipalType": {},
+                "aws:Referer": {},
+                "aws:RequestTag/${TagKey}": {},
+                "aws:RequestedRegion": {},
+                "aws:SecureTransport": {},
+                "aws:SourceAccount": {},
+                "aws:SourceArn": {},
+                "aws:SourceIp": {},
+                "aws:SourceVpc": {},
+                "aws:SourceVpce": {},
+                "aws:TagKeys": {},
+                "aws:TokenIssueTime": {},
+                "aws:UserAgent": {},
+                "aws:userid": {},
+                "aws:username": {},
+                "s3:ExistingJobOperation": {},
+                "s3:ExistingJobPriority": {},
+                "s3:ExistingObjectTag/<key>": {},
+                "s3:JobSuspendedCause": {},
+                "s3:LocationConstraint": {},
+                "s3:RequestJobOperation": {},
+                "s3:RequestJobPriority": {},
+                "s3:RequestObjectTag/<key>": {},
+                "s3:RequestObjectTagKeys": {},
+                "s3:VersionId": {},
+                "s3:authtype": {},
+                "s3:delimiter": {},
+                "s3:locationconstraint": {},
+                "s3:max-keys": {},
+                "s3:object-lock-legal-hold": {},
+                "s3:object-lock-mode": {},
+                "s3:object-lock-remaining-retention-days": {},
+                "s3:object-lock-retain-until-date": {},
+                "s3:prefix": {},
+                "s3:signatureage": {},
+                "s3:signatureversion": {},
+                "s3:versionid": {},
+                "s3:x-amz-acl": {},
+                "s3:x-amz-content-sha256": {},
+                "s3:x-amz-copy-source": {},
+                "s3:x-amz-grant-full-control": {},
+                "s3:x-amz-grant-read": {},
+                "s3:x-amz-grant-read-acp": {},
+                "s3:x-amz-grant-write": {},
+                "s3:x-amz-grant-write-acp": {},
+                "s3:x-amz-metadata-directive": {},
+                "s3:x-amz-server-side-encryption": {},
+                "s3:x-amz-server-side-encryption-aws-kms-key-id": {},
+                "s3:x-amz-storage-class": {},
+                "s3:x-amz-website-redirect-location": {}
+               },
+               "additionalProperties": false
+        },
         "conditions": {
             "type": "object",
             "properties": {
-                "StringEquals": {
+                "ArnEquals": {
                     "type": "object"
                 },
-                "StringNotEquals": {
+                "ArnEqualsIfExists": {
                     "type": "object"
                 },
-                "StringEqualsIgnoreCase": {
+                "ArnLike": {
                     "type": "object"
                 },
-                "StringNotEqualsIgnoreCase": {
+                "ArnLikeIfExists": {
                     "type": "object"
                 },
-                "StringLike": {
+                "ArnNotEquals": {
                     "type": "object"
                 },
-                "StringNotLike": {
+                "ArnNotEqualsIfExists": {
                     "type": "object"
                 },
-                "NumericEquals": {
+                "ArnNotLike": {
                     "type": "object"
                 },
-                "NumericNotEquals": {
+                "ArnNotLikeIfExists": {
                     "type": "object"
                 },
-                "NumericLessThan": {
+                "BinaryEquals": {
                     "type": "object"
                 },
-                "NumericLessThanEquals": {
+                "BinaryEqualsIfExists": {
                     "type": "object"
                 },
-                "NumericGreaterThan": {
+                "BinaryNotEquals": {
                     "type": "object"
                 },
-                "NumericGreaterThanEquals": {
+                "BinaryNotEqualsIfExists": {
+                    "type": "object"
+                },
+                "Bool": {
+                    "type": "object"
+                },
+                "BoolIfExists": {
                     "type": "object"
                 },
                 "DateEquals": {
                     "type": "object"
                 },
-                "DateNotEquals": {
-                    "type": "object"
-                },
-                "DateLessThan": {
-                    "type": "object"
-                },
-                "DateLessThanEquals": {
+                "DateEqualsIfExists": {
                     "type": "object"
                 },
                 "DateGreaterThan": {
@@ -167,115 +224,115 @@
                 "DateGreaterThanEquals": {
                     "type": "object"
                 },
-                "Bool": {
-                    "type": "object"
-                },
-                "BinaryEquals": {
-                    "type": "object"
-                },
-                "BinaryNotEquals": {
-                    "type": "object"
-                },
-                "IpAddress": {
-                    "type": "object"
-                },
-                "NotIpAddress": {
-                    "type": "object"
-                },
-                "ArnEquals": {
-                    "type": "object"
-                },
-                "ArnNotEquals": {
-                    "type": "object"
-                },
-                "ArnLike": {
-                    "type": "object"
-                },
-                "ArnNotLike": {
-                    "type": "object"
-                },
-                "Null": {
-                    "type": "object"
-                },
-                "StringEqualsIfExists": {
-                    "type": "object"
-                },
-                "StringNotEqualsIfExists": {
-                    "type": "object"
-                },
-                "StringEqualsIgnoreCaseIfExists": {
-                    "type": "object"
-                },
-                "StringNotEqualsIgnoreCaseIfExists": {
-                    "type": "object"
-                },
-                "StringLikeIfExists": {
-                    "type": "object"
-                },
-                "StringNotLikeIfExists": {
-                    "type": "object"
-                },
-                "NumericEqualsIfExists": {
-                    "type": "object"
-                },
-                "NumericNotEqualsIfExists": {
-                    "type": "object"
-                },
-                "NumericLessThanIfExists": {
-                    "type": "object"
-                },
-                "NumericLessThanEqualsIfExists": {
-                    "type": "object"
-                },
-                "NumericGreaterThanIfExists": {
-                    "type": "object"
-                },
-                "NumericGreaterThanEqualsIfExists": {
-                    "type": "object"
-                },
-                "DateEqualsIfExists": {
-                    "type": "object"
-                },
-                "DateNotEqualsIfExists": {
-                    "type": "object"
-                },
-                "DateLessThanIfExists": {
-                    "type": "object"
-                },
-                "DateLessThanEqualsIfExists": {
+                "DateGreaterThanEqualsIfExists": {
                     "type": "object"
                 },
                 "DateGreaterThanIfExists": {
                     "type": "object"
                 },
-                "DateGreaterThanEqualsIfExists": {
+                "DateLessThan": {
                     "type": "object"
                 },
-                "BoolIfExists": {
+                "DateLessThanEquals": {
                     "type": "object"
                 },
-                "BinaryEqualsIfExists": {
+                "DateLessThanEqualsIfExists": {
                     "type": "object"
                 },
-                "BinaryNotEqualsIfExists": {
+                "DateLessThanIfExists": {
+                    "type": "object"
+                },
+                "DateNotEquals": {
+                    "type": "object"
+                },
+                "DateNotEqualsIfExists": {
+                    "type": "object"
+                },
+                "IpAddress": {
                     "type": "object"
                 },
                 "IpAddressIfExists": {
                     "type": "object"
                 },
+                "NotIpAddress": {
+                    "type": "object"
+                },
                 "NotIpAddressIfExists": {
                     "type": "object"
                 },
-                "ArnEqualsIfExists": {
+                "Null": {
                     "type": "object"
                 },
-                "ArnNotEqualsIfExists": {
+                "NumericEquals": {
                     "type": "object"
                 },
-                "ArnLikeIfExists": {
+                "NumericEqualsIfExists": {
                     "type": "object"
                 },
-                "ArnNotLikeIfExists": {
+                "NumericGreaterThan": {
+                    "type": "object"
+                },
+                "NumericGreaterThanEquals": {
+                    "type": "object"
+                },
+                "NumericGreaterThanEqualsIfExists": {
+                    "type": "object"
+                },
+                "NumericGreaterThanIfExists": {
+                    "type": "object"
+                },
+                "NumericLessThan": {
+                    "type": "object"
+                },
+                "NumericLessThanEquals": {
+                    "type": "object"
+                },
+                "NumericLessThanEqualsIfExists": {
+                    "type": "object"
+                },
+                "NumericLessThanIfExists": {
+                    "type": "object"
+                },
+                "NumericNotEquals": {
+                    "type": "object"
+                },
+                "NumericNotEqualsIfExists": {
+                    "type": "object"
+                },
+                "StringEquals": {
+                    "type": "object"
+                },
+                "StringEqualsIfExists": {
+                    "type": "object"
+                },
+                "StringEqualsIgnoreCase": {
+                    "type": "object"
+                },
+                "StringEqualsIgnoreCaseIfExists": {
+                    "type": "object"
+                },
+                "StringLike": {
+                    "type": "object"
+                },
+                "StringLikeIfExists": {
+                    "type": "object"
+                },
+                "StringNotEquals": {
+                    "type": "object"
+                },
+                "StringNotEqualsIfExists": {
+                    "type": "object"
+                },
+                "StringNotEqualsIgnoreCase": {
+                    "type": "object"
+                },
+                "StringNotEqualsIgnoreCaseIfExists": {
+                    "type": "object"
+                },
+                "StringNotLike": {
+                    "type": "object"
+                },
+                "StringNotLikeIfExists": {
                     "type": "object"
                 }
             },
@@ -303,19 +360,6 @@
                                 "type": "string",
                                 "pattern": "^[a-zA-Z0-9]+$"
                             },
-                            "Effect": {
-                                "type": "string",
-                                "enum": [
-                                    "Allow",
-                                    "Deny"
-                                ]
-                            },
-                            "Principal": {
-                                "$ref": "#/definitions/principalItem"
-                            },
-                            "NotPrincipal": {
-                                "$ref": "#/definitions/principalItem"
-                            },
                             "Action": {
                                 "oneOf": [
                                     {
@@ -329,34 +373,17 @@
                                     }
                                 ]
                             },
-                            "NotAction": {
-                                "oneOf": [
-                                    {
-                                        "$ref": "#/definitions/actionItem"
-                                    },
-                                    {
-                                        "type": "array",
-                                        "items": {
-                                            "$ref": "#/definitions/actionItem"
-                                        }
-                                    }
+                            "Effect": {
+                                "type": "string",
+                                "enum": [
+                                    "Allow",
+                                    "Deny"
                                 ]
+                            },
+                            "Principal": {
+                                "$ref": "#/definitions/principalItem"
                             },
                             "Resource": {
-                                "oneOf": [
-                                    {
-                                        "$ref": "#/definitions/resourceItem"
-                                    },
-                                    {
-                                        "type": "array",
-                                        "items": {
-                                            "$ref": "#/definitions/resourceItem"
-                                        },
-                                        "minItems": 1
-                                    }
-                                ]
-                            },
-                            "NotResource": {
                                 "oneOf": [
                                     {
                                         "$ref": "#/definitions/resourceItem"
@@ -374,44 +401,11 @@
                                 "$ref": "#/definitions/conditions"
                             }
                         },
-                        "oneOf": [
-                            {
-                                "required": [
-                                    "Effect",
-                                    "Action",
-                                    "Resource"
-                                ]
-                            }, {
-                                "required": [
-                                    "Effect",
-                                    "Action",
-                                    "NotResource"
-                                ]
-                            }, {
-                                "required": [
-                                    "Effect",
-                                    "NotAction",
-                                    "Resource"
-                                ]
-                            }, {
-                                "required": [
-                                    "Effect",
-                                    "NotAction",
-                                    "NotResource"
-                                ]
-                            }, {
-                                "required": [
-                                    "Effect",
-                                    "Action",
-                                    "Principal"
-                                ]
-                            }, {
-                                "required": [
-                                    "Effect",
-                                    "Action",
-                                    "NotPrincipal"
-                                ]
-                            }
+                        "required": [
+                            "Action",
+                            "Effect",
+                            "Principal",
+                            "Resource"
                         ]
                     }
                 },
@@ -423,16 +417,6 @@
                         "Sid": {
                             "type": "string",
                             "pattern": "^[a-zA-Z0-9]+$"
-                        },
-                        "Effect": {
-                            "type": "string",
-                            "enum": [
-                                "Allow",
-                                "Deny"
-                            ]
-                        },
-                        "Principal": {
-                            "$ref": "#/definitions/principalItem"
                         },
                         "Action": {
                             "oneOf": [
@@ -447,34 +431,17 @@
                                 }
                             ]
                         },
-                        "NotAction": {
-                            "oneOf": [
-                                {
-                                    "$ref": "#/definitions/actionItem"
-                                },
-                                {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/definitions/actionItem"
-                                    }
-                                }
+                        "Effect": {
+                            "type": "string",
+                            "enum": [
+                                "Allow",
+                                "Deny"
                             ]
+                        },
+                        "Principal": {
+                            "$ref": "#/definitions/principalItem"
                         },
                         "Resource": {
-                            "oneOf": [
-                                {
-                                    "$ref": "#/definitions/resourceItem"
-                                },
-                                {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/definitions/resourceItem"
-                                    },
-                                    "minItems": 1
-                                }
-                            ]
-                        },
-                        "NotResource": {
                             "oneOf": [
                                 {
                                     "$ref": "#/definitions/resourceItem"
@@ -492,44 +459,11 @@
                             "$ref": "#/definitions/conditions"
                         }
                     },
-                    "oneOf": [
-                        {
-                            "required": [
-                                "Action",
-                                "Effect",
-                                "Resource"
-                            ]
-                        }, {
-                            "required": [
-                                "Action",
-                                "Effect",
-                                "NotResource"
-                            ]
-                        }, {
-                            "required": [
-                                "Effect",
-                                "NotAction",
-                                "Resource"
-                            ]
-                        }, {
-                            "required": [
-                                "Effect",
-                                "NotAction",
-                                "NotResource"
-                            ]
-                        }, {
-                            "required": [
-                                "Effect",
-                                "Action",
-                                "Principal"
-                            ]
-                        }, {
-                            "required": [
-                                "Effect",
-                                "Action",
-                                "NotPrincipal"
-                            ]
-                        }
+                    "required": [
+                        "Action",
+                        "Effect",
+                        "Resource",
+                        "Principal"
                     ]
                 }
             ]
