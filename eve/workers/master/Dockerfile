@@ -9,6 +9,8 @@ RUN apt-get update -q && apt-get -qy install curl apt-transport-https \
     && apt-get install -qy software-properties-common python-software-properties \
     && curl --silent https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add - \
     && echo "deb https://deb.nodesource.com/node_10.x trusty main" > /etc/apt/sources.list.d/nodesource.list \
+    && curl -sS http://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
+    && echo "deb http://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list \
     && add-apt-repository ppa:ubuntu-toolchain-r/test \
     && apt-get update -q \
     && cat /tmp/buildbot_worker_packages.list | xargs apt-get install -qy \
@@ -21,7 +23,7 @@ RUN apt-get update -q && apt-get -qy install curl apt-transport-https \
 # Install usefull nodejs dependencies
 #
 
-RUN npm install mocha -g
+RUN yarn global add mocha
 
 #
 # Add user eve
