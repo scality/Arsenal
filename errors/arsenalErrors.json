@@ -467,6 +467,10 @@
      "code": 400,
      "description": "The request was rejected because an invalid or out-of-range value was supplied for an input parameter."
   },
+  "MalformedPolicy": {
+    "code": 400,
+    "description": "Policies must be valid JSON and the first byte must be '{'"
+  },
   "_comment": "-------------- Special non-AWS S3 errors --------------",
   "MPUinProgress": {
     "code": 409,
