@@ -158,6 +158,7 @@ module.exports = {
           require('./lib/models/ReplicationConfiguration'),
         LifecycleConfiguration:
             require('./lib/models/LifecycleConfiguration'),
+        BucketPolicy: require('./lib/models/BucketPolicy'),
     },
     metrics: {
         StatsClient: require('./lib/metrics/StatsClient'),
