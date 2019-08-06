@@ -236,3 +236,17 @@ describe('MongoClientInterface::_handleMongo', () => {
         });
     });
 });
+
+describe('MongoClientInterface, misc', () => {
+    let s3ConfigObj;
+
+    beforeEach(() => {
+        s3ConfigObj = new DummyConfigObject();
+    });
+
+    it('should filter out collections with special names', () => {
+        const mongoClient = new MongoClientInterface({ config: s3ConfigObj });
+        assert.equal(mongoClient._isSpecialCollection('__foo'), true);
+        assert.equal(mongoClient._isSpecialCollection('bar'), false);
+    });
+});
