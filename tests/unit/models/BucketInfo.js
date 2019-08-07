@@ -118,6 +118,18 @@ const testLifecycleConfiguration = {
     ],
 };
 
+const testBucketPolicy = {
+    Version: '2012-10-17',
+    Statement: [
+        {
+            Effect: 'Allow',
+            Principal: '*',
+            Resource: 'arn:aws:s3:::examplebucket',
+            Action: 's3:*',
+        },
+    ],
+};
+
 const testIngestionConfiguration = { status: 'enabled' };
 const testUid = '99ae3446-7082-4c17-ac97-52965dc004ec';
 const testAzureInfo = {
@@ -156,6 +168,7 @@ Object.keys(acl).forEach(
             testCorsConfiguration,
             testReplicationConfiguration,
             testLifecycleConfiguration,
+            JSON.stringify(testBucketPolicy),
             testUid, undefined, true,
             undefined, testAzureInfo);
 
@@ -184,6 +197,7 @@ Object.keys(acl).forEach(
                         dummyBucket._replicationConfiguration,
                     lifecycleConfiguration:
                         dummyBucket._lifecycleConfiguration,
+                    bucketPolicy: dummyBucket._bucketPolicy,
                     uid: dummyBucket._uid,
                     isNFS: dummyBucket._isNFS,
                     ingestion: dummyBucket._ingestion,
@@ -299,6 +313,11 @@ Object.keys(acl).forEach(
             it('getLifeCycleConfiguration should return configuration', () => {
                 assert.deepStrictEqual(dummyBucket.getLifecycleConfiguration(),
                     testLifecycleConfiguration);
+            });
+            it('getBucketPolicy should return policy', () => {
+                assert.deepStrictEqual(
+                    JSON.parse(dummyBucket.getBucketPolicy()),
+                    testBucketPolicy);
             });
             it('getUid should return unique id of bucket', () => {
                 assert.deepStrictEqual(dummyBucket.getUid(), testUid);
@@ -433,6 +452,23 @@ Object.keys(acl).forEach(
                 dummyBucket.setLifecycleConfiguration(newLifecycleConfig);
                 assert.deepStrictEqual(dummyBucket.getLifecycleConfiguration(),
                     newLifecycleConfig);
+            });
+            it('setBucketPolicy should set bucket policy', () => {
+                const newBucketPolicy = {
+                    Version: '2012-10-17',
+                    Statement: [
+                        {
+                            Effect: 'Deny',
+                            Principal: '*',
+                            Resource: 'arn:aws:s3:::examplebucket',
+                            Action: 's3:*',
+                        },
+                    ],
+                };
+                dummyBucket.setBucketPolicy(JSON.stringify(newBucketPolicy));
+                assert.deepStrictEqual(
+                    JSON.parse(dummyBucket.getBucketPolicy()),
+                    newBucketPolicy);
             });
             it('enableIngestion should set ingestion status to enabled', () => {
                 dummyBucket.enableIngestion();
