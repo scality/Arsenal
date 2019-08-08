@@ -118,6 +118,7 @@ const testLifecycleConfiguration = {
     ],
 };
 
+<<<<<<< HEAD
 const testIngestionConfiguration = { status: 'enabled' };
 const testUid = '99ae3446-7082-4c17-ac97-52965dc004ec';
 const testAzureInfo = {
@@ -138,6 +139,19 @@ const testAzureInfo = {
     hnsEnabled: false,
 };
 
+=======
+const testBucketPolicy = {
+    Version: '2012-10-17',
+    Statement: [
+        {
+            Effect: 'Allow',
+            Principal: '*',
+            Resource: 'arn:aws:s3:::examplebucket',
+            Action: 's3:*',
+        },
+    ],
+};
+>>>>>>> origin/feature/S3C-2276-bucket-policy-model
 // create a dummy bucket to test getters and setters
 
 Object.keys(acl).forEach(
@@ -156,8 +170,12 @@ Object.keys(acl).forEach(
             testCorsConfiguration,
             testReplicationConfiguration,
             testLifecycleConfiguration,
+<<<<<<< HEAD
             testUid, undefined, true,
             undefined, testAzureInfo);
+=======
+            JSON.stringify(testBucketPolicy));
+>>>>>>> origin/feature/S3C-2276-bucket-policy-model
 
         describe('serialize/deSerialize on BucketInfo class', () => {
             const serialized = dummyBucket.serialize();
@@ -184,10 +202,14 @@ Object.keys(acl).forEach(
                         dummyBucket._replicationConfiguration,
                     lifecycleConfiguration:
                         dummyBucket._lifecycleConfiguration,
+<<<<<<< HEAD
                     uid: dummyBucket._uid,
                     isNFS: dummyBucket._isNFS,
                     ingestion: dummyBucket._ingestion,
                     azureInfo: dummyBucket._azureInfo,
+=======
+                    bucketPolicy: dummyBucket._bucketPolicy,
+>>>>>>> origin/feature/S3C-2276-bucket-policy-model
                 };
                 assert.strictEqual(serialized, JSON.stringify(bucketInfos));
                 done();
@@ -300,6 +322,7 @@ Object.keys(acl).forEach(
                 assert.deepStrictEqual(dummyBucket.getLifecycleConfiguration(),
                     testLifecycleConfiguration);
             });
+<<<<<<< HEAD
             it('getUid should return unique id of bucket', () => {
                 assert.deepStrictEqual(dummyBucket.getUid(), testUid);
             });
@@ -313,6 +336,12 @@ Object.keys(acl).forEach(
             it('getAzureInfo should return the expected structure', () => {
                 const azureInfo = dummyBucket.getAzureInfo();
                 assert.deepStrictEqual(azureInfo, testAzureInfo);
+=======
+            it('getBucketPolicy should return policy', () => {
+                assert.deepStrictEqual(
+                    JSON.parse(dummyBucket.getBucketPolicy()),
+                    testBucketPolicy);
+>>>>>>> origin/feature/S3C-2276-bucket-policy-model
             });
         });
 
@@ -434,6 +463,7 @@ Object.keys(acl).forEach(
                 assert.deepStrictEqual(dummyBucket.getLifecycleConfiguration(),
                     newLifecycleConfig);
             });
+<<<<<<< HEAD
             it('enableIngestion should set ingestion status to enabled', () => {
                 dummyBucket.enableIngestion();
                 assert.deepStrictEqual(dummyBucket.getIngestion(),
@@ -449,6 +479,24 @@ Object.keys(acl).forEach(
                 dummyBucket.setAzureInfo(dummyAzureInfo);
                 const azureInfo = dummyBucket.getAzureInfo();
                 assert.deepStrictEqual(azureInfo, dummyAzureInfo);
+=======
+            it('setBucketPolicy should set bucket policy', () => {
+                const newBucketPolicy = {
+                    Version: '2012-10-17',
+                    Statement: [
+                        {
+                            Effect: 'Deny',
+                            Principal: '*',
+                            Resource: 'arn:aws:s3:::examplebucket',
+                            Action: 's3:*',
+                        },
+                    ],
+                };
+                dummyBucket.setBucketPolicy(JSON.stringify(newBucketPolicy));
+                assert.deepStrictEqual(
+                    JSON.parse(dummyBucket.getBucketPolicy()),
+                    newBucketPolicy);
+>>>>>>> origin/feature/S3C-2276-bucket-policy-model
             });
         });
     })
