@@ -526,7 +526,7 @@ describe('ingest', () => {
             testCorsConfiguration,
             testReplicationConfiguration,
             testLifecycleConfiguration,
-            JSON.stringify(testBucketPolicy),
+            testBucketPolicy,
             testUid, undefined, true, testIngestionConfiguration);
         assert.deepStrictEqual(dummyBucket.getIngestion(),
             { status: 'enabled' });
@@ -550,7 +550,7 @@ describe('ingest', () => {
             testCorsConfiguration,
             testReplicationConfiguration,
             testLifecycleConfiguration,
-            JSON.stringify(testBucketPolicy),
+            testBucketPolicy,
             testUid, undefined, true);
         assert.deepStrictEqual(dummyBucket.getIngestion(), null);
         assert.strictEqual(dummyBucket.isIngestionBucket(), false);
