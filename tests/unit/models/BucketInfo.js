@@ -315,8 +315,7 @@ Object.keys(acl).forEach(
             });
             it('getBucketPolicy should return policy', () => {
                 assert.deepStrictEqual(
-                    JSON.parse(dummyBucket.getBucketPolicy()),
-                    testBucketPolicy);
+                    dummyBucket.getBucketPolicy(), testBucketPolicy);
             });
             it('getUid should return unique id of bucket', () => {
                 assert.deepStrictEqual(dummyBucket.getUid(), testUid);
@@ -466,8 +465,7 @@ Object.keys(acl).forEach(
                 };
                 dummyBucket.setBucketPolicy(JSON.stringify(newBucketPolicy));
                 assert.deepStrictEqual(
-                    JSON.parse(dummyBucket.getBucketPolicy()),
-                    newBucketPolicy);
+                    dummyBucket.getBucketPolicy(), newBucketPolicy);
             });
             it('enableIngestion should set ingestion status to enabled', () => {
                 dummyBucket.enableIngestion();
