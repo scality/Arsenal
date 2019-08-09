@@ -145,7 +145,7 @@ Object.keys(acl).forEach(
             testCorsConfiguration,
             testReplicationConfiguration,
             testLifecycleConfiguration,
-            JSON.stringify(testBucketPolicy));
+            testBucketPolicy);
 
         describe('serialize/deSerialize on BucketInfo class', () => {
             const serialized = dummyBucket.serialize();
@@ -273,8 +273,7 @@ Object.keys(acl).forEach(
             });
             it('getBucketPolicy should return policy', () => {
                 assert.deepStrictEqual(
-                    JSON.parse(dummyBucket.getBucketPolicy()),
-                    testBucketPolicy);
+                    dummyBucket.getBucketPolicy(), testBucketPolicy);
             });
         });
 
@@ -409,10 +408,9 @@ Object.keys(acl).forEach(
                         },
                     ],
                 };
-                dummyBucket.setBucketPolicy(JSON.stringify(newBucketPolicy));
+                dummyBucket.setBucketPolicy(newBucketPolicy);
                 assert.deepStrictEqual(
-                    JSON.parse(dummyBucket.getBucketPolicy()),
-                    newBucketPolicy);
+                    dummyBucket.getBucketPolicy(), newBucketPolicy);
             });
         });
     })
