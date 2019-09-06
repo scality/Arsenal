@@ -18,6 +18,10 @@ const testAzureInfoObj = {
     cname: 'www.example.com',
     azureFilesAADIntegration: false,
     hnsEnabled: false,
+    logging: {},
+    hourMetrics: {},
+    minuteMetrics: {},
+    serviceVersion: '2018-03-28',
 };
 
 const azureInfo = new BucketAzureInfo(testAzureInfoObj);
@@ -117,5 +121,50 @@ describe('BucketAzureInfo setters/getters', () => {
         azureInfo.setHnsEnabled(hnsEnabled);
         assert.deepStrictEqual(azureInfo.getHnsEnabled(),
                                hnsEnabled);
+    });
+    it('should control the logging attribute', () => {
+        const logging = {
+            version: '1.0',
+            delete: false,
+            read: false,
+            write: false,
+            retentionPolicy: {
+                enabled: false,
+                days: 0,
+            },
+        };
+        azureInfo.setLogging(logging);
+        assert.deepStrictEqual(azureInfo.getLogging(), logging);
+    });
+    it('should control the hourMetrics attribute', () => {
+        const hourMetrics = {
+            version: '1.0',
+            enabled: false,
+            includeAPIs: false,
+            retentionPolicy: {
+                enabled: false,
+                days: 0,
+            },
+        };
+        azureInfo.setHourMetrics(hourMetrics);
+        assert.deepStrictEqual(azureInfo.getHourMetrics(), hourMetrics);
+    });
+    it('should control the minuteMetrics attribute', () => {
+        const minuteMetrics = {
+            version: '1.0',
+            enabled: false,
+            includeAPIs: false,
+            retentionPolicy: {
+                enabled: false,
+                days: 0,
+            },
+        };
+        azureInfo.setMinuteMetrics(minuteMetrics);
+        assert.deepStrictEqual(azureInfo.getMinuteMetrics(), minuteMetrics);
+    });
+    it('should control the serviceVersion attribute', () => {
+        const serviceVersion = '2019-08-01';
+        azureInfo.setServiceVersion(serviceVersion);
+        assert.deepStrictEqual(azureInfo.getServiceVersion(), serviceVersion);
     });
 });
