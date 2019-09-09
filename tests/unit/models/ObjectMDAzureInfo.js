@@ -9,6 +9,7 @@ const testAzureInfoObj = {
     containerDeletionInProgress: false,
     blobType: 'BlockBlob',
     blobContentMD5: 'ABCDEF==',
+    blobIssuedETag: '0xabcdef',
     blobCopyInfo: {},
     blobSequenceNumber: 42,
     blobAccessTierChangeTime: 'abcdef',
@@ -67,6 +68,12 @@ describe('ObjectMDAzureInfo setters/getters', () => {
         azureInfo.setBlobContentMD5(blobContentMD5);
         assert.deepStrictEqual(azureInfo.getBlobContentMD5(),
                                blobContentMD5);
+    });
+    it('should control the blobIssuedETag attribute', () => {
+        const blobIssuedETag = '0x123456';
+        azureInfo.setBlobIssuedETag(blobIssuedETag);
+        assert.deepStrictEqual(azureInfo.getBlobIssuedETag(),
+                               blobIssuedETag);
     });
     it('should control the blobCopyInfo attribute', () => {
         const blobCopyInfo = { meh: 46 };
