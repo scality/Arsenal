@@ -3,6 +3,28 @@ const routesUtils = require('../../../../lib/s3routes/routesUtils.js');
 
 const bannedStr = 'banned';
 const prefixBlacklist = [];
+const validBucketNamesWithDotsAndHyphens = [
+    'my-bucket',
+    'my.bucket',
+    'my-bucket-01',
+    '01-my-bucket',
+    'my.bucket.01',
+    '01.my.bucket',
+    'my.bucket-01',
+    'my-bucket.01',
+    'my--bucket--01',
+    'my--bucket.01',
+    'my.bucket--01',
+];
+const invalidBucketNamesWithDotsAndHyphens = [
+    '-my-bucket',
+    '.my.bucket',
+    'my-bucket-',
+    'my.bucket.',
+    'my..bucket',
+    'my-.bucket',
+    'my.-bucket',
+];
 
 describe('routesUtils.isValidBucketName', () => {
     it('should return false if bucketname is fewer than ' +
@@ -55,5 +77,31 @@ describe('routesUtils.isValidBucketName', () => {
     it('should return true if bucketname does not break rules', () => {
         const result = routesUtils.isValidBucketName('okay', prefixBlacklist);
         assert.strictEqual(result, true);
+    });
+
+    describe('should return true when bucket name has valid' +
+        ' combination of dots and hyphens', () => {
+        validBucketNamesWithDotsAndHyphens.forEach(bucketName => {
+            it(`should return true if bucketname is '${bucketName}'`,
+                () => {
+                    const result =
+                        routesUtils.isValidBucketName(bucketName,
+                            prefixBlacklist);
+                    assert.strictEqual(result, true);
+                });
+        });
+    });
+
+    describe('should return false when bucket name has invalid' +
+        ' combination of dots and hyphens', () => {
+        invalidBucketNamesWithDotsAndHyphens.forEach(bucketName => {
+            it(`should return false if bucketname is '${bucketName}'`,
+                () => {
+                    const result =
+                        routesUtils.isValidBucketName(bucketName,
+                            prefixBlacklist);
+                    assert.strictEqual(result, false);
+                });
+        });
     });
 });
