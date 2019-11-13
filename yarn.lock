@@ -1044,9 +1044,9 @@ hash-base@^3.0.0:
     inherits "^2.0.1"
     safe-buffer "^5.0.1"
 
-hdclient@scality/hdclient#5145e04e5ed33e85106765b1caa90cd245ef482b:
+"hdclient@github:scality/hdclient#545ab9694c6afc4301853c5b9c63d8a1454fdfd3":
   version "0.1.0"
-  resolved "https://codeload.github.com/scality/hdclient/tar.gz/5145e04e5ed33e85106765b1caa90cd245ef482b"
+  resolved "https://codeload.github.com/scality/hdclient/tar.gz/545ab9694c6afc4301853c5b9c63d8a1454fdfd3"
   dependencies:
     werelogs scality/werelogs#GA7.2.0.5
 
