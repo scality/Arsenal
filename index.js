@@ -24,6 +24,9 @@ module.exports = {
         listTools: {
             DelimiterTools: require('./lib/algos/list/tools'),
         },
+        cache: {
+            LRUCache: require('./lib/algos/cache/LRUCache'),
+        },
     },
     policies: {
         evaluators: require('./lib/policyEvaluator/evaluator.js'),
