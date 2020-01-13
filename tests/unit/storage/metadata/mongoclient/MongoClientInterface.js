@@ -1,48 +1,31 @@
+const async = require('async');
 const assert = require('assert');
+const werelogs = require('werelogs');
+const { MongoMemoryReplSet } = require('mongodb-memory-server');
+
+const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
+const BucketInfo = require('../../../../../lib/models/BucketInfo');
+const ObjectMD = require('../../../../../lib/models/ObjectMD');
+const dbName = 'metadata';
+
+const mongoserver = new MongoMemoryReplSet({
+    debug: false,
+    instanceOpts: [
+        { port: 27018 },
+    ],
+    replSet: {
+        name: 'rs0',
+        count: 1,
+        dbName,
+        storageEngine: 'ephemeralForTest',
+    },
+});
 
 const MongoClientInterface = require(
     '../../../../../lib/storage/metadata/mongoclient/MongoClientInterface');
-const DummyMongoDB = require('./utils/DummyMongoDB');
 const DummyConfigObject = require('./utils/DummyConfigObject');
-const DummyRequestLogger = require('./utils/DummyRequestLogger');
 
-const log = new DummyRequestLogger();
 const mongoTestClient = new MongoClientInterface({});
-mongoTestClient.db = new DummyMongoDB();
-
-describe('MongoClientInterface, init behavior', () => {
-    let s3ConfigObj;
-    const locationConstraints = {
-        locationOne: { isTransient: true },
-        locationTwo: { isTransient: false },
-    };
-
-    beforeEach(() => {
-        s3ConfigObj = new DummyConfigObject();
-    });
-
-    it('should set DataCounter transientList when declaring a ' +
-    'new MongoClientInterface object', () => {
-        s3ConfigObj.setLocationConstraints(locationConstraints);
-        const mongoClient = new MongoClientInterface({ config: s3ConfigObj });
-        const expectedRes = { locationOne: true, locationTwo: false };
-        assert.deepStrictEqual(
-            mongoClient.dataCount.transientList, expectedRes);
-    });
-
-    it('should update DataCounter transientList if location constraints ' +
-    'are updated', done => {
-        const mongoClient = new MongoClientInterface({ config: s3ConfigObj });
-        assert.deepStrictEqual(mongoClient.dataCount.transientList, {});
-        const expectedRes = { locationOne: true, locationTwo: false };
-        s3ConfigObj.once('MongoClientTestDone', () => {
-            assert.deepStrictEqual(
-                mongoClient.dataCount.transientList, expectedRes);
-            return done();
-        });
-        s3ConfigObj.setLocationConstraints(locationConstraints);
-    });
-});
 
 describe('MongoClientInterface::_handleResults', () => {
     it('should return zero-result', () => {
@@ -103,140 +86,6 @@ describe('MongoClientInterface::_handleResults', () => {
     });
 });
 
-describe('MongoClientInterface::_handleMongo', () => {
-    beforeEach(() => mongoTestClient.db.reset());
-
-    it('should return error if mongo aggregate fails', done => {
-        const retValues = [new Error('testError')];
-        mongoTestClient.db.setReturnValues(retValues);
-        const testCollection = mongoTestClient.db.collection('test');
-        mongoTestClient._handleMongo(testCollection, {}, false, log, err => {
-            assert(err, 'Expected error, but got success');
-            return done();
-        });
-    });
-
-    it('should return empty object if mongo aggregate has no results', done => {
-        const testCollection = mongoTestClient.db.collection('test');
-        mongoTestClient._handleMongo(testCollection, {}, false, log,
-        (err, res) => {
-            assert.ifError(err, `Expected success, but got error ${err}`);
-            assert.deepStrictEqual(res, {});
-            return done();
-        });
-    });
-
-    it('should return empty object if mongo aggregate has missing results',
-    done => {
-        const retValues = [[{
-            count: undefined,
-            data: undefined,
-            repData: undefined,
-        }]];
-        mongoTestClient.db.setReturnValues(retValues);
-        const testCollection = mongoTestClient.db.collection('test');
-        mongoTestClient._handleMongo(testCollection, {}, false, log,
-        (err, res) => {
-            assert.ifError(err, `Expected success, but got error ${err}`);
-            assert.deepStrictEqual(res, {});
-            return done();
-        });
-    });
-
-    const testRetValues = [[{
-        count: [{ _id: null, count: 100 }],
-        data: [
-            { _id: 'locationone', bytes: 1000 },
-            { _id: 'locationtwo', bytes: 1000 },
-        ],
-        repData: [
-            { _id: 'awsbackend', bytes: 500 },
-            { _id: 'azurebackend', bytes: 500 },
-            { _id: 'gcpbackend', bytes: 500 },
-        ],
-        compData: [
-            { _id: 'locationone', bytes: 500 },
-            { _id: 'locationtwo', bytes: 500 },
-        ],
-    }]];
-
-    it('should return correct results, transient false', done => {
-        mongoTestClient.db.setReturnValues(testRetValues);
-        const testCollection = mongoTestClient.db.collection('test');
-        mongoTestClient._handleMongo(testCollection, {}, false, log,
-        (err, res) => {
-            assert.ifError(err, `Expected success, but got error ${err}`);
-            assert.deepStrictEqual(res, {
-                count: 100,
-                data: {
-                    locationone: 1000,
-                    locationtwo: 1000,
-                    awsbackend: 500,
-                    azurebackend: 500,
-                    gcpbackend: 500,
-                },
-            });
-            return done();
-        });
-    });
-
-    it('should return correct results, transient true', done => {
-        mongoTestClient.db.setReturnValues(testRetValues);
-        const testCollection = mongoTestClient.db.collection('test');
-        mongoTestClient._handleMongo(testCollection, {}, true, log,
-        (err, res) => {
-            assert.ifError(err, `Expected success, but got error ${err}`);
-            assert.deepStrictEqual(res, {
-                count: 100,
-                data: {
-                    locationone: 500,
-                    locationtwo: 500,
-                    awsbackend: 500,
-                    azurebackend: 500,
-                    gcpbackend: 500,
-                },
-            });
-            return done();
-        });
-    });
-
-    const testRetValuesNeg = [[{
-        count: [{ _id: null, count: 100 }],
-        data: [
-            { _id: 'locationone', bytes: 100 },
-            { _id: 'locationtwo', bytes: 100 },
-        ],
-        repData: [
-            { _id: 'awsbackend', bytes: 500 },
-            { _id: 'azurebackend', bytes: 500 },
-            { _id: 'gcpbackend', bytes: 500 },
-        ],
-        compData: [
-            { _id: 'locationone', bytes: 500 },
-            { _id: 'locationtwo', bytes: 500 },
-        ],
-    }]];
-    it('should return clamp negative values to 0', done => {
-        mongoTestClient.db.setReturnValues(testRetValuesNeg);
-        const testCollection = mongoTestClient.db.collection('test');
-        mongoTestClient._handleMongo(testCollection, {}, true, log,
-        (err, res) => {
-            assert.ifError(err, `Expected success, but got error ${err}`);
-            assert.deepStrictEqual(res, {
-                count: 100,
-                data: {
-                    locationone: 0,
-                    locationtwo: 0,
-                    awsbackend: 500,
-                    azurebackend: 500,
-                    gcpbackend: 500,
-                },
-            });
-            return done();
-        });
-    });
-});
-
 describe('MongoClientInterface, misc', () => {
     let s3ConfigObj;
 
@@ -249,4 +98,531 @@ describe('MongoClientInterface, misc', () => {
         assert.equal(mongoClient._isSpecialCollection('__foo'), true);
         assert.equal(mongoClient._isSpecialCollection('bar'), false);
     });
+});
+
+describe('MongoClientInterface::_processEntryData', () => {
+    const tests = [
+        [
+            'should add content-length to total if replication status != ' +
+            'COMPLETED and transient == true',
+            true,
+            {
+                _id: 'testkey',
+                value: {
+                    'last-modified': new Date(),
+                    'replicationInfo': {
+                        status: 'PENDING',
+                        backends: [],
+                        content: [],
+                        destination: '',
+                        storageClass: '',
+                        role: '',
+                        storageType: '',
+                        dataStoreVersionId: '',
+                        isNFS: null,
+                    },
+                    'dataStoreName': 'us-east-1',
+                    'content-length': 42,
+                    'versionId': '0123456789abcdefg',
+                },
+            },
+            {
+                'us-east-1': 42,
+            },
+        ],
+        [
+            'should not add content-length to total if replication ' +
+            'status == COMPLETED and transient == true',
+            true,
+            {
+                _id: 'testkey',
+                value: {
+                    'last-modified': new Date(),
+                    'replicationInfo': {
+                        status: 'COMPLETED',
+                        backends: [],
+                        content: [],
+                        destination: '',
+                        storageClass: '',
+                        role: '',
+                        storageType: '',
+                        dataStoreVersionId: '',
+                        isNFS: null,
+                    },
+                    'dataStoreName': 'us-east-1',
+                    'content-length': 42,
+                    'versionId': '0123456789abcdefg',
+                },
+            },
+            {
+                'us-east-1': 0,
+            },
+        ],
+        [
+            'should add content-length to total if replication status != ' +
+            'COMPLETED and transient == false',
+            false,
+            {
+                _id: 'testkey',
+                value: {
+                    'last-modified': new Date(),
+                    'replicationInfo': {
+                        status: 'PENDING',
+                        backends: [],
+                        content: [],
+                        destination: '',
+                        storageClass: '',
+                        role: '',
+                        storageType: '',
+                        dataStoreVersionId: '',
+                        isNFS: null,
+                    },
+                    'dataStoreName': 'us-east-1',
+                    'content-length': 42,
+                    'versionId': '0123456789abcdefg',
+                },
+            },
+            {
+                'us-east-1': 42,
+            },
+        ],
+        [
+            'should add content-length to total if replication ' +
+            'status == COMPLETED and transient == false',
+            false,
+            {
+                _id: 'testkey',
+                value: {
+                    'last-modified': new Date(),
+                    'replicationInfo': {
+                        status: 'COMPLETED',
+                        backends: [],
+                        content: [],
+                        destination: '',
+                        storageClass: '',
+                        role: '',
+                        storageType: '',
+                        dataStoreVersionId: '',
+                        isNFS: null,
+                    },
+                    'dataStoreName': 'us-east-1',
+                    'content-length': 42,
+                    'versionId': '0123456789abcdefg',
+                },
+            },
+            {
+                'us-east-1': 42,
+            },
+        ],
+        [
+            'should add content-length to total for each COMPLETED backends ' +
+            '(replication status: COMPLETED)',
+            true,
+            {
+                _id: 'testkey',
+                value: {
+                    'last-modified': new Date(),
+                    'replicationInfo': {
+                        status: 'COMPLETED',
+                        backends: [
+                            {
+                                status: 'COMPLETED',
+                                site: 'completed-1',
+                            },
+                            {
+                                status: 'COMPLETED',
+                                site: 'completed-2',
+                            },
+                            {
+                                status: 'COMPLETED',
+                                site: 'completed-3',
+                            },
+                        ],
+                        content: [],
+                        destination: '',
+                        storageClass: '',
+                        role: '',
+                        storageType: '',
+                        dataStoreVersionId: '',
+                        isNFS: null,
+                    },
+                    'dataStoreName': 'us-east-1',
+                    'content-length': 42,
+                    'versionId': '0123456789abcdefg',
+                },
+            },
+            {
+                'us-east-1': 0,
+                'completed-1': 42,
+                'completed-2': 42,
+                'completed-3': 42,
+            },
+        ],
+        [
+            'should add content-length to total for each COMPLETED backends ' +
+            '(replication status: PENDING)',
+            true,
+            {
+                _id: 'testkey',
+                value: {
+                    'last-modified': new Date(),
+                    'replicationInfo': {
+                        status: 'PENDING',
+                        backends: [
+                            {
+                                status: 'PENDING',
+                                site: 'not-completed',
+                            },
+                            {
+                                status: 'COMPLETED',
+                                site: 'completed-1',
+                            },
+                            {
+                                status: 'COMPLETED',
+                                site: 'completed-2',
+                            },
+                        ],
+                        content: [],
+                        destination: '',
+                        storageClass: '',
+                        role: '',
+                        storageType: '',
+                        dataStoreVersionId: '',
+                        isNFS: null,
+                    },
+                    'dataStoreName': 'us-east-1',
+                    'content-length': 42,
+                    'versionId': '0123456789abcdefg',
+                },
+            },
+            {
+                'us-east-1': 42,
+                'completed-1': 42,
+                'completed-2': 42,
+            },
+        ],
+    ];
+    tests.forEach(([msg, isTransient, params, expected]) => it(msg, () => {
+        assert.deepStrictEqual(
+            mongoTestClient._processEntryData(params, isTransient),
+            expected
+        );
+    }));
+});
+
+describe('MongoClientInterface::_isReplicationEntryStalled', () => {
+    const hr = 1000 * 60 * 60;
+    const testDate = new Date();
+    const tests = [
+        [
+            'return false if status != PENDING',
+            {
+                _id: 'testkey',
+                value: {
+                    'last-modified': new Date(testDate.getTime() - hr),
+                    'replicationInfo': {
+                        status: 'FAILED',
+                        backends: [
+                            {
+                                status: 'FAILED',
+                                site: 'not-completed',
+                            },
+                        ],
+                        content: [],
+                        destination: '',
+                        storageClass: '',
+                        role: '',
+                        storageType: '',
+                        dataStoreVersionId: '',
+                        isNFS: null,
+                    },
+                    'dataStoreName': 'us-east-1',
+                    'content-length': 42,
+                    'versionId': '0123456789abcdefg',
+                },
+
+            },
+            false,
+        ],
+        [
+            'return false if status == PENDING and object is not expired',
+            {
+                _id: 'testkey',
+                value: {
+                    'last-modified': new Date(testDate.getTime() + hr),
+                    'replicationInfo': {
+                        status: 'PENDING',
+                        backends: [
+                            {
+                                status: 'PENDING',
+                                site: 'not-completed',
+                            },
+                        ],
+                        content: [],
+                        destination: '',
+                        storageClass: '',
+                        role: '',
+                        storageType: '',
+                        dataStoreVersionId: '',
+                        isNFS: null,
+                    },
+                    'dataStoreName': 'us-east-1',
+                    'content-length': 42,
+                    'versionId': '0123456789abcdefg',
+                },
+
+            },
+            false,
+        ],
+        [
+            'return true if status == PENDING and object is expired',
+            {
+                _id: 'testkey',
+                value: {
+                    'last-modified': new Date(testDate.getTime() - hr),
+                    'replicationInfo': {
+                        status: 'PENDING',
+                        backends: [
+                            {
+                                status: 'PENDING',
+                                site: 'not-completed',
+                            },
+                        ],
+                        content: [],
+                        destination: '',
+                        storageClass: '',
+                        role: '',
+                        storageType: '',
+                        dataStoreVersionId: '',
+                        isNFS: null,
+                    },
+                    'dataStoreName': 'us-east-1',
+                    'content-length': 42,
+                    'versionId': '0123456789abcdefg',
+                },
+
+            },
+            true,
+        ],
+    ];
+    tests.forEach(([msg, params, expected]) => it(msg, () => {
+        assert.deepStrictEqual(
+            mongoTestClient._isReplicationEntryStalled(params, testDate),
+            expected
+        );
+    }));
+});
+
+function createBucket(client, bucketName, isVersioned, callback) {
+    const bucketMD = BucketInfo.fromObj({
+        _name: bucketName,
+        _owner: 'testowner',
+        _ownerDisplayName: 'testdisplayname',
+        _creationDate: new Date().toJSON(),
+        _acl: {
+            Canned: 'private',
+            FULL_CONTROL: [],
+            WRITE: [],
+            WRITE_ACP: [],
+            READ: [],
+            READ_ACP: [],
+        },
+        _mdBucketModelVersion: 10,
+        _transient: false,
+        _deleted: false,
+        _serverSideEncryption: null,
+        _versioningConfiguration: isVersioned
+            ? { Status: 'Enabled' }
+            : null,
+        _locationConstraint: 'us-east-1',
+        _readLocationConstraint: null,
+        _cors: null,
+        _replicationConfiguration: null,
+        _lifecycleConfiguration: null,
+        _uid: '',
+        _isNFS: null,
+        ingestion: null,
+    });
+    client.createBucket(bucketName, bucketMD, logger, callback);
+}
+
+function uploadObjects(client, bucketName, objectList, callback) {
+    async.eachSeries(objectList, (obj, done) => {
+        const objMD = new ObjectMD()
+            .setKey(obj.name)
+            .setDataStoreName('us-east-1')
+            .setContentLength(100)
+            .setLastModified(obj.lastModified);
+        if (obj.repInfo) {
+            objMD.setReplicationInfo(obj.repInfo);
+        }
+        client.putObject(bucketName, obj.name, objMD.getValue(), {
+            versionId: obj.versionId,
+            versioning: obj.versioning,
+        }, logger, done);
+    }, callback);
+}
+
+describe('MongoClientInterface::getObjectMDStats', () => {
+    const hr = 1000 * 60 * 60;
+    let client;
+    before(done => {
+        mongoserver.waitUntilRunning().then(() => {
+            const opts = {
+                replicaSetHosts: 'localhost:27018',
+                writeConcern: 'majority',
+                replicaSet: 'rs0',
+                readPreference: 'primary',
+                database: dbName,
+                replicationGroupId: 'GR001',
+                logger,
+            };
+
+            client = new MongoClientInterface(opts);
+            client.setup(done);
+        });
+    });
+
+    after(done => {
+        async.series([
+            next => client.close(next),
+            next => mongoserver.stop()
+                .then(() => next())
+                .catch(next),
+        ], done);
+    });
+
+    const tests = [
+        [
+            'should return correct results',
+            {
+                bucketName: 'test-bucket',
+                isVersioned: true,
+                objectList: [
+                    // versioned object 1,
+                    {
+                        name: 'testkey',
+                        versioning: true,
+                        versionId: null,
+                        lastModified: new Date(Date.now()),
+                        repInfo: {
+                            status: 'COMPLETED',
+                            backends: [
+                                {
+                                    status: 'COMPLETED',
+                                    site: 'rep-loc-1',
+                                },
+                            ],
+                            content: [],
+                            destination: '',
+                            storageClass: '',
+                            role: '',
+                            storageType: '',
+                            dataStoreVersionId: '',
+                            isNFS: null,
+                        },
+                    },
+                    // versioned object 2,
+                    {
+                        name: 'testkey',
+                        versioning: true,
+                        versionId: null,
+                        lastModified: new Date(Date.now()),
+                        repInfo: {
+                            status: 'COMPLETED',
+                            backends: [
+                                {
+                                    status: 'COMPLETED',
+                                    site: 'rep-loc-1',
+                                },
+                            ],
+                            content: [],
+                            destination: '',
+                            storageClass: '',
+                            role: '',
+                            storageType: '',
+                            dataStoreVersionId: '',
+                            isNFS: null,
+                        },
+                    },
+                    // stalled object 1
+                    {
+                        name: 'testkey',
+                        versioning: true,
+                        versionId: null,
+                        lastModified: new Date(Date.now() - hr),
+                        repInfo: {
+                            status: 'PENDING',
+                            backends: [
+                                {
+                                    status: 'PENDING',
+                                    site: 'rep-loc-1',
+                                },
+                            ],
+                            content: [],
+                            destination: '',
+                            storageClass: '',
+                            role: '',
+                            storageType: '',
+                            dataStoreVersionId: '',
+                            isNFS: null,
+                        },
+                    },
+                    // null versioned object
+                    {
+                        name: 'nullkey',
+                        lastModified: new Date(Date.now() - hr),
+                    },
+                ],
+            },
+            {
+                dataManaged: {
+                    locations: {
+                        'rep-loc-1': {
+                            curr: 0,
+                            prev: 200,
+                        },
+                        'us-east-1': {
+                            curr: 200,
+                            prev: 200,
+                        },
+                    },
+                    total: {
+                        curr: 200,
+                        prev: 400,
+                    },
+                },
+                objects: 2,
+                stalled: 1,
+                versions: 2,
+            },
+        ],
+    ];
+    tests.forEach(([msg, testCase, expected]) => it(msg, done => {
+        const {
+            bucketName,
+            isVersioned,
+            objectList,
+        } = testCase;
+        async.waterfall([
+            next => createBucket(
+                client, bucketName, isVersioned, err => next(err)),
+            next => uploadObjects(
+                client, bucketName, objectList, err => next(err)),
+            next => client.getBucketAttributes(bucketName, logger, next),
+            (bucketInfo, next) => client.getObjectMDStats(
+                bucketName,
+                BucketInfo.fromObj(bucketInfo),
+                false,
+                logger,
+                (err, res) => {
+                    if (err) {
+                        return next(err);
+                    }
+                    assert.deepStrictEqual(res, expected);
+                    return next();
+                }),
+            next => client.deleteBucket(bucketName, logger, next),
+        ], done);
+    }));
 });

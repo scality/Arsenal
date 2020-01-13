@@ -1,5 +1,5 @@
-const assert = require('assert');
 const async = require('async');
+const assert = require('assert');
 const werelogs = require('werelogs');
 const { MongoMemoryReplSet } = require('mongodb-memory-server');
 
