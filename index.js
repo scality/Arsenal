@@ -34,6 +34,7 @@ module.exports = {
             .validateUserPolicy,
         evaluatePrincipal: require('./lib/policyEvaluator/principal'),
         RequestContext: require('./lib/policyEvaluator/RequestContext.js'),
+        requestUtils: require('./lib/policyEvaluator/requestUtils'),
     },
     Clustering: require('./lib/Clustering'),
     testing: {
