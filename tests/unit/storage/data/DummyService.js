@@ -14,6 +14,12 @@ class DummyService {
         return callback(null, {});
     }
     headObject(params, callback) {
+        if (params.Key ===
+            'externalBackendTestBucket/externalBackendMissingKey') {
+            const err = new Error();
+            err.code = 'NotFound';
+            return callback(err);
+        }
         const retObj = {
             ContentLength: `${1024 * 1024 * 1024}`,
         };
@@ -54,6 +60,17 @@ class DummyService {
         if (this.versioning) {
             retObj.VersionId = uuid().replace(/-/g, '');
         }
+        return callback(null, retObj);
+    }
+    getBlobProperties(containerName, key, streamingOptions, callback) {
+        if (key === 'externalBackendTestBucket/externalBackendMissingKey') {
+            const err = new Error();
+            err.code = 'NotFound';
+            return callback(err);
+        }
+        const retObj = {
+            ContentLength: `${1024 * 1024 * 1024}`,
+        };
         return callback(null, retObj);
     }
     // To-Do: add tests for other methods

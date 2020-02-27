@@ -102,6 +102,18 @@ describe('external backend clients', () => {
                 dataStoreName: backend.config.dataStoreName,
             });
         });
+
+        it(`${backend.name} head() should return HTTP 424 if location ` +
+        'does not exist', done => {
+            testClient.head({
+                key: 'externalBackendTestBucket/externalBackendMissingKey',
+                dataStoreName: backend.config.dataStoreName,
+            }, null, err => {
+                assert(err);
+                assert(err.LocationNotFound);
+                done();
+            });
+        });
         // To-Do: test the other external client methods
     });
 });
