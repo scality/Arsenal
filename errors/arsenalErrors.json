@@ -476,6 +476,10 @@
     "code": 409,
     "description": "The bucket you tried to delete has an ongoing multipart upload."
   },
+  "LocationNotFound": {
+    "code": 424,
+    "description": "The object data location does not exist."
+  },
   "_comment": "-------------- Internal project errors --------------",
   "_comment": "----------------------- Vault -----------------------",
   "_comment": "#### formatErrors ####",
