@@ -173,4 +173,7 @@ module.exports = {
     pensieve: {
         credentialUtils: require('./lib/executables/pensieveCreds/utils'),
     },
+    management: {
+        locations: require('./lib/management/locations'),
+    },
 };
