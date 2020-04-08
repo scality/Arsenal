@@ -31,10 +31,15 @@ describe('v2: queryAuthCheck', () => {
 });
 
 describe('v2: queryAuthCheck', () => {
-    let clock = sinon.useFakeTimers();
+    let clock;
 
-    beforeEach(() => process.env.PRE_SIGN_URL_EXPIRY = 604800000);
-
+    beforeEach(() => {
+        clock = sinon.useFakeTimers();
+    });
+    afterEach(() => {
+        process.env.PRE_SIGN_URL_EXPIRY = 604800000;
+        clock.restore();
+    });
     it('URL should not expire before 7 days with default expiry', () => {
         const currentTime = Date.now() / 1000;
         const expires = currentTime + 604799;  // in seconds
@@ -57,10 +62,8 @@ describe('v2: queryAuthCheck', () => {
         assert.notStrictEqual(res.err.AccessDenied, true);
         assert.notStrictEqual(res.err.RequestTimeTooSkewed, true);
     });
-
-    clock.tick(604800000);  // take time 604800000ms (7 days) ahead
-
     it('URL should expire after 7 days with default expiry', () => {
+        clock.tick(604800000);  // take time 604800000ms (7 days) ahead
         const currentTime = Date.now();
         const request = { method: 'GET', query: { Expires: currentTime } };
         const data = { Expires: currentTime };
@@ -68,9 +71,6 @@ describe('v2: queryAuthCheck', () => {
         assert.notStrictEqual(res.err, undefined);
         assert.strictEqual(res.err.AccessDenied, true);
     });
-
-    clock.restore();
-
     it(`URL should not expire before 7 days with custom expiry`, () => {
         process.env.PRE_SIGN_URL_EXPIRY = 31556952000; // in ms (1 year)
         const currentTime = Date.now() / 1000;
@@ -94,10 +94,8 @@ describe('v2: queryAuthCheck', () => {
         assert.notStrictEqual(res.err.AccessDenied, true);
         assert.notStrictEqual(res.err.RequestTimeTooSkewed, true);
     });
-
-    clock.tick(604800000);  // take time 604800000ms (7 days) ahead
-
     it('URL should still not expire after 7 days with custom expiry', () => {
+        clock.tick(604800000);  // take time 604800000ms (7 days) ahead
         process.env.PRE_SIGN_URL_EXPIRY = 31556952000; // in ms (1 year)
         const currentTime = Date.now() / 1000;
         const request = { method: 'GET', query: { Expires: currentTime } };
@@ -105,19 +103,19 @@ describe('v2: queryAuthCheck', () => {
         const res = queryAuthCheck(request, log, data);
         assert.notStrictEqual(res.err.AccessDenied, true);
     });
-    it('should raise RequestTimeTooSkewed with current time > expiry', () => {
+    it('should return RequestTimeTooSkewed with current time > expiry', () => {
+        clock.tick(1);  // take time 604800000ms (7 days) ahead
         const request = { method: 'GET', query: { Expires: 0 } };
         const data = { Expires: 0 };
         const res = queryAuthCheck(request, log, data);
         assert.notStrictEqual(res.err, undefined);
         assert.strictEqual(res.err.RequestTimeTooSkewed, true);
     });
-    it('should raise MissingSecurityHeader with invalid expires param', () => {
+    it('should return MissingSecurityHeader with invalid expires param', () => {
         const request = { method: 'GET', query: { Expires: 'a string' } };
         const data = { Expires: 'a string' };
         const res = queryAuthCheck(request, log, data);
         assert.notStrictEqual(res.err, undefined);
         assert.strictEqual(res.err.MissingSecurityHeader, true);
     });
-    clock.restore();
 });
