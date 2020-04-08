@@ -71,7 +71,7 @@ describe('v2: queryAuthCheck', () => {
         assert.notStrictEqual(res.err, undefined);
         assert.strictEqual(res.err.AccessDenied, true);
     });
-    it(`URL should not expire before 7 days with custom expiry`, () => {
+    it('URL should not expire before 7 days with custom expiry', () => {
         process.env.PRE_SIGN_URL_EXPIRY = 31556952000; // in ms (1 year)
         const currentTime = Date.now() / 1000;
         const expires = currentTime + 604799;  // in seconds
