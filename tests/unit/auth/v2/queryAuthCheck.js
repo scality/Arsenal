@@ -104,9 +104,10 @@ describe('v2: queryAuthCheck', () => {
         assert.notStrictEqual(res.err.AccessDenied, true);
     });
     it('should return RequestTimeTooSkewed with current time > expiry', () => {
-        clock.tick(1);  // take time 604800000ms (7 days) ahead
-        const request = { method: 'GET', query: { Expires: 0 } };
-        const data = { Expires: 0 };
+        clock.tick(123);
+        const expires = 0;
+        const request = { method: 'GET', query: { Expires: expires } };
+        const data = { Expires: expires };
         const res = queryAuthCheck(request, log, data);
         assert.notStrictEqual(res.err, undefined);
         assert.strictEqual(res.err.RequestTimeTooSkewed, true);
