@@ -46,6 +46,7 @@
     "eslint-config-scality": "scality/Guidelines#71a059ad",
     "lolex": "1.5.2",
     "mocha": "2.5.3",
+    "sinon": "^9.0.2",
     "temp": "0.8.3"
   },
   "scripts": {
