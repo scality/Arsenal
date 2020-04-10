@@ -55,8 +55,8 @@
     "eslint-config-scality": "scality/Guidelines#71a059ad",
     "eslint-plugin-react": "^4.3.0",
     "lolex": "1.5.2",
-    "mocha": "5.2.0",
-    "mongodb-memory-server": "^6.0.2",
+    "mocha": "2.5.3",
+    "sinon": "^9.0.2",
     "temp": "0.8.3"
   },
   "scripts": {
