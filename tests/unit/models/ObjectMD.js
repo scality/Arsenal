@@ -257,6 +257,25 @@ describe('ObjectMD class setters/getters', () => {
         md.clearMetadataValues();
         assert.strictEqual(md.getUserMetadata(), undefined);
     });
+
+    it('ObjectMD::microVersionId unset', () => {
+        assert.strictEqual(md.getMicroVersionId(), null);
+    });
+
+    it('ObjectMD::microVersionId set', () => {
+        const generatedIds = new Set();
+        for (let i = 0; i < 100; ++i) {
+            md.updateMicroVersionId();
+            generatedIds.add(md.getMicroVersionId());
+        }
+        // all generated IDs should be different
+        assert.strictEqual(generatedIds.size, 100);
+        generatedIds.forEach(key => {
+            // length is always 16 in hex because leading 0s are
+            // also encoded in the 8-byte random buffer.
+            assert.strictEqual(key.length, 16);
+        });
+    });
 });
 
 describe('ObjectMD import from stored blob', () => {
