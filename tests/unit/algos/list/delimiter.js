@@ -95,7 +95,7 @@ const receivedNonAlphaData = nonAlphabeticalData.map(
 );
 
 function createUtf8GreaterThanFilter(startAfter) {
-    return (e) => utf8Compare(e.key, startAfter) > 0;
+    return e => utf8Compare(e.key, startAfter) > 0;
 }
 
 const tests = [
