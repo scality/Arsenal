@@ -16,12 +16,12 @@ function createDb() {
 }
 
 function checkValueInDb(db, k, v, done) {
-    db.get(k, (err, value) => {
+    db.get(k, (err, val) => {
         if (err) {
             return done(err);
         }
 
-        if (value === v) {
+        if (val === v) {
             return done();
         }
 
