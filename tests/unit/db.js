@@ -16,16 +16,17 @@ function createDb() {
 }
 
 function checkValueInDb(db, k, v, done) {
-    db.get(k, (err, val) => {
+    db.get(k, (err, value) => {
         if (err) {
             return done(err);
         }
 
-        if (val === v) {
+        if (value === v) {
             return done();
         }
 
-        return done(new Error('values differ'))});
+        return done(new Error('values differ'));
+    });
 }
 
 function checkValueNotInDb(db, k, done) {
