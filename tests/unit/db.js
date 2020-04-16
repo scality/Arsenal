@@ -25,8 +25,7 @@ function checkValueInDb(db, k, v, done) {
             return done();
         }
 
-        return done(new Error('values differ'));
-    });
+        return done(new Error('values differ'))});
 }
 
 function checkValueNotInDb(db, k, done) {
