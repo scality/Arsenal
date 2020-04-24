@@ -127,6 +127,9 @@ const testBucketPolicy = {
         },
     ],
 };
+
+const testobjectLockEnabled = false;
+
 // create a dummy bucket to test getters and setters
 
 Object.keys(acl).forEach(
@@ -145,7 +148,8 @@ Object.keys(acl).forEach(
             testCorsConfiguration,
             testReplicationConfiguration,
             testLifecycleConfiguration,
-            testBucketPolicy);
+            testBucketPolicy,
+            testobjectLockEnabled);
 
         describe('serialize/deSerialize on BucketInfo class', () => {
             const serialized = dummyBucket.serialize();
@@ -172,6 +176,7 @@ Object.keys(acl).forEach(
                     lifecycleConfiguration:
                         dummyBucket._lifecycleConfiguration,
                     bucketPolicy: dummyBucket._bucketPolicy,
+                    objectLockEnabled: dummyBucket._objectLockEnabled,
                 };
                 assert.strictEqual(serialized, JSON.stringify(bucketInfos));
                 done();
@@ -188,15 +193,16 @@ Object.keys(acl).forEach(
         });
 
         describe('constructor', () => {
-            it('this should have the right BucketInfo types',
-               () => {
-                   assert.strictEqual(typeof dummyBucket.getName(), 'string');
-                   assert.strictEqual(typeof dummyBucket.getOwner(), 'string');
-                   assert.strictEqual(typeof dummyBucket.getOwnerDisplayName(),
-                                      'string');
-                   assert.strictEqual(typeof dummyBucket.getCreationDate(),
-                                      'string');
-               });
+            it('this should have the right BucketInfo types', () => {
+                assert.strictEqual(typeof dummyBucket.getName(), 'string');
+                assert.strictEqual(typeof dummyBucket.getOwner(), 'string');
+                assert.strictEqual(typeof dummyBucket.getOwnerDisplayName(),
+                                    'string');
+                assert.strictEqual(typeof dummyBucket.getCreationDate(),
+                                    'string');
+                assert.strictEqual(typeof dummyBucket.isObjectLockEnabled(),
+                                    'boolean');
+            });
             it('this should have the right acl\'s types', () => {
                 assert.strictEqual(typeof dummyBucket.getAcl(), 'object');
                 assert.strictEqual(
