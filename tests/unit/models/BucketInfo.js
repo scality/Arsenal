@@ -59,8 +59,6 @@ const testWebsiteConfiguration = new WebsiteConfiguration({
 });
 
 const testLocationConstraint = 'us-west-1';
-const testReadLocationConstraint = 'us-west-2';
-const testLocationConstraintIngest = 'us-west-3:ingest';
 
 const testCorsConfiguration = [
     { id: 'test',
@@ -118,26 +116,6 @@ const testLifecycleConfiguration = {
     ],
 };
 
-const testIngestionConfiguration = { status: 'enabled' };
-const testUid = '99ae3446-7082-4c17-ac97-52965dc004ec';
-const testAzureInfo = {
-    sku: 'skuname',
-    accessTier: 'accessTierName',
-    kind: 'kindName',
-    systemKeys: ['key1', 'key2'],
-    tenantKeys: ['key1', 'key2'],
-    subscriptionId: 'subscriptionIdName',
-    resourceGroup: 'resourceGroupName',
-    deleteRetentionPolicy: { enabled: true, days: 14 },
-    managementPolicies: [],
-    httpsOnly: false,
-    tags: { foo: 'bar' },
-    networkACL: [],
-    cname: 'www.example.com',
-    azureFilesAADIntegration: false,
-    hnsEnabled: false,
-};
-
 const testBucketPolicy = {
     Version: '2012-10-17',
     Statement: [
@@ -149,6 +127,9 @@ const testBucketPolicy = {
         },
     ],
 };
+
+const testobjectLockEnabled = false;
+
 // create a dummy bucket to test getters and setters
 
 Object.keys(acl).forEach(
@@ -167,8 +148,8 @@ Object.keys(acl).forEach(
             testCorsConfiguration,
             testReplicationConfiguration,
             testLifecycleConfiguration,
-            testBucketPolicy, testUid, undefined,
-            true, undefined, testAzureInfo);
+            testBucketPolicy,
+            testobjectLockEnabled);
 
         describe('serialize/deSerialize on BucketInfo class', () => {
             const serialized = dummyBucket.serialize();
@@ -187,7 +168,6 @@ Object.keys(acl).forEach(
                     versioningConfiguration:
                         dummyBucket._versioningConfiguration,
                     locationConstraint: dummyBucket._locationConstraint,
-                    readLocationConstraint: dummyBucket._readLocationConstraint,
                     websiteConfiguration: dummyBucket._websiteConfiguration
                         .getConfig(),
                     cors: dummyBucket._cors,
@@ -196,10 +176,7 @@ Object.keys(acl).forEach(
                     lifecycleConfiguration:
                         dummyBucket._lifecycleConfiguration,
                     bucketPolicy: dummyBucket._bucketPolicy,
-                    uid: dummyBucket._uid,
-                    isNFS: dummyBucket._isNFS,
-                    ingestion: dummyBucket._ingestion,
-                    azureInfo: dummyBucket._azureInfo,
+                    objectLockEnabled: dummyBucket._objectLockEnabled,
                 };
                 assert.strictEqual(serialized, JSON.stringify(bucketInfos));
                 done();
@@ -216,16 +193,16 @@ Object.keys(acl).forEach(
         });
 
         describe('constructor', () => {
-            it('this should have the right BucketInfo types',
-               () => {
-                   assert.strictEqual(typeof dummyBucket.getName(), 'string');
-                   assert.strictEqual(typeof dummyBucket.getOwner(), 'string');
-                   assert.strictEqual(typeof dummyBucket.getOwnerDisplayName(),
-                                      'string');
-                   assert.strictEqual(typeof dummyBucket.getCreationDate(),
-                                      'string');
-                   assert.strictEqual(typeof dummyBucket.getUid(), 'string');
-               });
+            it('this should have the right BucketInfo types', () => {
+                assert.strictEqual(typeof dummyBucket.getName(), 'string');
+                assert.strictEqual(typeof dummyBucket.getOwner(), 'string');
+                assert.strictEqual(typeof dummyBucket.getOwnerDisplayName(),
+                                    'string');
+                assert.strictEqual(typeof dummyBucket.getCreationDate(),
+                                    'string');
+                assert.strictEqual(typeof dummyBucket.isObjectLockEnabled(),
+                                    'boolean');
+            });
             it('this should have the right acl\'s types', () => {
                 assert.strictEqual(typeof dummyBucket.getAcl(), 'object');
                 assert.strictEqual(
@@ -292,18 +269,6 @@ Object.keys(acl).forEach(
                 assert.deepStrictEqual(dummyBucket.getLocationConstraint(),
                 testLocationConstraint);
             });
-            it('getReadLocationConstraint should return locationConstraint ' +
-            'if readLocationConstraint hasn\'t been set', () => {
-                assert.deepStrictEqual(dummyBucket.getReadLocationConstraint(),
-                testLocationConstraint);
-            });
-            it('getReadLocationConstraint should return readLocationConstraint',
-            () => {
-                dummyBucket._readLocationConstraint =
-                    testReadLocationConstraint;
-                assert.deepStrictEqual(dummyBucket.getReadLocationConstraint(),
-                testReadLocationConstraint);
-            });
             it('getCors should return CORS configuration', () => {
                 assert.deepStrictEqual(dummyBucket.getCors(),
                         testCorsConfiguration);
@@ -315,20 +280,6 @@ Object.keys(acl).forEach(
             it('getBucketPolicy should return policy', () => {
                 assert.deepStrictEqual(
                     dummyBucket.getBucketPolicy(), testBucketPolicy);
-            });
-            it('getUid should return unique id of bucket', () => {
-                assert.deepStrictEqual(dummyBucket.getUid(), testUid);
-            });
-            it('isNFS should return whether bucket is on NFS', () => {
-                assert.deepStrictEqual(dummyBucket.isNFS(), true);
-            });
-            it('setIsNFS should set whether bucket is on NFS', () => {
-                dummyBucket.setIsNFS(false);
-                assert.deepStrictEqual(dummyBucket.isNFS(), false);
-            });
-            it('getAzureInfo should return the expected structure', () => {
-                const azureInfo = dummyBucket.getAzureInfo();
-                assert.deepStrictEqual(azureInfo, testAzureInfo);
             });
         });
 
@@ -401,7 +352,8 @@ Object.keys(acl).forEach(
                         protocol: 'https',
                     },
                 };
-                dummyBucket.setWebsiteConfiguration(newWebsiteConfiguration);
+                dummyBucket
+                    .setWebsiteConfiguration(newWebsiteConfiguration);
                 assert.deepStrictEqual(dummyBucket.getWebsiteConfiguration(),
                     newWebsiteConfiguration);
             });
@@ -466,94 +418,6 @@ Object.keys(acl).forEach(
                 assert.deepStrictEqual(
                     dummyBucket.getBucketPolicy(), newBucketPolicy);
             });
-            it('enableIngestion should set ingestion status to enabled', () => {
-                dummyBucket.enableIngestion();
-                assert.deepStrictEqual(dummyBucket.getIngestion(),
-                    { status: 'enabled' });
-            });
-            it('disableIngestion should set ingestion status to null', () => {
-                dummyBucket.disableIngestion();
-                assert.deepStrictEqual(dummyBucket.getIngestion(),
-                    { status: 'disabled' });
-            });
-            it('setAzureInfo should work', () => {
-                const dummyAzureInfo = {};
-                dummyBucket.setAzureInfo(dummyAzureInfo);
-                const azureInfo = dummyBucket.getAzureInfo();
-                assert.deepStrictEqual(azureInfo, dummyAzureInfo);
-            });
         });
     })
 );
-
-describe('uid default', () => {
-    it('should set uid if none is specified by constructor params', () => {
-        const dummyBucket = new BucketInfo(
-            bucketName, owner, ownerDisplayName, testDate,
-            BucketInfo.currentModelVersion(), acl[emptyAcl],
-            false, false, {
-                cryptoScheme: 1,
-                algorithm: 'sha1',
-                masterKeyId: 'somekey',
-                mandatory: true,
-            }, testVersioningConfiguration,
-            testLocationConstraint,
-            testWebsiteConfiguration,
-            testCorsConfiguration,
-            testReplicationConfiguration,
-            testLifecycleConfiguration);
-
-        const defaultUid = dummyBucket.getUid();
-        assert(defaultUid);
-        assert.strictEqual(defaultUid.length, 36);
-    });
-});
-
-describe('ingest', () => {
-    it('should enable ingestion if ingestion param sent on bucket creation',
-    () => {
-        const dummyBucket = new BucketInfo(
-            bucketName, owner, ownerDisplayName, testDate,
-            BucketInfo.currentModelVersion(), acl[emptyAcl],
-            false, false, {
-                cryptoScheme: 1,
-                algorithm: 'sha1',
-                masterKeyId: 'somekey',
-                mandatory: true,
-            }, testVersioningConfiguration,
-            testLocationConstraintIngest,
-            testWebsiteConfiguration,
-            testCorsConfiguration,
-            testReplicationConfiguration,
-            testLifecycleConfiguration,
-            testBucketPolicy,
-            testUid, undefined, true, testIngestionConfiguration);
-        assert.deepStrictEqual(dummyBucket.getIngestion(),
-            { status: 'enabled' });
-        assert.strictEqual(dummyBucket.isIngestionBucket(), true);
-        assert.strictEqual(dummyBucket.isIngestionEnabled(), true);
-    });
-
-    it('should have ingestion as null if no ingestion param was sent on' +
-    'bucket creation', () => {
-        const dummyBucket = new BucketInfo(
-            bucketName, owner, ownerDisplayName, testDate,
-            BucketInfo.currentModelVersion(), acl[emptyAcl],
-            false, false, {
-                cryptoScheme: 1,
-                algorithm: 'sha1',
-                masterKeyId: 'somekey',
-                mandatory: true,
-            }, testVersioningConfiguration,
-            testLocationConstraintIngest,
-            testWebsiteConfiguration,
-            testCorsConfiguration,
-            testReplicationConfiguration,
-            testLifecycleConfiguration,
-            testBucketPolicy,
-            testUid, undefined, true);
-        assert.deepStrictEqual(dummyBucket.getIngestion(), null);
-        assert.strictEqual(dummyBucket.isIngestionBucket(), false);
-        assert.strictEqual(dummyBucket.isIngestionEnabled(), false);
-    });
-});
