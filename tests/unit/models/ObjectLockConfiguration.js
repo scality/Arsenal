@@ -52,6 +52,17 @@ function generateParsedXml(testParams, cb) {
     });
 }
 
+const expectedXml = (daysOrYears, time, mode) =>
+    '<?xml version="1.0" encoding="UTF-8"?>' +
+    '<ObjectLockConfiguration ' +
+    'xmlns="http://s3.amazonaws.com/doc/2006-03-01/">' +
+    '<ObjectLockEnabled>Enabled</ObjectLockEnabled>' +
+    '<Rule><DefaultRetention>' +
+    `<Mode>${mode}</Mode>` +
+    `<${daysOrYears}>${time}</${daysOrYears}>` +
+    '</DefaultRetention></Rule>' +
+    '</ObjectLockConfiguration>';
+
 const failTests = [
     {
         name: 'fail with empty configuration',
@@ -152,6 +163,63 @@ const passTests = [
     },
 ];
 
+const passTestsGetConfigXML = [
+    {
+        config: {
+            rule: {
+                mode: 'COMPLIANCE',
+                days: 90,
+            },
+        },
+        expectedXml: expectedXml('Days', 90, 'COMPLIANCE'),
+        description: 'with COMPLIANCE retention mode ' +
+            'and valid Days retention period',
+    },
+    {
+        config: {
+            rule: {
+                mode: 'GOVERNANCE',
+                days: 30,
+            },
+        },
+        expectedXml: expectedXml('Days', 30, 'GOVERNANCE'),
+        description: 'with GOVERNANCE retention mode ' +
+            'and valid Days retention period',
+    },
+    {
+        config: {
+            rule: {
+                mode: 'COMPLIANCE',
+                years: 1,
+            },
+        },
+        expectedXml: expectedXml('Years', 1, 'COMPLIANCE'),
+        description: 'with COMPLIANCE retention mode ' +
+            'and valid Years retention period',
+    },
+    {
+        config: {
+            rule: {
+                mode: 'GOVERNANCE',
+                years: 2,
+            },
+        },
+        expectedXml: expectedXml('Years', 2, 'GOVERNANCE'),
+        description: 'with GOVERNANCE retention mode ' +
+            'and valid Years retention period',
+    },
+    {
+        config: {},
+        expectedXml: '<?xml version="1.0" encoding="UTF-8"?>' +
+            '<ObjectLockConfiguration ' +
+            'xmlns="http://s3.amazonaws.com/doc/2006-03-01/">' +
+            '<ObjectLockEnabled>Enabled</ObjectLockEnabled>' +
+            '</ObjectLockConfiguration>',
+        description: 'without rule if object lock ' +
+            'configuration has not been set',
+    },
+];
+
 describe('ObjectLockConfiguration class getValidatedObjectLockConfiguration',
 () => {
     it('should return MalformedXML error if request xml is empty', done => {
@@ -175,6 +243,16 @@ describe('ObjectLockConfiguration class getValidatedObjectLockConfiguration',
                 assert.ifError(config.error);
                 done();
             });
+        });
+    });
+});
+
+describe('ObjectLockConfiguration class getConfigXML', () => {
+    passTestsGetConfigXML.forEach(test => {
+        const { config, description, expectedXml } = test;
+        it(`should return correct XML ${description}`, () => {
+            const responseXml = ObjectLockConfiguration.getConfigXML(config);
+            assert.strictEqual(responseXml, expectedXml);
         });
     });
 });
