@@ -149,6 +149,9 @@ const testBucketPolicy = {
         },
     ],
 };
+
+const testobjectLockEnabled = false;
+
 // create a dummy bucket to test getters and setters
 
 Object.keys(acl).forEach(
@@ -168,7 +171,9 @@ Object.keys(acl).forEach(
             testReplicationConfiguration,
             testLifecycleConfiguration,
             testBucketPolicy, testUid, undefined,
-            true, undefined, testAzureInfo);
+            true, undefined, testAzureInfo,
+            testBucketPolicy,
+            testobjectLockEnabled);
 
         describe('serialize/deSerialize on BucketInfo class', () => {
             const serialized = dummyBucket.serialize();
@@ -200,6 +205,7 @@ Object.keys(acl).forEach(
                     isNFS: dummyBucket._isNFS,
                     ingestion: dummyBucket._ingestion,
                     azureInfo: dummyBucket._azureInfo,
+                    objectLockEnabled: dummyBucket._objectLockEnabled,
                 };
                 assert.strictEqual(serialized, JSON.stringify(bucketInfos));
                 done();
@@ -226,6 +232,16 @@ Object.keys(acl).forEach(
                                       'string');
                    assert.strictEqual(typeof dummyBucket.getUid(), 'string');
                });
+            it('this should have the right BucketInfo types', () => {
+                assert.strictEqual(typeof dummyBucket.getName(), 'string');
+                assert.strictEqual(typeof dummyBucket.getOwner(), 'string');
+                assert.strictEqual(typeof dummyBucket.getOwnerDisplayName(),
+                                    'string');
+                assert.strictEqual(typeof dummyBucket.getCreationDate(),
+                                    'string');
+                assert.strictEqual(typeof dummyBucket.isObjectLockEnabled(),
+                                    'boolean');
+            });
             it('this should have the right acl\'s types', () => {
                 assert.strictEqual(typeof dummyBucket.getAcl(), 'object');
                 assert.strictEqual(
@@ -329,6 +345,10 @@ Object.keys(acl).forEach(
             it('getAzureInfo should return the expected structure', () => {
                 const azureInfo = dummyBucket.getAzureInfo();
                 assert.deepStrictEqual(azureInfo, testAzureInfo);
+            });
+            it('object lock should be disabled by default', () => {
+                assert.deepStrictEqual(
+                    dummyBucket.isObjectLockEnabled(), false);
             });
         });
 
