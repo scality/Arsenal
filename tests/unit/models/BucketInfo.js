@@ -172,7 +172,6 @@ Object.keys(acl).forEach(
             testLifecycleConfiguration,
             testBucketPolicy, testUid, undefined,
             true, undefined, testAzureInfo,
-            testBucketPolicy,
             testobjectLockEnabled);
 
         describe('serialize/deSerialize on BucketInfo class', () => {
