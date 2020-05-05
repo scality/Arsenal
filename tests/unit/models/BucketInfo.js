@@ -281,6 +281,10 @@ Object.keys(acl).forEach(
                 assert.deepStrictEqual(
                     dummyBucket.getBucketPolicy(), testBucketPolicy);
             });
+            it('object lock should be disabled by default', () => {
+                assert.deepStrictEqual(
+                    dummyBucket.isObjectLockEnabled(), false);
+            });
         });
 
         describe('setters on BucketInfo class', () => {
