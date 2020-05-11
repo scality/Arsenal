@@ -27,6 +27,9 @@ module.exports = {
         cache: {
             LRUCache: require('./lib/algos/cache/LRUCache'),
         },
+        stream: {
+            MergeStream: require('./lib/algos/stream/MergeStream'),
+        },
     },
     policies: {
         evaluators: require('./lib/policyEvaluator/evaluator.js'),
