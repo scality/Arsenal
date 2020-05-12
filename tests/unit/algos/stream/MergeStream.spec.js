@@ -191,8 +191,6 @@ describe('MergeStream', () => {
                         const stream1 = [];
                         const stream2 = [];
                         for (let i = 0; i < nbEntries; ++i) {
-                            // picked two large arbitrary prime numbers to get a
-                            // deterministic random-looking series
                             if (Math.floor(i / (nbEntries / 10)) % 2 === 0) {
                                 stream1.push(i);
                             } else {
