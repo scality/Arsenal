@@ -252,10 +252,6 @@
     "code": 404,
     "description": "The lifecycle configuration does not exist."
   },
-  "NoSuchObjectLockConfiguration": {
-    "code": 404,
-    "description": "The object lock configuration does not exist."
-  },
   "NoSuchWebsiteConfiguration": {
     "code": 404,
     "description": "The specified bucket does not have a website configuration"
