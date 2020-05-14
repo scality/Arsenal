@@ -284,6 +284,10 @@
     "code": 404,
     "description": "The specified bucket does not have a bucket policy."
   },
+  "ObjectLockConfigurationNotFoundError": {
+    "code": 404,
+    "description": "Object Lock configuration does not exist for this bucket."
+  },
   "OperationAborted": {
     "code": 409,
     "description": "A conflicting conditional operation is currently in progress against this resource. Try again."
