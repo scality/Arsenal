@@ -86,6 +86,7 @@ module.exports = {
             SubStreamInterface:
                 require('./lib/s3middleware/azureHelpers/SubStreamInterface'),
         },
+        retention: require('./lib/s3middleware/objectRetention'),
     },
     storage: {
         metadata: {

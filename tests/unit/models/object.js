@@ -2,6 +2,9 @@ const assert = require('assert');
 const ObjectMD = require('../../../lib/models/ObjectMD');
 const constants = require('../../../lib/constants');
 
+const retainDate = new Date();
+retainDate.setDate(retainDate.getDate() + 1);
+
 describe('ObjectMD class setters/getters', () => {
     let md = null;
 
@@ -99,6 +102,14 @@ describe('ObjectMD class setters/getters', () => {
             dataStoreVersionId: '',
         }],
         ['DataStoreName', null, ''],
+        ['RetentionInfo', null, {
+            mode: '',
+            retainUntilDate: '',
+        }],
+        ['RetentionInfo', {
+            mode: 'GOVERNANCE',
+            retainUntilDate: retainDate.toISOString(),
+        }],
     ].forEach(test => {
         const property = test[0];
         const testValue = test[1];
@@ -191,6 +202,17 @@ describe('ObjectMD class setters/getters', () => {
         });
         assert.strictEqual(
             md.getReplicationSiteDataStoreVersionId('zenko'), 'a');
+    });
+
+    it('ObjectMD::set/getRetentionInfo', () => {
+        md.setRetentionInfo({
+            mode: 'COMPLIANCE',
+            retainUntilDate: retainDate.toISOString(),
+        });
+        assert.deepStrictEqual(md.getRetentionInfo(), {
+            mode: 'COMPLIANCE',
+            retainUntilDate: retainDate.toISOString(),
+        });
     });
 });
 
@@ -311,6 +333,7 @@ describe('getAttributes static method', () => {
             'versionId': true,
             'tags': true,
             'replicationInfo': true,
+            'retentionInfo': true,
             'dataStoreName': true,
             'last-modified': true,
             'md-model-version': true };
