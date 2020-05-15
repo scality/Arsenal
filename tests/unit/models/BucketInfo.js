@@ -130,8 +130,14 @@ const testBucketPolicy = {
 
 const testobjectLockEnabled = false;
 
-// create a dummy bucket to test getters and setters
+const testObjectLockConfiguration = {
+    rule: {
+        mode: 'GOVERNANCE',
+        days: 1,
+    },
+};
 
+// create a dummy bucket to test getters and setters
 Object.keys(acl).forEach(
     aclObj => describe(`different acl configurations : ${aclObj}`, () => {
         const dummyBucket = new BucketInfo(
@@ -149,7 +155,8 @@ Object.keys(acl).forEach(
             testReplicationConfiguration,
             testLifecycleConfiguration,
             testBucketPolicy,
-            testobjectLockEnabled);
+            testobjectLockEnabled,
+            testObjectLockConfiguration);
 
         describe('serialize/deSerialize on BucketInfo class', () => {
             const serialized = dummyBucket.serialize();
@@ -177,6 +184,8 @@ Object.keys(acl).forEach(
                         dummyBucket._lifecycleConfiguration,
                     bucketPolicy: dummyBucket._bucketPolicy,
                     objectLockEnabled: dummyBucket._objectLockEnabled,
+                    objectLockConfiguration:
+                        dummyBucket._objectLockConfiguration,
                 };
                 assert.strictEqual(serialized, JSON.stringify(bucketInfos));
                 done();
@@ -284,6 +293,10 @@ Object.keys(acl).forEach(
             it('object lock should be disabled by default', () => {
                 assert.deepStrictEqual(
                     dummyBucket.isObjectLockEnabled(), false);
+            });
+            it('getObjectLockConfiguration should return configuration', () => {
+                assert.deepStrictEqual(dummyBucket.getObjectLockConfiguration(),
+                    testObjectLockConfiguration);
             });
         });
 
@@ -421,6 +434,18 @@ Object.keys(acl).forEach(
                 dummyBucket.setBucketPolicy(newBucketPolicy);
                 assert.deepStrictEqual(
                     dummyBucket.getBucketPolicy(), newBucketPolicy);
+            });
+            it('setObjectLockConfiguration should set object lock ' +
+                'configuration', () => {
+                const newObjectLockConfig = {
+                    rule: {
+                        mode: 'COMPLIANCE',
+                        years: 1,
+                    },
+                };
+                dummyBucket.setObjectLockConfiguration(newObjectLockConfig);
+                assert.deepStrictEqual(dummyBucket.getObjectLockConfiguration(),
+                    newObjectLockConfig);
             });
         });
     })
