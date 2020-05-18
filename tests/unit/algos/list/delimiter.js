@@ -5,6 +5,7 @@ const Delimiter =
     require('../../../../lib/algos/list/delimiter').Delimiter;
 const DelimiterMaster =
     require('../../../../lib/algos/list/delimiterMaster').DelimiterMaster;
+const { utf8Compare } = require('../../../../lib/algos/list/tools');
 const Werelogs = require('werelogs').Logger;
 const logger = new Werelogs('listTest');
 const performListing = require('../../../utils/performListing');
@@ -37,6 +38,11 @@ const data = [
     { key: 'notes/year.txt', value },
     { key: 'notes/yore.rs', value },
     { key: 'notes/zaphod/Beeblebrox.txt', value },
+    { key: 'utf8order/a', value },
+    { key: 'utf8order/\uD7FB', value },
+    { key: 'utf8order/\uFB80', value },
+    { key: 'utf8order/\uD83D\uDC4F', value },
+    { key: 'utf8order/\uD83D\uDC50', value },
 ];
 const dataVersioned = [
     { key: 'Pâtisserie=中文-español-English', value },
@@ -72,6 +78,11 @@ const dataVersioned = [
     { key: 'notes/year.txt', value },
     { key: 'notes/yore.rs', value },
     { key: 'notes/zaphod/Beeblebrox.txt', value },
+    { key: 'utf8order/a', value },
+    { key: 'utf8order/\uD7FB', value },
+    { key: 'utf8order/\uFB80', value },
+    { key: 'utf8order/\uD83D\uDC4F', value },
+    { key: 'utf8order/\uD83D\uDC50', value },
 ];
 const nonAlphabeticalData = [
     { key: 'zzz', value },
@@ -82,6 +93,10 @@ const receivedData = data.map(item => ({ key: item.key, value: item.value }));
 const receivedNonAlphaData = nonAlphabeticalData.map(
     item => ({ key: item.key, value: item.value })
 );
+
+function createUtf8GreaterThanFilter(startAfter) {
+    return e => utf8Compare(e.key, startAfter) > 0;
+}
 
 const tests = [
     new Test('all elements', {}, {
@@ -100,12 +115,17 @@ const tests = [
             receivedData[7],
             receivedData[8],
             receivedData[9],
+            receivedData[10],
+            receivedData[11],
+            receivedData[12],
+            receivedData[13],
+            receivedData[14],
         ],
         CommonPrefixes: [],
         Delimiter: undefined,
         IsTruncated: false,
         NextMarker: undefined,
-    }, (e, input) => e.key > input.marker),
+    }, createUtf8GreaterThanFilter(receivedData[4].key)),
     new Test('with bad marker', {
         marker: 'zzzz',
         delimiter: '/',
@@ -115,7 +135,7 @@ const tests = [
         Delimiter: '/',
         IsTruncated: false,
         NextMarker: undefined,
-    }, (e, input) => e.key > input.marker),
+    }, createUtf8GreaterThanFilter('zzzz')),
     new Test('with makKeys', {
         maxKeys: 3,
     }, {
@@ -140,7 +160,7 @@ const tests = [
         Contents: [
             receivedData[0],
         ],
-        CommonPrefixes: ['notes/'],
+        CommonPrefixes: ['notes/', 'utf8order/'],
         Delimiter: '/',
         IsTruncated: false,
         NextMarker: undefined,
@@ -156,6 +176,11 @@ const tests = [
             receivedData[7],
             receivedData[8],
             receivedData[9],
+            receivedData[10],
+            receivedData[11],
+            receivedData[12],
+            receivedData[13],
+            receivedData[14],
         ],
         CommonPrefixes: ['notes/summer'],
         Delimiter: 'notes/summer',
@@ -172,7 +197,7 @@ const tests = [
         Delimiter: '/',
         IsTruncated: false,
         NextMarker: undefined,
-    }, (e, input) => e.key > input.marker),
+    }, createUtf8GreaterThanFilter('notes/summer0')),
     new Test('delimiter and prefix (related to #147)', {
         delimiter: '/',
         prefix: 'notes/',
@@ -204,7 +229,7 @@ const tests = [
         Delimiter: '/',
         IsTruncated: false,
         NextMarker: undefined,
-    }, (e, input) => e.key > input.marker),
+    }, createUtf8GreaterThanFilter('notes/year.txt')),
     new Test('all parameters 1/3', {
         delimiter: '/',
         prefix: 'notes/',
@@ -216,7 +241,7 @@ const tests = [
         Delimiter: '/',
         IsTruncated: true,
         NextMarker: 'notes/spring/',
-    }, (e, input) => e.key > input.marker),
+    }, createUtf8GreaterThanFilter('notes/')),
 
     new Test('all parameters 2/3', {
         delimiter: '/',
@@ -229,7 +254,7 @@ const tests = [
         Delimiter: '/',
         IsTruncated: true,
         NextMarker: 'notes/summer/',
-    }, (e, input) => e.key > input.marker),
+    }, createUtf8GreaterThanFilter('notes/spring/')),
 
     new Test('all parameters 3/3', {
         delimiter: '/',
@@ -244,7 +269,7 @@ const tests = [
         Delimiter: '/',
         IsTruncated: true,
         NextMarker: 'notes/year.txt',
-    }, (e, input) => e.key > input.marker),
+    }, createUtf8GreaterThanFilter('notes/summer/')),
 
     new Test('all parameters 4/3', {
         delimiter: '/',
@@ -259,7 +284,7 @@ const tests = [
         Delimiter: '/',
         IsTruncated: true,
         NextMarker: 'notes/yore.rs',
-    }, (e, input) => e.key > input.marker),
+    }, createUtf8GreaterThanFilter('notes/year.txt')),
 
     new Test('all parameters 5/3', {
         delimiter: '/',
@@ -272,7 +297,7 @@ const tests = [
         Delimiter: '/',
         IsTruncated: false,
         NextMarker: undefined,
-    }, (e, input) => e.key > input.marker),
+    }, createUtf8GreaterThanFilter('notes/yore.rs')),
 
     new Test('all elements v2', {
         v2: true,
@@ -293,12 +318,17 @@ const tests = [
             receivedData[7],
             receivedData[8],
             receivedData[9],
+            receivedData[10],
+            receivedData[11],
+            receivedData[12],
+            receivedData[13],
+            receivedData[14],
         ],
         CommonPrefixes: [],
         Delimiter: undefined,
         IsTruncated: false,
         NextContinuationToken: undefined,
-    }, (e, input) => e.key > input.startAfter),
+    }, createUtf8GreaterThanFilter(receivedData[4].key)),
     new Test('with bad startAfter', {
         startAfter: 'zzzz',
         delimiter: '/',
@@ -309,7 +339,7 @@ const tests = [
         Delimiter: '/',
         IsTruncated: false,
         NextContinuationToken: undefined,
-    }, (e, input) => e.key > input.startAfter),
+    }, createUtf8GreaterThanFilter('zzzz')),
     new Test('with valid continuationToken', {
         continuationToken: receivedData[4].key,
         v2: true,
@@ -320,12 +350,17 @@ const tests = [
             receivedData[7],
             receivedData[8],
             receivedData[9],
+            receivedData[10],
+            receivedData[11],
+            receivedData[12],
+            receivedData[13],
+            receivedData[14],
         ],
         CommonPrefixes: [],
         Delimiter: undefined,
         IsTruncated: false,
         NextContinuationToken: undefined,
-    }, (e, input) => e.key > input.continuationToken),
+    }, createUtf8GreaterThanFilter(receivedData[4].key)),
     new Test('with bad continuationToken', {
         continuationToken: 'zzzz',
         delimiter: '/',
@@ -336,7 +371,7 @@ const tests = [
         Delimiter: '/',
         IsTruncated: false,
         NextContinuationToken: undefined,
-    }, (e, input) => e.key > input.continuationToken),
+    }, createUtf8GreaterThanFilter('zzzz')),
     new Test('bad startAfter and good prefix', {
         delimiter: '/',
         prefix: 'notes/summer/',
@@ -347,7 +382,7 @@ const tests = [
         Delimiter: '/',
         IsTruncated: false,
         NextMarker: undefined,
-    }, (e, input) => e.key > input.startAfter),
+    }, createUtf8GreaterThanFilter('notes/summer0')),
     new Test('bad continuation token and good prefix', {
         delimiter: '/',
         prefix: 'notes/summer/',
@@ -358,7 +393,7 @@ const tests = [
         Delimiter: '/',
         IsTruncated: false,
         NextMarker: undefined,
-    }, (e, input) => e.key > input.continuationToken),
+    }, createUtf8GreaterThanFilter('notes/summer0')),
 
     new Test('no delimiter v2', {
         startAfter: 'notes/year.txt',
@@ -372,7 +407,7 @@ const tests = [
         Delimiter: undefined,
         IsTruncated: true,
         NextContinuationToken: 'notes/yore.rs',
-    }, (e, input) => e.key > input.startAfter),
+    }, createUtf8GreaterThanFilter('notes/year.txt')),
 
     new Test('all parameters v2 1/6', {
         delimiter: '/',
@@ -386,7 +421,7 @@ const tests = [
         Delimiter: '/',
         IsTruncated: true,
         NextContinuationToken: 'notes/spring/',
-    }, (e, input) => e.key > input.startAfter),
+    }, createUtf8GreaterThanFilter('notes/')),
 
     new Test('all parameters v2 2/6', {
         delimiter: '/',
@@ -400,7 +435,7 @@ const tests = [
         Delimiter: '/',
         IsTruncated: true,
         NextContinuationToken: 'notes/summer/',
-    }, (e, input) => e.key > input.continuationToken),
+    }, createUtf8GreaterThanFilter('notes/spring/')),
 
     new Test('all parameters v2 3/5', {
         delimiter: '/',
@@ -416,7 +451,7 @@ const tests = [
         Delimiter: '/',
         IsTruncated: true,
         NextContinuationToken: 'notes/year.txt',
-    }, (e, input) => e.key > input.continuationToken),
+    }, createUtf8GreaterThanFilter('notes/summer/')),
 
     new Test('all parameters v2 4/5', {
         delimiter: '/',
@@ -432,7 +467,7 @@ const tests = [
         Delimiter: '/',
         IsTruncated: true,
         NextContinuationToken: 'notes/yore.rs',
-    }, (e, input) => e.key > input.startAfter),
+    }, createUtf8GreaterThanFilter('notes/year.txt')),
 
     new Test('all parameters v2 5/5', {
         delimiter: '/',
@@ -446,7 +481,7 @@ const tests = [
         Delimiter: '/',
         IsTruncated: false,
         NextContinuationToken: undefined,
-    }, (e, input) => e.key > input.startAfter),
+    }, createUtf8GreaterThanFilter('notes/yore.rs')),
 
 ];
 
@@ -496,7 +531,7 @@ describe('Delimiter listing algorithm', () => {
     tests.forEach(test => {
         it(`Should list ${test.name}`, done => {
             // Simulate skip scan done by LevelDB
-            const d = data.filter(e => test.filter(e, test.input));
+            const d = data.filter(e => test.filter(e));
             const res = performListing(d, Delimiter, test.input, logger);
             assert.deepStrictEqual(res, test.output);
             done();
@@ -506,7 +541,7 @@ describe('Delimiter listing algorithm', () => {
     tests.forEach(test => {
         it(`Should list master versions ${test.name}`, done => {
             // Simulate skip scan done by LevelDB
-            const d = dataVersioned.filter(e => test.filter(e, test.input));
+            const d = dataVersioned.filter(e => test.filter(e));
             const res = performListing(d, DelimiterMaster, test.input, logger);
             assert.deepStrictEqual(res, test.output);
             done();
@@ -527,7 +562,7 @@ describe('Delimiter listing algorithm', () => {
                IsTruncated: false,
                NextMarker: undefined,
            });
-           let d = nonAlphabeticalData.filter(e => test.filter(e, test.input));
+           let d = nonAlphabeticalData.filter(e => test.filter(e));
            let res = performListing(d, Delimiter, test.input, logger);
            assert.deepStrictEqual(res, test.output);
 
@@ -544,7 +579,7 @@ describe('Delimiter listing algorithm', () => {
                IsTruncated: false,
                NextMarker: undefined,
            });
-           d = nonAlphabeticalData.filter(e => test.filter(e, test.input));
+           d = nonAlphabeticalData.filter(e => test.filter(e));
            res = performListing(d, Delimiter, test.input, logger);
            assert.deepStrictEqual(res, test.output);
        });
