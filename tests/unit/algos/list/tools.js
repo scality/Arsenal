@@ -95,10 +95,10 @@ describe('listingParamsMasterKeysV0ToV1', () => {
             },
         },
     ];
-    testCases.forEach(testCase => {
-        it(`${JSON.stringify(testCase.v0params)} => ${JSON.stringify(testCase.v1params)}`, () => {
-            const converted = listingParamsMasterKeysV0ToV1(testCase.v0params);
-            assert.deepStrictEqual(converted, testCase.v1params);
+    testCases.forEach(({ v0params, v1params }) => {
+        it(`${JSON.stringify(v0params)} => ${JSON.stringify(v1params)}`, () => {
+            const converted = listingParamsMasterKeysV0ToV1(v0params);
+            assert.deepStrictEqual(converted, v1params);
         });
     });
 });
