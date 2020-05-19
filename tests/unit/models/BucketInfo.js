@@ -229,6 +229,44 @@ Object.keys(acl).forEach(
             });
         });
 
+        describe('fromObj on BucketInfo class', () => {
+            it('should create BucketInfo instance from fromObj', done => {
+                const dataObj = {
+                    _acl: dummyBucket._acl,
+                    _name: dummyBucket._name,
+                    _owner: dummyBucket._owner,
+                    _ownerDisplayName: dummyBucket._ownerDisplayName,
+                    _creationDate: dummyBucket._creationDate,
+                    _mdBucketModelVersion: dummyBucket._mdBucketModelVersion,
+                    _transient: dummyBucket._transient,
+                    _deleted: dummyBucket._deleted,
+                    _serverSideEncryption: dummyBucket._serverSideEncryption,
+                    _versioningConfiguration:
+                        dummyBucket._versioningConfiguration,
+                    _locationConstraint: dummyBucket._locationConstraint,
+                    _readLocationConstraint: dummyBucket._readLocationConstraint,
+                    _websiteConfiguration: testWebsiteConfiguration,
+                    _cors: dummyBucket._cors,
+                    _replicationConfiguration:
+                        dummyBucket._replicationConfiguration,
+                    _lifecycleConfiguration:
+                        dummyBucket._lifecycleConfiguration,
+                    _bucketPolicy: dummyBucket._bucketPolicy,
+                    _uid: dummyBucket._uid,
+                    _isNFS: dummyBucket._isNFS,
+                    _ingestion: dummyBucket._ingestion,
+                    _azureInfo: dummyBucket._azureInfo,
+                    _objectLockEnabled: dummyBucket._objectLockEnabled,
+                    _objectLockConfiguration:
+                        dummyBucket._objectLockConfiguration,
+                };
+                const fromObj = BucketInfo.fromObj(dataObj);
+                assert(fromObj instanceof BucketInfo);
+                assert.deepStrictEqual(fromObj, dummyBucket);
+                done();
+            });
+        });
+
         describe('constructor', () => {
             it('this should have the right BucketInfo types',
                () => {
