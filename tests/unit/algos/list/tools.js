@@ -2,7 +2,10 @@
 
 const assert = require('assert');
 
-const checkLimit = require('../../../../lib/algos/list/tools').checkLimit;
+const { checkLimit, inc, listingParamsMasterKeysV0ToV1 } =
+      require('../../../../lib/algos/list/tools');
+const VSConst = require('../../../../lib/versioning/constants').VersioningConstants;
+const { DbPrefixes } = VSConst;
 
 describe('checkLimit function', () => {
     const tests = [
@@ -20,6 +23,82 @@ describe('checkLimit function', () => {
             const res = checkLimit(test.input[0], test.input[1]);
             assert.deepStrictEqual(res, test.output);
             done();
+        });
+    });
+});
+
+describe('listingParamsMasterKeysV0ToV1', () => {
+    const testCases = [
+        {
+            v0params: {},
+            v1params: {
+                gte: DbPrefixes.Master,
+                lt: inc(DbPrefixes.Master),
+            },
+        },
+        {
+            v0params: {
+                gt: 'foo/bar',
+            },
+            v1params: {
+                gt: `${DbPrefixes.Master}foo/bar`,
+                lt: inc(DbPrefixes.Master),
+            },
+        },
+        {
+            v0params: {
+                gte: 'foo/bar',
+            },
+            v1params: {
+                gte: `${DbPrefixes.Master}foo/bar`,
+                lt: inc(DbPrefixes.Master),
+            },
+        },
+        {
+            v0params: {
+                lt: 'foo/bar',
+            },
+            v1params: {
+                gte: DbPrefixes.Master,
+                lt: `${DbPrefixes.Master}foo/bar`,
+            },
+        },
+        {
+            v0params: {
+                lte: 'foo/bar',
+            },
+            v1params: {
+                gte: DbPrefixes.Master,
+                lte: `${DbPrefixes.Master}foo/bar`,
+            },
+        },
+        {
+            v0params: {
+                gt: 'baz/qux',
+                lt: 'foo/bar',
+            },
+            v1params: {
+                gt: `${DbPrefixes.Master}baz/qux`,
+                lt: `${DbPrefixes.Master}foo/bar`,
+            },
+        },
+        {
+            v0params: {
+                gte: 'baz/qux',
+                lte: 'foo/bar',
+                limit: 5,
+            },
+            v1params: {
+                gte: `${DbPrefixes.Master}baz/qux`,
+                lte: `${DbPrefixes.Master}foo/bar`,
+                limit: 5,
+            },
+        },
+    ];
+    testCases.forEach(testCase => {
+        it(`${JSON.stringify(testCase.v0params)} => ${JSON.stringify(testCase.v1params)}`, () => {
+            const converted = listingParamsMasterKeysV0ToV1(testCase.v0params);
+            assert.deepStrictEqual(converted, testCase.v1params);
         });
     });
 });
