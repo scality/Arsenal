@@ -4,12 +4,6 @@ const { parseString } = require('xml2js');
 const ObjectLockConfiguration =
     require('../../../lib/models/ObjectLockConfiguration.js');
 
-const mockObjectLockConfig = {
-    ObjectLockConfiguration: {
-        ObjectLockEnabled: 'Enabled',
-    },
-};
-
 function checkError(parsedXml, err, errMessage, cb) {
     const config = new ObjectLockConfiguration(parsedXml).
         getValidatedObjectLockConfiguration();
@@ -57,6 +51,17 @@ function generateParsedXml(testParams, cb) {
         cb(parsedXml);
     });
 }
+
+const expectedXml = (daysOrYears, time, mode) =>
+    '<?xml version="1.0" encoding="UTF-8"?>' +
+    '<ObjectLockConfiguration ' +
+    'xmlns="http://s3.amazonaws.com/doc/2006-03-01/">' +
+    '<ObjectLockEnabled>Enabled</ObjectLockEnabled>' +
+    '<Rule><DefaultRetention>' +
+    `<Mode>${mode}</Mode>` +
+    `<${daysOrYears}>${time}</${daysOrYears}>` +
+    '</DefaultRetention></Rule>' +
+    '</ObjectLockConfiguration>';
 
 const failTests = [
     {
@@ -158,36 +163,60 @@ const passTests = [
     },
 ];
 
-function generateExpectedXml(testParams) {
-    if (!testParams || !testParams.key) {
-        return '<?xml version="1.0" encoding="UTF-8"?>' +
+const passTestsGetConfigXML = [
+    {
+        config: {
+            rule: {
+                mode: 'COMPLIANCE',
+                days: 90,
+            },
+        },
+        expectedXml: expectedXml('Days', 90, 'COMPLIANCE'),
+        description: 'with COMPLIANCE retention mode ' +
+            'and valid Days retention period',
+    },
+    {
+        config: {
+            rule: {
+                mode: 'GOVERNANCE',
+                days: 30,
+            },
+        },
+        expectedXml: expectedXml('Days', 30, 'GOVERNANCE'),
+        description: 'with GOVERNANCE retention mode ' +
+            'and valid Days retention period',
+    },
+    {
+        config: {
+            rule: {
+                mode: 'COMPLIANCE',
+                years: 1,
+            },
+        },
+        expectedXml: expectedXml('Years', 1, 'COMPLIANCE'),
+        description: 'with COMPLIANCE retention mode ' +
+            'and valid Years retention period',
+    },
+    {
+        config: {
+            rule: {
+                mode: 'GOVERNANCE',
+                years: 2,
+            },
+        },
+        expectedXml: expectedXml('Years', 2, 'GOVERNANCE'),
+        description: 'with GOVERNANCE retention mode ' +
+            'and valid Years retention period',
+    },
+    {
+        config: {},
+        expectedXml: '<?xml version="1.0" encoding="UTF-8"?>' +
             '<ObjectLockConfiguration ' +
             'xmlns="http://s3.amazonaws.com/doc/2006-03-01/">' +
             '<ObjectLockEnabled>Enabled</ObjectLockEnabled>' +
-            '</ObjectLockConfiguration>';
-    }
-    const xml = generateXml(testParams);
-    const xmlStr = `${xml.slice(0, 24)} ` +
-        'xmlns="http://s3.amazonaws.com/doc/2006-03-01/"' +
-        `${xml.slice(24)}`;
-    return `<?xml version="1.0" encoding="UTF-8"?>${xmlStr}`;
-}
-
-const passTestsGetConfigXML = [
-    {
-        name: 'should return correct XML with GOVERNANCE retention mode and ' +
-            'valid Days retention period',
-        params: { key: 'Days', value: 90 },
-    },
-    {
-        name: 'should return correct XML with COMPLIANCE retention mode and ' +
-            'valid Days retention period',
-        params: { key: 'Mode', value: 'COMPLIANCE' },
-    },
-    {
-        name: 'should return correct XML with GOVERNANCE retention mode and ' +
-            'valid Years retention period',
-        params: { key: 'Years', value: 1 },
+            '</ObjectLockConfiguration>',
+        description: 'without rule if object lock ' +
+            'configuration has not been set',
     },
 ];
 
@@ -219,28 +248,12 @@ describe('ObjectLockConfiguration class getValidatedObjectLockConfiguration',
 });
 
 describe('ObjectLockConfiguration class getConfigXML', () => {
-    it('should return XML without rule if object lock config not set', done => {
-        const params = {};
-        generateParsedXml(params, xml => {
-            const expectedXml = generateExpectedXml(params);
-            const responseXml = new ObjectLockConfiguration(xml)
-                .getConfigXML(mockObjectLockConfig);
+    passTestsGetConfigXML.forEach(test => {
+        const { config, description, expectedXml } = test;
+        it(`should return correct XML ${description}`, done => {
+            const responseXml = ObjectLockConfiguration.getConfigXML(config);
             assert.strictEqual(responseXml, expectedXml);
             done();
-        });
-    });
-
-    passTestsGetConfigXML.forEach(test => {
-        it(`should ${test.name}`, done => {
-            generateParsedXml(test.params, xml => {
-                const config = new ObjectLockConfiguration(xml).
-                    getValidatedObjectLockConfiguration();
-                const responseXml = new ObjectLockConfiguration(xml).
-                    getConfigXML(config);
-                const expectedXml = generateExpectedXml(test.params);
-                assert.strictEqual(responseXml, expectedXml);
-                done();
-            });
         });
     });
 });
