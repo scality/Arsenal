@@ -100,7 +100,7 @@ describe('Delimiter All masters listing algorithm', () => {
         assert.deepStrictEqual(delimiter.result(), EmptyResult);
     });
 
-    it('should skip entries superior to next marker', () => {
+    it('should skip entries inferior to next marker', () => {
         const delimiter = new DelimiterMaster({ marker: 'b' }, fakeLogger);
 
         assert.strictEqual(delimiter.filter({ key: 'a' }), FILTER_SKIP);
