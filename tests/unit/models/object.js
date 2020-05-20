@@ -99,6 +99,8 @@ describe('ObjectMD class setters/getters', () => {
             dataStoreVersionId: '',
         }],
         ['DataStoreName', null, ''],
+        ['LegalHold', null, false],
+        ['LegalHold', true],
     ].forEach(test => {
         const property = test[0];
         const testValue = test[1];
