@@ -250,9 +250,10 @@ describe('ObjectLockConfiguration class getValidatedObjectLockConfiguration',
 describe('ObjectLockConfiguration class getConfigXML', () => {
     passTestsGetConfigXML.forEach(test => {
         const { config, description, expectedXml } = test;
-        it(`should return correct XML ${description}`, () => {
+        it(`should return correct XML ${description}`, done => {
             const responseXml = ObjectLockConfiguration.getConfigXML(config);
             assert.strictEqual(responseXml, expectedXml);
+            done();
         });
     });
 });
