@@ -313,6 +313,7 @@ describe('getAttributes static method', () => {
             'replicationInfo': true,
             'dataStoreName': true,
             'last-modified': true,
+            'legalHold': true,
             'md-model-version': true };
         assert.deepStrictEqual(attributes, expectedResult);
     });
