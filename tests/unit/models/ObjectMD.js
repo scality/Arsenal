@@ -119,6 +119,8 @@ describe('ObjectMD class setters/getters', () => {
             blobAccessTierChangeTime: 'abcdef',
             blobUncommitted: false,
         }],
+        ['LegalHold', null, { status: '' }],
+        ['LegalHold', { status: 'ON' }],
     ].forEach(test => {
         const property = test[0];
         const testValue = test[1];
@@ -400,6 +402,7 @@ describe('getAttributes static method', () => {
             'replicationInfo': true,
             'dataStoreName': true,
             'last-modified': true,
+            'legalHold': true,
             'md-model-version': true };
         assert.deepStrictEqual(attributes, expectedResult);
     });
