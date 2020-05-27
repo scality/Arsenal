@@ -10,31 +10,31 @@ function generateXml(status) {
 
 const failTests = [
     {
-        name: 'should fail with empty status',
+        description: 'should fail with empty status',
         params: { status: '' },
         error: 'MalformedXML',
         errMessage: 'request xml does not contain Status',
     },
     {
-        name: 'should fail with invalid status "on"',
+        description: 'should fail with invalid status "on"',
         params: { status: 'on' },
         error: 'MalformedXML',
         errMessage: 'Status request xml must be one of "ON", "OFF"',
     },
     {
-        name: 'should fail with invalid status "On"',
+        description: 'should fail with invalid status "On"',
         params: { status: 'On' },
         error: 'MalformedXML',
         errMessage: 'Status request xml must be one of "ON", "OFF"',
     },
     {
-        name: 'should fail with invalid status "off"',
+        description: 'should fail with invalid status "off"',
         params: { status: 'off' },
         error: 'MalformedXML',
         errMessage: 'Status request xml must be one of "ON", "OFF"',
     },
     {
-        name: 'should fail with invalid status "Off"',
+        description: 'should fail with invalid status "Off"',
         params: { status: 'Off' },
         error: 'MalformedXML',
         errMessage: 'Status request xml must be one of "ON", "OFF"',
@@ -43,7 +43,7 @@ const failTests = [
 
 describe('object legal hold validation', () => {
     failTests.forEach(test => {
-        it(test.name, done => {
+        it(test.description, done => {
             const status = test.params.status;
             parseLegalHoldXml(generateXml(status), log, err => {
                 assert(err[test.error]);
