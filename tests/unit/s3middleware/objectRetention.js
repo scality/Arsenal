@@ -1,5 +1,8 @@
 const assert = require('assert');
-const { parseRetentionXml } = require('../../../lib/s3middleware/objectRetention');
+const {
+    parseRetentionXml,
+    convertToXml,
+} = require('../../../lib/s3middleware/objectRetention');
 const DummyRequestLogger = require('../helpers').DummyRequestLogger;
 
 const log = new DummyRequestLogger();
@@ -30,6 +33,12 @@ const expectedRetention = {
         retainUntilDate: passDate.toISOString(),
     },
 };
+
+const expectedXml =
+    '<ObjectRetention xmlns="http://s3.amazonaws.com/doc/2006-03-01/">' +
+    '<Mode>GOVERNANCE</Mode>' +
+    `<RetainUntilDate>${passDate.toISOString()}</RetainUntilDate>` +
+    '</ObjectRetention>';
 
 const failTests = [
     {
@@ -96,5 +105,26 @@ describe('object Retention validation', () => {
             assert.deepStrictEqual(result, expectedRetention);
             done();
         });
+    });
+});
+
+describe('object Retention xml', () => {
+    it('should return empty string if no retention info', done => {
+        const xml = convertToXml({});
+        assert.equal(xml, '');
+        done();
+    });
+
+    it('should return empty string if retention info is empty', done => {
+        const xml = convertToXml(
+            { retention: { mode: '', retainUntilDate: '' } });
+        assert.equal(xml, '');
+        done();
+    });
+
+    it('should return xml string', done => {
+        const xml = convertToXml(expectedRetention);
+        assert.strictEqual(xml, expectedXml);
+        done();
     });
 });
