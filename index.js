@@ -88,6 +88,7 @@ module.exports = {
         },
         prepareStream: require('./lib/s3middleware/prepareStream'),
         processMpuParts: require('./lib/s3middleware/processMpuParts'),
+        retention: require('./lib/s3middleware/objectRetention'),
     },
     storage: {
         metadata: {

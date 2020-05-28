@@ -2,6 +2,9 @@ const assert = require('assert');
 const ObjectMD = require('../../../lib/models/ObjectMD');
 const constants = require('../../../lib/constants');
 
+const retainDate = new Date();
+retainDate.setDate(retainDate.getDate() + 1);
+
 describe('ObjectMD class setters/getters', () => {
     let md = null;
 
@@ -118,6 +121,14 @@ describe('ObjectMD class setters/getters', () => {
             blobSequenceNumber: 42,
             blobAccessTierChangeTime: 'abcdef',
             blobUncommitted: false,
+        }],
+        ['RetentionInfo', null, {
+            mode: '',
+            retainUntilDate: '',
+        }],
+        ['RetentionInfo', {
+            mode: 'GOVERNANCE',
+            retainUntilDate: retainDate.toISOString(),
         }],
     ].forEach(test => {
         const property = test[0];
@@ -276,6 +287,17 @@ describe('ObjectMD class setters/getters', () => {
             assert.strictEqual(key.length, 16);
         });
     });
+
+    it('ObjectMD::set/getRetentionInfo', () => {
+        md.setRetentionInfo({
+            mode: 'COMPLIANCE',
+            retainUntilDate: retainDate.toISOString(),
+        });
+        assert.deepStrictEqual(md.getRetentionInfo(), {
+            mode: 'COMPLIANCE',
+            retainUntilDate: retainDate.toISOString(),
+        });
+    });
 });
 
 describe('ObjectMD import from stored blob', () => {
@@ -398,6 +420,7 @@ describe('getAttributes static method', () => {
             'versionId': true,
             'tags': true,
             'replicationInfo': true,
+            'retentionInfo': true,
             'dataStoreName': true,
             'last-modified': true,
             'md-model-version': true };
