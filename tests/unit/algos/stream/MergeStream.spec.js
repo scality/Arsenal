@@ -8,6 +8,8 @@ class Streamify extends stream.Readable {
         this._remaining = Array.from(objectsToSend);
         this._remaining.reverse();
         this._errorAtEnd = errorAtEnd || false;
+        this._ended = false;
+        this._destroyed = false;
     }
 
     _read() {
@@ -21,8 +23,14 @@ class Streamify extends stream.Readable {
             if (this._errorAtEnd) {
                 return this.emit('error', new Error('OOPS'));
             }
+            this._ended = true;
             return this.push(null);
         });
+    }
+
+    _destroy(err, callback) {
+        this._destroyed = true;
+        callback();
     }
 }
 
@@ -39,17 +47,12 @@ function readAll(stream, usePauseResume, cb) {
     stream.once('error', err => cb(err));
 }
 
+function compareInt(a, b) {
+    return Math.sign(a - b);
+}
+
 function testMergeStreamWithIntegers(contents1, contents2,
                                      usePauseResume, errorAtEnd, cb) {
-    const compareInt = (a, b) => {
-        if (a < b) {
-            return -1;
-        }
-        if (a > b) {
-            return 1;
-        }
-        return 0;
-    };
     const expectedItems = contents1.concat(contents2).sort(compareInt);
     const mergeStream = new MergeStream(
         new Streamify(contents1, errorAtEnd)
@@ -220,6 +223,37 @@ describe('MergeStream', () => {
                             stream1, stream2, usePauseResume, errorAtEnd, done);
                     });
                 }
+            });
+        });
+    });
+    // with 3 items per input stream, we reach the end of stream even
+    // though destroy() has been called (due to buffering), while with
+    // 100 items input streams are aborted before emitting the 'end'
+    // event, so it's useful to test both cases
+    [3, 100].forEach(nbItemsPerStream => {
+        it(`destroy() should destroy both inner streams with ${nbItemsPerStream} items per stream`,
+        done => {
+            const stream1 = new Streamify(new Array(nbItemsPerStream).fill().map((e, i) => 2 * i));
+            const stream2 = new Streamify(new Array(nbItemsPerStream).fill().map((e, i) => 1 + 2 * i));
+            const mergeStream = new MergeStream(stream1, stream2, compareInt);
+            mergeStream.on('data', item => {
+                if (item === 5) {
+                    mergeStream.destroy();
+                    const s1ended = stream1._ended;
+                    const s2ended = stream2._ended;
+                    setTimeout(() => {
+                        if (!s1ended) {
+                            assert(stream1._destroyed);
+                        }
+                        if (!s2ended) {
+                            assert(stream2._destroyed);
+                        }
+                        done();
+                    }, 10);
+                }
+            });
+            mergeStream.once('error', err => {
+                assert.fail(`unexpected error: ${err.message}`);
             });
         });
     });
