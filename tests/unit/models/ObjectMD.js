@@ -119,6 +119,8 @@ describe('ObjectMD class setters/getters', () => {
             blobAccessTierChangeTime: 'abcdef',
             blobUncommitted: false,
         }],
+        ['LegalHold', null, false],
+        ['LegalHold', true],
     ].forEach(test => {
         const property = test[0];
         const testValue = test[1];
