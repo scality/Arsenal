@@ -1,5 +1,6 @@
 const assert = require('assert');
-const { parseLegalHoldXml } = require('../../../lib/s3middleware/objectLegalHold');
+const { parseLegalHoldXml } =
+    require('../../../lib/s3middleware/objectLegalHold');
 const DummyRequestLogger = require('../helpers').DummyRequestLogger;
 
 const log = new DummyRequestLogger();
