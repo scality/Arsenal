@@ -1,12 +1,9 @@
 const assert = require('assert');
-const { parseLegalHoldXml } = require('../../../lib/s3middleware/objectLegalHold');
+const { convertToXml, parseLegalHoldXml } =
+    require('../../../lib/s3middleware/objectLegalHold');
 const DummyRequestLogger = require('../helpers').DummyRequestLogger;
 
 const log = new DummyRequestLogger();
-
-function generateXml(status) {
-    return `<LegalHold><Status>${status}</Status></LegalHold>`;
-}
 
 const failTests = [
     {
@@ -41,7 +38,11 @@ const failTests = [
     },
 ];
 
-describe('object legal hold validation', () => {
+const generateXml = status =>
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    `<LegalHold><Status>${status}</Status></LegalHold>`;
+
+describe('object legal hold helpers: parseLegalHoldXml', () => {
     failTests.forEach(test => {
         it(test.description, done => {
             const status = test.params.status;
@@ -67,5 +68,25 @@ describe('object legal hold validation', () => {
             assert.strictEqual(result, false);
             done();
         });
+    });
+});
+
+describe('object legal hold helpers: convertToXml', () => {
+    it('should return correct xml when legal hold status "ON"', () => {
+        const xml = convertToXml(true);
+        const expextedXml = generateXml('ON');
+        assert.strictEqual(xml, expextedXml);
+    });
+
+    it('should return correct xml when legal hold status "OFF"', () => {
+        const xml = convertToXml(false);
+        const expextedXml = generateXml('OFF');
+        assert.strictEqual(xml, expextedXml);
+    });
+
+    it('should return empty string when legal hold not set', () => {
+        const xml = convertToXml(undefined);
+        const expextedXml = '';
+        assert.strictEqual(xml, expextedXml);
     });
 });
