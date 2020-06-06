@@ -2,6 +2,9 @@ const assert = require('assert');
 const ObjectMD = require('../../../lib/models/ObjectMD');
 const constants = require('../../../lib/constants');
 
+const retainDate = new Date();
+retainDate.setDate(retainDate.getDate() + 1);
+
 describe('ObjectMD class setters/getters', () => {
     let md = null;
 
@@ -121,6 +124,10 @@ describe('ObjectMD class setters/getters', () => {
         }],
         ['LegalHold', null, false],
         ['LegalHold', true],
+        ['RetentionInfo', {
+            mode: 'GOVERNANCE',
+            retainUntilDate: retainDate.toISOString(),
+        }],
     ].forEach(test => {
         const property = test[0];
         const testValue = test[1];
@@ -220,6 +227,7 @@ describe('ObjectMD class setters/getters', () => {
             md.getReplicationSiteDataStoreVersionId('zenko'), 'a');
     });
 
+<<<<<<< HEAD:tests/unit/models/ObjectMD.js
     it('ObjectMd::isMultipartUpload', () => {
         md.setContentMd5('68b329da9893e34099c7d8ad5cb9c940');
         assert.strictEqual(md.isMultipartUpload(), false);
@@ -276,6 +284,17 @@ describe('ObjectMD class setters/getters', () => {
             // length is always 16 in hex because leading 0s are
             // also encoded in the 8-byte random buffer.
             assert.strictEqual(key.length, 16);
+        });
+    });
+
+    it('ObjectMD::set/getRetentionInfo', () => {
+        md.setRetentionInfo({
+            mode: 'COMPLIANCE',
+            retainUntilDate: retainDate.toISOString(),
+        });
+        assert.deepStrictEqual(md.getRetentionInfo(), {
+            mode: 'COMPLIANCE',
+            retainUntilDate: retainDate.toISOString(),
         });
     });
 });
