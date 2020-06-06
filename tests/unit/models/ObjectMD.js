@@ -227,7 +227,6 @@ describe('ObjectMD class setters/getters', () => {
             md.getReplicationSiteDataStoreVersionId('zenko'), 'a');
     });
 
-<<<<<<< HEAD:tests/unit/models/ObjectMD.js
     it('ObjectMd::isMultipartUpload', () => {
         md.setContentMd5('68b329da9893e34099c7d8ad5cb9c940');
         assert.strictEqual(md.isMultipartUpload(), false);
