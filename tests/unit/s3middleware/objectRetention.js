@@ -22,8 +22,8 @@ function buildXml(key, value) {
         `<RetainUntilDate>${value}</RetainUntilDate>` :
         `<RetainUntilDate>${date}</RetainUntilDate>`;
     const retention = key === 'Retention' ?
-        `<ObjectRetention>${value}</ObjectRetention>` :
-        `<ObjectRetention>${mode}${retainDate}</ObjectRetention>`;
+        `<Retention>${value}</Retention>` :
+        `<Retention>${mode}${retainDate}</Retention>`;
     return retention;
 }
 
@@ -35,17 +35,17 @@ const expectedRetention = {
 };
 
 const expectedXml =
-    '<ObjectRetention xmlns="http://s3.amazonaws.com/doc/2006-03-01/">' +
+    '<Retention xmlns="http://s3.amazonaws.com/doc/2006-03-01/">' +
     '<Mode>GOVERNANCE</Mode>' +
     `<RetainUntilDate>${passDate.toISOString()}</RetainUntilDate>` +
-    '</ObjectRetention>';
+    '</Retention>';
 
 const failTests = [
     {
         name: 'should fail with empty retention',
         params: { key: 'Retention', value: '' },
         error: 'MalformedXML',
-        errMessage: 'request xml does not contain ObjectRetention',
+        errMessage: 'request xml does not contain Retention',
     },
     {
         name: 'should fail with empty mode',
