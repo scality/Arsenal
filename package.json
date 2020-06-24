@@ -34,7 +34,7 @@
     "ipaddr.js": "1.8.1",
     "level": "~5.0.1",
     "level-sublevel": "~6.6.5",
-    "mongodb": "^3.0.1",
+    "mongodb": "^3.5.9",
     "node-forge": "^0.7.1",
     "prom-client": "10.2.3",
     "simple-glob": "^0.2.0",
