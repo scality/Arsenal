@@ -121,4 +121,7 @@ module.exports = {
     pensieve: {
         credentialUtils: require('./lib/executables/pensieveCreds/utils'),
     },
+    stream: {
+        utils: require('./lib/stream/utils'),
+    },
 };
