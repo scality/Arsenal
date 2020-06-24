@@ -1424,10 +1424,10 @@ ioredis@4.9.5:
     redis-parser "^3.0.0"
     standard-as-callback "^2.0.1"
 
-ipaddr.js@1.8.1:
-  version "1.8.1"
-  resolved "https://registry.yarnpkg.com/ipaddr.js/-/ipaddr.js-1.8.1.tgz#fa4b79fa47fd3def5e3b159825161c0a519c9427"
-  integrity sha1-+kt5+kf9Pe9eOxWYJRYcClGclCc=
+ipaddr.js@1.9.1:
+  version "1.9.1"
+  resolved "https://registry.yarnpkg.com/ipaddr.js/-/ipaddr.js-1.9.1.tgz#bff38543eeb8984825079ff3a2a8e6cbd46781b3"
+  integrity sha512-0KI/607xoxSToH7GjN1FfSbLoU0+btTicjsQSWQlh/hZykN8KpmMf7uYwPW3R+akZ6R/w18ZlXSHBYXiYUPO3g==
 
 is-fullwidth-code-point@^1.0.0:
   version "1.0.0"
