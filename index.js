@@ -180,4 +180,7 @@ module.exports = {
     pensieve: {
         credentialUtils: require('./lib/executables/pensieveCreds/utils'),
     },
+    stream: {
+        readJSONStreamObject: require('./lib/stream/readJSONStreamObject'),
+    },
 };
