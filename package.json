@@ -21,7 +21,7 @@
     "JSONStream": "^1.0.0",
     "ajv": "4.10.0",
     "async": "~2.1.5",
-    "debug": "~2.3.3",
+    "debug": "~4.1.1",
     "diskusage": "^1.1.1",
     "ioredis": "4.9.5",
     "ipaddr.js": "1.2.0",
