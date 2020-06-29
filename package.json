@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/scality/Arsenal#readme",
   "dependencies": {
-    "@hapi/joi": "^15.1.0",
+    "@hapi/joi": "^17.1.1",
     "JSONStream": "^1.0.0",
     "ajv": "4.10.0",
     "async": "~2.1.5",
