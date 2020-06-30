@@ -58,7 +58,7 @@
     "mocha": "5.2.0",
     "mongodb-memory-server": "^6.0.2",
     "sinon": "^9.0.2",
-    "temp": "0.8.3"
+    "temp": "0.9.1"
   },
   "scripts": {
     "lint": "eslint $(git ls-files '*.js')",
