@@ -447,6 +447,13 @@ Object.keys(acl).forEach(
                 assert.deepStrictEqual(dummyBucket.getObjectLockConfiguration(),
                     newObjectLockConfig);
             });
+            [true, false].forEach(bool => {
+                it('setObjectLockEnabled should set object lock status', () => {
+                    dummyBucket.setObjectLockEnabled(bool);
+                    assert.deepStrictEqual(dummyBucket.isObjectLockEnabled(),
+                        bool);
+                });
+            });
         });
     })
 );
