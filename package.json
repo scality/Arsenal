@@ -46,7 +46,7 @@
     "eslint-config-scality": "scality/Guidelines#ec33dfb",
     "lolex": "1.5.2",
     "mocha": "2.5.3",
-    "temp": "0.8.3"
+    "temp": "0.9.1"
   },
   "scripts": {
     "lint": "eslint $(git ls-files '*.js')",
