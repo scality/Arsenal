@@ -4,6 +4,8 @@ const constants = require('../../../lib/constants');
 
 const retainDate = new Date();
 retainDate.setDate(retainDate.getDate() + 1);
+const laterDate = new Date();
+laterDate.setDate(laterDate.getDate() + 5);
 
 describe('ObjectMD class setters/getters', () => {
     let md = null;
@@ -104,10 +106,8 @@ describe('ObjectMD class setters/getters', () => {
         ['DataStoreName', null, ''],
         ['LegalHold', null, false],
         ['LegalHold', true],
-        ['RetentionInfo', {
-            mode: 'GOVERNANCE',
-            retainUntilDate: retainDate.toISOString(),
-        }],
+        ['RetentionMode', 'GOVERNANCE'],
+        ['RetentionDate', retainDate.toISOString()],
     ].forEach(test => {
         const property = test[0];
         const testValue = test[1];
@@ -202,15 +202,14 @@ describe('ObjectMD class setters/getters', () => {
             md.getReplicationSiteDataStoreVersionId('zenko'), 'a');
     });
 
-    it('ObjectMD::set/getRetentionInfo', () => {
-        md.setRetentionInfo({
-            mode: 'COMPLIANCE',
-            retainUntilDate: retainDate.toISOString(),
-        });
-        assert.deepStrictEqual(md.getRetentionInfo(), {
-            mode: 'COMPLIANCE',
-            retainUntilDate: retainDate.toISOString(),
-        });
+    it('ObjectMD::set/getRetentionMode', () => {
+        md.setRetentionMode('COMPLIANCE');
+        assert.deepStrictEqual(md.getRetentionMode(), 'COMPLIANCE');
+    });
+
+    it('ObjectMD::set/getRetentionDate', () => {
+        md.setRetentionDate(laterDate.toISOString());
+        assert.deepStrictEqual(md.getRetentionDate(), laterDate.toISOString());
     });
 });
 
