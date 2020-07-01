@@ -60,6 +60,8 @@ module.exports = {
             RESTClient: require('./lib/network/rest/RESTClient'),
         },
         RoundRobin: require('./lib/network/RoundRobin'),
+        kmip: require('./lib/network/kmip'),
+        kmipClient: require('./lib/network/kmip/Client'),
     },
     s3routes: {
         routes: require('./lib/s3routes/routes'),
@@ -69,6 +71,7 @@ module.exports = {
         userMetadata: require('./lib/s3middleware/userMetadata'),
         convertToXml: require('./lib/s3middleware/convertToXml'),
         escapeForXml: require('./lib/s3middleware/escapeForXml'),
+        objectLegalHold: require('./lib/s3middleware/objectLegalHold'),
         tagging: require('./lib/s3middleware/tagging'),
         validateConditionalHeaders:
             require('./lib/s3middleware/validateConditionalHeaders')
@@ -84,6 +87,7 @@ module.exports = {
             SubStreamInterface:
                 require('./lib/s3middleware/azureHelpers/SubStreamInterface'),
         },
+        retention: require('./lib/s3middleware/objectRetention'),
     },
     storage: {
         metadata: {
@@ -112,6 +116,9 @@ module.exports = {
           require('./lib/models/ReplicationConfiguration'),
         LifecycleConfiguration:
             require('./lib/models/LifecycleConfiguration'),
+        BucketPolicy: require('./lib/models/BucketPolicy'),
+        ObjectLockConfiguration:
+            require('./lib/models/ObjectLockConfiguration'),
     },
     metrics: {
         StatsClient: require('./lib/metrics/StatsClient'),
