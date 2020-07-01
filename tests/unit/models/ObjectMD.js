@@ -286,17 +286,6 @@ describe('ObjectMD class setters/getters', () => {
         });
     });
 
-    it('ObjectMD::set/getRetentionInfo', () => {
-        md.setRetentionInfo({
-            mode: 'COMPLIANCE',
-            retainUntilDate: retainDate.toISOString(),
-        });
-        assert.deepStrictEqual(md.getRetentionInfo(), {
-            mode: 'COMPLIANCE',
-            retainUntilDate: retainDate.toISOString(),
-        });
-    });
-
     it('ObjectMD::set/getRetentionMode', () => {
         md.setRetentionMode('COMPLIANCE');
         assert.deepStrictEqual(md.getRetentionMode(), 'COMPLIANCE');
