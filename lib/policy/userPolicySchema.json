@@ -1,5 +1,5 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$schema": "http://json-schema.org/draft-06/schema#",
     "type": "object",
     "title": "AWS Policy schema.",
     "description": "This schema describes a user policy per AWS policy grammar rules",
@@ -9,9 +9,7 @@
             "properties": {
                 "Service": {
                     "type": "string",
-                    "enum": [
-                        "backbeat"
-                    ]
+                    "const": "backbeat"
                 }
             },
             "additionalProperties": false
@@ -45,11 +43,21 @@
             "properties": {
                 "AWS": {
                     "oneOf": [
-                        { "$ref": "#/definitions/principalAWSAccountID" },
-                        { "$ref": "#/definitions/principalAnonymous" },
-                        { "$ref": "#/definitions/principalAWSAccountArn" },
-                        { "$ref": "#/definitions/principalAWSUserArn" },
-                        { "$ref": "#/definitions/principalAWSRoleArn" },
+                        {
+                            "$ref": "#/definitions/principalAWSAccountID"
+                        },
+                        {
+                            "$ref": "#/definitions/principalAnonymous"
+                        },
+                        {
+                            "$ref": "#/definitions/principalAWSAccountArn"
+                        },
+                        {
+                            "$ref": "#/definitions/principalAWSUserArn"
+                        },
+                        {
+                            "$ref": "#/definitions/principalAWSRoleArn"
+                        },
                         {
                             "type": "array",
                             "minItems": 1,
@@ -88,7 +96,9 @@
             "properties": {
                 "Federated": {
                     "oneOf": [
-                        { "$ref": "#/definitions/principalFederatedSamlIdp" }
+                        {
+                            "$ref": "#/definitions/principalFederatedSamlIdp"
+                        }
                     ]
                 }
             },
@@ -96,10 +106,18 @@
         },
         "principalItem": {
             "oneOf": [
-                { "$ref": "#/definitions/principalAWSItem" },
-                { "$ref": "#/definitions/principalAnonymous" },
-                { "$ref": "#/definitions/principalFederatedItem" },
-                { "$ref": "#/definitions/principalService" }
+                {
+                    "$ref": "#/definitions/principalAWSItem"
+                },
+                {
+                    "$ref": "#/definitions/principalAnonymous"
+                },
+                {
+                    "$ref": "#/definitions/principalFederatedItem"
+                },
+                {
+                    "$ref": "#/definitions/principalService"
+                }
             ]
         },
         "actionItem": {
@@ -285,9 +303,7 @@
     "properties": {
         "Version": {
             "type": "string",
-            "enum": [
-                "2012-10-17"
-            ]
+            "const": "2012-10-17"
         },
         "Statement": {
             "oneOf": [
@@ -381,31 +397,36 @@
                                     "Action",
                                     "Resource"
                                 ]
-                            }, {
+                            },
+                            {
                                 "required": [
                                     "Effect",
                                     "Action",
                                     "NotResource"
                                 ]
-                            }, {
+                            },
+                            {
                                 "required": [
                                     "Effect",
                                     "NotAction",
                                     "Resource"
                                 ]
-                            }, {
+                            },
+                            {
                                 "required": [
                                     "Effect",
                                     "NotAction",
                                     "NotResource"
                                 ]
-                            }, {
+                            },
+                            {
                                 "required": [
                                     "Effect",
                                     "Action",
                                     "Principal"
                                 ]
-                            }, {
+                            },
+                            {
                                 "required": [
                                     "Effect",
                                     "Action",
@@ -499,31 +520,36 @@
                                 "Effect",
                                 "Resource"
                             ]
-                        }, {
+                        },
+                        {
                             "required": [
                                 "Action",
                                 "Effect",
                                 "NotResource"
                             ]
-                        }, {
+                        },
+                        {
                             "required": [
                                 "Effect",
                                 "NotAction",
                                 "Resource"
                             ]
-                        }, {
+                        },
+                        {
                             "required": [
                                 "Effect",
                                 "NotAction",
                                 "NotResource"
                             ]
-                        }, {
+                        },
+                        {
                             "required": [
                                 "Effect",
                                 "Action",
                                 "Principal"
                             ]
-                        }, {
+                        },
+                        {
                             "required": [
                                 "Effect",
                                 "Action",
