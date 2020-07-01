@@ -28,10 +28,8 @@ function buildXml(key, value) {
 }
 
 const expectedRetention = {
-    retention: {
-        mode: 'GOVERNANCE',
-        retainUntilDate: passDate.toISOString(),
-    },
+    mode: 'GOVERNANCE',
+    date: passDate.toISOString(),
 };
 
 const expectedXml =
@@ -109,21 +107,20 @@ describe('object Retention validation', () => {
 });
 
 describe('object Retention xml', () => {
-    it('should return empty string if no retention info', done => {
-        const xml = convertToXml({});
+    it('should return empty string if no retention date', done => {
+        const xml = convertToXml('GOVERNANCE', '');
         assert.equal(xml, '');
         done();
     });
 
-    it('should return empty string if retention info is empty', done => {
-        const xml = convertToXml(
-            { retention: { mode: '', retainUntilDate: '' } });
+    it('should return empty string if no retention mode', done => {
+        const xml = convertToXml('', passDate.toISOString());
         assert.equal(xml, '');
         done();
     });
 
     it('should return xml string', done => {
-        const xml = convertToXml(expectedRetention);
+        const xml = convertToXml('GOVERNANCE', passDate.toISOString());
         assert.strictEqual(xml, expectedXml);
         done();
     });
