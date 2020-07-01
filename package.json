@@ -19,7 +19,7 @@
   "dependencies": {
     "@hapi/joi": "^15.1.0",
     "JSONStream": "^1.0.0",
-    "ajv": "4.10.0",
+    "ajv": "6.12.2",
     "async": "~2.6.1",
     "aws-sdk": "2.80.0",
     "azure-storage": "^2.1.0",
