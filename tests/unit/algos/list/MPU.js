@@ -1,14 +1,26 @@
 'use strict'; // eslint-disable-line strict
 
 const assert = require('assert');
-const MultipartUploads =
-    require('../../../../lib/algos/list/MPU').MultipartUploads;
+const MultipartUploads = require('../../../../lib/algos/list/MPU').MultipartUploads;
+const { inc } = require('../../../../lib/algos/list/tools');
 const werelogs = require('werelogs').Logger;
 // eslint-disable-next-line new-cap
 const logger = new werelogs('listMpuTest');
 const performListing = require('../../../utils/performListing');
 const VSConst = require('../../../../lib/versioning/constants').VersioningConstants;
-const { DbPrefixes } = VSConst;
+const { DbPrefixes, BucketVersioningKeyFormat } = VSConst;
+
+function getListingKey(key, vFormat) {
+    if ([BucketVersioningKeyFormat.v0,
+         BucketVersioningKeyFormat.v0mig].includes(vFormat)) {
+        return key;
+    }
+    if (vFormat === BucketVersioningKeyFormat.v1) {
+        return `${DbPrefixes.Master}${key}`;
+    }
+    assert.fail(`bad vFormat ${vFormat}`);
+    return undefined;
+}
 
 describe('Multipart Uploads listing algorithm', () => {
     const splitter = '**';
@@ -16,22 +28,14 @@ describe('Multipart Uploads listing algorithm', () => {
     const storageClass = 'STANDARD';
     const initiator1 = { ID: '1', DisplayName: 'initiator1' };
     const initiator2 = { ID: '2', DisplayName: 'initiator2' };
-    const keys = {
-        v0: [`${overviewPrefix}test/1${splitter}uploadId1`,
-             `${overviewPrefix}test/2${splitter}uploadId2`,
-             `${overviewPrefix}test/3${splitter}uploadId3`,
-             `${overviewPrefix}testMore/4${splitter}uploadId4`,
-             `${overviewPrefix}testMore/5${splitter}uploadId5`,
-             `${overviewPrefix}prefixTest/5${splitter}uploadId5`,
-            ],
-        v1: [`${DbPrefixes.Master}${overviewPrefix}test/1${splitter}uploadId1`,
-             `${DbPrefixes.Master}${overviewPrefix}test/2${splitter}uploadId2`,
-             `${DbPrefixes.Master}${overviewPrefix}test/3${splitter}uploadId3`,
-             `${DbPrefixes.Master}${overviewPrefix}testMore/4${splitter}uploadId4`,
-             `${DbPrefixes.Master}${overviewPrefix}testMore/5${splitter}uploadId5`,
-             `${DbPrefixes.Master}${overviewPrefix}prefixTest/5${splitter}uploadId5`,
-            ],
-    };
+    const v0keys = [
+        `${overviewPrefix}test/1${splitter}uploadId1`,
+        `${overviewPrefix}test/2${splitter}uploadId2`,
+        `${overviewPrefix}test/3${splitter}uploadId3`,
+        `${overviewPrefix}testMore/4${splitter}uploadId4`,
+        `${overviewPrefix}testMore/5${splitter}uploadId5`,
+        `${overviewPrefix}prefixTest/5${splitter}uploadId5`,
+    ];
     const values = [
         JSON.stringify({
             'key': 'test/1',
@@ -128,9 +132,13 @@ describe('Multipart Uploads listing algorithm', () => {
         done();
     });
 
-    ['v0', 'v1'].forEach(vFormat => {
-        const dbListing = keys[vFormat].map((key, i) => ({
-            key,
+    [
+        BucketVersioningKeyFormat.v0,
+        BucketVersioningKeyFormat.v0mig,
+        BucketVersioningKeyFormat.v1,
+    ].forEach(vFormat => {
+        const dbListing = v0keys.map((key, i) => ({
+            key: getListingKey(key, vFormat),
             value: values[i],
         }));
         it(`should perform a vFormat=${vFormat} listing of all keys`, () => {
@@ -169,6 +177,78 @@ describe('Multipart Uploads listing algorithm', () => {
             const listingResult = performListing(dbListing, MultipartUploads,
                                                  listingParams, logger, vFormat);
             assert.deepStrictEqual(listingResult, expectedResult);
+        });
+    });
+
+    describe('MultipartUploads.genMDParams()', () => {
+        [{
+            listingParams: {
+                splitter,
+            },
+            mdParams: {
+                [BucketVersioningKeyFormat.v0]: {},
+                [BucketVersioningKeyFormat.v0mig]: [{
+                    lt: DbPrefixes.V1,
+                }, {
+                    gte: inc(DbPrefixes.V1),
+                    serial: true,
+                }],
+                [BucketVersioningKeyFormat.v1]: {
+                    gte: DbPrefixes.Master,
+                    lt: inc(DbPrefixes.Master),
+                },
+            },
+        }, {
+            listingParams: {
+                splitter,
+                prefix: 'foo/bar',
+            },
+            mdParams: {
+                [BucketVersioningKeyFormat.v0]: {
+                    gte: 'foo/bar',
+                    lt: 'foo/bas',
+                },
+                [BucketVersioningKeyFormat.v0mig]: {
+                    gte: 'foo/bar',
+                    lt: 'foo/bas',
+                },
+                [BucketVersioningKeyFormat.v1]: {
+                    gte: `${DbPrefixes.Master}foo/bar`,
+                    lt: `${DbPrefixes.Master}foo/bas`,
+                },
+            },
+        }, {
+            listingParams: {
+                splitter,
+                keyMarker: 'marker',
+            },
+            mdParams: {
+                [BucketVersioningKeyFormat.v0]: {
+                    gt: `${overviewPrefix}marker${inc(splitter)}`,
+                },
+                [BucketVersioningKeyFormat.v0mig]: [{
+                    gt: `${overviewPrefix}marker${inc(splitter)}`,
+                    lt: DbPrefixes.V1,
+                }, {
+                    gte: inc(DbPrefixes.V1),
+                    serial: true,
+                }],
+                [BucketVersioningKeyFormat.v1]: {
+                    gt: `${DbPrefixes.Master}${overviewPrefix}marker${inc(splitter)}`,
+                    lt: inc(DbPrefixes.Master),
+                },
+            },
+        }].forEach(testCase => {
+            [BucketVersioningKeyFormat.v0,
+             BucketVersioningKeyFormat.v0mig,
+             BucketVersioningKeyFormat.v1].forEach(vFormat => {
+                 it(`with vFormat=${vFormat}, listing params ${JSON.stringify(testCase.listingParams)}`, () => {
+                     const delimiter = new MultipartUploads(
+                         testCase.listingParams, logger, vFormat);
+                     const mdParams = delimiter.genMDParams();
+                     assert.deepStrictEqual(mdParams, testCase.mdParams[vFormat]);
+                 });
+             });
         });
     });
 });

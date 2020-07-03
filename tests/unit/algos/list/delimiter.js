@@ -11,7 +11,7 @@ const performListing = require('../../../utils/performListing');
 const zpad = require('../../helpers').zpad;
 const { inc } = require('../../../../lib/algos/list/tools');
 const VSConst = require('../../../../lib/versioning/constants').VersioningConstants;
-const { DbPrefixes } = VSConst;
+const { DbPrefixes, BucketVersioningKeyFormat } = VSConst;
 
 class Test {
     constructor(name, input, genMDParams, output, filter) {
@@ -90,8 +90,14 @@ const receivedNonAlphaData = nonAlphabeticalData.map(
 
 const tests = [
     new Test('all elements', {}, {
-        v0: {},
-        v1: {
+        [BucketVersioningKeyFormat.v0]: {},
+        [BucketVersioningKeyFormat.v0mig]: [{
+            lt: DbPrefixes.V1,
+        }, {
+            gte: inc(DbPrefixes.V1),
+            serial: true,
+        }],
+        [BucketVersioningKeyFormat.v1]: {
             gte: DbPrefixes.Master,
             lt: inc(DbPrefixes.Master),
         },
@@ -105,10 +111,17 @@ const tests = [
     new Test('with valid marker', {
         marker: receivedData[4].key,
     }, {
-        v0: {
+        [BucketVersioningKeyFormat.v0]: {
             gt: receivedData[4].key,
         },
-        v1: {
+        [BucketVersioningKeyFormat.v0mig]: [{
+            gt: receivedData[4].key,
+            lt: DbPrefixes.V1,
+        }, {
+            gte: inc(DbPrefixes.V1),
+            serial: true,
+        }],
+        [BucketVersioningKeyFormat.v1]: {
             gt: `${DbPrefixes.Master}${receivedData[4].key}`,
             lt: inc(DbPrefixes.Master),
         },
@@ -129,10 +142,17 @@ const tests = [
         marker: 'zzzz',
         delimiter: '/',
     }, {
-        v0: {
+        [BucketVersioningKeyFormat.v0]: {
             gt: 'zzzz',
         },
-        v1: {
+        [BucketVersioningKeyFormat.v0mig]: [{
+            gt: 'zzzz',
+            lt: DbPrefixes.V1,
+        }, {
+            gte: inc(DbPrefixes.V1),
+            serial: true,
+        }],
+        [BucketVersioningKeyFormat.v1]: {
             gt: `${DbPrefixes.Master}zzzz`,
             lt: inc(DbPrefixes.Master),
         },
@@ -146,8 +166,14 @@ const tests = [
     new Test('with makKeys', {
         maxKeys: 3,
     }, {
-        v0: {},
-        v1: {
+        [BucketVersioningKeyFormat.v0]: {},
+        [BucketVersioningKeyFormat.v0mig]: [{
+            lt: DbPrefixes.V1,
+        }, {
+            gte: inc(DbPrefixes.V1),
+            serial: true,
+        }],
+        [BucketVersioningKeyFormat.v1]: {
             gte: DbPrefixes.Master,
             lt: inc(DbPrefixes.Master),
         },
@@ -161,8 +187,14 @@ const tests = [
     new Test('with big makKeys', {
         maxKeys: 15000,
     }, {
-        v0: {},
-        v1: {
+        [BucketVersioningKeyFormat.v0]: {},
+        [BucketVersioningKeyFormat.v0mig]: [{
+            lt: DbPrefixes.V1,
+        }, {
+            gte: inc(DbPrefixes.V1),
+            serial: true,
+        }],
+        [BucketVersioningKeyFormat.v1]: {
             gte: DbPrefixes.Master,
             lt: inc(DbPrefixes.Master),
         },
@@ -176,8 +208,14 @@ const tests = [
     new Test('with delimiter', {
         delimiter: '/',
     }, {
-        v0: {},
-        v1: {
+        [BucketVersioningKeyFormat.v0]: {},
+        [BucketVersioningKeyFormat.v0mig]: [{
+            lt: DbPrefixes.V1,
+        }, {
+            gte: inc(DbPrefixes.V1),
+            serial: true,
+        }],
+        [BucketVersioningKeyFormat.v1]: {
             gte: DbPrefixes.Master,
             lt: inc(DbPrefixes.Master),
         },
@@ -193,8 +231,14 @@ const tests = [
     new Test('with long delimiter', {
         delimiter: 'notes/summer',
     }, {
-        v0: {},
-        v1: {
+        [BucketVersioningKeyFormat.v0]: {},
+        [BucketVersioningKeyFormat.v0mig]: [{
+            lt: DbPrefixes.V1,
+        }, {
+            gte: inc(DbPrefixes.V1),
+            serial: true,
+        }],
+        [BucketVersioningKeyFormat.v1]: {
             gte: DbPrefixes.Master,
             lt: inc(DbPrefixes.Master),
         },
@@ -218,11 +262,15 @@ const tests = [
         prefix: 'notes/summer/',
         marker: 'notes/summer0',
     }, {
-        v0: {
+        [BucketVersioningKeyFormat.v0]: {
             gt: `notes/summer${inc('/')}`,
             lt: `notes/summer${inc('/')}`,
         },
-        v1: {
+        [BucketVersioningKeyFormat.v0mig]: {
+            gt: `notes/summer${inc('/')}`,
+            lt: `notes/summer${inc('/')}`,
+        },
+        [BucketVersioningKeyFormat.v1]: {
             gt: `${DbPrefixes.Master}notes/summer${inc('/')}`,
             lt: `${DbPrefixes.Master}notes/summer${inc('/')}`,
         },
@@ -237,11 +285,15 @@ const tests = [
         delimiter: '/',
         prefix: 'notes/',
     }, {
-        v0: {
+        [BucketVersioningKeyFormat.v0]: {
             gte: 'notes/',
             lt: `notes${inc('/')}`,
         },
-        v1: {
+        [BucketVersioningKeyFormat.v0mig]: {
+            gte: 'notes/',
+            lt: `notes${inc('/')}`,
+        },
+        [BucketVersioningKeyFormat.v1]: {
             gte: `${DbPrefixes.Master}notes/`,
             lt: `${DbPrefixes.Master}notes${inc('/')}`,
         },
@@ -264,11 +316,15 @@ const tests = [
         prefix: 'notes/',
         marker: 'notes/year.txt',
     }, {
-        v0: {
+        [BucketVersioningKeyFormat.v0]: {
             gt: 'notes/year.txt',
             lt: `notes${inc('/')}`,
         },
-        v1: {
+        [BucketVersioningKeyFormat.v0mig]: {
+            gt: 'notes/year.txt',
+            lt: `notes${inc('/')}`,
+        },
+        [BucketVersioningKeyFormat.v1]: {
             gt: `${DbPrefixes.Master}notes/year.txt`,
             lt: `${DbPrefixes.Master}notes${inc('/')}`,
         },
@@ -289,11 +345,15 @@ const tests = [
         marker: 'notes/',
         maxKeys: 1,
     }, {
-        v0: {
+        [BucketVersioningKeyFormat.v0]: {
             gt: 'notes/',
             lt: `notes${inc('/')}`,
         },
-        v1: {
+        [BucketVersioningKeyFormat.v0mig]: {
+            gt: 'notes/',
+            lt: `notes${inc('/')}`,
+        },
+        [BucketVersioningKeyFormat.v1]: {
             gt: `${DbPrefixes.Master}notes/`,
             lt: `${DbPrefixes.Master}notes${inc('/')}`,
         },
@@ -311,11 +371,15 @@ const tests = [
         marker: 'notes/spring/',
         maxKeys: 1,
     }, {
-        v0: {
+        [BucketVersioningKeyFormat.v0]: {
             gt: 'notes/spring/',
             lt: `notes${inc('/')}`,
         },
-        v1: {
+        [BucketVersioningKeyFormat.v0mig]: {
+            gt: 'notes/spring/',
+            lt: `notes${inc('/')}`,
+        },
+        [BucketVersioningKeyFormat.v1]: {
             gt: `${DbPrefixes.Master}notes/spring/`,
             lt: `${DbPrefixes.Master}notes${inc('/')}`,
         },
@@ -333,11 +397,15 @@ const tests = [
         marker: 'notes/summer/',
         maxKeys: 1,
     }, {
-        v0: {
+        [BucketVersioningKeyFormat.v0]: {
             gt: 'notes/summer/',
             lt: `notes${inc('/')}`,
         },
-        v1: {
+        [BucketVersioningKeyFormat.v0mig]: {
+            gt: 'notes/summer/',
+            lt: `notes${inc('/')}`,
+        },
+        [BucketVersioningKeyFormat.v1]: {
             gt: `${DbPrefixes.Master}notes/summer/`,
             lt: `${DbPrefixes.Master}notes${inc('/')}`,
         },
@@ -357,11 +425,15 @@ const tests = [
         marker: 'notes/year.txt',
         maxKeys: 1,
     }, {
-        v0: {
+        [BucketVersioningKeyFormat.v0]: {
             gt: 'notes/year.txt',
             lt: `notes${inc('/')}`,
         },
-        v1: {
+        [BucketVersioningKeyFormat.v0mig]: {
+            gt: 'notes/year.txt',
+            lt: `notes${inc('/')}`,
+        },
+        [BucketVersioningKeyFormat.v1]: {
             gt: `${DbPrefixes.Master}notes/year.txt`,
             lt: `${DbPrefixes.Master}notes${inc('/')}`,
         },
@@ -381,11 +453,15 @@ const tests = [
         marker: 'notes/yore.rs',
         maxKeys: 1,
     }, {
-        v0: {
+        [BucketVersioningKeyFormat.v0]: {
             gt: 'notes/yore.rs',
             lt: `notes${inc('/')}`,
         },
-        v1: {
+        [BucketVersioningKeyFormat.v0mig]: {
+            gt: 'notes/yore.rs',
+            lt: `notes${inc('/')}`,
+        },
+        [BucketVersioningKeyFormat.v1]: {
             gt: `${DbPrefixes.Master}notes/yore.rs`,
             lt: `${DbPrefixes.Master}notes${inc('/')}`,
         },
@@ -400,8 +476,14 @@ const tests = [
     new Test('all elements v2', {
         v2: true,
     }, {
-        v0: {},
-        v1: {
+        [BucketVersioningKeyFormat.v0]: {},
+        [BucketVersioningKeyFormat.v0mig]: [{
+            lt: DbPrefixes.V1,
+        }, {
+            gte: inc(DbPrefixes.V1),
+            serial: true,
+        }],
+        [BucketVersioningKeyFormat.v1]: {
             gte: DbPrefixes.Master,
             lt: inc(DbPrefixes.Master),
         },
@@ -416,10 +498,17 @@ const tests = [
         startAfter: receivedData[4].key,
         v2: true,
     }, {
-        v0: {
+        [BucketVersioningKeyFormat.v0]: {
             gt: receivedData[4].key,
         },
-        v1: {
+        [BucketVersioningKeyFormat.v0mig]: [{
+            gt: receivedData[4].key,
+            lt: DbPrefixes.V1,
+        }, {
+            gte: inc(DbPrefixes.V1),
+            serial: true,
+        }],
+        [BucketVersioningKeyFormat.v1]: {
             gt: `${DbPrefixes.Master}${receivedData[4].key}`,
             lt: inc(DbPrefixes.Master),
         },
@@ -441,10 +530,17 @@ const tests = [
         delimiter: '/',
         v2: true,
     }, {
-        v0: {
+        [BucketVersioningKeyFormat.v0]: {
             gt: 'zzzz',
         },
-        v1: {
+        [BucketVersioningKeyFormat.v0mig]: [{
+            gt: 'zzzz',
+            lt: DbPrefixes.V1,
+        }, {
+            gte: inc(DbPrefixes.V1),
+            serial: true,
+        }],
+        [BucketVersioningKeyFormat.v1]: {
             gt: `${DbPrefixes.Master}zzzz`,
             lt: inc(DbPrefixes.Master),
         },
@@ -459,10 +555,17 @@ const tests = [
         continuationToken: receivedData[4].key,
         v2: true,
     }, {
-        v0: {
+        [BucketVersioningKeyFormat.v0]: {
             gt: receivedData[4].key,
         },
-        v1: {
+        [BucketVersioningKeyFormat.v0mig]: [{
+            gt: receivedData[4].key,
+            lt: DbPrefixes.V1,
+        }, {
+            gte: inc(DbPrefixes.V1),
+            serial: true,
+        }],
+        [BucketVersioningKeyFormat.v1]: {
             gt: `${DbPrefixes.Master}${receivedData[4].key}`,
             lt: inc(DbPrefixes.Master),
         },
@@ -484,10 +587,17 @@ const tests = [
         delimiter: '/',
         v2: true,
     }, {
-        v0: {
+        [BucketVersioningKeyFormat.v0]: {
             gt: 'zzzz',
         },
-        v1: {
+        [BucketVersioningKeyFormat.v0mig]: [{
+            gt: 'zzzz',
+            lt: DbPrefixes.V1,
+        }, {
+            gte: inc(DbPrefixes.V1),
+            serial: true,
+        }],
+        [BucketVersioningKeyFormat.v1]: {
             gt: `${DbPrefixes.Master}zzzz`,
             lt: inc(DbPrefixes.Master),
         },
@@ -503,11 +613,15 @@ const tests = [
         prefix: 'notes/summer/',
         startAfter: 'notes/summer0',
     }, {
-        v0: {
+        [BucketVersioningKeyFormat.v0]: {
             gte: 'notes/summer/',
             lt: `notes/summer${inc('/')}`,
         },
-        v1: {
+        [BucketVersioningKeyFormat.v0mig]: {
+            gte: 'notes/summer/',
+            lt: `notes/summer${inc('/')}`,
+        },
+        [BucketVersioningKeyFormat.v1]: {
             gte: `${DbPrefixes.Master}notes/summer/`,
             lt: `${DbPrefixes.Master}notes/summer${inc('/')}`,
         },
@@ -523,11 +637,15 @@ const tests = [
         prefix: 'notes/summer/',
         continuationToken: 'notes/summer0',
     }, {
-        v0: {
+        [BucketVersioningKeyFormat.v0]: {
             gte: 'notes/summer/',
             lt: `notes/summer${inc('/')}`,
         },
-        v1: {
+        [BucketVersioningKeyFormat.v0mig]: {
+            gte: 'notes/summer/',
+            lt: `notes/summer${inc('/')}`,
+        },
+        [BucketVersioningKeyFormat.v1]: {
             gte: `${DbPrefixes.Master}notes/summer/`,
             lt: `${DbPrefixes.Master}notes/summer${inc('/')}`,
         },
@@ -544,10 +662,17 @@ const tests = [
         maxKeys: 1,
         v2: true,
     }, {
-        v0: {
+        [BucketVersioningKeyFormat.v0]: {
             gt: 'notes/year.txt',
         },
-        v1: {
+        [BucketVersioningKeyFormat.v0mig]: [{
+            gt: 'notes/year.txt',
+            lt: DbPrefixes.V1,
+        }, {
+            gte: inc(DbPrefixes.V1),
+            serial: true,
+        }],
+        [BucketVersioningKeyFormat.v1]: {
             gt: `${DbPrefixes.Master}notes/year.txt`,
             lt: inc(DbPrefixes.Master),
         },
@@ -568,11 +693,15 @@ const tests = [
         maxKeys: 1,
         v2: true,
     }, {
-        v0: {
+        [BucketVersioningKeyFormat.v0]: {
             gt: 'notes/',
             lt: `notes${inc('/')}`,
         },
-        v1: {
+        [BucketVersioningKeyFormat.v0mig]: {
+            gt: 'notes/',
+            lt: `notes${inc('/')}`,
+        },
+        [BucketVersioningKeyFormat.v1]: {
             gt: `${DbPrefixes.Master}notes/`,
             lt: `${DbPrefixes.Master}notes${inc('/')}`,
         },
@@ -591,11 +720,15 @@ const tests = [
         maxKeys: 1,
         v2: true,
     }, {
-        v0: {
+        [BucketVersioningKeyFormat.v0]: {
             gt: 'notes/spring/',
             lt: `notes${inc('/')}`,
         },
-        v1: {
+        [BucketVersioningKeyFormat.v0mig]: {
+            gt: 'notes/spring/',
+            lt: `notes${inc('/')}`,
+        },
+        [BucketVersioningKeyFormat.v1]: {
             gt: `${DbPrefixes.Master}notes/spring/`,
             lt: `${DbPrefixes.Master}notes${inc('/')}`,
         },
@@ -614,11 +747,15 @@ const tests = [
         maxKeys: 1,
         v2: true,
     }, {
-        v0: {
+        [BucketVersioningKeyFormat.v0]: {
             gt: 'notes/summer/',
             lt: `notes${inc('/')}`,
         },
-        v1: {
+        [BucketVersioningKeyFormat.v0mig]: {
+            gt: 'notes/summer/',
+            lt: `notes${inc('/')}`,
+        },
+        [BucketVersioningKeyFormat.v1]: {
             gt: `${DbPrefixes.Master}notes/summer/`,
             lt: `${DbPrefixes.Master}notes${inc('/')}`,
         },
@@ -639,11 +776,15 @@ const tests = [
         maxKeys: 1,
         v2: true,
     }, {
-        v0: {
+        [BucketVersioningKeyFormat.v0]: {
             gt: 'notes/year.txt',
             lt: `notes${inc('/')}`,
         },
-        v1: {
+        [BucketVersioningKeyFormat.v0mig]: {
+            gt: 'notes/year.txt',
+            lt: `notes${inc('/')}`,
+        },
+        [BucketVersioningKeyFormat.v1]: {
             gt: `${DbPrefixes.Master}notes/year.txt`,
             lt: `${DbPrefixes.Master}notes${inc('/')}`,
         },
@@ -664,11 +805,15 @@ const tests = [
         maxKeys: 1,
         v2: true,
     }, {
-        v0: {
+        [BucketVersioningKeyFormat.v0]: {
             gt: 'notes/yore.rs',
             lt: `notes${inc('/')}`,
         },
-        v1: {
+        [BucketVersioningKeyFormat.v0mig]: {
+            gt: 'notes/yore.rs',
+            lt: `notes${inc('/')}`,
+        },
+        [BucketVersioningKeyFormat.v1]: {
             gt: `${DbPrefixes.Master}notes/yore.rs`,
             lt: `${DbPrefixes.Master}notes${inc('/')}`,
         },
@@ -680,6 +825,109 @@ const tests = [
         NextContinuationToken: undefined,
     }, (e, input) => e.key > input.startAfter),
 
+    new Test('with startAfter after vformat V1 prefix', {
+        delimiter: '/',
+        startAfter: 'éléphant pâle',
+        maxKeys: 3,
+        v2: true,
+    }, {
+        [BucketVersioningKeyFormat.v0]: {
+            gt: 'éléphant pâle',
+        },
+        [BucketVersioningKeyFormat.v0mig]: {
+            gt: 'éléphant pâle',
+        },
+        [BucketVersioningKeyFormat.v1]: {
+            gt: `${DbPrefixes.Master}éléphant pâle`,
+            lt: inc(DbPrefixes.Master),
+        },
+    }, {
+        Contents: [],
+        CommonPrefixes: [],
+        Delimiter: '/',
+        IsTruncated: false,
+        NextContinuationToken: undefined,
+    }, (e, input) => e.key > input.startAfter),
+
+    new Test('with startAfter inside vformat V1 prefix', {
+        delimiter: '/',
+        startAfter: `${DbPrefixes.V1}foo`,
+        maxKeys: 3,
+        v2: true,
+    }, {
+        [BucketVersioningKeyFormat.v0]: {
+            gt: `${DbPrefixes.V1}foo`,
+        },
+        // v0mig skips all V1-prefixed keys to start at the beginning
+        // of the second v0 range (to skip V1 keys being migrated)
+        [BucketVersioningKeyFormat.v0mig]: {
+            gt: inc(DbPrefixes.V1),
+        },
+        [BucketVersioningKeyFormat.v1]: {
+            gt: `${DbPrefixes.Master}${DbPrefixes.V1}foo`,
+            lt: inc(DbPrefixes.Master),
+        },
+    }, {
+        Contents: [],
+        CommonPrefixes: [],
+        Delimiter: '/',
+        IsTruncated: false,
+        NextContinuationToken: undefined,
+    }, (e, input) => e.key > input.startAfter),
+
+    new Test('with prefix after vformat V1 prefix', {
+        delimiter: '/',
+        prefix: 'éléphant pâle/',
+        maxKeys: 3,
+        v2: true,
+    }, {
+        [BucketVersioningKeyFormat.v0]: {
+            gte: 'éléphant pâle/',
+            lt: 'éléphant pâle0',
+        },
+        [BucketVersioningKeyFormat.v0mig]: {
+            gte: 'éléphant pâle/',
+            lt: 'éléphant pâle0',
+        },
+        [BucketVersioningKeyFormat.v1]: {
+            gte: `${DbPrefixes.Master}éléphant pâle/`,
+            lt: `${DbPrefixes.Master}éléphant pâle0`,
+        },
+    }, {
+        Contents: [],
+        CommonPrefixes: [],
+        Delimiter: '/',
+        IsTruncated: false,
+        NextContinuationToken: undefined,
+    }, (e, input) => e.key > input.startAfter),
+
+    new Test('with prefix inside vformat V1 prefix', {
+        delimiter: '/',
+        prefix: `${DbPrefixes.V1}foo/`,
+        maxKeys: 3,
+        v2: true,
+    }, {
+        [BucketVersioningKeyFormat.v0]: {
+            gte: `${DbPrefixes.V1}foo/`,
+            lt: `${DbPrefixes.V1}foo0`,
+        },
+        // v0mig skips the V1 prefix altogether to avoid returning V1
+        // keys being migrated. It uses a trick: passing "lt: ''"
+        // (empty string) forces to list an empty range
+        [BucketVersioningKeyFormat.v0mig]: {
+            lt: '',
+        },
+        [BucketVersioningKeyFormat.v1]: {
+            gte: `${DbPrefixes.Master}${DbPrefixes.V1}foo/`,
+            lt: `${DbPrefixes.Master}${DbPrefixes.V1}foo0`,
+        },
+    }, {
+        Contents: [],
+        CommonPrefixes: [],
+        Delimiter: '/',
+        IsTruncated: false,
+        NextContinuationToken: undefined,
+    }, (e, input) => e.key > input.startAfter),
 ];
 
 const alphabeticalOrderTests = [
@@ -708,10 +956,11 @@ function getTestListing(test, data, vFormat) {
     return data
         .filter(e => test.filter(e, test.input))
         .map(obj => {
-            if (vFormat === 'v0') {
+            if ([BucketVersioningKeyFormat.v0,
+                 BucketVersioningKeyFormat.v0mig].includes(vFormat)) {
                 return obj;
             }
-            if (vFormat === 'v1') {
+            if (vFormat === BucketVersioningKeyFormat.v1) {
                 return {
                     key: `${DbPrefixes.Master}${obj.key}`,
                     value: obj.value,
@@ -721,18 +970,22 @@ function getTestListing(test, data, vFormat) {
         });
 }
 
-['v0', 'v1'].forEach(vFormat => {
+[
+    BucketVersioningKeyFormat.v0,
+    BucketVersioningKeyFormat.v0mig,
+    BucketVersioningKeyFormat.v1,
+].forEach(vFormat => {
     describe(`vFormat=${vFormat} Delimiter listing algorithm`, () => {
         it('Should return good skipping value for DelimiterMaster', () => {
             const delimiter = new DelimiterMaster({ delimiter: '/' });
             for (let i = 0; i < 100; i++) {
                 delimiter.filter({
-                    key: `${vFormat === 'v1' ? DbPrefixes.Master : ''}foo/${zpad(i)}`,
+                    key: `${vFormat === BucketVersioningKeyFormat.v1 ? DbPrefixes.Master : ''}foo/${zpad(i)}`,
                     value: '{}',
                 });
             }
             assert.strictEqual(delimiter.skipping(),
-                               `${vFormat === 'v1' ? DbPrefixes.Master : ''}foo/`);
+                               `${vFormat === BucketVersioningKeyFormat.v1 ? DbPrefixes.Master : ''}foo/`);
         });
 
         it('Should set Delimiter alphabeticalOrder field to the expected value', () => {
@@ -759,7 +1012,7 @@ function getTestListing(test, data, vFormat) {
         });
 
         // Only v0 gets a listing of master and version keys together.
-        if (vFormat === 'v0') {
+        if (vFormat === BucketVersioningKeyFormat.v0) {
             tests.forEach(test => {
                 it(`Should list master versions ${test.name}`, () => {
                     // Simulate skip scan done by LevelDB

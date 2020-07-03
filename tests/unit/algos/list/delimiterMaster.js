@@ -13,7 +13,7 @@ const VSConst =
     require('../../../../lib/versioning/constants').VersioningConstants;
 const Version = require('../../../../lib/versioning/Version').Version;
 const { generateVersionId } = require('../../../../lib/versioning/VersionID');
-const { DbPrefixes } = VSConst;
+const { DbPrefixes, BucketVersioningKeyFormat } = VSConst;
 
 
 const VID_SEP = VSConst.VersionId.Separator;
@@ -35,16 +35,21 @@ const fakeLogger = {
 };
 
 function getListingKey(key, vFormat) {
-    if (vFormat === 'v0') {
+    if ([BucketVersioningKeyFormat.v0,
+         BucketVersioningKeyFormat.v0mig].includes(vFormat)) {
         return key;
     }
-    if (vFormat === 'v1') {
+    if (vFormat === BucketVersioningKeyFormat.v1) {
         return `${DbPrefixes.Master}${key}`;
     }
     return assert.fail(`bad vFormat ${vFormat}`);
 }
 
-['v0', 'v1'].forEach(vFormat => {
+[
+    BucketVersioningKeyFormat.v0,
+    BucketVersioningKeyFormat.v0mig,
+    BucketVersioningKeyFormat.v1,
+].forEach(vFormat => {
     describe(`Delimiter All masters listing algorithm vFormat=${vFormat}`, () => {
         it('should return SKIP_NONE for DelimiterMaster when both NextMarker ' +
         'and NextContinuationToken are undefined', () => {
@@ -102,7 +107,7 @@ function getListingKey(key, vFormat) {
             /* When a delimiter is set and the NextMarker ends with the
              * delimiter it should return the next marker value. */
             assert.strictEqual(delimiter.NextMarker, keyWithEndingDelimiter);
-            const skipKey = vFormat === 'v1' ?
+            const skipKey = vFormat === BucketVersioningKeyFormat.v1 ?
                   `${DbPrefixes.Master}${keyWithEndingDelimiter}` :
                   keyWithEndingDelimiter;
             assert.strictEqual(delimiter.skipping(), skipKey);
@@ -135,7 +140,8 @@ function getListingKey(key, vFormat) {
 
             const listingKey = getListingKey(key, vFormat);
             assert.strictEqual(delimiter.filter({ key: listingKey, value }), FILTER_ACCEPT);
-            if (vFormat === 'v0') {
+            if ([BucketVersioningKeyFormat.v0,
+                 BucketVersioningKeyFormat.v0mig].includes(vFormat)) {
                 assert.strictEqual(delimiter.prvKey, key);
             }
             assert.strictEqual(delimiter.NextMarker, key);
@@ -206,7 +212,8 @@ function getListingKey(key, vFormat) {
             });
         });
 
-        if (vFormat === 'v0') {
+        if ([BucketVersioningKeyFormat.v0,
+             BucketVersioningKeyFormat.v0mig].includes(vFormat)) {
             it('should accept a PHD version as first input', () => {
                 const delimiter = new DelimiterMaster({}, fakeLogger, vFormat);
                 const keyPHD = 'keyPHD';
