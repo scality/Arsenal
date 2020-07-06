@@ -30,6 +30,9 @@ function generateRule(testParams) {
     if (testParams.key === 'Years') {
         time = `<Years>${testParams.value}</Years>`;
     }
+    if (testParams.key === 'NoRule') {
+        return '';
+    }
     return `<Rule><DefaultRetention>${mode}${time}</DefaultRetention></Rule>`;
 }
 
@@ -160,6 +163,10 @@ const passTests = [
     {
         name: 'pass with valid Years retention period',
         params: { key: 'Years', value: 1 },
+    },
+    {
+        name: 'pass without Rule',
+        params: { key: 'NoRule' },
     },
 ];
 
