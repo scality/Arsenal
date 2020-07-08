@@ -1,5 +1,5 @@
 const assert = require('assert');
-const MergeStream = require('../../../../lib/algos/stream/MergeStream');
+const SerialStream = require('../../../../lib/algos/stream/SerialStream');
 const Streamify = require('./Streamify');
 
 function readAll(stream, usePauseResume, cb) {
@@ -15,20 +15,15 @@ function readAll(stream, usePauseResume, cb) {
     stream.once('error', err => cb(err));
 }
 
-function compareInt(a, b) {
-    return Math.sign(a - b);
-}
-
-function testMergeStreamWithIntegers(contents1, contents2,
+function testSerialStreamWithIntegers(contents1, contents2,
                                      usePauseResume, errorAtEnd, cb) {
-    const expectedItems = contents1.concat(contents2).sort(compareInt);
-    const mergeStream = new MergeStream(
+    const expectedItems = contents1.concat(contents2);
+    const serialStream = new SerialStream(
         new Streamify(contents1, errorAtEnd)
             .on('error', () => {}),
         new Streamify(contents2)
-            .on('error', () => {}),
-        compareInt);
-    readAll(mergeStream, usePauseResume, (err, readItems) => {
+            .on('error', () => {}));
+    readAll(serialStream, usePauseResume, (err, readItems) => {
         if (errorAtEnd) {
             assert(err);
         } else {
@@ -44,10 +39,10 @@ function testCasePretty(testCase, reversed) {
         reversed ? testCase.stream2 : testCase.stream1);
     const desc2 = JSON.stringify(
         reversed ? testCase.stream1 : testCase.stream2);
-    return `${desc1} merged with ${desc2}`;
+    return `${desc1} concatenated with ${desc2}`;
 }
 
-describe('MergeStream', () => {
+describe('SerialStream', () => {
     [
         {
             stream1: [],
@@ -67,67 +62,11 @@ describe('MergeStream', () => {
         },
         {
             stream1: [1, 2, 3, 4, 5],
-            stream2: [0],
+            stream2: [6],
         },
         {
-            stream1: [0, 1, 2, 3, 4],
-            stream2: [5],
-        },
-        {
-            stream1: [1, 2],
-            stream2: [3, 4, 5],
-        },
-        {
-            stream1: [1, 2, 3],
-            stream2: [4, 5],
-        },
-        {
-            stream1: [1, 3, 5, 7, 9],
-            stream2: [2, 4, 6, 8, 10],
-        },
-        {
-            stream1: [1, 4, 7],
-            stream2: [0, 2, 3, 5, 6, 8, 9, 10],
-        },
-        {
-            stream1: [0, 10],
-            stream2: [1, 2, 3, 4, 5, 6, 7, 8, 9],
-        },
-        {
-            stream1: [4, 5, 6],
-            stream2: [1, 2, 3, 7, 8, 9],
-        },
-        {
-            stream1: [0],
-            stream2: [0],
-        },
-        {
-            stream1: [0, 1],
-            stream2: [0, 1],
-        },
-        {
-            stream1: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-            stream2: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-        },
-        {
-            stream1: [0, 2, 3, 4],
-            stream2: [0, 1, 2, 4],
-        },
-        {
-            stream1: [0, 1, 2, 3],
-            stream2: [1, 2, 3, 4],
-        },
-        {
-            stream1: [0, 1, 2, 3],
-            stream2: [2, 3, 4, 5, 6, 7],
-        },
-        {
-            stream1: [0, 1, 2, 3],
-            stream2: [3, 4, 5, 6],
-        },
-        {
-            stream1: [0, 1, 2, 3],
-            stream2: [0, 3],
+            stream1: [1, 2, 3, 4, 5],
+            stream2: [6, 7, 8, 9, 10],
         },
     ].forEach(testCase => {
         [false, true].forEach(usePauseResume => {
@@ -141,12 +80,12 @@ describe('MergeStream', () => {
                       `${usePauseResume ? ' with pause/resume' : ''}` +
                       `${errorAtEnd ? ' with error' : ''}`;
                 it(`should cover ${testDesc}`, done => {
-                    testMergeStreamWithIntegers(
+                    testSerialStreamWithIntegers(
                         testCase.stream1, testCase.stream2,
                         usePauseResume, errorAtEnd, done);
                 });
                 it(`should cover ${testDescRev}`, done => {
-                    testMergeStreamWithIntegers(
+                    testSerialStreamWithIntegers(
                         testCase.stream2, testCase.stream1,
                         usePauseResume, errorAtEnd, done);
                 });
@@ -160,38 +99,18 @@ describe('MergeStream', () => {
                     const fixtureDesc =
                           `${usePauseResume ? ' with pause/resume' : ''}` +
                           `${errorAtEnd ? ' with error' : ''}`;
-                    it(`${nbEntries} sequential entries${fixtureDesc}`,
-                    function bigMergeSequential(done) {
+                    it(`${nbEntries} entries${fixtureDesc}`,
+                    function bigConcatSequential(done) {
                         this.timeout(10000);
                         const stream1 = [];
                         const stream2 = [];
-                        for (let i = 0; i < nbEntries; ++i) {
-                            if (Math.floor(i / (nbEntries / 10)) % 2 === 0) {
-                                stream1.push(i);
-                            } else {
-                                stream2.push(i);
-                            }
+                        for (let i = 0; i < nbEntries / 2; ++i) {
+                            stream1.push(i);
                         }
-                        testMergeStreamWithIntegers(
-                            stream1, stream2, usePauseResume, errorAtEnd, done);
-                    });
-                    it(`${nbEntries} randomly mingled entries${fixtureDesc}`,
-                    function bigMergeRandom(done) {
-                        this.timeout(10000);
-                        const stream1 = [];
-                        const stream2 = [];
-                        let accu = nbEntries;
-                        for (let i = 0; i < nbEntries; ++i) {
-                            // picked two large arbitrary prime numbers to get a
-                            // deterministic random-looking series
-                            accu = (accu * 1592760451) % 8448053;
-                            if (accu % 2 === 0) {
-                                stream1.push(i);
-                            } else {
-                                stream2.push(i);
-                            }
+                        for (let i = nbEntries / 2; i < nbEntries; ++i) {
+                            stream2.push(i);
                         }
-                        testMergeStreamWithIntegers(
+                        testSerialStreamWithIntegers(
                             stream1, stream2, usePauseResume, errorAtEnd, done);
                     });
                 }
@@ -205,12 +124,14 @@ describe('MergeStream', () => {
     [3, 100].forEach(nbItemsPerStream => {
         it(`destroy() should destroy both inner streams with ${nbItemsPerStream} items per stream`,
         done => {
-            const stream1 = new Streamify(new Array(nbItemsPerStream).fill().map((e, i) => 2 * i));
-            const stream2 = new Streamify(new Array(nbItemsPerStream).fill().map((e, i) => 1 + 2 * i));
-            const mergeStream = new MergeStream(stream1, stream2, compareInt);
-            mergeStream.on('data', item => {
+            const stream1 = new Streamify(new Array(nbItemsPerStream).fill()
+                                          .map((e, i) => i));
+            const stream2 = new Streamify(new Array(nbItemsPerStream).fill()
+                                          .map((e, i) => nbItemsPerStream + i));
+            const serialStream = new SerialStream(stream1, stream2);
+            serialStream.on('data', item => {
                 if (item === 5) {
-                    mergeStream.destroy();
+                    serialStream.destroy();
                     const s1ended = stream1._ended;
                     const s2ended = stream2._ended;
                     setTimeout(() => {
@@ -224,7 +145,7 @@ describe('MergeStream', () => {
                     }, 10);
                 }
             });
-            mergeStream.once('error', err => {
+            serialStream.once('error', err => {
                 assert.fail(`unexpected error: ${err.message}`);
             });
         });
