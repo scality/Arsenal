@@ -28,6 +28,7 @@ module.exports = {
             LRUCache: require('./lib/algos/cache/LRUCache'),
         },
         stream: {
+            SerialStream: require('./lib/algos/stream/SerialStream'),
             MergeStream: require('./lib/algos/stream/MergeStream'),
         },
     },
