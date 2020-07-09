@@ -39,7 +39,9 @@ function getListingKey(key, vFormat) {
          BucketVersioningKeyFormat.v0mig].includes(vFormat)) {
         return key;
     }
-    if (vFormat === BucketVersioningKeyFormat.v1) {
+    if ([BucketVersioningKeyFormat.v0v1,
+         BucketVersioningKeyFormat.v1mig,
+         BucketVersioningKeyFormat.v1].includes(vFormat)) {
         return `${DbPrefixes.Master}${key}`;
     }
     return assert.fail(`bad vFormat ${vFormat}`);
@@ -48,6 +50,8 @@ function getListingKey(key, vFormat) {
 [
     BucketVersioningKeyFormat.v0,
     BucketVersioningKeyFormat.v0mig,
+    BucketVersioningKeyFormat.v0v1,
+    BucketVersioningKeyFormat.v1mig,
     BucketVersioningKeyFormat.v1,
 ].forEach(vFormat => {
     describe(`Delimiter All masters listing algorithm vFormat=${vFormat}`, () => {
@@ -107,7 +111,9 @@ function getListingKey(key, vFormat) {
             /* When a delimiter is set and the NextMarker ends with the
              * delimiter it should return the next marker value. */
             assert.strictEqual(delimiter.NextMarker, keyWithEndingDelimiter);
-            const skipKey = vFormat === BucketVersioningKeyFormat.v1 ?
+            const skipKey = [BucketVersioningKeyFormat.v0v1,
+                             BucketVersioningKeyFormat.v1mig,
+                             BucketVersioningKeyFormat.v1].includes(vFormat) ?
                   `${DbPrefixes.Master}${keyWithEndingDelimiter}` :
                   keyWithEndingDelimiter;
             assert.strictEqual(delimiter.skipping(), skipKey);

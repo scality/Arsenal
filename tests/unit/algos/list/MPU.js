@@ -15,7 +15,9 @@ function getListingKey(key, vFormat) {
          BucketVersioningKeyFormat.v0mig].includes(vFormat)) {
         return key;
     }
-    if (vFormat === BucketVersioningKeyFormat.v1) {
+    if ([BucketVersioningKeyFormat.v0v1,
+         BucketVersioningKeyFormat.v1mig,
+         BucketVersioningKeyFormat.v1].includes(vFormat)) {
         return `${DbPrefixes.Master}${key}`;
     }
     assert.fail(`bad vFormat ${vFormat}`);
@@ -135,6 +137,8 @@ describe('Multipart Uploads listing algorithm', () => {
     [
         BucketVersioningKeyFormat.v0,
         BucketVersioningKeyFormat.v0mig,
+        BucketVersioningKeyFormat.v0v1,
+        BucketVersioningKeyFormat.v1mig,
         BucketVersioningKeyFormat.v1,
     ].forEach(vFormat => {
         const dbListing = v0keys.map((key, i) => ({
@@ -239,16 +243,30 @@ describe('Multipart Uploads listing algorithm', () => {
                 },
             },
         }].forEach(testCase => {
-            [BucketVersioningKeyFormat.v0,
-             BucketVersioningKeyFormat.v0mig,
-             BucketVersioningKeyFormat.v1].forEach(vFormat => {
-                 it(`with vFormat=${vFormat}, listing params ${JSON.stringify(testCase.listingParams)}`, () => {
-                     const delimiter = new MultipartUploads(
-                         testCase.listingParams, logger, vFormat);
-                     const mdParams = delimiter.genMDParams();
-                     assert.deepStrictEqual(mdParams, testCase.mdParams[vFormat]);
-                 });
-             });
+            [
+                BucketVersioningKeyFormat.v0,
+                BucketVersioningKeyFormat.v0mig,
+                BucketVersioningKeyFormat.v0v1,
+                BucketVersioningKeyFormat.v1mig,
+                BucketVersioningKeyFormat.v1,
+            ].forEach(vFormat => {
+                it(`with vFormat=${vFormat}, listing params ${JSON.stringify(testCase.listingParams)}`, () => {
+                    const delimiter = new MultipartUploads(
+                        testCase.listingParams, logger, vFormat);
+                    const mdParams = delimiter.genMDParams();
+                    let paramsVFormat;
+                    if ([BucketVersioningKeyFormat.v0v1,
+                         BucketVersioningKeyFormat.v1mig,
+                         BucketVersioningKeyFormat.v1].includes(vFormat)) {
+                        // all above vformats are equivalent to v1 when it
+                        // comes to generating md params
+                        paramsVFormat = BucketVersioningKeyFormat.v1;
+                    } else {
+                        paramsVFormat = vFormat;
+                    }
+                    assert.deepStrictEqual(mdParams, testCase.mdParams[paramsVFormat]);
+                });
+            });
         });
     });
 });

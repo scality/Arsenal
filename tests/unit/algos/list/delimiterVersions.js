@@ -531,14 +531,18 @@ const tests = [
 
 function getTestListing(test, vFormat) {
     return rawListingData
-        .filter(e => vFormat !== BucketVersioningKeyFormat.v1 || e.value !== valuePHD)
+        .filter(e => [BucketVersioningKeyFormat.v0,
+                      BucketVersioningKeyFormat.v0mig].includes(vFormat)
+                || e.value !== valuePHD)
         .filter(e => test.filter(e, test.input))
         .map(e => {
             if ([BucketVersioningKeyFormat.v0,
                  BucketVersioningKeyFormat.v0mig].includes(vFormat)) {
                 return e;
             }
-            if (vFormat === BucketVersioningKeyFormat.v1) {
+            if ([BucketVersioningKeyFormat.v0v1,
+                 BucketVersioningKeyFormat.v1mig,
+                 BucketVersioningKeyFormat.v1].includes(vFormat)) {
                 const keyPrefix = e.key.includes(VID_SEP) ?
                       DbPrefixes.Version : DbPrefixes.Master;
                 return {
@@ -553,26 +557,53 @@ function getTestListing(test, vFormat) {
 [
     BucketVersioningKeyFormat.v0,
     BucketVersioningKeyFormat.v0mig,
+    BucketVersioningKeyFormat.v0v1,
+    BucketVersioningKeyFormat.v1mig,
     BucketVersioningKeyFormat.v1,
 ].forEach(vFormat => {
     describe(`Delimiter All Versions listing algorithm vFormat=${vFormat}`, () => {
         it('Should return good skipping value for DelimiterVersions', () => {
             const delimiter = new DelimiterVersions({ delimiter: '/' });
             for (let i = 0; i < 100; i++) {
+                let key;
+                if ([BucketVersioningKeyFormat.v0v1,
+                     BucketVersioningKeyFormat.v1mig,
+                     BucketVersioningKeyFormat.v1].includes(vFormat)) {
+                    key = `${DbPrefixes.Master}foo/${zpad(i)}`;
+                } else {
+                    key = `foo/${zpad(i)}`;
+                }
                 delimiter.filter({
-                    key: `${vFormat === BucketVersioningKeyFormat.v1 ? DbPrefixes.Master : ''}foo/${zpad(i)}`,
+                    key,
                     value: '{}',
                 });
             }
-            assert.strictEqual(delimiter.skipping(),
-                               `${vFormat === BucketVersioningKeyFormat.v1 ? DbPrefixes.Master : ''}foo/`);
+            let skipping;
+            if ([BucketVersioningKeyFormat.v0v1,
+                 BucketVersioningKeyFormat.v1mig,
+                 BucketVersioningKeyFormat.v1].includes(vFormat)) {
+                skipping = `${DbPrefixes.Master}foo/`;
+            } else {
+                skipping = 'foo/';
+            }
+            assert.strictEqual(delimiter.skipping(), skipping);
         });
 
         tests.forEach(test => {
             it(`Should return metadata listing params to list ${test.name}`, () => {
                 const listing = new DelimiterVersions(test.input, logger, vFormat);
                 const params = listing.genMDParams();
-                assert.deepStrictEqual(params, test.genMDParams[vFormat]);
+                let paramsVFormat;
+                if ([BucketVersioningKeyFormat.v0v1,
+                     BucketVersioningKeyFormat.v1mig,
+                     BucketVersioningKeyFormat.v1].includes(vFormat)) {
+                    // all above vformats are equivalent to v1 when it
+                    // comes to generating md params
+                    paramsVFormat = BucketVersioningKeyFormat.v1;
+                } else {
+                    paramsVFormat = vFormat;
+                }
+                assert.deepStrictEqual(params, test.genMDParams[paramsVFormat]);
             });
             it(`Should list ${test.name}`, () => {
                 // Simulate skip scan done by LevelDB
