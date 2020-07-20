@@ -1,7 +1,7 @@
 'use strict'; // eslint-disable-line strict
 
 const assert = require('assert');
-const lolex = require('lolex');
+const fakeTimers = require('@sinonjs/fake-timers');
 
 const checkTimeSkew =
     require('../../../../lib/auth/v4/timeUtils').checkTimeSkew;
@@ -37,7 +37,7 @@ describe('checkTimeSkew function', () => {
     let clock;
     before(() => {
         // Time is 2016-03-17T18:22:01.033Z
-        clock = lolex.install(1458238921033);
+        clock = fakeTimers.install({ now: 1458238921033 });
     });
     after(() => {
         clock.uninstall();
