@@ -23,7 +23,6 @@
     "eslint",
     "eslint-plugin-react",
     "eslint-config-airbnb",
-    "eslint-config-scality",
-    "lolex"
+    "eslint-config-scality"
   ]
 }

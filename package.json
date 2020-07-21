@@ -50,11 +50,11 @@
     "ioctl": "2.0.1"
   },
   "devDependencies": {
+    "@sinonjs/fake-timers": "^6.0.1",
     "eslint": "2.13.1",
     "eslint-config-airbnb": "6.2.0",
     "eslint-config-scality": "scality/Guidelines#ec33dfb",
     "eslint-plugin-react": "^4.3.0",
-    "lolex": "1.5.2",
     "mocha": "5.2.0",
     "mongodb-memory-server": "^6.0.2",
     "sinon": "^9.0.2",
