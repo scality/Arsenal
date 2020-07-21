@@ -1,7 +1,7 @@
 'use strict'; // eslint-disable-line strict
 
 const assert = require('assert');
-const lolex = require('lolex');
+const fakeTimers = require('@sinonjs/fake-timers');
 
 const errors = require('../../../../lib/errors');
 
@@ -178,7 +178,7 @@ describe('v4 queryAuthCheck', () => {
 
     it('should return error if scope date from X-Amz-Credential param' +
         'does not match date from X-Amz-Date param', done => {
-        const clock = lolex.install(1454974984001);
+        const clock = fakeTimers.install({ now: 1454974984001 });
         const alteredRequest = createAlteredRequest({
             'X-Amz-Credential': 'accessKey1/20160209/' +
                 'us-east-1/s3/aws4_request',
@@ -192,7 +192,7 @@ describe('v4 queryAuthCheck', () => {
     it('should successfully return v4 and no error', done => {
         // Freezes time so date created within function will be Feb 8, 2016
         // (within 15 minutes of timestamp in request)
-        const clock = lolex.install(1454974984001);
+        const clock = fakeTimers.install({ now: 1454974984001 });
         const res = queryAuthCheck(request, log, request.query);
         clock.uninstall();
         assert.deepStrictEqual(res.err, null);
@@ -203,7 +203,7 @@ describe('v4 queryAuthCheck', () => {
     it('should successfully return v4 and no error if X-Amz-Expires param ' +
     'is 604800 (7 days)', done => {
         // Freezes time so date created within function will be Feb 8, 2016
-        const clock = lolex.install(1454974984001);
+        const clock = fakeTimers.install({ now: 1454974984001 });
         const alteredRequest = createAlteredRequest({ 'X-Amz-Expires':
         604800 }, 'query', request, query);
         const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
@@ -216,7 +216,7 @@ describe('v4 queryAuthCheck', () => {
     it('should successfully return v4 and no error if X-Amz-Expires param ' +
     'is less thant 604800 (7 days)', done => {
         // Freezes time so date created within function will be Feb 8, 2016
-        const clock = lolex.install(1454974984001);
+        const clock = fakeTimers.install({ now: 1454974984001 });
         const alteredRequest = createAlteredRequest({ 'X-Amz-Expires':
         604799 }, 'query', request, query);
         const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
