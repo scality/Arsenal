@@ -1,7 +1,7 @@
 'use strict'; // eslint-disable-line strict
 
 const assert = require('assert');
-const lolex = require('lolex');
+const fakeTimers = require('@sinonjs/fake-timers');
 
 const errors = require('../../../../index').errors;
 
@@ -253,7 +253,7 @@ describe('v4 headerAuthCheck', () => {
                 'x-amz-date, Signature=90235ffa4277d688072e16fa7a7560044f4f' +
                 '8e43e369f48ea6d3a5f1fe518e14',
         }, 'headers', request, headers);
-        const clock = lolex.install(1454962445000);
+        const clock = fakeTimers.install({ now: 1454962445000 });
         const res = headerAuthCheck(alteredRequest, log);
         clock.uninstall();
         assert.ifError(res.err);
@@ -262,7 +262,7 @@ describe('v4 headerAuthCheck', () => {
 
     it('should successfully return v4 and no error', done => {
         // Freezes time so date created within function will be Feb 8, 2016
-        const clock = lolex.install(1454962445000);
+        const clock = fakeTimers.install({ now: 1454962445000 });
         const res = headerAuthCheck(request, log);
         clock.uninstall();
         assert.strictEqual(res.err, null);
