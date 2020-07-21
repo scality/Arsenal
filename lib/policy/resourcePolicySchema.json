@@ -1,5 +1,5 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$schema": "http://json-schema.org/draft-06/schema#",
     "type": "object",
     "title": "AWS Bucket Policy schema.",
     "description": "This schema describes a bucket policy per AWS policy grammar rules",
@@ -9,9 +9,7 @@
             "properties": {
                 "Service": {
                     "type": "string",
-                    "enum": [
-                        "backbeat"
-                    ]
+                    "const": "backbeat"
                 }
             },
             "additionalProperties": false
@@ -51,11 +49,21 @@
             "properties": {
                 "AWS": {
                     "oneOf": [
-                        { "$ref": "#/definitions/principalAWSAccountID" },
-                        { "$ref": "#/definitions/principalAnonymous" },
-                        { "$ref": "#/definitions/principalAWSAccountArn" },
-                        { "$ref": "#/definitions/principalAWSUserArn" },
-                        { "$ref": "#/definitions/principalAWSRoleArn" },
+                        {
+                            "$ref": "#/definitions/principalAWSAccountID"
+                        },
+                        {
+                            "$ref": "#/definitions/principalAnonymous"
+                        },
+                        {
+                            "$ref": "#/definitions/principalAWSAccountArn"
+                        },
+                        {
+                            "$ref": "#/definitions/principalAWSUserArn"
+                        },
+                        {
+                            "$ref": "#/definitions/principalAWSRoleArn"
+                        },
                         {
                             "type": "array",
                             "minItems": 1,
@@ -91,10 +99,18 @@
         },
         "principalItem": {
             "oneOf": [
-                { "$ref": "#/definitions/principalAWSItem" },
-                { "$ref": "#/definitions/principalAnonymous" },
-                { "$ref": "#/definitions/principalService" },
-                { "$ref": "#/definitions/principalCanonicalUser" }
+                {
+                    "$ref": "#/definitions/principalAWSItem"
+                },
+                {
+                    "$ref": "#/definitions/principalAnonymous"
+                },
+                {
+                    "$ref": "#/definitions/principalService"
+                },
+                {
+                    "$ref": "#/definitions/principalCanonicalUser"
+                }
             ]
         },
         "actionItem": {
@@ -105,67 +121,67 @@
             "type": "string",
             "pattern": "^\\*|arn:(aws|scality)(:(\\*{1}|[a-z0-9\\*\\-]{2,})*?){3}:((?!\\$\\{\\}).)*?$"
         },
-        "conditionKeys" : {
+        "conditionKeys": {
             "properties": {
-                "aws:CurrentTime": {},
-                "aws:EpochTime": {},
-                "aws:MultiFactorAuthAge": {},
-                "aws:MultiFactorAuthPresent": {},
-                "aws:PrincipalArn": {},
-                "aws:PrincipalOrgId": {},
-                "aws:PrincipalTag/${TagKey}": {},
-                "aws:PrincipalType": {},
-                "aws:Referer": {},
-                "aws:RequestTag/${TagKey}": {},
-                "aws:RequestedRegion": {},
-                "aws:SecureTransport": {},
-                "aws:SourceAccount": {},
-                "aws:SourceArn": {},
-                "aws:SourceIp": {},
-                "aws:SourceVpc": {},
-                "aws:SourceVpce": {},
-                "aws:TagKeys": {},
-                "aws:TokenIssueTime": {},
-                "aws:UserAgent": {},
-                "aws:userid": {},
-                "aws:username": {},
-                "s3:ExistingJobOperation": {},
-                "s3:ExistingJobPriority": {},
-                "s3:ExistingObjectTag/<key>": {},
-                "s3:JobSuspendedCause": {},
-                "s3:LocationConstraint": {},
-                "s3:RequestJobOperation": {},
-                "s3:RequestJobPriority": {},
-                "s3:RequestObjectTag/<key>": {},
-                "s3:RequestObjectTagKeys": {},
-                "s3:VersionId": {},
-                "s3:authtype": {},
-                "s3:delimiter": {},
-                "s3:locationconstraint": {},
-                "s3:max-keys": {},
-                "s3:object-lock-legal-hold": {},
-                "s3:object-lock-mode": {},
-                "s3:object-lock-remaining-retention-days": {},
-                "s3:object-lock-retain-until-date": {},
-                "s3:prefix": {},
-                "s3:signatureage": {},
-                "s3:signatureversion": {},
-                "s3:versionid": {},
-                "s3:x-amz-acl": {},
-                "s3:x-amz-content-sha256": {},
-                "s3:x-amz-copy-source": {},
-                "s3:x-amz-grant-full-control": {},
-                "s3:x-amz-grant-read": {},
-                "s3:x-amz-grant-read-acp": {},
-                "s3:x-amz-grant-write": {},
-                "s3:x-amz-grant-write-acp": {},
-                "s3:x-amz-metadata-directive": {},
-                "s3:x-amz-server-side-encryption": {},
-                "s3:x-amz-server-side-encryption-aws-kms-key-id": {},
-                "s3:x-amz-storage-class": {},
-                "s3:x-amz-website-redirect-location": {}
-               },
-               "additionalProperties": false
+                "aws:CurrentTime": true,
+                "aws:EpochTime": true,
+                "aws:MultiFactorAuthAge": true,
+                "aws:MultiFactorAuthPresent": true,
+                "aws:PrincipalArn": true,
+                "aws:PrincipalOrgId": true,
+                "aws:PrincipalTag/${TagKey}": true,
+                "aws:PrincipalType": true,
+                "aws:Referer": true,
+                "aws:RequestTag/${TagKey}": true,
+                "aws:RequestedRegion": true,
+                "aws:SecureTransport": true,
+                "aws:SourceAccount": true,
+                "aws:SourceArn": true,
+                "aws:SourceIp": true,
+                "aws:SourceVpc": true,
+                "aws:SourceVpce": true,
+                "aws:TagKeys": true,
+                "aws:TokenIssueTime": true,
+                "aws:UserAgent": true,
+                "aws:userid": true,
+                "aws:username": true,
+                "s3:ExistingJobOperation": true,
+                "s3:ExistingJobPriority": true,
+                "s3:ExistingObjectTag/<key>": true,
+                "s3:JobSuspendedCause": true,
+                "s3:LocationConstraint": true,
+                "s3:RequestJobOperation": true,
+                "s3:RequestJobPriority": true,
+                "s3:RequestObjectTag/<key>": true,
+                "s3:RequestObjectTagKeys": true,
+                "s3:VersionId": true,
+                "s3:authtype": true,
+                "s3:delimiter": true,
+                "s3:locationconstraint": true,
+                "s3:max-keys": true,
+                "s3:object-lock-legal-hold": true,
+                "s3:object-lock-mode": true,
+                "s3:object-lock-remaining-retention-days": true,
+                "s3:object-lock-retain-until-date": true,
+                "s3:prefix": true,
+                "s3:signatureage": true,
+                "s3:signatureversion": true,
+                "s3:versionid": true,
+                "s3:x-amz-acl": true,
+                "s3:x-amz-content-sha256": true,
+                "s3:x-amz-copy-source": true,
+                "s3:x-amz-grant-full-control": true,
+                "s3:x-amz-grant-read": true,
+                "s3:x-amz-grant-read-acp": true,
+                "s3:x-amz-grant-write": true,
+                "s3:x-amz-grant-write-acp": true,
+                "s3:x-amz-metadata-directive": true,
+                "s3:x-amz-server-side-encryption": true,
+                "s3:x-amz-server-side-encryption-aws-kms-key-id": true,
+                "s3:x-amz-storage-class": true,
+                "s3:x-amz-website-redirect-location": true
+            },
+            "additionalProperties": false
         },
         "conditions": {
             "type": "object",
@@ -342,9 +358,7 @@
     "properties": {
         "Version": {
             "type": "string",
-            "enum": [
-                "2012-10-17"
-            ]
+            "const": "2012-10-17"
         },
         "Statement": {
             "oneOf": [

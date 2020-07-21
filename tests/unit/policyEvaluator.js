@@ -1,7 +1,7 @@
 'use strict'; // eslint-disable-line strict
 
 const assert = require('assert');
-const lolex = require('lolex');
+const fakeTimers = require('@sinonjs/fake-timers');
 
 const evaluator = require('../../lib/policyEvaluator/evaluator.js');
 const evaluatePolicy = evaluator.evaluatePolicy;
@@ -659,7 +659,7 @@ describe('policyEvaluator', () => {
             it('should allow access for DateEquals condition with epoch time ' +
                 'if meet condition',
                 () => {
-                    const clock = lolex.install(1467315743431);
+                    const clock = fakeTimers.install({ now: 1467315743431 });
                     policy.Statement.Condition = { DateEquals:
                     { 'aws:EpochTime':
                         '1467315743431' } };
@@ -684,7 +684,7 @@ describe('policyEvaluator', () => {
             it('should be neutral for DateNotEquals condition with epoch ' +
                 'time if do not meet condition',
                 () => {
-                    const clock = lolex.install(1467315743431);
+                    const clock = fakeTimers.install({ now: 1467315743431 });
                     policy.Statement.Condition = { DateNotEquals:
                     { 'aws:EpochTime':
                         '1467315743431' } };
