@@ -34,9 +34,8 @@ describe('routesUtils.isValidBucketName', () => {
     });
 
     it('should return false if bucketname is greater than ' +
-        '63 characters long', () => {
-        const longString = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' +
-            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+        '255 characters long', () => {
+        const longString = 'a'.repeat(256);
         const result =
             routesUtils.isValidBucketName(longString, prefixBlacklist);
         assert.strictEqual(result, false);
@@ -78,6 +77,15 @@ describe('routesUtils.isValidBucketName', () => {
         const result = routesUtils.isValidBucketName('okay', prefixBlacklist);
         assert.strictEqual(result, true);
     });
+
+    it('should return true if bucketname is greater than 63 characters ' +
+        'but less than 256', () => {
+        const longString = 'a'.repeat(64);
+        const result =
+            routesUtils.isValidBucketName(longString, prefixBlacklist);
+        assert.strictEqual(result, true);
+
+    })
 
     describe('should return true when bucket name has valid' +
         ' combination of dots and hyphens', () => {
