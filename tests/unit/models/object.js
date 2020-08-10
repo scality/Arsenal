@@ -108,6 +108,7 @@ describe('ObjectMD class setters/getters', () => {
         ['LegalHold', true],
         ['RetentionMode', 'GOVERNANCE'],
         ['RetentionDate', retainDate.toISOString()],
+        ['OriginOp', null, ''],
     ].forEach(test => {
         const property = test[0];
         const testValue = test[1];
@@ -210,6 +211,11 @@ describe('ObjectMD class setters/getters', () => {
     it('ObjectMD::set/getRetentionDate', () => {
         md.setRetentionDate(laterDate.toISOString());
         assert.deepStrictEqual(md.getRetentionDate(), laterDate.toISOString());
+    });
+
+    it('ObjectMD::set/getOriginOp', () => {
+        md.setOriginOp('Copy');
+        assert.deepStrictEqual(md.getOriginOp(), 'Copy');
     });
 });
 
@@ -332,7 +338,9 @@ describe('getAttributes static method', () => {
             'replicationInfo': true,
             'dataStoreName': true,
             'last-modified': true,
-            'md-model-version': true };
+            'md-model-version': true,
+            'originOp': true,
+        };
         assert.deepStrictEqual(attributes, expectedResult);
     });
 });
