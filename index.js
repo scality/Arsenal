@@ -119,6 +119,8 @@ module.exports = {
         BucketPolicy: require('./lib/models/BucketPolicy'),
         ObjectLockConfiguration:
             require('./lib/models/ObjectLockConfiguration'),
+        NotificationConfiguration:
+            require('./lib/models/NotificationConfiguration'),
     },
     metrics: {
         StatsClient: require('./lib/metrics/StatsClient'),
