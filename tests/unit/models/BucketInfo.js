@@ -286,6 +286,8 @@ Object.keys(acl).forEach(
                     _objectLockEnabled: dummyBucket._objectLockEnabled,
                     _objectLockConfiguration:
                         dummyBucket._objectLockConfiguration,
+                    _notificationConfiguration:
+                        dummyBucket._notificationConfiguration,
                 };
                 const fromObj = BucketInfo.fromObj(dataObj);
                 assert(fromObj instanceof BucketInfo);
