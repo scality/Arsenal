@@ -159,6 +159,31 @@ const testObjectLockConfiguration = {
     },
 };
 
+const testNotificationConfiguration = {
+    queueConfig: [
+        {
+            events: ['s3:ObjectCreated:*'],
+            queueArn: 'arn:scality:bucketnotif:::target1',
+            filterRules: [
+                {
+                    name: 'prefix',
+                    value: 'logs/',
+                },
+                {
+                    name: 'suffix',
+                    value: '.log',
+                },
+            ],
+            id: 'test-queue-config-1',
+        },
+        {
+            events: ['s3:ObjectRemoved:Delete', 's3:ObjectCreated:Copy'],
+            queueArn: 'arn:scality:bucketnotif:::target2',
+            id: 'test-queue-config-2',
+        },
+    ],
+};
+
 // create a dummy bucket to test getters and setters
 Object.keys(acl).forEach(
     aclObj => describe(`different acl configurations : ${aclObj}`, () => {
@@ -179,7 +204,8 @@ Object.keys(acl).forEach(
             testBucketPolicy, testUid, undefined,
             true, undefined, testAzureInfo,
             testobjectLockEnabled,
-            testObjectLockConfiguration);
+            testObjectLockConfiguration,
+            testNotificationConfiguration);
 
         describe('serialize/deSerialize on BucketInfo class', () => {
             const serialized = dummyBucket.serialize();
@@ -214,6 +240,7 @@ Object.keys(acl).forEach(
                     objectLockEnabled: dummyBucket._objectLockEnabled,
                     objectLockConfiguration:
                         dummyBucket._objectLockConfiguration,
+                    notificationConfiguration: dummyBucket._notificationConfiguration,
                 };
                 assert.strictEqual(serialized, JSON.stringify(bucketInfos));
                 done();
@@ -400,6 +427,10 @@ Object.keys(acl).forEach(
                 assert.deepStrictEqual(dummyBucket.getObjectLockConfiguration(),
                     testObjectLockConfiguration);
             });
+            it('getNotificationConfiguration should return configuration', () => {
+                assert.deepStrictEqual(dummyBucket.getNotificationConfiguration(),
+                    testNotificationConfiguration);
+            });
         });
 
         describe('setters on BucketInfo class', () => {
@@ -570,6 +601,26 @@ Object.keys(acl).forEach(
                     assert.deepStrictEqual(dummyBucket.isObjectLockEnabled(),
                         bool);
                 });
+            });
+            it('setNotificationConfiguration should set notification configuration', () => {
+                const newNotifConfig = {
+                    queueConfig: [
+                        {
+                            events: ['s3:ObjectRemoved:*'],
+                            queueArn: 'arn:scality:bucketnotif:::target3',
+                            filterRules: [
+                                {
+                                    name: 'prefix',
+                                    value: 'configs/',
+                                },
+                            ],
+                            id: 'test-config-3',
+                        },
+                    ],
+                };
+                dummyBucket.setNotificationConfiguration(newNotifConfig);
+                assert.deepStrictEqual(
+                    dummyBucket.getNotificationConfiguration(), newNotifConfig);
             });
         });
     })
