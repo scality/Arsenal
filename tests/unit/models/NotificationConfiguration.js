@@ -53,8 +53,8 @@ function generateFilter(testParams) {
 function generateXml(testParams) {
     const id = testParams.key === 'Id' ? `<Id>${testParams.value}</Id>` : '<Id>queue-id</Id>';
     const arn = testParams.key === 'QueueArn' ?
-        `<QueueArn>${testParams.value}</QueueArn>` :
-        '<QueueArn>arn:scality:bucketnotif:::target</QueueArn>';
+        `<Queue>${testParams.value}</Queue>` :
+        '<Queue>arn:scality:bucketnotif:::target</Queue>';
     const event = generateEvent(testParams);
     const filter = generateFilter(testParams);
     let queueConfig = `<QueueConfiguration>${id}${arn}${event}${filter}` +
@@ -88,7 +88,7 @@ const failTests = [
     },
     {
         name: 'fail with empty QueueConfiguration',
-        params: { key: 'QueueConfiguration', value: '<QueueArn>arn:scality:bucketnotif:::target</QueueArn>' },
+        params: { key: 'QueueConfiguration', value: '<Queue>arn:scality:bucketnotif:::target</Queue>' },
         error: 'MalformedXML',
         errorMessage: 'request xml does not include QueueConfiguration',
     },
