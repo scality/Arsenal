@@ -14,7 +14,7 @@ const mongoserver = new MongoMemoryReplSet({
         { port: 27018 },
     ],
     replSet: {
-        name: 'rs0',
+        name: 'customSetName',
         count: 1,
         dbName,
         storageEngine: 'ephemeralForTest',
@@ -471,7 +471,7 @@ describe('MongoClientInterface::getObjectMDStats', () => {
             const opts = {
                 replicaSetHosts: 'localhost:27018',
                 writeConcern: 'majority',
-                replicaSet: 'rs0',
+                replicaSet: 'customSetName',
                 readPreference: 'primary',
                 database: dbName,
                 replicationGroupId: 'GR001',
