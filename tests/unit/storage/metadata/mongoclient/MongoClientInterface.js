@@ -5,6 +5,7 @@ const { MongoMemoryReplSet } = require('mongodb-memory-server');
 
 const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
 const BucketInfo = require('../../../../../lib/models/BucketInfo');
+const MongoUtils = require('../../../../../lib/storage/metadata/mongoclient/utils');
 const ObjectMD = require('../../../../../lib/models/ObjectMD');
 const dbName = 'metadata';
 
@@ -463,7 +464,7 @@ function uploadObjects(client, bucketName, objectList, callback) {
     }, callback);
 }
 
-describe('MongoClientInterface::getObjectMDStats', () => {
+describe('MongoClientInterface, tests', () => {
     const hr = 1000 * 60 * 60;
     let client;
     before(done => {
@@ -494,7 +495,7 @@ describe('MongoClientInterface::getObjectMDStats', () => {
 
     const tests = [
         [
-            'should return correct results',
+            'getObjectMDStats() should return correct results',
             {
                 bucketName: 'test-bucket',
                 isVersioned: true,
@@ -625,4 +626,61 @@ describe('MongoClientInterface::getObjectMDStats', () => {
             next => client.deleteBucket(bucketName, logger, next),
         ], done);
     }));
+
+    it('shall encode/decode tags properly', done => {
+        const bucketName = 'foo';
+        const objectName = 'bar';
+        const tags = {
+            'tag1': 'value1',
+            'tag2': 'value.2',
+            'tag.3': 'value3',
+            'tag.4': 'value.4',
+            'tag6': 'value6',
+            'tag7': 'value$7',
+            'tag$8': 'value8',
+            'tag$9': 'value$9',
+        };
+        async.waterfall([
+            next => createBucket(
+                client, bucketName, false, err => next(err)),
+            next => {
+                const objMD = new ObjectMD()
+                      .setKey(objectName)
+                      .setDataStoreName('us-east-1')
+                      .setContentLength(100)
+                      .setTags(tags)
+                      .setLastModified(new Date(Date.now()));
+                client.putObject(bucketName, objectName, objMD.getValue(), {},
+                                 logger, err => next(err));
+            },
+            next => {
+                const c = client.getCollection(bucketName);
+                c.findOne({
+                    _id: objectName,
+                }, {}, (err, doc) => {
+                    if (err) {
+                        return next(err);
+                    }
+                    if (!doc) {
+                        return next(new Error('key not found'));
+                    }
+                    assert.deepStrictEqual(doc.value.tags, {
+                        'tag1': 'value1',
+                        'tag2': 'value.2',
+                        'tag\uFF0E3': 'value3',
+                        'tag\uFF0E4': 'value.4',
+                        'tag6': 'value6',
+                        'tag7': 'value$7',
+                        'tag\uFF048': 'value8',
+                        'tag\uFF049': 'value$9',
+                    });
+                    MongoUtils.unserialize(doc.value);
+                    assert.deepStrictEqual(doc.value.tags, tags);
+                    return next();
+                });
+            },
+            next => client.deleteObject(bucketName, objectName, {}, logger, next),
+            next => client.deleteBucket(bucketName, logger, next),
+        ], done);
+    });
 });

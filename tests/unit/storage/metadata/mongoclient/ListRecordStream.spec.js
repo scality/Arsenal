@@ -376,7 +376,7 @@ describe('mongoclient.ListRecordStream', () => {
                 value: {
                     tags: {
                         'some\uFF04weird\uFF0Ekey':
-                        'some\uFF04weird\uFF0Evalue',
+                        'some$weird.value',
                     },
                 },
             },
