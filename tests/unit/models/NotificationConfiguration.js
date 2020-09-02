@@ -87,12 +87,6 @@ const failTests = [
         errorMessage: 'request xml is undefined or empty',
     },
     {
-        name: 'fail with empty QueueConfiguration',
-        params: { key: 'QueueConfiguration', value: '<Queue>arn:scality:bucketnotif:::target</Queue>' },
-        error: 'MalformedXML',
-        errorMessage: 'request xml does not include QueueConfiguration',
-    },
-    {
         name: 'fail with invalid id',
         params: { key: 'Id', value: 'a'.repeat(256) },
         error: 'InvalidArgument',
@@ -167,6 +161,10 @@ const failTests = [
 ];
 
 const passTests = [
+    {
+        name: 'pass with empty QueueConfiguration',
+        params: { key: 'QueueConfiguration', value: '[]' },
+    },
     {
         name: 'pass with multiple events in one queue configuration',
         params: {
