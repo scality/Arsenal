@@ -35,7 +35,7 @@
     "level": "~5.0.1",
     "level-sublevel": "~6.6.5",
     "mongodb": "^3.0.1",
-    "node-forge": "^0.7.1",
+    "node-forge": "^0.10.0",
     "prom-client": "10.2.3",
     "simple-glob": "^0.2.0",
     "socket.io": "~2.3.0",
