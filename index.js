@@ -148,6 +148,10 @@ module.exports = {
             },
         },
         utils: require('./lib/storage/utils'),
+        coldstorage: {
+            ColdStorageWrapper:
+            require('./lib/storage/coldstorage/ColdStorageWrapper'),
+        }
     },
     models: {
         BackendInfo: require('./lib/models/BackendInfo'),
