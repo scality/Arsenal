@@ -2,6 +2,11 @@ const assert = require('assert');
 const ObjectMD = require('../../../lib/models/ObjectMD');
 const constants = require('../../../lib/constants');
 
+const retainDate = new Date();
+retainDate.setDate(retainDate.getDate() + 1);
+const laterDate = new Date();
+laterDate.setDate(laterDate.getDate() + 5);
+
 describe('ObjectMD class setters/getters', () => {
     let md = null;
 
@@ -63,11 +68,11 @@ describe('ObjectMD class setters/getters', () => {
         ['Key', 'key'],
         ['Location', null, []],
         ['Location', ['location1']],
-        ['IsNull', null, ''],
+        ['IsNull', null, false],
         ['IsNull', true],
-        ['NullVersionId', null, ''],
+        ['NullVersionId', null, undefined],
         ['NullVersionId', '111111'],
-        ['IsDeleteMarker', null, ''],
+        ['IsDeleteMarker', null, false],
         ['IsDeleteMarker', true],
         ['VersionId', null, undefined],
         ['VersionId', '111111'],
@@ -119,6 +124,11 @@ describe('ObjectMD class setters/getters', () => {
             blobAccessTierChangeTime: 'abcdef',
             blobUncommitted: false,
         }],
+        ['LegalHold', null, false],
+        ['LegalHold', true],
+        ['RetentionMode', 'GOVERNANCE'],
+        ['RetentionDate', retainDate.toISOString()],
+        ['OriginOp', null, ''],
     ].forEach(test => {
         const property = test[0];
         const testValue = test[1];
@@ -257,6 +267,40 @@ describe('ObjectMD class setters/getters', () => {
         md.clearMetadataValues();
         assert.strictEqual(md.getUserMetadata(), undefined);
     });
+
+    it('ObjectMD::microVersionId unset', () => {
+        assert.strictEqual(md.getMicroVersionId(), null);
+    });
+
+    it('ObjectMD::microVersionId set', () => {
+        const generatedIds = new Set();
+        for (let i = 0; i < 100; ++i) {
+            md.updateMicroVersionId();
+            generatedIds.add(md.getMicroVersionId());
+        }
+        // all generated IDs should be different
+        assert.strictEqual(generatedIds.size, 100);
+        generatedIds.forEach(key => {
+            // length is always 16 in hex because leading 0s are
+            // also encoded in the 8-byte random buffer.
+            assert.strictEqual(key.length, 16);
+        });
+    });
+
+    it('ObjectMD::set/getRetentionMode', () => {
+        md.setRetentionMode('COMPLIANCE');
+        assert.deepStrictEqual(md.getRetentionMode(), 'COMPLIANCE');
+    });
+
+    it('ObjectMD::set/getRetentionDate', () => {
+        md.setRetentionDate(laterDate.toISOString());
+        assert.deepStrictEqual(md.getRetentionDate(), laterDate.toISOString());
+    });
+
+    it('ObjectMD::set/getOriginOp', () => {
+        md.setOriginOp('Copy');
+        assert.deepStrictEqual(md.getOriginOp(), 'Copy');
+    });
 });
 
 describe('ObjectMD import from stored blob', () => {
@@ -382,7 +426,9 @@ describe('getAttributes static method', () => {
             'replicationInfo': true,
             'dataStoreName': true,
             'last-modified': true,
-            'md-model-version': true };
+            'md-model-version': true,
+            'originOp': true,
+        };
         assert.deepStrictEqual(attributes, expectedResult);
     });
 });

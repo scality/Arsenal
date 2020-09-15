@@ -149,8 +149,42 @@ const testBucketPolicy = {
         },
     ],
 };
-// create a dummy bucket to test getters and setters
 
+const testobjectLockEnabled = false;
+
+const testObjectLockConfiguration = {
+    rule: {
+        mode: 'GOVERNANCE',
+        days: 1,
+    },
+};
+
+const testNotificationConfiguration = {
+    queueConfig: [
+        {
+            events: ['s3:ObjectCreated:*'],
+            queueArn: 'arn:scality:bucketnotif:::target1',
+            filterRules: [
+                {
+                    name: 'prefix',
+                    value: 'logs/',
+                },
+                {
+                    name: 'suffix',
+                    value: '.log',
+                },
+            ],
+            id: 'test-queue-config-1',
+        },
+        {
+            events: ['s3:ObjectRemoved:Delete', 's3:ObjectCreated:Copy'],
+            queueArn: 'arn:scality:bucketnotif:::target2',
+            id: 'test-queue-config-2',
+        },
+    ],
+};
+
+// create a dummy bucket to test getters and setters
 Object.keys(acl).forEach(
     aclObj => describe(`different acl configurations : ${aclObj}`, () => {
         const dummyBucket = new BucketInfo(
@@ -168,7 +202,10 @@ Object.keys(acl).forEach(
             testReplicationConfiguration,
             testLifecycleConfiguration,
             testBucketPolicy, testUid, undefined,
-            true, undefined, testAzureInfo);
+            true, undefined, testAzureInfo,
+            testobjectLockEnabled,
+            testObjectLockConfiguration,
+            testNotificationConfiguration);
 
         describe('serialize/deSerialize on BucketInfo class', () => {
             const serialized = dummyBucket.serialize();
@@ -200,6 +237,10 @@ Object.keys(acl).forEach(
                     isNFS: dummyBucket._isNFS,
                     ingestion: dummyBucket._ingestion,
                     azureInfo: dummyBucket._azureInfo,
+                    objectLockEnabled: dummyBucket._objectLockEnabled,
+                    objectLockConfiguration:
+                        dummyBucket._objectLockConfiguration,
+                    notificationConfiguration: dummyBucket._notificationConfiguration,
                 };
                 assert.strictEqual(serialized, JSON.stringify(bucketInfos));
                 done();
@@ -215,6 +256,46 @@ Object.keys(acl).forEach(
             });
         });
 
+        describe('fromObj on BucketInfo class', () => {
+            it('should create BucketInfo instance from fromObj', done => {
+                const dataObj = {
+                    _acl: dummyBucket._acl,
+                    _name: dummyBucket._name,
+                    _owner: dummyBucket._owner,
+                    _ownerDisplayName: dummyBucket._ownerDisplayName,
+                    _creationDate: dummyBucket._creationDate,
+                    _mdBucketModelVersion: dummyBucket._mdBucketModelVersion,
+                    _transient: dummyBucket._transient,
+                    _deleted: dummyBucket._deleted,
+                    _serverSideEncryption: dummyBucket._serverSideEncryption,
+                    _versioningConfiguration:
+                        dummyBucket._versioningConfiguration,
+                    _locationConstraint: dummyBucket._locationConstraint,
+                    _readLocationConstraint: dummyBucket._readLocationConstraint,
+                    _websiteConfiguration: testWebsiteConfiguration,
+                    _cors: dummyBucket._cors,
+                    _replicationConfiguration:
+                        dummyBucket._replicationConfiguration,
+                    _lifecycleConfiguration:
+                        dummyBucket._lifecycleConfiguration,
+                    _bucketPolicy: dummyBucket._bucketPolicy,
+                    _uid: dummyBucket._uid,
+                    _isNFS: dummyBucket._isNFS,
+                    _ingestion: dummyBucket._ingestion,
+                    _azureInfo: dummyBucket._azureInfo,
+                    _objectLockEnabled: dummyBucket._objectLockEnabled,
+                    _objectLockConfiguration:
+                        dummyBucket._objectLockConfiguration,
+                    _notificationConfiguration:
+                        dummyBucket._notificationConfiguration,
+                };
+                const fromObj = BucketInfo.fromObj(dataObj);
+                assert(fromObj instanceof BucketInfo);
+                assert.deepStrictEqual(fromObj, dummyBucket);
+                done();
+            });
+        });
+
         describe('constructor', () => {
             it('this should have the right BucketInfo types',
                () => {
@@ -226,6 +307,16 @@ Object.keys(acl).forEach(
                                       'string');
                    assert.strictEqual(typeof dummyBucket.getUid(), 'string');
                });
+            it('this should have the right BucketInfo types', () => {
+                assert.strictEqual(typeof dummyBucket.getName(), 'string');
+                assert.strictEqual(typeof dummyBucket.getOwner(), 'string');
+                assert.strictEqual(typeof dummyBucket.getOwnerDisplayName(),
+                                    'string');
+                assert.strictEqual(typeof dummyBucket.getCreationDate(),
+                                    'string');
+                assert.strictEqual(typeof dummyBucket.isObjectLockEnabled(),
+                                    'boolean');
+            });
             it('this should have the right acl\'s types', () => {
                 assert.strictEqual(typeof dummyBucket.getAcl(), 'object');
                 assert.strictEqual(
@@ -329,6 +420,18 @@ Object.keys(acl).forEach(
             it('getAzureInfo should return the expected structure', () => {
                 const azureInfo = dummyBucket.getAzureInfo();
                 assert.deepStrictEqual(azureInfo, testAzureInfo);
+            });
+            it('object lock should be disabled by default', () => {
+                assert.deepStrictEqual(
+                    dummyBucket.isObjectLockEnabled(), false);
+            });
+            it('getObjectLockConfiguration should return configuration', () => {
+                assert.deepStrictEqual(dummyBucket.getObjectLockConfiguration(),
+                    testObjectLockConfiguration);
+            });
+            it('getNotificationConfiguration should return configuration', () => {
+                assert.deepStrictEqual(dummyBucket.getNotificationConfiguration(),
+                    testNotificationConfiguration);
             });
         });
 
@@ -481,6 +584,45 @@ Object.keys(acl).forEach(
                 dummyBucket.setAzureInfo(dummyAzureInfo);
                 const azureInfo = dummyBucket.getAzureInfo();
                 assert.deepStrictEqual(azureInfo, dummyAzureInfo);
+            });
+            it('setObjectLockConfiguration should set object lock ' +
+                'configuration', () => {
+                const newObjectLockConfig = {
+                    rule: {
+                        mode: 'COMPLIANCE',
+                        years: 1,
+                    },
+                };
+                dummyBucket.setObjectLockConfiguration(newObjectLockConfig);
+                assert.deepStrictEqual(dummyBucket.getObjectLockConfiguration(),
+                    newObjectLockConfig);
+            });
+            [true, false].forEach(bool => {
+                it('setObjectLockEnabled should set object lock status', () => {
+                    dummyBucket.setObjectLockEnabled(bool);
+                    assert.deepStrictEqual(dummyBucket.isObjectLockEnabled(),
+                        bool);
+                });
+            });
+            it('setNotificationConfiguration should set notification configuration', () => {
+                const newNotifConfig = {
+                    queueConfig: [
+                        {
+                            events: ['s3:ObjectRemoved:*'],
+                            queueArn: 'arn:scality:bucketnotif:::target3',
+                            filterRules: [
+                                {
+                                    name: 'prefix',
+                                    value: 'configs/',
+                                },
+                            ],
+                            id: 'test-config-3',
+                        },
+                    ],
+                };
+                dummyBucket.setNotificationConfiguration(newNotifConfig);
+                assert.deepStrictEqual(
+                    dummyBucket.getNotificationConfiguration(), newNotifConfig);
             });
         });
     })

@@ -20,6 +20,9 @@ module.exports = {
         cache: {
             LRUCache: require('./lib/algos/cache/LRUCache'),
         },
+        stream: {
+            MergeStream: require('./lib/algos/stream/MergeStream'),
+        },
     },
     policies: {
         evaluators: require('./lib/policyEvaluator/evaluator.js'),
@@ -65,6 +68,7 @@ module.exports = {
         userMetadata: require('./lib/s3middleware/userMetadata'),
         convertToXml: require('./lib/s3middleware/convertToXml'),
         escapeForXml: require('./lib/s3middleware/escapeForXml'),
+        objectLegalHold: require('./lib/s3middleware/objectLegalHold'),
         tagging: require('./lib/s3middleware/tagging'),
         checkDateModifiedHeaders:
             require('./lib/s3middleware/validateConditionalHeaders')
@@ -85,6 +89,7 @@ module.exports = {
         },
         prepareStream: require('./lib/s3middleware/prepareStream'),
         processMpuParts: require('./lib/s3middleware/processMpuParts'),
+        retention: require('./lib/s3middleware/objectRetention'),
     },
     storage: {
         metadata: {
@@ -167,6 +172,10 @@ module.exports = {
         LifecycleConfiguration:
             require('./lib/models/LifecycleConfiguration'),
         BucketPolicy: require('./lib/models/BucketPolicy'),
+        ObjectLockConfiguration:
+            require('./lib/models/ObjectLockConfiguration'),
+        NotificationConfiguration:
+            require('./lib/models/NotificationConfiguration'),
     },
     metrics: {
         StatsClient: require('./lib/metrics/StatsClient'),
@@ -176,5 +185,8 @@ module.exports = {
     },
     pensieve: {
         credentialUtils: require('./lib/executables/pensieveCreds/utils'),
+    },
+    stream: {
+        readJSONStreamObject: require('./lib/stream/readJSONStreamObject'),
     },
 };
