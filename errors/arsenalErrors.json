@@ -475,6 +475,18 @@
     "code": 400,
     "description": "This policy contains invalid Json"
   },
+  "ReportExpired": {
+    "code": 410,
+    "description": "The request was rejected because the most recent credential report has expired."
+  },
+  "ReportInProgress": {
+    "code": 404,
+    "description": "The request was rejected because the credential report is still being generated."
+  },
+  "ReportNotPresent": {
+    "code": 410,
+    "description": "The request was rejected because the credential report does not exist. To generate a credential report, use GenerateCredentialReport."
+  },
   "_comment": "-------------- Special non-AWS S3 errors --------------",
   "MPUinProgress": {
     "code": 409,
