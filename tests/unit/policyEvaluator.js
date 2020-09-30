@@ -1161,6 +1161,85 @@ describe('policyEvaluator', () => {
                 };
                 check(requestContext, rcModifiers, policy, 'Neutral');
             });
+
+            it('should allow with StringEquals operator and ExistingObjectTag ' +
+            'key if meet condition', () => {
+                policy.Statement.Condition = {
+                    StringEquals: { 's3:ExistingObjectTag/tagKey': 'tagValue' },
+                };
+                const rcModifiers = {
+                    _existingObjTag: 'tagKey=tagValue',
+                    _needTagEval: true,
+                };
+                check(requestContext, rcModifiers, policy, 'Allow');
+            });
+
+            it('should allow StringEquals operator and RequestObjectTag ' +
+            'key if meet condition', () => {
+                policy.Statement.Condition = {
+                    StringEquals: { 's3:RequestObjectTagKey/tagKey': 'tagValue' },
+                };
+                const rcModifiers = {
+                    _requestObjTags: 'tagKey=tagValue',
+                    _needTagEval: true,
+                };
+                check(requestContext, rcModifiers, policy, 'Allow');
+            });
+
+            it('should allow with ForAnyValue prefix if meet condition', () => {
+                policy.Statement.Condition = {
+                    'ForAnyValue:StringLike': { 's3:RequestObjectTagKeys': ['tagOne', 'tagTwo'] },
+                };
+                const rcModifiers = {
+                    _requestObjTags: 'tagOne=keyOne&tagThree=keyThree',
+                    _needTagEval: true,
+                };
+                check(requestContext, rcModifiers, policy, 'Allow');
+            });
+
+            it('should allow with ForAllValues prefix if meet condition', () => {
+                policy.Statement.Condition = {
+                    'ForAllValues:StringLike': { 's3:RequestObjectTagKeys': ['tagOne', 'tagTwo'] },
+                };
+                const rcModifiers = {
+                    _requestObjTags: 'tagOne=keyOne&tagTwo=keyTwo',
+                    _needTagEval: true,
+                };
+                check(requestContext, rcModifiers, policy, 'Allow');
+            });
+
+            it('should not allow with ForAnyValue prefix if do not meet condition', () => {
+                policy.Statement.Condition = {
+                    'ForAnyValue:StringLike': { 's3:RequestObjectTagKeys': ['tagOne', 'tagTwo'] },
+                };
+                const rcModifiers = {
+                    _requestObjTags: 'tagThree=keyThree&tagFour=keyFour',
+                    _needTagEval: true,
+                };
+                check(requestContext, rcModifiers, policy, 'Neutral');
+            });
+
+            it('should not allow with ForAllValues prefix if do not meet condition', () => {
+                policy.Statement.Condition = {
+                    'ForAllValues:StringLike': { 's3:RequestObjectTagKeys': ['tagOne', 'tagTwo'] },
+                };
+                const rcModifiers = {
+                    _requestObjTags: 'tagThree=keyThree&tagFour=keyFour',
+                    _needTagEval: true,
+                };
+                check(requestContext, rcModifiers, policy, 'Neutral');
+            });
+
+            it('should be neutral with StringEquals if condition key does not exist', () => {
+                policy.Statement.Condition = {
+                    StringEquals: { 's3:Foobar/tagKey': 'tagValue' },
+                };
+                const rcModifiers = {
+                    _requestObjTags: 'tagKey=tagValue',
+                    _needTagEval: true,
+                };
+                check(requestContext, rcModifiers, policy, 'Neutral');
+            });
         });
     });
 
