@@ -180,4 +180,39 @@ describe('network.Server: ', () => {
             res.end('done');
         }).start();
     });
+
+    it('should automatically close idle connections with setKeepAliveTimeout()', done => {
+        const ws = new Server(3000, log);
+        ws.setKeepAliveTimeout(1000);
+        ws.onError(done).onListening(() => {
+            const options = {
+                hostname: '127.0.0.1',
+                port: 3000,
+                path: '/',
+                agent: new http.Agent({ keepAlive: true }),
+            };
+            const req = http.request(options, res => {
+                res.on('data', () => {});
+                res.on('end', () => {});
+            });
+            req.on('error', err => {
+                assert.ifError(err);
+            });
+            req.end();
+        }).onRequest((req, res) => {
+            res.writeHead(200, { 'Content-Type': 'text/plain' });
+            res.end();
+            assert.strictEqual(ws._server._connections, 1);
+            setTimeout(() => {
+                // client connection should remain open after less than 1000ms
+                assert.strictEqual(ws._server._connections, 1);
+                setTimeout(() => {
+                    // client connection should have been closed after more than 1000ms
+                    assert.strictEqual(ws._server.connections, 0);
+                    ws.stop();
+                    ws.onStop(done);
+                }, 200);
+            }, 900);
+        }).start();
+    });
 });
