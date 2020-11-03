@@ -137,6 +137,23 @@ describe('external backend clients', () => {
                     });
             });
         });
-        // To-Do: test the other external client methods
+
+        it(`${backend.name} get() should not call the callback again on stream error`, done => {
+            testClient.get({
+                key: 'externalBackendTestBucket/externalBackendTestKey',
+                dataStoreName: backend.config.dataStoreName,
+                response: new stream.PassThrough(),
+            }, [10000000, 20000000], '', (err, readable) => {
+                // a stream error should not trigger this callback again with an error
+                assert.ifError(err);
+                readable
+                    .once('data', () => readable.emit('error', new Error('OOPS')))
+                    .on('error', err => {
+                        assert.strictEqual(err.message, 'OOPS');
+                        done();
+                    });
+            });
+        });
+        // To-Do: test the other external client methods (delete, createMPU ...)
     });
 });
