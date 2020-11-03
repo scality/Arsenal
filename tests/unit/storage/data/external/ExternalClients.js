@@ -1,4 +1,5 @@
 const assert = require('assert');
+const stream = require('stream');
 
 const AwsClient = require('../../../../../lib/storage/data/external/AwsClient');
 const GcpClient = require('../../../../../lib/storage/data/external/GcpClient');
@@ -112,6 +113,28 @@ describe('external backend clients', () => {
                 assert(err);
                 assert(err.LocationNotFound);
                 done();
+            });
+        });
+
+        it(`${backend.name} get() should stream a range of data`, done => {
+            // the reference virtual object is 1GB in size, let's get
+            // only a small range from it
+            testClient.get({
+                key: 'externalBackendTestBucket/externalBackendTestKey',
+                dataStoreName: backend.config.dataStoreName,
+                response: new stream.PassThrough(),
+            }, [10000000, 10000050], '', (err, readable) => {
+                assert.ifError(err);
+                const readChunks = [];
+                readable
+                    .on('data', chunk => readChunks.push(chunk))
+                    .on('error', err => assert.ifError(err))
+                    .on('end', () => {
+                        assert.strictEqual(
+                            readChunks.join(''),
+                            ' 0989680 0989688 0989690 0989698 09896a0 09896a8 09');
+                        done();
+                    });
             });
         });
         // To-Do: test the other external client methods
