@@ -38,6 +38,7 @@ module.exports = {
         evaluatePrincipal: require('./lib/policyEvaluator/principal'),
         RequestContext: require('./lib/policyEvaluator/RequestContext.js'),
         requestUtils: require('./lib/policyEvaluator/requestUtils'),
+        actionMaps: require('./lib/policyEvaluator/utils/actionMaps'),
     },
     Clustering: require('./lib/Clustering'),
     testing: {
