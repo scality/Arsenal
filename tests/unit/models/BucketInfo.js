@@ -127,8 +127,17 @@ const testBucketPolicy = {
         },
     ],
 };
-// create a dummy bucket to test getters and setters
 
+const testobjectLockEnabled = false;
+
+const testObjectLockConfiguration = {
+    rule: {
+        mode: 'GOVERNANCE',
+        days: 1,
+    },
+};
+
+// create a dummy bucket to test getters and setters
 Object.keys(acl).forEach(
     aclObj => describe(`different acl configurations : ${aclObj}`, () => {
         const dummyBucket = new BucketInfo(
@@ -145,7 +154,9 @@ Object.keys(acl).forEach(
             testCorsConfiguration,
             testReplicationConfiguration,
             testLifecycleConfiguration,
-            testBucketPolicy);
+            testBucketPolicy,
+            testobjectLockEnabled,
+            testObjectLockConfiguration);
 
         describe('serialize/deSerialize on BucketInfo class', () => {
             const serialized = dummyBucket.serialize();
@@ -172,6 +183,9 @@ Object.keys(acl).forEach(
                     lifecycleConfiguration:
                         dummyBucket._lifecycleConfiguration,
                     bucketPolicy: dummyBucket._bucketPolicy,
+                    objectLockEnabled: dummyBucket._objectLockEnabled,
+                    objectLockConfiguration:
+                        dummyBucket._objectLockConfiguration,
                 };
                 assert.strictEqual(serialized, JSON.stringify(bucketInfos));
                 done();
@@ -188,15 +202,16 @@ Object.keys(acl).forEach(
         });
 
         describe('constructor', () => {
-            it('this should have the right BucketInfo types',
-               () => {
-                   assert.strictEqual(typeof dummyBucket.getName(), 'string');
-                   assert.strictEqual(typeof dummyBucket.getOwner(), 'string');
-                   assert.strictEqual(typeof dummyBucket.getOwnerDisplayName(),
-                                      'string');
-                   assert.strictEqual(typeof dummyBucket.getCreationDate(),
-                                      'string');
-               });
+            it('this should have the right BucketInfo types', () => {
+                assert.strictEqual(typeof dummyBucket.getName(), 'string');
+                assert.strictEqual(typeof dummyBucket.getOwner(), 'string');
+                assert.strictEqual(typeof dummyBucket.getOwnerDisplayName(),
+                                    'string');
+                assert.strictEqual(typeof dummyBucket.getCreationDate(),
+                                    'string');
+                assert.strictEqual(typeof dummyBucket.isObjectLockEnabled(),
+                                    'boolean');
+            });
             it('this should have the right acl\'s types', () => {
                 assert.strictEqual(typeof dummyBucket.getAcl(), 'object');
                 assert.strictEqual(
@@ -274,6 +289,14 @@ Object.keys(acl).forEach(
             it('getBucketPolicy should return policy', () => {
                 assert.deepStrictEqual(
                     dummyBucket.getBucketPolicy(), testBucketPolicy);
+            });
+            it('object lock should be disabled by default', () => {
+                assert.deepStrictEqual(
+                    dummyBucket.isObjectLockEnabled(), false);
+            });
+            it('getObjectLockConfiguration should return configuration', () => {
+                assert.deepStrictEqual(dummyBucket.getObjectLockConfiguration(),
+                    testObjectLockConfiguration);
             });
         });
 
@@ -411,6 +434,25 @@ Object.keys(acl).forEach(
                 dummyBucket.setBucketPolicy(newBucketPolicy);
                 assert.deepStrictEqual(
                     dummyBucket.getBucketPolicy(), newBucketPolicy);
+            });
+            it('setObjectLockConfiguration should set object lock ' +
+                'configuration', () => {
+                const newObjectLockConfig = {
+                    rule: {
+                        mode: 'COMPLIANCE',
+                        years: 1,
+                    },
+                };
+                dummyBucket.setObjectLockConfiguration(newObjectLockConfig);
+                assert.deepStrictEqual(dummyBucket.getObjectLockConfiguration(),
+                    newObjectLockConfig);
+            });
+            [true, false].forEach(bool => {
+                it('setObjectLockEnabled should set object lock status', () => {
+                    dummyBucket.setObjectLockEnabled(bool);
+                    assert.deepStrictEqual(dummyBucket.isObjectLockEnabled(),
+                        bool);
+                });
             });
         });
     })

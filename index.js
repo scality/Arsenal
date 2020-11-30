@@ -24,6 +24,12 @@ module.exports = {
         listTools: {
             DelimiterTools: require('./lib/algos/list/tools'),
         },
+        cache: {
+            LRUCache: require('./lib/algos/cache/LRUCache'),
+        },
+        stream: {
+            MergeStream: require('./lib/algos/stream/MergeStream'),
+        },
     },
     policies: {
         evaluators: require('./lib/policyEvaluator/evaluator.js'),
@@ -31,6 +37,7 @@ module.exports = {
             .validateUserPolicy,
         evaluatePrincipal: require('./lib/policyEvaluator/principal'),
         RequestContext: require('./lib/policyEvaluator/RequestContext.js'),
+        requestUtils: require('./lib/policyEvaluator/requestUtils'),
     },
     Clustering: require('./lib/Clustering'),
     testing: {
@@ -64,6 +71,7 @@ module.exports = {
         userMetadata: require('./lib/s3middleware/userMetadata'),
         convertToXml: require('./lib/s3middleware/convertToXml'),
         escapeForXml: require('./lib/s3middleware/escapeForXml'),
+        objectLegalHold: require('./lib/s3middleware/objectLegalHold'),
         tagging: require('./lib/s3middleware/tagging'),
         validateConditionalHeaders:
             require('./lib/s3middleware/validateConditionalHeaders')
@@ -79,6 +87,7 @@ module.exports = {
             SubStreamInterface:
                 require('./lib/s3middleware/azureHelpers/SubStreamInterface'),
         },
+        retention: require('./lib/s3middleware/objectRetention'),
     },
     storage: {
         metadata: {
@@ -108,6 +117,8 @@ module.exports = {
         LifecycleConfiguration:
             require('./lib/models/LifecycleConfiguration'),
         BucketPolicy: require('./lib/models/BucketPolicy'),
+        ObjectLockConfiguration:
+            require('./lib/models/ObjectLockConfiguration'),
     },
     metrics: {
         StatsClient: require('./lib/metrics/StatsClient'),
@@ -116,5 +127,8 @@ module.exports = {
     },
     pensieve: {
         credentialUtils: require('./lib/executables/pensieveCreds/utils'),
+    },
+    stream: {
+        readJSONStreamObject: require('./lib/stream/readJSONStreamObject'),
     },
 };
