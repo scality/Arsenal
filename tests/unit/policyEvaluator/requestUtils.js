@@ -42,11 +42,11 @@ describe('requestUtils.getClientIp', () => {
             },
         });
         const result = requestUtils.getClientIp(request, configWithoutProxy);
-        assert.strictEqual(result, testClientIp2);
+        assert.strictEqual(result, testClientIp1);
     });
 
     it('should not return client Ip address from header ' +
-        'if the request is forwarded from proxies, but the request' +
+        'if the request is forwarded from proxies, but the request ' +
         'has no expected header or the header value is empty', () => {
         const request = new DummyRequest({
             headers: {
