@@ -28,9 +28,9 @@ describe('requestUtils.getClientIp', () => {
         assert.strictEqual(result, testClientIp1);
     });
 
-    it('should not return client Ip address from header ' +
-        'if the request is not forwarded from proxies or ' +
-        'fails ip check', () => {
+    it('should extract client Ip address from x-forwarded-for header ' +
+        'when the header is present and has valid ip address(es) if the ' +
+        'request is not forwarded via proxy', () => {
         const request = new DummyRequest({
             headers: {
                 'x-forwarded-for': [testClientIp1, testProxyIp].join(','),
@@ -42,11 +42,11 @@ describe('requestUtils.getClientIp', () => {
             },
         });
         const result = requestUtils.getClientIp(request, configWithoutProxy);
-        assert.strictEqual(result, testClientIp2);
+        assert.strictEqual(result, testClientIp1);
     });
 
     it('should not return client Ip address from header ' +
-        'if the request is forwarded from proxies, but the request' +
+        'if the request is forwarded from proxies, but the request ' +
         'has no expected header or the header value is empty', () => {
         const request = new DummyRequest({
             headers: {
