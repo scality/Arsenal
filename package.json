@@ -32,7 +32,7 @@
     "socket.io": "~2.3.0",
     "socket.io-client": "~2.3.0",
     "utf8": "2.1.2",
-    "uuid": "^3.0.1",
+    "uuid": "^8.3.2",
     "werelogs": "scality/werelogs#0ff7ec82",
     "xml2js": "~0.4.23"
   },
