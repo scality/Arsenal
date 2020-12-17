@@ -19,7 +19,7 @@
   "dependencies": {
     "@hapi/joi": "^15.1.0",
     "JSONStream": "^1.0.0",
-    "ajv": "6.12.2",
+    "ajv": "7.0.1",
     "async": "~2.1.5",
     "debug": "~2.6.9",
     "diskusage": "^1.1.1",
