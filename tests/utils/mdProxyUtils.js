@@ -63,7 +63,7 @@ class DummyProxyRequest {
         this.method = params.method;
         this.url = params.url;
         this.json = params.json;
-        this.body = new Buffer(
+        this.body = Buffer.from(
             this.json ? JSON.stringify(params.body) : (params.body || ''));
         this.headers = params.headers;
         this.socket = {
