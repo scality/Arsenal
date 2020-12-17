@@ -46,7 +46,7 @@ describe('requestUtils.getClientIp', () => {
     });
 
     it('should not return client Ip address from header ' +
-        'if the request is forwarded from proxies, but the request' +
+        'if the request is forwarded from proxies, but the request ' +
         'has no expected header or the header value is empty', () => {
         const request = new DummyRequest({
             headers: {
