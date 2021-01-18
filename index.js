@@ -60,6 +60,7 @@ module.exports = {
         },
         kmip: require('./lib/network/kmip'),
         kmipClient: require('./lib/network/kmip/Client'),
+        request: require('./lib/network/request'),
     },
     s3routes: {
         routes: require('./lib/s3routes/routes'),
