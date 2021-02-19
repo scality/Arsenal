@@ -58,6 +58,7 @@
     "eslint-plugin-react": "^4.3.0",
     "mocha": "5.2.0",
     "mongodb-memory-server": "^6.0.2",
+    "nyc": "^15.1.0",
     "sinon": "^9.0.2",
     "temp": "0.9.1"
   },
@@ -66,7 +67,10 @@
     "lint_md": "mdlint $(git ls-files '*.md')",
     "lint_yml": "yamllint $(git ls-files '*.yml')",
     "test": "mocha --recursive --timeout 5500 --exit tests/unit",
-    "ft_test": "find tests/functional -name \"*.js\" | grep -v \"utils/\" | xargs mocha --timeout 120000 --exit"
-  },
-  "private": true
+    "ft_test": "find tests/functional -name \"*.js\" | grep -v \"utils/\" | xargs mocha --timeout 120000 --exit",
+    "coverage": "yarn coverage_unit && yarn coverage_ft && yarn coverage_report",
+    "coverage_unit": "nyc --silent yarn test",
+    "coverage_ft": "nyc --silent --no-clean yarn ft_test",
+    "coverage_report": "nyc report --all --reporter=text-summary --reporter=lcov"
+  }
 }

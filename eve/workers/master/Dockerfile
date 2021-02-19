@@ -20,12 +20,6 @@ RUN apt-get update -q && apt-get -qy install curl apt-transport-https \
     && rm -f /tmp/*_packages.list
 
 #
-# Install usefull nodejs dependencies
-#
-
-RUN yarn global add mocha
-
-#
 # Add user eve
 #
 
@@ -38,8 +32,7 @@ RUN adduser -u 1042 --home /home/eve --disabled-password --gecos "" eve \
 #
 
 ARG BUILDBOT_VERSION=0.9.12
-RUN pip install yamllint
-RUN pip install buildbot-worker==$BUILDBOT_VERSION
+RUN pip install yamllint buildbot-worker==$BUILDBOT_VERSION
 
 USER eve
 ENV HOME /home/eve
@@ -49,7 +42,6 @@ ENV HOME /home/eve
 
 ENV CXX=g++-4.9
 ENV LANG C.UTF-8
-
 
 WORKDIR /home/eve/workspace
 CMD buildbot-worker create-worker . "$BUILDMASTER:$BUILDMASTER_PORT" "$WORKERNAME" "$WORKERPASS" \

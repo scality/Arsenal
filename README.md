@@ -1,5 +1,7 @@
 # Arsenal
 
+[![codecov](https://codecov.io/gh/scality/Arsenal/branch/development/8.1/graph/badge.svg?token=X0esXhJSwb)](https://codecov.io/gh/scality/Arsenal)
+
 Common utilities for the S3 project components
 
 Within this repository, you will be able to find the shared libraries for the

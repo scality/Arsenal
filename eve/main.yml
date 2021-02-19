@@ -5,6 +5,13 @@ branches:
   default:
     stage: pre-merge
 
+models:
+  - env: &coverage
+      CODECOV_TOKEN: '%(secret:codecov_token)s'
+      VCS_COMMIT_ID: '%(prop:revision)s'
+      VCS_BRANCH_NAME: '%(prop:branch)s'
+      CI_BUILD_ID: '%(prop:bootstrap)s'
+
 stages:
   pre-merge:
     worker: &master-worker
@@ -16,32 +23,34 @@ stages:
       - Git:
           name: fetch source
           repourl: '%(prop:git_reference)s'
-          shallow: True
-          retryFetch: True
-          haltOnFailure: True
+          shallow: true
+          retryFetch: true
+          haltOnFailure: true
       - ShellCommand:
           name: install dependencies
           command: yarn install --frozen-lockfile
       - ShellCommand:
           name: run lint yml
-          command: yarn run --silent lint_yml
+          command: yarn --silent lint_yml
       - ShellCommand:
           name: run lint
-          command: yarn run --silent lint -- --max-warnings 0
+          command: yarn --silent lint --max-warnings 0
       - ShellCommand:
           name: run lint_md
-          command: yarn run --silent lint_md
+          command: yarn --silent lint_md
       - ShellCommand:
           name: add hostname
           command: sudo sh -c "echo '127.0.0.1 testrequestbucket.localhost' \
             >> /etc/hosts"
-
       - ShellCommand:
-          name: run test
-          command: yarn run --silent test
+          name: test and coverage
+          command: yarn --silent coverage
       - ShellCommand:
-          name: run ft_test
-          command: yarn run ft_test
+          name: upload test coverage
+          haltOnFailure: false
+          command: "curl -s https://codecov.io/bash | bash"
+          env:
+            <<: *coverage
       - ShellCommand:
           name: run executables tests
           command: yarn install && yarn test
