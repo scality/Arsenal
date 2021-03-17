@@ -14,7 +14,7 @@ class Test {
     }
 }
 
-describe('Basic listing algorithm', () => {
+describe.only('Basic listing algorithm', () => {
     const data = [];
     for (let i = 0; i < 15000; ++i) {
         // Following the fix for S3C-1985, data is set as a stringified JSON
@@ -64,5 +64,51 @@ describe('Basic listing algorithm', () => {
         const res = performListing(['key1', 'key2'],
                                    Basic, { maxKeys: 1 }, logger);
         assert.deepStrictEqual(res, ['key1']);
+    });
+
+    it('Shall support filtering custom attributes', () => {
+        const attr1 = {
+            key: 'key1',
+            value: '{"foo": "bar"}',
+        };
+        const attr2 = {
+            key: 'key2',
+            value: '{"customAttributes": {"foo": "bar"}}',
+        };
+        const attr3 = {
+            key: 'key3',
+            value: `{"customAttributes": {
+"cd_tenant_id%3D%3D6a84c782-8766-11eb-b0a1-d7238b6e9579": "",
+"cd_tenant_id%3D%3Dc486659c-8761-11eb-87c2-8b0faea3c595": ""
+}}`,
+        };
+        const attr4 = {
+            key: 'key4',
+            value: `{"customAttributes": {
+"cd_tenant_id%3D%3D6a84c782-8766-11eb-b0a1-d7238b6e9579": ""
+}}`,
+        };
+        const input = [attr1, attr2, attr3, attr4];
+
+        const output1 = input;
+        const res1 = performListing(
+            input, Basic,
+            {},
+            logger);
+        assert.deepStrictEqual(res1, output1);
+
+        const output2 = [attr3];
+        const res2 = performListing(
+            input, Basic,
+            { filterKey: 'cd_tenant_id%3D%3Dc486659c-8761-11eb-87c2-8b0faea3c595' },
+            logger);
+        assert.deepStrictEqual(res2, output2);
+
+        const output3 = [attr3, attr4];
+        const res3 = performListing(
+            input, Basic,
+            { filterKeyStartsWith: 'cd_tenant_id%3D%3D' },
+            logger);
+        assert.deepStrictEqual(res3, output3);
     });
 });
