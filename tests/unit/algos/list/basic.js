@@ -65,4 +65,63 @@ describe('Basic listing algorithm', () => {
                                    Basic, { maxKeys: 1 }, logger);
         assert.deepStrictEqual(res, ['key1']);
     });
+
+    const attr1 = {
+        key: 'key1',
+        value: '{"foo": "bar"}',
+    };
+    const attr2 = {
+        key: 'key2',
+        value: '{"customAttributes": {"foo": "bar"}}',
+    };
+    const attr3 = {
+        key: 'key3',
+        value: `{"customAttributes": {
+"cd_tenant_id%3D%3D6a84c782-8766-11eb-b0a1-d7238b6e9579": "",
+"cd_tenant_id%3D%3Dc486659c-8761-11eb-87c2-8b0faea3c595": ""
+}}`,
+    };
+    const attr4 = {
+        key: 'key4',
+        value: `{"customAttributes": {
+"cd_tenant_id%3D%3D6a84c782-8766-11eb-b0a1-d7238b6e9579": ""
+}}`,
+    };
+    const input = [attr1, attr2, attr3, attr4];
+
+    it('Shall ignore custom attributes if no filter is specified', () => {
+        const output = input;
+        const res = performListing(
+            input, Basic,
+            {},
+            logger);
+        assert.deepStrictEqual(res, output);
+    });
+
+    it('Shall report nothing if filter does not match', () => {
+        const output = [];
+        const res = performListing(
+            input, Basic,
+            { filterKey: 'do not exist' },
+            logger);
+        assert.deepStrictEqual(res, output);
+    });
+
+    it('Shall find key in custom attributes', () => {
+        const output = [attr3];
+        const res = performListing(
+            input, Basic,
+            { filterKey: 'cd_tenant_id%3D%3Dc486659c-8761-11eb-87c2-8b0faea3c595' },
+            logger);
+        assert.deepStrictEqual(res, output);
+    });
+
+    it('Shall find key starting with a prefix in custom attributes', () => {
+        const output = [attr3, attr4];
+        const res = performListing(
+            input, Basic,
+            { filterKeyStartsWith: 'cd_tenant_id%3D%3D' },
+            logger);
+        assert.deepStrictEqual(res, output);
+    });
 });
