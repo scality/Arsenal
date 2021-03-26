@@ -1727,9 +1727,9 @@ hasha@^5.0.0:
     is-stream "^2.0.0"
     type-fest "^0.8.0"
 
-hdclient@scality/hdclient#5145e04e5ed33e85106765b1caa90cd245ef482b:
+hdclient@scality/hdclient#489db2106570b9ea41bdacdf56131324d0db6a58:
   version "0.1.0"
-  resolved "https://codeload.github.com/scality/hdclient/tar.gz/5145e04e5ed33e85106765b1caa90cd245ef482b"
+  resolved "https://codeload.github.com/scality/hdclient/tar.gz/489db2106570b9ea41bdacdf56131324d0db6a58"
   dependencies:
     werelogs scality/werelogs#GA7.2.0.5
 
