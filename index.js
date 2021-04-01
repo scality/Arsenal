@@ -118,6 +118,7 @@ module.exports = {
         StatsClient: require('./lib/metrics/StatsClient'),
         StatsModel: require('./lib/metrics/StatsModel'),
         RedisClient: require('./lib/metrics/RedisClient'),
+        ZenkoMetrics: require('./lib/metrics/ZenkoMetrics'),
     },
     pensieve: {
         credentialUtils: require('./lib/executables/pensieveCreds/utils'),
