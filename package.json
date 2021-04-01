@@ -23,7 +23,7 @@
     "ajv": "6.12.2",
     "async": "~2.6.1",
     "aws-sdk": "2.80.0",
-    "azure-storage": "~2.1.0",
+    "azure-storage": "~2.10.2",
     "backo": "^1.1.0",
     "bson": "4.0.0",
     "debug": "~4.1.0",
@@ -45,7 +45,8 @@
     "utf8": "3.0.0",
     "uuid": "^3.0.1",
     "werelogs": "scality/werelogs#0ff7ec82",
-    "xml2js": "~0.4.23"
+    "xml2js": "~0.4.23",
+    "snyk": "^1.521.0"
   },
   "optionalDependencies": {
     "ioctl": "2.0.1"
@@ -71,6 +72,9 @@
     "coverage": "yarn coverage_unit && yarn coverage_ft && yarn coverage_report",
     "coverage_unit": "nyc --silent yarn test",
     "coverage_ft": "nyc --silent --no-clean yarn ft_test",
-    "coverage_report": "nyc report --all --reporter=text-summary --reporter=lcov"
-  }
+    "coverage_report": "nyc report --all --reporter=text-summary --reporter=lcov",
+    "snyk-protect": "snyk protect",
+    "prepublish": "npm run snyk-protect"
+  },
+  "snyk": true
 }
