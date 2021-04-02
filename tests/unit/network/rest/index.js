@@ -59,6 +59,7 @@ describe('REST interface for blob data storage', () => {
 
     after(done => {
         server.stop();
+        client.destroy();
         done();
     });
 

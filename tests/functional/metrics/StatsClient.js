@@ -28,6 +28,8 @@ describe('StatsClient class', () => {
 
     afterEach(() => redisClient.clear(() => {}));
 
+    after(() => redisClient.disconnect());
+
     it('should correctly record a new request by default one increment',
     done => {
         async.series([
