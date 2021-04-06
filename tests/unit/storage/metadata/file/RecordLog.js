@@ -210,6 +210,11 @@ describe('record log - persistent log of metadata operations', () => {
             });
         });
 
+        after(done => closeRecordLog(logProxy, () => {
+            logProxy = undefined;
+            done();
+        }));
+
         function checkRecord(record, seq) {
             assert.strictEqual(record.entries.length, 1);
             assert.deepStrictEqual(record.db, 'foobucket');
