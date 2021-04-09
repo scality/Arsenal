@@ -817,6 +817,84 @@ function getTestListing(test, data, vFormat) {
             });
         });
 
+        it('should skip first version key if equal to master', () => {
+            const delimiter = new DelimiterVersions({}, logger, vFormat);
+            const masterKey = 'key';
+            const versionKey1 = `${masterKey}${VID_SEP}version1`;
+            const versionKey2 = `${masterKey}${VID_SEP}version2`;
+            const value2 = 'value2';
+
+            /* Filter the master version for version1 */
+            assert.strictEqual(delimiter.filter({
+                key: getListingKey(masterKey, vFormat),
+                value: '{"versionId":"version1"}',
+            }), FILTER_ACCEPT);
+
+            /* Filter the version key for version1 */
+            assert.strictEqual(delimiter.filter({
+                key: getListingKey(versionKey1, vFormat),
+                value: '{"versionId":"version1"}',
+            }), FILTER_SKIP);
+
+            /* Filter the version key for version2 */
+            assert.strictEqual(delimiter.filter({
+                key: getListingKey(versionKey2, vFormat),
+                value: value2,
+            }), FILTER_ACCEPT);
+
+            assert.deepStrictEqual(delimiter.result(), {
+                CommonPrefixes: [],
+                Versions: [{
+                    key: 'key',
+                    value: '{"versionId":"version1"}',
+                    versionId: 'version1',
+                }, {
+                    key: 'key',
+                    value: 'value2',
+                    versionId: 'version2',
+                }],
+                Delimiter: undefined,
+                IsTruncated: false,
+                NextKeyMarker: undefined,
+                NextVersionIdMarker: undefined,
+            });
+        });
+
+        it('should skip master and version key if under a known prefix', () => {
+            const commonPrefix1 = 'commonPrefix/';
+            const prefixKey1 = 'commonPrefix/key1';
+            const prefixKey2 = 'commonPrefix/key2';
+            const prefixVersionKey1 = `commonPrefix/key2${VID_SEP}version`;
+            const value = '{"versionId":"version"}';
+
+            const delimiter = new DelimiterVersions({ delimiter: '/' },
+                                                    logger, vFormat);
+
+            assert.strictEqual(delimiter.filter({
+                key: getListingKey(prefixKey1, vFormat),
+                value,
+            }), FILTER_ACCEPT);
+            /* The second master key of the same common prefix should be skipped */
+            assert.strictEqual(delimiter.filter({
+                key: getListingKey(prefixKey2, vFormat),
+                value,
+            }), FILTER_SKIP);
+
+            /* The version key of the same common prefix should also be skipped */
+            assert.strictEqual(delimiter.filter({
+                key: getListingKey(prefixVersionKey1, vFormat),
+                value,
+            }), FILTER_SKIP);
+            assert.deepStrictEqual(delimiter.result(), {
+                CommonPrefixes: [commonPrefix1],
+                Versions: [],
+                Delimiter: '/',
+                IsTruncated: false,
+                NextKeyMarker: undefined,
+                NextVersionIdMarker: undefined,
+            });
+        });
+
         if (vFormat === 'v0') {
             it('should accept a PHD version as first input', () => {
                 const delimiter = new DelimiterVersions({}, logger, vFormat);
