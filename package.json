@@ -48,7 +48,7 @@
     "eslint-config-scality": "scality/Guidelines#ec33dfb",
     "eslint-plugin-react": "^4.3.0",
     "mocha": "8.0.1",
-    "temp": "0.9.1"
+    "temp": "0.9.4"
   },
   "scripts": {
     "lint": "eslint $(git ls-files '*.js')",
