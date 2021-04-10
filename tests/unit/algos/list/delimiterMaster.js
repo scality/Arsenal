@@ -64,7 +64,6 @@ function getListingKey(key, vFormat) {
                                                   fakeLogger, vFormat);
 
             /* Filter a master version to set NextMarker. */
-            // TODO: useless once S3C-1628 is fixed.
             const listingKey = getListingKey(key, vFormat);
             delimiter.filter({ key: listingKey, value: '' });
             assert.strictEqual(delimiter.NextMarker, key);
@@ -215,8 +214,8 @@ function getListingKey(key, vFormat) {
                     value: Version.generatePHDVersion(generateVersionId('', '')),
                 };
 
-                /* When filtered, it should return FILTER_ACCEPT and set the prvKey.
-                 * to undefined. It should not be added to result the content or common
+                /* When filtered, it should return FILTER_ACCEPT and set the prvKey
+                 * to undefined. It should not be added to the result content or common
                  * prefixes. */
                 assert.strictEqual(delimiter.filter(objPHD), FILTER_ACCEPT);
                 assert.strictEqual(delimiter.prvKey, undefined);
@@ -238,7 +237,7 @@ function getListingKey(key, vFormat) {
                  * and element in result content. */
                 delimiter.filter({ key, value });
 
-                /* When filtered, it should return FILTER_ACCEPT and set the prvKey.
+                /* When filtered, it should return FILTER_ACCEPT and set the prvKey
                  * to undefined. It should not be added to the result content or common
                  * prefixes. */
                 assert.strictEqual(delimiter.filter(objPHD), FILTER_ACCEPT);
@@ -283,7 +282,7 @@ function getListingKey(key, vFormat) {
                 });
             });
 
-            it('should accept a delete marker', () => {
+            it('should skip a delete marker version', () => {
                 const delimiter = new DelimiterMaster({}, fakeLogger, vFormat);
                 const version = new Version({ isDeleteMarker: true });
                 const key = 'key';
@@ -300,7 +299,7 @@ function getListingKey(key, vFormat) {
                 assert.deepStrictEqual(delimiter.result(), EmptyResult);
             });
 
-            it('should skip version after a delete marker', () => {
+            it('should skip version after a delete marker master', () => {
                 const delimiter = new DelimiterMaster({}, fakeLogger, vFormat);
                 const version = new Version({ isDeleteMarker: true });
                 const key = 'key';
@@ -316,7 +315,7 @@ function getListingKey(key, vFormat) {
                 assert.deepStrictEqual(delimiter.result(), EmptyResult);
             });
 
-            it('should accept a new key after a delete marker', () => {
+            it('should accept a new master key after a delete marker master', () => {
                 const delimiter = new DelimiterMaster({}, fakeLogger, vFormat);
                 const version = new Version({ isDeleteMarker: true });
                 const key1 = 'key1';
