@@ -760,5 +760,10 @@
   "ReadOnly": {
     "description": "trying to write to read only back-end",
     "code": 403
+  },
+  "_comment": "----------------------- authbackend -----------------------",
+  "AuthMethodNotImplemented": {
+    "description": "AuthMethodNotImplemented",
+    "code": 501
   }
 }

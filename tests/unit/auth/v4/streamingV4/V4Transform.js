@@ -3,7 +3,7 @@ const { Readable } = require('stream');
 
 const V4Transform =
     require('../../../../../lib/auth/v4/streamingV4/V4Transform');
-const Backend = require('../../../../../lib/auth/in_memory/Backend').s3;
+const Backend = require('../../../../../lib/auth/backends/in_memory/Backend').s3;
 const Vault = require('../../../../../lib/auth/Vault');
 const { DummyRequestLogger } = require('../../../helpers');
 
