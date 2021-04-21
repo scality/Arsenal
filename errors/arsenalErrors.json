@@ -276,6 +276,10 @@
     "code": 404,
     "description": "The object lock configuration was not found"
   },
+  "ServerSideEncryptionConfigurationNotFoundError" : {
+    "code": 404,
+    "description": "The server side encryption configuration was not found"
+  },
   "NotImplemented": {
     "code": 501,
     "description": "A header you provided implies functionality that is not implemented."
