@@ -184,8 +184,32 @@ describe('network.probe.HealthProbeServer', () => {
             server.stop();
             done();
         });
-        it('should expose metrics', done => {
+        it('should expose metrics 1/2', done => {
             makeRequest('GET', '/_/monitoring/metrics')
+                .on('response', res => {
+                    assert(res.statusCode === 200);
+                    const respBufs = [];
+                    res.on('data', data => {
+                        respBufs.push(data);
+                    });
+                    res.on('end', () => {
+                        const respContents = respBufs.join('');
+                        assert(respContents.length > 0);
+                        done();
+                    });
+                    res.on('error', err => {
+                        assert.ifError(err);
+                        done();
+                    });
+                })
+                .on('error', err => {
+                    assert.ifError(err);
+                    done();
+                }).end();
+        });
+
+        it('should expose metrics 2/2', done => {
+            makeRequest('GET', '/_/metrics')
                 .on('response', res => {
                     assert(res.statusCode === 200);
                     const respBufs = [];
