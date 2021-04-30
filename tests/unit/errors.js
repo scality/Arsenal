@@ -26,4 +26,24 @@ describe('Errors: ', () => {
         assert.strictEqual(error.description, 'custom-description');
         assert.strictEqual(error.NoSuchEntity, true);
     });
+
+    it('can be turned into strings', () => {
+        assert.strictEqual(
+            errors.NoSuchEntity.toString(),
+            '{"errorType":"NoSuchEntity","errorMessage":"The request was rejected because it referenced an entity that does not exist. The error message describes the entity."}',
+        )
+    })
+
+    it('can be used as an http response', () => {
+        const fakeRes = {
+            writeHead: code => assert.strictEqual(code, 404),
+            end: msg => {
+                assert.strictEqual(
+                    msg,
+                    '{"errorType":"NoSuchEntity","errorMessage":"The request was rejected because it referenced an entity that does not exist. The error message describes the entity."}',
+                )
+            },
+        }
+        errors.NoSuchEntity.writeResponse(fakeRes);
+    })
 });
