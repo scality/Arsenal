@@ -26,4 +26,17 @@ describe('Errors: ', () => {
         assert.strictEqual(error.description, 'custom-description');
         assert.strictEqual(error.NoSuchEntity, true);
     });
+
+    it('can be used as an http response', () => {
+        const fakeRes = {
+            writeHead: code => assert.strictEqual(code, 404),
+            end: msg => {
+                assert.strictEqual(
+                    msg,
+                    errors.NoSuchEntity.toString(),
+                );
+            },
+        };
+        errors.NoSuchEntity.writeResponse(fakeRes);
+    });
 });
