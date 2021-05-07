@@ -55,6 +55,7 @@ module.exports = {
         },
         RoundRobin: require('./lib/network/RoundRobin'),
         probe: {
+            ProbeServer: require('./lib/network/probe/ProbeServer'),
             HealthProbeServer:
                 require('./lib/network/probe/HealthProbeServer.js'),
         },
