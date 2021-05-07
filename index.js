@@ -60,6 +60,9 @@ module.exports = {
             RESTServer: require('./lib/network/rest/RESTServer'),
             RESTClient: require('./lib/network/rest/RESTClient'),
         },
+        probe: {
+            ProbeServer: require('./lib/network/probe/ProbeServer'),
+        },
         RoundRobin: require('./lib/network/RoundRobin'),
         kmip: require('./lib/network/kmip'),
         kmipClient: require('./lib/network/kmip/Client'),
