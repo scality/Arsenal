@@ -16,12 +16,25 @@ const expectCanId =
 const searchEmail2 = 'sampleaccount4@sampling.com';
 const expectCanId2 = 'newCanId';
 
+const searchCanId = '79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2bf';
+const expectAccountId = '123456789013';
+
 describe('S3 in_memory auth backend', () => {
     it('should find an account', done => {
         const backend = new Backend(JSON.parse(JSON.stringify(ref)));
         backend.getCanonicalIds([searchEmail], log, (err, res) => {
             assert.strictEqual(res.message.body[searchEmail],
                 expectCanId);
+            done();
+        });
+    });
+
+    it('should find an accounts accountId from canonicalId', done => {
+        const backend = new Backend(JSON.parse(JSON.stringify(ref)));
+        backend.getAccountIds([searchCanId], log, (err, res) => {
+            assert.ifError(err);
+            assert.strictEqual(res.message.body[searchCanId],
+                expectAccountId);
             done();
         });
     });
