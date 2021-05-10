@@ -1,6 +1,7 @@
 const assert = require('assert');
-const { ProbeServer } = require('../../../../lib/network/probe/ProbeServer');
 const http = require('http');
+const index = require('../../../../');
+const { ProbeServer } = index.network.probe.ProbeServer;
 
 function makeRequest(method, uri, cb) {
     const params = {
