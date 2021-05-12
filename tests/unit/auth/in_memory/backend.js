@@ -19,6 +19,8 @@ const expectCanId2 = 'newCanId';
 const searchCanId = '79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2be';
 const expectAccountId = '123456789012';
 
+const invalidAccountId = 'doesnotexit';
+
 describe('S3 in_memory auth backend', () => {
     it('should find an account', done => {
         const backend = new Backend(JSON.parse(JSON.stringify(ref)));
@@ -35,6 +37,16 @@ describe('S3 in_memory auth backend', () => {
             assert.ifError(err);
             assert.strictEqual(res.message.body[searchCanId],
                 expectAccountId);
+            done();
+        });
+    });
+
+    it('should return "Not Found" for missing accounts', done => {
+        const backend = new Backend(JSON.parse(JSON.stringify(ref)));
+        backend.getAccountIds([invalidAccountId], log, (err, res) => {
+            assert.ifError(err);
+            assert.strictEqual(res.message.body[invalidAccountId],
+                'Not Found');
             done();
         });
     });
