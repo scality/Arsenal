@@ -19,7 +19,7 @@ const expectCanId2 = 'newCanId';
 const searchCanId = '79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2be';
 const expectAccountId = '123456789012';
 
-const invalidAccountId = 'doesnotexit';
+const invalidAccountId = 'doesnotexist';
 
 describe('S3 in_memory auth backend', () => {
     it('should find an account', done => {
