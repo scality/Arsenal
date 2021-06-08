@@ -113,6 +113,24 @@ describe('record log - persistent log of metadata operations', () => {
                 recordStream.on('end', done);
             });
         });
+
+        it('should list an empty record log with null start', done => {
+            logProxy.readRecords({startSeq: null}, (err, res) => {
+                assert.ifError(err);
+                const info = res.info;
+                const recordStream = res.log;
+
+                assert(info);
+                assert.strictEqual(info.start, null);
+                assert.strictEqual(info.end, null);
+                assert(recordStream);
+                recordStream.on('data', () => {
+                    assert.fail('unexpected data event');
+                });
+                recordStream.on('end', done);
+            });
+        });
+
         it('should be able to add records and list them thereafter', done => {
             debug('going to append records');
             const ops = [{ type: 'put', key: 'foo', value: 'bar',
