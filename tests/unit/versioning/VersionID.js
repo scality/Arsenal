@@ -39,4 +39,53 @@ describe('test generating versionIds', () => {
         assert.strictEqual(vids.length, count);
         assert.deepStrictEqual(vids, decoded);
     });
+
+    it('simple tiny version test', () => {
+        const vid = '98376906954349999999RG001  145.20.5';
+        const encoded = VID.tinyEncode(vid);
+        assert.strictEqual(encoded, 'aJLWKz4Ko9IjBBgXKj5KQT2G9UHv0g7P');
+        const decoded = VID.tinyDecode(encoded);
+        assert.strictEqual(vid, decoded);
+    });
+
+    it('tiny version test with smaller part1 number', () => {
+        const vid = '00000000054349999999RG001  145.20.5';
+        const encoded = VID.tinyEncode(vid);
+        const decoded = VID.tinyDecode(encoded);
+        assert.strictEqual(vid, decoded);
+    });
+
+    it('tiny version test with smaller part2 number', () => {
+        const vid = '98376906950000099999RG001  145.20.5';
+        const encoded = VID.tinyEncode(vid);
+        const decoded = VID.tinyDecode(encoded);
+        assert.strictEqual(vid, decoded);
+    });
+
+    it('tiny version test with smaller part3', () => {
+        const vid = '98376906950000099999R1  145.20.5';
+        const encoded = VID.tinyEncode(vid);
+        const decoded = VID.tinyDecode(encoded);
+        assert.strictEqual(vid, decoded);
+    });
+
+    it('tiny version test with smaller part3 - 2', () => {
+        const vid = '98376906950000099999R1x';
+        const encoded = VID.tinyEncode(vid);
+        const decoded = VID.tinyDecode(encoded);
+        assert.strictEqual(vid, decoded);
+    });
+
+    it('error case: when invalid tiny key part 3 has invalid base62 character', () => {
+        const invalidTinyVersionId = 'aJLWKz4Ko9IjBBgXKj5KQT.G9UHv0g7P';
+        const decoded = VID.tinyDecode(invalidTinyVersionId);
+        assert(decoded instanceof Error);
+    });
+
+    it('should encode and decode tiny versionIds', () => {
+        const encoded = vids.map(vid => VID.tinyEncode(vid));
+        const decoded = encoded.map(vid => VID.tinyDecode(vid));
+        assert.strictEqual(vids.length, count);
+        assert.deepStrictEqual(vids, decoded);
+    });
 });
