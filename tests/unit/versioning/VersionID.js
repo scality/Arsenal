@@ -28,14 +28,70 @@ describe('test generating versionIds', () => {
 
     // nodejs 10 no longer returns error for non-hex string versionIds
     it.skip('should return error decoding non-hex string versionIds', () => {
-        const encoded = vids.map(vid => VID.encode(vid));
-        const decoded = encoded.map(vid => VID.decode(`${vid}foo`));
+        const encoded = vids.map(vid => VID.hexEncode(vid));
+        const decoded = encoded.map(vid => VID.hexDecode(`${vid}foo`));
+        decoded.forEach(result => assert(result instanceof Error));
+    });
+
+    // nodejs 10 no longer returns error for non-hex string versionIds
+    it.skip('should return error decoding non-hex string versionIds', () => {
+        const encoded = vids.map(vid => VID.hexEncode(vid));
+        const decoded = encoded.map(vid => VID.hexDecode(`${vid}foo`));
         decoded.forEach(result => assert(result instanceof Error));
     });
 
     it('should encode and decode versionIds', () => {
-        const encoded = vids.map(vid => VID.encode(vid));
-        const decoded = encoded.map(vid => VID.decode(vid));
+        const encoded = vids.map(vid => VID.hexEncode(vid));
+        const decoded = encoded.map(vid => VID.hexDecode(vid));
+        assert.strictEqual(vids.length, count);
+        assert.deepStrictEqual(vids, decoded);
+    });
+
+    it('simple base62 version test', () => {
+        const vid = '98376906954349999999RG001  145.20.5';
+        const encoded = VID.base62Encode(vid);
+        assert.strictEqual(encoded, 'aJLWKz4Ko9IjBBgXKj5KQT2G9UHv0g7P');
+        const decoded = VID.base62Decode(encoded);
+        assert.strictEqual(vid, decoded);
+    });
+
+    it('base62 version test with smaller part1 number', () => {
+        const vid = '00000000054349999999RG001  145.20.5';
+        const encoded = VID.base62Encode(vid);
+        const decoded = VID.base62Decode(encoded);
+        assert.strictEqual(vid, decoded);
+    });
+
+    it('base62 version test with smaller part2 number', () => {
+        const vid = '98376906950000099999RG001  145.20.5';
+        const encoded = VID.base62Encode(vid);
+        const decoded = VID.base62Decode(encoded);
+        assert.strictEqual(vid, decoded);
+    });
+
+    it('base62 version test with smaller part3', () => {
+        const vid = '98376906950000099999R1  145.20.5';
+        const encoded = VID.base62Encode(vid);
+        const decoded = VID.base62Decode(encoded);
+        assert.strictEqual(vid, decoded);
+    });
+
+    it('base62 version test with smaller part3 - 2', () => {
+        const vid = '98376906950000099999R1x';
+        const encoded = VID.base62Encode(vid);
+        const decoded = VID.base62Decode(encoded);
+        assert.strictEqual(vid, decoded);
+    });
+
+    it('error case: when invalid base62 key part 3 has invalid base62 character', () => {
+        const invalidBase62VersionId = 'aJLWKz4Ko9IjBBgXKj5KQT.G9UHv0g7P';
+        const decoded = VID.base62Decode(invalidBase62VersionId);
+        assert(decoded instanceof Error);
+    });
+
+    it('should encode and decode base62 versionIds', () => {
+        const encoded = vids.map(vid => VID.base62Encode(vid));
+        const decoded = encoded.map(vid => VID.base62Decode(vid));
         assert.strictEqual(vids.length, count);
         assert.deepStrictEqual(vids, decoded);
     });
