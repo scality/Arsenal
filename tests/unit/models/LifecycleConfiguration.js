@@ -162,6 +162,9 @@ function generateFilter(errorTag, tagObj) {
         if (tagObj.label === 'only-prefix') {
             middleTags = '<And><Prefix></Prefix></And>';
         }
+        if (tagObj.label === 'empty-prefix') {
+            middleTags = '<Prefix></Prefix>';
+        }
         if (tagObj.label === 'single-tag') {
             middleTags = '<And><Tags><Key>fo</Key><Value></Value></Tags></And>';
         }
@@ -190,6 +193,10 @@ function generateFilter(errorTag, tagObj) {
         if (tagObj.label === 'mult-tags') {
             middleTags = '<And><Tag><Key>color</Key><Value>blue</Value></Tag>' +
                 '<Tag><Key>shape</Key><Value>circle</Value></Tag></And>';
+        }
+        if (tagObj.label === 'not-unique-key-tag') {
+            middleTags = '<And><Tag><Key>color</Key><Value>blue</Value></Tag>' +
+                '<Tag><Key>color</Key><Value>red</Value></Tag></And>';
         }
         Filter = `<Filter>${middleTags}</Filter>`;
         if (tagObj.label === 'also-prefix') {
@@ -366,14 +373,22 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
         });
     });
 
-    it('should apply all unique Key tags if multiple tags included', done => {
-        tagObj.label = 'mult-tags';
+    it('should return InvalidRequest is tag key is not unique', done => {
+        tagObj.label = 'not-unique-key-tag';
+        const errMessage = 'Tag Keys must be unique';
+        generateParsedXml('Filter', tagObj, parsedXml => {
+            checkError(parsedXml, 'InvalidRequest', errMessage, done);
+        });
+    });
+
+    it('should include prefix in the response even if it is an empty string', done => {
+        tagObj.label = 'empty-prefix';
+        const expectedPrefix = '';
         generateParsedXml('Filter', tagObj, parsedXml => {
             const lcConfig = new LifecycleConfiguration(parsedXml).
                 getLifecycleConfiguration();
-            const expected = [{ key: 'color', val: 'blue' },
-                { key: 'shape', val: 'circle' }];
-            assert.deepStrictEqual(expected, lcConfig.rules[0].filter.tags);
+            assert.strictEqual(expectedPrefix,
+                lcConfig.rules[0].filter.rulePrefix);
             done();
         });
     });
