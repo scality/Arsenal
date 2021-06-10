@@ -382,7 +382,7 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
         tagObj.label = 'empty-prefix';
         const expectedPrefix = '';
         generateParsedXml('Filter', tagObj, parsedXml => {
-            const lcConfig = new LifecycleConfiguration(parsedXml).
+            const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig).
                 getLifecycleConfiguration();
             assert.strictEqual(expectedPrefix,
                 lcConfig.rules[0].filter.rulePrefix);
