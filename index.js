@@ -62,6 +62,8 @@ module.exports = {
         },
         probe: {
             ProbeServer: require('./lib/network/probe/ProbeServer'),
+            HealthProbeServer:
+                require('./lib/network/probe/HealthProbeServer'),
         },
         RoundRobin: require('./lib/network/RoundRobin'),
         kmip: require('./lib/network/kmip'),
