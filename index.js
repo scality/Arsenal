@@ -57,7 +57,7 @@ module.exports = {
         probe: {
             ProbeServer: require('./lib/network/probe/ProbeServer'),
             HealthProbeServer:
-                require('./lib/network/probe/HealthProbeServer.js'),
+                require('./lib/network/probe/HealthProbeServer'),
         },
         kmip: require('./lib/network/kmip'),
         kmipClient: require('./lib/network/kmip/Client'),
