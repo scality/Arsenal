@@ -472,7 +472,7 @@ describe('Principal evaluator', () => {
             },
         },
         {
-            name: 'should deny user as principal if account is different',
+            name: 'should allow user as principal if account is different',
             statement: [
                 {
                     Principal: {
@@ -491,7 +491,7 @@ describe('Principal evaluator', () => {
                 accountId: defaultAccountId,
             },
             result: {
-                result: 'Deny',
+                result: 'Allow',
                 checkAction: true,
             },
         },
