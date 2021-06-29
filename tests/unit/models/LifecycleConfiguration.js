@@ -112,7 +112,11 @@ const invalidFilters = [
     { tag: 'Tag', label: 'no-value', error: 'MissingRequiredParameter',
         errMessage: 'Tag XML does not contain both Key and Value' },
     { tag: 'Tag', label: 'key-too-long', error: 'InvalidRequest',
-        errMessage: 'Tag Key must be a length between 1 and 128 char' }];
+        errMessage: 'A Tag\'s Key must be a length between 1 and 128' },
+    { tag: 'Tag', label: 'value-too-long', error: 'InvalidRequest',
+        errMessage: 'A Tag\'s Value must be a length between 0 and 256' },
+    { tag: 'Tag', label: 'prefix-too-long', error: 'InvalidRequest',
+        errMessage: 'The maximum size of a prefix is 1024' }];
 
 function generateAction(errorTag, tagObj) {
     const xmlObj = {};
@@ -158,6 +162,9 @@ function generateFilter(errorTag, tagObj) {
         if (tagObj.label === 'only-prefix') {
             middleTags = '<And><Prefix></Prefix></And>';
         }
+        if (tagObj.label === 'empty-prefix') {
+            middleTags = '<Prefix></Prefix>';
+        }
         if (tagObj.label === 'single-tag') {
             middleTags = '<And><Tags><Key>fo</Key><Value></Value></Tags></And>';
         }
@@ -171,9 +178,25 @@ function generateFilter(errorTag, tagObj) {
             const longKey = 'a'.repeat(129);
             middleTags = `<Tag><Key>${longKey}</Key><Value></Value></Tag>`;
         }
+        if (tagObj.label === 'value-too-long') {
+            const longValue = 'b'.repeat(257);
+            middleTags = `<Tag><Key>a</Key><Value>${longValue}</Value></Tag>`;
+        }
+        if (tagObj.label === 'prefix-too-long') {
+            const longValue = 'a'.repeat(1025);
+            middleTags = `<Prefix>${longValue}</Prefix>`;
+        }
         if (tagObj.label === 'mult-prefixes') {
             middleTags = '<Prefix>foo</Prefix><Prefix>bar</Prefix>' +
                 `<Prefix>${tagObj.lastPrefix}</Prefix>`;
+        }
+        if (tagObj.label === 'mult-tags') {
+            middleTags = '<And><Tag><Key>color</Key><Value>blue</Value></Tag>' +
+                '<Tag><Key>shape</Key><Value>circle</Value></Tag></And>';
+        }
+        if (tagObj.label === 'not-unique-key-tag') {
+            middleTags = '<And><Tag><Key>color</Key><Value>blue</Value></Tag>' +
+                '<Tag><Key>color</Key><Value>red</Value></Tag></And>';
         }
         Filter = `<Filter>${middleTags}</Filter>`;
         if (tagObj.label === 'also-prefix') {
@@ -345,6 +368,26 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
             const lcConfig = new LifecycleConfiguration(parsedXml).
                 getLifecycleConfiguration();
             assert.strictEqual(tagObj.lastPrefix,
+                lcConfig.rules[0].filter.rulePrefix);
+            done();
+        });
+    });
+
+    it('should return InvalidRequest is tag key is not unique', done => {
+        tagObj.label = 'not-unique-key-tag';
+        const errMessage = 'Tag Keys must be unique';
+        generateParsedXml('Filter', tagObj, parsedXml => {
+            checkError(parsedXml, 'InvalidRequest', errMessage, done);
+        });
+    });
+
+    it('should include prefix in the response even if it is an empty string', done => {
+        tagObj.label = 'empty-prefix';
+        const expectedPrefix = '';
+        generateParsedXml('Filter', tagObj, parsedXml => {
+            const lcConfig = new LifecycleConfiguration(parsedXml).
+                getLifecycleConfiguration();
+            assert.strictEqual(expectedPrefix,
                 lcConfig.rules[0].filter.rulePrefix);
             done();
         });
