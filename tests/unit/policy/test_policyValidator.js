@@ -170,6 +170,11 @@ describe('Policies validation - Principal', () => {
             policyType: [user, resource],
         },
         {
+            name: 'user arn with path',
+            value: { AWS: 'arn:aws:iam::111111111111:user/path/in/org/leaf' },
+            policyType: [user, resource],
+        },
+        {
             name: 'multiple user arns',
             value: {
                 AWS: [
