@@ -231,29 +231,6 @@ describe('createCanonicalRequest function', () => {
         assert.strictEqual(actualOutput, expectedOutput);
     });
 
-    it('should construct a canonical request that contains a ' +
-        'signed expect header even if expect header value was ' +
-        'stripped by the load balancer', () => {
-        const params = {
-            pHttpVerb: 'PUT',
-            pResource: '/test.txt',
-            pQuery: {},
-            pHeaders: {
-                host: 'examplebucket.s3.amazonaws.com',
-            },
-            pSignedHeaders: 'expect;host',
-            payloadChecksum: 'UNSIGNED-PAYLOAD',
-        };
-        const expectedOutput = 'PUT\n' +
-            '/test.txt\n\n' +
-            'expect:100-continue\n' +
-            'host:examplebucket.s3.amazonaws.com\n\n' +
-            'expect;host\n' +
-            'UNSIGNED-PAYLOAD';
-        const actualOutput = createCanonicalRequest(params);
-        assert.strictEqual(actualOutput, expectedOutput);
-    });
-
     it('should trim white space in a canonical header value so that ' +
         'there is no white space before or after a value and any sequential ' +
         'white space becomes a single space', () => {
