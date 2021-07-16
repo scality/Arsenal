@@ -1,5 +1,6 @@
 const assert = require('assert');
 const ObjectMD = require('../../../lib/models/ObjectMD');
+const ObjectMDLocation = require('../../../lib/models/ObjectMDLocation');
 const constants = require('../../../lib/constants');
 
 const retainDate = new Date();
@@ -391,7 +392,7 @@ describe('ObjectMD import from stored blob', () => {
     });
 });
 
-describe('getAttributes static method', () => {
+describe('ObjectMD.getAttributes static method', () => {
     it('should return object metadata attributes', () => {
         const attributes = ObjectMD.getAttributes();
         const expectedResult = {
@@ -429,5 +430,55 @@ describe('getAttributes static method', () => {
             'originOp': true,
         };
         assert.deepStrictEqual(attributes, expectedResult);
+    });
+});
+
+describe('ObjectMDLocation class', () => {
+    let mdLoc;
+    beforeEach(() => {
+        mdLoc = new ObjectMDLocation({
+            key: 'location-key',
+            start: 0,
+            size: 1000,
+            dataStoreName: 'location-name',
+            dataStoreETag: '1:location-etag',
+        });
+    });
+    it('should be able to create a location with standard fields', () => {
+        assert.strictEqual(mdLoc.getKey(), 'location-key');
+        assert.strictEqual(mdLoc.getDataStoreName(), 'location-name');
+        assert.strictEqual(mdLoc.getDataStoreETag(), '1:location-etag');
+        assert.strictEqual(mdLoc.getPartNumber(), 1);
+        assert.strictEqual(mdLoc.getPartETag(), 'location-etag');
+        assert.strictEqual(mdLoc.getPartStart(), 0);
+        assert.strictEqual(mdLoc.getPartSize(), 1000);
+        assert.strictEqual(mdLoc.getCryptoScheme(), undefined);
+        assert.strictEqual(mdLoc.getCipheredDataKey(), undefined);
+    });
+
+    it('should be able to update a location without encryption info', () => {
+        mdLoc.setDataLocation({
+            key: 'new-location-key',
+            dataStoreName: 'new-location-name',
+        });
+        assert.strictEqual(mdLoc.getKey(), 'new-location-key');
+        assert.strictEqual(mdLoc.getDataStoreName(), 'new-location-name');
+        assert.strictEqual(mdLoc.getDataStoreETag(), '1:location-etag');
+        assert.strictEqual(mdLoc.getCryptoScheme(), undefined);
+        assert.strictEqual(mdLoc.getCipheredDataKey(), undefined);
+    });
+
+    it('should be able to update a location with encryption info', () => {
+        mdLoc.setDataLocation({
+            key: 'new-location-key',
+            dataStoreName: 'new-location-name',
+            cryptoScheme: 1,
+            cipheredDataKey: 'CiPhErEdDaTaKeY',
+        });
+        assert.strictEqual(mdLoc.getKey(), 'new-location-key');
+        assert.strictEqual(mdLoc.getDataStoreName(), 'new-location-name');
+        assert.strictEqual(mdLoc.getDataStoreETag(), '1:location-etag');
+        assert.strictEqual(mdLoc.getCryptoScheme(), 1);
+        assert.strictEqual(mdLoc.getCipheredDataKey(), 'CiPhErEdDaTaKeY');
     });
 });
