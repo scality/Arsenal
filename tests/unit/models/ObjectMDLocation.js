@@ -11,6 +11,8 @@ describe('ObjectMDLocation', () => {
             dataStoreETag: '2:abcdefghi',
             dataStoreVersionId: 'someversion',
             blockId: 'someBlockId',
+            cryptoScheme: 1,
+            cipheredDataKey: 'CiPhErEdDaTaKeY',
         };
         const location = new ObjectMDLocation(locValue);
         assert.strictEqual(location.getKey(), 'fookey');
@@ -22,6 +24,8 @@ describe('ObjectMDLocation', () => {
         assert.strictEqual(location.getPartStart(), 42);
         assert.strictEqual(location.getPartSize(), 100);
         assert.strictEqual(location.getBlockId(), 'someBlockId');
+        assert.strictEqual(location.getCryptoScheme(), 1);
+        assert.strictEqual(location.getCipheredDataKey(), 'CiPhErEdDaTaKeY');
 
         assert.deepStrictEqual(location.getValue(), locValue);
 
@@ -38,18 +42,26 @@ describe('ObjectMDLocation', () => {
             dataStoreETag: '2:abcdefghi',
             dataStoreVersionId: 'someversion',
             blockId: 'someBlockId',
+            cryptoScheme: 1,
+            cipheredDataKey: 'CiPhErEdDaTaKeY',
         });
         location.setDataLocation({ key: 'secondkey',
                                    dataStoreName: 'gcpbackend' });
         assert.strictEqual(location.getKey(), 'secondkey');
         assert.strictEqual(location.getDataStoreName(), 'gcpbackend');
         assert.strictEqual(location.getDataStoreVersionId(), undefined);
+        assert.strictEqual(location.getCryptoScheme(), undefined);
+        assert.strictEqual(location.getCipheredDataKey(), undefined);
         location.setDataLocation({ key: 'thirdkey',
                                    dataStoreName: 'azurebackend',
-                                   dataStoreVersionId: 'newversion' });
+                                   dataStoreVersionId: 'newversion',
+                                   cryptoScheme: 1,
+                                   cipheredDataKey: 'NeWcIpHeReDdAtAkEy' });
         assert.strictEqual(location.getKey(), 'thirdkey');
         assert.strictEqual(location.getDataStoreName(), 'azurebackend');
         assert.strictEqual(location.getDataStoreVersionId(), 'newversion');
+        assert.strictEqual(location.getCryptoScheme(), 1);
+        assert.strictEqual(location.getCipheredDataKey(), 'NeWcIpHeReDdAtAkEy');
         location.setBlockId('otherBlockId');
         assert.strictEqual(location.getBlockId(), 'otherBlockId');
     });
