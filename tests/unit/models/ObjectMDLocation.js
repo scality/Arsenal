@@ -45,6 +45,13 @@ describe('ObjectMDLocation', () => {
         assert.strictEqual(location.getDataStoreName(), 'gcpbackend');
         assert.strictEqual(location.getCryptoScheme(), undefined);
         assert.strictEqual(location.getCipheredDataKey(), undefined);
+        assert.deepStrictEqual(location.getValue(), {
+            dataStoreETag: '2:abcdefghi',
+            dataStoreName: 'gcpbackend',
+            key: 'secondkey',
+            size: 100,
+            start: 42,
+        });
         location.setDataLocation({ key: 'thirdkey',
                                    dataStoreName: 'azurebackend',
                                    cryptoScheme: 1,
