@@ -1,6 +1,6 @@
-'use strict'; // eslint-disable-line
 /* eslint new-cap: "off" */
 
+const { EventEmitter } = require('events');
 
 const logger = {
     info: () => {},
@@ -10,27 +10,16 @@ const logger = {
 };
 
 /* Fake tls AND socket objects, duck type */
-class EchoChannel {
+class EchoChannel extends EventEmitter {
     constructor() {
+        super();
         this.clogged = false;
-        this.eventHandler = {};
-        this.deferedSignal = {};
     }
 
     /* tls object members substitutes */
 
     connect(port, options, cb) {
         process.nextTick(cb);
-        return this;
-    }
-
-    on(event, cb) {
-        this.eventHandler[event] = cb;
-        if (this.deferedSignal[event] &&
-            this.deferedSignal[event].length > 0) {
-            this.deferedSignal[event].forEach(this.eventHandler[event]);
-            this.deferedSignal[event] = undefined;
-        }
         return this;
     }
 
@@ -46,7 +35,7 @@ class EchoChannel {
 
     write(data) {
         if (!this.clogged) {
-            return this.emit('data', data);
+            return process.nextTick(() => this.emit('data', data));
         }
         return this;
     }
@@ -56,18 +45,6 @@ class EchoChannel {
     }
 
     /* Instrumentation member functions */
-
-    emit(event, data) {
-        if (this.eventHandler[event]) {
-            this.eventHandler[event](data);
-        } else {
-            if (!this.deferedSignal[event]) {
-                this.deferedSignal[event] = [];
-            }
-            this.deferedSignal[event].push(data);
-        }
-        return this;
-    }
 
     clog() {
         this.clogged = true;
