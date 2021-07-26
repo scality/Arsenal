@@ -47,7 +47,7 @@
     "eslint-config-airbnb": "6.2.0",
     "eslint-config-scality": "scality/Guidelines#ec33dfb",
     "eslint-plugin-react": "^4.3.0",
-    "mocha": "8.0.1",
+    "mocha": "9.0.3",
     "temp": "0.9.1"
   },
   "scripts": {
