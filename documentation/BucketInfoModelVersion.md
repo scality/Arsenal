@@ -118,3 +118,15 @@ this._serverSideEncryption.configuredMasterKeyId = configuredMasterKeyId || unde
 ### Usage
 
 Used to store the users configured KMS key id
+
+## Model version 10
+
+### Properties Added
+
+```javascript
+this._uid = uid || uuid();
+```
+
+### Usage
+
+Used to set a unique identifier on a bucket
