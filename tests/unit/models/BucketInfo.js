@@ -116,6 +116,8 @@ const testLifecycleConfiguration = {
     ],
 };
 
+const testUid = '99ae3446-7082-4c17-ac97-52965dc004ec';
+
 const testBucketPolicy = {
     Version: '2012-10-17',
     Statement: [
@@ -180,6 +182,7 @@ Object.keys(acl).forEach(
             testReplicationConfiguration,
             testLifecycleConfiguration,
             testBucketPolicy,
+            testUid,
             testobjectLockEnabled,
             testObjectLockConfiguration,
             testNotificationConfiguration);
@@ -209,6 +212,7 @@ Object.keys(acl).forEach(
                     lifecycleConfiguration:
                         dummyBucket._lifecycleConfiguration,
                     bucketPolicy: dummyBucket._bucketPolicy,
+                    uid: dummyBucket._uid,
                     objectLockEnabled: dummyBucket._objectLockEnabled,
                     objectLockConfiguration:
                         dummyBucket._objectLockConfiguration,
@@ -316,6 +320,9 @@ Object.keys(acl).forEach(
             it('getBucketPolicy should return policy', () => {
                 assert.deepStrictEqual(
                     dummyBucket.getBucketPolicy(), testBucketPolicy);
+            });
+            it('getUid should return unique id of bucket', () => {
+                assert.deepStrictEqual(dummyBucket.getUid(), testUid);
             });
             it('object lock should be disabled by default', () => {
                 assert.deepStrictEqual(
@@ -504,6 +511,12 @@ Object.keys(acl).forEach(
                 dummyBucket.setNotificationConfiguration(newNotifConfig);
                 assert.deepStrictEqual(
                     dummyBucket.getNotificationConfiguration(), newNotifConfig);
+            });
+            it('setUid should set bucket uid', () => {
+                const testUid = '7751ec04-da87-44a1-99b4-95ebb345d40e';
+                dummyBucket.setUid(testUid);
+                assert.deepStrictEqual(
+                    dummyBucket.getUid(), testUid);
             });
         });
     })
