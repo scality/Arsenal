@@ -624,6 +624,12 @@ Object.keys(acl).forEach(
                 assert.deepStrictEqual(
                     dummyBucket.getNotificationConfiguration(), newNotifConfig);
             });
+            it('setUid should set bucket uid', () => {
+                const testUid = '7751ec04-da87-44a1-99b4-95ebb345d40e';
+                dummyBucket.setUid(testUid);
+                assert.deepStrictEqual(
+                    dummyBucket.getUid(), testUid);
+            });
         });
     })
 );
