@@ -560,7 +560,7 @@ base-x@3.0.8:
   resolved "https://registry.yarnpkg.com/base-x/-/base-x-3.0.8.tgz#1e1106c2537f0162e8b52474a557ebb09000018d"
   integrity sha512-Rl/1AWP4J/zRrk54hhlxH4drNxPJXYUaKffODVI53/dAsV4t9fBxyxYKAVPU1XBHxYwOWP9h9H0hM2MVw4YfJA==
   dependencies:
-    safe-buffer "~5.1.0"
+    safe-buffer "^5.0.1"
 
 base62@2.0.1:
   version "2.0.1"
@@ -4217,15 +4217,15 @@ verror@1.10.0:
     core-util-is "1.0.2"
     extsprintf "^1.2.0"
 
-werelogs@scality/werelogs#0ff7ec82:
-  version "7.4.0"
-  resolved "https://codeload.github.com/scality/werelogs/tar.gz/0ff7ec82f0deb1e472d8285fb7cc9ebde72c5f61"
-  dependencies:
-    safe-json-stringify "1.0.3"
-
 werelogs@scality/werelogs#351a2a3:
   version "8.0.0"
   resolved "https://codeload.github.com/scality/werelogs/tar.gz/351a2a339e9673301cb45777e1b6d70ae9a73d67"
+  dependencies:
+    safe-json-stringify "1.0.3"
+
+werelogs@scality/werelogs#8.1.0:
+  version "8.1.0"
+  resolved "https://codeload.github.com/scality/werelogs/tar.gz/e8f828725642c54c511cdbe580b18f43d3589313"
   dependencies:
     safe-json-stringify "1.0.3"
 
