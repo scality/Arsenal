@@ -1,14 +1,22 @@
 'use strict';// eslint-disable-line strict
 
 const assert = require('assert');
+const async = require('async');
 
 const leveldb = require('level');
 const temp = require('temp');
 temp.track();
 
 const db = require('../../index').db;
+const errors = require('../../lib/errors');
 
 const IndexTransaction = db.IndexTransaction;
+const key1 = 'key1';
+const key2 = 'key2';
+const key3 = 'key3';
+const value1 = 'value1';
+const value2 = 'value2';
+const value3 = 'value3';
 
 function createDb() {
     const indexPath = temp.mkdirSync();
@@ -37,6 +45,45 @@ function checkValueNotInDb(db, k, done) {
 
         return done();
     });
+}
+
+function checkKeyNotExistsInDB(db, key, cb) {
+    return db.get(key, (err, value) => {
+        if (err && !err.notFound) {
+            return cb(err);
+        }
+        if (value) {
+            return cb(errors.PreconditionFailed);
+        }
+        return cb();
+    });
+}
+
+class ConditionalLevelDB {
+    constructor() {
+        this.db = createDb();
+    }
+
+    batch(operations, writeOptions, cb) {
+        return async.eachLimit(writeOptions.conditions, 10, (cond, asyncCallback) => {
+            switch (true) {
+            case ('notExists' in cond):
+                checkKeyNotExistsInDB(this.db, cond.notExists, asyncCallback);
+                break;
+            default:
+                asyncCallback(new Error('unsupported conditional operation'));
+            }
+        }, err => {
+            if (err) {
+                return cb(err);
+            }
+            return this.db.batch(operations, writeOptions, cb);
+        });
+    }
+
+    get client() {
+        return this.db;
+    }
 }
 
 describe('IndexTransaction', () => {
@@ -316,5 +363,105 @@ describe('IndexTransaction', () => {
                 return checkValueNotInDb(db, 'k', done);
             });
         });
+    });
+
+    it('should allow batch operation with notExists condition if key does not exist', done => {
+        const db = new ConditionalLevelDB();
+        const { client } = db;
+        const transaction = new IndexTransaction(db);
+        transaction.addCondition({ notExists: key1 });
+        transaction.push({
+            type: 'put',
+            key: key1,
+            value: value1,
+        });
+        return async.series([
+            next => transaction.commit(next),
+            next => client.get(key1, next),
+        ], (err, res) => {
+            assert.ifError(err);
+            assert.strictEqual(res[1], value1);
+            return done();
+        });
+    });
+
+    it('should have a working addCondition shortcut method', done => {
+        const db = new ConditionalLevelDB();
+        const { client } = db;
+        const transaction = new IndexTransaction(db);
+        transaction.put(key1, value1);
+        transaction.addCondition({ notExists: 'key1' });
+        transaction.commit(err => {
+            if (err) {
+                return done(err);
+            }
+            return checkValueInDb(client, key1, value1, done);
+        });
+    });
+
+    it('should not allow any op in a batch operation with notExists condition if key exists', done => {
+        const db = new ConditionalLevelDB();
+        const { client } = db;
+        const transaction = new IndexTransaction(db);
+
+        function tryPushAgain(err) {
+            if (err) {
+                return done(err);
+            }
+            transaction.addCondition({ notExists: key1 });
+            transaction.push({
+                type: 'put',
+                key: key1,
+                value: value1,
+            });
+            transaction.push({
+                type: 'put',
+                key: key2,
+                value: value2,
+            });
+            transaction.push({
+                type: 'put',
+                key: key3,
+                value: value3,
+            });
+            return transaction.commit(err => {
+                if (!err || !err.PreconditionFailed) {
+                    return done(new Error('should not be able to conditional put for duplicate key'));
+                }
+                return async.parallel([
+                    next => checkKeyNotExistsInDB(client, key2, next),
+                    next => checkKeyNotExistsInDB(client, key3, next),
+                ], err => {
+                    assert.ifError(err);
+                    return done();
+                });
+            });
+        }
+
+        client.batch()
+            .put(key1, value1)
+            .write(tryPushAgain);
+    });
+
+    it('should not allow batch operation with empty condition', done => {
+        const transaction = new IndexTransaction();
+        try {
+            transaction.addCondition({});
+            done(new Error('should fail for empty condition'));
+        } catch (err) {
+            assert.strictEqual(err.missingCondition, true);
+            done();
+        }
+    });
+
+    it('should not allow batch operation with unsupported condition', done => {
+        const transaction = new IndexTransaction();
+        try {
+            transaction.addCondition({ exists: key1 });
+            done(new Error('should fail for unsupported condition, currently supported - notExists'));
+        } catch (err) {
+            assert.strictEqual(err.unsupportedConditionalOperation, true);
+            done();
+        }
     });
 });
