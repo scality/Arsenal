@@ -9,7 +9,6 @@ temp.track();
 
 const db = require('../../index').db;
 const errors = require('../../lib/errors');
-const { ifNoneMatch } = require('../../lib/constants');
 
 const IndexTransaction = db.IndexTransaction;
 const key1 = 'key1';
@@ -47,6 +46,7 @@ function checkValueNotInDb(db, k, done) {
         return done();
     });
 }
+
 function checkKeyInDB(db, key, cb) {
     return db.get(key, (err, value) => {
         if (value || (err && !err.stack.includes('Error: NotFound:'))) {
@@ -55,7 +55,6 @@ function checkKeyInDB(db, key, cb) {
         return cb();
     });
 }
-
 
 class ConditionalLevelDB {
     constructor() {
@@ -66,13 +65,13 @@ class ConditionalLevelDB {
         const { db } = this.db;
         const operations = Array.from(conditionalOperations);
         return async.eachOfLimit(operations, 10, (op, index, asyncCallback) => {
-            if (op.type !== 'cond_put') {
+            if (!op.notExists) {
                 return asyncCallback(null, true);
             }
             return async.series([
-                next => checkKeyInDB(db, op.key, next),
+                next => checkKeyInDB(db, op.notExists, next),
                 next => {
-                    operations[index].type = 'put';
+                    operations.splice(index, 1);
                     return next();
                 },
             ], asyncCallback);
@@ -133,27 +132,6 @@ describe('IndexTransaction', () => {
         });
     });
 
-    it('should allow conditional put', done => {
-        const db = new ConditionalLevelDB();
-        const { client } = db;
-        const transaction = new IndexTransaction(db);
-        transaction.push({
-            type: 'cond_put',
-            key: key1,
-            value: value1,
-            conditionOperation: ifNoneMatch,
-            conditionValue: '*',
-        });
-        return async.series([
-            next => transaction.commit(next),
-            next => client.get(key1, next),
-        ], (err, res) => {
-            assert.ifError(err);
-            assert.strictEqual(res[1], value1);
-            return done();
-        });
-    });
-
     it('should commit put and del combined', done => {
         const db = createDb();
         const transaction = new IndexTransaction(db);
@@ -195,177 +173,7 @@ describe('IndexTransaction', () => {
             .write(commitTransactionAndCheck);
     });
 
-    it('should commit cond_put and del combined', done => {
-        const db = new ConditionalLevelDB();
-        const { client } = db;
-        const transaction = new IndexTransaction(db);
-
-        transaction.push({
-            type: 'del',
-            key: key1,
-        });
-
-        transaction.push({
-            type: 'cond_put',
-            key: key2,
-            value: value2,
-            conditionOperation: ifNoneMatch,
-            conditionValue: '*',
-        });
-
-        function commitTransactionAndCheck(err) {
-            if (err) {
-                return done(err);
-            }
-            return async.series([
-                next => transaction.commit(next),
-                next => client.get(key2, next),
-                next => client.get(key1, (err, value) => {
-                    if (err && !err.stack.includes('Error: NotFound:')) {
-                        return next(err);
-                    }
-                    if (value) {
-                        return next(errors.EntityAlreadyExists);
-                    }
-                    return next();
-                }),
-            ], (err, res) => {
-                assert.ifError(err);
-                assert.strictEqual(res[1], value2);
-                return done();
-            });
-        }
-
-        client.batch()
-            .put(key1, value1)
-            .write(commitTransactionAndCheck);
-    });
-
-    it('should commit put and cond_put combined', done => {
-        const db = new ConditionalLevelDB();
-        const { client } = db;
-        const transaction = new IndexTransaction(db);
-
-        transaction.push({
-            type: 'put',
-            key: key1,
-            value: value2,
-        });
-
-        transaction.push({
-            type: 'cond_put',
-            key: key2,
-            value: value2,
-            conditionOperation: ifNoneMatch,
-            conditionValue: '*',
-        });
-
-        function commitTransactionAndCheck(err) {
-            if (err) {
-                return done(err);
-            }
-            return async.series([
-                next => transaction.commit(next),
-                next => client.get(key2, next),
-                next => client.get(key1, next),
-            ], (err, res) => {
-                assert.ifError(err);
-                assert.strictEqual(res[1], value2);
-                assert.strictEqual(res[2], value2);
-                return done();
-            });
-        }
-
-        client.batch()
-            .put(key1, value1)
-            .write(commitTransactionAndCheck);
-    });
-
-
-    it('should commit put, cond_put and del combined', done => {
-        const db = new ConditionalLevelDB();
-        const { client } = db;
-        const transaction = new IndexTransaction(db);
-
-        transaction.push({
-            type: 'put',
-            key: key1,
-            value: value2,
-        });
-
-        transaction.push({
-            type: 'cond_put',
-            key: key2,
-            value: value2,
-            conditionOperation: ifNoneMatch,
-            conditionValue: '*',
-        });
-
-        transaction.push({
-            type: 'del',
-            key: key3,
-        });
-
-        function commitTransactionAndCheck(err) {
-            if (err) {
-                return done(err);
-            }
-            return async.series([
-                next => transaction.commit(next),
-                next => client.get(key1, next),
-                next => client.get(key2, next),
-                next => client.get(key3, (err, value) => {
-                    if (err && !err.stack.includes('Error: NotFound:')) {
-                        return next(err);
-                    }
-                    if (value) {
-                        return next(errors.EntityAlreadyExists);
-                    }
-                    return next();
-                }),
-            ], (err, res) => {
-                assert.ifError(err);
-                assert.strictEqual(res[1], value2);
-                assert.strictEqual(res[2], value2);
-                return done();
-            });
-        }
-        client.batch()
-            .put(key1, value1)
-            .put(key3, value3)
-            .write(commitTransactionAndCheck);
-    });
-
-    it('should refuse a conditional put if key is already present', done => {
-        const db = new ConditionalLevelDB();
-        const { client } = db;
-        const transaction = new IndexTransaction(db);
-
-        function tryPushAgain(err) {
-            if (err) {
-                return done(err);
-            }
-            transaction.push({
-                type: 'cond_put',
-                key: key1,
-                value: value2,
-                conditionOperation: ifNoneMatch,
-                conditionValue: '*',
-            });
-            return transaction.commit(err => {
-                if (!err || !err.EntityAlreadyExists) {
-                    return done(new Error('should not be able to conditional put for duplicate key'));
-                }
-                return done();
-            });
-        }
-
-        client.batch()
-            .put(key1, value1)
-            .write(tryPushAgain);
-    });
-
-    it('should refuse types other than del, put and cond_put', done => {
+    it('should refuse types other than del and put', done => {
         const transaction = new IndexTransaction();
 
         function tryPush() {
@@ -408,75 +216,6 @@ describe('IndexTransaction', () => {
         }
 
         assert.throws(tryPush, validateError);
-    });
-
-    it('should refuse cond_put without key', done => {
-        const transaction = new IndexTransaction();
-        try {
-            transaction.push({
-                type: 'cond_put',
-                value: value1,
-                conditionOperation: ifNoneMatch,
-                conditionValue: '*',
-            });
-            return done(new Error('should have detected missing key'));
-        } catch (err) {
-            if (err && err.missingKey) {
-                return done();
-            }
-            return done(err);
-        }
-    });
-    it('should refuse cond_put without conditional put operation', done => {
-        const transaction = new IndexTransaction();
-        try {
-            transaction.push({
-                type: 'cond_put',
-                key: key1,
-                value: value1,
-                conditionValue: '*',
-            });
-            return done(new Error('should have detected missing conditional put operation'));
-        } catch (err) {
-            if (err && err.missingConditionalPutOperation) {
-                return done();
-            }
-            return done(err);
-        }
-    });
-    it('should refuse cond_put without conditional put value', done => {
-        const transaction = new IndexTransaction();
-        try {
-            transaction.push({
-                type: 'cond_put',
-                key: key1,
-                value: value1,
-                conditionOperation: ifNoneMatch,
-            });
-            return done(new Error('should have detected missing conditional put value'));
-        } catch (err) {
-            if (err && err.missingConditionalPutValue) {
-                return done();
-            }
-            return done(err);
-        }
-    });
-    it('should refuse conditional put without value', done => {
-        const transaction = new IndexTransaction();
-        try {
-            transaction.push({
-                type: 'cond_put',
-                key: key1,
-                conditionOperation: ifNoneMatch,
-                conditionValue: '*',
-            });
-            return done(new Error('should have detected missing value for a conditional put'));
-        } catch (err) {
-            if (err && err.missingValue) {
-                return done();
-            }
-            return done(err);
-        }
     });
 
     it('should refuse del without key', done => {
@@ -628,16 +367,113 @@ describe('IndexTransaction', () => {
         });
     });
 
-    it('should have a working conditional put shortcut method', done => {
+    it('should allow batch operation with notExits condition if key does not exist', done => {
         const db = new ConditionalLevelDB();
         const { client } = db;
         const transaction = new IndexTransaction(db);
-        transaction.condPut(key1, value1, ifNoneMatch, '*');
+        transaction.addCondition({ notExists: key1 });
+        transaction.push({
+            type: 'put',
+            key: key1,
+            value: value1,
+        });
+        return async.series([
+            next => transaction.commit(next),
+            next => client.get(key1, next),
+        ], (err, res) => {
+            assert.ifError(err);
+            assert.strictEqual(res[1], value1);
+            return done();
+        });
+    });
+
+    it('should have a working addCondition shortcut method', done => {
+        const db = new ConditionalLevelDB();
+        const { client } = db;
+        const transaction = new IndexTransaction(db);
+        transaction.put(key1, value1);
+        transaction.addCondition({ notExists: 'key1' });
         transaction.commit(err => {
             if (err) {
                 return done(err);
             }
             return checkValueInDb(client, key1, value1, done);
         });
+    });
+
+    it('should not allow any op in a batch operation with notExits condition if key exists', done => {
+        const db = new ConditionalLevelDB();
+        const { client } = db;
+        const transaction = new IndexTransaction(db);
+
+        function tryPushAgain(err) {
+            if (err) {
+                return done(err);
+            }
+            transaction.addCondition({ notExists: key1 });
+            transaction.push({
+                type: 'put',
+                key: key1,
+                value: value1,
+            });
+            transaction.push({
+                type: 'put',
+                key: key2,
+                value: value2,
+            });
+            transaction.push({
+                type: 'put',
+                key: key3,
+                value: value3,
+            });
+            return transaction.commit(err => {
+                if (!err || !err.EntityAlreadyExists) {
+                    return done(new Error('should not be able to conditional put for duplicate key'));
+                }
+                return async.parallel([
+                    next => checkKeyInDB(client, key2, next),
+                    next => checkKeyInDB(client, key3, next),
+                ], err => {
+                    assert.ifError(err);
+                    return done();
+                });
+            });
+        }
+
+        client.batch()
+            .put(key1, value1)
+            .write(tryPushAgain);
+    });
+
+    it('should not allow batch operation with empty condition', done => {
+        const transaction = new IndexTransaction();
+        try {
+            transaction.addCondition({});
+            done(new Error('should fail for empty condition'));
+        } catch (err) {
+            assert.strictEqual(err.missingCondition, true);
+            done();
+        }
+    });
+
+    it('should not allow batch operation with unsupported condition', done => {
+        const transaction = new IndexTransaction();
+        try {
+            transaction.addCondition({ exists: key1 });
+            done(new Error('should fail for unsupported condition, currently supported - notExists'));
+        } catch (err) {
+            assert.strictEqual(err.unsupportedConditionalOperation, true);
+            done();
+        }
+    });
+    it('should not allow batch operation with missing key', done => {
+        const transaction = new IndexTransaction();
+        try {
+            transaction.addCondition({ notExists: undefined });
+            done(new Error('should fail when key not present in condition'));
+        } catch (err) {
+            assert.strictEqual(err.missingKey, true);
+            done();
+        }
     });
 });
