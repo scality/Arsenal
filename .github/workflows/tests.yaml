@@ -1,0 +1,47 @@
+---
+name: tests
+
+on:
+  push:
+    branches-ignore:
+    - 'development/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      # Label used to access the service container
+      redis:
+        # Docker Hub image
+        image: redis
+        # Set health checks to wait until redis has started
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          # Maps port 6379 on service container to the host
+          - 6379:6379
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - uses: actions/setup-node@v2
+      with:
+        node-version: '10'
+        cache: 'yarn'
+    - name: install dependencies
+      run: yarn install --frozen-lockfile
+    - name: lint yaml
+      run: yarn --silent lint_yml
+    - name: lint javascript
+      run: yarn --silent lint -- --max-warnings 0
+    - name: lint markdown
+      run: yarn --silent lint_md
+    - name: run unit tests
+      run: yarn --silent test
+    - name: run functional tests
+      run: yarn ft_test
+    - name: run executables tests
+      run: yarn install && yarn test
+      working-directory: 'lib/executables/pensieveCreds/'
