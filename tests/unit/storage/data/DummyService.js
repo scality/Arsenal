@@ -3,6 +3,7 @@ const { EventEmitter } = require('events');
 
 const DummyObjectStream = require('./DummyObjectStream');
 const { parseRange } = require('../../../../lib/network/http/utils');
+const assert = require('assert');
 
 const OBJECT_SIZE = 1024 * 1024 * 1024;
 
@@ -131,6 +132,42 @@ class DummyService {
               Math.min(Number.parseInt(rangeEnd, 10), OBJECT_SIZE - 1) : OBJECT_SIZE - 1;
         const objStream = new DummyObjectStream(firstByte, lastByte - firstByte + 1);
         objStream.pipe(writeStream);
+        return callback();
+    }
+    putObjectTagging(tagParams, callback) {
+        if (tagParams.Key === 'externalBackendTestBucket/externalBackendMissingKey') {
+            const err = new Error();
+            err.code = 404;
+            err.message = 'NoSuchKey';
+            return callback(err);
+        }
+
+        const keys = Object.keys(tagParams);
+        assert.ok(keys.length > 0);
+        assert.ok(tagParams.Tagging.TagSet.length > 0);
+        tagParams.Tagging.TagSet.forEach(tag => {
+            assert.ok(tag.Key.length > 0);
+            assert.ok(tag.Value.length > 0);
+        });
+
+        if (tagParams.VersionId) {
+            assert.ok(tagParams.VersionId === 'latestversion');
+        }
+
+        return callback();
+    }
+    deleteObjectTagging(tagParams, callback) {
+        if (tagParams.Key === 'externalBackendTestBucket/externalBackendMissingKey') {
+            const err = new Error();
+            err.code = 404;
+            err.message = 'NoSuchKey';
+            return callback(err);
+        }
+
+        if (tagParams.VersionId) {
+            assert.ok(tagParams.VersionId === 'latestversion');
+        }
+
         return callback();
     }
     // To-Do: add tests for other methods

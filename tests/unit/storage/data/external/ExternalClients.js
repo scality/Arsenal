@@ -48,6 +48,16 @@ const backendClients = [
 ];
 const log = new DummyRequestLogger();
 
+class DummyBucket {
+    constructor(name) {
+        this.name = name;
+    }
+
+    getName() {
+        return this.name;
+    }
+}
+
 describe('external backend clients', () => {
     backendClients.forEach(backend => {
         let testClient;
@@ -154,6 +164,73 @@ describe('external backend clients', () => {
                     });
             });
         });
+
+        if (backend.config.type !== 'azure') {
+            it(`${backend.name} objectPutTagging() then objectDeleteTagging() should set tags then delete it`, done => {
+                const key = {
+                    key: 'externalBackendTestBucket/externalBackendTestKey',
+                    dataStoreName: backend.config.dataStoreName,
+                    response: new stream.PassThrough(),
+                };
+                const bucket = new DummyBucket(backend.config.bucketName);
+                const objectMd = {
+                    tags: {
+                        Key1: 'value_1',
+                        Key2: 'value_2',
+                    },
+                };
+                testClient.objectPutTagging(
+                    key,
+                    bucket,
+                    objectMd,
+                    log,
+                    assert.ifError,
+                );
+                testClient.objectDeleteTagging(
+                    key,
+                    bucket,
+                    objectMd,
+                    log,
+                    (err) => {
+                        assert.ifError(err);
+                        done();
+                    },
+                );
+            });
+
+            it(`${backend.name} objectPutTagging() then objectDeleteTagging() with versionId`, done => {
+                const key = {
+                    key: 'externalBackendTestBucket/externalBackendTestKey',
+                    dataStoreName: backend.config.dataStoreName,
+                    response: new stream.PassThrough(),
+                };
+                const bucket = new DummyBucket(backend.config.bucketName);
+                const objectMd = {
+                    tags: {
+                        Key1: 'value_1',
+                        Key2: 'value_2',
+                    },
+                    versionId: 'latestversion',
+                };
+                testClient.objectPutTagging(
+                    key,
+                    bucket,
+                    objectMd,
+                    log,
+                    assert.ifError,
+                );
+                testClient.objectDeleteTagging(
+                    key,
+                    bucket,
+                    objectMd,
+                    log,
+                    (err) => {
+                        assert.ifError(err);
+                        done();
+                    },
+                );
+            });
+        }
         // To-Do: test the other external client methods (delete, createMPU ...)
     });
 });
