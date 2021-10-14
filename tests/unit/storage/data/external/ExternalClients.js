@@ -1,4 +1,5 @@
 const assert = require('assert');
+const async = require('async');
 const stream = require('stream');
 
 const AwsClient = require('../../../../../lib/storage/data/external/AwsClient');
@@ -7,6 +8,7 @@ const AzureClient =
     require('../../../../../lib/storage/data/external/AzureClient');
 const DummyService = require('../DummyService');
 const { DummyRequestLogger } = require('../../../helpers');
+const BucketInfo = require('../../../../../lib/models/BucketInfo');
 
 const backendClients = [
     {
@@ -154,6 +156,68 @@ describe('external backend clients', () => {
                     });
             });
         });
+
+        if (backend.config.type !== 'azure') {
+            it(`${backend.name} should set tags and then delete it`, done => {
+                const key = 'externalBackendTestKey';
+                const bucketData = {
+                    _name: 'externalBackendTestBucket',
+                    _owner: 'abcdef0123456789',
+                    _ownerDisplayName: 'UnitTestOwner',
+                    _creationDate: '2021-10-05T08:59:12.546Z',
+                };
+                const bucket = BucketInfo.fromObj(bucketData);
+                const objectMd = {
+                    tags: {
+                        Key1: 'value_1',
+                        Key2: 'value_2',
+                    },
+                    location: [
+                        {
+                            dataStoreVersionId: 'latestversion',
+                        },
+                    ],
+                };
+                async.series([
+                    next => testClient.objectPutTagging(key.key, bucket.getName(), objectMd, log, next),
+                    next => testClient.objectDeleteTagging(key.Key, bucket.getName(), objectMd, log, next),
+                ], done);
+            });
+
+            it(`${backend.name} should fail to set tag on missing key`, done => {
+                const key = 'externalBackendMissingKey';
+                const bucketData = {
+                    _name: 'externalBackendTestBucket',
+                    _owner: 'abcdef0123456789',
+                    _ownerDisplayName: 'UnitTestOwner',
+                    _creationDate: '2021-10-05T08:59:12.546Z',
+                };
+                const bucket = BucketInfo.fromObj(bucketData);
+                const objectMD = {
+                    tags: {
+                        Key1: 'value_1',
+                    },
+                    location: [
+                        {
+                            dataStoreVersionId: 'latestversion',
+                        },
+                    ],
+                };
+                async.series(
+                    [
+                        next => testClient.objectPutTagging(key, bucket.getName(), objectMD, log, (err) => {
+                            assert(err.ServiceUnavailable);
+                            next();
+                        }),
+                        next => testClient.objectDeleteTagging(key, bucket.getName(), objectMD, log, (err) => {
+                            assert(err.ServiceUnavailable);
+                            next();
+                        }),
+                    ],
+                    done,
+                );
+            });
+        }
         // To-Do: test the other external client methods (delete, createMPU ...)
     });
 });
