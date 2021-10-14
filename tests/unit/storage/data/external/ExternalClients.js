@@ -180,7 +180,7 @@ describe('external backend clients', () => {
                 };
                 async.series([
                     next => testClient.objectPutTagging(key.key, bucket.getName(), objectMd, log, next),
-                    next => testClient.objectDeleteTagging(key.Key, bucket, objectMd, log, next),
+                    next => testClient.objectDeleteTagging(key.Key, bucket.getName(), objectMd, log, next),
                 ], done);
             });
 
@@ -209,7 +209,7 @@ describe('external backend clients', () => {
                             assert(err.ServiceUnavailable);
                             next();
                         }),
-                        next => testClient.objectDeleteTagging(key, bucket, objectMD, log, (err) => {
+                        next => testClient.objectDeleteTagging(key, bucket.getName(), objectMD, log, (err) => {
                             assert(err.ServiceUnavailable);
                             next();
                         }),
