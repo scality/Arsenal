@@ -53,4 +53,12 @@ describe('should URIencode in accordance with AWS rules', () => {
         const actualOutput = awsURIencode(input);
         assert.strictEqual(actualOutput, expectedOutput);
     });
+
+    it('should skip invalid query params', () => {
+        const input = ['s3:ObjectCreated:*', 's3:ObjectRemoved:*',
+            's3:BucketCreated:*', 's3:BucketRemoved:*'];
+        const expectedOutput = '';
+        const actualOutput = awsURIencode(input);
+        assert.strictEqual(actualOutput, expectedOutput);
+    });
 });
