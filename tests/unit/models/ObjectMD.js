@@ -81,6 +81,8 @@ describe('ObjectMD class setters/getters', () => {
             key: 'value',
         }],
         ['Tags', null, {}],
+        ['UploadId', null, undefined],
+        ['UploadId', 'abcdefghi'],
         ['ReplicationInfo', null, {
             status: '',
             backends: [],
@@ -422,6 +424,7 @@ describe('getAttributes static method', () => {
             'isDeleteMarker': true,
             'versionId': true,
             'tags': true,
+            'uploadId': true,
             'replicationInfo': true,
             'dataStoreName': true,
             'last-modified': true,
