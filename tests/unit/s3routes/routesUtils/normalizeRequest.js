@@ -76,4 +76,16 @@ describe('routesUtils.normalizeRequest', () => {
         assert.strictEqual(result.objectKey, objName);
         assert.strictEqual(result.parsedHost, 's3.amazonaws.com');
     });
+
+    it('should pick the first occurence of the query param when duplicates ' +
+        'are present ', () => {
+        const request = {
+            url: `/${bucketName}/${objName}?a=1&a=2&a=3&b=4&c=5`,
+            headers: { host: 's3.amazonaws.com' },
+        };
+        const result = routesUtils.normalizeRequest(request, validHosts);
+        assert.strictEqual(result.query.a, '1');
+        assert.strictEqual(result.query.b, '4');
+        assert.strictEqual(result.query.c, '5');
+    });
 });
