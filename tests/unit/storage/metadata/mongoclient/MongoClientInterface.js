@@ -128,7 +128,10 @@ describe('MongoClientInterface::_processEntryData', () => {
                 },
             },
             {
-                'us-east-1': 42,
+                data: {
+                    'us-east-1': 42,
+                },
+                error: null,
             },
         ],
         [
@@ -156,7 +159,10 @@ describe('MongoClientInterface::_processEntryData', () => {
                 },
             },
             {
-                'us-east-1': 0,
+                data: {
+                    'us-east-1': 0,
+                },
+                error: null,
             },
         ],
         [
@@ -184,7 +190,10 @@ describe('MongoClientInterface::_processEntryData', () => {
                 },
             },
             {
-                'us-east-1': 42,
+                data: {
+                    'us-east-1': 42,
+                },
+                error: null,
             },
         ],
         [
@@ -212,7 +221,10 @@ describe('MongoClientInterface::_processEntryData', () => {
                 },
             },
             {
-                'us-east-1': 42,
+                data: {
+                    'us-east-1': 42,
+                },
+                error: null,
             },
         ],
         [
@@ -253,10 +265,13 @@ describe('MongoClientInterface::_processEntryData', () => {
                 },
             },
             {
-                'us-east-1': 0,
-                'completed-1': 42,
-                'completed-2': 42,
-                'completed-3': 42,
+                data: {
+                    'us-east-1': 0,
+                    'completed-1': 42,
+                    'completed-2': 42,
+                    'completed-3': 42,
+                },
+                error: null,
             },
         ],
         [
@@ -297,9 +312,83 @@ describe('MongoClientInterface::_processEntryData', () => {
                 },
             },
             {
-                'us-east-1': 42,
-                'completed-1': 42,
-                'completed-2': 42,
+                data: {
+                    'us-east-1': 42,
+                    'completed-1': 42,
+                    'completed-2': 42,
+                },
+                error: null,
+            },
+        ],
+        [
+            'should error if content-length is invalid',
+            true,
+            {
+                _id: 'testkey',
+                value: {
+                    'last-modified': new Date(),
+                    'replicationInfo': {
+                        status: 'PENDING',
+                        backends: [
+                            {
+                                status: 'PENDING',
+                                site: 'not-completed',
+                            },
+                            {
+                                status: 'COMPLETED',
+                                site: 'completed-1',
+                            },
+                            {
+                                status: 'COMPLETED',
+                                site: 'completed-2',
+                            },
+                        ],
+                        content: [],
+                        destination: '',
+                        storageClass: '',
+                        role: '',
+                        storageType: '',
+                        dataStoreVersionId: '',
+                        isNFS: null,
+                    },
+                    'dataStoreName': 'us-east-1',
+                    'content-length': 'not-a-number',
+                    'versionId': '0123456789abcdefg',
+                },
+            },
+            {
+                data: {},
+                error: new Error('invalid content length'),
+            },
+        ],
+        [
+            'should correctly process entry with string typed content-length',
+            true,
+            {
+                _id: 'testkey',
+                value: {
+                    'last-modified': new Date(),
+                    'replicationInfo': {
+                        status: 'PENDING',
+                        backends: [],
+                        content: [],
+                        destination: '',
+                        storageClass: '',
+                        role: '',
+                        storageType: '',
+                        dataStoreVersionId: '',
+                        isNFS: null,
+                    },
+                    'dataStoreName': 'us-east-1',
+                    'content-length': '42',
+                    'versionId': '0123456789abcdefg',
+                },
+            },
+            {
+                data: {
+                    'us-east-1': 42,
+                },
+                error: null,
             },
         ],
     ];
