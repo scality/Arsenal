@@ -7,12 +7,12 @@ const {
     FILTER_ACCEPT,
     FILTER_SKIP,
     SKIP_NONE,
+    inc,
 } = require('../../../../lib/algos/list/tools');
 const Werelogs = require('werelogs').Logger;
 const logger = new Werelogs('listTest');
 const performListing = require('../../../utils/performListing');
 const zpad = require('../../helpers').zpad;
-const { inc } = require('../../../../lib/algos/list/tools');
 const VSConst = require('../../../../lib/versioning/constants').VersioningConstants;
 const Version = require('../../../../lib/versioning/Version').Version;
 const { generateVersionId } = require('../../../../lib/versioning/VersionID');
@@ -520,16 +520,54 @@ function getTestListing(test, data, vFormat) {
 ['v0', 'v1'].forEach(vFormat => {
     describe(`Delimiter All Versions listing algorithm vFormat=${vFormat}`, () => {
         it('Should return good skipping value for DelimiterVersions', () => {
-            const delimiter = new DelimiterVersions({ delimiter: '/' });
+            const delimiter = new DelimiterVersions({ delimiter: '/' }, logger, vFormat);
             for (let i = 0; i < 100; i++) {
                 delimiter.filter({
                     key: `${vFormat === 'v1' ? DbPrefixes.Master : ''}foo/${zpad(i)}`,
                     value: '{}',
                 });
             }
-            assert.strictEqual(delimiter.skipping(),
-                               `${vFormat === 'v1' ? DbPrefixes.Master : ''}foo/`);
+            if (vFormat === 'v1') {
+                assert.deepStrictEqual(delimiter.skipping(), [
+                    `${DbPrefixes.Master}foo/`,
+                    `${DbPrefixes.Version}foo/`,
+                ]);
+            } else {
+                assert.strictEqual(delimiter.skipping(), 'foo/');
+            }
         });
+
+        if (vFormat === 'v0') {
+            it('Should return good skipping value for DelimiterVersions on replay keys', () => {
+                const delimiter = new DelimiterVersions({ delimiter: '/' }, logger, vFormat);
+                for (let i = 0; i < 10; i++) {
+                    delimiter.filter({
+                        key: `foo/${zpad(i)}`,
+                        value: '{}',
+                    });
+                }
+                // simulate a listing that goes through a replay key, ...
+                assert.strictEqual(
+                    delimiter.filter({
+                        key: `${DbPrefixes.Replay}xyz`,
+                        value: 'abcdef',
+                    }),
+                    FILTER_SKIP);
+                // ...it should skip the whole replay prefix
+                assert.strictEqual(delimiter.skipping(), DbPrefixes.Replay);
+
+                // simulate a listing that reaches regular object keys
+                // beyond the replay prefix, ...
+                assert.strictEqual(
+                    delimiter.filter({
+                        key: `${inc(DbPrefixes.Replay)}foo/bar`,
+                        value: '{}',
+                    }),
+                    FILTER_ACCEPT);
+                // ...it should return to skipping by prefix as usual
+                assert.strictEqual(delimiter.skipping(), `${inc(DbPrefixes.Replay)}foo/`);
+            });
+        }
 
         tests.forEach(test => {
             it(`Should return metadata listing params to list ${test.name}`, () => {
