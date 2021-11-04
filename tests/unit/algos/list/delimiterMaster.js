@@ -8,12 +8,14 @@ const {
     FILTER_ACCEPT,
     FILTER_SKIP,
     SKIP_NONE,
+    inc,
 } = require('../../../../lib/algos/list/tools');
 const VSConst =
     require('../../../../lib/versioning/constants').VersioningConstants;
 const Version = require('../../../../lib/versioning/Version').Version;
 const { generateVersionId } = require('../../../../lib/versioning/VersionID');
 const { DbPrefixes } = VSConst;
+const zpad = require('../../helpers').zpad;
 
 
 const VID_SEP = VSConst.VersionId.Separator;
@@ -452,6 +454,39 @@ function getListingKey(key, vFormat) {
                 delimiter.NextMarker = commonPrefix;
 
                 assert.strictEqual(delimiter.filter({ key, value }), FILTER_SKIP);
+            });
+
+            it('should return good skipping value for DelimiterMaster on replay keys', () => {
+                const delimiter = new DelimiterMaster(
+                    { delimiter: '/', v2: true },
+                    fakeLogger, vFormat);
+
+                for (let i = 0; i < 10; i++) {
+                    delimiter.filter({
+                        key: `foo/${zpad(i)}`,
+                        value: '{}',
+                    });
+                }
+                // simulate a listing that goes through a replay key, ...
+                assert.strictEqual(
+                    delimiter.filter({
+                        key: `${DbPrefixes.Replay}xyz`,
+                        value: 'abcdef',
+                    }),
+                    FILTER_SKIP);
+                // ...it should skip the whole replay prefix
+                assert.strictEqual(delimiter.skipping(), DbPrefixes.Replay);
+
+                // simulate a listing that reaches regular object keys
+                // beyond the replay prefix, ...
+                assert.strictEqual(
+                    delimiter.filter({
+                        key: `${inc(DbPrefixes.Replay)}foo/bar`,
+                        value: '{}',
+                    }),
+                    FILTER_ACCEPT);
+                // ...it should return to skipping by prefix as usual
+                assert.strictEqual(delimiter.skipping(), `${inc(DbPrefixes.Replay)}foo/`);
             });
         }
     });
