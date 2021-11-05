@@ -188,4 +188,7 @@ module.exports = {
     stream: {
         readJSONStreamObject: require('./lib/stream/readJSONStreamObject'),
     },
+    patches: {
+        locationConstraints: require('./lib/patches/locationConstraints'),
+    },
 };
