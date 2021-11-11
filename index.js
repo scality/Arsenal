@@ -92,6 +92,7 @@ module.exports = {
                 require('./lib/s3middleware/azureHelpers/SubStreamInterface'),
         },
         retention: require('./lib/s3middleware/objectRetention'),
+        lifecycleHelpers: require('./lib/s3middleware/lifecycleHelpers'),
     },
     storage: {
         metadata: {
@@ -120,6 +121,7 @@ module.exports = {
           require('./lib/models/ReplicationConfiguration'),
         LifecycleConfiguration:
             require('./lib/models/LifecycleConfiguration'),
+        LifecycleRule: require('./lib/models/LifecycleRule'),
         BucketPolicy: require('./lib/models/BucketPolicy'),
         ObjectLockConfiguration:
             require('./lib/models/ObjectLockConfiguration'),
