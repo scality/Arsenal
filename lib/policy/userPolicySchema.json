@@ -38,6 +38,10 @@
             "type": "string",
             "pattern": "^arn:aws:iam::[0-9]{12}:saml-provider/[\\w._-]{1,128}$"
         },
+        "principalFederatedOidcIdp": {
+            "type": "string",
+            "pattern": "^(?:http(s)?:\/\/)?[\\w.-]+(?:\\.[\\w\\.-]+)+[\\w\\-\\._~:/?#[\\]@!\\$&'\\(\\)\\*\\+,;=.]+$"
+        },
         "principalAWSItem": {
             "type": "object",
             "properties": {
@@ -98,6 +102,9 @@
                     "oneOf": [
                         {
                             "$ref": "#/definitions/principalFederatedSamlIdp"
+                        },
+                        {
+                            "$ref": "#/definitions/principalFederatedOidcIdp"
                         }
                     ]
                 }
