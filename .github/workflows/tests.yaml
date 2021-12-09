@@ -39,7 +39,7 @@ jobs:
     - name: lint markdown
       run: yarn --silent lint_md
     - name: run unit tests
-      run: yarn --silent test
+      run: yarn test
     - name: run functional tests
       run: yarn ft_test
     - name: run executables tests
