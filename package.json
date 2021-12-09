@@ -54,7 +54,7 @@
     "lint": "eslint $(git ls-files '*.js')",
     "lint_md": "mdlint $(git ls-files '*.md')",
     "lint_yml": "yamllint $(git ls-files '*.yml')",
-    "test": "mocha --recursive --timeout 5500 tests/unit",
+    "test": "mocha --recursive tests/unit",
     "ft_test": "find tests/functional -name \"*.js\" | grep -v \"utils/\" | xargs mocha --timeout 120000"
   },
   "private": true
