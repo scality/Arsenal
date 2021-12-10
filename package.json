@@ -38,9 +38,7 @@
     "werelogs": "scality/werelogs#8.1.0",
     "xml2js": "~0.4.23"
   },
-  "optionalDependencies": {
-    "ioctl": "2.0.0"
-  },
+  "optionalDependencies": {},
   "devDependencies": {
     "@sinonjs/fake-timers": "^6.0.1",
     "eslint": "2.13.1",
