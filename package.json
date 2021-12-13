@@ -24,6 +24,7 @@
     "async": "~2.6.1",
     "aws-sdk": "2.80.0",
     "azure-storage": "2.10.3",
+    "@azure/storage-blob": "^10.5.0",
     "backo": "^1.1.0",
     "base62": "2.0.1",
     "base-x": "3.0.8",
