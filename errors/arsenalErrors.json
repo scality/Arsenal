@@ -745,7 +745,7 @@
     "code": 404
   },
   "DBAPINotReady": {
-    "message": "DBAPINotReady",
+    "description": "DBAPINotReady",
     "code": 500
   },
   "NotEnoughMapsInConfig:": {
