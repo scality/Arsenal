@@ -34,11 +34,11 @@ describe('network.probe.HealthProbeServer', () => {
             server.start();
         }
 
-        before(done => {
+        beforeAll(done => {
             setup(done);
         });
 
-        after(done => {
+        afterAll(done => {
             server.stop();
             done();
         });
@@ -73,11 +73,11 @@ describe('network.probe.HealthProbeServer', () => {
             done();
         }
 
-        before(done => {
+        beforeAll(done => {
             setup(done);
         });
 
-        after(done => {
+        afterAll(done => {
             server.stop();
             done();
         });
@@ -108,11 +108,11 @@ describe('network.probe.HealthProbeServer', () => {
             done();
         }
 
-        before(done => {
+        beforeAll(done => {
             setup(done);
         });
 
-        after(done => {
+        afterAll(done => {
             server.stop();
             done();
         });
@@ -143,11 +143,11 @@ describe('network.probe.HealthProbeServer', () => {
             done();
         }
 
-        before(done => {
+        beforeAll(done => {
             setup(done);
         });
 
-        after(done => {
+        afterAll(done => {
             server.stop();
             done();
         });
@@ -176,11 +176,11 @@ describe('network.probe.HealthProbeServer', () => {
             server.start();
         }
 
-        before(done => {
+        beforeAll(done => {
             setup(done);
         });
 
-        after(done => {
+        afterAll(done => {
             server.stop();
             done();
         });

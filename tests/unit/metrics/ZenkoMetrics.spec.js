@@ -9,7 +9,7 @@ describe('ZenkoMetrics', () => {
     let summary;
     let petCounter;
 
-    before(() => {
+    beforeAll(() => {
         counter = ZenkoMetrics.createCounter({
             name: 'gizmo_counter',
             help: 'Count gizmos',

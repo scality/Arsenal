@@ -64,7 +64,7 @@ function getDataWrapper() {
 let dw;
 
 describe('Routes from DataWrapper to backend client', () => {
-    before(() => {
+    beforeAll(() => {
         dw = getDataWrapper();
     });
 

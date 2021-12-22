@@ -53,12 +53,16 @@
     "ioctl": "^2.0.2"
   },
   "devDependencies": {
+    "@babel/preset-env": "^7.16.5",
+    "@babel/preset-typescript": "^7.16.5",
     "@sinonjs/fake-timers": "^6.0.1",
+    "@types/jest": "^27.0.3",
     "@types/node": "^16.11.7",
     "eslint": "2.13.1",
     "eslint-config-airbnb": "6.2.0",
     "eslint-config-scality": "scality/Guidelines#ec33dfb",
     "eslint-plugin-react": "^4.3.0",
+    "jest": "^27.4.5",
     "mocha": "8.0.1",
     "mongodb-memory-server": "^6.0.2",
     "nyc": "^15.1.0",
@@ -70,12 +74,29 @@
     "lint": "eslint $(git ls-files '*.js')",
     "lint_md": "mdlint $(git ls-files '*.md')",
     "lint_yml": "yamllint $(git ls-files '*.yml')",
-    "test": "mocha --recursive --exit tests/unit",
+    "test": "jest tests/unit",
     "ft_test": "find tests/functional -name \"*.js\" | grep -v \"utils/\" | xargs mocha --timeout 120000 --exit",
     "coverage": "yarn coverage_unit && yarn coverage_ft && yarn coverage_report",
     "coverage_unit": "nyc --silent yarn test",
     "coverage_ft": "nyc --silent --no-clean yarn ft_test",
     "coverage_report": "nyc report --all --reporter=text-summary --reporter=lcov",
     "compile": "tsc"
+  },
+  "jest": {
+    "maxWorkers": 1,
+    "roots": [
+      ".",
+      "lib",
+      "errors"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "helpers?\\.js",
+      "Mock.*\\.js",
+      "Dummy.*\\.js"
+    ],
+    "testMatch": [
+      "**/*.js"
+    ]
   }
 }
