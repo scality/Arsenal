@@ -2,15 +2,15 @@ module.exports = {
     auth: require('./lib/auth/auth'),
     constants: require('./lib/constants'),
     db: require('./lib/db'),
-    errors: require('./lib/errors.js'),
+    errors: require('./lib/errors'),
     errorUtils: require('./lib/errorUtils'),
     shuffle: require('./lib/shuffle'),
     stringHash: require('./lib/stringHash'),
     ipCheck: require('./lib/ipCheck'),
     jsutil: require('./lib/jsutil'),
     https: {
-        ciphers: require('./lib/https/ciphers.js'),
-        dhparam: require('./lib/https/dh2048.js'),
+        ciphers: require('./lib/https/ciphers'),
+        dhparam: require('./lib/https/dh2048'),
     },
     algorithms: {
         list: require('./lib/algos/list/exportAlgos'),
@@ -25,23 +25,23 @@ module.exports = {
         },
     },
     policies: {
-        evaluators: require('./lib/policyEvaluator/evaluator.js'),
+        evaluators: require('./lib/policyEvaluator/evaluator'),
         validateUserPolicy: require('./lib/policy/policyValidator')
             .validateUserPolicy,
         evaluatePrincipal: require('./lib/policyEvaluator/principal'),
-        RequestContext: require('./lib/policyEvaluator/RequestContext.js'),
+        RequestContext: require('./lib/policyEvaluator/RequestContext'),
         requestUtils: require('./lib/policyEvaluator/requestUtils'),
         actionMaps: require('./lib/policyEvaluator/utils/actionMaps'),
     },
     Clustering: require('./lib/Clustering'),
     testing: {
-        matrix: require('./lib/testing/matrix.js'),
+        matrix: require('./lib/testing/matrix'),
     },
     versioning: {
-        VersioningConstants: require('./lib/versioning/constants.js')
+        VersioningConstants: require('./lib/versioning/constants')
             .VersioningConstants,
-        Version: require('./lib/versioning/Version.js').Version,
-        VersionID: require('./lib/versioning/VersionID.js'),
+        Version: require('./lib/versioning/Version').Version,
+        VersionID: require('./lib/versioning/VersionID'),
     },
     network: {
         http: {
@@ -57,8 +57,8 @@ module.exports = {
         probe: {
             ProbeServer: require('./lib/network/probe/ProbeServer'),
             HealthProbeServer:
-                require('./lib/network/probe/HealthProbeServer.js'),
-            Utils: require('./lib/network/probe/Utils.js'),
+                require('./lib/network/probe/HealthProbeServer'),
+            Utils: require('./lib/network/probe/Utils'),
         },
         kmip: require('./lib/network/kmip'),
         kmipClient: require('./lib/network/kmip/Client'),
