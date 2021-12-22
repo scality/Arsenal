@@ -556,7 +556,7 @@ function uploadObjects(client, bucketName, objectList, callback) {
 describe('MongoClientInterface, tests', () => {
     const hr = 1000 * 60 * 60;
     let client;
-    before(done => {
+    beforeAll(done => {
         mongoserver.waitUntilRunning().then(() => {
             const opts = {
                 replicaSetHosts: 'localhost:27018',
@@ -573,7 +573,7 @@ describe('MongoClientInterface, tests', () => {
         });
     });
 
-    after(done => {
+    afterAll(done => {
         async.series([
             next => client.close(next),
             next => mongoserver.stop()

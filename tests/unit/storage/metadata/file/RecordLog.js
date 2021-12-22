@@ -66,7 +66,7 @@ describe('record log - persistent log of metadata operations', () => {
         done();
     }
 
-    before(done => {
+    beforeAll(done => {
         temp.mkdir('record-log-testdir-', (err, dbDir) => {
             const rootDb = level(dbDir);
             db = sublevel(rootDb);
@@ -74,7 +74,7 @@ describe('record log - persistent log of metadata operations', () => {
         });
     });
 
-    after(done => {
+    afterAll(done => {
         server.close();
         done();
     });
@@ -207,7 +207,7 @@ describe('record log - persistent log of metadata operations', () => {
     describe('readRecords', () => {
         let logProxy;
 
-        before(done => {
+        beforeAll(done => {
             logProxy = createScratchRecordLog(cliLogger, err => {
                 assert.ifError(err);
                 // fill the log with 1000 entries
@@ -228,7 +228,7 @@ describe('record log - persistent log of metadata operations', () => {
             });
         });
 
-        after(done => closeRecordLog(logProxy, () => {
+        afterAll(done => closeRecordLog(logProxy, () => {
             logProxy = undefined;
             done();
         }));

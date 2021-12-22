@@ -1,6 +1,6 @@
 'use strict'; // eslint-disable-line strict
 
-const ipaddr = require('ipaddr.js');
+import * as ipaddr from 'ipaddr.js';
 
 /**
  * checkIPinRangeOrMatch checks whether a given ip address is in an ip address
@@ -9,12 +9,15 @@ const ipaddr = require('ipaddr.js');
  * @param {object} ip - parsed ip address
  * @return {boolean} true if in range, false if not
  */
-function checkIPinRangeOrMatch(cidr, ip) {
+function checkIPinRangeOrMatch(
+    cidr: string, ip: ipaddr.IPv4 | ipaddr.IPv6
+): boolean {
     // If there is an exact match of the ip address, no need to check ranges
     if (ip.toString() === cidr) {
         return true;
     }
-    let range;
+
+    let range: [ipaddr.IPv4 | ipaddr.IPv6, number];
 
     try {
         range = ipaddr.IPv4.parseCIDR(cidr);
@@ -60,10 +63,17 @@ function parseIp(ip) {
 * @param {string} ip - IP address
 * @return {boolean} - true if there is match or false for no match
 */
-function ipMatchCidrList(cidrList, ip) {
-    const parsedIp = parseIp(ip);
+function ipMatchCidrList(cidrList: string[], ip: string): boolean {
+    let parsedIp: ipaddr.IPv4 | ipaddr.IPv6;
+
+    try {
+        parsedIp = parseIp(ip);
+    } catch (err) {
+        return false
+    }
+
     return cidrList.some(item => {
-        let cidr;
+        let cidr: string;
         // patch the cidr if range is not specified
         if (item.indexOf('/') === -1) {
             if (item.startsWith('127.')) {
@@ -72,6 +82,7 @@ function ipMatchCidrList(cidrList, ip) {
                 cidr = `${item}/32`;
             }
         }
+        // TODO cidr type error
         return checkIPinRangeOrMatch(cidr || item, parsedIp);
     });
 }
