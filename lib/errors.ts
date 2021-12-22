@@ -1,11 +1,22 @@
 'use strict'; // eslint-disable-line strict
 
+import * as http from 'http';
+import errorsObj from '../errors/arsenalErrors.json';
+
 /**
  * ArsenalError
  *
  * @extends {Error}
  */
+
+type Errors = Record<string, ArsenalError>;
+
 class ArsenalError extends Error {
+
+    code: number;
+    description: string;
+    private static _errorMap: Errors;
+
     /**
      * constructor.
      *
@@ -13,7 +24,7 @@ class ArsenalError extends Error {
      * @param {number} code - HTTP status code
      * @param {string} desc - Verbose description of error
      */
-    constructor(type, code, desc) {
+    constructor(type: string, code: number, desc: string) {
         super(type);
 
         /**
@@ -28,14 +39,36 @@ class ArsenalError extends Error {
          */
         this.description = desc;
 
-        this[type] = true;
+        (this as any)[type] = true;
+    }
+
+    public static get errorMap () {
+        if (this._errorMap !== undefined) {
+            return this._errorMap;
+        }
+
+        const errors: Errors = {};
+        type ErrorDefinition = { code: number, description: string };
+        type ErrorDefinitions = Record<string, ErrorDefinition | string>;
+
+        Object.keys(errorsObj)
+            .filter(index => index !== '_comment')
+            .forEach(index => {
+                errors[index] = new ArsenalError(
+                    index,
+                    ((errorsObj as ErrorDefinitions)[index] as ErrorDefinition).code,
+                    ((errorsObj as ErrorDefinitions)[index] as ErrorDefinition).description
+                );
+            });
+        this._errorMap = errors;
+        return this._errorMap;
     }
 
     /**
      * Output the error as a JSON string
      * @returns {string} Error as JSON string
      */
-    toString() {
+    toString(): string {
         return JSON.stringify({
             errorType: this.message,
             errorMessage: this.description,
@@ -48,7 +81,7 @@ class ArsenalError extends Error {
      * @param { http.ServerResponse } res - Response we are responding to
      * @returns {undefined}
      */
-    writeResponse(res) {
+    writeResponse(res: http.ServerResponse): void {
         res.writeHead(this.code);
         res.end(this.toString());
     }
@@ -60,28 +93,13 @@ class ArsenalError extends Error {
      * @param {string} description - New error description
      * @returns {ArsenalError} New error
      */
-    customizeDescription(description) {
+    customizeDescription(description: string): ArsenalError {
         return new ArsenalError(this.message, this.code, description);
     }
 }
 
-/**
- * Generate an Errors instances object.
- *
- * @returns {Object.<string, ArsenalError>} - object field by arsenalError
- *                                            instances
- */
-function errorsGen() {
-    const errors = {};
-    const errorsObj = require('../errors/arsenalErrors.json');
+const errors = ArsenalError.errorMap
 
-    Object.keys(errorsObj)
-          .filter(index => index !== '_comment')
-          .forEach(index => {
-              errors[index] = new ArsenalError(index, errorsObj[index].code,
-                                               errorsObj[index].description);
-          });
-    return errors;
-}
-
-module.exports = errorsGen();
+export default {
+    ...errors
+};
