@@ -1,4 +1,4 @@
-const assert = require('assert');
+import { strict as assert } from 'assert';
 
 /**
  * @class
@@ -12,9 +12,15 @@ class LRUCache {
      * @param {number} maxEntries - maximum number of entries kept in
      * the cache
      */
-    constructor(maxEntries) {
+    maxEntries: number;
+    private entryCount: number;
+    private entryMap: object;
+    private lruHead: any; // TODO lruTrail?
+    private lruTail: any; // TODO lruTrail?
+
+    constructor(maxEntries: number) {
         assert(maxEntries >= 1);
-        this._maxEntries = maxEntries;
+        this.maxEntries = maxEntries;
         this.clear();
     }
 
@@ -27,8 +33,8 @@ class LRUCache {
      * @return {boolean} true if the cache contained an entry with
      * this key, false if it did not
      */
-    add(key, value) {
-        let entry = this._entryMap[key];
+    add(key: string, value: object): boolean {
+        let entry = this.entryMap[key];
         if (entry) {
             entry.value = value;
             // make the entry the most recently used by re-pushing it
@@ -37,15 +43,15 @@ class LRUCache {
             this._lruPushEntry(entry);
             return true;
         }
-        if (this._entryCount === this._maxEntries) {
+        if (this.entryCount === this.maxEntries) {
             // if the cache is already full, abide by the LRU strategy
             // and remove the least recently used entry from the cache
             // before pushing the new entry
-            this._removeEntry(this._lruTail);
+            this._removeEntry(this.lruTail);
         }
         entry = { key, value };
-        this._entryMap[key] = entry;
-        this._entryCount += 1;
+        this.entryMap[key] = entry;
+        this.entryCount += 1;
         this._lruPushEntry(entry);
         return false;
     }
@@ -59,8 +65,8 @@ class LRUCache {
      * exists in the cache, or undefined if not found - either if the
      * key was never added or if it has been evicted from the cache.
      */
-    get(key) {
-        const entry = this._entryMap[key];
+    get(key: string): object | undefined{
+        const entry = this.entryMap[key];
         if (entry) {
             // make the entry the most recently used by re-pushing it
             // to the head of the LRU list
@@ -79,8 +85,8 @@ class LRUCache {
      * there was no entry with this key in the cache - either if the
      * key was never added or if it has been evicted from the cache.
      */
-    remove(key) {
-        const entry = this._entryMap[key];
+    remove(key: string): boolean {
+        const entry = this.entryMap[key];
         if (entry) {
             this._removeEntry(entry);
             return true;
@@ -93,8 +99,8 @@ class LRUCache {
      *
      * @return {number} current number of cached entries
      */
-    count() {
-        return this._entryCount;
+    count(): number {
+        return this.entryCount;
     }
 
     /**
@@ -102,11 +108,11 @@ class LRUCache {
      *
      * @return {undefined}
      */
-    clear() {
-        this._entryMap = {};
-        this._entryCount = 0;
-        this._lruHead = null;
-        this._lruTail = null;
+    clear(): undefined {
+        this.entryMap = {};
+        this.entryCount = 0;
+        this.lruHead = null;
+        this.lruTail = null;
     }
 
     /**
@@ -116,16 +122,16 @@ class LRUCache {
      * @param {object} entry - entry to push
      * @return {undefined}
      */
-    _lruPushEntry(entry) {
+    _lruPushEntry(entry: object): undefined {
         /* eslint-disable no-param-reassign */
-        entry._lruNext = this._lruHead;
+        entry._lruNext = this.lruHead;
         entry._lruPrev = null;
-        if (this._lruHead) {
-            this._lruHead._lruPrev = entry;
+        if (this.lruHead) {
+            this.lruHead._lruPrev = entry;
         }
-        this._lruHead = entry;
-        if (!this._lruTail) {
-            this._lruTail = entry;
+        this.lruHead = entry;
+        if (!this.lruTail) {
+            this.lruTail = entry;
         }
         /* eslint-enable no-param-reassign */
     }
@@ -136,17 +142,17 @@ class LRUCache {
      * @param {object} entry - entry to remove
      * @return {undefined}
      */
-    _lruRemoveEntry(entry) {
+    _lruRemoveEntry(entry): undefined {
         /* eslint-disable no-param-reassign */
         if (entry._lruPrev) {
             entry._lruPrev._lruNext = entry._lruNext;
         } else {
-            this._lruHead = entry._lruNext;
+            this.lruHead = entry._lruNext;
         }
         if (entry._lruNext) {
             entry._lruNext._lruPrev = entry._lruPrev;
         } else {
-            this._lruTail = entry._lruPrev;
+            this.lruTail = entry._lruPrev;
         }
         /* eslint-enable no-param-reassign */
     }
@@ -157,11 +163,11 @@ class LRUCache {
      * @param {object} entry - cache entry to remove
      * @return {undefined}
      */
-    _removeEntry(entry) {
+    _removeEntry(entry: object): undefined {
         this._lruRemoveEntry(entry);
-        delete this._entryMap[entry.key];
-        this._entryCount -= 1;
+        delete this.entryMap[entry.key];
+        this.entryCount -= 1;
     }
 }
 
-module.exports = LRUCache;
+export default LRUCache;
