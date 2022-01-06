@@ -18,7 +18,7 @@ const writeOptions = { sync: true };
  * @param {String} message - the Error message.
  * @returns {Error} the Error object.
  */
-function propError(propName, message) {
+function propError(propName: string, message: string): Error {
     const err = new Error(message);
     err[propName] = true;
     return err;
@@ -36,6 +36,11 @@ class IndexTransaction {
      *
      * @returns {IndexTransaction} a new empty transaction
      */
+
+    operations: any[];
+    db: any;
+    closed: boolean;
+
     constructor(db) {
         this.operations = [];
         this.db = db;

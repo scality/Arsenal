@@ -6,7 +6,7 @@
  * @param {String} str - The string to compute the hash
  * @return {Number} The computed hash
  */
-function stringHash(str) {
+function stringHash(str: string): number {
     let hash = 5381;
     let i = str.length;
 
@@ -22,4 +22,4 @@ function stringHash(str) {
     return hash >>> 0;
 }
 
-module.exports = stringHash;
+export default stringHash;

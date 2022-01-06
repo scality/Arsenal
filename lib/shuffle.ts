@@ -1,6 +1,6 @@
 'use strict'; // eslint-disable-line strict
 
-const randomBytes = require('crypto').randomBytes;
+import { randomBytes } from 'crypto';
 
 /*
  * This set of function allows us to create an efficient shuffle
@@ -18,13 +18,13 @@ const randomBytes = require('crypto').randomBytes;
  * @return {number} the lowest number of bits
  * @throws Error if number < 0
  */
-function bitsNeeded(number) {
-    if (number < 0) {
+function bitsNeeded(num: number): number {
+    if (num < 0) {
         throw new Error('Input must be greater than or equal to zero');
-    } else if (number === 0) {
+    } else if (num === 0) {
         return 1;
     } else {
-        return Math.floor(Math.log2(number)) + 1;
+        return Math.floor(Math.log2(num)) + 1;
     }
 }
 
@@ -36,7 +36,7 @@ function bitsNeeded(number) {
  *  if numbits === 0
  * @throws Error if numBits < 0
  */
-function createMaskOnes(numBits) {
+function createMaskOnes(numBits: number): number {
     if (numBits < 0) {
         throw new Error('Input must be greater than or equal to zero');
     }
@@ -50,7 +50,7 @@ function createMaskOnes(numBits) {
  * @return {buffer} a InRangebuffer with 'howMany' pseudo-random bytes.
  * @throws Error if numBytes < 0 or if insufficient entropy
  */
-function nextBytes(numBytes) {
+function nextBytes(numBytes: number): Buffer {
     if (numBytes < 0) {
         throw new Error('Input must be greater than or equal to zero');
     }
@@ -67,7 +67,7 @@ function nextBytes(numBytes) {
  * @return {number} the number of bytes needed
  * @throws Error if numBits < 0
  */
-function bitsToBytes(numBits) {
+function bitsToBytes(numBits: number): number {
     if (numBits < 0) {
         throw new Error('Input must be greater than or equal to zero');
     }
@@ -83,7 +83,7 @@ function bitsToBytes(numBits) {
  * @return {number} - a pseudo-random integer in [min,max], undefined if
  *  min >= max
  */
-function randomRange(min, max) {
+function randomRange(min: number, max: number): number {
     if (max < min) {
         throw new Error('Invalid range');
     }
@@ -98,7 +98,7 @@ function randomRange(min, max) {
     // we use a mask as an optimization: it increases the chances for the
     // candidate to be in range
     const mask = createMaskOnes(bits);
-    let candidate;
+    let candidate: number;
     do {
         candidate = parseInt(nextBytes(bytes).toString('hex'), 16) & mask;
     } while (candidate > range);
@@ -111,7 +111,7 @@ function randomRange(min, max) {
  * @param {Array} array - Any type of array
  * @return {Array} - The sorted array
  */
-module.exports = function shuffle(array) {
+export default function shuffle<T>(array: T[]): T[] {
     for (let i = array.length - 1; i > 0; i--) {
         const randIndex = randomRange(0, i);
         /* eslint-disable no-param-reassign */

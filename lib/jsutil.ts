@@ -1,6 +1,8 @@
 'use strict'; // eslint-disable-line
 
-const debug = require('util').debuglog('jsutil');
+import { debuglog } from 'util';
+
+const debug = debuglog('jsutil');
 
 // JavaScript utility functions
 
@@ -17,9 +19,9 @@ const debug = require('util').debuglog('jsutil');
  * @return {function} a callable wrapper mirroring <tt>func</tt> but
  * only calls <tt>func</tt> at first invocation.
  */
-module.exports.once = function once(func) {
+export function once(func: Function): Function {
     const state = { called: false, res: undefined };
-    return function wrapper(...args) {
+    return function wrapper(...args: any) {
         if (!state.called) {
             state.called = true;
             state.res = func.apply(func, args);

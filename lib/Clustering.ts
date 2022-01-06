@@ -1,6 +1,7 @@
 'use strict'; // eslint-disable-line
 
-const cluster = require('cluster');
+import * as cluster from 'cluster';
+
 
 class Clustering {
     /**
@@ -12,20 +13,31 @@ class Clustering {
      * releasing ressources
      * @return {Clustering} itself
      */
-    constructor(size, logger, shutdownTimeout) {
-        this._size = size;
+    size: number;
+    shutdownTimeout: number;
+    logger: any; // TODO logger ???
+    shutdown: boolean;
+    workers: cluster.Worker[];
+    workersTimeout: NodeJS.Timeout[]; // TODO array of worker timeouts
+    workersStatus: number[];
+    status: number;
+    exitCb?: Function;
+    index?: number;
+
+    constructor(size: number, logger: any, shutdownTimeout=5000) {
         if (size < 1) {
             throw new Error('Cluster size must be greater than or equal to 1');
         }
-        this._shutdownTimeout = shutdownTimeout || 5000;
-        this._logger = logger;
-        this._shutdown = false;
-        this._workers = new Array(size).fill(undefined);
-        this._workersTimeout = new Array(size).fill(undefined);
-        this._workersStatus = new Array(size).fill(undefined);
-        this._status = 0;
-        this._exitCb = undefined; // Exit callback
-        this._index = undefined;
+        this.size = size;
+        this.shutdownTimeout = shutdownTimeout || 5000;
+        this.logger = logger;
+        this.shutdown = false;
+        this.workers = new Array(size).fill(undefined);
+        this.workersTimeout = new Array(size).fill(undefined);
+        this.workersStatus = new Array(size).fill(undefined);
+        this.status = 0;
+        this.exitCb = undefined; // Exit callback
+        this.index = undefined;
     }
 
     /**
@@ -34,23 +46,23 @@ class Clustering {
      * @private
      * @return {undefined}
      */
-    _afterStop() {
+    _afterStop(): undefined {
         // Asuming all workers shutdown gracefully
-        this._status = 0;
-        const size = this._size;
+        this.status = 0;
+        const size = this.size;
         for (let i = 0; i < size; ++i) {
             // If the process return an error code or killed by a signal,
             // set the status
-            if (typeof this._workersStatus[i] === 'number') {
-                this._status = this._workersStatus[i];
+            if (typeof this.workersStatus[i] === 'number') {
+                this.status = this.workersStatus[i];
                 break;
-            } else if (typeof this._workersStatus[i] === 'string') {
-                this._status = 1;
+            } else if (typeof this.workersStatus[i] === 'string') {
+                this.status = 1;
                 break;
             }
         }
-        if (this._exitCb) {
-            return this._exitCb(this);
+        if (this.exitCb) {
+            return this.exitCb(this);
         }
         return process.exit(this.getStatus());
     }
@@ -64,45 +76,47 @@ class Clustering {
      * @param {string} signal - Exit signal
      * @return {undefined}
      */
-    _workerExited(worker, i, code, signal) {
+    _workerExited(
+        worker: cluster.Worker, index: number, code: number, signal: number
+    ): undefined {
         // If the worker:
         //   - was killed by a signal
         //   - return an error code
         //   - or just stopped
         if (signal) {
-            this._logger.info('Worker killed by signal', {
+            this.logger.info('Worker killed by signal', {
                 signal,
-                id: i,
+                id: index,
                 childPid: worker.process.pid,
             });
-            this._workersStatus[i] = signal;
+            this.workersStatus[index] = signal;
         } else if (code !== 0) {
-            this._logger.error('Worker exit with code', {
+            this.logger.error('Worker exit with code', {
                 code,
-                id: i,
+                id: index,
                 childPid: worker.process.pid,
             });
-            this._workersStatus[i] = code;
+            this.workersStatus[index] = code;
         } else {
-            this._logger.info('Worker shutdown gracefully', {
-                id: i,
+            this.logger.info('Worker shutdown gracefully', {
+                id: index,
                 childPid: worker.process.pid,
             });
-            this._workersStatus[i] = undefined;
+            this.workersStatus[index] = undefined;
         }
-        this._workers[i] = undefined;
-        if (this._workersTimeout[i]) {
-            clearTimeout(this._workersTimeout[i]);
-            this._workersTimeout[i] = undefined;
+        this.workers[index] = undefined;
+        if (this.workersTimeout[index]) {
+            clearTimeout(this.workersTimeout[index]);
+            this.workersTimeout[index] = undefined;
         }
         // If we don't trigger the stop method, the watchdog
         // will autorestart the worker
-        if (this._shutdown === false) {
-            return process.nextTick(() => this.startWorker(i));
+        if (this.shutdown === false) {
+            return process.nextTick(() => this.startWorker(index));
         }
         // Check if an worker is still running
-        if (!this._workers.every(cur => cur === undefined)) {
-            return undefined;
+        if (!this.workers.every(cur => cur === undefined)) {
+            return;
         }
         return this._afterStop();
     }
@@ -113,26 +127,26 @@ class Clustering {
      * @param {number} i Index of the starting worker
      * @return {undefined}
      */
-    startWorker(i) {
+    startWorker(index: number): undefined {
         if (!cluster.isMaster) {
             return;
         }
         // Fork a new worker
-        this._workers[i] = cluster.fork();
+        this.workers[index] = cluster.fork();
         // Listen for message from the worker
-        this._workers[i].on('message', msg => {
+        this.workers[index].on('message', msg => {
             // If the worker is ready, send him his id
             if (msg === 'ready') {
-                this._workers[i].send({ msg: 'setup', id: i });
+                this.workers[index].send({ msg: 'setup', id: index });
             }
         });
-        this._workers[i].on('exit', (code, signal) =>
-            this._workerExited(this._workers[i], i, code, signal));
+        this.workers[index].on('exit', (code, signal) =>
+            this._workerExited(this.workers[index], index, code, signal));
         // Trigger when the worker was started
-        this._workers[i].on('online', () => {
-            this._logger.info('Worker started', {
-                id: i,
-                childPid: this._workers[i].process.pid,
+        this.workers[index].on('online', () => {
+            this.logger.info('Worker started', {
+                id: index,
+                childPid: this.workers[index].process.pid,
             });
         });
     }
@@ -143,8 +157,8 @@ class Clustering {
      * @param {function} cb - Callback(Clustering, [exitSignal])
      * @return {Clustering} Itself
      */
-    onExit(cb) {
-        this._exitCb = cb;
+    onExit(cb: Function): Clustering {
+        this.exitCb = cb;
         return this;
     }
 
@@ -155,21 +169,21 @@ class Clustering {
      * @param {function} cb - Callback to run the worker
      * @return {Clustering} itself
      */
-    start(cb) {
+    start(cb: Function): Clustering {
         process.on('SIGINT', () => this.stop('SIGINT'));
         process.on('SIGHUP', () => this.stop('SIGHUP'));
         process.on('SIGQUIT', () => this.stop('SIGQUIT'));
         process.on('SIGTERM', () => this.stop('SIGTERM'));
         process.on('SIGPIPE', () => {});
         process.on('exit', (code, signal) => {
-            if (this._exitCb) {
-                this._status = code || 0;
-                return this._exitCb(this, signal);
+            if (this.exitCb) {
+                this.status = code || 0;
+                return this.exitCb(this, signal);
             }
             return process.exit(code || 0);
         });
         process.on('uncaughtException', err => {
-            this._logger.fatal('caught error', {
+            this.logger.fatal('caught error', {
                 error: err.message,
                 stack: err.stack.split('\n').map(str => str.trim()),
             });
@@ -180,7 +194,7 @@ class Clustering {
             // know the id of the slave cluster
             process.on('message', msg => {
                 if (msg.msg === 'setup') {
-                    this._index = msg.id;
+                    this.index = msg.id;
                     cb(this);
                 }
             });
@@ -188,7 +202,7 @@ class Clustering {
             // the worker has started
             process.send('ready');
         } else {
-            for (let i = 0; i < this._size; ++i) {
+            for (let i = 0; i < this.size; ++i) {
                 this.startWorker(i);
             }
         }
@@ -200,8 +214,8 @@ class Clustering {
      *
      * @return {Cluster.Worker[]} Workers
      */
-    getWorkers() {
-        return this._workers;
+    getWorkers(): cluster.Worker[] {
+        return this.workers;
     }
 
     /**
@@ -209,8 +223,8 @@ class Clustering {
      *
      * @return {number} Status code
      */
-    getStatus() {
-        return this._status;
+    getStatus(): number {
+        return this.status;
     }
 
     /**
@@ -218,8 +232,8 @@ class Clustering {
      *
      * @return {boolean} - True if master, false otherwise
      */
-    isMaster() {
-        return this._index === undefined;
+    isMaster(): boolean {
+        return this.index === undefined;
     }
 
     /**
@@ -227,8 +241,8 @@ class Clustering {
      *
      * @return {number|undefined} Worker index, undefined if it's master
      */
-    getIndex() {
-        return this._index;
+    getIndex(): number {
+        return this.index;
     }
 
     /**
@@ -237,22 +251,22 @@ class Clustering {
      * @param {string} signal - Set internally when processes killed by signal
      * @return {undefined}
      */
-    stop(signal) {
+    stop(signal: string): undefined {
         if (!cluster.isMaster) {
-            if (this._exitCb) {
-                return this._exitCb(this, signal);
+            if (this.exitCb) {
+                return this.exitCb(this, signal);
             }
             return process.exit(0);
         }
-        this._shutdown = true;
-        return this._workers.forEach((worker, i) => {
+        this.shutdown = true;
+        return this.workers.forEach((worker, index) => {
             if (!worker) {
                 return undefined;
             }
-            this._workersTimeout[i] = setTimeout(() => {
+            this.workersTimeout[index] = setTimeout(() => {
                 // Kill the worker if the sigterm was ignored or take too long
                 process.kill(worker.process.pid, 'SIGKILL');
-            }, this._shutdownTimeout);
+            }, this.shutdownTimeout);
             // Send sigterm to the process, allowing to release ressources
             // and save some states
             return process.kill(worker.process.pid, 'SIGTERM');
@@ -260,4 +274,4 @@ class Clustering {
     }
 }
 
-module.exports = Clustering;
+export default Clustering;

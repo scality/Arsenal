@@ -1,4 +1,4 @@
-function reshapeExceptionError(error) {
+export function reshapeExceptionError(error: any) {
     const { message, code, stack, name } = error;
     return {
         message,
@@ -7,7 +7,3 @@ function reshapeExceptionError(error) {
         name,
     };
 }
-
-module.exports = {
-    reshapeExceptionError,
-};

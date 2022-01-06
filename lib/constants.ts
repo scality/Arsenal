@@ -1,5 +1,6 @@
 'use strict'; // eslint-disable-line strict
-const crypto = require('crypto');
+
+import { createHash } from 'crypto';
 
 // The min value here is to manage further backward compat if we
 // need it
@@ -10,7 +11,7 @@ const iamSecurityTokenPattern =
     new RegExp(`^[a-f0-9]{${iamSecurityTokenSizeMin},` +
         `${iamSecurityTokenSizeMax}}$`);
 
-module.exports = {
+export default {
     // info about the iam security token
     iamSecurityToken: {
         min: iamSecurityTokenSizeMin,
@@ -92,7 +93,7 @@ module.exports = {
     replicationBackends: { aws_s3: true, azure: true, gcp: true },
 
     // hex digest of sha256 hash of empty string:
-    emptyStringHash: crypto.createHash('sha256')
+    emptyStringHash: createHash('sha256')
         .update('', 'binary').digest('hex'),
     mpuMDStoredExternallyBackend: { aws_s3: true, gcp: true },
     // AWS sets a minimum size limit for parts except for the last part.
