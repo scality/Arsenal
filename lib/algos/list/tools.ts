@@ -1,4 +1,6 @@
-const { DbPrefixes } = require('../../versioning/constants').VersioningConstants;
+import { VersioningConstants } from '../../versioning/constants';
+
+const DbPrefixes = VersioningConstants.DbPrefixes;
 
 // constants for extensions
 const SKIP_NONE = undefined; // to be inline with the values of NextMarker
@@ -15,8 +17,8 @@ const FILTER_END = -1;
  * @param {Number} limit - The limit to respect
  * @return {Number} - The parsed number || limit
  */
-function checkLimit(number, limit) {
-    const parsed = Number.parseInt(number, 10);
+function checkLimit(str: string, limit: number): number {
+    const parsed = Number.parseInt(str, 10);
     const valid = !Number.isNaN(parsed) && (!limit || parsed <= limit);
     return valid ? parsed : limit;
 }
@@ -28,7 +30,7 @@ function checkLimit(number, limit) {
  * @return {string} - the incremented string
  *                    or the input if it is not valid
  */
-function inc(str) {
+function inc(str: string): string {
     return str ? (str.slice(0, str.length - 1) +
             String.fromCharCode(str.charCodeAt(str.length - 1) + 1)) : str;
 }
@@ -40,7 +42,7 @@ function inc(str) {
  * @param {object} v0params - listing parameters for v0 format
  * @return {object} - listing parameters for v1 format
  */
-function listingParamsMasterKeysV0ToV1(v0params) {
+function listingParamsMasterKeysV0ToV1(v0params: any): any {
     const v1params = Object.assign({}, v0params);
     if (v0params.gt !== undefined) {
         v1params.gt = `${DbPrefixes.Master}${v0params.gt}`;
@@ -59,7 +61,7 @@ function listingParamsMasterKeysV0ToV1(v0params) {
     return v1params;
 }
 
-module.exports = {
+export {
     checkLimit,
     inc,
     listingParamsMasterKeysV0ToV1,

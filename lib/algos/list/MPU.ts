@@ -1,15 +1,36 @@
 'use strict'; // eslint-disable-line strict
 
-const { inc, checkLimit, listingParamsMasterKeysV0ToV1,
-        FILTER_END, FILTER_ACCEPT } = require('./tools');
+import { inc, checkLimit, listingParamsMasterKeysV0ToV1,
+         FILTER_END, FILTER_ACCEPT } from './tools';
+import { VersioningConstants as VSConst} from '../../versioning/constants';
+
 const DEFAULT_MAX_KEYS = 1000;
-const VSConst = require('../../versioning/constants').VersioningConstants;
 const { DbPrefixes, BucketVersioningKeyFormat } = VSConst;
 
-function numberDefault(num, defaultNum) {
+function numberDefault(num: string, defaultNum: number): number {
     const parsedNum = Number.parseInt(num, 10);
     return Number.isNaN(parsedNum) ? defaultNum : parsedNum;
 }
+
+
+interface MPUParams {
+    delimiter: any;
+    splitter: any;
+    prefix: any; // TODO type
+    uploadIdMarker: any; // TODO type
+    maxKeys: string;
+    queryPrefixLength: string;
+    keyMarker?: any; // TODO type
+}
+
+
+interface V0Params {
+    gt?: string;
+    gte?: string;
+    lt?: string;
+    lte?: string;
+}
+
 
 /**
  *  Class for the MultipartUploads extension
@@ -23,7 +44,22 @@ class MultipartUploads {
      *  @param {String} [vFormat] - versioning key format
      *  @return {undefined}
      */
-    constructor(params, logger, vFormat) {
+    params: MPUParams; // TODO param type
+    vFormat: string; // TODO vFormat type
+    CommonPrefixes: any[]; // TODO commonPrefixes type
+    Uploads: any[]; // TODO type
+    IsTruncated: boolean;
+    NextKeyMarker: string;
+    NextUploadIdMarker: string;
+    prefixLength: number;
+    queryPrefixLength: number;
+    keys: number;
+    maxKeys: number;
+    delimiter: any; // TODO type
+    splitter: any; // TODO type
+    logger: any // TODO type
+
+    constructor(params: MPUParams, logger: any, vFormat: string) {
         this.params = params;
         this.vFormat = vFormat || BucketVersioningKeyFormat.v0;
         this.CommonPrefixes = [];
@@ -51,8 +87,8 @@ class MultipartUploads {
         }[this.vFormat]);
     }
 
-    genMDParamsV0() {
-        const params = {};
+    genMDParamsV0(): V0Params {
+        const params: V0Params = {};
         if (this.params.keyMarker) {
             params.gt = `overview${this.params.splitter}` +
                 `${this.params.keyMarker}${this.params.splitter}`;
@@ -85,7 +121,7 @@ class MultipartUploads {
      *  @param {String} value - The value of the key
      *  @return {undefined}
      */
-    addUpload(value) {
+    addUpload(value: string): undefined {
         const tmp = JSON.parse(value);
         this.Uploads.push({
             key: tmp.key,
@@ -114,7 +150,7 @@ class MultipartUploads {
      *  @param {String} commonPrefix - The commonPrefix to add
      *  @return {undefined}
      */
-    addCommonPrefix(commonPrefix) {
+    addCommonPrefix(commonPrefix: string): undefined {
         if (this.CommonPrefixes.indexOf(commonPrefix) === -1) {
             this.CommonPrefixes.push(commonPrefix);
             this.NextKeyMarker = commonPrefix;
@@ -122,11 +158,11 @@ class MultipartUploads {
         }
     }
 
-    getObjectKeyV0(obj) {
+    getObjectKeyV0(obj: any) { // TODO this is an Upload value
         return obj.key;
     }
 
-    getObjectKeyV1(obj) {
+    getObjectKeyV1(obj: any) { // TODO this is an Upload value
         return obj.key.slice(DbPrefixes.Master.length);
     }
 
@@ -135,14 +171,14 @@ class MultipartUploads {
      *  @param {String} obj - The key and value of the element
      *  @return {number} - > 0: Continue, < 0: Stop
      */
-    filter(obj) {
+    filter(obj: any): number {
         // Check first in case of maxkeys = 0
         if (this.keys >= this.maxKeys) {
             // In cases of maxKeys <= 0 => IsTruncated = false
             this.IsTruncated = this.maxKeys > 0;
             return FILTER_END;
         }
-        const key = this.getObjectKey(obj);
+        const key = this.getObjectKey(obj); // TODO this is actually valid - see ctor
         const value = obj.value;
         if (this.delimiter) {
             const mpuPrefixSlice = `overview${this.splitter}`.length;
@@ -162,7 +198,7 @@ class MultipartUploads {
         return FILTER_ACCEPT;
     }
 
-    skipping() {
+    skipping(): string {
         return '';
     }
 
@@ -170,7 +206,7 @@ class MultipartUploads {
      *  Returns the formatted result
      *  @return {Object} - The result.
      */
-    result() {
+    result(): object {
         return {
             CommonPrefixes: this.CommonPrefixes,
             Uploads: this.Uploads,
@@ -183,6 +219,7 @@ class MultipartUploads {
     }
 }
 
-module.exports = {
+export {
     MultipartUploads,
-};
+    MPUParams
+}

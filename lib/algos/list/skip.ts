@@ -1,9 +1,14 @@
-const assert = require('assert');
+import { strict as assert } from 'assert';
 
-const { FILTER_END, FILTER_SKIP, SKIP_NONE } = require('./tools');
+import { FILTER_END, FILTER_SKIP, SKIP_NONE } from './tools';
 
 
 const MAX_STREAK_LENGTH = 100;
+
+interface SkipParams {
+    extension: any;
+    gte: any;
+}
 
 /**
  * Handle the filtering and the skip mechanism of a listing result.
@@ -15,14 +20,23 @@ class Skip {
      * @param {String} params.gte       - current range gte (greater than or
      *                                    equal) used by the client code
      */
-    constructor(params) {
+
+    extension: any;
+    gteParams: any;
+    listingEndCb?: Function;
+    skipRangeCb?: Function;
+    streakLength: number;
+
+    constructor(params: SkipParams) {
+        // TODO - once we're in strict TS everywhere, we no longer need these
+        //        assertions
         assert(params.extension);
 
         this.extension = params.extension;
         this.gteParams = params.gte;
 
-        this.listingEndCb = null;
-        this.skipRangeCb = null;
+        this.listingEndCb = undefined;
+        this.skipRangeCb = undefined;
 
         /* Used to count consecutive FILTER_SKIP returned by the extension
          * filter method. Once this counter reaches MAX_STREAK_LENGTH, the
@@ -31,11 +45,11 @@ class Skip {
         this.streakLength = 0;
     }
 
-    setListingEndCb(cb) {
+    setListingEndCb(cb: Function) {
         this.listingEndCb = cb;
     }
 
-    setSkipRangeCb(cb) {
+    setSkipRangeCb(cb: Function) {
         this.skipRangeCb = cb;
     }
 
@@ -47,9 +61,9 @@ class Skip {
      * This function calls the listing end or the skip range callbacks if
      * needed.
      */
-    filter(entry) {
-        assert(this.listingEndCb);
-        assert(this.skipRangeCb);
+    filter(entry: object): undefined {
+        assert(this.listingEndCb !== undefined);
+        assert(this.skipRangeCb !== undefined);
 
         const filteringResult = this.extension.filter(entry);
         const skippingRange = this.extension.skipping();
@@ -73,7 +87,7 @@ class Skip {
         }
     }
 
-    _inc(str) {
+    _inc(str: string): string {
         if (!str) {
             return str;
         }
@@ -84,5 +98,7 @@ class Skip {
     }
 }
 
-
-module.exports = Skip;
+export {
+    Skip,
+    SkipParams
+}
