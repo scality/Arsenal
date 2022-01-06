@@ -1,7 +1,6 @@
 export default {
     auth: require('./lib/auth/auth'),
     constants: require('./lib/constants'),
-    db: require('./lib/db'),
     errors: require('./lib/errors'),
     errorUtils: require('./lib/errorUtils'),
     shuffle: require('./lib/shuffle'),
