@@ -1,6 +1,6 @@
 'use strict'; // eslint-disable-line strict
 
-const { FILTER_SKIP, SKIP_NONE } = require('./tools');
+import { FILTER_SKIP, SKIP_NONE } from './tools';
 
 // Use a heuristic to amortize the cost of JSON
 // serialization/deserialization only on largest metadata where the
@@ -31,7 +31,13 @@ class Extension {
      * @param {RequestLogger} logger - the logger
      * @constructor
      */
-    constructor(parameters, logger) {
+
+    parameters: any;
+    logger: any;
+    res: any;
+    keys: number;
+
+    constructor(parameters: any, logger: any) {
         // inputs
         this.parameters = parameters;
         this.logger = logger;
@@ -51,7 +57,7 @@ class Extension {
      * heavy unused fields, or left untouched (depending on size
      * heuristics)
      */
-    trimMetadata(value) {
+    trimMetadata(value: string): string {
         let ret = undefined;
         if (value.length >= TRIM_METADATA_MIN_BLOB_SIZE) {
             try {
@@ -81,7 +87,7 @@ class Extension {
      *
      * @return {object} - listing parameters for metadata
      */
-    genMDParams() {
+    genMDParams(): object {
         return {};
     }
 
@@ -96,7 +102,7 @@ class Extension {
      *                    = 0: entry is accepted but not included (skipping)
      *                    < 0: entry is not accepted, listing should finish
      */
-    filter(entry) {
+    filter(entry: any): number {
         return entry ? FILTER_SKIP : FILTER_SKIP;
     }
 
@@ -108,7 +114,7 @@ class Extension {
      * @return {string} - the insight: a common prefix or a master key,
      *                                 or SKIP_NONE if there is no insight
      */
-    skipping() {
+    skipping(): string {
         return SKIP_NONE;
     }
 
@@ -116,9 +122,9 @@ class Extension {
      * Get the listing resutls. Format depends on derivatives' specific logic.
      * @return {Array} - The listed elements
      */
-    result() {
+    result(): any[] {
         return this.res;
     }
 }
 
-module.exports.default = Extension;
+export default Extension;
