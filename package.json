@@ -1,7 +1,7 @@
 {
   "name": "arsenal",
   "engines": {
-    "node": ">=6.9.5"
+    "node": ">=16"
   },
   "version": "7.4.12",
   "description": "Common utilities for the S3 project components",
