@@ -103,6 +103,8 @@ describe('ObjectMD class setters/getters', () => {
             dataStoreVersionId: '',
         }],
         ['DataStoreName', null, ''],
+        ['IsAborted', null, undefined],
+        ['IsAborted', true],
     ].forEach(test => {
         const property = test[0];
         const testValue = test[1];
@@ -319,7 +321,9 @@ describe('getAttributes static method', () => {
             'replicationInfo': true,
             'dataStoreName': true,
             'last-modified': true,
-            'md-model-version': true };
+            'md-model-version': true,
+            'isAborted': true,
+        };
         assert.deepStrictEqual(attributes, expectedResult);
     });
 });
