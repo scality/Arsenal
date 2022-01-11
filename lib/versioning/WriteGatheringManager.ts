@@ -6,7 +6,11 @@ const WG_TIMEOUT = 5; // batching period in milliseconds
  * from operations targeting the same database.
  */
 class WriteGatheringManager {
-    constructor(db) {
+
+    db: any; // TODO type
+    dbState: object; // TODO type
+
+    constructor(db: any) {
         this.db = db;
         this.dbState = {};
     }
@@ -21,11 +25,11 @@ class WriteGatheringManager {
      * @param {function} callback - callback function: callback(error, value)
      * @return {any} - to finish the call
      */
-    get(request, logger, callback) {
+    get(request: object, logger: object, callback: Function): any {
         return this.db.get(request, logger, callback);
     }
 
-    list(request, logger, callback) {
+    list(request: object, logger: object, callback: Function) {
         return this.db.list(request, logger, callback);
     }
 
@@ -39,7 +43,7 @@ class WriteGatheringManager {
      * @param {function} callback - callback(err)
      * @return {WriteGatheringManager} - return this
      */
-    batch(request, logger, callback) {
+    batch(request: object, logger: object, callback: Function): WriteGatheringManager {
         const { db, array } = request;
         if (this.dbState[db] === undefined) {
             this.dbState[db] = { db, isCommitting: false };
@@ -55,7 +59,7 @@ class WriteGatheringManager {
             };
         }
         const bCache = dbState.batchCache;
-        array.forEach((entry, index) => {
+        array.forEach((entry: any, index: number) => {
             bCache.batch.push(entry);
             bCache.uids.push(logger.getSerializedUids());
             bCache.callback.push(index ? null : callback);
@@ -69,7 +73,7 @@ class WriteGatheringManager {
      * @param {string} db - Name of the database
      * @return {any} - to finish the call
      */
-    _commitBatch(db) {
+    _commitBatch(db: string): any {
         const dbState = this.dbState[db];
         const bCache = dbState.batchCache;
         // do nothing if no batch to replicate
@@ -124,7 +128,7 @@ class WriteGatheringManager {
      * @param {object} batch - the committed batch
      * @return {undefined} - nothing
      */
-    _batchCommitted(error, batch) {
+    _batchCommitted(error: object, batch: object): undefined {
         batch.callback.forEach(callback => {
             if (callback) {
                 callback(error);
@@ -133,4 +137,4 @@ class WriteGatheringManager {
     }
 }
 
-module.exports = WriteGatheringManager;
+export default WriteGatheringManager;

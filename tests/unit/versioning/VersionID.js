@@ -1,4 +1,4 @@
-const VID = require('../../../lib/versioning/VersionID.js');
+const VID = require('../../../lib/versioning/VersionID');
 const assert = require('assert');
 
 function randkey(length) {

@@ -1,4 +1,4 @@
-module.exports.VersioningConstants = {
+const VersioningConstants = {
     VersionId: {
         Separator: '\0',
     },
@@ -16,3 +16,5 @@ module.exports.VersioningConstants = {
         v1: 'v1',
     },
 };
+
+export { VersioningConstants };

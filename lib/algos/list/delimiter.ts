@@ -1,9 +1,9 @@
 'use strict'; // eslint-disable-line strict
 
-const Extension = require('./Extension');
-const { inc, listingParamsMasterKeysV0ToV1,
-        FILTER_END, FILTER_ACCEPT, FILTER_SKIP } = require('./tools');
-const VSConst = require('../../versioning/constants').VersioningConstants;
+import { Extension } from './Extension';
+import { inc, listingParamsMasterKeysV0ToV1,
+        FILTER_END, FILTER_ACCEPT, FILTER_SKIP } from './tools';
+import { VersioningConstants as VSConst } from '../../versioning/constants';
 const { DbPrefixes, BucketVersioningKeyFormat } = VSConst;
 
 /**
@@ -14,9 +14,40 @@ const { DbPrefixes, BucketVersioningKeyFormat } = VSConst;
  * @param {Number} delimiterIndex - 'folder' index in the path
  * @return {String}               - CommonPrefix
  */
-function getCommonPrefix(key, delimiter, delimiterIndex) {
+function getCommonPrefix(
+    key: string, delimiter: string, delimiterIndex: number
+): string {
     return key.substring(0, delimiterIndex + delimiter.length);
 }
+
+
+interface DelimiterParams {
+    delimiter: string;
+    prefix: string;
+    marker: string;
+    maxKeys: number;
+    v2: boolean;
+    startAfter: string;
+    continuationToken: string;
+    alphabeticalOrder: boolean;
+}
+
+
+interface DelimiterContentItem {
+    key: string;
+    value: string;
+}
+
+
+interface DelimiterResult {
+    CommonPrefixes: string[];
+    Contents: DelimiterContentItem[]; // TODO type this.Contents,
+    IsTruncated: boolean;
+    Delimiter: string;
+    NextMarker?: any; // TODO type
+    NextContinuationToken?: any; // TODO type
+}
+
 
 /**
  * Handle object listing with parameters
@@ -55,7 +86,25 @@ class Delimiter extends Extension {
      *                                                   request
      * @param {String} [vFormat]                       - versioning key format
      */
-    constructor(parameters, logger, vFormat) {
+
+    delimiter: string;
+    prefix: string;
+    marker: string;
+    maxKeys: number;
+    startAfter: string;
+    continuationToken: string;
+    alphabeticalOrder: boolean;
+    vFormat: string;
+    CommonPrefixes: string[];
+    Contents: DelimiterContentItem[];
+    IsTruncated: boolean;
+    NextMarker: string;
+    NextContinuationToken: string;
+    startMarker: string;
+    continueMarker: string;
+    nextContinueMarker: string;
+
+    constructor(parameters: DelimiterParams, logger: any, vFormat: string) {
         super(parameters, logger);
         // original listing parameters
         this.delimiter = parameters.delimiter;
@@ -134,7 +183,7 @@ class Delimiter extends Extension {
      * final state of the result if it is the case
      * @return {Boolean} - indicates if the iteration has to stop
      */
-    _reachedMaxKeys() {
+    _reachedMaxKeys(): boolean {
         if (this.keys >= this.maxKeys) {
             // In cases of maxKeys <= 0 -> IsTruncated = false
             this.IsTruncated = this.maxKeys > 0;
@@ -151,7 +200,7 @@ class Delimiter extends Extension {
      *  @param {String} value - The value of the key
      *  @return {number}      - indicates if iteration should continue
      */
-    addContents(key, value) {
+    addContents(key: string, value: string): number {
         if (this._reachedMaxKeys()) {
             return FILTER_END;
         }
@@ -180,7 +229,7 @@ class Delimiter extends Extension {
      *  @param {String} obj.value - The value of the element
      *  @return {number}          - indicates if iteration should continue
      */
-    filter(obj) {
+    filter(obj): number {
         const key = this.getObjectKey(obj);
         const value = obj.value;
         if ((this.prefix && !key.startsWith(this.prefix))
@@ -206,7 +255,7 @@ class Delimiter extends Extension {
      * @param {Number} index - after prefix starting point
      * @return {Boolean}     - indicates if iteration should continue
      */
-    addCommonPrefix(key, index) {
+    addCommonPrefix(key: string, index: number) {
         const commonPrefix = getCommonPrefix(key, this.delimiter, index);
         if (this.CommonPrefixes.indexOf(commonPrefix) === -1
                 && this[this.nextContinueMarker] !== commonPrefix) {
@@ -228,7 +277,7 @@ class Delimiter extends Extension {
      * @return {string} - the present range (NextMarker) if repd believes
      *                    that it's enough and should move on
      */
-    skippingV0() {
+    skippingV0(): string {
         return this[this.nextContinueMarker];
     }
 
@@ -239,7 +288,7 @@ class Delimiter extends Extension {
      * @return {string} - the present range (NextMarker) if repd believes
      *                    that it's enough and should move on
      */
-    skippingV1() {
+    skippingV1(): string {
         return DbPrefixes.Master + this[this.nextContinueMarker];
     }
 
@@ -249,12 +298,12 @@ class Delimiter extends Extension {
      *  isn't truncated
      *  @return {Object} - following amazon format
      */
-    result() {
+    result(): DelimiterResult {
         /* NextMarker is only provided when delimiter is used.
          * specified in v1 listing documentation
          * http://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketGET.html
          */
-        const result = {
+        const result: DelimiterResult = {
             CommonPrefixes: this.CommonPrefixes,
             Contents: this.Contents,
             IsTruncated: this.IsTruncated,
@@ -271,4 +320,4 @@ class Delimiter extends Extension {
     }
 }
 
-module.exports = { Delimiter };
+export { Delimiter, DelimiterParams };

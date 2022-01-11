@@ -100,6 +100,8 @@ class ArsenalError extends Error {
 
 const errors = ArsenalError.errorMap
 
+export type { ArsenalError };
+
 export default {
     ...errors
 };

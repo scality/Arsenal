@@ -22,7 +22,7 @@ const TRIM_METADATA_MIN_BLOB_SIZE = 10000;
 /**
  *  Base class of listing extensions.
  */
-class Extension {
+export class Extension {
     /**
      * This takes a list of parameters and a logger as the inputs.
      * Derivatives should have their own format regarding parameters.
@@ -122,9 +122,7 @@ class Extension {
      * Get the listing resutls. Format depends on derivatives' specific logic.
      * @return {Array} - The listed elements
      */
-    result(): any[] {
+    result(): any {
         return this.res;
     }
 }
-
-export default Extension;

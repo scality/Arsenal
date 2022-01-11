@@ -1,10 +1,12 @@
-const errors = require('../errors');
-const Version = require('./Version').Version;
-
-const genVID = require('./VersionID').generateVersionId;
+import errors from '../errors';
+import { Version } from './Version';
+import type WriteCache from './WriteCache';
+import type WriteGatheringManager from './WriteGatheringManager';
+import { generateVersionId as genVID } from './VersionID';
 
 // some predefined constants
-const VID_SEP = require('./constants').VersioningConstants.VersionId.Separator;
+import { VersioningConstants } from './constants';
+const VID_SEP = VersioningConstants.VersionId.Separator;
 
 /**
  * Increment the charCode of the last character of a valid string.
@@ -12,7 +14,7 @@ const VID_SEP = require('./constants').VersioningConstants.VersionId.Separator;
  * @param {string} prefix - the input string
  * @return {string} - the incremented string, or the input if it is not valid
  */
-function getPrefixUpperBoundary(prefix) {
+function getPrefixUpperBoundary(prefix: string): string {
     if (prefix) {
         return prefix.slice(0, prefix.length - 1) +
             String.fromCharCode(prefix.charCodeAt(prefix.length - 1) + 1);
@@ -20,18 +22,34 @@ function getPrefixUpperBoundary(prefix) {
     return prefix;
 }
 
-function formatVersionKey(key, versionId) {
+function formatVersionKey(key: string, versionId: string): string {
     return `${key}${VID_SEP}${versionId}`;
 }
 
-function formatCacheKey(db, key) {
+function formatCacheKey(db: string, key: string): string {
     // using double VID_SEP to make sure the cache key is unique
     return `${db}${VID_SEP}${VID_SEP}${key}`;
 }
 
 const VID_SEPPLUS = getPrefixUpperBoundary(VID_SEP);
 
+
+interface RepairHints {
+    type: string;
+    value: string;
+    nextValue: string;
+}
+
+
 class VersioningRequestProcessor {
+
+    writeCache: WriteCache;
+    wgm: WriteGatheringManager;
+    replicationGroupId: any// TODO
+    uidCounter: number;
+    queue: object;
+    repairing: object;
+
     /**
      * This class takes a random string generator as additional input.
      * @param {WriteCache} writeCache - the WriteCache to which this
@@ -43,7 +61,11 @@ class VersioningRequestProcessor {
      * @param {string} versioning.replicationGroupId - replication group id
      * @constructor
      */
-    constructor(writeCache, writeGatheringManager, versioning) {
+    constructor(
+        writeCache: WriteCache,
+        writeGatheringManager: WriteGatheringManager,
+        versioning: object
+    ) {
         this.writeCache = writeCache;
         this.wgm = writeGatheringManager;
         this.replicationGroupId = versioning.replicationGroupId;
@@ -69,13 +91,13 @@ class VersioningRequestProcessor {
      * @param {function} callback - callback function
      * @return {any} - to finish the call
      */
-    get(request, logger, callback) {
+    get(request: object, logger: object, callback: Function) {
         const { db, key, options } = request;
         if (options && options.versionId) {
             const versionKey = formatVersionKey(key, options.versionId);
             return this.wgm.get({ db, key: versionKey }, logger, callback);
         }
-        return this.wgm.get(request, logger, (err, data) => {
+        return this.wgm.get(request, logger, (err: Error, data) => {
             if (err) {
                 return callback(err);
             }
@@ -103,7 +125,7 @@ class VersioningRequestProcessor {
      * @param {function} callback - callback function
      * @return {any} - to finish the call
      */
-    getByListing(request, logger, callback) {
+    getByListing(request: object, logger: object, callback: Function): any {
         // enqueue the get entry; do nothing if another is processing it
         // this is to manage the number of expensive listings when there
         // are multiple concurrent gets on the same key which is a PHD version
@@ -156,7 +178,7 @@ class VersioningRequestProcessor {
      * @param {function} callback - callback function
      * @return {boolean} - this request is the first in the queue or not
      */
-    enqueueGet(request, logger, callback) {
+    enqueueGet(request: object, logger: object, callback: Function): boolean {
         const cacheKey = formatCacheKey(request.db, request.key);
         // enqueue the get entry if another is processing it
         if (this.queue[cacheKey]) {
@@ -179,7 +201,7 @@ class VersioningRequestProcessor {
      * @param {string} value - resulting value of the first request
      * @return {undefined}
      */
-    dequeueGet(request, err, value) {
+    dequeueGet(request: object, err: object, value: string): undefined {
         const cacheKey = formatCacheKey(request.db, request.key);
         if (this.queue[cacheKey]) {
             this.queue[cacheKey].forEach(entry => {
@@ -208,7 +230,7 @@ class VersioningRequestProcessor {
          (for 'put')
      * @return {any} - to finish the call
      */
-    repairMaster(request, logger, hints) {
+    repairMaster(request: object, logger: object, hints: RepairHints): any {
         const { db, key } = request;
         logger.info('start repair process', { request });
         this.writeCache.get({ db, key }, logger, (err, value) => {
@@ -248,7 +270,7 @@ class VersioningRequestProcessor {
      * @param {function} callback - expect callback(err, data)
      * @return {any} - to finish the call
      */
-    put(request, logger, callback) {
+    put(request: object, logger: object, callback: Function): any {
         const { db, key, value, options } = request;
         // valid combinations of versioning options:
         // - !versioning && !versionId: normal non-versioning put
@@ -318,7 +340,7 @@ class VersioningRequestProcessor {
      * @param {function} callback - expect callback(err, batch, versionId)
      * @return {any} - to finish the call
      */
-    processVersionSpecificPut(request, logger, callback) {
+    processVersionSpecificPut(request: object, logger: object, callback: Function): any {
         const { db, key } = request;
         // versionId is empty: update the master version
         if (request.options.versionId === '') {
@@ -347,7 +369,7 @@ class VersioningRequestProcessor {
     }
 
 
-    del(request, logger, callback) {
+    del(request: object, logger: object, callback: Function) {
         const { db, key, options } = request;
         // no versioning or versioning configuration off
         if (!(options && options.versionId)) {
@@ -379,7 +401,9 @@ class VersioningRequestProcessor {
      * @param {function} callback - expect callback(err, batch, versionId)
      * @return {any} - to finish the call
      */
-    processVersionSpecificDelete(request, logger, callback) {
+    processVersionSpecificDelete(
+        request: object, logger: object, callback: Function
+    ): any {
         const { db, key, options } = request;
         // deleting a specific version
         this.writeCache.get({ db, key }, logger, (err, data) => {
@@ -406,4 +430,4 @@ class VersioningRequestProcessor {
     }
 }
 
-module.exports = VersioningRequestProcessor;
+export default VersioningRequestProcessor;

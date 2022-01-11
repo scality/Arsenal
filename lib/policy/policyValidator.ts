@@ -1,9 +1,10 @@
 'use strict'; // eslint-disable-line strict
 
-const Ajv = require('ajv');
-const userPolicySchema = require('./userPolicySchema');
-const resourcePolicySchema = require('./resourcePolicySchema');
-const errors = require('../errors');
+import Ajv from 'ajv';
+import * as userPolicySchema from './userPolicySchema.json';
+import * as resourcePolicySchema from './resourcePolicySchema.json';
+import errors from '../errors';
+import type { ArsenalError } from '../errors';
 
 const ajValidate = new Ajv({ allErrors: true });
 ajValidate.addMetaSchema(require('ajv/lib/refs/json-schema-draft-06.json'));
@@ -27,7 +28,7 @@ const errDict = {
 };
 
 // parse ajv errors and return early with the first relevant error
-function _parseErrors(ajvErrors, policyType) {
+function _parseErrors(ajvErrors: Ajv.ErrorObject[], policyType: string) {
     let parsedErr;
     if (policyType === 'user') {
         // deep copy is needed as we have to assign custom error description
@@ -67,7 +68,7 @@ function _parseErrors(ajvErrors, policyType) {
 }
 
 // parse JSON safely without throwing an exception
-function _safeJSONParse(s) {
+function _safeJSONParse(s: string): object {
     try {
         return JSON.parse(s);
     } catch (e) {
@@ -75,9 +76,20 @@ function _safeJSONParse(s) {
     }
 }
 
+/**
+ * @typedef ValidationResult
+ * @type Object
+ * @property {Array|null} error - list of validation errors or null
+ * @property {Bool} valid - true/false depending on the validation result
+ */
+interface ValidationResult {
+    error: ArsenalError;
+    valid: boolean;
+}
+
 // validates policy using the validation schema
-function _validatePolicy(type, policy) {
-    if (type === 'user') {
+function _validatePolicy(policyType: string, policy: string): ValidationResult {
+    if (policyType === 'user') {
         const parseRes = _safeJSONParse(policy);
         if (parseRes instanceof Error) {
             return { error: Object.assign({}, errors.MalformedPolicyDocument),
@@ -90,7 +102,7 @@ function _validatePolicy(type, policy) {
         }
         return { error: null, valid: true };
     }
-    if (type === 'resource') {
+    if (policyType === 'resource') {
         const parseRes = _safeJSONParse(policy);
         if (parseRes instanceof Error) {
             return { error: Object.assign({}, errors.MalformedPolicy),
@@ -105,19 +117,14 @@ function _validatePolicy(type, policy) {
     }
     return { error: errors.NotImplemented, valid: false };
 }
-/**
-* @typedef ValidationResult
-* @type Object
-* @property {Array|null} error - list of validation errors or null
-* @property {Bool} valid - true/false depending on the validation result
-*/
+
 /**
 * Validates user policy
 * @param {String} policy - policy json
 * @returns {Object} - returns object with properties error and value
 * @returns {ValidationResult} - result of the validation
 */
-function validateUserPolicy(policy) {
+function validateUserPolicy(policy: string): ValidationResult {
     return _validatePolicy('user', policy);
 }
 
@@ -127,11 +134,11 @@ function validateUserPolicy(policy) {
 * @returns {Object} - returns object with properties error and value
 * @returns {ValidationResult} - result of the validation
 */
-function validateResourcePolicy(policy) {
+function validateResourcePolicy(policy: string): ValidationResult {
     return _validatePolicy('resource', policy);
 }
 
-module.exports = {
+export {
     validateUserPolicy,
     validateResourcePolicy,
 };

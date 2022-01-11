@@ -1,6 +1,7 @@
 'use strict'; // eslint-disable-line
 
-const errors = require('../errors');
+import errors from '../errors';
+import type WriteGatheringManager from './WriteGatheringManager'
 
 function formatCacheKey(db, key) {
     return `${db}\0\0${key}`;
@@ -25,7 +26,13 @@ function formatCacheKey(db, key) {
  * remains only until the write is done and no other update is using it.
  */
 class WriteCache {
-    constructor(wgm) {
+
+    wgm: WriteGatheringManager;
+    cache: object;
+    queue: object;
+    counter: number;
+
+    constructor(wgm: WriteGatheringManager) {
         this.wgm = wgm;
         // internal state
         this.cache = {};
@@ -43,7 +50,7 @@ class WriteCache {
      * @param {function} callback - callback function: callback(error, value)
      * @return {any} - to finish the call
      */
-    get(request, logger, callback) {
+    get(request: object, logger: object, callback: Function): any {
         const { db, key } = request;
 
         const cacheKey = formatCacheKey(db, key);
@@ -60,7 +67,7 @@ class WriteCache {
             return null;
         }
         // no other is in progress, get the key from the database
-        return this.wgm.get(request, logger, (err, value) => {
+        return this.wgm.get(request, logger, (err: Error, value: any) => {
             // answer all the queued requests
             this._dequeue(cacheKey, signature, err, value);
         });
@@ -75,7 +82,7 @@ class WriteCache {
      *                    entry in the queue (which will do the get from the
      *                    database), undefined otherwise
      */
-    _enqueue(cacheKey, callback) {
+    _enqueue(cacheKey: string, callback: Function) {
         if (this.queue[cacheKey]) {
             this.queue[cacheKey].queue.push(callback);
             return undefined;
@@ -94,7 +101,9 @@ class WriteCache {
      * @param {boolean} force - force dequeuing even on signature mismatch
      * @return {undefined} - nothing
      */
-    _dequeue(cacheKey, signature, err, value, force = false) {
+    _dequeue(
+        cacheKey: string, signature: number, err: object, value: string, force = false
+    ): undefined {
         if (this.queue[cacheKey] === undefined) {
             return;
         }
@@ -139,7 +148,7 @@ class WriteCache {
      * @param {function} callback - asynchronous callback of the call
      * @return {undefined}
      */
-    batch(request, logger, callback) {
+    batch(request: object, logger: object, callback: Function): undefined {
         const { db, array } = request;
         const signature = this._cacheWrite(db, array);
         this.wgm.batch(request, logger, (err, data) => {
@@ -159,7 +168,7 @@ class WriteCache {
      * @param {object} array - batch operation to apply on the database
      * @return {string} - signature of the request
      */
-    _cacheWrite(db, array) {
+    _cacheWrite(db: string, array: object): string {
         const signature = this.counter++;
         array.forEach(entry => {
             const cacheKey = formatCacheKey(db, entry.key);
@@ -177,7 +186,7 @@ class WriteCache {
      * @param {string} signature - signature if temporarily cached
      * @return {undefined}
      */
-    _cacheClear(db, array, signature) {
+    _cacheClear(db: string, array: object, signature: string): undefined {
         array.forEach(entry => {
             const key = formatCacheKey(db, entry.key);
             if (this.cache[key] && this.cache[key].signature === signature) {
@@ -190,4 +199,4 @@ class WriteCache {
     }
 }
 
-module.exports = WriteCache;
+export default WriteCache;

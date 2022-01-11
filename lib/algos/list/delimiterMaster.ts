@@ -1,10 +1,11 @@
 'use strict'; // eslint-disable-line strict
 
-const Delimiter = require('./delimiter').Delimiter;
-const Version = require('../../versioning/Version').Version;
-const VSConst = require('../../versioning/constants').VersioningConstants;
+import { Delimiter } from './delimiter';
+import type { DelimiterParams } from './delimiter';
+import { Version } from '../../versioning/Version';
+import { VersioningConstants as VSConst } from '../../versioning/constants';
 const { BucketVersioningKeyFormat } = VSConst;
-const { FILTER_ACCEPT, FILTER_SKIP, SKIP_NONE } = require('./tools');
+import { FILTER_ACCEPT, FILTER_SKIP, SKIP_NONE } from './tools';
 
 const VID_SEP = VSConst.VersionId.Separator;
 const { DbPrefixes } = VSConst;
@@ -27,7 +28,11 @@ class DelimiterMaster extends Delimiter {
      * @param {RequestLogger} logger          - The logger of the request
      * @param {String} [vFormat]              - versioning key format
      */
-    constructor(parameters, logger, vFormat) {
+    prvKey?: any; // TODO type
+    prvPHDKey?: any; // TODO type
+    inReplayPrefix?: any; // TODO type
+
+    constructor(parameters: DelimiterParams, logger: any, vFormat: string) {
         super(parameters, logger, vFormat);
         // non-PHD master version or a version whose master is a PHD version
         this.prvKey = undefined;
@@ -58,7 +63,7 @@ class DelimiterMaster extends Delimiter {
      *  @param {String} obj.value - The value of the element
      *  @return {number}          - indicates if iteration should continue
      */
-    filterV0(obj) {
+    filterV0(obj: object): number {
         let key = obj.key;
         const value = obj.value;
 
@@ -155,14 +160,14 @@ class DelimiterMaster extends Delimiter {
      *  @param {String} obj.value - The value of the element
      *  @return {number}          - indicates if iteration should continue
      */
-    filterV1(obj) {
+    filterV1(obj: object): number {
         // Filtering master keys in v1 is simply listing the master
         // keys, as the state of version keys do not change the
         // result, so we can use Delimiter method directly.
         return super.filter(obj);
     }
 
-    skippingBase() {
+    skippingBase(): string {
         if (this[this.nextContinueMarker]) {
             // next marker or next continuation token:
             // - foo/ : skipping foo/
@@ -177,14 +182,14 @@ class DelimiterMaster extends Delimiter {
         return SKIP_NONE;
     }
 
-    skippingV0() {
+    skippingV0(): string {
         if (this.inReplayPrefix) {
             return DbPrefixes.Replay;
         }
         return this.skippingBase();
     }
 
-    skippingV1() {
+    skippingV1(): string {
         const skipTo = this.skippingBase();
         if (skipTo === SKIP_NONE) {
             return SKIP_NONE;
@@ -193,4 +198,4 @@ class DelimiterMaster extends Delimiter {
     }
 }
 
-module.exports = { DelimiterMaster };
+export { DelimiterMaster };

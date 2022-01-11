@@ -1,6 +1,16 @@
 'use strict'; // eslint-disable-line strict
 
-const VID_SEP = require('./constants').VersioningConstants.VersionId.Separator;
+import { VersioningConstants } from './constants';
+const VID_SEP = VersioningConstants.VersionId.Separator;
+
+
+interface VersionContents {
+    isNull: boolean;
+    isDeleteMarker: boolean;
+    versionId: string;
+    otherInfo: any; // TODO type
+}
+
 
 /**
  * Class for manipulating an object version.
@@ -12,6 +22,9 @@ const VID_SEP = require('./constants').VersioningConstants.VersionId.Separator;
  * use with a production setup with Metadata).
  */
 class Version {
+
+    version: VersionContents; // TODO type
+
     /**
      * Create a new version instantiation from its data object.
      * @param {object} version - the data object to instantiate
@@ -20,7 +33,7 @@ class Version {
      * @param {string} version.versionId - the version id
      * @constructor
      */
-    constructor(version) {
+    constructor(version: VersionContents) {
         this.version = version || {};
     }
 
@@ -30,7 +43,7 @@ class Version {
      * @param {string} value - the string to parse
      * @return {Version} - the version deserialized from the input string
      */
-    static from(value) {
+    static from(value: string): Version {
         return new Version(value ? JSON.parse(value) : undefined);
     }
 
@@ -40,7 +53,7 @@ class Version {
      * @param {string} value - version to check
      * @return {boolean} - whether this is a PHD version
      */
-    static isPHD(value) {
+    static isPHD(value: string): boolean {
         // check if the input is a valid version
         if (!value) {
             return false;
@@ -67,7 +80,7 @@ class Version {
      * @param {string} versionId - versionId of the PHD version
      * @return {string} - the serialized version
      */
-    static generatePHDVersion(versionId) {
+    static generatePHDVersion(versionId: string): string {
         return `{ "isPHD": true, "versionId": "${versionId}" }`;
     }
 
@@ -79,7 +92,7 @@ class Version {
      * @param {string} versionId - the versionId to append
      * @return {string} - the object with versionId appended
      */
-    static appendVersionId(value, versionId) {
+    static appendVersionId(value: string, versionId: string): string {
         // assuming value has the format of '{...}'
         let index = value.length - 2;
         while (value.charAt(index--) === ' ');
@@ -93,7 +106,7 @@ class Version {
      *
      * @return {boolean} - whether this is a PHD version
      */
-    isPHDVersion() {
+    isPHDVersion(): boolean {
         return this.version.isPHD || false;
     }
 
@@ -102,7 +115,7 @@ class Version {
      *
      * @return {boolean} - stating if the value is a null version
      */
-    isNullVersion() {
+    isNullVersion(): boolean {
         return this.version.isNull;
     }
 
@@ -112,7 +125,7 @@ class Version {
      * @param {string} value - the stringified object to check
      * @return {boolean} - if the object is a delete marker
      */
-    static isDeleteMarker(value) {
+    static isDeleteMarker(value: string): boolean {
         const index = value.indexOf('isDeleteMarker');
         if (index < 0) {
             return false;
@@ -130,7 +143,7 @@ class Version {
      *
      * @return {boolean} - stating if the value is a delete marker
      */
-    isDeleteMarkerVersion() {
+    isDeleteMarkerVersion(): boolean {
         return this.version.isDeleteMarker;
     }
 
@@ -139,7 +152,7 @@ class Version {
      *
      * @return {string} - the versionId
      */
-    getVersionId() {
+    getVersionId(): string {
         return this.version.versionId;
     }
 
@@ -149,7 +162,7 @@ class Version {
      * @param {string} versionId - the versionId
      * @return {Version} - the updated version
      */
-    setVersionId(versionId) {
+    setVersionId(versionId: string): Version {
         this.version.versionId = versionId;
         return this;
     }
@@ -159,7 +172,7 @@ class Version {
      *
      * @return {Version} - the updated version
      */
-    setDeleteMarker() {
+    setDeleteMarker(): Version {
         this.version.isDeleteMarker = true;
         return this;
     }
@@ -169,7 +182,7 @@ class Version {
      *
      * @return {Version} - the updated version
      */
-    setNullVersion() {
+    setNullVersion(): Version {
         this.version.isNull = true;
         return this;
     }
@@ -179,14 +192,15 @@ class Version {
      *
      * @return {string} - the serialized version
      */
-    toString() {
+    toString(): string {
         return JSON.stringify(this.version);
     }
 }
 
+// TODO type key can be array, str, ...
 function isMasterKey(key) {
     return !key.includes(VID_SEP);
 }
 
 
-module.exports = { Version, isMasterKey };
+export { Version, isMasterKey };

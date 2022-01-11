@@ -6,9 +6,11 @@
 // - rep_group_id           07 bytes        replication group identifier
 // - other_information      arbitrary       user input, such as a unique string
 
-const base62Integer = require('base62');
+import * as base62 from 'base62';
+
 const BASE62 = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-const base62String = require('base-x')(BASE62);
+import base from 'base-x'
+const base62String = base(BASE62);
 
 // the lengths of the components in bytes
 const LENGTH_TS = 14; // timestamp: epoch in ms
@@ -178,8 +180,8 @@ function base62Encode(str) {
     const part1 = Number(str.substring(0, B62V_HALF));
     const part2 = Number(str.substring(B62V_HALF, B62V_TOTAL));
     const part3 = Buffer.from(str.substring(B62V_TOTAL));
-    const enc1 = base62Integer.encode(part1);
-    const enc2 = base62Integer.encode(part2);
+    const enc1 = base62.encode(part1);
+    const enc2 = base62.encode(part2);
     const enc3 = base62String.encode(part3);
     return (B62V_EPAD + enc1).slice(-B62V_EPAD.length) +
         (B62V_EPAD + enc2).slice(-B62V_EPAD.length) +
@@ -197,10 +199,10 @@ function base62Decode(str) {
     try {
         let start = 0;
         const enc1 = str.substring(start, start + B62V_EPAD.length);
-        const orig1 = base62Integer.decode(enc1);
+        const orig1 = base62.decode(enc1);
         start += B62V_EPAD.length;
         const enc2 = str.substring(start, start + B62V_EPAD.length);
-        const orig2 = base62Integer.decode(enc2);
+        const orig2 = base62.decode(enc2);
         start += B62V_EPAD.length;
         const enc3 = str.substring(start);
         const orig3 = base62String.decode(enc3);
@@ -246,8 +248,15 @@ function decode(str) {
     return hexDecode(str);
 }
 
-module.exports = { generateVersionId, getInfVid,
-                   hexEncode, hexDecode,
-                   base62Encode, base62Decode,
-                   encode, decode,
-                   ENC_TYPE_HEX, ENC_TYPE_BASE62 };
+export {
+    generateVersionId,
+    getInfVid,
+    hexEncode,
+    hexDecode,
+    base62Encode,
+    base62Decode,
+    encode,
+    decode,
+    ENC_TYPE_HEX,
+    ENC_TYPE_BASE62
+};

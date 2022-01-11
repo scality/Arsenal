@@ -1,14 +1,27 @@
 'use strict'; // eslint-disable-line strict
 
-const Extension = require('./Extension');
+import { Extension } from './Extension';
 
-const { checkLimit, FILTER_END, FILTER_ACCEPT, FILTER_SKIP } = require('./tools');
+import { checkLimit, FILTER_END, FILTER_ACCEPT, FILTER_SKIP } from './tools';
 const DEFAULT_MAX_KEYS = 10000;
+
+
+interface ListParams {
+    maxKeys: number;
+    filterKey: any; // TODO type
+    filterKeyStartsWith: any; // TODO type
+}
+
 
 /**
  *  Class of an extension doing the simple listing
  */
 class List extends Extension {
+
+    maxKeys: number;
+    filterKey: any;
+    filterKeyStartsWith: any;
+
     /**
      *  Constructor
      *  Set the logger and the res
@@ -16,7 +29,7 @@ class List extends Extension {
      *  @param {RequestLogger} logger - The logger of the request
      *  @return {undefined}
      */
-    constructor(parameters, logger) {
+    constructor(parameters: ListParams, logger: any) {
         super(parameters, logger);
         this.res = [];
         if (parameters) {
@@ -29,7 +42,7 @@ class List extends Extension {
         this.keys = 0;
     }
 
-    genMDParams() {
+    genMDParams(): object {
         const params = this.parameters ? {
             gt: this.parameters.gt,
             gte: this.parameters.gte || this.parameters.start,
@@ -53,7 +66,7 @@ class List extends Extension {
      *
      * @return {Boolean} Returns true if matches, else false.
      */
-    customFilter(value) {
+    customFilter(value: string): boolean {
         let _value;
         try {
             _value = JSON.parse(value);
@@ -90,7 +103,7 @@ class List extends Extension {
      *  @return {number} - > 0 : continue listing
      *                     < 0 : listing done
      */
-    filter(elem) {
+    filter(elem: object): number {
         // Check first in case of maxkeys <= 0
         if (this.keys >= this.maxKeys) {
             return FILTER_END;
@@ -117,7 +130,7 @@ class List extends Extension {
      *  Function returning the result
      *  @return {Array} - The listed elements
      */
-    result() {
+    result(): any[] {
         return this.res;
     }
 }

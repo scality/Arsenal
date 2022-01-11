@@ -1,13 +1,31 @@
 'use strict'; // eslint-disable-line strict
 
-const Delimiter = require('./delimiter').Delimiter;
-const Version = require('../../versioning/Version').Version;
-const VSConst = require('../../versioning/constants').VersioningConstants;
-const { inc, FILTER_END, FILTER_ACCEPT, FILTER_SKIP, SKIP_NONE } =
-    require('./tools');
+import { Delimiter } from './delimiter';
+import type { DelimiterParams } from './delimiter';
+import type { MPUParams } from './MPU';
+import { Version } from '../../versioning/Version';
+import { VersioningConstants as VSConst } from '../../versioning/constants';
+import { inc, FILTER_END, FILTER_ACCEPT, FILTER_SKIP, SKIP_NONE } from './tools';
 
 const VID_SEP = VSConst.VersionId.Separator;
 const { DbPrefixes, BucketVersioningKeyFormat } = VSConst;
+
+
+interface DelimiterVersionsParams extends DelimiterParams {
+    keyMarker: string; // TODO type
+    versionIdMarker: any; // TODO type
+}
+
+
+interface DelimiterVersionsResult {
+    CommonPrefixes: string[];
+    Versions: any; // TODO type
+    IsTruncated: boolean,
+    NextKeyMarker?: any; // TODO type
+    NextVersionIdMarker?: any; // TODO type
+    Delimiter: string;
+}
+
 
 /**
  * Handle object listing with parameters
@@ -22,7 +40,15 @@ const { DbPrefixes, BucketVersioningKeyFormat } = VSConst;
  * @prop {Number} maxKeys              - number of keys to list
  */
 class DelimiterVersions extends Delimiter {
-    constructor(parameters, logger, vFormat) {
+
+    keyMarker: string;
+    versionIdMarker: any;
+    masterKey?: any; // TODO type
+    masterVersionId?: any; // TODO type
+    NextVersionIdMarker: any; // TODO type
+    inReplayPrefix: boolean;
+
+    constructor(parameters: DelimiterVersionsParams, logger: any, vFormat: string) {
         super(parameters, logger, vFormat);
         // specific to version listing
         this.keyMarker = parameters.keyMarker;
@@ -49,7 +75,7 @@ class DelimiterVersions extends Delimiter {
         }[this.vFormat]);
     }
 
-    genMDParamsV0() {
+    genMDParamsV0(): MPUParams {
         const params = {};
         if (this.parameters.prefix) {
             params.gte = this.parameters.prefix;
@@ -73,40 +99,41 @@ class DelimiterVersions extends Delimiter {
         return params;
     }
 
-    genMDParamsV1() {
+    genMDParamsV1(): MPUParams[] {
         // return an array of two listing params sets to ask for
         // synchronized listing of M and V ranges
-        const params = [{}, {}];
+        const mRangeParams: MPUParams = {};
+        const vRangeParams: MPUParams = {};
         if (this.parameters.prefix) {
-            params[0].gte = DbPrefixes.Master + this.parameters.prefix;
-            params[0].lt = DbPrefixes.Master + inc(this.parameters.prefix);
-            params[1].gte = DbPrefixes.Version + this.parameters.prefix;
-            params[1].lt = DbPrefixes.Version + inc(this.parameters.prefix);
+            mRangeParams.gte = DbPrefixes.Master + this.parameters.prefix;
+            mRangeParams.lt = DbPrefixes.Master + inc(this.parameters.prefix);
+            vRangeParams.gte = DbPrefixes.Version + this.parameters.prefix;
+            vRangeParams.lt = DbPrefixes.Version + inc(this.parameters.prefix);
         } else {
-            params[0].gte = DbPrefixes.Master;
-            params[0].lt = inc(DbPrefixes.Master); // stop after the last master key
-            params[1].gte = DbPrefixes.Version;
-            params[1].lt = inc(DbPrefixes.Version); // stop after the last version key
+            mRangeParams.gte = DbPrefixes.Master;
+            mRangeParams.lt = inc(DbPrefixes.Master); // stop after the last master key
+            vRangeParams.gte = DbPrefixes.Version;
+            vRangeParams.lt = inc(DbPrefixes.Version); // stop after the last version key
         }
         if (this.parameters.keyMarker) {
-            if (params[1].gte <= DbPrefixes.Version + this.parameters.keyMarker) {
-                delete params[0].gte;
-                delete params[1].gte;
-                params[0].gt = DbPrefixes.Master + inc(this.parameters.keyMarker + VID_SEP);
+            if (vRangeParams.gte <= DbPrefixes.Version + this.parameters.keyMarker) {
+                delete mRangeParams.gte;
+                delete vRangeParams.gte;
+                mRangeParams.gt = DbPrefixes.Master + inc(this.parameters.keyMarker + VID_SEP);
                 if (this.parameters.versionIdMarker) {
                     // versionIdMarker should always come with keyMarker
                     // but may not be the other way around
-                    params[1].gt = DbPrefixes.Version
+                    vRangeParams.gt = DbPrefixes.Version
                         + this.parameters.keyMarker
                         + VID_SEP
                         + this.parameters.versionIdMarker;
                 } else {
-                    params[1].gt = DbPrefixes.Version
+                    vRangeParams.gt = DbPrefixes.Version
                         + inc(this.parameters.keyMarker + VID_SEP);
                 }
             }
         }
-        return params;
+        return [mRangeParams, vRangeParams];
     }
 
     /**
@@ -120,7 +147,7 @@ class DelimiterVersions extends Delimiter {
      *   * -1 if master key < version key
      *   * 1 if master key > version key
      */
-    compareObjects(masterObj, versionObj) {
+    compareObjects(masterObj: object, versionObj: object): number {
         const masterKey = masterObj.key.slice(DbPrefixes.Master.length);
         const versionKey = versionObj.key.slice(DbPrefixes.Version.length);
         return masterKey < versionKey ? -1 : 1;
@@ -136,7 +163,7 @@ class DelimiterVersions extends Delimiter {
      *  @param {String} obj.value       - The value of the key
      *  @return {Boolean} - indicates if iteration should continue
      */
-    addContents(obj) {
+    addContents(obj: object): boolean {
         if (this._reachedMaxKeys()) {
             return FILTER_END;
         }
@@ -163,7 +190,7 @@ class DelimiterVersions extends Delimiter {
      *  @param {String} obj.value - The value of the element
      *  @return {number}          - indicates if iteration should continue
      */
-    filterV0(obj) {
+    filterV0(obj: object): number {
         if (obj.key.startsWith(DbPrefixes.Replay)) {
             this.inReplayPrefix = true;
             return FILTER_SKIP;
@@ -189,7 +216,7 @@ class DelimiterVersions extends Delimiter {
      *  @param {String} obj.value - The value of the element
      *  @return {number}          - indicates if iteration should continue
      */
-    filterV1(obj) {
+    filterV1(obj: object): number {
         // this function receives both M and V keys, but their prefix
         // length is the same so we can remove their prefix without
         // looking at the type of key
@@ -197,7 +224,7 @@ class DelimiterVersions extends Delimiter {
                                  obj.value);
     }
 
-    filterCommon(key, value) {
+    filterCommon(key: string, value: string): boolean {
         if (this.prefix && !key.startsWith(this.prefix)) {
             return FILTER_SKIP;
         }
@@ -230,7 +257,7 @@ class DelimiterVersions extends Delimiter {
         return this.addContents({ key: nonversionedKey, value, versionId });
     }
 
-    skippingV0() {
+    skippingV0(): string {
         if (this.inReplayPrefix) {
             return DbPrefixes.Replay;
         }
@@ -243,7 +270,7 @@ class DelimiterVersions extends Delimiter {
         return SKIP_NONE;
     }
 
-    skippingV1() {
+    skippingV1(): string {
         const skipV0 = this.skippingV0();
         if (skipV0 === SKIP_NONE) {
             return SKIP_NONE;
@@ -259,7 +286,7 @@ class DelimiterVersions extends Delimiter {
      *  isn't truncated
      *  @return {Object} - following amazon format
      */
-    result() {
+    result(): DelimiterVersionsResult {
         /* NextMarker is only provided when delimiter is used.
          * specified in v1 listing documentation
          * http://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketGET.html
@@ -276,4 +303,4 @@ class DelimiterVersions extends Delimiter {
     }
 }
 
-module.exports = { DelimiterVersions };
+export { DelimiterVersions };
