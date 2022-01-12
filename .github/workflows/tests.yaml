@@ -31,7 +31,7 @@ jobs:
         node-version: '16'
         cache: 'yarn'
     - name: install dependencies
-      run: yarn install --frozen-lockfile
+      run: yarn cache clean && yarn install --frozen-lockfile
     - name: lint yaml
       run: yarn --silent lint_yml
     - name: lint javascript
