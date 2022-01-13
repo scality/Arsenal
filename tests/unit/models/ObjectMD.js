@@ -133,6 +133,8 @@ describe('ObjectMD class setters/getters', () => {
         ['RetentionMode', 'GOVERNANCE'],
         ['RetentionDate', retainDate.toISOString()],
         ['OriginOp', null, ''],
+        ['IsAborted', null, undefined],
+        ['IsAborted', true],
     ].forEach(test => {
         const property = test[0];
         const testValue = test[1];
@@ -433,6 +435,7 @@ describe('getAttributes static method', () => {
             'last-modified': true,
             'md-model-version': true,
             'originOp': true,
+            'isAborted': true,
         };
         assert.deepStrictEqual(attributes, expectedResult);
     });
