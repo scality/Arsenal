@@ -201,7 +201,7 @@ describe('mongoclient.ListRecordStream', () => {
                 mongoProcessedLogEntries[entryType],
             ]);
             const lrs = new ListRecordStream(cursor, logger,
-                                             lastEndIDEntry.h.toString());
+                lastEndIDEntry.h.toString());
             let hasReceivedData = false;
             lrs.on('data', entry => {
                 assert.strictEqual(hasReceivedData, false);
@@ -210,7 +210,7 @@ describe('mongoclient.ListRecordStream', () => {
                 if (cursor.hasSentAllItems()) {
                     assert.strictEqual(hasReceivedData, true);
                     assert.deepStrictEqual(JSON.parse(lrs.getOffset()),
-                                           { uniqID: '-42' });
+                        { uniqID: '-42' });
                     done();
                 }
             });
@@ -225,27 +225,27 @@ describe('mongoclient.ListRecordStream', () => {
         });
         const cursor = new MongoCursorMock(logEntries);
         const lrs = new ListRecordStream(cursor, logger,
-                                         lastEndIDEntry.h.toString());
+            lastEndIDEntry.h.toString());
         lrs.on('data', entry => {
             assert(false, `ListRecordStream did not ignore entry ${entry}`);
         });
         setTimeout(() => {
             assert.strictEqual(cursor.hasSentAllItems(), true);
             assert.deepStrictEqual(JSON.parse(lrs.getOffset()),
-                                   { uniqID: '-42' });
+                { uniqID: '-42' });
             done();
         }, 200);
     });
     it('should skip entries until uniqID is encountered', done => {
         const logEntries = [
             Object.assign({}, mongoProcessedLogEntries.insert,
-                          { h: 1234, ts: Timestamp.fromNumber(45) }),
+                { h: 1234, ts: Timestamp.fromNumber(45) }),
             Object.assign({}, mongoProcessedLogEntries.insert,
-                          { h: 5678, ts: Timestamp.fromNumber(44) }),
+                { h: 5678, ts: Timestamp.fromNumber(44) }),
             Object.assign({}, mongoProcessedLogEntries.insert,
-                          { h: -1234, ts: Timestamp.fromNumber(42) }),
+                { h: -1234, ts: Timestamp.fromNumber(42) }),
             Object.assign({}, mongoProcessedLogEntries.insert,
-                          { h: 2345, ts: Timestamp.fromNumber(42) }),
+                { h: 2345, ts: Timestamp.fromNumber(42) }),
         ];
         const cursor = new MongoCursorMock(logEntries);
         const lrs = new ListRecordStream(cursor, logger, '5678');
@@ -258,7 +258,7 @@ describe('mongoclient.ListRecordStream', () => {
             if (cursor.hasSentAllItems()) {
                 assert.strictEqual(nbReceivedEntries, 2);
                 assert.deepStrictEqual(JSON.parse(lrs.getOffset()),
-                                       { uniqID: '2345' });
+                    { uniqID: '2345' });
                 assert.strictEqual(lrs.getSkipCount(), 2);
                 assert.strictEqual(lrs.reachedUnpublishedListing(), true);
                 done();
@@ -269,13 +269,13 @@ describe('mongoclient.ListRecordStream', () => {
     it('should start after latest entry if uniqID is not encountered', done => {
         const logEntries = [
             Object.assign({}, mongoProcessedLogEntries.insert,
-                          { h: 1234, ts: Timestamp.fromNumber(45) }),
+                { h: 1234, ts: Timestamp.fromNumber(45) }),
             Object.assign({}, mongoProcessedLogEntries.insert,
-                          { h: 5678, ts: Timestamp.fromNumber(44) }),
+                { h: 5678, ts: Timestamp.fromNumber(44) }),
             Object.assign({}, mongoProcessedLogEntries.insert,
-                          { h: -1234, ts: Timestamp.fromNumber(42) }),
+                { h: -1234, ts: Timestamp.fromNumber(42) }),
             Object.assign({}, mongoProcessedLogEntries.insert,
-                          { h: 2345, ts: Timestamp.fromNumber(42) }),
+                { h: 2345, ts: Timestamp.fromNumber(42) }),
         ];
         const cursor = new MongoCursorMock(logEntries);
         const lrs = new ListRecordStream(cursor, logger, '4242', '-1234');
@@ -286,7 +286,7 @@ describe('mongoclient.ListRecordStream', () => {
             if (cursor.hasSentAllItems()) {
                 assert.strictEqual(nbReceivedEntries, 1);
                 assert.deepStrictEqual(JSON.parse(lrs.getOffset()),
-                                       { uniqID: '2345' });
+                    { uniqID: '2345' });
                 assert.strictEqual(lrs.getSkipCount(), 3);
                 assert.strictEqual(lrs.reachedUnpublishedListing(), true);
                 done();
@@ -296,13 +296,13 @@ describe('mongoclient.ListRecordStream', () => {
     it('should consume from the first entry if there is no saved ID', done => {
         const logEntries = [
             Object.assign({}, mongoProcessedLogEntries.insert,
-                          { h: 1234, ts: Timestamp.fromNumber(42) }),
+                { h: 1234, ts: Timestamp.fromNumber(42) }),
             Object.assign({}, mongoProcessedLogEntries.insert,
-                          { h: 5678, ts: Timestamp.fromNumber(42) }),
+                { h: 5678, ts: Timestamp.fromNumber(42) }),
             Object.assign({}, mongoProcessedLogEntries.insert,
-                          { h: -1234, ts: Timestamp.fromNumber(42) }),
+                { h: -1234, ts: Timestamp.fromNumber(42) }),
             Object.assign({}, mongoProcessedLogEntries.insert,
-                          { h: 2345, ts: Timestamp.fromNumber(42) }),
+                { h: 2345, ts: Timestamp.fromNumber(42) }),
         ];
         const cursor = new MongoCursorMock(logEntries);
         const lrs = new ListRecordStream(cursor, logger, undefined, '-1234');
@@ -313,7 +313,7 @@ describe('mongoclient.ListRecordStream', () => {
             if (cursor.hasSentAllItems()) {
                 assert.strictEqual(nbReceivedEntries, 4);
                 assert.deepStrictEqual(JSON.parse(lrs.getOffset()),
-                                       { uniqID: '2345' });
+                    { uniqID: '2345' });
                 assert.strictEqual(lrs.getSkipCount(), 0);
                 assert.strictEqual(lrs.reachedUnpublishedListing(), true);
                 done();
@@ -358,7 +358,7 @@ describe('mongoclient.ListRecordStream', () => {
             logEntry,
         ]);
         const lrs = new ListRecordStream(cursor, logger,
-                                         lastEndIDEntry.h.toString());
+            lastEndIDEntry.h.toString());
         lrs.on('data', entry => {
             assert.deepStrictEqual(entry, expectedLogEntry);
             done();
@@ -397,7 +397,7 @@ describe('mongoclient.ListRecordStream', () => {
             logEntry,
         ]);
         const lrs = new ListRecordStream(cursor, logger,
-                                         lastEndIDEntry.h.toString());
+            lastEndIDEntry.h.toString());
         lrs.on('data', entry => {
             assert.deepStrictEqual(entry, expectedLogEntry);
             done();

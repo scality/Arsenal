@@ -40,7 +40,7 @@ describe('v2: queryAuthCheck', () => {
     });
     it('URL should not expire before 7 days with default expiry', () => {
         const currentTime = Date.now() / 1000;
-        const expires = currentTime + 604799;  // in seconds
+        const expires = currentTime + 604799; // in seconds
         const mockRequest = {
             method: 'GET',
             url: 'mockurl',
@@ -61,7 +61,7 @@ describe('v2: queryAuthCheck', () => {
         assert.notStrictEqual(res.err.RequestTimeTooSkewed, true);
     });
     it('URL should expire after 7 days with default expiry', () => {
-        clock.tick(604800000);  // take time 604800000ms (7 days) ahead
+        clock.tick(604800000); // take time 604800000ms (7 days) ahead
         const currentTime = Date.now();
         const request = { method: 'GET', query: { Expires: currentTime } };
         const data = { Expires: currentTime };
@@ -73,7 +73,7 @@ describe('v2: queryAuthCheck', () => {
     it('URL should not expire before 7 days with custom expiry', () => {
         process.env.PRE_SIGN_URL_EXPIRY = 31556952000; // in ms (1 year)
         const currentTime = Date.now() / 1000;
-        const expires = currentTime + 604799;  // in seconds
+        const expires = currentTime + 604799; // in seconds
         const mockRequest = {
             method: 'GET',
             url: 'mockurl',
@@ -94,7 +94,7 @@ describe('v2: queryAuthCheck', () => {
         assert.notStrictEqual(res.err.RequestTimeTooSkewed, true);
     });
     it('URL should still not expire after 7 days with custom expiry', () => {
-        clock.tick(604800000);  // take time 604800000ms (7 days) ahead
+        clock.tick(604800000); // take time 604800000ms (7 days) ahead
         process.env.PRE_SIGN_URL_EXPIRY = 31556952000; // in ms (1 year)
         const currentTime = Date.now() / 1000;
         const request = { method: 'GET', query: { Expires: currentTime } };

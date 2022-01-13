@@ -116,9 +116,9 @@ describe('REST interface for blob data storage', () => {
                         subDone();
                     });
                 }],
-                         err => {
-                             done(err);
-                         });
+            err => {
+                done(err);
+            });
         });
     });
 
@@ -168,43 +168,43 @@ describe('REST interface for blob data storage', () => {
             .forEach((test, i) => {
                 const { range, sliceArgs, contentRange } = test;
                 it(`should get the correct range ${range[0]}-${range[1]}`,
-                   done => {
-                       client.get(
-                           objKey, range,
-                           (1000 + i).toString(), (err, resp) => {
-                               assert.ifError(err);
-                               const value = resp.read();
-                               assert.strictEqual(
-                                   value.toString(),
-                                   contents.slice(...sliceArgs));
-                               checkContentRange(resp, contentRange[0],
-                                                 contentRange[1]);
-                               done();
-                           });
-                   });
+                    done => {
+                        client.get(
+                            objKey, range,
+                            (1000 + i).toString(), (err, resp) => {
+                                assert.ifError(err);
+                                const value = resp.read();
+                                assert.strictEqual(
+                                    value.toString(),
+                                    contents.slice(...sliceArgs));
+                                checkContentRange(resp, contentRange[0],
+                                    contentRange[1]);
+                                done();
+                            });
+                    });
             });
 
         // queries returning 416 Requested Range Not Satisfiable
 
         [{ range: [1000, undefined], emptyObject: false },
-         { range: [contents.length, undefined], emptyObject: false },
-         { range: [0, undefined], emptyObject: true },
-         { range: [0, 10], emptyObject: true },
-         { range: [undefined, 0], emptyObject: true }]
+            { range: [contents.length, undefined], emptyObject: false },
+            { range: [0, undefined], emptyObject: true },
+            { range: [0, 10], emptyObject: true },
+            { range: [undefined, 0], emptyObject: true }]
             .forEach((test, i) => {
                 const { range, emptyObject } = test;
                 it(`should get error 416 on ${range[0]}-${range[1]}` +
                    `${emptyObject ? ' (empty object)' : ''}`,
-                   done => {
-                       const key = (emptyObject ? emptyObjKey : objKey);
-                       client.get(
-                           key, range,
-                           (2000 + i).toString(), err => {
-                               assert(err);
-                               assert.strictEqual(err.code, 416);
-                               done();
-                           });
-                   });
+                done => {
+                    const key = (emptyObject ? emptyObjKey : objKey);
+                    client.get(
+                        key, range,
+                        (2000 + i).toString(), err => {
+                            assert(err);
+                            assert.strictEqual(err.code, 416);
+                            done();
+                        });
+                });
             });
 
         it('should get 200 OK on both range boundaries undefined', done => {
@@ -216,13 +216,13 @@ describe('REST interface for blob data storage', () => {
             });
         });
         it('should get 200 OK on range query "bytes=-10" of empty object',
-           done => {
-               client.get(emptyObjKey, [undefined, 10], '3002', (err, resp) => {
-                   assert.ifError(err);
-                   const value = resp.read();
-                   assert.strictEqual(value, null);
-                   done();
-               });
-           });
+            done => {
+                client.get(emptyObjKey, [undefined, 10], '3002', (err, resp) => {
+                    assert.ifError(err);
+                    const value = resp.read();
+                    assert.strictEqual(value, null);
+                    done();
+                });
+            });
     });
 });

@@ -185,14 +185,14 @@ describe('checkDateModifiedHeaders util function: ', () => {
     };
 
     it('should return NotModified error for \'if-modified-since\' header',
-    () => {
-        const header = {};
-        header['if-modified-since'] = afterLastModified;
-        const { modifiedSinceRes, unmodifiedSinceRes } =
+        () => {
+            const header = {};
+            header['if-modified-since'] = afterLastModified;
+            const { modifiedSinceRes, unmodifiedSinceRes } =
             checkDateModifiedHeaders(header, lastModified);
-        assert.deepStrictEqual(modifiedSinceRes.error, errors.NotModified);
-        assert.deepStrictEqual(unmodifiedSinceRes, expectedAbsense);
-    });
+            assert.deepStrictEqual(modifiedSinceRes.error, errors.NotModified);
+            assert.deepStrictEqual(unmodifiedSinceRes, expectedAbsense);
+        });
 
     it('should return PreconditionFailed error for \'if-unmodified-since\' ' +
     'header', () => {
@@ -245,16 +245,16 @@ describe('_checkEtagMatch function :', () => {
     });
 
     it('should return success for multiple valid values with comma at index 0',
-    () => {
-        const result = _checkEtagMatch(`,${listOfValues}`, contentMD5);
-        assert.deepStrictEqual(result, expectedSuccess);
-    });
+        () => {
+            const result = _checkEtagMatch(`,${listOfValues}`, contentMD5);
+            assert.deepStrictEqual(result, expectedSuccess);
+        });
 
     it('should return success as long as one value in list is valid',
-    () => {
-        const result = _checkEtagMatch(`${listOfValues},aaa`, contentMD5);
-        assert.deepStrictEqual(result, expectedSuccess);
-    });
+        () => {
+            const result = _checkEtagMatch(`${listOfValues},aaa`, contentMD5);
+            assert.deepStrictEqual(result, expectedSuccess);
+        });
 
     const failTests = [
         { desc: 'if only value does not match', value: 'aaa' },
@@ -303,22 +303,22 @@ describe('_checkModifiedSince function :', () => {
     });
 
     it('should return success if header value is earlier to than last modified',
-    () => {
-        const result = _checkModifiedSince(beforeLastModified, lastModified);
-        assert.deepStrictEqual(result, expectedSuccess);
-    });
+        () => {
+            const result = _checkModifiedSince(beforeLastModified, lastModified);
+            assert.deepStrictEqual(result, expectedSuccess);
+        });
 
     it('should return NotModified if header value is later than last modified',
-    () => {
-        const result = _checkModifiedSince(afterLastModified, lastModified);
-        assert.deepStrictEqual(result.error, errors.NotModified);
-    });
+        () => {
+            const result = _checkModifiedSince(afterLastModified, lastModified);
+            assert.deepStrictEqual(result.error, errors.NotModified);
+        });
 
     it('should return NotModified if header value is equal to last modified',
-    () => {
-        const result = _checkModifiedSince(lastModified, lastModified);
-        assert.deepStrictEqual(result.error, errors.NotModified);
-    });
+        () => {
+            const result = _checkModifiedSince(lastModified, lastModified);
+            assert.deepStrictEqual(result.error, errors.NotModified);
+        });
 });
 
 describe('_checkUnmodifiedSince function :', () => {
@@ -334,14 +334,14 @@ describe('_checkUnmodifiedSince function :', () => {
     });
 
     it('should return success if header value is later to than last modified',
-    () => {
-        const result = _checkUnmodifiedSince(afterLastModified, lastModified);
-        assert.deepStrictEqual(result, expectedSuccess);
-    });
+        () => {
+            const result = _checkUnmodifiedSince(afterLastModified, lastModified);
+            assert.deepStrictEqual(result, expectedSuccess);
+        });
 
     it('should return success if header value is equal to last modified',
-    () => {
-        const result = _checkUnmodifiedSince(lastModified, lastModified);
-        assert.deepStrictEqual(result, expectedSuccess);
-    });
+        () => {
+            const result = _checkUnmodifiedSince(lastModified, lastModified);
+            assert.deepStrictEqual(result, expectedSuccess);
+        });
 });

@@ -88,21 +88,21 @@ describe('object Retention validation', () => {
     failTests.forEach(t => {
         it(t.name, done => {
             parseRetentionXml(buildXml(t.params.key, t.params.value), log,
-            err => {
-                assert(err[t.error]);
-                assert.strictEqual(err.description, t.errMessage);
-                done();
-            });
+                err => {
+                    assert(err[t.error]);
+                    assert.strictEqual(err.description, t.errMessage);
+                    done();
+                });
         });
     });
 
     it('should pass with valid retention', done => {
         parseRetentionXml(buildXml('RetainDate', passDate.toISOString()), log,
-        (err, result) => {
-            assert.ifError(err);
-            assert.deepStrictEqual(result, expectedRetention);
-            done();
-        });
+            (err, result) => {
+                assert.ifError(err);
+                assert.deepStrictEqual(result, expectedRetention);
+                done();
+            });
     });
 });
 

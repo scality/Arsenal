@@ -118,11 +118,11 @@ describe('Policies validation - Version', () => {
     });
 
     it('should return error if Version field in resource policy is missing',
-    () => {
-        resourcePolicy.Version = undefined;
-        check(resourcePolicy, failRes(resource, errDict.required.Version),
-            resource);
-    });
+        () => {
+            resourcePolicy.Version = undefined;
+            check(resourcePolicy, failRes(resource, errDict.required.Version),
+                resource);
+        });
 });
 
 describe('Policies validation - Principal', () => {
@@ -224,25 +224,25 @@ describe('Policies validation - Principal', () => {
     ].forEach(test => {
         if (test.policyType.includes(user)) {
             it(`should allow user policy principal field with ${test.name}`,
-            () => {
-                userPolicy.Statement.Principal = test.value;
-                delete userPolicy.Statement.Resource;
-                check(userPolicy, successRes, user);
-            });
+                () => {
+                    userPolicy.Statement.Principal = test.value;
+                    delete userPolicy.Statement.Resource;
+                    check(userPolicy, successRes, user);
+                });
 
             it(`should allow user policy notPrincipal field with ${test.name}`,
-            () => {
-                userPolicy.Statement.NotPrincipal = test.value;
-                delete userPolicy.Statement.Resource;
-                check(userPolicy, successRes, user);
-            });
+                () => {
+                    userPolicy.Statement.NotPrincipal = test.value;
+                    delete userPolicy.Statement.Resource;
+                    check(userPolicy, successRes, user);
+                });
         }
         if (test.policyType.includes(resource)) {
             it(`should allow resource policy principal field with ${test.name}`,
-            () => {
-                resourcePolicy.Statement[0].Principal = test.value;
-                check(resourcePolicy, successRes, resource);
-            });
+                () => {
+                    resourcePolicy.Statement[0].Principal = test.value;
+                    check(resourcePolicy, successRes, resource);
+                });
         }
     });
 
@@ -501,9 +501,9 @@ describe('Policies validation - Statement::Sid_block', () => {
     });
 
     it('resource policy should succeed if Sid is any alphanumeric string',
-    () => {
-        check(resourcePolicy, successRes, resource);
-    });
+        () => {
+            check(resourcePolicy, successRes, resource);
+        });
 
     it('user policy should fail if Sid is not a valid format', () => {
         userPolicy.Statement.Sid = 'foo bar()';

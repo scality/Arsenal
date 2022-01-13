@@ -228,31 +228,31 @@ const passTestsGetConfigXML = [
 ];
 
 describe('ObjectLockConfiguration class getValidatedObjectLockConfiguration',
-() => {
-    it('should return MalformedXML error if request xml is empty', done => {
-        const errMessage = 'request xml is undefined or empty';
-        checkError('', 'MalformedXML', errMessage, done);
-    });
+    () => {
+        it('should return MalformedXML error if request xml is empty', done => {
+            const errMessage = 'request xml is undefined or empty';
+            checkError('', 'MalformedXML', errMessage, done);
+        });
 
-    failTests.forEach(test => {
-        it(`should ${test.name}`, done => {
-            generateParsedXml(test.params, xml => {
-                checkError(xml, test.error, test.errorMessage, done);
+        failTests.forEach(test => {
+            it(`should ${test.name}`, done => {
+                generateParsedXml(test.params, xml => {
+                    checkError(xml, test.error, test.errorMessage, done);
+                });
+            });
+        });
+
+        passTests.forEach(test => {
+            it(`should ${test.name}`, done => {
+                generateParsedXml(test.params, xml => {
+                    const config = new ObjectLockConfiguration(xml).
+                        getValidatedObjectLockConfiguration();
+                    assert.ifError(config.error);
+                    done();
+                });
             });
         });
     });
-
-    passTests.forEach(test => {
-        it(`should ${test.name}`, done => {
-            generateParsedXml(test.params, xml => {
-                const config = new ObjectLockConfiguration(xml).
-                    getValidatedObjectLockConfiguration();
-                assert.ifError(config.error);
-                done();
-            });
-        });
-    });
-});
 
 describe('ObjectLockConfiguration class getConfigXML', () => {
     passTestsGetConfigXML.forEach(test => {

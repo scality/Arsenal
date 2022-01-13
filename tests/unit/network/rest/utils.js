@@ -23,9 +23,9 @@ describe('parseURL function', () => {
         const { inputUrl, expectedKey } = testCase;
 
         it(`should return ${expectedKey} with url "${inputUrl}"`,
-        () => {
-            const pathInfo = parseURL(inputUrl, true);
-            assert.strictEqual(pathInfo.key, expectedKey);
-        });
+            () => {
+                const pathInfo = parseURL(inputUrl, true);
+                assert.strictEqual(pathInfo.key, expectedKey);
+            });
     });
 });

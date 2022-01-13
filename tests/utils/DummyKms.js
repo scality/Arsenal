@@ -61,7 +61,7 @@ class Common {
         return newIV;
     }
 
-     /**
+    /**
       * Derive key to use in cipher
       * @param {number} cryptoScheme - cryptoScheme being used
       * @param {buffer} dataKey - the unencrypted key (either from the
@@ -88,7 +88,7 @@ class Common {
                 this._keySize(), 'sha1', (err, derivedKey) => {
                     if (err) {
                         log.error('pbkdf2 function failed on key derivation',
-                                  { error: err });
+                            { error: err });
                         cb(errors.InternalError);
                         return;
                     }
@@ -111,7 +111,7 @@ class Common {
         return cb(errors.InternalError);
     }
 
-     /**
+    /**
       * createDecipher
       * @param {number} cryptoScheme - cryptoScheme being used
       * @param {buffer} dataKey - the unencrypted key (either from the
@@ -135,7 +135,7 @@ class Common {
                 const toSkip = offset % aesBlockSize;
                 const iv = this._incrementIV(derivedIV, blocks);
                 const cipher = crypto.createDecipheriv(this._algorithm(),
-                                                       derivedKey, iv);
+                    derivedKey, iv);
                 if (toSkip) {
                     /* Above, we advanced to the latest boundary not
                     greater than the offset amount. Here we advance by
@@ -171,7 +171,7 @@ const backend = {
      * Target implementation will be async. let's mimic it
      */
 
-     /**
+    /**
       *
       * @param {string} bucketName - bucket name
       * @param {object} log - logger object
@@ -203,7 +203,7 @@ const backend = {
         });
     },
 
-     /**
+    /**
       *
       * @param {number} cryptoScheme - crypto scheme version number
       * @param {string} masterKeyId - key to retrieve master key
@@ -214,10 +214,10 @@ const backend = {
       * @callback called with (err, cipheredDataKey: Buffer)
       */
     cipherDataKey: function cipherDataKeyMem(cryptoScheme,
-                                             masterKeyId,
-                                             plainTextDataKey,
-                                             log,
-                                             cb) {
+        masterKeyId,
+        plainTextDataKey,
+        log,
+        cb) {
         process.nextTick(() => {
             Common.createCipher(
                 cryptoScheme, kms[masterKeyId], 0, log,
@@ -241,7 +241,7 @@ const backend = {
         });
     },
 
-     /**
+    /**
       *
       * @param {number} cryptoScheme - crypto scheme version number
       * @param {string} masterKeyId - key to retrieve master key
@@ -252,10 +252,10 @@ const backend = {
       * @callback called with (err, plainTextDataKey: Buffer)
       */
     decipherDataKey: function decipherDataKeyMem(cryptoScheme,
-                                                 masterKeyId,
-                                                 cipheredDataKey,
-                                                 log,
-                                                 cb) {
+        masterKeyId,
+        cipheredDataKey,
+        log,
+        cb) {
         process.nextTick(() => {
             Common.createDecipher(
                 cryptoScheme, kms[masterKeyId], 0, log,
@@ -303,7 +303,7 @@ class KMS {
         });
     }
 
-        /**
+    /**
          *
          * @param {string} bucketName - bucket name
          * @param {object} headers - request headers
@@ -387,7 +387,7 @@ class KMS {
     }
 
 
-        /**
+    /**
          * createCipherBundle
          * @param {object} serverSideEncryptionInfo - info for encryption
          * @param {number} serverSideEncryptionInfo.cryptoScheme -
@@ -404,7 +404,7 @@ class KMS {
          * @callback called with (err, cipherBundle)
          */
     static createCipherBundle(serverSideEncryptionInfo,
-                                log, cb) {
+        log, cb) {
         const dataKey = this.createDataKey(log);
         const cipherBundle = {
             algorithm: serverSideEncryptionInfo.algorithm,
@@ -438,7 +438,7 @@ class KMS {
                         dataKey.fill(0);
                         if (err) {
                             log.debug('error from kms',
-                            { implName, error: err });
+                                { implName, error: err });
                             return next(err);
                         }
                         log.trace('cipher created by the kms');
@@ -452,13 +452,13 @@ class KMS {
         ], (err, cipherBundle) => {
             if (err) {
                 log.error('error processing cipher bundle',
-                            { implName, error: err });
+                    { implName, error: err });
             }
             return cb(err, cipherBundle);
         });
     }
 
-        /**
+    /**
          * createDecipherBundle
          * @param {object} serverSideEncryptionInfo - info for decryption
          * @param {number} serverSideEncryptionInfo.cryptoScheme -
@@ -478,7 +478,7 @@ class KMS {
          * @callback called with (err, decipherBundle)
          */
     static createDecipherBundle(serverSideEncryptionInfo, offset,
-                                log, cb) {
+        log, cb) {
         if (!serverSideEncryptionInfo.masterKeyId ||
             !serverSideEncryptionInfo.cipheredDataKey ||
             !serverSideEncryptionInfo.cryptoScheme) {
@@ -499,7 +499,7 @@ class KMS {
                         log.debug('deciphering a data key');
                         if (err) {
                             log.debug('error from kms',
-                                        { implName, error: err });
+                                { implName, error: err });
                             return next(err);
                         }
                         log.trace('data key deciphered by the kms');
@@ -513,7 +513,7 @@ class KMS {
                         plainTextDataKey.fill(0);
                         if (err) {
                             log.debug('error from kms',
-                            { implName, error: err });
+                                { implName, error: err });
                             return next(err);
                         }
                         log.trace('decipher created by the kms');
@@ -527,7 +527,7 @@ class KMS {
         ], (err, decipherBundle) => {
             if (err) {
                 log.error('error processing decipher bundle',
-                            { implName, error: err });
+                    { implName, error: err });
                 return cb(err);
             }
             return cb(err, decipherBundle);

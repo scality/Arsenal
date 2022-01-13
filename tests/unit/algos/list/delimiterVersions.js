@@ -60,7 +60,7 @@ const dataVersioned = {
         { key: `notes/spring/2.txt${VID_SEP}bar`, value: valueDeleteMarker },
         { key: `notes/spring/2.txt${VID_SEP}foo`, value: foo },
         { key: 'notes/spring/march/1.txt',
-          value: '{"versionId":"null","isNull":true}' },
+            value: '{"versionId":"null","isNull":true}' },
         { key: `notes/spring/march/1.txt${VID_SEP}bar`, value: bar },
         { key: `notes/spring/march/1.txt${VID_SEP}foo`, value: foo },
         { key: 'notes/summer/1.txt', value: bar },
@@ -83,7 +83,7 @@ const dataVersioned = {
         { key: 'notes/zaphod/Beeblebrox.txt', value },
     ],
     v1: [ // we add M and V prefixes in getTestListing() due to the
-          // test cases needing the original key to filter
+        // test cases needing the original key to filter
         { key: 'Pâtisserie=中文-español-English', value: bar },
         { key: `Pâtisserie=中文-español-English${VID_SEP}bar`, value: bar },
         { key: `Pâtisserie=中文-español-English${VID_SEP}foo`, value: foo },
@@ -94,7 +94,7 @@ const dataVersioned = {
         { key: `notes/spring/2.txt${VID_SEP}bar`, value: valueDeleteMarker },
         { key: `notes/spring/2.txt${VID_SEP}foo`, value: foo },
         { key: 'notes/spring/march/1.txt',
-          value: '{"versionId":"null","isNull":true}' },
+            value: '{"versionId":"null","isNull":true}' },
         { key: `notes/spring/march/1.txt${VID_SEP}bar`, value: bar },
         { key: `notes/spring/march/1.txt${VID_SEP}foo`, value: foo },
         { key: 'notes/summer/1.txt', value: bar },
@@ -147,7 +147,7 @@ const tests = [
     new Test('all versions', {}, {
         v0: {},
         v1: [{ gte: DbPrefixes.Master, lt: inc(DbPrefixes.Master) },
-             { gte: DbPrefixes.Version, lt: inc(DbPrefixes.Version) }],
+            { gte: DbPrefixes.Version, lt: inc(DbPrefixes.Version) }],
     }, {
         Versions: receivedData,
         CommonPrefixes: [],
@@ -272,7 +272,7 @@ const tests = [
         }],
     }, {
         Versions: receivedData.filter(entry =>
-                          entry.key.indexOf('notes/summer') < 0),
+            entry.key.indexOf('notes/summer') < 0),
         CommonPrefixes: ['notes/summer'],
         Delimiter: 'notes/summer',
         IsTruncated: false,
@@ -502,7 +502,7 @@ function getListingKey(key, vFormat) {
     }
     if (vFormat === 'v1') {
         const keyPrefix = key.includes(VID_SEP) ?
-              DbPrefixes.Version : DbPrefixes.Master;
+            DbPrefixes.Version : DbPrefixes.Master;
         return `${keyPrefix}${key}`;
     }
     return assert.fail(`bad format ${vFormat}`);
@@ -594,7 +594,7 @@ function getTestListing(test, data, vFormat) {
         'does not contain the delimiter', () => {
             const key = 'foo';
             const delimiter = new DelimiterVersions({ delimiter: '/', marker: key },
-                                                    logger, vFormat);
+                logger, vFormat);
 
             /* Filter a master version to set NextMarker. */
             const listingKey = getListingKey(key, vFormat);
@@ -607,7 +607,7 @@ function getTestListing(test, data, vFormat) {
         'contains the delimiter', () => {
             const key = 'foo/bar';
             const delimiter = new DelimiterVersions({ delimiter: '/', marker: key },
-                                                    logger, vFormat);
+                logger, vFormat);
 
             /* Filter a master version to set NextMarker. */
             const listingKey = getListingKey(key, vFormat);
@@ -628,7 +628,7 @@ function getTestListing(test, data, vFormat) {
         'ends with the delimiter', () => {
             const key = 'foo/';
             const delimiter = new DelimiterVersions({ delimiter: '/', marker: key },
-                                                    logger, vFormat);
+                logger, vFormat);
 
             /* Filter a master version to set NextMarker. */
             const listingKey = getListingKey(key, vFormat);
@@ -679,7 +679,7 @@ function getTestListing(test, data, vFormat) {
 
         it('should return good values for entries with different common prefixes', () => {
             const delimiter = new DelimiterVersions({ delimiter: '/' },
-                                                    logger, vFormat);
+                logger, vFormat);
 
             /* Filter the first entry with a common prefix. It should be
              * accepted and added to the result. */
@@ -687,7 +687,7 @@ function getTestListing(test, data, vFormat) {
                 key: getListingKey('commonPrefix1/key1', vFormat),
                 value: '',
             }),
-                               FILTER_ACCEPT);
+            FILTER_ACCEPT);
             assert.deepStrictEqual(delimiter.result(), {
                 CommonPrefixes: ['commonPrefix1/'],
                 Versions: [],
@@ -703,7 +703,7 @@ function getTestListing(test, data, vFormat) {
                 key: getListingKey('commonPrefix1/key2', vFormat),
                 value: '',
             }),
-                               FILTER_SKIP);
+            FILTER_SKIP);
             assert.deepStrictEqual(delimiter.result(), {
                 CommonPrefixes: ['commonPrefix1/'],
                 Versions: [],
@@ -719,7 +719,7 @@ function getTestListing(test, data, vFormat) {
                 key: getListingKey('commonPrefix2/key1', vFormat),
                 value: '',
             }),
-                               FILTER_ACCEPT);
+            FILTER_ACCEPT);
             assert.deepStrictEqual(delimiter.result(), {
                 CommonPrefixes: ['commonPrefix1/', 'commonPrefix2/'],
                 Versions: [],
@@ -830,7 +830,7 @@ function getTestListing(test, data, vFormat) {
             const value = '{"versionId":"version"}';
 
             const delimiter = new DelimiterVersions({ delimiter: '/' },
-                                                    logger, vFormat);
+                logger, vFormat);
 
             /* Filter the two first entries with the same common prefix to add
              * it to the result and reach the state where an entry is skipped
@@ -906,7 +906,7 @@ function getTestListing(test, data, vFormat) {
             const value = '{"versionId":"version"}';
 
             const delimiter = new DelimiterVersions({ delimiter: '/' },
-                                                    logger, vFormat);
+                logger, vFormat);
 
             assert.strictEqual(delimiter.filter({
                 key: getListingKey(prefixKey1, vFormat),

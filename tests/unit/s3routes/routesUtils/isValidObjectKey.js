@@ -23,11 +23,11 @@ describe('routesUtils.isValidObjectKey', () => {
     });
 
     it('should return isValid false if object key name exceeds length of 915',
-    () => {
-        const key = 'a'.repeat(916);
-        const result = routesUtils.isValidObjectKey(key, prefixBlacklist);
-        assert.strictEqual(result.isValid, false);
-    });
+        () => {
+            const key = 'a'.repeat(916);
+            const result = routesUtils.isValidObjectKey(key, prefixBlacklist);
+            assert.strictEqual(result.isValid, false);
+        });
 
     it('should return isValid true for a utf8 string of byte size 915', () => {
         const result = routesUtils.isValidObjectKey(keyutf8, prefixBlacklist);
