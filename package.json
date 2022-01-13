@@ -30,7 +30,7 @@
     "bson": "4.0.0",
     "debug": "~4.1.0",
     "diskusage": "^1.1.1",
-    "fcntl": "github:scality/node-fcntl",
+    "fcntl": "github:scality/node-fcntl#0.2.0",
     "hdclient": "scality/hdclient#489db2106570b9ea41bdacdf56131324d0db6a58",
     "https-proxy-agent": "^2.2.0",
     "ioredis": "4.9.5",
