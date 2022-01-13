@@ -62,7 +62,7 @@ describe('Basic listing algorithm', () => {
 
     it('Should support key-only listing', () => {
         const res = performListing(['key1', 'key2'],
-                                   Basic, { maxKeys: 1 }, logger);
+            Basic, { maxKeys: 1 }, logger);
         assert.deepStrictEqual(res, ['key1']);
     });
 

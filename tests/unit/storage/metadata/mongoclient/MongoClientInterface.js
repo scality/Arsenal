@@ -395,7 +395,7 @@ describe('MongoClientInterface::_processEntryData', () => {
     tests.forEach(([msg, isTransient, params, expected]) => it(msg, () => {
         assert.deepStrictEqual(
             mongoTestClient._processEntryData(params, isTransient),
-            expected
+            expected,
         );
     }));
 });
@@ -498,7 +498,7 @@ describe('MongoClientInterface::_isReplicationEntryStalled', () => {
     tests.forEach(([msg, params, expected]) => it(msg, () => {
         assert.deepStrictEqual(
             mongoTestClient._isReplicationEntryStalled(params, testDate),
-            expected
+            expected,
         );
     }));
 });
@@ -734,13 +734,13 @@ describe('MongoClientInterface, tests', () => {
                 client, bucketName, false, err => next(err)),
             next => {
                 const objMD = new ObjectMD()
-                      .setKey(objectName)
-                      .setDataStoreName('us-east-1')
-                      .setContentLength(100)
-                      .setTags(tags)
-                      .setLastModified(new Date(Date.now()));
+                    .setKey(objectName)
+                    .setDataStoreName('us-east-1')
+                    .setContentLength(100)
+                    .setTags(tags)
+                    .setLastModified(new Date(Date.now()));
                 client.putObject(bucketName, objectName, objMD.getValue(), {},
-                                 logger, err => next(err));
+                    logger, err => next(err));
             },
             next => {
                 const c = client.getCollection(bucketName);

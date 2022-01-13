@@ -30,9 +30,9 @@ describe('rpc - generic client/server RPC system', () => {
     let server;
     let miscClient;
     const srvLogger = new Logger('rpc:test-server',
-                                 { level: 'info', dump: 'error' });
+        { level: 'info', dump: 'error' });
     const cliLogger = new Logger('rpc:test-client',
-                                 { level: 'info', dump: 'error' });
+        { level: 'info', dump: 'error' });
     const reqLogger = cliLogger.newRequestLoggerFromSerializedUids('foo');
 
     function setupRPC(done) {

@@ -96,11 +96,11 @@ describe('object Retention validation', () => {
     failTests.forEach(t => {
         it(t.name, done => {
             parseRetentionXml(buildXml(t.params.key, t.params.value), log,
-            err => {
-                assert(err[t.error]);
-                assert.strictEqual(err.description, t.errMessage);
-                done();
-            });
+                err => {
+                    assert(err[t.error]);
+                    assert.strictEqual(err.description, t.errMessage);
+                    done();
+                });
         });
     });
 

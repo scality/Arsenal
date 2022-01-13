@@ -93,38 +93,38 @@ function _listObjects(prefix, objects, cb) {
     async.mapLimit(listing, 5, (obj, next) => {
         const currentMarker = obj.marker === undefined ? '' : obj.marker;
         dispatcher.get(_listingURL(prefix, prefix + currentMarker),
-                       (err, response, body) => {
-                           if (err) {
-                               return next(err);
-                           }
-                           if (obj.isPrefix) {
-                               assert.strictEqual(body.Contents.length, 0);
-                               assert.strictEqual(body.CommonPrefixes.length,
-                                                  1);
-                               assert.strictEqual(body.CommonPrefixes[0],
-                                                  prefix + obj.key);
-                           } else {
-                               assert.strictEqual(body.Contents.length, 1);
-                               assert.strictEqual(body.CommonPrefixes.length,
-                                                  0);
-                               assert.strictEqual(body.Contents[0].key,
-                                                  prefix + obj.key);
-                           }
-                           assert.strictEqual(body.IsTruncated,
-                                              obj.IsTruncated);
-                           if (body.IsTruncated) {
-                               assert.strictEqual(body.NextMarker,
-                                                  prefix + obj.NextMarker);
-                           }
-                           return next();
-                       });
+            (err, response, body) => {
+                if (err) {
+                    return next(err);
+                }
+                if (obj.isPrefix) {
+                    assert.strictEqual(body.Contents.length, 0);
+                    assert.strictEqual(body.CommonPrefixes.length,
+                        1);
+                    assert.strictEqual(body.CommonPrefixes[0],
+                        prefix + obj.key);
+                } else {
+                    assert.strictEqual(body.Contents.length, 1);
+                    assert.strictEqual(body.CommonPrefixes.length,
+                        0);
+                    assert.strictEqual(body.Contents[0].key,
+                        prefix + obj.key);
+                }
+                assert.strictEqual(body.IsTruncated,
+                    obj.IsTruncated);
+                if (body.IsTruncated) {
+                    assert.strictEqual(body.NextMarker,
+                        prefix + obj.NextMarker);
+                }
+                return next();
+            });
     }, err => cb(err));
 }
 
 function _createObjects(objects, cb) {
     async.mapLimit(objects, 5, (key, next) => {
         dispatcher.post(`/default/bucket/${Bucket}/${key}`,
-                        { key }, next);
+            { key }, next);
     }, err => {
         cb(err);
     });
@@ -133,10 +133,10 @@ function _createObjects(objects, cb) {
 function _readObjects(objects, cb) {
     async.mapLimit(objects, 5, (key, next) => {
         dispatcher.get(`/default/bucket/${Bucket}/${key}`,
-                       (err, response, body) => {
-                           assert.deepStrictEqual(body.key, key);
-                           next(err);
-                       });
+            (err, response, body) => {
+                assert.deepStrictEqual(body.key, key);
+                next(err);
+            });
     }, err => {
         cb(err);
     });
@@ -145,34 +145,34 @@ function _readObjects(objects, cb) {
 function _deleteObjects(objects, cb) {
     async.mapLimit(objects, 5, (key, next) => {
         dispatcher.delete(`/default/bucket/${Bucket}/${key}`,
-                          err => next(err));
+            err => next(err));
     }, err => {
         cb(err);
     });
 }
 
 describe('Basic Metadata Proxy Server test',
-         function bindToThis() {
-             this.timeout(10000);
-             it('Shoud get the metadataInformation', done => {
-                 dispatcher.get('/default/metadataInformation',
-                                (err, response, body) => {
-                                    if (err) {
-                                        return done(err);
-                                    }
-                                    assert.deepStrictEqual(
-                                        body, { metadataVersion: 2 });
-                                    return done();
-                                });
-             });
-         });
+    function bindToThis() {
+        this.timeout(10000);
+        it('Shoud get the metadataInformation', done => {
+            dispatcher.get('/default/metadataInformation',
+                (err, response, body) => {
+                    if (err) {
+                        return done(err);
+                    }
+                    assert.deepStrictEqual(
+                        body, { metadataVersion: 2 });
+                    return done();
+                });
+        });
+    });
 
 describe('Basic Metadata Proxy Server CRUD test', function bindToThis() {
     this.timeout(10000);
 
     beforeEach(done => {
         dispatcher.post(`/default/bucket/${Bucket}`, bucketInfo,
-                        done);
+            done);
     });
 
     afterEach(done => {
@@ -181,40 +181,40 @@ describe('Basic Metadata Proxy Server CRUD test', function bindToThis() {
 
     it('Should get the bucket attributes', done => {
         dispatcher.get(`/default/attributes/${Bucket}`,
-                       (err, response, body) => {
-                           if (err) {
-                               return done(err);
-                           }
-                           assert.deepStrictEqual(body.name,
-                                                  bucketInfo.name);
-                           return done();
-                       });
+            (err, response, body) => {
+                if (err) {
+                    return done(err);
+                }
+                assert.deepStrictEqual(body.name,
+                    bucketInfo.name);
+                return done();
+            });
     });
 
     it('Should crud an object', done => {
         async.waterfall([
             next => dispatcher.post(`/default/bucket/${Bucket}/test1`,
-                                    { foo: 'gabu' }, err => next(err)),
+                { foo: 'gabu' }, err => next(err)),
             next => dispatcher.get(`/default/bucket/${Bucket}/test1`,
-                                   (err, response, body) => {
-                                       if (!err) {
-                                           assert.deepStrictEqual(body.foo,
-                                                                  'gabu');
-                                           next(err);
-                                       }
-                                   }),
+                (err, response, body) => {
+                    if (!err) {
+                        assert.deepStrictEqual(body.foo,
+                            'gabu');
+                        next(err);
+                    }
+                }),
             next => dispatcher.post(`/default/bucket/${Bucket}/test1`,
-                                    { foo: 'zome' }, err => next(err)),
+                { foo: 'zome' }, err => next(err)),
             next => dispatcher.get(`/default/bucket/${Bucket}/test1`,
-                                   (err, response, body) => {
-                                       if (!err) {
-                                           assert.deepStrictEqual(body.foo,
-                                                                  'zome');
-                                           next(err);
-                                       }
-                                   }),
+                (err, response, body) => {
+                    if (!err) {
+                        assert.deepStrictEqual(body.foo,
+                            'zome');
+                        next(err);
+                    }
+                }),
             next => dispatcher.delete(`/default/bucket/${Bucket}/test1`,
-                                      err => next(err)),
+                err => next(err)),
         ], err => done(err));
     });
 
@@ -256,22 +256,22 @@ describe('Basic Metadata Proxy Server CRUD test', function bindToThis() {
 
     it('Should fail to list a non existing bucket', done => {
         dispatcher.get('/default/bucket/nonexisting',
-                       (err, response) => {
-                           assert.strictEqual(
-                               response.responseHead.statusCode,
-                               404);
-                           done(err);
-                       });
+            (err, response) => {
+                assert.strictEqual(
+                    response.responseHead.statusCode,
+                    404);
+                done(err);
+            });
     });
 
     it('Should fail to get attributes from a non existing bucket', done => {
         dispatcher.get('/default/attributes/nonexisting',
-                       (err, response) => {
-                           assert.strictEqual(
-                               response.responseHead.statusCode,
-                               404);
-                           done(err);
-                       });
+            (err, response) => {
+                assert.strictEqual(
+                    response.responseHead.statusCode,
+                    404);
+                done(err);
+            });
     });
 
     it('should succeed a health check', done => {
@@ -303,12 +303,12 @@ describe('Basic Metadata Proxy Server CRUD test', function bindToThis() {
                             return next(err);
                         }
                         assert.strictEqual(response.responseHead.statusCode,
-                                           200);
+                            200);
                         const bucketMD = JSON.parse(body.bucket);
                         const objectMD = JSON.parse(body.obj);
                         const expectedObjectMD = { key: objectName };
                         assert.deepStrictEqual(bucketMD.name,
-                                               bucketInfo.name);
+                            bucketInfo.name);
                         assert.deepStrictEqual(objectMD, expectedObjectMD);
                         return next(err);
                     });

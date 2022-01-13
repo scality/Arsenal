@@ -328,9 +328,9 @@ describe('ObjectMD import from stored blob', () => {
         const importedMd = importedRes.result;
         const valueImported = importedMd.getValue();
         assert.strictEqual(valueImported['md-model-version'],
-                           constants.mdModelVersion);
+            constants.mdModelVersion);
         assert.deepStrictEqual(valueImported.location,
-                               [{ key: 'stringLocation' }]);
+            [{ key: 'stringLocation' }]);
     });
 
     it('should keep null location as is', () => {
@@ -358,20 +358,20 @@ describe('ObjectMD import from stored blob', () => {
         const importedMd = importedRes.result;
         const valueImported = importedMd.getValue();
         assert.strictEqual(valueImported['md-model-version'],
-                           constants.mdModelVersion);
+            constants.mdModelVersion);
         assert.notStrictEqual(valueImported.dataStoreName, undefined);
     });
 
     it('should return undefined for dataStoreVersionId if no object location',
-    () => {
-        const md = new ObjectMD();
-        const value = md.getValue();
-        const jsonMd = JSON.stringify(value);
-        const importedRes = ObjectMD.createFromBlob(jsonMd);
-        assert.strictEqual(importedRes.error, undefined);
-        const importedMd = importedRes.result;
-        assert.strictEqual(importedMd.getDataStoreVersionId(), undefined);
-    });
+        () => {
+            const md = new ObjectMD();
+            const value = md.getValue();
+            const jsonMd = JSON.stringify(value);
+            const importedRes = ObjectMD.createFromBlob(jsonMd);
+            assert.strictEqual(importedRes.error, undefined);
+            const importedMd = importedRes.result;
+            assert.strictEqual(importedMd.getDataStoreVersionId(), undefined);
+        });
 
     it('should get dataStoreVersionId if saved in object location', () => {
         const md = new ObjectMD();

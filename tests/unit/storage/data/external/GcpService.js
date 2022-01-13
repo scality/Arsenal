@@ -87,7 +87,7 @@ const operations = [
     },
 ];
 
-describe('GcpService request behavior', function testSuite() {
+describe('GcpService request behavior', () => {
     jest.setTimeout(120000);
     let httpServer;
     let client;
@@ -116,16 +116,16 @@ describe('GcpService request behavior', function testSuite() {
 
     invalidBucketNames.forEach(bucket => {
         it(`should not use dns-style if bucket isn't dns compatible: ${bucket}`,
-        done => {
-            client.headBucket({ Bucket: bucket }, err => {
-                assert.ifError(err);
-                done();
+            done => {
+                client.headBucket({ Bucket: bucket }, err => {
+                    assert.ifError(err);
+                    done();
+                });
             });
-        });
     });
 });
 
-describe('GcpService pathStyle tests', function testSuite() {
+describe('GcpService pathStyle tests', () => {
     jest.setTimeout(120000);
     let httpServer;
     let client;
@@ -159,7 +159,7 @@ describe('GcpService pathStyle tests', function testSuite() {
     }));
 });
 
-describe('GcpService dnsStyle tests', function testSuite() {
+describe('GcpService dnsStyle tests', () => {
     jest.setTimeout(120000);
     let httpServer;
     let client;

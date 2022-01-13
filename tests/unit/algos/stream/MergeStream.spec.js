@@ -52,7 +52,7 @@ function compareInt(a, b) {
 }
 
 function testMergeStreamWithIntegers(contents1, contents2,
-                                     usePauseResume, errorAtEnd, cb) {
+    usePauseResume, errorAtEnd, cb) {
     const expectedItems = contents1.concat(contents2).sort(compareInt);
     const mergeStream = new MergeStream(
         new Streamify(contents1, errorAtEnd)
@@ -189,39 +189,39 @@ describe('MergeStream', () => {
                           `${usePauseResume ? ' with pause/resume' : ''}` +
                           `${errorAtEnd ? ' with error' : ''}`;
                     it(`${nbEntries} sequential entries${fixtureDesc}`,
-                    function bigMergeSequential(done) {
-                        jest.setTimeout(10000);
-                        const stream1 = [];
-                        const stream2 = [];
-                        for (let i = 0; i < nbEntries; ++i) {
-                            if (Math.floor(i / (nbEntries / 10)) % 2 === 0) {
-                                stream1.push(i);
-                            } else {
-                                stream2.push(i);
+                        (done) => {
+                            jest.setTimeout(10000);
+                            const stream1 = [];
+                            const stream2 = [];
+                            for (let i = 0; i < nbEntries; ++i) {
+                                if (Math.floor(i / (nbEntries / 10)) % 2 === 0) {
+                                    stream1.push(i);
+                                } else {
+                                    stream2.push(i);
+                                }
                             }
-                        }
-                        testMergeStreamWithIntegers(
-                            stream1, stream2, usePauseResume, errorAtEnd, done);
-                    });
+                            testMergeStreamWithIntegers(
+                                stream1, stream2, usePauseResume, errorAtEnd, done);
+                        });
                     it(`${nbEntries} randomly mingled entries${fixtureDesc}`,
-                    function bigMergeRandom(done) {
-                        jest.setTimeout(10000);
-                        const stream1 = [];
-                        const stream2 = [];
-                        let accu = nbEntries;
-                        for (let i = 0; i < nbEntries; ++i) {
+                        (done) => {
+                            jest.setTimeout(10000);
+                            const stream1 = [];
+                            const stream2 = [];
+                            let accu = nbEntries;
+                            for (let i = 0; i < nbEntries; ++i) {
                             // picked two large arbitrary prime numbers to get a
                             // deterministic random-looking series
-                            accu = (accu * 1592760451) % 8448053;
-                            if (accu % 2 === 0) {
-                                stream1.push(i);
-                            } else {
-                                stream2.push(i);
+                                accu = (accu * 1592760451) % 8448053;
+                                if (accu % 2 === 0) {
+                                    stream1.push(i);
+                                } else {
+                                    stream2.push(i);
+                                }
                             }
-                        }
-                        testMergeStreamWithIntegers(
-                            stream1, stream2, usePauseResume, errorAtEnd, done);
-                    });
+                            testMergeStreamWithIntegers(
+                                stream1, stream2, usePauseResume, errorAtEnd, done);
+                        });
                 }
             });
         });
@@ -232,29 +232,29 @@ describe('MergeStream', () => {
     // event, so it's useful to test both cases
     [3, 100].forEach(nbItemsPerStream => {
         it(`destroy() should destroy both inner streams with ${nbItemsPerStream} items per stream`,
-        done => {
-            const stream1 = new Streamify(new Array(nbItemsPerStream).fill().map((e, i) => 2 * i));
-            const stream2 = new Streamify(new Array(nbItemsPerStream).fill().map((e, i) => 1 + 2 * i));
-            const mergeStream = new MergeStream(stream1, stream2, compareInt);
-            mergeStream.on('data', item => {
-                if (item === 5) {
-                    mergeStream.destroy();
-                    const s1ended = stream1._ended;
-                    const s2ended = stream2._ended;
-                    setTimeout(() => {
-                        if (!s1ended) {
-                            assert(stream1._destroyed);
-                        }
-                        if (!s2ended) {
-                            assert(stream2._destroyed);
-                        }
-                        done();
-                    }, 10);
-                }
+            done => {
+                const stream1 = new Streamify(new Array(nbItemsPerStream).fill().map((e, i) => 2 * i));
+                const stream2 = new Streamify(new Array(nbItemsPerStream).fill().map((e, i) => 1 + 2 * i));
+                const mergeStream = new MergeStream(stream1, stream2, compareInt);
+                mergeStream.on('data', item => {
+                    if (item === 5) {
+                        mergeStream.destroy();
+                        const s1ended = stream1._ended;
+                        const s2ended = stream2._ended;
+                        setTimeout(() => {
+                            if (!s1ended) {
+                                assert(stream1._destroyed);
+                            }
+                            if (!s2ended) {
+                                assert(stream2._destroyed);
+                            }
+                            done();
+                        }, 10);
+                    }
+                });
+                mergeStream.once('error', err => {
+                    assert.fail(`unexpected error: ${err.message}`);
+                });
             });
-            mergeStream.once('error', err => {
-                assert.fail(`unexpected error: ${err.message}`);
-            });
-        });
     });
 });

@@ -67,7 +67,7 @@ describe('ReplicationConfiguration class', () => {
             const repConfErr = repConf.parseConfiguration();
             assert.ifError(repConfErr);
             assert.strictEqual(repConf.getPreferredReadLocation(),
-                               'gcpbackend');
+                'gcpbackend');
             done();
         });
     });

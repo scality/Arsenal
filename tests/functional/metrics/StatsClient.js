@@ -31,28 +31,28 @@ describe('StatsClient class', () => {
     after(() => redisClient.disconnect());
 
     it('should correctly record a new request by default one increment',
-    done => {
-        async.series([
-            next => {
-                statsClient.reportNewRequest(id, (err, res) => {
-                    assert.ifError(err);
+        done => {
+            async.series([
+                next => {
+                    statsClient.reportNewRequest(id, (err, res) => {
+                        assert.ifError(err);
 
-                    const expected = [[null, 1], [null, 1]];
-                    assert.deepEqual(res, expected);
-                    next();
-                });
-            },
-            next => {
-                statsClient.reportNewRequest(id, (err, res) => {
-                    assert.ifError(err);
+                        const expected = [[null, 1], [null, 1]];
+                        assert.deepEqual(res, expected);
+                        next();
+                    });
+                },
+                next => {
+                    statsClient.reportNewRequest(id, (err, res) => {
+                        assert.ifError(err);
 
-                    const expected = [[null, 2], [null, 1]];
-                    assert.deepEqual(res, expected);
-                    next();
-                });
-            },
-        ], done);
-    });
+                        const expected = [[null, 2], [null, 1]];
+                        assert.deepEqual(res, expected);
+                        next();
+                    });
+                },
+            ], done);
+        });
 
     it('should record new requests by defined amount increments', done => {
         function noop() {}
