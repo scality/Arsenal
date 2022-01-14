@@ -78,7 +78,7 @@
     "lint_md": "mdlint $(git ls-files '*.md')",
     "lint_yml": "yamllint $(git ls-files '*.yml')",
     "test": "jest tests/unit",
-    "ft_test": "jest tests/functional  --testTimeout=120000 --forceExit",
+    "ft_test": "jest tests/functional --forceExit",
     "coverage": "yarn coverage_unit && yarn coverage_ft && yarn coverage_report",
     "coverage_unit": "yarn test --coverage",
     "coverage_ft": "yarn ft_test --coverage",
@@ -98,8 +98,8 @@
       "helpers?\\.js",
       "Mock.*\\.js",
       "Dummy.*\\.js",
-      "tests/functional/\\.*/utils\\.js",
-      "tests/functional/\\.*/utils/.*\\.js"
+      "tests/functional/.*/utils\\.js",
+      "tests/functional/.*/utils/.*\\.js"
     ],
     "testMatch": [
       "**/*.js"
