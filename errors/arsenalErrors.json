@@ -56,6 +56,10 @@
     "code": 400,
     "description": "The provided token has expired."
   },
+  "HttpHeadersTooLarge": {
+    "code": 400,
+    "description": "Your http headers exceed the maximum allowed http headers size."
+  },
   "IllegalVersioningConfigurationException": {
     "code": 400,
     "description": "Indicates that the versioning configuration specified in the request is invalid."
