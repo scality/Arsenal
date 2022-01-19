@@ -42,6 +42,10 @@ class DummyGetObjectRequest {
     on() {
         return this;
     }
+
+    abort() {
+        return this;
+    }
 }
 
 class DummyService {
