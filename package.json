@@ -73,6 +73,6 @@
     "coverage": "yarn coverage_unit && yarn coverage_ft && yarn coverage_report",
     "coverage_unit": "nyc --silent yarn test",
     "coverage_ft": "nyc --silent --no-clean yarn ft_test",
-    "coverage_report": "nyc report --all --reporter=text-summary --reporter=lcov"
+    "coverage_report": "nyc report --all --reporter=text-summary --reporter=json"
   }
 }
