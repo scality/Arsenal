@@ -115,10 +115,11 @@ describe('REST interface for blob data storage', () => {
                         assert(usage.total > 0);
                         subDone();
                     });
-                }],
-                         err => {
-                             done(err);
-                         });
+                },
+            ],
+            err => {
+                done(err);
+            });
         });
     });
 
