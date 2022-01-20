@@ -69,6 +69,8 @@ describe('ObjectMD class setters/getters', () => {
         ['IsNull', true],
         ['NullVersionId', null, undefined],
         ['NullVersionId', '111111'],
+        ['NullUploadId', null, undefined],
+        ['NullUploadId', 'abcdefghi'],
         ['IsDeleteMarker', null, false],
         ['IsDeleteMarker', true],
         ['VersionId', null, undefined],
@@ -111,6 +113,8 @@ describe('ObjectMD class setters/getters', () => {
         ['RetentionMode', 'GOVERNANCE'],
         ['RetentionDate', retainDate.toISOString()],
         ['OriginOp', null, ''],
+        ['IsAborted', null, undefined],
+        ['IsAborted', true],
     ].forEach(test => {
         const property = test[0];
         const testValue = test[1];
@@ -334,6 +338,7 @@ describe('getAttributes static method', () => {
             'location': true,
             'isNull': true,
             'nullVersionId': true,
+            'nullUploadId': true,
             'isDeleteMarker': true,
             'versionId': true,
             'tags': true,
@@ -343,6 +348,7 @@ describe('getAttributes static method', () => {
             'last-modified': true,
             'md-model-version': true,
             'originOp': true,
+            'isAborted': true,
         };
         assert.deepStrictEqual(attributes, expectedResult);
     });

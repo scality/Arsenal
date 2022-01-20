@@ -28,7 +28,7 @@ jobs:
       uses: actions/checkout@v2
     - uses: actions/setup-node@v2
       with:
-        node-version: '10'
+        node-version: '16'
         cache: 'yarn'
     - name: install dependencies
       run: yarn install --frozen-lockfile
@@ -39,7 +39,7 @@ jobs:
     - name: lint markdown
       run: yarn --silent lint_md
     - name: run unit tests
-      run: yarn --silent test
+      run: yarn test
     - name: run functional tests
       run: yarn ft_test
     - name: run executables tests

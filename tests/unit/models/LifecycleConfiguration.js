@@ -393,3 +393,358 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
         });
     });
 });
+
+describe('LifecycleConfiguration::getConfigJson', () => {
+    const tests = [
+        [
+            'without prefix and tags',
+            {
+                rules: [
+                    {
+                        ruleID: 'test-id',
+                        ruleStatus: 'Enabled',
+                        actions: [
+                            { actionName: 'Expiration', days: 1 },
+                        ],
+                    },
+                ],
+            },
+            {
+                Rules: [
+                    {
+                        ID: 'test-id',
+                        Status: 'Enabled',
+                        Prefix: '',
+                        Expiration: { Days: 1 },
+                    },
+                ],
+            },
+        ],
+        [
+            'with prefix and no tags',
+            {
+                rules: [
+                    {
+                        ruleID: 'test-id',
+                        ruleStatus: 'Enabled',
+                        actions: [
+                            { actionName: 'Expiration', days: 1 },
+                        ],
+                        prefix: 'prefix',
+                    },
+                ],
+            },
+            {
+                Rules: [
+                    {
+                        ID: 'test-id',
+                        Status: 'Enabled',
+                        Filter: { Prefix: 'prefix' },
+                        Expiration: { Days: 1 },
+                    },
+                ],
+            },
+        ],
+        [
+            'with filter.prefix and no tags',
+            {
+                rules: [
+                    {
+                        ruleID: 'test-id',
+                        ruleStatus: 'Enabled',
+                        actions: [
+                            { actionName: 'Expiration', days: 1 },
+                        ],
+                        filter: { rulePrefix: 'prefix' },
+                    },
+                ],
+            },
+            {
+                Rules: [
+                    {
+                        ID: 'test-id',
+                        Status: 'Enabled',
+                        Expiration: { Days: 1 },
+                        Filter: { Prefix: 'prefix' },
+                    },
+                ],
+            },
+        ],
+        [
+            'with prefix and at least one tag',
+            {
+                rules: [
+                    {
+                        ruleID: 'test-id',
+                        ruleStatus: 'Enabled',
+                        actions: [
+                            { actionName: 'Expiration', days: 1 },
+                        ],
+                        filter: {
+                            tags: [
+                                { key: 'key', val: 'val' },
+                            ],
+                        },
+                        prefix: 'prefix',
+                    },
+                ],
+            },
+            {
+                Rules: [
+                    {
+                        ID: 'test-id',
+                        Status: 'Enabled',
+                        Filter: {
+                            And: {
+                                Prefix: 'prefix',
+                                Tags: [
+                                    { Key: 'key', Value: 'val' },
+                                ],
+                            },
+                        },
+                        Expiration: { Days: 1 },
+                    },
+                ],
+            },
+        ],
+        [
+            'with filter.prefix and at least one tag',
+            {
+                rules: [
+                    {
+                        ruleID: 'test-id',
+                        ruleStatus: 'Enabled',
+                        actions: [
+                            { actionName: 'Expiration', days: 1 },
+                        ],
+                        filter: {
+                            rulePrefix: 'prefix',
+                            tags: [
+                                { key: 'key', val: 'val' },
+                            ],
+                        },
+                    },
+                ],
+            },
+            {
+                Rules: [
+                    {
+                        ID: 'test-id',
+                        Status: 'Enabled',
+                        Filter: {
+                            And: {
+                                Prefix: 'prefix',
+                                Tags: [
+                                    { Key: 'key', Value: 'val' },
+                                ],
+                            },
+                        },
+                        Expiration: { Days: 1 },
+                    },
+                ],
+            },
+        ],
+        [
+            'with no prefix and multiple tags',
+            {
+                rules: [
+                    {
+                        ruleID: 'test-id',
+                        ruleStatus: 'Enabled',
+                        actions: [
+                            { actionName: 'Expiration', days: 1 },
+                        ],
+                        filter: {
+                            tags: [
+                                { key: 'key1', val: 'val' },
+                                { key: 'key2', val: 'val' },
+                            ],
+                        },
+                    },
+                ],
+            },
+            {
+                Rules: [
+                    {
+                        ID: 'test-id',
+                        Status: 'Enabled',
+                        Filter: {
+                            And: {
+                                Tags: [
+                                    { Key: 'key1', Value: 'val' },
+                                    { Key: 'key2', Value: 'val' },
+                                ],
+                            },
+                        },
+                        Expiration: { Days: 1 },
+                    },
+                ],
+            },
+        ],
+        [
+            'single action Expiration',
+            {
+                rules: [
+                    {
+                        ruleID: 'test-id',
+                        ruleStatus: 'Enabled',
+                        actions: [
+                            { actionName: 'Expiration', deleteMarker: 'true' },
+                        ],
+                        prefix: '',
+                    },
+                ],
+            },
+            {
+                Rules: [
+                    {
+                        ID: 'test-id',
+                        Status: 'Enabled',
+                        Prefix: '',
+                        Expiration: { ExpiredObjectDeleteMarker: true },
+                    },
+                ],
+            },
+        ],
+        [
+            'single action Expiration days',
+            {
+                rules: [
+                    {
+                        ruleID: 'test-id',
+                        ruleStatus: 'Enabled',
+                        actions: [
+                            { actionName: 'Expiration', days: 10 },
+                        ],
+                        prefix: '',
+                    },
+                ],
+            },
+            {
+                Rules: [
+                    {
+                        ID: 'test-id',
+                        Status: 'Enabled',
+                        Prefix: '',
+                        Expiration: { Days: 10 },
+                    },
+                ],
+            },
+        ],
+        [
+            'single action Expiration date',
+            {
+                rules: [
+                    {
+                        ruleID: 'test-id',
+                        ruleStatus: 'Enabled',
+                        actions: [
+                            {
+                                actionName: 'Expiration',
+                                date: 'Fri, 21 Dec 2012 00:00:00 GMT',
+                            },
+                        ],
+                        prefix: '',
+                    },
+                ],
+            },
+            {
+                Rules: [
+                    {
+                        ID: 'test-id',
+                        Status: 'Enabled',
+                        Prefix: '',
+                        Expiration: { Date: 'Fri, 21 Dec 2012 00:00:00 GMT' },
+                    },
+                ],
+            },
+        ],
+        [
+            'single action NoncurrentVersionExpiration',
+            {
+                rules: [
+                    {
+                        ruleID: 'test-id',
+                        ruleStatus: 'Enabled',
+                        actions: [
+                            { actionName: 'NoncurrentVersionExpiration', days: 10 },
+                        ],
+                        prefix: '',
+                    },
+                ],
+            },
+            {
+                Rules: [
+                    {
+                        ID: 'test-id',
+                        Status: 'Enabled',
+                        Prefix: '',
+                        NoncurrentVersionExpiration: { NoncurrentDays: 10 },
+                    },
+                ],
+            },
+        ],
+        [
+            'single action AbortIncompleteMultipartUpload days',
+            {
+                rules: [
+                    {
+                        ruleID: 'test-id',
+                        ruleStatus: 'Enabled',
+                        actions: [
+                            { actionName: 'AbortIncompleteMultipartUpload', days: 10 },
+                        ],
+                        prefix: '',
+                    },
+                ],
+            },
+            {
+                Rules: [
+                    {
+                        ID: 'test-id',
+                        Status: 'Enabled',
+                        Prefix: '',
+                        AbortIncompleteMultipartUpload: { DaysAfterInitiation: 10 },
+                    },
+                ],
+            },
+        ],
+        [
+            'multiple actions',
+            {
+                rules: [
+                    {
+                        ruleID: 'test-id',
+                        ruleStatus: 'Enabled',
+                        actions: [
+                            { actionName: 'AbortIncompleteMultipartUpload', days: 10 },
+                            { actionName: 'NoncurrentVersionExpiration', days: 1 },
+                            { actionName: 'Expiration', deleteMarker: 'true' },
+                        ],
+                        prefix: '',
+                    },
+                ],
+            },
+            {
+                Rules: [
+                    {
+                        ID: 'test-id',
+                        Status: 'Enabled',
+                        Prefix: '',
+                        AbortIncompleteMultipartUpload: { DaysAfterInitiation: 10 },
+                        NoncurrentVersionExpiration: { NoncurrentDays: 1 },
+                        Expiration: { ExpiredObjectDeleteMarker: true },
+                    },
+                ],
+            },
+        ],
+    ];
+
+    tests.forEach(([msg, input, expected]) => it(
+        `should return correct configuration: ${msg}`, () => {
+            assert.deepStrictEqual(
+                LifecycleConfiguration.getConfigJson(input),
+                expected
+            );
+        }));
+});

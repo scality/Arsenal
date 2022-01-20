@@ -1,9 +1,9 @@
 {
   "name": "arsenal",
   "engines": {
-    "node": ">=6.9.5"
+    "node": ">=16"
   },
-  "version": "7.10.3",
+  "version": "7.10.4",
   "description": "Common utilities for the S3 project components",
   "main": "index.js",
   "repository": {
@@ -41,7 +41,7 @@
     "xml2js": "~0.4.23"
   },
   "optionalDependencies": {
-    "ioctl": "2.0.0"
+    "ioctl": "^2.0.2"
   },
   "devDependencies": {
     "@sinonjs/fake-timers": "^6.0.1",
@@ -57,7 +57,7 @@
     "lint": "eslint $(git ls-files '*.js')",
     "lint_md": "mdlint $(git ls-files '*.md')",
     "lint_yml": "yamllint $(git ls-files '*.yml')",
-    "test": "mocha --recursive --timeout 5500 tests/unit",
+    "test": "mocha --recursive tests/unit",
     "ft_test": "find tests/functional -name \"*.js\" | grep -v \"utils/\" | xargs mocha --timeout 120000"
   },
   "private": true
