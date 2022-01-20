@@ -208,7 +208,7 @@ describe('network.Server: ', () => {
                 assert.strictEqual(ws._server._connections, 1);
                 setTimeout(() => {
                     // client connection should have been closed after more than 1000ms
-                    assert.strictEqual(ws._server.connections, 0);
+                    assert.strictEqual(ws._server._connections, 0);
                     ws.stop();
                     ws.onStop(done);
                 }, 200);
