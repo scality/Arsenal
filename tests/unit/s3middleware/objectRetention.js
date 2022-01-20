@@ -27,10 +27,12 @@ function buildXml(key, value) {
     return retention;
 }
 
-const expectedRetention = {
-    mode: 'GOVERNANCE',
-    date: passDate.toISOString(),
-};
+function expectedRetention(retainDate) {
+    return {
+        mode: 'GOVERNANCE',
+        date: retainDate,
+    };
+}
 
 const expectedXml =
     '<Retention xmlns="http://s3.amazonaws.com/doc/2006-03-01/">' +
@@ -65,16 +67,10 @@ const failTests = [
             '"COMPLIANCE"',
     },
     {
-        name: 'should fail with retain until date in UTC format',
-        params: { key: 'RetainDate', value: `${date.toUTCString()}` },
+        name: 'should fail with retain until date in invalid format',
+        params: { key: 'RetainDate', value: '599616000000' },
         error: 'InvalidRequest',
-        errMessage: 'RetainUntilDate timestamp must be ISO-8601 format',
-    },
-    {
-        name: 'should fail with retain until date in GMT format',
-        params: { key: 'RetainDate', value: `${date.toString()}` },
-        error: 'InvalidRequest',
-        errMessage: 'RetainUntilDate timestamp must be ISO-8601 format',
+        errMessage: 'RetainUntilDate is not a valid timestamp',
     },
     {
         name: 'should fail with retain until date in past',
@@ -82,6 +78,18 @@ const failTests = [
         error: 'InvalidRequest',
         errMessage: 'RetainUntilDate must be in the future',
     },
+];
+
+const validRetainDates = [
+    passDate.toISOString(),
+    passDate.toUTCString(),
+    passDate.toString(),
+    '2099-01-31T01:20:36Z',
+    '2099-01-31T01:20:36.123000Z',
+    '2099-01-31T01:20:36',
+    '2099-01-31',
+    '2099.01.31',
+    '2099/01/31',
 ];
 
 describe('object Retention validation', () => {
@@ -96,12 +104,16 @@ describe('object Retention validation', () => {
         });
     });
 
-    it('should pass with valid retention', done => {
-        parseRetentionXml(buildXml('RetainDate', passDate.toISOString()), log,
-        (err, result) => {
-            assert.ifError(err);
-            assert.deepStrictEqual(result, expectedRetention);
-            done();
+    describe('should pass with valid retention date', () => {
+        validRetainDates.forEach(retainDate => {
+            it(`should pass with - ${retainDate}`, done => {
+                parseRetentionXml(buildXml('RetainDate', retainDate), log,
+                (err, result) => {
+                    assert.ifError(err);
+                    assert.deepStrictEqual(result, expectedRetention(retainDate));
+                    done();
+                });
+            });
         });
     });
 });
