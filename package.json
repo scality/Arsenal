@@ -1,7 +1,7 @@
 {
   "name": "arsenal",
   "engines": {
-    "node": ">=10"
+    "node": ">=16"
   },
   "version": "8.1.22",
   "description": "Common utilities for the S3 project components",
@@ -30,7 +30,7 @@
     "bson": "4.0.0",
     "debug": "~4.1.0",
     "diskusage": "^1.1.1",
-    "fcntl": "github:scality/node-fcntl#9108603d8881d7762dcadfde1db927a1653dfda5",
+    "fcntl": "github:scality/node-fcntl#0.2.0",
     "hdclient": "scality/hdclient#489db2106570b9ea41bdacdf56131324d0db6a58",
     "https-proxy-agent": "^2.2.0",
     "ioredis": "4.9.5",
@@ -50,7 +50,7 @@
     "xml2js": "~0.4.23"
   },
   "optionalDependencies": {
-    "ioctl": "2.0.1"
+    "ioctl": "^2.0.2"
   },
   "devDependencies": {
     "@sinonjs/fake-timers": "^6.0.1",
