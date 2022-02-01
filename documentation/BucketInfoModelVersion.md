@@ -142,4 +142,4 @@ this._data.abortedUploadId = abortedUploadID || undefined
 
 ### Usage
 
-Indicates multipart upload abort status and aborted mulitpart upload id.
+Indicates multipart upload abort status and aborted multipart upload id.
