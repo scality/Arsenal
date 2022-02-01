@@ -87,8 +87,9 @@ Used to store the bucket lifecycle configuration info
 
 ```javascript
 this._data.isAborted = true || false;
+this._data.abortedUploadId = abortedUploadID || undefined
 ```
 
 ### Usage
 
-Indicates multipart upload abort status
+Indicates multipart upload abort status and aborted mulitpart upload id.
