@@ -3,7 +3,7 @@
   "engines": {
     "node": ">=16"
   },
-  "version": "7.4.13",
+  "version": "7.4.16",
   "description": "Common utilities for the S3 project components",
   "main": "index.js",
   "repository": {
@@ -45,7 +45,7 @@
     "@sinonjs/fake-timers": "^6.0.1",
     "eslint": "2.13.1",
     "eslint-config-airbnb": "6.2.0",
-    "eslint-config-scality": "scality/Guidelines#ec33dfb",
+    "eslint-config-scality": "scality/Guidelines#7.4.11",
     "eslint-plugin-react": "^4.3.0",
     "mocha": "8.0.1",
     "temp": "0.9.1"
