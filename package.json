@@ -42,7 +42,7 @@
     "ioctl": "^2.0.2"
   },
   "devDependencies": {
-    "@sinonjs/fake-timers": "^6.0.1",
+    "@sinonjs/fake-timers": "^9.1.0",
     "eslint": "2.13.1",
     "eslint-config-airbnb": "6.2.0",
     "eslint-config-scality": "scality/Guidelines#7.4.11",
