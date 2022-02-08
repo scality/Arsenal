@@ -1,7 +1,7 @@
 {
   "name": "arsenal",
   "engines": {
-    "node": ">=10"
+    "node": ">=16"
   },
   "version": "7.10.11",
   "description": "Common utilities for the S3 project components",
@@ -47,7 +47,7 @@
     "@sinonjs/fake-timers": "^6.0.1",
     "eslint": "2.13.1",
     "eslint-config-airbnb": "6.2.0",
-    "eslint-config-scality": "scality/Guidelines#ec33dfb",
+    "eslint-config-scality": "scality/Guidelines#7.10.2",
     "eslint-plugin-react": "^4.3.0",
     "mocha": "8.0.1",
     "sinon": "^9.0.2",
