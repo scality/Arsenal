@@ -126,19 +126,3 @@ Used to store the users configured KMS key id
 ```javascript
 this._uid = uid || uuid();
 ```
-
-### Usage
-
-Used to set a unique identifier on a bucket
-
-## Model version 11
-
-### Properties Added
-
-```javascript
-this._data.isAborted = true || false;
-```
-
-### Usage
-
-Indicates multipart upload abort status
