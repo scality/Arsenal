@@ -80,15 +80,3 @@ this._lifecycleConfiguration = lifecycleConfiguration || null;
 ### Usage
 
 Used to store the bucket lifecycle configuration info
-
-## Model version 7
-
-### Properties Added
-
-```javascript
-this._data.isAborted = true || false;
-```
-
-### Usage
-
-Indicates multipart upload abort status
