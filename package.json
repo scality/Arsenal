@@ -3,7 +3,7 @@
   "engines": {
     "node": ">=16"
   },
-  "version": "7.10.13",
+  "version": "7.10.14",
   "description": "Common utilities for the S3 project components",
   "main": "build/index.js",
   "repository": {
@@ -36,8 +36,10 @@
     "ipaddr.js": "1.9.1",
     "level": "~5.0.1",
     "level-sublevel": "~6.6.5",
+    "memorystream": "^0.3.1",
     "mongodb": "^3.0.1",
     "node-forge": "^0.7.1",
+    "node-zookeeper-client": "^0.2.2",
     "prom-client": "10.2.3",
     "simple-glob": "^0.2",
     "socket.io": "~2.3.0",
@@ -57,6 +59,7 @@
     "@sinonjs/fake-timers": "^6.0.1",
     "@types/jest": "^27.4.1",
     "@types/node": "^17.0.21",
+    "argparse": "^2.0.1",
     "eslint": "2.13.1",
     "eslint-config-airbnb": "6.2.0",
     "eslint-config-scality": "scality/Guidelines#7.10.2",
@@ -64,6 +67,7 @@
     "jest": "^27.5.1",
     "mocha": "8.0.1",
     "mongodb-memory-server": "^6.0.2",
+    "prando": "^6.0.1",
     "sinon": "^9.0.2",
     "temp": "0.9.1",
     "ts-jest": "^27.1.3",
