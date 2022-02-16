@@ -23,6 +23,7 @@ module.exports = {
         stream: {
             MergeStream: require('./lib/algos/stream/MergeStream'),
         },
+        SortedSet: require('./lib/algos/set/SortedSet'),
     },
     policies: {
         evaluators: require('./lib/policyEvaluator/evaluator.js'),
