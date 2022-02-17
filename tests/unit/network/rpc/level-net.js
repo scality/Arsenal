@@ -161,7 +161,7 @@ describe('level-net - LevelDB over network', () => {
         async.series(opList, cb);
     }
 
-    before(done => {
+    beforeAll(done => {
         temp.mkdir('level-net-testdb-', (err, dbDir) => {
             const rootDb = level(dbDir);
             db = sublevel(rootDb);
@@ -169,7 +169,7 @@ describe('level-net - LevelDB over network', () => {
         });
     });
 
-    after(done => {
+    afterAll(done => {
         client.once('disconnect', () => {
             server.close();
             done();
@@ -249,7 +249,7 @@ describe('level-net - LevelDB over network', () => {
                     .put(keyOfIter(i), valueOfIter(i), params, putCb);
             }
         }
-        before(done => {
+        beforeAll(done => {
             prefillKeys(done);
         });
         it('should be able to read keys back at random', done => {

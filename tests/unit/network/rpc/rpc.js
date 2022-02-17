@@ -53,11 +53,11 @@ describe('rpc - generic client/server RPC system', () => {
         miscClient.connect(done);
     }
 
-    before(done => {
+    beforeAll(done => {
         setupRPC(done);
     });
 
-    after(done => {
+    afterAll(done => {
         miscClient.once('disconnect', () => {
             server.close();
             done();
