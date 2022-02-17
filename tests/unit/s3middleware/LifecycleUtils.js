@@ -34,7 +34,7 @@ function getRuleIDs(rules) {
 describe('LifecycleUtils::getApplicableRules', () => {
     let lutils;
 
-    before(() => {
+    beforeAll(() => {
         lutils = new LifecycleUtils([
             'expiration',
             'noncurrentVersionExpiration',
@@ -434,7 +434,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
 describe('LifecycleUtils::filterRules', () => {
     let lutils;
 
-    before(() => {
+    beforeAll(() => {
         lutils = new LifecycleUtils();
     });
 
@@ -619,7 +619,7 @@ describe('LifecycleUtils::filterRules', () => {
 describe('LifecycleUtils::getApplicableTransition', () => {
     let lutils;
 
-    before(() => {
+    beforeAll(() => {
         lutils = new LifecycleUtils();
     });
 
@@ -792,7 +792,7 @@ describe('LifecycleUtils::getApplicableTransition', () => {
 describe('LifecycleUtils::compareTransitions', () => {
     let lutils;
 
-    before(() => {
+    beforeAll(() => {
         lutils = new LifecycleUtils();
     });
 
