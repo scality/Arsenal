@@ -30,10 +30,11 @@
     "bson": "4.0.0",
     "debug": "~4.1.0",
     "diskusage": "^1.1.1",
+    "eslint-plugin-import": "^2.25.4",
     "fcntl": "github:scality/node-fcntl#0.2.0",
     "hdclient": "scality/hdclient#1.1.0",
     "https-proxy-agent": "^2.2.0",
-    "ioredis": "4.9.5",
+    "ioredis": "^4.28.5",
     "ipaddr.js": "1.9.1",
     "level": "~5.0.1",
     "level-sublevel": "~6.6.5",
@@ -53,26 +54,51 @@
     "ioctl": "^2.0.2"
   },
   "devDependencies": {
+    "@babel/preset-env": "^7.16.11",
+    "@babel/preset-typescript": "^7.16.7",
     "@sinonjs/fake-timers": "^6.0.1",
-    "eslint": "2.13.1",
+    "@types/jest": "^27.4.0",
+    "@types/node": "^17.0.18",
+    "eslint": "^8.9.0",
     "eslint-config-airbnb": "6.2.0",
     "eslint-config-scality": "scality/Guidelines#ec33dfb",
     "eslint-plugin-react": "^4.3.0",
+    "jest": "^27.5.1",
     "mocha": "8.0.1",
     "mongodb-memory-server": "^6.0.2",
     "nyc": "^15.1.0",
     "sinon": "^9.0.2",
-    "temp": "0.9.1"
+    "temp": "0.9.1",
+    "typescript": "^4.5.5"
   },
   "scripts": {
     "lint": "eslint $(git ls-files '*.js')",
     "lint_md": "mdlint $(git ls-files '*.md')",
     "lint_yml": "yamllint $(git ls-files '*.yml')",
-    "test": "mocha --recursive --exit tests/unit",
-    "ft_test": "find tests/functional -name \"*.js\" | grep -v \"utils/\" | xargs mocha --timeout 120000 --exit",
+    "test": "jest tests/unit",
+    "ft_test": "jest tests/functional --testTimeout=120000 --forceExit",
     "coverage": "yarn coverage_unit && yarn coverage_ft && yarn coverage_report",
-    "coverage_unit": "nyc --silent yarn test",
-    "coverage_ft": "nyc --silent --no-clean yarn ft_test",
+    "coverage_unit": "yarn test --coverage",
+    "coverage_ft": "yarn ft_test --coverage",
     "coverage_report": "nyc report --all --reporter=text-summary --reporter=lcov"
+  },
+  "jest": {
+    "maxWorkers": 1,
+    "roots": [
+      ".",
+      "lib",
+      "errors"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "helpers?\\.js",
+      "Mock.*\\.js",
+      "Dummy.*\\.js",
+      "tests/functional/.*/utils\\.js",
+      "tests/functional/.*/utils/.*\\.js"
+    ],
+    "testMatch": [
+      "**/*.js"
+    ]
   }
 }

@@ -153,7 +153,7 @@ function _deleteObjects(objects, cb) {
 
 describe('Basic Metadata Proxy Server test',
          function bindToThis() {
-             this.timeout(10000);
+             jest.setTimeout(10000);
              it('Shoud get the metadataInformation', done => {
                  dispatcher.get('/default/metadataInformation',
                                 (err, response, body) => {
@@ -168,7 +168,7 @@ describe('Basic Metadata Proxy Server test',
          });
 
 describe('Basic Metadata Proxy Server CRUD test', function bindToThis() {
-    this.timeout(10000);
+    jest.setTimeout(10000);
 
     beforeEach(done => {
         dispatcher.post(`/default/bucket/${Bucket}`, bucketInfo,

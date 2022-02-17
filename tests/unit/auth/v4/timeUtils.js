@@ -35,11 +35,11 @@ describe('convertUTCtoISO8601 function', () => {
 
 describe('checkTimeSkew function', () => {
     let clock;
-    before(() => {
+    beforeAll(() => {
         // Time is 2016-03-17T18:22:01.033Z
         clock = fakeTimers.install({ now: 1458238921033 });
     });
-    after(() => {
+    afterAll(() => {
         clock.uninstall();
     });
 

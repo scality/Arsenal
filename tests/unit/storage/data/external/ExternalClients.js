@@ -54,7 +54,7 @@ describe('external backend clients', () => {
     backendClients.forEach(backend => {
         let testClient;
 
-        before(() => {
+        beforeAll(() => {
             testClient = new backend.Class(backend.config);
             testClient._client = new DummyService({ versioning: true });
         });

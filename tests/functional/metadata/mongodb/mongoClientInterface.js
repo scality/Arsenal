@@ -28,7 +28,7 @@ const mongoserver = new MongoMemoryReplSet({
 
 describe('MongoClientInterface', () => {
     let metadata;
-    before(done => {
+    beforeAll(done => {
         mongoserver.waitUntilRunning().then(() => {
             const opts = {
                 mongodb: {
@@ -44,7 +44,7 @@ describe('MongoClientInterface', () => {
         });
     });
 
-    after(done => {
+    afterAll(done => {
         async.series([
             next => metadata.close(next),
             next => mongoserver.stop()
