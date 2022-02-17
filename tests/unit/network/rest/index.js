@@ -53,11 +53,11 @@ describe('REST interface for blob data storage', () => {
         });
     }
 
-    before(done => {
+    beforeAll(done => {
         setup(done);
     });
 
-    after(done => {
+    afterAll(done => {
         server.stop();
         client.destroy();
         done();
@@ -135,7 +135,7 @@ describe('REST interface for blob data storage', () => {
                 `bytes ${expectedStart}-${expectedEnd}/${contents.length}`);
         }
 
-        before(done => {
+        beforeAll(done => {
             const rs = createReadStream(contents);
             client.put(rs, contents.length, '1', (err, key) => {
                 assert.ifError(err);

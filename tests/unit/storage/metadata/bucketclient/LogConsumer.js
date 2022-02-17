@@ -117,11 +117,11 @@ describe('raft record log client', () => {
         done();
     }
 
-    before(done => {
+    beforeAll(done => {
         setup(done);
     });
 
-    after(done => {
+    afterAll(done => {
         done();
     });
 
