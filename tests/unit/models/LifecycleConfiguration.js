@@ -1207,7 +1207,7 @@ describe('LifecycleConfiguration::getConfigJson', () => {
         `should return correct configuration: ${msg}`, () => {
             assert.deepStrictEqual(
                 LifecycleConfiguration.getConfigJson(input),
-                expected
+                expected,
             );
         }));
 });

@@ -108,11 +108,11 @@ describe('object Retention validation', () => {
         validRetainDates.forEach(retainDate => {
             it(`should pass with - ${retainDate}`, done => {
                 parseRetentionXml(buildXml('RetainDate', retainDate), log,
-                (err, result) => {
-                    assert.ifError(err);
-                    assert.deepStrictEqual(result, expectedRetention(retainDate));
-                    done();
-                });
+                    (err, result) => {
+                        assert.ifError(err);
+                        assert.deepStrictEqual(result, expectedRetention(retainDate));
+                        done();
+                    });
             });
         });
     });
