@@ -7,7 +7,7 @@ const { logger } = require('../../utils/kmip/ersatz.js');
 
 describe('KMIP Connection Management', () => {
     let server;
-    before(done => {
+    beforeAll(done => {
         server = net.createServer(conn => {
             // abort the connection as soon as it is accepted
             conn.destroy();
@@ -15,7 +15,7 @@ describe('KMIP Connection Management', () => {
         server.listen(5696);
         server.on('listening', done);
     });
-    after(done => {
+    afterAll(done => {
         server.close(done);
     });
 
