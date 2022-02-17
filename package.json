@@ -55,7 +55,7 @@
   },
   "devDependencies": {
     "@sinonjs/fake-timers": "^6.0.1",
-    "eslint": "^8.9.0",
+    "eslint": "^8.10.0",
     "eslint-config-airbnb": "6.2.0",
     "eslint-config-scality": "scality/Guidelines#ec33dfb",
     "eslint-plugin-react": "^4.3.0",
