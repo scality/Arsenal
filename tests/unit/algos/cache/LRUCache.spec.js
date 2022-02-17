@@ -89,7 +89,7 @@ describe('LRUCache', () => {
         // this test takes ~1-2 seconds on a laptop, nevertheless set a
         // large timeout to reduce the potential of flakiness on possibly
         // slower CI environment.
-        this.timeout(30000);
+        jest.setTimeout(30000);
 
         const lru = new LRUCache(1000000);
 

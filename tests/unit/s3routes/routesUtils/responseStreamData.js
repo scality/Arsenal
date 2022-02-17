@@ -36,7 +36,7 @@ describe('routesUtils.responseStreamData', () => {
     let httpServer;
     let awsClient;
 
-    before(done => {
+    beforeAll(done => {
         awsClient = new AwsClient(awsConfig);
         httpServer = http.createServer((req, res) => {
             const objStream = new DummyObjectStream(0, 10000000);
@@ -47,7 +47,7 @@ describe('routesUtils.responseStreamData', () => {
         httpServer.on('error', err => assert.ifError(err));
     });
 
-    after(() => {
+    afterAll(() => {
         httpServer.close();
     });
 

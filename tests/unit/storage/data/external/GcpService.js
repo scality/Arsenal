@@ -88,11 +88,11 @@ const operations = [
 ];
 
 describe('GcpService request behavior', function testSuite() {
-    this.timeout(120000);
+    jest.setTimeout(120000);
     let httpServer;
     let client;
 
-    before(done => {
+    beforeAll(done => {
         client = new GCP({
             endpoint: `http://${host}`,
             maxRetries: 0,
@@ -109,7 +109,7 @@ describe('GcpService request behavior', function testSuite() {
         });
     });
 
-    after('Terminating Server', () => {
+    afterAll(() => {
         httpServer.close();
     });
 
@@ -126,11 +126,11 @@ describe('GcpService request behavior', function testSuite() {
 });
 
 describe('GcpService pathStyle tests', function testSuite() {
-    this.timeout(120000);
+    jest.setTimeout(120000);
     let httpServer;
     let client;
 
-    before(done => {
+    beforeAll(done => {
         client = new GCP({
             endpoint: `http://${host}`,
             maxRetries: 0,
@@ -147,7 +147,7 @@ describe('GcpService pathStyle tests', function testSuite() {
         });
     });
 
-    after('Terminating Server', () => {
+    afterAll(() => {
         httpServer.close();
     });
 
@@ -160,11 +160,11 @@ describe('GcpService pathStyle tests', function testSuite() {
 });
 
 describe('GcpService dnsStyle tests', function testSuite() {
-    this.timeout(120000);
+    jest.setTimeout(120000);
     let httpServer;
     let client;
 
-    before(done => {
+    beforeAll(done => {
         client = new GCP({
             endpoint: `http://${host}`,
             maxRetries: 0,
@@ -181,7 +181,7 @@ describe('GcpService dnsStyle tests', function testSuite() {
         });
     });
 
-    after('Terminating Server', () => {
+    afterAll(() => {
         httpServer.close();
     });
 
