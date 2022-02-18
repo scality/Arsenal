@@ -77,28 +77,13 @@
     "lint_yml": "yamllint $(git ls-files '*.yml')",
     "test": "jest tests/unit",
     "ft_test": "jest tests/functional --testTimeout=120000 --forceExit",
-    "coverage": "yarn coverage_unit && yarn coverage_ft && yarn coverage_report",
-    "coverage_unit": "yarn test --coverage",
-    "coverage_ft": "yarn ft_test --coverage",
-    "coverage_report": "nyc report --all --reporter=text-summary --reporter=lcov"
+    "coverage": "jest tests --coverage --testTimeout=120000 --forceExit"
   },
   "jest": {
     "maxWorkers": 1,
-    "roots": [
-      ".",
-      "lib",
-      "errors"
-    ],
-    "testPathIgnorePatterns": [
-      "/node_modules/",
-      "helpers?\\.js",
-      "Mock.*\\.js",
-      "Dummy.*\\.js",
-      "tests/functional/.*/utils\\.js",
-      "tests/functional/.*/utils/.*\\.js"
-    ],
-    "testMatch": [
-      "**/*.js"
+    "collectCoverageFrom": [
+      "lib/**/*.{js,ts}",
+      "index.js"
     ]
   }
 }
