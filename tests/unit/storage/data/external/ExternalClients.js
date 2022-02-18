@@ -82,14 +82,14 @@ describe('external backend clients', () => {
                 const bucketName = 'externalBackendTestBucket';
                 const uploadId = 'externalBackendTestUploadId';
                 testClient.completeMPU(jsonList, null, key,
-                uploadId, bucketName, log, (err, res) => {
-                    assert.strictEqual(typeof res.key, 'string');
-                    assert.strictEqual(typeof res.eTag, 'string');
-                    assert.strictEqual(typeof res.dataStoreVersionId,
-                                       'string');
-                    assert.strictEqual(typeof res.contentLength, 'number');
-                    return done();
-                });
+                    uploadId, bucketName, log, (err, res) => {
+                        assert.strictEqual(typeof res.key, 'string');
+                        assert.strictEqual(typeof res.eTag, 'string');
+                        assert.strictEqual(typeof res.dataStoreVersionId,
+                            'string');
+                        assert.strictEqual(typeof res.contentLength, 'number');
+                        return done();
+                    });
             });
         }
 

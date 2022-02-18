@@ -18,19 +18,19 @@ describe('Multipart Uploads listing algorithm', () => {
     const initiator2 = { ID: '2', DisplayName: 'initiator2' };
     const keys = {
         v0: [`${overviewPrefix}test/1${splitter}uploadId1`,
-             `${overviewPrefix}test/2${splitter}uploadId2`,
-             `${overviewPrefix}test/3${splitter}uploadId3`,
-             `${overviewPrefix}testMore/4${splitter}uploadId4`,
-             `${overviewPrefix}testMore/5${splitter}uploadId5`,
-             `${overviewPrefix}prefixTest/5${splitter}uploadId5`,
-            ],
+            `${overviewPrefix}test/2${splitter}uploadId2`,
+            `${overviewPrefix}test/3${splitter}uploadId3`,
+            `${overviewPrefix}testMore/4${splitter}uploadId4`,
+            `${overviewPrefix}testMore/5${splitter}uploadId5`,
+            `${overviewPrefix}prefixTest/5${splitter}uploadId5`,
+        ],
         v1: [`${DbPrefixes.Master}${overviewPrefix}test/1${splitter}uploadId1`,
-             `${DbPrefixes.Master}${overviewPrefix}test/2${splitter}uploadId2`,
-             `${DbPrefixes.Master}${overviewPrefix}test/3${splitter}uploadId3`,
-             `${DbPrefixes.Master}${overviewPrefix}testMore/4${splitter}uploadId4`,
-             `${DbPrefixes.Master}${overviewPrefix}testMore/5${splitter}uploadId5`,
-             `${DbPrefixes.Master}${overviewPrefix}prefixTest/5${splitter}uploadId5`,
-            ],
+            `${DbPrefixes.Master}${overviewPrefix}test/2${splitter}uploadId2`,
+            `${DbPrefixes.Master}${overviewPrefix}test/3${splitter}uploadId3`,
+            `${DbPrefixes.Master}${overviewPrefix}testMore/4${splitter}uploadId4`,
+            `${DbPrefixes.Master}${overviewPrefix}testMore/5${splitter}uploadId5`,
+            `${DbPrefixes.Master}${overviewPrefix}prefixTest/5${splitter}uploadId5`,
+        ],
     };
     const values = [
         JSON.stringify({
@@ -135,7 +135,7 @@ describe('Multipart Uploads listing algorithm', () => {
         }));
         it(`should perform a vFormat=${vFormat} listing of all keys`, () => {
             const listingResult = performListing(dbListing, MultipartUploads,
-                                                 listingParams, logger, vFormat);
+                listingParams, logger, vFormat);
             assert.deepStrictEqual(listingResult, expectedResult);
         });
 
@@ -151,7 +151,7 @@ describe('Multipart Uploads listing algorithm', () => {
             expectedResult.NextUploadIdMarker = '';
 
             const listingResult = performListing(dbListing, MultipartUploads,
-                                                 listingParams, logger, vFormat);
+                listingParams, logger, vFormat);
             assert.deepStrictEqual(listingResult, expectedResult);
         });
 
@@ -167,7 +167,7 @@ describe('Multipart Uploads listing algorithm', () => {
             expectedResult.MaxKeys = 3;
 
             const listingResult = performListing(dbListing, MultipartUploads,
-                                                 listingParams, logger, vFormat);
+                listingParams, logger, vFormat);
             assert.deepStrictEqual(listingResult, expectedResult);
         });
     });

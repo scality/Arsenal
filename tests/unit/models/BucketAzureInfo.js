@@ -54,73 +54,73 @@ describe('BucketAzureInfo setters/getters', () => {
         const systemKeys = ['newKey1', 'newKey2'];
         azureInfo.setSystemKeys(systemKeys);
         assert.deepStrictEqual(azureInfo.getSystemKeys(),
-                               systemKeys);
+            systemKeys);
     });
     it('should control the tenantKeys attribute', () => {
         const tenantKeys = ['newKey3', 'newKey4'];
         azureInfo.setTenantKeys(tenantKeys);
         assert.deepStrictEqual(azureInfo.getTenantKeys(),
-                               tenantKeys);
+            tenantKeys);
     });
     it('should control the subscriptionId attribute', () => {
         const subscriptionId = 'new subscription value';
         azureInfo.setSubscriptionId(subscriptionId);
         assert.deepStrictEqual(azureInfo.getSubscriptionId(),
-                               subscriptionId);
+            subscriptionId);
     });
     it('should control the resourceGroup attribute', () => {
         const resourceGroup = 'new resource group value';
         azureInfo.setResourceGroup(resourceGroup);
         assert.deepStrictEqual(azureInfo.getResourceGroup(),
-                               resourceGroup);
+            resourceGroup);
     });
     it('should control the deleteRetentionPolicy attribute', () => {
         const deleteRetentionPolicy = { enabled: false };
         azureInfo.setDeleteRetentionPolicy(deleteRetentionPolicy);
         assert.deepStrictEqual(azureInfo.getDeleteRetentionPolicy(),
-                               deleteRetentionPolicy);
+            deleteRetentionPolicy);
     });
     it('should control the managementPolicies attribute', () => {
         const managementPolicies = [{}];
         azureInfo.setManagementPolicies(managementPolicies);
         assert.deepStrictEqual(azureInfo.getManagementPolicies(),
-                               managementPolicies);
+            managementPolicies);
     });
     it('should control the httpsOnly attribute', () => {
         const httpsOnly = true;
         azureInfo.setHttpsOnly(httpsOnly);
         assert.deepStrictEqual(azureInfo.getHttpsOnly(),
-                               httpsOnly);
+            httpsOnly);
     });
     it('should control the tags attribute', () => {
         const tags = { baz: 'baz' };
         azureInfo.setTags(tags);
         assert.deepStrictEqual(azureInfo.getTags(),
-                               tags);
+            tags);
     });
     it('should control the networkACL attribute', () => {
         const networkACL = [{}];
         azureInfo.setNetworkACL(networkACL);
         assert.deepStrictEqual(azureInfo.getNetworkACL(),
-                               networkACL);
+            networkACL);
     });
     it('should control the cname attribute', () => {
         const cname = 'new cname value';
         azureInfo.setCname(cname);
         assert.deepStrictEqual(azureInfo.getCname(),
-                               cname);
+            cname);
     });
     it('should control the azureFilesAADIntegration attribute', () => {
         const azureFilesAADIntegration = true;
         azureInfo.setAzureFilesAADIntegration(azureFilesAADIntegration);
         assert.deepStrictEqual(azureInfo.getAzureFilesAADIntegration(),
-                               azureFilesAADIntegration);
+            azureFilesAADIntegration);
     });
     it('should control the hnsEnabled attribute', () => {
         const hnsEnabled = true;
         azureInfo.setHnsEnabled(hnsEnabled);
         assert.deepStrictEqual(azureInfo.getHnsEnabled(),
-                               hnsEnabled);
+            hnsEnabled);
     });
     it('should control the logging attribute', () => {
         const logging = {

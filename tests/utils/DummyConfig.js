@@ -173,7 +173,7 @@ class DummyConfig extends EventEmitter {
         let azureStorageEndpoint =
             process.env[`${locationConstraint}_AZURE_STORAGE_ENDPOINT`] ||
             this.locationConstraints[locationConstraint]
-            .details.azureStorageEndpoint;
+                .details.azureStorageEndpoint;
         if (!azureStorageEndpoint.endsWith('/')) {
             // append the trailing slash
             azureStorageEndpoint = `${azureStorageEndpoint}/`;

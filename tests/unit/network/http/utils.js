@@ -5,8 +5,8 @@ const assert = require('assert');
 const errors = require('../../../../lib/errors');
 
 const { parseRange,
-        parseRangeSpec,
-        getByteRangeFromSpec } = require('../../../../lib/network/http/utils');
+    parseRangeSpec,
+    getByteRangeFromSpec } = require('../../../../lib/network/http/utils');
 
 function checkParseRange(rangeHeader, totalLength, expectedRange) {
     const { range, error } = parseRange(rangeHeader, totalLength);
@@ -27,19 +27,19 @@ describe('parseRangeSpec function', () => {
         const { rangeHeader, expectedRangeSpec } = testCase;
 
         it(`should return ${expectedRangeSpec} on range "${rangeHeader}"`,
-        () => {
-            const rangeSpec = parseRangeSpec(rangeHeader);
-            if (expectedRangeSpec.error) {
-                assert(rangeSpec.error);
-                assert.strictEqual(rangeSpec.error.message,
-                                   expectedRangeSpec.error.message);
-            } else {
-                assert.ifError(rangeSpec.error);
-            }
-            assert.strictEqual(rangeSpec.start, expectedRangeSpec.start);
-            assert.strictEqual(rangeSpec.end, expectedRangeSpec.end);
-            assert.strictEqual(rangeSpec.suffix, expectedRangeSpec.suffix);
-        });
+            () => {
+                const rangeSpec = parseRangeSpec(rangeHeader);
+                if (expectedRangeSpec.error) {
+                    assert(rangeSpec.error);
+                    assert.strictEqual(rangeSpec.error.message,
+                        expectedRangeSpec.error.message);
+                } else {
+                    assert.ifError(rangeSpec.error);
+                }
+                assert.strictEqual(rangeSpec.start, expectedRangeSpec.start);
+                assert.strictEqual(rangeSpec.end, expectedRangeSpec.end);
+                assert.strictEqual(rangeSpec.suffix, expectedRangeSpec.suffix);
+            });
     });
 });
 
@@ -73,12 +73,12 @@ describe('getByteRangeFromSpec function', () => {
             if (expectedByteRange.error) {
                 assert(byteRange.error);
                 assert.strictEqual(byteRange.error.message,
-                                   expectedByteRange.error.message);
+                    expectedByteRange.error.message);
             } else {
                 assert.ifError(byteRange.error);
             }
             assert.deepStrictEqual(byteRange.range,
-                                   expectedByteRange.range);
+                expectedByteRange.range);
         });
     });
 });
@@ -144,9 +144,9 @@ describe('parseRange function', () => {
         assert.strictEqual(range, undefined);
     });
     it('should return undefined for "bytes=-" request (invalid syntax) ',
-    () => {
-        checkParseRange('bytes=-', 10);
-    });
+        () => {
+            checkParseRange('bytes=-', 10);
+        });
     it('should return undefined for "bytes=-" request (invalid syntax, ' +
     'empty object)', () => {
         checkParseRange('bytes=-', 0);

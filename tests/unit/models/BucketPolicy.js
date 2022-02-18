@@ -95,11 +95,11 @@ describe('BucketPolicy class getBucketPolicy', () => {
     });
 
     it('should successfully get a valid policy with wildcard in action',
-    done => {
-        const newPolicy = createPolicy('Action', 's3:Get*');
-        const bucketPolicy = new BucketPolicy(JSON.stringify(newPolicy))
-            .getBucketPolicy();
-        assert.deepStrictEqual(bucketPolicy, newPolicy);
-        done();
-    });
+        done => {
+            const newPolicy = createPolicy('Action', 's3:Get*');
+            const bucketPolicy = new BucketPolicy(JSON.stringify(newPolicy))
+                .getBucketPolicy();
+            assert.deepStrictEqual(bucketPolicy, newPolicy);
+            done();
+        });
 });

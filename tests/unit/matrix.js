@@ -200,10 +200,10 @@ describe('Matrix', () => {
         let anExceptionWasFound = false;
         try {
             testMatrix.generate(['invalid specialization'],
-            (testMatrix, done) => {
-                assert(testMatrix.params.auth !== undefined, true);
-                done();
-            }, 'should generate matrix').execute();
+                (testMatrix, done) => {
+                    assert(testMatrix.params.auth !== undefined, true);
+                    done();
+                }, 'should generate matrix').execute();
         } catch (e) {
             anExceptionWasFound = true;
         }
@@ -214,23 +214,23 @@ describe('Matrix', () => {
     });
 
     describe('Should launch an exception if element already specialized',
-    () => {
-        const testMatrix = new Matrix(params);
-        let anExceptionWasFound = false;
-        try {
-            testMatrix.generate(['auth'], testMatrix => {
+        () => {
+            const testMatrix = new Matrix(params);
+            let anExceptionWasFound = false;
+            try {
                 testMatrix.generate(['auth'], testMatrix => {
-                    assert(testMatrix.params.auth !== undefined, true);
-                }, 'should generate matrix');
-            }).execute();
-        } catch (e) {
-            anExceptionWasFound = true;
-        }
-        it('An exception was launched', done => {
-            assert.equal(anExceptionWasFound, true);
-            done();
+                    testMatrix.generate(['auth'], testMatrix => {
+                        assert(testMatrix.params.auth !== undefined, true);
+                    }, 'should generate matrix');
+                }).execute();
+            } catch (e) {
+                anExceptionWasFound = true;
+            }
+            it('An exception was launched', done => {
+                assert.equal(anExceptionWasFound, true);
+                done();
+            });
         });
-    });
     describe('Should execute even bad key exception', () => {
         const testMatrix = new Matrix(params);
 

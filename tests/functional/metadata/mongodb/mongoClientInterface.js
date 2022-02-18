@@ -183,7 +183,7 @@ describe('MongoClientInterface', () => {
                         return next();
                     }
                     return metadata.putObjectMD(bucketName, objectKey, initVal,
-                                                {}, logger, next);
+                        {}, logger, next);
                 },
                 next => metadata.putObjectWithCond(bucketName, objectKey,
                     upsertVal, params, logger, err => {
@@ -290,7 +290,7 @@ describe('MongoClientInterface', () => {
                         return next();
                     }
                     return metadata.putObjectMD(bucketName, objectKey, initVal,
-                                                {}, logger, next);
+                        {}, logger, next);
                 },
                 next => metadata.deleteObjectWithCond(bucketName, objectKey,
                     params, logger, err => {

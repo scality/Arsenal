@@ -85,7 +85,7 @@ const nonAlphabeticalData = [
 
 const receivedData = data.map(item => ({ key: item.key, value: item.value }));
 const receivedNonAlphaData = nonAlphabeticalData.map(
-    item => ({ key: item.key, value: item.value })
+    item => ({ key: item.key, value: item.value }),
 );
 
 const tests = [
@@ -732,15 +732,15 @@ function getTestListing(test, data, vFormat) {
                 });
             }
             assert.strictEqual(delimiter.skipping(),
-                               `${vFormat === 'v1' ? DbPrefixes.Master : ''}foo/`);
+                `${vFormat === 'v1' ? DbPrefixes.Master : ''}foo/`);
         });
 
         it('Should set Delimiter alphabeticalOrder field to the expected value', () => {
             alphabeticalOrderTests.forEach(test => {
                 const delimiter = new Delimiter(test.params);
                 assert.strictEqual(delimiter.alphabeticalOrder,
-                                   test.expectedValue,
-                                   `${JSON.stringify(test.params)}`);
+                    test.expectedValue,
+                    `${JSON.stringify(test.params)}`);
             });
         });
 

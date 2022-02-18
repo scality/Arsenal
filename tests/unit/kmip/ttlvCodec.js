@@ -12,8 +12,8 @@ const { logger } = require('../../utils/kmip/ersatz.js');
 
 function newKMIP() {
     return new KMIP(TTLVCodec,
-                    class DummyTransport {},
-                    { kmip: {} }, () => {});
+        class DummyTransport {},
+        { kmip: {} }, () => {});
 }
 
 describe('KMIP TTLV Codec', () => {
@@ -130,8 +130,8 @@ describe('KMIP TTLV Codec', () => {
         const usageMask = ['Encrypt', 'Decrypt', 'Export'];
         const decodedMask =
               kmip.decodeMask('Cryptographic Usage Mask',
-                              kmip.encodeMask('Cryptographic Usage Mask',
-                                              usageMask));
+                  kmip.encodeMask('Cryptographic Usage Mask',
+                      usageMask));
         assert.deepStrictEqual(usageMask.sort(), decodedMask.sort());
         done();
     });
@@ -159,14 +159,14 @@ describe('KMIP TTLV Codec', () => {
 
     badTtlvFixtures.forEach((rawMessage, idx) => {
         it(`should fail to parse invalid TTLV message fixture[${idx}]`,
-           done => {
-               const kmip = newKMIP();
-               try {
-                   kmip._decodeMessage(logger, rawMessage);
-                   done(Error('Must not succeed'));
-               } catch (e) {
-                   done();
-               }
-           });
+            done => {
+                const kmip = newKMIP();
+                try {
+                    kmip._decodeMessage(logger, rawMessage);
+                    done(Error('Must not succeed'));
+                } catch (e) {
+                    done();
+                }
+            });
     });
 });

@@ -47,7 +47,7 @@ describe('network.probe.Utils', () => {
                     {
                         errorType: 'MethodNotAllowed',
                         errorMessage: errors.MethodNotAllowed.description,
-                    }
+                    },
                 );
                 done();
             }),
@@ -64,7 +64,7 @@ describe('network.probe.Utils', () => {
                     {
                         errorType: 'MethodNotAllowed',
                         errorMessage: 'Very much not allowed',
-                    }
+                    },
                 );
                 done();
             }),

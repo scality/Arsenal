@@ -48,9 +48,9 @@ function closeRecordLog(logProxy, done) {
 describe('record log - persistent log of metadata operations', () => {
     let server;
     const srvLogger = new Logger('recordLog:test-server',
-                                 { level: 'info', dump: 'error' });
+        { level: 'info', dump: 'error' });
     const cliLogger = new Logger('recordLog:test-client',
-                                 { level: 'info', dump: 'error' });
+        { level: 'info', dump: 'error' });
     let db;
 
     function setup(done) {
@@ -160,9 +160,9 @@ describe('record log - persistent log of metadata operations', () => {
                             debug('readRecords: next record:', record);
                             if (nbRecords === 0) {
                                 assert.deepStrictEqual(record.db,
-                                                       'foobucket');
+                                    'foobucket');
                                 assert.strictEqual(typeof record.timestamp,
-                                                   'string');
+                                    'string');
                                 assert.strictEqual(record.entries.length, 1);
                                 const entry = record.entries[0];
                                 assert.strictEqual(entry.type, 'put');
@@ -170,9 +170,9 @@ describe('record log - persistent log of metadata operations', () => {
                                 assert.strictEqual(entry.value, 'bar');
                             } else if (nbRecords === 1) {
                                 assert.deepStrictEqual(record.db,
-                                                       'foobucket');
+                                    'foobucket');
                                 assert.strictEqual(typeof record.timestamp,
-                                                   'string');
+                                    'string');
                                 assert.strictEqual(record.entries.length, 1);
                                 const entry = record.entries[0];
                                 assert.strictEqual(entry.type, 'del');
@@ -180,9 +180,9 @@ describe('record log - persistent log of metadata operations', () => {
                                 assert.strictEqual(entry.value, undefined);
                             } else if (nbRecords === 2) {
                                 assert.deepStrictEqual(record.db,
-                                                       'foobucket');
+                                    'foobucket');
                                 assert.strictEqual(typeof record.timestamp,
-                                                   'string');
+                                    'string');
                                 assert.strictEqual(record.entries.length, 1);
                                 const entry = record.entries[0];
                                 assert.strictEqual(entry.type, 'put');
@@ -287,18 +287,18 @@ describe('record log - persistent log of metadata operations', () => {
                 { startSeq: 100, endSeq: 500 }, (err, res) => {
                     assert.ifError(err);
                     checkReadRecords(res, { startSeq: 100, endSeq: 500 },
-                                     done);
+                        done);
                 });
         });
 
         it('should list all entries from a given startSeq up to a limit',
-        done => {
-            logProxy.readRecords(
-                { startSeq: 100, limit: 100 }, (err, res) => {
-                    assert.ifError(err);
-                    checkReadRecords(res, { startSeq: 100, endSeq: 199 },
-                                     done);
-                });
-        });
+            done => {
+                logProxy.readRecords(
+                    { startSeq: 100, limit: 100 }, (err, res) => {
+                        assert.ifError(err);
+                        checkReadRecords(res, { startSeq: 100, endSeq: 199 },
+                            done);
+                    });
+            });
     });
 });

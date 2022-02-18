@@ -317,9 +317,9 @@ describe('patch location constriants', () => {
                 patchLocations(
                     { [locationName]: locations },
                     { privateKey },
-                    mockLog
+                    mockLog,
                 ),
-                { [locationName]: expected }
+                { [locationName]: expected },
             );
         });
     });
@@ -330,9 +330,9 @@ describe('patch location constriants', () => {
             patchLocations(
                 undefined,
                 { privateKey },
-                mockLog
+                mockLog,
             ),
-            {}
+            {},
         );
     });
 
@@ -345,9 +345,9 @@ describe('patch location constriants', () => {
                     },
                 },
                 { privateKey },
-                mockLog
+                mockLog,
             ),
-            {}
+            {},
         );
     });
 });
