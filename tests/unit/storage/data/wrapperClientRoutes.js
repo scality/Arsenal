@@ -71,10 +71,10 @@ describe('Routes from DataWrapper to backend client', () => {
     it('should follow object put path successfully for sproxyd backend', () => {
         const backendInfo = new BackendInfo(null, null, sproxydLocation);
         dw.put(cipherBundle, value, size, keyContext, backendInfo, log,
-        (err, data) => {
-            assert.ifError(err);
-            assert(typeof data, 'object');
-        });
+            (err, data) => {
+                assert.ifError(err);
+                assert(typeof data, 'object');
+            });
     });
 
     it('should follow object get path successfully for sproxyd backend', () => {
@@ -86,20 +86,20 @@ describe('Routes from DataWrapper to backend client', () => {
     });
 
     it('should follow object delete path successfully for sproxyd backend',
-    () => {
-        const objectGetInfo = genObjGetInfo('sproxyd');
-        dw.delete(objectGetInfo, log, err => {
-            assert.ifError(err);
+        () => {
+            const objectGetInfo = genObjGetInfo('sproxyd');
+            dw.delete(objectGetInfo, log, err => {
+                assert.ifError(err);
+            });
         });
-    });
 
     it('should follow object put path successfully for Azure backend', () => {
         const backendInfo = new BackendInfo(null, null, azureLocation);
         dw.put(cipherBundle, value, size, keyContext, backendInfo, log,
-        (err, data) => {
-            assert.ifError(err);
-            assert(typeof data, 'object');
-        });
+            (err, data) => {
+                assert.ifError(err);
+                assert(typeof data, 'object');
+            });
     });
 
     it('should follow object get path successfully for Azure backend', () => {
@@ -111,10 +111,10 @@ describe('Routes from DataWrapper to backend client', () => {
     });
 
     it('should follow object delete path successfully for Azure backend',
-    () => {
-        const objectGetInfo = genObjGetInfo('azure', objectKey);
-        dw.delete(objectGetInfo, log, err => {
-            assert.ifError(err);
+        () => {
+            const objectGetInfo = genObjGetInfo('azure', objectKey);
+            dw.delete(objectGetInfo, log, err => {
+                assert.ifError(err);
+            });
         });
-    });
 });

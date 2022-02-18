@@ -33,7 +33,7 @@ describe('Public Access', () => {
         auth(request, logger, (err, authInfo) => {
             assert.strictEqual(err, null);
             assert.strictEqual(authInfo.getCanonicalID(),
-                               publicAuthInfo.getCanonicalID());
+                publicAuthInfo.getCanonicalID());
             done();
         }, 's3', requestContext);
     });

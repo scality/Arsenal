@@ -84,7 +84,7 @@ describe('Auth Backend: Chain Backend', () => {
         ]],
     ].forEach(([msg, input]) => it(msg, () => {
         assert.throws(() => {
-            new ChainBackend('chain', input);  // eslint-disable-line no-new
+            new ChainBackend('chain', input); // eslint-disable-line no-new
         });
     }));
 
@@ -257,7 +257,7 @@ describe('Auth Backend: Chain Backend', () => {
                     id3: 'email3@test.com',
                     // id4 should be overwritten
                     id4: 'email5@test.com',
-                }
+                },
             );
         });
     });

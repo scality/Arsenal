@@ -69,7 +69,7 @@ describe('Check IP matches a list of CIDR ranges', () => {
         [['192.168.1.1'], '192.168.1.1'],
     ].forEach(item =>
         it(`should match IP ${item[0][0]} without CIDR range`,
-            () => cidrListMatchCheck(item[0], item[1], true))
+            () => cidrListMatchCheck(item[0], item[1], true)),
     );
 
     it('should not range match if CIDR range is not provided',

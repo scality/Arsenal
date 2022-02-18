@@ -36,6 +36,6 @@ describe('utilities.MD5Sum', () => {
          */
         const buffer = Buffer.alloc(4 * 1024 * 1024);
         testMD5([buffer, buffer, buffer, buffer],
-                '2c7ab85a893283e98c931e9511add182', done);
+            '2c7ab85a893283e98c931e9511add182', done);
     });
 });

@@ -522,7 +522,7 @@ describe('LifecycleUtils::filterRules', () => {
         const expRes1 = getRuleIDs(mBucketRules.filter(rule =>
             (rule.Filter && rule.Filter.Tag &&
             rule.Filter.Tag.Key === 'tag1' &&
-            rule.Filter.Tag.Value === 'val1')
+            rule.Filter.Tag.Value === 'val1'),
         ));
         assert.deepStrictEqual(expRes1, getRuleIDs(res1));
 
@@ -532,7 +532,7 @@ describe('LifecycleUtils::filterRules', () => {
         const expRes2 = getRuleIDs(mBucketRules.filter(rule =>
             rule.Filter && rule.Filter.Tag &&
             rule.Filter.Tag.Key === 'tag3-1' &&
-            rule.Filter.Tag.Value === 'val3'
+            rule.Filter.Tag.Value === 'val3',
         ));
         assert.deepStrictEqual(expRes2, getRuleIDs(res2));
     });

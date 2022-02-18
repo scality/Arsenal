@@ -301,29 +301,29 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
 
     requiredTags.forEach(t => {
         it(`should return ${t.error} error if ${t.tag} tag is missing`,
-        done => {
-            generateParsedXml(t.tag, null, parsedXml => {
-                checkError(parsedXml, t.error, t.errMessage, done);
+            done => {
+                generateParsedXml(t.tag, null, parsedXml => {
+                    checkError(parsedXml, t.error, t.errMessage, done);
+                });
             });
-        });
     });
 
     invalidActions.forEach(a => {
         it(`should return ${a.error} for ${a.label} action error`,
-        done => {
-            generateParsedXml('Action', a, parsedXml => {
-                checkError(parsedXml, a.error, a.errMessage, done);
+            done => {
+                generateParsedXml('Action', a, parsedXml => {
+                    checkError(parsedXml, a.error, a.errMessage, done);
+                });
             });
-        });
     });
 
     invalidFilters.forEach(filter => {
         it(`should return ${filter.error} for ${filter.label} filter error`,
-        done => {
-            generateParsedXml('Filter', filter, parsedXml => {
-                checkError(parsedXml, filter.error, filter.errMessage, done);
+            done => {
+                generateParsedXml('Filter', filter, parsedXml => {
+                    checkError(parsedXml, filter.error, filter.errMessage, done);
+                });
             });
-        });
     });
 
     it('should return MalformedXML error if invalid status', done => {
@@ -603,17 +603,17 @@ describe('LifecycleConfiguration', () => {
         });
 
         it('should return error when time type differs across expiration',
-        () => {
-            const error = lifecycleConfiguration._checkTimeType({
-                usedTimeType: 'Date',
-                currentTimeType: 'Date',
-                rule: getParsedXML().LifecycleConfiguration.Rule[0],
-            });
-            const msg = "Found mixed 'Date' and 'Days' based Expiration and " +
+            () => {
+                const error = lifecycleConfiguration._checkTimeType({
+                    usedTimeType: 'Date',
+                    currentTimeType: 'Date',
+                    rule: getParsedXML().LifecycleConfiguration.Rule[0],
+                });
+                const msg = "Found mixed 'Date' and 'Days' based Expiration and " +
                 "Transition actions in lifecycle rule for prefix ''";
-            const expected = errors.InvalidRequest.customizeDescription(msg);
-            assert.deepStrictEqual(error, expected);
-        });
+                const expected = errors.InvalidRequest.customizeDescription(msg);
+                assert.deepStrictEqual(error, expected);
+            });
     });
 
     describe('::_checkDate', () => {
@@ -1207,7 +1207,7 @@ describe('LifecycleConfiguration::getConfigJson', () => {
         `should return correct configuration: ${msg}`, () => {
             assert.deepStrictEqual(
                 LifecycleConfiguration.getConfigJson(input),
-                expected
+                expected,
             );
         }));
 });

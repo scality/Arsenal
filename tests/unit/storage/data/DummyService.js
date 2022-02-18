@@ -132,9 +132,9 @@ class DummyService {
         }
         const { rangeStart, rangeEnd } = options || {};
         const firstByte = rangeStart !== undefined ?
-              Number.parseInt(rangeStart, 10) : 0;
+            Number.parseInt(rangeStart, 10) : 0;
         const lastByte = rangeEnd !== undefined ?
-              Math.min(Number.parseInt(rangeEnd, 10), OBJECT_SIZE - 1) : OBJECT_SIZE - 1;
+            Math.min(Number.parseInt(rangeEnd, 10), OBJECT_SIZE - 1) : OBJECT_SIZE - 1;
         const objStream = new DummyObjectStream(firstByte, lastByte - firstByte + 1);
         objStream.pipe(writeStream);
         return callback();
