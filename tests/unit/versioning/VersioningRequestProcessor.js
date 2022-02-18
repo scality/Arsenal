@@ -109,13 +109,13 @@ describe('test VSP', () => {
         async.waterfall([
             callback => async.times(OP_COUNT, (i, next) =>
                 vsp.put(putRequest, logger, next), (err, res) => {
-                    assert.strictEqual(err, null);
-                    const vidCount = res.sort().reverse().length;
-                    assert.strictEqual(vidCount, OP_COUNT);
-                    const latestVID = JSON.parse(res[vidCount - 1]).versionId;
-                    const nextVID = JSON.parse(res[vidCount - 2]).versionId;
-                    callback(null, latestVID, nextVID);
-                }),
+                assert.strictEqual(err, null);
+                const vidCount = res.sort().reverse().length;
+                assert.strictEqual(vidCount, OP_COUNT);
+                const latestVID = JSON.parse(res[vidCount - 1]).versionId;
+                const nextVID = JSON.parse(res[vidCount - 2]).versionId;
+                callback(null, latestVID, nextVID);
+            }),
             (latestVID, nextVID, callback) => {
                 const deleteRequest = { db: 'foo', key: 'bar',
                     options: { versionId: latestVID }, type: 'del' };
@@ -129,7 +129,7 @@ describe('test VSP', () => {
                 // listing result has the master version
                 assert.strictEqual(list.length, OP_COUNT);
                 assert(Version.isPHD(list[0].value),
-                        'latest version must be a PHD version');
+                    'latest version must be a PHD version');
                 // force repairing using a get request so that
                 // we do not need to wait the scheduled repair
                 callback(null, nextVID);
@@ -144,7 +144,7 @@ describe('test VSP', () => {
                     // listing result has the master version
                     assert.strictEqual(list.length, OP_COUNT);
                     assert.strictEqual(list[0].value, res,
-                            'latest version is not repaired');
+                        'latest version is not repaired');
                     callback();
                 }), 1000);
             }),
@@ -163,60 +163,60 @@ describe('test VSP', () => {
             };
             vsp.put(request, logger, next);
         },
-            (res, next) => {
-                v1 = Version.from(res).getVersionId();
-                const request = {
-                    db: 'foo',
-                    key: 'bar',
-                    value: '{"qux":"quz2"}',
-                    options: { versioning: true },
-                };
-                vsp.put(request, logger, next);
-            },
-            (res, next) => {
-                v2 = Version.from(res).getVersionId();
+        (res, next) => {
+            v1 = Version.from(res).getVersionId();
+            const request = {
+                db: 'foo',
+                key: 'bar',
+                value: '{"qux":"quz2"}',
+                options: { versioning: true },
+            };
+            vsp.put(request, logger, next);
+        },
+        (res, next) => {
+            v2 = Version.from(res).getVersionId();
 
             // overwriting v1: master should not be updated
-                const request = {
-                    db: 'foo',
-                    key: 'bar',
-                    value: '{"qux":"quz1.1"}',
-                    options: { versioning: true,
-                        versionId: v1 },
-                };
-                vsp.put(request, logger, next);
-            },
-            (res, next) => {
-                const request = {
-                    db: 'foo',
-                    key: 'bar',
-                };
-                vsp.get(request, logger, next);
-            },
-            (res, next) => {
-                assert.strictEqual(JSON.parse(res).qux, 'quz2');
+            const request = {
+                db: 'foo',
+                key: 'bar',
+                value: '{"qux":"quz1.1"}',
+                options: { versioning: true,
+                    versionId: v1 },
+            };
+            vsp.put(request, logger, next);
+        },
+        (res, next) => {
+            const request = {
+                db: 'foo',
+                key: 'bar',
+            };
+            vsp.get(request, logger, next);
+        },
+        (res, next) => {
+            assert.strictEqual(JSON.parse(res).qux, 'quz2');
 
             // overwriting v2: master should be updated
-                const request = {
-                    db: 'foo',
-                    key: 'bar',
-                    value: '{"qux":"quz2.1"}',
-                    options: { versioning: true,
-                        versionId: v2 },
-                };
-                vsp.put(request, logger, next);
-            },
-            (res, next) => {
-                const request = {
-                    db: 'foo',
-                    key: 'bar',
-                };
-                vsp.get(request, logger, next);
-            },
-            (res, next) => {
-                assert.strictEqual(JSON.parse(res).qux, 'quz2.1');
-                next();
-            }],
-                     done);
+            const request = {
+                db: 'foo',
+                key: 'bar',
+                value: '{"qux":"quz2.1"}',
+                options: { versioning: true,
+                    versionId: v2 },
+            };
+            vsp.put(request, logger, next);
+        },
+        (res, next) => {
+            const request = {
+                db: 'foo',
+                key: 'bar',
+            };
+            vsp.get(request, logger, next);
+        },
+        (res, next) => {
+            assert.strictEqual(JSON.parse(res).qux, 'quz2.1');
+            next();
+        }],
+        done);
     });
 });

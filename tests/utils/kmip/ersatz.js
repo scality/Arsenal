@@ -50,7 +50,6 @@ class EchoChannel extends EventEmitter {
         this.clogged = true;
         return this;
     }
-
 }
 
 class MirrorChannel extends EchoChannel {
@@ -78,9 +77,9 @@ class MirrorChannel extends EchoChannel {
                 this.KMIP.Structure('Response Header', [
                     this.KMIP.Structure('Protocol Version', [
                         this.KMIP.Integer('Protocol Version Major',
-                                          requestProtocolVersionMajor),
+                            requestProtocolVersionMajor),
                         this.KMIP.Integer('Protocol Version Minor',
-                                          requestProtocolVersionMinor),
+                            requestProtocolVersionMinor),
                     ]),
                     this.KMIP.DateTime('Time Stamp', new Date),
                     this.KMIP.Integer('Batch Count', 1),
@@ -88,7 +87,7 @@ class MirrorChannel extends EchoChannel {
                 this.KMIP.Structure('Batch Item', [
                     this.KMIP.Enumeration('Operation', requestOperation),
                     this.KMIP.ByteString('Unique Batch Item ID',
-                                         uniqueBatchItemID),
+                        uniqueBatchItemID),
                     this.KMIP.Enumeration('Result Status', 'Success'),
                     this.KMIP.Structure('Response Payload', requestPayload),
                 ]),

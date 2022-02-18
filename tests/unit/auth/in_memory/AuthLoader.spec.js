@@ -89,10 +89,10 @@ describe('AuthLoader class', () => {
             // Check a failure when the type of field is different than
             // expected
             it(`should fail when modified field ${test[0]} ${test[1]}`,
-            done => {
-                should._exec = shouldFail;
-                should.modifiedField(obj, test[0], test[1], done);
-            });
+                done => {
+                    should._exec = shouldFail;
+                    should.modifiedField(obj, test[0], test[1], done);
+                });
         }
     });
 
