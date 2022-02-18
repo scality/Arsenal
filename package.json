@@ -64,21 +64,9 @@
   "private": true,
   "jest": {
     "maxWorkers": 1,
-    "roots": [
-      ".",
-      "lib",
-      "errors"
-    ],
-    "testPathIgnorePatterns": [
-      "/node_modules/",
-      "helpers?\\.js",
-      "Mock.*\\.js",
-      "Dummy.*\\.js",
-      "tests/functional/.*/utils\\.js",
-      "tests/functional/.*/utils/.*\\.js"
-    ],
-    "testMatch": [
-      "**/*.js"
+    "collectCoverageFrom": [
+      "lib/**/*.{js,ts}",
+      "index.js"
     ]
   }
 }
