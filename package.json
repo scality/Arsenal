@@ -71,13 +71,23 @@
     "lint_yml": "yamllint $(git ls-files '*.yml')",
     "test": "jest tests/unit",
     "ft_test": "jest tests/functional --testTimeout=120000 --forceExit",
-    "coverage": "jest tests --coverage --testTimeout=120000 --forceExit"
+    "coverage": "nyc --clean jest tests --coverage --testTimeout=120000 --forceExit"
   },
   "jest": {
     "maxWorkers": 1,
+    "coverageReporters": [
+      "json"
+    ],
     "collectCoverageFrom": [
       "lib/**/*.{js,ts}",
       "index.js"
+    ]
+  },
+  "nyc": {
+    "tempDirectory": "coverage",
+    "reporter": [
+      "lcov",
+      "text"
     ]
   }
 }
