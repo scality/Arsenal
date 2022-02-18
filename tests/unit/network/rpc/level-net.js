@@ -39,9 +39,9 @@ describe('level-net - LevelDB over network', () => {
     let client;
     const params = { };
     const srvLogger = new Logger('level-net:test-server',
-                                 { level: 'info', dump: 'error' });
+        { level: 'info', dump: 'error' });
     const cliLogger = new Logger('level-net:test-client',
-                                 { level: 'info', dump: 'error' });
+        { level: 'info', dump: 'error' });
     const reqLogger = cliLogger.newRequestLoggerFromSerializedUids('foo');
 
     function setupLevelNet(done) {
@@ -293,14 +293,14 @@ describe('level-net - LevelDB over network', () => {
                     prevKey = entry.key;
                     client.withRequestLogger(reqLogger)
                         .put(entry.key, `new data for key ${entry.key}`,
-                             params, err => {
-                                 assert.ifError(err);
-                                 ++nbPutDone;
-                                 if (nbPutDone === nbKeys && receivedEnd) {
-                                     done();
-                                 }
-                                 return undefined;
-                             });
+                            params, err => {
+                                assert.ifError(err);
+                                ++nbPutDone;
+                                if (nbPutDone === nbKeys && receivedEnd) {
+                                    done();
+                                }
+                                return undefined;
+                            });
                 });
                 keyStream.on('end', () => {
                     receivedEnd = true;
@@ -333,7 +333,7 @@ describe('level-net - LevelDB over network', () => {
                         setTimeout(() => {
                             assert(nbKeysListed === nbKeys / 2);
                             debug('after abort: keyStream._readState=',
-                                  keyStream._readState);
+                                keyStream._readState);
                             done();
                         }, 100);
                     }

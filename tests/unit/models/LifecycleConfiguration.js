@@ -294,39 +294,39 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
 
     requiredTags.forEach(t => {
         it(`should return ${t.error} error if ${t.tag} tag is missing`,
-        done => {
-            generateParsedXml(t.tag, null, parsedXml => {
-                checkError(parsedXml, t.error, t.errMessage, done);
+            done => {
+                generateParsedXml(t.tag, null, parsedXml => {
+                    checkError(parsedXml, t.error, t.errMessage, done);
+                });
             });
-        });
     });
 
     notImplementedActions.forEach(action => {
         const expError = 'NotImplemented';
         it(`should return ${expError} error for ${action.tag} action`,
-        done => {
-            generateParsedXml('Action', action, parsedXml => {
-                checkError(parsedXml, expError, action.errMessage, done);
+            done => {
+                generateParsedXml('Action', action, parsedXml => {
+                    checkError(parsedXml, expError, action.errMessage, done);
+                });
             });
-        });
     });
 
     invalidActions.forEach(a => {
         it(`should return ${a.error} for ${a.label} action error`,
-        done => {
-            generateParsedXml('Action', a, parsedXml => {
-                checkError(parsedXml, a.error, a.errMessage, done);
+            done => {
+                generateParsedXml('Action', a, parsedXml => {
+                    checkError(parsedXml, a.error, a.errMessage, done);
+                });
             });
-        });
     });
 
     invalidFilters.forEach(filter => {
         it(`should return ${filter.error} for ${filter.label} filter error`,
-        done => {
-            generateParsedXml('Filter', filter, parsedXml => {
-                checkError(parsedXml, filter.error, filter.errMessage, done);
+            done => {
+                generateParsedXml('Filter', filter, parsedXml => {
+                    checkError(parsedXml, filter.error, filter.errMessage, done);
+                });
             });
-        });
     });
 
     it('should return MalformedXML error if invalid status', done => {
@@ -744,7 +744,7 @@ describe('LifecycleConfiguration::getConfigJson', () => {
         `should return correct configuration: ${msg}`, () => {
             assert.deepStrictEqual(
                 LifecycleConfiguration.getConfigJson(input),
-                expected
+                expected,
             );
         }));
 });
