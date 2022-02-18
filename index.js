@@ -47,6 +47,7 @@ module.exports = {
     network: {
         http: {
             server: require('./lib/network/http/server'),
+            utils: require('./lib/network/http/utils'),
         },
         rpc: require('./lib/network/rpc/rpc'),
         level: require('./lib/network/rpc/level-net'),
