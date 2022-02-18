@@ -99,6 +99,7 @@ describe('network.probe.HealthProbeServer', () => {
     });
 
     describe('Invalid Methods', () => {
+        jest.setTimeout(10000);
         let server;
         function setup(done) {
             server = new HealthProbeServer({
