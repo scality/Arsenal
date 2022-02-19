@@ -43,6 +43,9 @@ module.exports = {
             .VersioningConstants,
         Version: require('./lib/versioning/Version.js').Version,
         VersionID: require('./lib/versioning/VersionID.js'),
+        WriteGatheringManager: require('./lib/versioning/WriteGatheringManager.js'),
+        WriteCache: require('./lib/versioning/WriteCache.js'),
+        VersioningRequestProcessor: require('./lib/versioning/VersioningRequestProcessor.js'),
     },
     network: {
         http: {
