@@ -47,3 +47,5 @@ jobs:
     - name: run executables tests
       run: yarn install && yarn test
       working-directory: 'lib/executables/pensieveCreds/'
+    - name: run ft tests
+      run: yarn ft_test
