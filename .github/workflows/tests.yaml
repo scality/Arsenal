@@ -43,6 +43,8 @@ jobs:
         sudo sh -c "echo '127.0.0.1 testrequestbucket.localhost' >> /etc/hosts"
     - name: test and coverage
       run: yarn --silent coverage
+    - name: run functional tests
+      run: yarn ft_test
     - uses: codecov/codecov-action@v2
     - name: run executables tests
       run: yarn install && yarn test
