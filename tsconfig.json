@@ -6,11 +6,14 @@
         "resolveJsonModule": true,
         "allowJs": true,
         "checkJs": false,
-        "outDir": "./build",
+        "outDir": "build",
         "esModuleInterop": true,
         "forceConsistentCasingInFileNames": true,
-        "strict": true
+        "strict": true,
+        "declaration": true,
+        "noImplicitAny": false,
+        "noEmitOnError": false
     },
-    "include": [ "./index.js", "./lib/*.js", "./lib/**/*.js" ],
-    "exclude": [ "./node_modules/*" ]
+    "include": ["index.ts", "lib"],
+    "exclude": ["node_modules/*"]
 }

@@ -5,7 +5,8 @@
   },
   "version": "8.1.27",
   "description": "Common utilities for the S3 project components",
-  "main": "index.js",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/scality/Arsenal.git"
@@ -58,7 +59,9 @@
     "@babel/preset-typescript": "^7.16.7",
     "@sinonjs/fake-timers": "^6.0.1",
     "@types/jest": "^27.4.0",
+    "@types/level": "^6.0.0",
     "@types/node": "^17.0.18",
+    "@types/utf8": "^3.0.1",
     "eslint": "^8.9.0",
     "eslint-config-airbnb": "6.2.0",
     "eslint-config-scality": "scality/Guidelines#ec33dfb",
@@ -76,6 +79,8 @@
     "lint_md": "mdlint $(git ls-files '*.md')",
     "lint_yml": "yamllint $(git ls-files '*.yml')",
     "test": "jest tests/unit",
+    "build": "tsc",
+    "prepare": "yarn build",
     "ft_test": "jest tests/functional --testTimeout=120000 --forceExit",
     "coverage": "nyc --clean jest tests --coverage --testTimeout=120000 --forceExit"
   },
