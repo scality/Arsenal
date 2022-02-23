@@ -5,7 +5,8 @@
   },
   "version": "8.1.27",
   "description": "Common utilities for the S3 project components",
-  "main": "index.js",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/scality/Arsenal.git"
@@ -75,6 +76,7 @@
     "lint_md": "mdlint $(git ls-files '*.md')",
     "lint_yml": "yamllint $(git ls-files '*.yml')",
     "test": "jest tests/unit",
+    "build": "tsc",
     "ft_test": "jest tests/functional --testTimeout=120000 --forceExit",
     "coverage": "nyc --clean jest tests --coverage --testTimeout=120000 --forceExit"
   },

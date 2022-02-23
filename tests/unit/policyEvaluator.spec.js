@@ -3,16 +3,16 @@
 const assert = require('assert');
 const fakeTimers = require('@sinonjs/fake-timers');
 
-const evaluator = require('../../lib/policyEvaluator/evaluator.js');
+const evaluator = require('../../lib/policyEvaluator/evaluator');
 const evaluatePolicy = evaluator.evaluatePolicy;
 const evaluateAllPolicies = evaluator.evaluateAllPolicies;
 const handleWildcards =
-    require('../../lib/policyEvaluator/utils/wildcards.js').handleWildcards;
+    require('../../lib/policyEvaluator/utils/wildcards').handleWildcards;
 const substituteVariables =
-    require('../../lib/policyEvaluator/utils/variables.js');
+    require('../../lib/policyEvaluator/utils/variables');
 const samples = require('../utils/samplePolicies.json');
 const DummyRequestLogger = require('./helpers').DummyRequestLogger;
-const RequestContext = require('../../lib/policyEvaluator/RequestContext.js');
+const RequestContext = require('../../lib/policyEvaluator/RequestContext');
 const log = new DummyRequestLogger();
 
 
