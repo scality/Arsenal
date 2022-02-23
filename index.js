@@ -16,6 +16,7 @@ module.exports = {
         list: require('./lib/algos/list/exportAlgos'),
         listTools: {
             DelimiterTools: require('./lib/algos/list/tools'),
+            Skip: require('./lib/algos/list/skip'),
         },
         cache: {
             LRUCache: require('./lib/algos/cache/LRUCache'),
