@@ -1,6 +1,6 @@
 'use strict'; // eslint-disable-line strict
 
-const AuthInfo = require('../../lib/auth/AuthInfo');
+const AuthInfo = require('../../lib/auth/AuthInfo').default;
 const constants = require('../../lib/constants');
 
 function makeid(size) {

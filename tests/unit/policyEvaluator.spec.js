@@ -8,11 +8,11 @@ const evaluatePolicy = evaluator.evaluatePolicy;
 const evaluateAllPolicies = evaluator.evaluateAllPolicies;
 const handleWildcards =
     require('../../lib/policyEvaluator/utils/wildcards').handleWildcards;
-const substituteVariables =
+const { substituteVariables } =
     require('../../lib/policyEvaluator/utils/variables');
 const samples = require('../utils/samplePolicies.json');
 const DummyRequestLogger = require('./helpers').DummyRequestLogger;
-const RequestContext = require('../../lib/policyEvaluator/RequestContext');
+const RequestContext = require('../../lib/policyEvaluator/RequestContext').default;
 const log = new DummyRequestLogger();
 
 

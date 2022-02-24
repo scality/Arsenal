@@ -1,7 +1,7 @@
 import { substituteVariables } from './utils/variables';
 import { handleWildcards } from './utils/wildcards';
-import { findConditionKey, convertConditionOperator } from './utils/conditions.js';
-import checkArnMatch from './utils/checkArnMatch.js';
+import { findConditionKey, convertConditionOperator } from './utils/conditions';
+import checkArnMatch from './utils/checkArnMatch';
 import { transformTagKeyValue } from './utils/objectTags';
 
 const operatorsWithVariables = ['StringEquals', 'StringNotEquals',

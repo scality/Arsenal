@@ -14,7 +14,7 @@ import * as rpc from './rpc';
  * openSub() can be used to open sub-levels, returning a new LevelDB
  * RPC client object accessing the sub-level transparently.
  */
-class LevelDbClient extends rpc.BaseClient {
+export class LevelDbClient extends rpc.BaseClient {
     /**
      * @constructor
      *
@@ -74,7 +74,7 @@ class LevelDbClient extends rpc.BaseClient {
  * database is opened and attached to the call environment in
  * env.subDb (env is passed as first parameter of received RPC calls).
  */
-class LevelDbService extends rpc.BaseService {
+export class LevelDbService extends rpc.BaseService {
     /**
      * @constructor
      *
@@ -121,8 +121,3 @@ class LevelDbService extends rpc.BaseService {
         return subDb;
     }
 }
-
-module.exports = {
-    LevelDbClient,
-    LevelDbService,
-};

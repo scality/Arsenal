@@ -3,7 +3,7 @@
 const assert = require('assert');
 
 const constructStringToSign =
-    require('../../../../lib/auth/v2/constructStringToSign');
+    require('../../../../lib/auth/v2/constructStringToSign').default;
 const hashSignature =
     require('../../../../lib/auth/backends/in_memory/vaultUtilities').hashSignature;
 const DummyRequestLogger = require('../../helpers').DummyRequestLogger;

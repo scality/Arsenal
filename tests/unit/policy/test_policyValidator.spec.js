@@ -2,7 +2,7 @@
 
 const assert = require('assert');
 const policyValidator = require('../../../lib/policy/policyValidator');
-const errors = require('../../../lib/errors');
+const errors = require('../../../lib/errors').default;
 const validateUserPolicy = policyValidator.validateUserPolicy;
 const validateResourcePolicy = policyValidator.validateResourcePolicy;
 const successRes = { error: null, valid: true };

@@ -1,4 +1,3 @@
-'use strict'; // eslint-disable-line strict
 import errors from '../../errors';
 
 const epochTime = new Date('1970-01-01').getTime();

@@ -1,6 +1,6 @@
 const assert = require('assert');
 const stream = require('stream');
-const MergeStream = require('../../../../lib/algos/stream/MergeStream');
+const MergeStream = require('../../../../lib/algos/stream/MergeStream').default;
 
 class Streamify extends stream.Readable {
     constructor(objectsToSend, errorAtEnd) {

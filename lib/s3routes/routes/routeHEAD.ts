@@ -1,5 +1,5 @@
 import errors from '../../errors';
-import routesUtils from '../routesUtils';
+import * as routesUtils from '../routesUtils';
 
 export default function routeHEAD(request, response, api, log, statsClient) {
     log.debug('routing request', { method: 'routeHEAD' });

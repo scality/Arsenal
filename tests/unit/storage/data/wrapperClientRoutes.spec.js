@@ -1,7 +1,7 @@
 const assert = require('assert');
 const crypto = require('crypto');
 
-const BackendInfo = require('../../../../lib/models/BackendInfo');
+const BackendInfo = require('../../../../lib/models/BackendInfo').default;
 const DataWrapper = require('../../../../lib/storage/data/DataWrapper');
 const DummyRequestLogger = require('../../helpers').DummyRequestLogger;
 const MetadataWrapper =

@@ -1,4 +1,4 @@
-import routesUtils from '../routesUtils';
+import * as routesUtils from '../routesUtils';
 import errors from '../../errors';
 
 export default function routeDELETE(request, response, api, log, statsClient) {

@@ -1,7 +1,7 @@
 const assert = require('assert');
 
 const azureMpuUtils =
-    require('../../../../lib/s3middleware/azureHelpers/mpuUtils');
+    require('../../../../lib/s3middleware/azureHelpers/mpuUtils').default;
 const padString = azureMpuUtils.padString;
 const getSubPartInfo = azureMpuUtils.getSubPartInfo;
 

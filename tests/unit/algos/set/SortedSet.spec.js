@@ -1,5 +1,5 @@
 const assert = require('assert');
-const SortedSet = require('../../../../lib/algos/set/SortedSet');
+const SortedSet = require('../../../../lib/algos/set/SortedSet').default;
 
 describe('SortedSet', () => {
     it('basic', () => {

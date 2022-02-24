@@ -1,5 +1,4 @@
-const handleWildcardInResource =
-    require('./wildcards.js').handleWildcardInResource;
+import { handleWildcardInResource } from './wildcards';
 /**
  * Checks whether an ARN from a request matches an ARN in a policy
  * to compare against each portion of the ARN from the request

@@ -3,7 +3,7 @@
 const assert = require('assert');
 
 const checkRequestExpiry =
-    require('../../../../lib/auth/v2/checkRequestExpiry');
+    require('../../../../lib/auth/v2/checkRequestExpiry').default;
 const DummyRequestLogger = require('../../helpers').DummyRequestLogger;
 const errors = require('../../../../index').errors;
 

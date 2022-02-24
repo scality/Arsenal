@@ -8,7 +8,7 @@ const temp = require('temp');
 temp.track();
 
 const db = require('../../index').db;
-const errors = require('../../lib/errors');
+const errors = require('../../lib/errors').default;
 
 const IndexTransaction = db.IndexTransaction;
 const key1 = 'key1';

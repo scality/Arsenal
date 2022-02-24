@@ -9,7 +9,7 @@ const uuidv4 = require('uuid/v4');
 const {
     EchoChannel,
     logger,
-} = require('./ersatz.js');
+} = require('./ersatz');
 
 const expectedObjectType = 'Symmetric Key';
 const expectedAlgorithm = 'AES';

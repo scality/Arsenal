@@ -1,6 +1,6 @@
 const assert = require('assert');
 
-const LifecycleRule = require('../../../lib/models/LifecycleRule');
+const LifecycleRule = require('../../../lib/models/LifecycleRule').default;
 const { LifecycleUtils } = require('../../../lib/s3middleware/lifecycleHelpers');
 
 // 5 days prior to CURRENT
@@ -853,4 +853,3 @@ describe('LifecycleUtils::compareTransitions', () => {
         assert.deepStrictEqual(result, transition2);
     });
 });
-

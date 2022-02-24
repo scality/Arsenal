@@ -3,8 +3,8 @@
 const assert = require('assert');
 const async = require('async');
 
-const RedisClient = require('../../../lib/metrics/RedisClient');
-const StatsClient = require('../../../lib/metrics/StatsClient');
+const RedisClient = require('../../../lib/metrics/RedisClient').default;
+const StatsClient = require('../../../lib/metrics/StatsClient').default;
 
 // setup redis client
 const config = {

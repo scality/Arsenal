@@ -1,6 +1,6 @@
-import {checkIPinRangeOrMatch} from '../../ipCheck';
-import {handleWildcards} from './wildcards.js';
-import checkArnMatch from './checkArnMatch.js';
+import { checkIPinRangeOrMatch } from '../../ipCheck';
+import { handleWildcards } from './wildcards';
+import checkArnMatch from './checkArnMatch';
 import { getTagKeys } from './objectTags';
 
 /**
