@@ -57,7 +57,6 @@ function zpad(key, length = 15) {
 }
 
 class DummyRequestLogger {
-
     constructor() {
         this.ops = [];
         this.counts = {

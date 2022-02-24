@@ -85,11 +85,11 @@ describe('LRUCache', () => {
         assert.strictEqual(lru.get(100), undefined);
     });
 
-    it('max 1000000 entries', function lru1M() {
+    it('max 1000000 entries', () => {
         // this test takes ~1-2 seconds on a laptop, nevertheless set a
         // large timeout to reduce the potential of flakiness on possibly
         // slower CI environment.
-        this.timeout(30000);
+        jest.setTimeout(30000);
 
         const lru = new LRUCache(1000000);
 
@@ -111,7 +111,7 @@ describe('LRUCache', () => {
         // check present (even) and evicted (odd) items
         for (let i = 0; i < 1000000; ++i) {
             assert.strictEqual(lru.get(`${i}`),
-                               i % 2 === 0 ? i : undefined);
+                i % 2 === 0 ? i : undefined);
             assert.strictEqual(lru.remove(`${i}`), i % 2 === 0);
         }
         assert.strictEqual(lru.count(), 500000);

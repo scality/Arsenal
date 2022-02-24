@@ -67,7 +67,7 @@ class LoopbackServerChannel extends EchoChannel {
         };
         this.KMIP = KMIPClass;
         this.kmip = new KMIPClass(Codec, DummyServerTransport,
-                                  this.options);
+            this.options);
         serverExtensions.forEach(extension => {
             this.kmip.mapExtension(extension.name, extension.tag);
         });
@@ -97,7 +97,7 @@ class LoopbackServerChannel extends EchoChannel {
                     result = [
                         this.KMIP.Enumeration('Result Status', 'Success'),
                         this.KMIP.Structure('Response Payload',
-                                            responsePayload),
+                            responsePayload),
                     ];
                 }
 
@@ -106,18 +106,18 @@ class LoopbackServerChannel extends EchoChannel {
                         this.KMIP.Structure('Response Header', [
                             this.KMIP.Structure('Protocol Version', [
                                 this.KMIP.Integer('Protocol Version Major',
-                                                  requestProtocolVersionMajor),
+                                    requestProtocolVersionMajor),
                                 this.KMIP.Integer('Protocol Version Minor',
-                                                  requestProtocolVersionMinor),
+                                    requestProtocolVersionMinor),
                             ]),
                             this.KMIP.DateTime('Time Stamp', new Date),
                             this.KMIP.Integer('Batch Count', 1),
                         ]),
                         this.KMIP.Structure('Batch Item', [
                             this.KMIP.Enumeration('Operation',
-                                                  requestOperation),
+                                requestOperation),
                             this.KMIP.ByteString('Unique Batch Item ID',
-                                                 uniqueBatchItemID),
+                                uniqueBatchItemID),
                             ...result,
                         ]),
                     ]),
@@ -172,13 +172,13 @@ class LoopbackServerChannel extends EchoChannel {
         if (queryFunctions.includes('Query Server Information')) {
             response.push(
                 this.KMIP.TextString('Vendor Identification',
-                                     vendorIdentification),
+                    vendorIdentification),
                 this.KMIP.Structure('Server Information',
-                                    serverExtensions.map(extension =>
-                                                         this.KMIP.TextString(
-                                                             extension.name,
-                                                             extension.value)
-                                                        )));
+                    serverExtensions.map(extension =>
+                        this.KMIP.TextString(
+                            extension.name,
+                            extension.value),
+                    )));
         }
         if (queryFunctions.includes('Query Extension Map')) {
             serverExtensions.forEach(extension => {
@@ -240,7 +240,7 @@ class LoopbackServerChannel extends EchoChannel {
         });
         const decodedUsageMask =
               this.kmip.decodeMask('Cryptographic Usage Mask',
-                                   cryptographicUsageMask);
+                  cryptographicUsageMask);
         assert(cryptographicAlgorithm === expectedAlgorithm);
         assert(cryptographicLength === expectedLength);
         assert(decodedUsageMask.includes('Encrypt'));
