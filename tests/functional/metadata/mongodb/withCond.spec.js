@@ -16,7 +16,7 @@ const bucketName = 'testbucket';
 const mongoserver = new MongoMemoryReplSet({
     debug: false,
     instanceOpts: [
-        { port: 27018 },
+        { port: 27022 },
     ],
     replSet: {
         name: 'rs0',
@@ -26,13 +26,13 @@ const mongoserver = new MongoMemoryReplSet({
     },
 });
 
-describe('MongoClientInterface', () => {
+describe('MongoClientInterface:withCond', () => {
     let metadata;
     beforeAll(done => {
         mongoserver.waitUntilRunning().then(() => {
             const opts = {
                 mongodb: {
-                    replicaSetHosts: 'localhost:27018',
+                    replicaSetHosts: 'localhost:27022',
                     writeConcern: 'majority',
                     replicaSet: 'rs0',
                     readPreference: 'primary',

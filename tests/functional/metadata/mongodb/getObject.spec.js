@@ -30,7 +30,7 @@ const mongoserver = new MongoMemoryReplSet({
 let uidCounter = 0;
 function generateVersionId() {
     return genVID(`${process.pid}.${uidCounter++}`,
-                    replicationGroupId);
+        replicationGroupId);
 }
 
 describe('MongoClientInterface::metadata.getObjectMD', () => {
@@ -61,7 +61,7 @@ describe('MongoClientInterface::metadata.getObjectMD', () => {
                         $gt: versionId,
                     },
                 },
-                        ],
+                ],
             },
             {
                 $set: { _id: objName, value: objVal },

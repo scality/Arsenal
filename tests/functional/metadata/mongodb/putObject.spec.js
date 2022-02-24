@@ -29,8 +29,8 @@ const mongoserver = new MongoMemoryReplSet({
 
 function unescape(obj) {
     return JSON.parse(JSON.stringify(obj).
-                      replace(/\uFF04/g, '$').
-                      replace(/\uFF0E/g, '.'));
+        replace(/\uFF04/g, '$').
+        replace(/\uFF0E/g, '.'));
 }
 
 describe('MongoClientInterface:metadata.putObjectMD', () => {
