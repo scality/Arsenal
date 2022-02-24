@@ -80,6 +80,7 @@
     "lint_yml": "yamllint $(git ls-files '*.yml')",
     "test": "jest tests/unit",
     "build": "tsc",
+    "prepare": "yarn build",
     "ft_test": "jest tests/functional --testTimeout=120000 --forceExit",
     "coverage": "nyc --clean jest tests --coverage --testTimeout=120000 --forceExit"
   },
