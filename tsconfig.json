@@ -12,8 +12,10 @@
         "strict": true,
         "declaration": true,
         "noImplicitAny": false,
-        "noEmitOnError": false
+        "noEmitOnError": false,
+        "sourceMap": true
     },
     "include": ["index.ts", "lib"],
-    "exclude": ["node_modules/*"]
+    "exclude": ["node_modules/*"],
+    "compileOnSave": true
 }
