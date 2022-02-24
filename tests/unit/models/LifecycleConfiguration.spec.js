@@ -1,9 +1,9 @@
 const assert = require('assert');
 const { parseString } = require('xml2js');
-const errors = require('../../../lib/errors');
+const errors = require('../../../lib/errors').default;
 
 const LifecycleConfiguration =
-    require('../../../lib/models/LifecycleConfiguration.js');
+    require('../../../lib/models/LifecycleConfiguration').default;
 
 const days = {
     AbortIncompleteMultipartUpload: 'DaysAfterInitiation',

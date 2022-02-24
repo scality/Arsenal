@@ -1,6 +1,6 @@
 const assert = require('assert');
 
-const LRUCache = require('../../../../lib/algos/cache/LRUCache');
+const LRUCache = require('../../../../lib/algos/cache/LRUCache').default;
 
 describe('LRUCache', () => {
     it('max 1 entry', () => {

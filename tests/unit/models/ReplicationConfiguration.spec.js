@@ -4,7 +4,7 @@ const { parseString } = require('xml2js');
 const werelogs = require('werelogs');
 
 const ReplicationConfiguration =
-      require('../../../lib/models/ReplicationConfiguration');
+      require('../../../lib/models/ReplicationConfiguration').default;
 
 const logger = new werelogs.Logger('test:ReplicationConfiguration');
 

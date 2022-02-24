@@ -7,11 +7,11 @@ import routeDELETE from './routes/routeDELETE';
 import routeHEAD from './routes/routeHEAD';
 import routePOST from './routes/routePOST';
 import routeOPTIONS from './routes/routeOPTIONS';
-import routesUtils from './routesUtils';
+import * as routesUtils from './routesUtils';
 import routeWebsite from './routes/routeWebsite';
 
 import { objectKeyByteLimit } from '../constants';
-import requestUtils from '../../lib/policyEvaluator/requestUtils';
+import * as requestUtils from '../../lib/policyEvaluator/requestUtils';
 
 const routeMap = {
     GET: routeGET,
@@ -151,7 +151,7 @@ function checkTypes(req, res, params, logger, s3config) {
  * @param {String} [s3config] - s3 configuration
  * @returns {undefined}
  */
-function routes(req, res, params, logger, s3config) {
+export default function routes(req, res, params, logger, s3config) {
     checkTypes(req, res, params, logger);
 
     const {
@@ -250,5 +250,3 @@ function routes(req, res, params, logger, s3config) {
 
     return method(req, res, api, log, statsClient, dataRetrievalParams);
 }
-
-module.exports = routes;

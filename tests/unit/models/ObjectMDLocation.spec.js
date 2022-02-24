@@ -1,5 +1,5 @@
 const assert = require('assert');
-const ObjectMDLocation = require('../../../lib/models/ObjectMDLocation');
+const ObjectMDLocation = require('../../../lib/models/ObjectMDLocation').default;
 
 describe('ObjectMDLocation', () => {
     it('class getters/setters', () => {

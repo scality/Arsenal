@@ -10,7 +10,7 @@ const Logger = require('werelogs').Logger;
 
 const rpc = require('../../../../../lib/network/rpc/rpc');
 const { RecordLogService, RecordLogProxy } =
-          require('../../../../../lib/storage/metadata/file/RecordLog.js');
+          require('../../../../../lib/storage/metadata/file/RecordLog');
 
 function randomName() {
     let text = '';

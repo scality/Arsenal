@@ -1,6 +1,6 @@
 const assert = require('assert');
 
-const Indexer = require('../../../../lib/auth/backends/in_memory/Indexer');
+const Indexer = require('../../../../lib/auth/backends/in_memory/Indexer').default;
 const ref = require('./sample_authdata.json');
 const { should } = require('./AuthLoader.spec');
 

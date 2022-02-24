@@ -4,7 +4,7 @@ const http = require('http');
 const werelogs = require('werelogs');
 const logger = new werelogs.Logger('test:routesUtils.responseStreamData');
 
-const { responseStreamData } = require('../../../../lib/s3routes/routesUtils.js');
+const { responseStreamData } = require('../../../../lib/s3routes/routesUtils');
 const AwsClient = require('../../../../lib/storage/data/external/AwsClient');
 const DummyObjectStream = require('../../storage/data/DummyObjectStream');
 

@@ -2,7 +2,7 @@
 
 const Logger = require('werelogs').Logger;
 const http = require('http');
-const Clustering = require('../../../../lib/Clustering');
+const Clustering = require('../../../../lib/Clustering').default;
 const Cluster = require('cluster');
 
 const log = new Logger('S3', {

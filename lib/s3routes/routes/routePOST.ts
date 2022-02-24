@@ -1,5 +1,5 @@
 import errors from '../../errors';
-import routesUtils from '../routesUtils';
+import * as routesUtils from '../routesUtils';
 
 /* eslint-disable no-param-reassign */
 export default function routePOST(request, response, api, log) {

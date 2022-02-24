@@ -2,7 +2,7 @@ const assert = require('assert');
 const { parseString } = require('xml2js');
 
 const ObjectLockConfiguration =
-    require('../../../lib/models/ObjectLockConfiguration.js');
+    require('../../../lib/models/ObjectLockConfiguration').default;
 
 function checkError(parsedXml, err, errMessage, cb) {
     const config = new ObjectLockConfiguration(parsedXml).

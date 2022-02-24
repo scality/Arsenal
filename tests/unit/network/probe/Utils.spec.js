@@ -1,5 +1,5 @@
 const assert = require('assert');
-const errors = require('../../../../lib/errors');
+const errors = require('../../../../lib/errors').default;
 const { sendError, sendSuccess } = require('../../../../lib/network/probe/Utils');
 const sinon = require('sinon');
 
