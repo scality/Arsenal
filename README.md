@@ -23,6 +23,18 @@ In order to contribute, please follow the
 [Contributing Guidelines](
 https://github.com/scality/Guidelines/blob/master/CONTRIBUTING.md).
 
+## Installation
+
+Because Arsenal is written in TypeScript, you need to pull the repository
+directly from GitHub with a git URL in the `package.json`. You need to setup
+Arsenal by adding this line to your `package.json`:
+
+```json
+"arsenal": "git://github.com/scality/Arsenal.git#[the-commit-hash-here]",
+```
+
+After running `yarn install`, everything should be good to go.
+
 ## Shuffle
 
 ### Usage
@@ -66,7 +78,7 @@ failure until the stop() method is called.
 
 #### Simple
 
-```
+```js
 import { Clustering } from 'arsenal';
 
 const cluster = new Clustering(clusterSize, logger);
@@ -81,7 +93,7 @@ The callback will be called every time a worker is started/restarted.
 
 #### Handle exit
 
-```
+```js
 import { Clustering } from 'arsenal';
 
 const cluster = new Clustering(clusterSize, logger);
@@ -105,7 +117,7 @@ or save state before exiting the process.
 
 #### Silencing a signal
 
-```
+```js
 import { Clustering } from 'arsenal';
 
 const cluster = new Clustering(clusterSize, logger);
@@ -124,7 +136,7 @@ You can silence stop signals, by simply not exiting on the exit callback
 
 #### Shutdown timeout
 
-```
+```js
 import { Clustering } from 'arsenal';
 
 const cluster = new Clustering(clusterSize, logger, 1000);
