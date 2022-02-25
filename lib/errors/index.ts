@@ -38,7 +38,7 @@ export class ArsenalError extends Error {
 
     /** Output the error as a JSON string */
     toString() {
-        const errorType = this.#type;
+        const errorType = this.message;
         const errorMessage = this.#description;
         return JSON.stringify({ errorType, errorMessage });
     }
