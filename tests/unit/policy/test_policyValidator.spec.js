@@ -53,7 +53,9 @@ function failRes(policyType, errDescription) {
     if (policyType === 'resource') {
         error = Object.assign({}, errors.MalformedPolicy);
     }
-    error.description = errDescription || error.description;
+    if (errDescription || error.description) {
+        error.description = errDescription || error.description;
+    }
     return { error, valid: false };
 }
 

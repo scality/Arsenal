@@ -184,7 +184,7 @@ describe('raft record log client', () => {
                 raftSession: 3 });
             logClient.readRecords({}, err => {
                 assert(err);
-                assert(err.InternalError);
+                assert(err.is.InternalError);
                 done();
             });
         });
@@ -193,7 +193,7 @@ describe('raft record log client', () => {
                 raftSession: 4 });
             logClient.readRecords({}, err => {
                 assert(err);
-                assert(err.InternalError);
+                assert(err.is.InternalError);
                 done();
             });
         });

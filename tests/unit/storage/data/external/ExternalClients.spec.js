@@ -113,7 +113,7 @@ describe('external backend clients', () => {
                 dataStoreName: backend.config.dataStoreName,
             }, null, err => {
                 assert(err);
-                assert(err.LocationNotFound);
+                assert(err.is.LocationNotFound);
                 done();
             });
         });
@@ -206,11 +206,11 @@ describe('external backend clients', () => {
                 async.series(
                     [
                         next => testClient.objectPutTagging(key, bucket.getName(), objectMD, log, (err) => {
-                            assert(err.ServiceUnavailable);
+                            assert(err.is.ServiceUnavailable);
                             next();
                         }),
                         next => testClient.objectDeleteTagging(key, bucket.getName(), objectMD, log, (err) => {
-                            assert(err.ServiceUnavailable);
+                            assert(err.is.ServiceUnavailable);
                             next();
                         }),
                     ],

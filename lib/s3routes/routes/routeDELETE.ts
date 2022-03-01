@@ -82,7 +82,7 @@ export default function routeDELETE(request, response, api, log, statsClient) {
               the object, the errors NoSuchKey and NoSuchVersion should not
               * be sent back as a response.
               */
-                if (err && !err.NoSuchKey && !err.NoSuchVersion) {
+                if (err && !err.is.NoSuchKey && !err.is.NoSuchVersion) {
                     return routesUtils.responseNoBody(err, corsHeaders,
                         response, null, log);
                 }

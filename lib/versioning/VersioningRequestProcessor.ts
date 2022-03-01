@@ -329,7 +329,7 @@ export default class VersioningRequestProcessor {
         }
         // need to get the master version to check if this is the master version
         this.writeCache.get({ db, key }, logger, (err, data) => {
-            if (err && !err.ObjNotFound) {
+            if (err && !err.is.ObjNotFound) {
                 return callback(err);
             }
             const versionId = request.options.versionId;
@@ -384,7 +384,7 @@ export default class VersioningRequestProcessor {
         const { db, key, options } = request;
         // deleting a specific version
         this.writeCache.get({ db, key }, logger, (err, data) => {
-            if (err && !err.ObjNotFound) {
+            if (err && !err.is.ObjNotFound) {
                 return callback(err);
             }
             // delete the specific version

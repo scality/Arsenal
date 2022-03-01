@@ -425,7 +425,7 @@ describe('IndexTransaction', () => {
                 value: value3,
             });
             return transaction.commit(err => {
-                if (!err || !err.PreconditionFailed) {
+                if (!err || !err.is.PreconditionFailed) {
                     return done(new Error('should not be able to conditional put for duplicate key'));
                 }
                 return async.parallel([

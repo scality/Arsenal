@@ -7,7 +7,7 @@ const ObjectLockConfiguration =
 function checkError(parsedXml, err, errMessage, cb) {
     const config = new ObjectLockConfiguration(parsedXml).
         getValidatedObjectLockConfiguration();
-    assert.strictEqual(config.error[err], true);
+    assert.strictEqual(config.error.is[err], true);
     assert.strictEqual(config.error.description, errMessage);
     cb();
 }

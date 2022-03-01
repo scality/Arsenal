@@ -110,7 +110,7 @@ describe('KMIP High Level Driver', () => {
         const kmipClient = new KMIPClient(options, TTLVCodec, TlsTransport);
         kmipClient.healthcheck(logger, err => {
             assert(err);
-            assert(err.InternalError);
+            assert(err.is.InternalError);
             assert(err.description.includes('ECONNREFUSED'));
             done();
         });
