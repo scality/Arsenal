@@ -5,6 +5,7 @@ export type Key = {
     secret: string;
 };
 
+export type Accounts = { accounts: Account[] };
 export type Account = {
     name: string;
     email: string;
@@ -38,7 +39,7 @@ const account = (() => {
 })();
 
 const accounts = (() => {
-    return joi.object<{ accounts: Account[] }>({
+    return joi.object<Accounts>({
         accounts: joi
             .array()
             .items(account)

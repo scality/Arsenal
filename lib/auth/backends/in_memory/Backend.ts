@@ -3,7 +3,7 @@ import errors from '../../../errors';
 import { calculateSigningKey, hashSignature } from './vault-utilities';
 import Indexer from './Indexer';
 import BaseBackend from '../base';
-import { Account } from './types';
+import { Accounts } from './types';
 
 function _formatResponse(userInfoToSend) {
     return {
@@ -187,11 +187,11 @@ class InMemoryBackend extends BaseBackend {
 }
 
 class S3AuthBackend extends InMemoryBackend {
-    constructor(authdata: { accounts: Account[] }) {
+    constructor(authdata: Accounts) {
         super('s3', new Indexer(authdata));
     }
 
-    refreshAuthData(authData: { accounts: Account[] }) {
+    refreshAuthData(authData: Accounts) {
         this.indexer = new Indexer(authData);
     }
 }

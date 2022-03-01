@@ -3,14 +3,14 @@ import glob from 'simple-glob';
 import joi from 'joi';
 import werelogs from 'werelogs';
 import * as types from './types';
-import { Account } from './types';
+import { Account, Accounts } from './types';
 
 import ARN from '../../../models/ARN';
 
 /** Load authentication information from files or pre-loaded account objects */
 export default class AuthLoader {
     #log: werelogs.Logger;
-    #authData: { accounts: Account[] };
+    #authData: Accounts;
     #isValid: 'waiting-for-validation' | 'valid' | 'invalid';
 
     constructor(logApi: { Logger: typeof werelogs.Logger } = werelogs) {
@@ -20,7 +20,7 @@ export default class AuthLoader {
     }
 
     /** Add one or more accounts to the authentication info */
-    addAccounts(authData: { accounts: Account[] }, filePath?: string) {
+    addAccounts(authData: Accounts, filePath?: string) {
         const isValid = this.#isAuthDataValid(authData, filePath);
         if (isValid) {
             this.#authData.accounts = [
