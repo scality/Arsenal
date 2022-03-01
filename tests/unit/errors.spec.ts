@@ -1,42 +1,39 @@
-const assert = require('assert');
-
-const errorsJSON = require('../../errors/arsenalErrors.json');
-const errors = require('../../index').errors;
+import * as rawErrors from '../../lib/errors/arsenalErrors';
+import { errors } from '../../index';
+import { ArsenalError } from '../../lib/errors';
 
 describe('Errors: ', () => {
-    Object.keys(errors).forEach(index => {
-        it(`should return and instance of ${index} Error`, done => {
-            assert.strictEqual(errors[index] instanceof Error, true,
-                'should be an instance of Error');
-            assert.strictEqual(errors[index].code, errorsJSON[index].code,
-                'Wrong Code');
-            assert.strictEqual(errors[index].description,
-                errorsJSON[index].description, 'Incorrect description');
-            assert.strictEqual(errors[index][index], true,
-                `${index} key must be true`);
-            done();
+    Object.entries(errors).forEach(([name, error]) => {
+        const raw = rawErrors[name];
+        it(`should return and instance of ${name} Error`, () => {
+            expect(error).toBeInstanceOf(ArsenalError);
+            expect(error).toBeInstanceOf(Error);
+            expect(error).toMatchObject(raw);
+            expect(error.is[name]).toBeTruthy();
         });
     });
 
     it('should allow custom error descriptions', () => {
-        const originDescription = errors.NoSuchEntity.description;
-        const error =
-            errors.NoSuchEntity.customizeDescription('custom-description');
-        assert.strictEqual(errors.NoSuchEntity.description, originDescription);
-        assert.strictEqual(error.description, 'custom-description');
-        assert.strictEqual(error.NoSuchEntity, true);
+        const error = errors.NoSuchEntity;
+        const custom = error.customizeDescription('custom-description');
+        const original = error.description;
+        expect(errors.NoSuchEntity).toHaveProperty('description', original);
+        expect(custom).toHaveProperty('description', 'custom-description');
+        expect(custom.is).toHaveProperty('NoSuchEntity', true);
     });
 
     it('can be used as an http response', () => {
-        const fakeRes = {
-            writeHead: code => assert.strictEqual(code, 404),
-            end: msg => {
-                assert.strictEqual(
-                    msg,
-                    errors.NoSuchEntity.toString(),
-                );
+        // @ts-expect-errors
+        errors.NoSuchEntity.writeResponse({
+            writeHead(statusCode: number) {
+                expect(statusCode).toEqual(404);
+                return this;
             },
-        };
-        errors.NoSuchEntity.writeResponse(fakeRes);
+            end(msg: any) {
+                const asStr = errors.NoSuchEntity.toString();
+                expect(msg).toEqual(asStr);
+                return this;
+            },
+        });
     });
 });

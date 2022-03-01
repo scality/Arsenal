@@ -46,9 +46,9 @@ describe('v4 headerAuthCheck', () => {
         const res = headerAuthCheck(alteredRequest, log);
         if (test.error) {
             assert.notStrictEqual(res.err, undefined);
-            assert.strictEqual(res.err.InvalidToken, true);
+            assert.strictEqual(res.err.is.InvalidToken, true);
         } else {
-            assert.strictEqual(res.err.AccessDenied, true);
+            assert.strictEqual(res.err.is.AccessDenied, true);
         }
     }));
 

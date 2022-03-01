@@ -1,7 +1,7 @@
 const assert = require('assert');
 const crypto = require('crypto');
 
-const errors = require('../../../lib/errors');
+const errors = require('../../../lib/errors').default;
 const {
     _checkEtagMatch,
     _checkEtagNoneMatch,

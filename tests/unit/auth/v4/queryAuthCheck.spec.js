@@ -3,7 +3,7 @@
 const assert = require('assert');
 const fakeTimers = require('@sinonjs/fake-timers');
 
-const errors = require('../../../../lib/errors');
+const errors = require('../../../../lib/errors').default;
 
 const createAlteredRequest = require('../../helpers').createAlteredRequest;
 const queryAuthCheck = require('../../../../lib/auth/v4/queryAuthCheck').check;
