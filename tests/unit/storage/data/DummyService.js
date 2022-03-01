@@ -4,7 +4,7 @@ const assert = require('assert');
 
 const DummyObjectStream = require('./DummyObjectStream');
 const { parseRange } = require('../../../../lib/network/http/utils');
-const errors = require('../../../../lib/errors');
+const errors = require('../../../../lib/errors').default;
 
 const OBJECT_SIZE = 1024 * 1024 * 1024;
 
