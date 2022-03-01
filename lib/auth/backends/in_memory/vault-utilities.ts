@@ -15,6 +15,10 @@ export function hashSignature(
     return hmacObject.update(stringToSign, 'binary').digest('base64');
 }
 
+const sha256 = (key: string | Buffer, data: string) => {
+    return crypto.createHmac('sha256', key).update(data, 'binary').digest();
+};
+
 /** calculateSigningKey for v4 Auth
  * @param {string} secretKey - requester's secretKey
  * @param {string} region - region included in request
@@ -26,15 +30,11 @@ export function calculateSigningKey(
     secretKey: string,
     region: string,
     scopeDate: string,
-    service: string
+    service?: string
 ): string {
-    const dateKey = crypto.createHmac('sha256', `AWS4${secretKey}`)
-        .update(scopeDate, 'binary').digest();
-    const dateRegionKey = crypto.createHmac('sha256', dateKey)
-        .update(region, 'binary').digest();
-    const dateRegionServiceKey = crypto.createHmac('sha256', dateRegionKey)
-        .update(service || 's3', 'binary').digest();
-    const signingKey = crypto.createHmac('sha256', dateRegionServiceKey)
-        .update('aws4_request', 'binary').digest();
-    return signingKey;
+    const dateKey = sha256(`AWS4${secretKey}`, scopeDate);
+    const dateRegionKey = sha256(dateKey, region);
+    const dateRegionServiceKey = sha256(dateRegionKey, service || 's3');
+    const signingKey = sha256(dateRegionServiceKey, 'aws4_request');
+    return signingKey.toString();
 }
