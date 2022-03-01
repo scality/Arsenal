@@ -2,7 +2,7 @@
 
 const assert = require('assert');
 
-const errors = require('../../../../lib/errors');
+const errors = require('../../../../lib/errors').default;
 
 const { parseRange,
         parseRangeSpec,

@@ -97,7 +97,7 @@ describe('object Retention validation', () => {
         it(t.name, done => {
             parseRetentionXml(buildXml(t.params.key, t.params.value), log,
             err => {
-                assert(err[t.error]);
+                assert(err.is[t.error]);
                 assert.strictEqual(err.description, t.errMessage);
                 done();
             });

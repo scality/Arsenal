@@ -2,7 +2,7 @@
 
 const assert = require('assert');
 const stream = require('stream');
-const errors = require('../../../../../lib/errors');
+const errors = require('../../../../../lib/errors').default;
 
 const LogConsumer = require(
     '../../../../../lib/storage/metadata/bucketclient/LogConsumer.js');
@@ -185,7 +185,7 @@ describe('raft record log client', () => {
                 raftSession: 3 });
             logClient.readRecords({}, err => {
                 assert(err);
-                assert(err.InternalError);
+                assert(err.is.InternalError);
                 done();
             });
         });
@@ -194,7 +194,7 @@ describe('raft record log client', () => {
                 raftSession: 4 });
             logClient.readRecords({}, err => {
                 assert(err);
-                assert(err.InternalError);
+                assert(err.is.InternalError);
                 done();
             });
         });

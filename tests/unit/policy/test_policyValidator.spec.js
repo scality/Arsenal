@@ -2,7 +2,7 @@
 
 const assert = require('assert');
 const policyValidator = require('../../../lib/policy/policyValidator');
-const errors = require('../../../lib/errors');
+const errors = require('../../../lib/errors').default;
 const validateUserPolicy = policyValidator.validateUserPolicy;
 const validateResourcePolicy = policyValidator.validateResourcePolicy;
 const successRes = { error: null, valid: true };
@@ -53,7 +53,9 @@ function failRes(policyType, errDescription) {
     if (policyType === 'resource') {
         error = Object.assign({}, errors.MalformedPolicy);
     }
-    error.description = errDescription || error.description;
+    if (errDescription || error.description) {
+        error.description = errDescription || error.description;
+    }
     return { error, valid: false };
 }
 
