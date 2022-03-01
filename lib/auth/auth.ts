@@ -10,7 +10,7 @@ import constructStringToSignV4 from './v4/constructStringToSign';
 import { convertUTCtoISO8601 } from './v4/timeUtils';
 import * as vaultUtilities from './backends/in_memory/vault-utilities';
 import * as inMemoryBackend from './backends/in_memory/Backend';
-import validateAuthConfig from './backends/in_memory/validateAuthConfig';
+import validateAuthConfig from './backends/in_memory/validate-auth-config';
 import AuthLoader from './backends/in_memory/AuthLoader';
 import Vault from './Vault';
 import baseBackend from './backends/base';
