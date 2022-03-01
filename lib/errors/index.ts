@@ -12,6 +12,8 @@ export type Errors = { [Property in keyof types.Names]: ArsenalError };
 const entries = Object.entries(rawErrors);
 
 // This contains some metaprog. Be careful.
+// Proxy can be found on MDN.
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy
 const createIs = (type: types.Name) => {
     const get = (_: {}, value: string | symbol) => type === value;
     return new Proxy({}, { get }) as Is;
