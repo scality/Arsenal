@@ -1,5 +1,6 @@
 const async = require('async');
 const assert = require('assert');
+const sinon = require('sinon');
 const werelogs = require('werelogs');
 const { MongoMemoryReplSet } = require('mongodb-memory-server');
 const { errors, versioning } = require('../../../../index');
@@ -51,6 +52,20 @@ describe('MongoClientInterface::metadata.deleteObjectMD', () => {
         });
     }
 
+    function getObject(key, cb) {
+        collection.findOne({
+            _id: key,
+        }, {}, (err, doc) => {
+            if (err) {
+                return cb(err);
+            }
+            if (!doc) {
+                return cb(errors.NoSuchKey);
+            }
+            return cb(null, doc.value);
+        });
+    }
+
     beforeAll(done => {
         mongoserver.waitUntilRunning().then(() => {
             const opts = {
@@ -77,6 +92,7 @@ describe('MongoClientInterface::metadata.deleteObjectMD', () => {
     });
 
     variations.forEach(variation => {
+        const itOnlyInV1 = variation.vFormat === 'v1' ? it : it.skip;
         describe(`vFormat : ${variation.vFormat}`, () => {
             beforeEach(done => {
                 const bucketMD = BucketInfo.fromObj({
@@ -328,6 +344,119 @@ describe('MongoClientInterface::metadata.deleteObjectMD', () => {
                     assert.deepStrictEqual(err, errors.NoSuchKey);
                     return done();
                 });
+            });
+
+            itOnlyInV1(`Should create master when delete marker removed ${variation.vFormat}`, done => {
+                const objVal = {
+                    key: 'test-object',
+                    isDeleteMarker: false,
+                };
+                const params = {
+                    versioning: true,
+                    versionId: null,
+                    repairMaster: null,
+                };
+                let firstVersionVersionId;
+                let deleteMarkerVersionId;
+                async.series([
+                    // We first create a new version and master
+                    next => metadata.putObjectMD(BUCKET_NAME, 'test-object', objVal, params, logger, (err, res) => {
+                        if (err) {
+                            return next(err);
+                        }
+                        firstVersionVersionId = JSON.parse(res).versionId;
+                        return next();
+                    }),
+                    // putting a delete marker as last version
+                    next => {
+                        objVal.isDeleteMarker = true;
+                        params.versionId = null;
+                        return metadata.putObjectMD(BUCKET_NAME, 'test-object', objVal, params, logger, (err, res) => {
+                            if (err) {
+                                return next(err);
+                            }
+                            deleteMarkerVersionId = JSON.parse(res).versionId;
+                            return next();
+                        });
+                    },
+                    next => {
+                        // using fake clock to override the setTimeout used by the repair
+                        const clock = sinon.useFakeTimers();
+                        return metadata.deleteObjectMD(BUCKET_NAME, 'test-object', { versionId: deleteMarkerVersionId },
+                            logger, () => {
+                                // running the repair callback
+                                clock.runAll();
+                                clock.restore();
+                                return next();
+                            });
+                    },
+                    // waiting for the repair callback to finish
+                    next => setTimeout(next, 100),
+                    // master should be created
+                    next => {
+                        getObject('\x7fMtest-object', (err, object) => {
+                            assert.deepStrictEqual(err, null);
+                            assert.strictEqual(object.key, 'test-object');
+                            assert.strictEqual(object.versionId, firstVersionVersionId);
+                            assert.strictEqual(object.isDeleteMarker, false);
+                            return next();
+                        });
+                    },
+                ], done);
+            });
+
+            itOnlyInV1(`Should delete master when delete marker becomes last version ${variation.vFormat}`, done => {
+                const objVal = {
+                    key: 'test-object',
+                    isDeleteMarker: false,
+                };
+                const params = {
+                    versioning: true,
+                    versionId: null,
+                    repairMaster: null,
+                };
+                let versionId;
+                async.series([
+                    // We first create a new version and master
+                    next => metadata.putObjectMD(BUCKET_NAME, 'test-object', objVal, params, logger, next),
+                    // putting a delete marker as last version
+                    next => {
+                        objVal.isDeleteMarker = true;
+                        params.versionId = null;
+                        return metadata.putObjectMD(BUCKET_NAME, 'test-object', objVal, params, logger, next);
+                    },
+                    // putting new version on top of delete marker
+                    next => {
+                        objVal.isDeleteMarker = false;
+                        return metadata.putObjectMD(BUCKET_NAME, 'test-object', objVal, params, logger, (err, res) => {
+                            if (err) {
+                                return next(err);
+                            }
+                            versionId = JSON.parse(res).versionId;
+                            return next();
+                        });
+                    },
+                    next => {
+                        // using fake clock to override the setTimeout used by the repair
+                        const clock = sinon.useFakeTimers();
+                        return metadata.deleteObjectMD(BUCKET_NAME, 'test-object', { versionId },
+                            logger, () => {
+                                // running the repair callback
+                                clock.runAll();
+                                clock.restore();
+                                return next();
+                            });
+                    },
+                    // waiting for the repair callback to finish
+                    next => setTimeout(next, 100),
+                    // master must be deleted
+                    next => {
+                        getObject('\x7fMtest-object', err => {
+                            assert.deepStrictEqual(err, errors.NoSuchKey);
+                            return next();
+                        });
+                    },
+                ], done);
             });
         });
     });

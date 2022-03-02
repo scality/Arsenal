@@ -28,12 +28,6 @@ const mongoserver = new MongoMemoryReplSet({
     },
 });
 
-function unescape(obj) {
-    return JSON.parse(JSON.stringify(obj).
-        replace(/\uFF04/g, '$').
-        replace(/\uFF0E/g, '.'));
-}
-
 const variations = [
     { it: '(v0)', vFormat: BucketVersioningKeyFormat.v0 },
     { it: '(v1)', vFormat: BucketVersioningKeyFormat.v1 },
@@ -52,10 +46,6 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
             }
             if (!doc) {
                 return cb(errors.NoSuchKey);
-            }
-            if (doc.value.tags) {
-                // eslint-disable-next-line
-                doc.value.tags = unescape(doc.value.tags);
             }
             return cb(null, doc.value);
         });
@@ -96,6 +86,7 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
     });
 
     variations.forEach(variation => {
+        const itOnlyInV1 = variation.vFormat === 'v1' ? it : it.skip;
         describe(`vFormat : ${variation.vFormat}`, () => {
             beforeEach(done => {
                 const bucketMD = BucketInfo.fromObj({
@@ -259,7 +250,7 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
                     // We first create a master and a version
                     next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, (err, data) => {
                         assert.deepStrictEqual(err, null);
-                        versionId = data.versionId;
+                        versionId = JSON.parse(data).versionId;
                         return next();
                     }),
                     // We put another version of the object
@@ -299,7 +290,7 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
                     // We first create a new version and master
                     next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, (err, data) => {
                         assert.deepStrictEqual(err, null);
-                        versionId = data.versionId;
+                        versionId = JSON.parse(data).versionId;
                         return next();
                     }),
                     next => {
@@ -362,6 +353,73 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
                     next => getObjectCount((err, count) => {
                         assert.deepStrictEqual(err, null);
                         assert.strictEqual(count, 2);
+                        return next();
+                    }),
+                ], done);
+            });
+
+            itOnlyInV1(`Should delete master when last version is delete marker ${variation.it}`, done => {
+                const objVal = {
+                    key: OBJECT_NAME,
+                    versionId: VERSION_ID,
+                    updated: false,
+                    isDeleteMarker: false,
+                };
+                const params = {
+                    versioning: true,
+                    versionId: VERSION_ID,
+                    repairMaster: null,
+                };
+                async.series([
+                    // We first create a new version and master
+                    next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
+                    // putting a delete marker as last version
+                    next => {
+                        objVal.isDeleteMarker = true;
+                        params.versionId = null;
+                        return metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next);
+                    },
+                    // master must be deleted
+                    next => getObject('\x7fMtest-object', err => {
+                        assert.deepStrictEqual(err, errors.NoSuchKey);
+                        return next();
+                    }),
+                ], done);
+            });
+
+            itOnlyInV1(`Should create master when new version is put on top of delete marker ${variation.it}`, done => {
+                const objVal = {
+                    key: OBJECT_NAME,
+                    versionId: VERSION_ID,
+                    updated: false,
+                    isDeleteMarker: false,
+                };
+                const params = {
+                    versioning: true,
+                    versionId: VERSION_ID,
+                    repairMaster: null,
+                };
+                async.series([
+                    // We first create a new version and master
+                    next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
+                    // putting a delete marker as last version
+                    next => {
+                        objVal.isDeleteMarker = true;
+                        params.versionId = null;
+                        return metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next);
+                    },
+                    // We put a new version on top of delete marker
+                    next => {
+                        objVal.isDeleteMarker = false;
+                        objVal.updated = true;
+                        return metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next);
+                    },
+                    // master must be created
+                    next => getObject('\x7fMtest-object', (err, object) => {
+                        assert.deepStrictEqual(err, null);
+                        assert.strictEqual(object.key, OBJECT_NAME);
+                        assert.strictEqual(object.updated, true);
+                        assert.strictEqual(object.isDeleteMarker, false);
                         return next();
                     }),
                 ], done);

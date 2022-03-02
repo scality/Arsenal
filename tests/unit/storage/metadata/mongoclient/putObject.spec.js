@@ -391,7 +391,8 @@ describe('MongoClientInterface:putObjectVerCase4', () => {
     it('should return versionId', done => {
         sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[4](null, {}));
         const collection = {
-            update: (filter, update, params, cb) => cb(null, {}),
+            update: (filter, update, params, cb) => cb(null),
+            bulkWrite: (ops, params, cb) => cb(null, {}),
         };
         client.putObjectVerCase4(collection, 'example-bucket', 'example-object', {}, {}, logger, (err, res) => {
             assert.deepStrictEqual(err, null);
@@ -404,6 +405,7 @@ describe('MongoClientInterface:putObjectVerCase4', () => {
         sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[4](null, {}));
         const collection = {
             update: (filter, update, params, cb) => cb(errors.InternalError),
+            bulkWrite: (ops, params, cb) => cb(errors.InternalError),
         };
         client.putObjectVerCase4(collection, 'example-bucket', 'example-object', {}, {}, logger, err => {
             assert.deepStrictEqual(err, errors.InternalError);
@@ -415,6 +417,7 @@ describe('MongoClientInterface:putObjectVerCase4', () => {
         sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[4](errors.InternalError));
         const collection = {
             update: (filter, update, params, cb) => cb(null),
+            bulkWrite: (ops, params, cb) => cb(null),
         };
         client.putObjectVerCase4(collection, 'example-bucket', 'example-object', {}, {}, logger, err => {
             assert.deepStrictEqual(err, errors.InternalError);

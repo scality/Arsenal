@@ -777,3 +777,29 @@ describe('MongoClientInterface, tests', () => {
         ], done);
     });
 });
+
+describe('MongoClientInterface, updateDeleteMaster', () => {
+    it('Should return delete operation', done => {
+        const op = mongoTestClient.updateDeleteMaster(true, 'v1', {}, {}, true);
+        assert(op.deleteOne);
+        return done();
+    });
+
+    it('Should return update operation (no delete marker v1)', done => {
+        const op = mongoTestClient.updateDeleteMaster(false, 'v1', {}, {}, true);
+        assert(op.updateOne);
+        return done();
+    });
+
+    it('Should return update operation (v0)', done => {
+        const op = mongoTestClient.updateDeleteMaster(true, 'v0', {}, {}, true);
+        assert(op.updateOne);
+        return done();
+    });
+
+    it('Should return update operation (no delete marker v0)', done => {
+        const op = mongoTestClient.updateDeleteMaster(false, 'v0', {}, {}, true);
+        assert(op.updateOne);
+        return done();
+    });
+});
