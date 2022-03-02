@@ -56,6 +56,7 @@ describe('MongoClientInterface:getObjectNoVer', () => {
         };
         sinon.stub(client, 'getCollection').callsFake(() => collection);
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null, 'v0'));
+        sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[4](errors.NoSuchKey));
         client.getObject('example-bucket', 'example-object', {}, logger, err => {
             assert.deepStrictEqual(err, errors.NoSuchKey);
             return done();

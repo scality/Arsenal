@@ -109,6 +109,7 @@ describe('MongoClientInterface::metadata.getObjectMD', () => {
     });
 
     variations.forEach(variation => {
+        const itOnlyInV1 = variation.vFormat === 'v1' ? it : it.skip;
         describe(`vFormat : ${variation.vFormat}`, () => {
             beforeEach(done => {
                 const bucketMD = BucketInfo.fromObj({
@@ -249,6 +250,30 @@ describe('MongoClientInterface::metadata.getObjectMD', () => {
                         assert.strictEqual(object.key, params.objName);
                         assert.strictEqual(object.versionId, versionId2);
                         delete params.isPHD;
+                        return next();
+                    }),
+                ], done);
+            });
+
+            itOnlyInV1(`Should return last version when master deleted ${variation.vFormat}`, done => {
+                const versioningParams = {
+                    versioning: true,
+                    versionId: null,
+                    repairMaster: null,
+                };
+                async.series([
+                    // putting a delete marker as last version
+                    next => {
+                        params.versionId = null;
+                        params.objVal.isDeleteMarker = true;
+                        return metadata.putObjectMD(BUCKET_NAME, params.objName, params.objVal, versioningParams,
+                            logger, next);
+                    },
+                    next => metadata.getObjectMD(BUCKET_NAME, params.objName, null, logger, (err, object) => {
+                        assert.deepStrictEqual(err, null);
+                        assert.strictEqual(object.key, params.objName);
+                        assert.strictEqual(object.isDeleteMarker, true);
+                        params.objVal.isDeleteMarker = null;
                         return next();
                     }),
                 ], done);
