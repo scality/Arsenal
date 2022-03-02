@@ -95,6 +95,7 @@ describe('MongoClientInterface:delObject', () => {
         const collection = {
             findOne: (filter, params, cb) => cb(null, null),
         };
+        sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[4](errors.NoSuchKey));
         client.deleteObjectVer(collection, 'example-bucket', 'example-object', {}, logger, err => {
             assert.deepStrictEqual(err, errors.NoSuchKey);
             return done();
@@ -180,7 +181,7 @@ describe('MongoClientInterface:delObject', () => {
             bulkWrite: (ops, params, cb) => cb(null),
         };
         sinon.useFakeTimers();
-        sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[4](null));
+        sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[4](null, { isDeleteMarker: false }));
         sinon.stub(client, 'asyncRepair').callsFake((...args) => args[5](null));
         client.deleteOrRepairPHD(collection, 'example-bucket', 'example-object', {}, 'v0', logger, err => {
             assert.deepStrictEqual(err, null);
