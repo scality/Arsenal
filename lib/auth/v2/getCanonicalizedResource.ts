@@ -39,7 +39,7 @@ const awsSubresources = [
     'website',
 ];
 
-export default function getCanonicalizedResource(request, clientType) {
+export default function getCanonicalizedResource(request: any, clientType: string) {
     /*
     This variable is used to determine whether to insert
     a '?' or '&'.  Once a query parameter is added to the resourceString,

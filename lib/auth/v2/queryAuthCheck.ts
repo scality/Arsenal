@@ -1,9 +1,10 @@
+import { Logger } from 'werelogs';
 import errors from '../../errors';
 import * as constants from '../../constants';
 import algoCheck from './algoCheck';
 import constructStringToSign from './constructStringToSign';
 
-export function check(request, log, data) {
+export function check(request: any, log: Logger, data: { [key: string]: string }) {
     log.trace('running query auth check');
     if (request.method === 'POST') {
         log.debug('query string auth not supported for post requests');
@@ -51,6 +52,7 @@ export function check(request, log, data) {
         return { err: errors.RequestTimeTooSkewed };
     }
     const accessKey = data.AWSAccessKeyId;
+    // @ts-ignore
     log.addDefaultFields({ accessKey });
 
     const signatureFromRequest = decodeURIComponent(data.Signature);

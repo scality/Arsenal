@@ -1,12 +1,12 @@
-export default function getCanonicalizedAmzHeaders(headers, clientType) {
+export default function getCanonicalizedAmzHeaders(headers: Headers, clientType: string) {
     /*
     Iterate through headers and pull any headers that are x-amz headers.
     Need to include 'x-amz-date' here even though AWS docs
     ambiguous on this.
     */
     const filterFn = clientType === 'GCP' ?
-        val => val.substr(0, 7) === 'x-goog-' :
-        val => val.substr(0, 6) === 'x-amz-';
+        (val: string) => val.substr(0, 7) === 'x-goog-' :
+        (val: string) => val.substr(0, 6) === 'x-amz-';
     const amzHeaders = Object.keys(headers)
         .filter(filterFn)
         .map(val => [val.trim(), headers[val].trim()]);

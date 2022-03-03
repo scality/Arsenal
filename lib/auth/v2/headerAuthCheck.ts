@@ -1,10 +1,11 @@
+import { Logger } from 'werelogs';
 import errors from '../../errors';
 import * as constants from '../../constants';
 import constructStringToSign from './constructStringToSign';
 import checkRequestExpiry from './checkRequestExpiry';
 import algoCheck from './algoCheck';
 
-export function check(request, log, data) {
+export function check(request: any, log: Logger, data: { [key: string]: string }) {
     log.trace('running header auth check');
     const headers = request.headers;
 
@@ -56,6 +57,7 @@ export function check(request, log, data) {
         log.trace('invalid authorization header', { authInfo });
         return { err: errors.MissingSecurityHeader };
     }
+    // @ts-ignore
     log.addDefaultFields({ accessKey });
 
     const signatureFromRequest = authInfo.substring(semicolonIndex + 1).trim();

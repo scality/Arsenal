@@ -1,8 +1,9 @@
+import { Logger } from 'werelogs';
 import errors from '../../errors';
 
 const epochTime = new Date('1970-01-01').getTime();
 
-export default function checkRequestExpiry(timestamp, log) {
+export default function checkRequestExpiry(timestamp: number, log: Logger) {
     // If timestamp is before epochTime, the request is invalid and return
     // errors.AccessDenied
     if (timestamp < epochTime) {
