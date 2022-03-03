@@ -4,8 +4,6 @@ import { Accounts } from './types';
 
 /**
  * @deprecated please use {@link AuthLoader} class instead
- * @param authdata - the authentication config file's data
- * @param logApi - object providing a constructor function for the Logger object
  * @return true on erroneous data false on success
  */
 export default function validateAuthConfig(
