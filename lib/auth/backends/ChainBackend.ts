@@ -2,7 +2,7 @@ import assert from 'assert';
 import async from 'async';
 
 import errors from '../../errors';
-import BaseBackend from './base';
+import BaseBackend from './BaseBackend';
 
 /**
  * Class that provides an authentication backend that will verify signatures

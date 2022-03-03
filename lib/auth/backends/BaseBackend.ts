@@ -7,7 +7,7 @@ import errors from '../../errors';
  */
 export default class BaseBackend {
     service
-    
+
     /**
      * @constructor
      * @param {string} service - service identifer for construction arn

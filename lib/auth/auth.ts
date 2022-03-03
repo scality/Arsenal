@@ -13,7 +13,7 @@ import * as inMemoryBackend from './backends/in_memory/Backend';
 import validateAuthConfig from './backends/in_memory/validate-auth-config';
 import AuthLoader from './backends/in_memory/AuthLoader';
 import Vault from './Vault';
-import baseBackend from './backends/base';
+import baseBackend from './backends/BaseBackend';
 import chainBackend from './backends/ChainBackend';
 
 let vault = null;

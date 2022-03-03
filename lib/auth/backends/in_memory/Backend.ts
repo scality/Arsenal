@@ -2,7 +2,7 @@ import * as crypto from 'crypto';
 import errors from '../../../errors';
 import { calculateSigningKey, hashSignature } from './vault-utilities';
 import Indexer from './Indexer';
-import BaseBackend from '../base';
+import BaseBackend from '../BaseBackend';
 import { Accounts } from './types';
 
 function _formatResponse(userInfoToSend) {
