@@ -1,4 +1,5 @@
 import * as crypto from 'crypto';
+import { Logger } from 'werelogs';
 import createCanonicalRequest from './createCanonicalRequest';
 
 /**
@@ -6,7 +7,17 @@ import createCanonicalRequest from './createCanonicalRequest';
  * @param {object} params - params object
  * @returns {string} - stringToSign
  */
-export default function constructStringToSign(params): string {
+export default function constructStringToSign(params: {
+    request: any;
+    signedHeaders: any;
+    payloadChecksum: any;
+    credentialScope: string;
+    timestamp: string;
+    query: { [key: string]: string };
+    log?: Logger;
+    proxyPath: string;
+    awsService: string;
+}): string {
     const {
         request,
         signedHeaders,
@@ -29,6 +40,8 @@ export default function constructStringToSign(params): string {
         service: params.awsService,
     });
 
+    // TODO Why that line?
+    // @ts-ignore
     if (canonicalReqResult instanceof Error) {
         if (log) {
             log.error('error creating canonicalRequest');

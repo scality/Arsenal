@@ -1,3 +1,4 @@
+import { Logger } from 'werelogs';
 import * as constants from '../../constants';
 import errors from '../../errors';
 
@@ -8,12 +9,11 @@ import { areSignedHeadersComplete } from './validateInputs';
 
 /**
  * V4 query auth check
- * @param {object} request - HTTP request object
- * @param {object} log - logging object
- * @param {object} data - Contain authentification params (GET or POST data)
- * @return {callback} calls callback
+ * @param request - HTTP request object
+ * @param log - logging object
+ * @param data - Contain authentification params (GET or POST data)
  */
-export function check(request, log, data) {
+export function check(request: any, log: Logger, data: { [key: string]: string }) {
     const authParams = extractQueryParams(data, log);
 
     if (Object.keys(authParams).length !== 5) {
@@ -28,11 +28,11 @@ export function check(request, log, data) {
         return { err: errors.InvalidToken };
     }
 
-    const signedHeaders = authParams.signedHeaders;
-    const signatureFromRequest = authParams.signatureFromRequest;
-    const timestamp = authParams.timestamp;
-    const expiry = authParams.expiry;
-    const credential = authParams.credential;
+    const signedHeaders = authParams.signedHeaders!;
+    const signatureFromRequest = authParams.signatureFromRequest!;
+    const timestamp = authParams.timestamp!;
+    const expiry = authParams.expiry!;
+    const credential = authParams.credential!;
 
     if (!areSignedHeadersComplete(signedHeaders, request.headers)) {
         log.debug('signedHeaders are incomplete', { signedHeaders });
@@ -59,7 +59,7 @@ export function check(request, log, data) {
         return { err: errors.RequestTimeTooSkewed };
     }
 
-    let proxyPath = null;
+    let proxyPath: string | null = null;
     if (request.headers.proxy_path) {
         try {
             proxyPath = decodeURIComponent(request.headers.proxy_path);
@@ -97,8 +97,10 @@ export function check(request, log, data) {
         timestamp,
         credentialScope: `${scopeDate}/${region}/${service}/${requestType}`,
         awsService: service,
-        proxyPath,
+        proxyPath: proxyPath!,
     });
+    // TODO Why?
+    // @ts-ignore
     if (stringToSign instanceof Error) {
         return { err: stringToSign };
     }

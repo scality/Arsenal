@@ -1,3 +1,4 @@
+import { Logger } from 'werelogs';
 import errors from '../../../lib/errors';
 import * as constants from '../../constants';
 import constructStringToSign from './constructStringToSign';
@@ -14,14 +15,18 @@ import {
 
 /**
  * V4 header auth check
- * @param {object} request - HTTP request object
- * @param {object} log - logging object
- * @param {object} data - Parameters from queryString parsing or body of
+ * @param request - HTTP request object
+ * @param log - logging object
+ * @param data - Parameters from queryString parsing or body of
  *      POST request
- * @param {string} awsService - Aws service ('iam' or 's3')
- * @return {callback} calls callback
+ * @param awsService - Aws service ('iam' or 's3')
  */
-export function check(request, log, data, awsService) {
+export function check(
+    request: any,
+    log: Logger,
+    data: { [key: string]: string },
+    awsService: string
+) {
     log.trace('running header auth check');
 
     const token = request.headers['x-amz-security-token'];
@@ -63,16 +68,16 @@ export function check(request, log, data, awsService) {
 
     log.trace('authorization header from request', { authHeader });
 
-    const signatureFromRequest = authHeaderItems.signatureFromRequest;
-    const credentialsArr = authHeaderItems.credentialsArr;
-    const signedHeaders = authHeaderItems.signedHeaders;
+    const signatureFromRequest = authHeaderItems.signatureFromRequest!;
+    const credentialsArr = authHeaderItems.credentialsArr!;
+    const signedHeaders = authHeaderItems.signedHeaders!;
 
     if (!areSignedHeadersComplete(signedHeaders, request.headers)) {
         log.debug('signedHeaders are incomplete', { signedHeaders });
         return { err: errors.AccessDenied };
     }
 
-    let timestamp;
+    let timestamp: string | undefined;
     // check request timestamp
     const xAmzDate = request.headers['x-amz-date'];
     if (xAmzDate) {
@@ -140,7 +145,7 @@ export function check(request, log, data, awsService) {
         return { err: errors.RequestTimeTooSkewed };
     }
 
-    let proxyPath = null;
+    let proxyPath: string | null = null;
     if (request.headers.proxy_path) {
         try {
             proxyPath = decodeURIComponent(request.headers.proxy_path);
@@ -163,9 +168,11 @@ export function check(request, log, data, awsService) {
         timestamp,
         payloadChecksum,
         awsService: service,
-        proxyPath,
+        proxyPath: proxyPath!,
     });
     log.trace('constructed stringToSign', { stringToSign });
+    // TODO Why?
+    // @ts-ignore
     if (stringToSign instanceof Error) {
         return { err: stringToSign };
     }

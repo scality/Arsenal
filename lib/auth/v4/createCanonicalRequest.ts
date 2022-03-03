@@ -4,22 +4,30 @@ import * as queryString from 'querystring';
 
 /**
  * createCanonicalRequest - creates V4 canonical request
- * @param {object} params - contains pHttpVerb (request type),
+ * @param params - contains pHttpVerb (request type),
  * pResource (parsed from URL), pQuery (request query),
  * pHeaders (request headers), pSignedHeaders (signed headers from request),
  * payloadChecksum (from request)
- * @returns {string} - canonicalRequest
+ * @returns - canonicalRequest
  */
-export default function createCanonicalRequest(params) {
+export default function createCanonicalRequest(
+    params: {
+        pHttpVerb: string;
+        pResource: string;
+        pQuery: { [key: string]: string };
+        pHeaders: any;
+        pSignedHeaders: any;
+        service: string;
+        payloadChecksum: string;
+    }
+) {
     const pHttpVerb = params.pHttpVerb;
     const pResource = params.pResource;
     const pQuery = params.pQuery;
     const pHeaders = params.pHeaders;
     const pSignedHeaders = params.pSignedHeaders;
     const service = params.service;
-
     let payloadChecksum = params.payloadChecksum;
-
     if (!payloadChecksum) {
         if (pHttpVerb === 'GET') {
             payloadChecksum = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b' +
@@ -32,7 +40,7 @@ export default function createCanonicalRequest(params) {
             if (/aws-sdk-java\/[0-9.]+/.test(pHeaders['user-agent'])) {
                 notEncodeStar = true;
             }
-            let payload = queryString.stringify(pQuery, null, null, {
+            let payload = queryString.stringify(pQuery, undefined, undefined, {
                 encodeURIComponent: input => awsURIencode(input, true,
                     notEncodeStar),
             });
@@ -59,11 +67,11 @@ export default function createCanonicalRequest(params) {
 
     // signed headers
     const signedHeadersList = pSignedHeaders.split(';');
-    signedHeadersList.sort((a, b) => a.localeCompare(b));
+    signedHeadersList.sort((a: any, b: any) => a.localeCompare(b));
     const signedHeaders = signedHeadersList.join(';');
 
     // canonical headers
-    const canonicalHeadersList = signedHeadersList.map(signedHeader => {
+    const canonicalHeadersList = signedHeadersList.map((signedHeader: any) => {
         if (pHeaders[signedHeader] !== undefined) {
             const trimmedHeader = pHeaders[signedHeader]
                 .trim().replace(/\s+/g, ' ');
