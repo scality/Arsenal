@@ -3,7 +3,7 @@ import errors from '../../../errors';
 import { calculateSigningKey, hashSignature } from './vaultUtilities';
 import Indexer from './Indexer';
 import { Accounts } from './types';
-import BaseBackend from '../base';
+import BaseBackend from '../BaseBackend';
 
 function _formatResponse(userInfoToSend: any) {
     return {
