@@ -5,7 +5,7 @@ import Indexer from './Indexer';
 import BaseBackend from '../BaseBackend';
 import { Accounts } from './types';
 
-function _formatResponse(userInfoToSend) {
+function _formatResponse(userInfoToSend: any) {
     return {
         message: {
             body: { userInfo: userInfoToSend },
@@ -58,6 +58,7 @@ class InMemoryBackend extends BaseBackend {
             accountDisplayName: this.indexer.getAcctDisplayName(entity),
             canonicalID: entity.canonicalID,
             arn: entity.arn,
+            // @ts-ignore TODO why ?
             IAMdisplayName: entity.IAMdisplayName,
         };
         const vaultReturnObject = _formatResponse(userInfoToSend);
@@ -72,7 +73,7 @@ class InMemoryBackend extends BaseBackend {
         accessKey: string,
         region: string,
         scopeDate: string,
-        options: { algo: 'SHA256' | 'SHA1' },
+        _options: { algo: 'SHA256' | 'SHA1' },
         callback: (
             err: Error | null,
             data?: ReturnType<typeof _formatResponse>
@@ -95,6 +96,7 @@ class InMemoryBackend extends BaseBackend {
             accountDisplayName: this.indexer.getAcctDisplayName(entity),
             canonicalID: entity.canonicalID,
             arn: entity.arn,
+            // @ts-ignore TODO why ?
             IAMdisplayName: entity.IAMdisplayName,
         };
         const vaultReturnObject = _formatResponse(userInfoToSend);
@@ -105,7 +107,7 @@ class InMemoryBackend extends BaseBackend {
     // CODEQUALITY-TODO-SYNC Should be synchronous
     getCanonicalIds(
         emails: string[],
-        log: any,
+        _log: any,
         cb: (err: null, data: { message: { body: any } }) => void
     ) {
         const results = {};
@@ -130,7 +132,7 @@ class InMemoryBackend extends BaseBackend {
     // CODEQUALITY-TODO-SYNC Should be synchronous
     getEmailAddresses(
         canonicalIDs: string[],
-        options: any,
+        _options: any,
         cb: (err: null, data: { message: { body: any } }) => void
     ) {
         const results = {};
@@ -158,14 +160,14 @@ class InMemoryBackend extends BaseBackend {
      * @param canonicalIDs - list of canonicalIDs
      * @param options - to send log id to vault
      * @param cb - callback to calling function
-     * @returns The next is wrong. Here to keep archives.
+     * @return The next is wrong. Here to keep archives.
      * callback with either error or
      * an object from Vault containing account canonicalID
      * as each object key and an accountId as the value (or "NotFound")
      */
     getAccountIds(
         canonicalIDs: string[],
-        options: any,
+        _options: any,
         cb: (err: null, data: { message: { body: any } }) => void
     ) {
         const results = {};
