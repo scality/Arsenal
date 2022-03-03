@@ -1,7 +1,7 @@
-export const auth = require('./lib/auth/auth');
+export * as auth from './lib/auth/auth'
 export * as constants from './lib/constants';
 export const db = require('./lib/db');
-export const errors = require('./lib/errors.js');
+export const errors = require('./lib/errors.js')
 export const shuffle = require('./lib/shuffle');
 export const stringHash = require('./lib/stringHash');
 export const ipCheck = require('./lib/ipCheck');
