@@ -3,7 +3,7 @@
 const assert = require('assert');
 
 const calculateSigningKey =
-    require('../../../../lib/auth/backends/in_memory/vault-utilities')
+    require('../../../../lib/auth/backends/in_memory/vaultUtilities')
         .calculateSigningKey;
 
 describe('v4 signing key calculation', () => {

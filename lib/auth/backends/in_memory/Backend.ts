@@ -1,6 +1,6 @@
 import * as crypto from 'crypto';
 import errors from '../../../errors';
-import { calculateSigningKey, hashSignature } from './vault-utilities';
+import { calculateSigningKey, hashSignature } from './vaultUtilities';
 import Indexer from './Indexer';
 import BaseBackend from '../BaseBackend';
 import { Accounts } from './types';
