@@ -31,10 +31,10 @@ export function calculateSigningKey(
     region: string,
     scopeDate: string,
     service?: string
-): string {
+): Buffer {
     const dateKey = sha256(`AWS4${secretKey}`, scopeDate);
     const dateRegionKey = sha256(dateKey, region);
     const dateRegionServiceKey = sha256(dateRegionKey, service || 's3');
     const signingKey = sha256(dateRegionServiceKey, 'aws4_request');
-    return signingKey.toString();
+    return signingKey;
 }
