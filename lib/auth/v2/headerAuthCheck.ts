@@ -1,12 +1,11 @@
-'use strict'; // eslint-disable-line strict
+import { Logger } from 'werelogs';
+import errors from '../../errors';
+import * as constants from '../../constants';
+import constructStringToSign from './constructStringToSign';
+import checkRequestExpiry from './checkRequestExpiry';
+import algoCheck from './algoCheck';
 
-const errors = require('../../errors');
-const constants = require('../../constants');
-const constructStringToSign = require('./constructStringToSign');
-const checkRequestExpiry = require('./checkRequestExpiry');
-const algoCheck = require('./algoCheck');
-
-function check(request, log, data) {
+export function check(request: any, log: Logger, data: { [key: string]: string }) {
     log.trace('running header auth check');
     const headers = request.headers;
 
@@ -52,6 +51,7 @@ function check(request, log, data) {
         log.trace('invalid authorization header', { authInfo });
         return { err: errors.MissingSecurityHeader };
     }
+    // @ts-ignore
     log.addDefaultFields({ accessKey });
 
     const signatureFromRequest = authInfo.substring(semicolonIndex + 1).trim();
@@ -80,5 +80,3 @@ function check(request, log, data) {
         },
     };
 }
-
-module.exports = { check };
