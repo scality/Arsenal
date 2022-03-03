@@ -6,16 +6,15 @@ import * as constants from '../constants';
  * shortid, email, accountDisplayName and IAMdisplayName (if applicable)
  * @return {AuthInfo} an AuthInfo instance
  */
-
 export default class AuthInfo {
-    arn
-    canonicalID
-    shortid
-    email
-    accountDisplayName
-    IAMdisplayName
-    
-    constructor(objectFromVault) {
+    arn: string;
+    canonicalID: string;
+    shortid: string;
+    email: string;
+    accountDisplayName: string;
+    IAMdisplayName: string;
+
+    constructor(objectFromVault: any) {
         // amazon resource name for IAM user (if applicable)
         this.arn = objectFromVault.arn;
         // account canonicalID
@@ -57,10 +56,8 @@ export default class AuthInfo {
     isRequesterAServiceAccount() {
         return this.canonicalID.startsWith(`${constants.zenkoServiceAccount}/`);
     }
-    isRequesterThisServiceAccount(serviceName) {
-        return (
-            this.canonicalID ===
-            `${constants.zenkoServiceAccount}/${serviceName}`
-        );
+    isRequesterThisServiceAccount(serviceName: string) {
+        const computedCanonicalID = `${constants.zenkoServiceAccount}/${serviceName}`;
+        return this.canonicalID === computedCanonicalID;
     }
 }
