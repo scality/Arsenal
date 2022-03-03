@@ -1,20 +1,18 @@
 import joi from 'joi';
 
-export type Key = {
-    access: string;
-    secret: string;
-};
+export type Callback<Data = any> = (err: Error | null | undefined, data?: Data) => void;
 
-export type Accounts = { accounts: Account[] };
-export type Account = {
-    name: string;
-    email: string;
+export type Key = { access: string; secret: string };
+export type Base = {
     arn: string;
     canonicalID: string;
     shortid: string;
+    email: string;
     keys: Key[];
-    users: any[];
 };
+export type Account = Base & { name: string; users: any[] };
+export type Accounts = { accounts: Account[] };
+export type Entity = Base & { accountDisplayName: string };
 
 const keys = ((): joi.ArraySchema => {
     const str = joi.string().required();
