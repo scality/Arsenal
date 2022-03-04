@@ -1,89 +1,94 @@
-import errorsObj from './arsenalErrors';
+import * as http from 'http';
+import * as rawErrors from './arsenalErrors';
+import * as types from './types';
 
-/**
- * ArsenalError
- *
- * @extends {Error}
- */
-class ArsenalError extends Error {
-    code: number
-    description: string
+export * from './types';
 
-    /**
-     * constructor.
-     *
-     * @param {string} type - Type of error or message
-     * @param {number} code - HTTP status code
-     * @param {string} desc - Verbose description of error
-     */
-    constructor(type, code, desc) {
+/** Mapping used to determine an error type. */
+export type Is = { [Name in types.Name]: boolean };
+/** Mapping of all possible Errors */
+export type Errors = { [Property in keyof types.Names]: ArsenalError };
+
+const entries = Object.entries(rawErrors);
+
+// This contains some metaprog. Be careful.
+// Proxy can be found on MDN.
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy
+const createIs = (type: types.Name) => {
+    const get = (_: {}, value: string | symbol) => type === value;
+    return new Proxy({}, { get }) as Is;
+};
+
+export class ArsenalError extends Error {
+    /** HTTP status code. Example: 401, 403, 500, ... */
+    #code: number;
+    /** Text description of the error. */
+    #description: string;
+    /** Type of the error. Belongs to errors.types. */
+    #type: types.Name;
+    /** Object used to determine the error type.
+     * Example: error.is.InternalError */
+    #is: Is;
+
+    private constructor(type: types.Name, code: number, description: string) {
         super(type);
-
-        /**
-         * HTTP status code of error
-         * @type {number}
-         */
-        this.code = code;
-
-        /**
-         * Description of error
-         * @type {string}
-         */
-        this.description = desc;
-
-        this[type] = true;
+        this.#code = code;
+        this.#description = description;
+        this.#type = type;
+        this.#is = createIs(type);
     }
 
-    /**
-     * Output the error as a JSON string
-     * @returns {string} Error as JSON string
-     */
+    /** Output the error as a JSON string */
     toString() {
-        return JSON.stringify({
-            errorType: this.message,
-            errorMessage: this.description,
-        });
+        const errorType = this.message;
+        const errorMessage = this.#description;
+        return JSON.stringify({ errorType, errorMessage });
     }
 
-    /**
-     * Write the error in an HTTP response
-     *
-     * @param { http.ServerResponse } res - Response we are responding to
-     * @returns {undefined}
-     */
-    writeResponse(res) {
-        res.writeHead(this.code);
-        res.end(this.toString());
+    /** Write the error in an HTTP response */
+    writeResponse(res: http.ServerResponse) {
+        res.writeHead(this.#code);
+        const asStr = this.toString();
+        res.end(asStr);
     }
 
-    /**
-     * customizeDescription returns a new ArsenalError with a new description
-     * with the same HTTP code and message.
-     *
-     * @param {string} description - New error description
-     * @returns {ArsenalError} New error
-     */
-    customizeDescription(description) {
-        return new ArsenalError(this.message, this.code, description);
+    /** Clone the error with a new description.*/
+    customizeDescription(description: string): ArsenalError {
+        const type = this.#type;
+        const code = this.#code;
+        return new ArsenalError(type, code, description);
+    }
+
+    get is() {
+        return this.#is;
+    }
+
+    get code() {
+        return this.#code;
+    }
+
+    get description() {
+        return this.#description;
+    }
+
+    get type() {
+        return this.#type;
+    }
+
+    /** Generate all possible errors. An instance is created by default. */
+    static errors() {
+        return entries.reduce((acc, value) => {
+            const name = value[0] as types.Name;
+            const error = value[1];
+            const { code, description } = error;
+            const err = new ArsenalError(name, code, description);
+            return { ...acc, [name]: err };
+        }, {} as Errors);
     }
 }
 
-/**
- * Generate an Errors instances object.
- *
- * @returns {Object.<string, ArsenalError>} - object field by arsenalError
- *                                            instances
- */
-function errorsGen() {
-    const errors = {};
+/** Mapping of all possible Errors.
+ * Use them with errors[error].customizeDescription for any customization. */
+const errors = ArsenalError.errors();
 
-    Object.keys(errorsObj)
-        .filter(index => index !== '_comment')
-        .forEach(index => {
-            errors[index] = new ArsenalError(index, errorsObj[index].code,
-                errorsObj[index].description);
-        });
-    return errors;
-}
-
-export default errorsGen();
+export default errors;
