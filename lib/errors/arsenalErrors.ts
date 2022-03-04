@@ -1,5 +1,5 @@
-{
-  "_comment": "------------------- Amazon errors ------------------",
+export default {
+  // "_comment": "------------------- Amazon errors ------------------",
   "AccessDenied": {
     "code": 403,
     "description": "Access Denied"
@@ -340,13 +340,13 @@
     "code": 403,
     "description": "The request signature we calculated does not match the signature you provided."
   },
-  "_comment" : {
-    "note" : "This is an AWS S3 specific error. We are opting to use the more general 'ServiceUnavailable' error used throughout AWS (IAM/EC2) to have uniformity of error messages even though we are potentially compromising S3 compatibility.",
-    "ServiceUnavailable": {
-      "code": 503,
-      "description": "Reduce your request rate."
-    }
-  },
+  // "_comment" : {
+  //   "note" : "This is an AWS S3 specific error. We are opting to use the more general 'ServiceUnavailable' error used throughout AWS (IAM/EC2) to have uniformity of error messages even though we are potentially compromising S3 compatibility.",
+  //   "ServiceUnavailable": {
+  //     "code": 503,
+  //     "description": "Reduce your request rate."
+  //   }
+  // },
   "ServiceUnavailable": {
     "code": 503,
     "description": "The request has failed due to a temporary failure of the server."
@@ -495,7 +495,7 @@
     "code": 410,
     "description": "The request was rejected because the credential report does not exist. To generate a credential report, use GenerateCredentialReport."
   },
-  "_comment": "-------------- Special non-AWS S3 errors --------------",
+  // "_comment": "-------------- Special non-AWS S3 errors --------------",
   "MPUinProgress": {
     "code": 409,
     "description": "The bucket you tried to delete has an ongoing multipart upload."
@@ -504,9 +504,9 @@
     "code": 424,
     "description": "The object data location does not exist."
   },
-  "_comment": "-------------- Internal project errors --------------",
-  "_comment": "----------------------- Vault -----------------------",
-  "_comment": "#### formatErrors ####",
+  // "_comment": "-------------- Internal project errors --------------",
+  // "_comment": "----------------------- Vault -----------------------",
+  // "_comment": "#### formatErrors ####",
   "BadName": {
     "description": "name not ok",
     "code": 5001
@@ -587,12 +587,12 @@
     "description": "alias not ok",
     "code": 5020
   },
-  "_comment": "#### internalErrors ####",
+  // "_comment": "#### internalErrors ####",
   "DBPutFailed": {
     "description": "DB put failed",
     "code": 5021
   },
-  "_comment": "#### alreadyExistErrors ####",
+  // "_comment": "#### alreadyExistErrors ####",
   "AccountEmailAlreadyUsed": {
     "description": "an other account already uses that email",
     "code": 5022
@@ -609,12 +609,12 @@
     "description": "an other user already uses that name",
     "code": 5025
   },
-  "_comment": "#### doesntExistErrors ####",
+  // "_comment": "#### doesntExistErrors ####",
   "NoParentAccount": {
     "description": "parent account does not exist",
     "code": 5026
   },
-  "_comment": "#### authErrors ####",
+  // "_comment": "#### authErrors ####",
   "BadStringToSign": {
     "description": "stringToSign not ok'",
     "code": 5027
@@ -659,7 +659,7 @@
     "description": "secretKey status not ok",
     "code": 5037
   },
-  "_comment": "#### OidcpErrors ####",
+  // "_comment": "#### OidcpErrors ####",
   "BadUrl": {
     "description": "url not ok",
     "code": 5038
@@ -676,12 +676,12 @@
     "description": "Object not ok'",
     "code": 5041
   },
-  "_comment": "#### RoleErrors ####",
+  // "_comment": "#### RoleErrors ####",
   "BadRole": {
     "description": "role not ok",
     "code": 5042
   },
-  "_comment": "#### SamlpErrors ####",
+  // "_comment": "#### SamlpErrors ####",
   "BadSamlp": {
     "description": "samlp not ok",
     "code": 5043
@@ -698,8 +698,8 @@
     "description": "not authenticated",
     "code": 401
   },
-  "_comment": "---------------------  MetaData ---------------------",
-  "_comment": "#### formatErrors ####",
+  // "_comment": "---------------------  MetaData ---------------------",
+  // "_comment": "#### formatErrors ####",
   "CacheUpdated": {
     "description": "The cache has been updated",
     "code": 500
@@ -756,7 +756,7 @@
     "description": "TooManyRequests",
     "code": 429
   },
-  "_comment": "----------------------- cdmiclient -----------------------",
+  // "_comment": "----------------------- cdmiclient -----------------------",
   "ReadOnly": {
     "description": "trying to write to read only back-end",
     "code": 403
