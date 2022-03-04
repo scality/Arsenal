@@ -1,4 +1,4 @@
-'use strict'; // eslint-disable-line strict
+import errorsObj from './arsenalErrors';
 
 /**
  * ArsenalError
@@ -6,6 +6,9 @@
  * @extends {Error}
  */
 class ArsenalError extends Error {
+    code: number
+    description: string
+
     /**
      * constructor.
      *
@@ -73,7 +76,6 @@ class ArsenalError extends Error {
  */
 function errorsGen() {
     const errors = {};
-    const errorsObj = require('../errors/arsenalErrors.json');
 
     Object.keys(errorsObj)
         .filter(index => index !== '_comment')
@@ -84,4 +86,4 @@ function errorsGen() {
     return errors;
 }
 
-module.exports = errorsGen();
+export default errorsGen();
