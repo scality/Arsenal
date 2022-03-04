@@ -10,3 +10,9 @@ node_modules/
 *-linux
 *-macos
 
+# Coverage
+coverage/
+.nyc_output/
+
+# TypeScript
+build/
