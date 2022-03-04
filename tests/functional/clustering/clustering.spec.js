@@ -5,7 +5,7 @@ const spawn = require('child_process').spawn;
 let currentSpawn = undefined;
 
 function runTest(name, done) {
-    const test = spawn('node', [`${__dirname}/utils/${name}.js`]);
+    const test = spawn('yarn', ['ts-node', '--transpile-only', `${__dirname}/utils/${name}.js`]);
     currentSpawn = test;
     test.stdout.pipe(process.stdout);
     test.stderr.pipe(process.stderr);
