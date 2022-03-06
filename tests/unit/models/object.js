@@ -324,3 +324,234 @@ describe('getAttributes static method', () => {
         assert.deepStrictEqual(attributes, expectedResult);
     });
 });
+
+describe('ObjectMD::getReducedLocations', () => {
+    it('should not alter an array when each part has only one element',
+    () => {
+        const md = new ObjectMD();
+        const locations = [
+            {
+                key: 'd1d1e055b19eb5a61adb8a665e626ff589cff233',
+                size: 1,
+                start: 0,
+                dataStoreName: 'file',
+                dataStoreETag: '1:0e5a6f42662652d44fcf978399ef5709',
+            },
+            {
+                key: '4e67844b674b093a9e109d42172922ea1f32ec12',
+                size: 3,
+                start: 1,
+                dataStoreName: 'file',
+                dataStoreETag: '2:9ca655158ca025aa00a818b6b81f9e48',
+            },
+        ];
+        md.setLocation(locations);
+        assert.deepStrictEqual(md.getReducedLocations(), locations);
+    });
+
+    it('should reduce an array when first part is > 1 element', () => {
+        const md = new ObjectMD();
+        md.setLocation([
+            {
+                key: 'd1d1e055b19eb5a61adb8a665e626ff589cff233',
+                size: 1,
+                start: 0,
+                dataStoreName: 'file',
+                dataStoreETag: '1:0e5a6f42662652d44fcf978399ef5709',
+            },
+            {
+                key: 'deebfb287cfcee1d137b0136562d2d776ba491e1',
+                size: 1,
+                start: 1,
+                dataStoreName: 'file',
+                dataStoreETag: '1:0e5a6f42662652d44fcf978399ef5709',
+            },
+            {
+                key: '4e67844b674b093a9e109d42172922ea1f32ec12',
+                size: 3,
+                start: 2,
+                dataStoreName: 'file',
+                dataStoreETag: '2:9ca655158ca025aa00a818b6b81f9e48',
+            },
+        ]);
+        assert.deepStrictEqual(md.getReducedLocations(), [
+            {
+                key: 'deebfb287cfcee1d137b0136562d2d776ba491e1',
+                size: 2,
+                start: 0,
+                dataStoreName: 'file',
+                dataStoreETag: '1:0e5a6f42662652d44fcf978399ef5709',
+            },
+            {
+                key: '4e67844b674b093a9e109d42172922ea1f32ec12',
+                size: 3,
+                start: 2,
+                dataStoreName: 'file',
+                dataStoreETag: '2:9ca655158ca025aa00a818b6b81f9e48',
+            },
+        ]);
+    });
+
+    it('should reduce an array when second part is > 1 element', () => {
+        const md = new ObjectMD();
+        md.setLocation([
+            {
+                key: 'd1d1e055b19eb5a61adb8a665e626ff589cff233',
+                size: 1,
+                start: 0,
+                dataStoreName: 'file',
+                dataStoreETag: '1:0e5a6f42662652d44fcf978399ef5709',
+            },
+            {
+                key: 'deebfb287cfcee1d137b0136562d2d776ba491e1',
+                size: 1,
+                start: 1,
+                dataStoreName: 'file',
+                dataStoreETag: '2:9ca655158ca025aa00a818b6b81f9e48',
+            },
+            {
+                key: '4e67844b674b093a9e109d42172922ea1f32ec12',
+                size: 3,
+                start: 2,
+                dataStoreName: 'file',
+                dataStoreETag: '2:9ca655158ca025aa00a818b6b81f9e48',
+            },
+        ]);
+        assert.deepStrictEqual(md.getReducedLocations(), [
+            {
+                key: 'd1d1e055b19eb5a61adb8a665e626ff589cff233',
+                size: 1,
+                start: 0,
+                dataStoreName: 'file',
+                dataStoreETag: '1:0e5a6f42662652d44fcf978399ef5709',
+            },
+            {
+                key: '4e67844b674b093a9e109d42172922ea1f32ec12',
+                size: 4,
+                start: 1,
+                dataStoreName: 'file',
+                dataStoreETag: '2:9ca655158ca025aa00a818b6b81f9e48',
+            },
+        ]);
+    });
+
+    it('should reduce an array when multiple parts are > 1 element', () => {
+        const md = new ObjectMD();
+        md.setLocation([
+            {
+                key: 'd1d1e055b19eb5a61adb8a665e626ff589cff233',
+                size: 1,
+                start: 0,
+                dataStoreName: 'file',
+                dataStoreETag: '1:0e5a6f42662652d44fcf978399ef5709',
+            },
+            {
+                key: 'c1c1e055b19eb5a61adb8a665e626ff589cff234',
+                size: 2,
+                start: 1,
+                dataStoreName: 'file',
+                dataStoreETag: '1:0e5a6f42662652d44fcf978399ef5709',
+            },
+            {
+                key: 'deebfb287cfcee1d137b0136562d2d776ba491e1',
+                size: 1,
+                start: 3,
+                dataStoreName: 'file',
+                dataStoreETag: '1:0e5a6f42662652d44fcf978399ef5709',
+            },
+            {
+                key: '8e67844b674b093a9e109d42172922ea1f32ec14',
+                size: 3,
+                start: 4,
+                dataStoreName: 'file',
+                dataStoreETag: '2:9ca655158ca025aa00a818b6b81f9e48',
+            },
+            {
+                key: 'd1d1e055b19eb5a61adb8a665e626ff589cff233',
+                size: 10,
+                start: 7,
+                dataStoreName: 'file',
+                dataStoreETag: '2:9ca655158ca025aa00a818b6b81f9e48',
+            },
+            {
+                key: '0e67844b674b093a9e109d42172922ea1f32ec11',
+                size: 10,
+                start: 17,
+                dataStoreName: 'file',
+                dataStoreETag: '2:9ca655158ca025aa00a818b6b81f9e48',
+            },
+            {
+                key: '8e67844b674b093a9e109d42172922ea1f32ec14',
+                size: 15,
+                start: 27,
+                dataStoreName: 'file',
+                dataStoreETag: '3:1ca655158ca025aa00a818b6b81f9e4c',
+            },
+            {
+                key: '7e67844b674b093a9e109d42172922ea1f32ec1f',
+                size: 2,
+                start: 42,
+                dataStoreName: 'file',
+                dataStoreETag: '3:1ca655158ca025aa00a818b6b81f9e4c',
+            },
+            {
+                key: '1237844b674b093a9e109d42172922ea1f32ec19',
+                size: 6,
+                start: 44,
+                dataStoreName: 'file',
+                dataStoreETag: '4:afa655158ca025aa00a818b6b81f9e4d',
+            },
+            {
+                key: '4567844b674b093a9e109d42172922ea1f32ec00',
+                size: 4,
+                start: 50,
+                dataStoreName: 'file',
+                dataStoreETag: '4:afa655158ca025aa00a818b6b81f9e4d',
+            },
+            {
+                key: '53d7844b674b093a9e109d42172922ea1f32ec02',
+                size: 9,
+                start: 54,
+                dataStoreName: 'file',
+                dataStoreETag: '4:afa655158ca025aa00a818b6b81f9e4d',
+            },
+            {
+                key: '6f6d7844b674b093a9e109d42172922ea1f32ec01',
+                size: 2,
+                start: 63,
+                dataStoreName: 'file',
+                dataStoreETag: '4:afa655158ca025aa00a818b6b81f9e4d',
+            },
+        ]);
+        assert.deepStrictEqual(md.getReducedLocations(), [
+            {
+                key: 'deebfb287cfcee1d137b0136562d2d776ba491e1',
+                size: 4,
+                start: 0,
+                dataStoreName: 'file',
+                dataStoreETag: '1:0e5a6f42662652d44fcf978399ef5709',
+            },
+            {
+                key: '0e67844b674b093a9e109d42172922ea1f32ec11',
+                size: 23,
+                start: 4,
+                dataStoreName: 'file',
+                dataStoreETag: '2:9ca655158ca025aa00a818b6b81f9e48',
+            },
+            {
+                key: '7e67844b674b093a9e109d42172922ea1f32ec1f',
+                size: 17,
+                start: 27,
+                dataStoreName: 'file',
+                dataStoreETag: '3:1ca655158ca025aa00a818b6b81f9e4c',
+            },
+            {
+                key: '6f6d7844b674b093a9e109d42172922ea1f32ec01',
+                size: 21,
+                start: 44,
+                dataStoreName: 'file',
+                dataStoreETag: '4:afa655158ca025aa00a818b6b81f9e4d',
+            },
+        ]);
+    });
+});
