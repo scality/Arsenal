@@ -87,6 +87,10 @@ export const supportedNotificationEvents = new Set([
     's3:ObjectRemoved:DeleteMarkerCreated',
 ]);
 export const notificationArnPrefix = 'arn:scality:bucketnotif';
+// some of the available data backends  (if called directly rather
+// than through the multiple backend gateway) need a key provided
+// as a string as first parameter of the get/delete methods.
+export const clientsRequireStringKey = { sproxyd: true, cdmi: true };
 // HTTP server keep-alive timeout is set to a higher value than
 // client's free sockets timeout to avoid the risk of triggering
 // ECONNRESET errors if the server closes the connection at the
@@ -106,4 +110,4 @@ export const supportedLifecycleRules = [
 ];
 // Maximum number of buckets to cache (bucket metadata)
 export const maxCachedBuckets = process.env.METADATA_MAX_CACHED_BUCKETS ?
-    Number(process.env.METADATA_MAX_CACHED_BUCKETS) : 1000
+    Number(process.env.METADATA_MAX_CACHED_BUCKETS) : 1000;
