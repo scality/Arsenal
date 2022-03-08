@@ -1,4 +1,4 @@
-import * as http from 'http';
+import type { ServerResponse } from 'http';
 import * as rawErrors from './arsenalErrors';
 import * as types from './types';
 
@@ -46,7 +46,7 @@ export class ArsenalError extends Error {
     }
 
     /** Write the error in an HTTP response */
-    writeResponse(res: http.ServerResponse) {
+    writeResponse(res: ServerResponse) {
         res.writeHead(this.#code);
         const asStr = this.toString();
         res.end(asStr);
