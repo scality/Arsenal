@@ -9,7 +9,6 @@ export type Is = { [Name in types.Name]: boolean };
 /** Mapping of all possible Errors */
 export type Errors = { [Property in keyof types.Names]: ArsenalError };
 
-const entries = Object.entries(rawErrors);
 
 // This contains some metaprog. Be careful.
 // Proxy can be found on MDN.
@@ -77,7 +76,7 @@ export class ArsenalError extends Error {
 
     /** Generate all possible errors. An instance is created by default. */
     static errors() {
-        return entries.reduce((acc, value) => {
+        return Object.entries(rawErrors).reduce((acc, value) => {
             const name = value[0] as types.Name;
             const error = value[1];
             const { code, description } = error;
