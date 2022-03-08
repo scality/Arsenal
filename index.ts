@@ -1,5 +1,5 @@
 export const auth = require('./lib/auth/auth');
-export const constants = require('./lib/constants');
+export * as constants from './lib/constants';
 export const db = require('./lib/db');
 export const errors = require('./lib/errors.js');
 export const shuffle = require('./lib/shuffle');
