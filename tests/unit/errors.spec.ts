@@ -5,7 +5,7 @@ import { ArsenalError } from '../../lib/errors';
 describe('Errors: ', () => {
     Object.entries(errors).forEach(([name, error]) => {
         const raw = rawErrors[name];
-        it(`should return and instance of ${name} Error`, () => {
+        it(`should return an instance of ${name} Error`, () => {
             expect(error).toBeInstanceOf(ArsenalError);
             expect(error).toBeInstanceOf(Error);
             expect(error).toMatchObject(raw);
