@@ -1,19 +1,21 @@
 import type { ServerResponse } from 'http';
 import * as rawErrors from './arsenalErrors';
-import * as types from './types';
 
-export * from './types';
-
-/** Mapping used to determine an error type. */
-export type Is = { [Name in types.Name]: boolean };
-/** Mapping of all possible Errors */
-export type Errors = { [Property in keyof types.Names]: ArsenalError };
-
+/** All possible errors names. */
+export type Name = keyof typeof rawErrors
+/** Object containing all errors names. It has the format { [Name]: "Name" } */
+export type Names = { [Name_ in Name]: Name_ };
+/** Mapping used to determine an error type. It has the format { [Name]: boolean } */
+export type Is = { [_ in Name]: boolean };
+/** Mapping of all possible Errors. It has the format { [Name]: Error } */
+export type Errors = { [_ in Name]: ArsenalError };
 
 // This contains some metaprog. Be careful.
 // Proxy can be found on MDN.
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy
-const createIs = (type: types.Name) => {
+// While this could seems better to avoid metaprog, this allows us to enforce
+// type-checking properly while avoiding all errors that could happen at runtime.
+const createIs = (type: Name) => {
     const get = (_: {}, value: string | symbol) => type === value;
     return new Proxy({}, { get }) as Is;
 };
@@ -23,13 +25,13 @@ export class ArsenalError extends Error {
     #code: number;
     /** Text description of the error. */
     #description: string;
-    /** Type of the error. Belongs to errors.types. */
-    #type: types.Name;
+    /** Type of the error. */
+    #type: Name;
     /** Object used to determine the error type.
      * Example: error.is.InternalError */
     #is: Is;
 
-    private constructor(type: types.Name, code: number, description: string) {
+    private constructor(type: Name, code: number, description: string) {
         super(type);
         this.#code = code;
         this.#description = description;
@@ -58,18 +60,24 @@ export class ArsenalError extends Error {
         return new ArsenalError(type, code, description);
     }
 
+    /** Used to determine the error type. Example: error.is.InternalError */
     get is() {
         return this.#is;
     }
 
+    /** HTTP status code. Example: 401, 403, 500, ... */
     get code() {
         return this.#code;
     }
 
+    /** Text description of the error. */
     get description() {
         return this.#description;
     }
 
+    /**
+     * Type of the error, belonging to Name. is should be prefered instead of
+     * type in a daily-basis, but type remains accessible for future use. */
     get type() {
         return this.#type;
     }
@@ -77,7 +85,7 @@ export class ArsenalError extends Error {
     /** Generate all possible errors. An instance is created by default. */
     static errors() {
         return Object.entries(rawErrors).reduce((acc, value) => {
-            const name = value[0] as types.Name;
+            const name = value[0] as Name;
             const error = value[1];
             const { code, description } = error;
             const err = new ArsenalError(name, code, description);
@@ -88,6 +96,4 @@ export class ArsenalError extends Error {
 
 /** Mapping of all possible Errors.
  * Use them with errors[error].customizeDescription for any customization. */
-const errors = ArsenalError.errors();
-
-export default errors;
+export default ArsenalError.errors();
