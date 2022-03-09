@@ -1,17 +1,19 @@
-'use strict'; // eslint-disable-line strict
-
-const errors = require('../../../lib/errors');
+import { Logger } from 'werelogs';
+import errors from '../../../lib/errors';
 
 /**
  * Validate Credentials
- * @param  {array} credentials - contains accessKey, scopeDate,
+ * @param credentials - contains accessKey, scopeDate,
  * region, service, requestType
- * @param {string} timestamp - timestamp from request in
+ * @param timestamp - timestamp from request in
  * the format of ISO 8601: YYYYMMDDTHHMMSSZ
- * @param {object} log - logging object
- * @return {boolean} true if credentials are correct format, false if not
+ * @param log - logging object
  */
-function validateCredentials(credentials, timestamp, log) {
+export function validateCredentials(
+    credentials: [string, string, string, string, string],
+    timestamp: string,
+    log: Logger
+): Error | {} {
     if (!Array.isArray(credentials) || credentials.length !== 5) {
         log.warn('credentials in improper format', { credentials });
         return errors.InvalidArgument;
@@ -58,12 +60,21 @@ function validateCredentials(credentials, timestamp, log) {
 
 /**
  * Extract and validate components from query object
- * @param  {object} queryObj - query object from request
- * @param {object} log - logging object
- * @return {object} object containing extracted query params for authV4
+ * @param  queryObj - query object from request
+ * @param log - logging object
+ * @return object containing extracted query params for authV4
  */
-function extractQueryParams(queryObj, log) {
-    const authParams = {};
+export function extractQueryParams(
+    queryObj: { [key: string]: string | undefined },
+    log: Logger
+) {
+    const authParams: {
+        signedHeaders?: string;
+        signatureFromRequest?: string;
+        timestamp?: string;
+        expiry?: number;
+        credential?: [string, string, string, string, string];
+    } = {};
 
     // Do not need the algorithm sent back
     if (queryObj['X-Amz-Algorithm'] !== 'AWS4-HMAC-SHA256') {
@@ -99,7 +110,7 @@ function extractQueryParams(queryObj, log) {
         return authParams;
     }
 
-    const expiry = Number.parseInt(queryObj['X-Amz-Expires'], 10);
+    const expiry = Number.parseInt(queryObj['X-Amz-Expires'] ?? 'nope', 10);
     const sevenDays = 604800;
     if (expiry && (expiry > 0 && expiry <= sevenDays)) {
         authParams.expiry = expiry;
@@ -110,6 +121,7 @@ function extractQueryParams(queryObj, log) {
 
     const credential = queryObj['X-Amz-Credential'];
     if (credential && credential.length > 28 && credential.indexOf('/') > -1) {
+        // @ts-ignore
         authParams.credential = credential.split('/');
     } else {
         log.warn('invalid credential param', { credential });
@@ -121,14 +133,17 @@ function extractQueryParams(queryObj, log) {
 
 /**
  * Extract and validate components from auth header
- * @param  {string} authHeader - authorization header from request
- * @param {object} log - logging object
- * @return {object} object containing extracted auth header items for authV4
+ * @param authHeader - authorization header from request
+ * @param log - logging object
+ * @return object containing extracted auth header items for authV4
  */
-function extractAuthItems(authHeader, log) {
-    const authItems = {};
-    const authArray = authHeader
-        .replace('AWS4-HMAC-SHA256 ', '').split(',');
+export function extractAuthItems(authHeader: string, log: Logger) {
+    const authItems: {
+        credentialsArr?: [string, string, string, string, string];
+        signedHeaders?: string;
+        signatureFromRequest?: string;
+    } = {};
+    const authArray = authHeader.replace('AWS4-HMAC-SHA256 ', '').split(',');
 
     if (authArray.length < 3) {
         return authItems;
@@ -138,8 +153,12 @@ function extractAuthItems(authHeader, log) {
     const signedHeadersStr = authArray[1];
     const signatureStr = authArray[2];
     log.trace('credentials from request', { credentialStr });
-    if (credentialStr && credentialStr.trim().startsWith('Credential=')
-        && credentialStr.indexOf('/') > -1) {
+    if (
+        credentialStr &&
+        credentialStr.trim().startsWith('Credential=') &&
+        credentialStr.indexOf('/') > -1
+    ) {
+        // @ts-ignore
         authItems.credentialsArr = credentialStr
             .trim().replace('Credential=', '').split('/');
     } else {
@@ -166,11 +185,11 @@ function extractAuthItems(authHeader, log) {
 /**
  * Checks whether the signed headers include the host header
  * and all x-amz- and x-scal- headers in request
- * @param {string} signedHeaders - signed headers sent with request
- * @param {object} allHeaders - request.headers
- * @return {boolean} true if all x-amz-headers included and false if not
+ * @param signedHeaders - signed headers sent with request
+ * @param allHeaders - request.headers
+ * @return true if all x-amz-headers included and false if not
  */
-function areSignedHeadersComplete(signedHeaders, allHeaders) {
+export function areSignedHeadersComplete(signedHeaders: string, allHeaders: Headers) {
     const signedHeadersList = signedHeaders.split(';');
     if (signedHeadersList.indexOf('host') === -1) {
         return false;
@@ -185,6 +204,3 @@ function areSignedHeadersComplete(signedHeaders, allHeaders) {
     }
     return true;
 }
-
-module.exports = { validateCredentials, extractQueryParams,
-    areSignedHeadersComplete, extractAuthItems };

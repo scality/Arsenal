@@ -1,6 +1,6 @@
 const assert = require('assert');
 const stream = require('stream');
-const joi = require('@hapi/joi');
+const joi = require('joi');
 const readJSONStreamObject = require('../../../lib/stream/readJSONStreamObject');
 
 class ReqStream extends stream.Readable {

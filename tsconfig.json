@@ -1,0 +1,21 @@
+{
+    "compilerOptions": {
+        "target": "es6",
+        "module": "commonjs",
+        "rootDir": "./",
+        "resolveJsonModule": true,
+        "allowJs": true,
+        "checkJs": false,
+        "outDir": "build",
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "strict": true,
+        "declaration": true,
+        "noImplicitAny": false,
+        "noEmitOnError": false,
+        "sourceMap": true
+    },
+    "include": ["index.ts", "lib"],
+    "exclude": ["node_modules/*"],
+    "compileOnSave": true
+}

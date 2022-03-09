@@ -1,24 +1,23 @@
-'use strict'; // eslint-disable-line strict
+import * as crypto from 'crypto';
+import { Logger } from 'werelogs';
+import errors from '../errors';
+import * as queryString from 'querystring';
+import AuthInfo from './AuthInfo';
+import * as v2 from './v2/authV2';
+import * as v4 from './v4/authV4';
+import * as constants from '../constants';
+import constructStringToSignV2 from './v2/constructStringToSign';
+import constructStringToSignV4 from './v4/constructStringToSign';
+import { convertUTCtoISO8601 } from './v4/timeUtils';
+import * as vaultUtilities from './in_memory/vaultUtilities';
+import * as inMemoryBackend from './in_memory/Backend';
+import validateAuthConfig from './in_memory/validateAuthConfig';
+import AuthLoader from './in_memory/AuthLoader';
+import Vault from './Vault';
+import baseBackend from './backends/base';
+import chainBackend from './backends/ChainBackend';
 
-const crypto = require('crypto');
-const errors = require('../errors');
-const queryString = require('querystring');
-const AuthInfo = require('./AuthInfo');
-const v2 = require('./v2/authV2');
-const v4 = require('./v4/authV4');
-const constants = require('../constants');
-const constructStringToSignV2 = require('./v2/constructStringToSign');
-const constructStringToSignV4 = require('./v4/constructStringToSign');
-const convertUTCtoISO8601 = require('./v4/timeUtils').convertUTCtoISO8601;
-const vaultUtilities = require('./backends/in_memory/vaultUtilities');
-const inMemoryBackend = require('./backends/in_memory/Backend');
-const validateAuthConfig = require('./backends/in_memory/validateAuthConfig');
-const AuthLoader = require('./backends/in_memory/AuthLoader');
-const Vault = require('./Vault');
-const baseBackend = require('./backends/base');
-const chainBackend = require('./backends/ChainBackend');
-
-let vault = null;
+let vault: Vault | null = null;
 const auth = {};
 const checkFunctions = {
     v2: {
@@ -35,7 +34,7 @@ const checkFunctions = {
 // 'All Users Group' so use this group as the canonicalID for the publicUser
 const publicUserInfo = new AuthInfo({ canonicalID: constants.publicId });
 
-function setAuthHandler(handler) {
+function setAuthHandler(handler: Vault) {
     vault = handler;
     return auth;
 }
@@ -43,25 +42,30 @@ function setAuthHandler(handler) {
 /**
  * This function will check validity of request parameters to authenticate
  *
- * @param {Http.Request} request - Http request object
- * @param {object} log - Logger object
- * @param {string} awsService - Aws service related
- * @param {object} data - Parameters from queryString parsing or body of
+ * @param request - Http request object
+ * @param log - Logger object
+ * @param awsService - Aws service related
+ * @param data - Parameters from queryString parsing or body of
  *      POST request
  *
- * @return {object} ret
- * @return {object} ret.err - arsenal.errors object if any error was found
- * @return {object} ret.params - auth parameters to use later on for signature
+ * @return ret
+ * @return ret.err - arsenal.errors object if any error was found
+ * @return ret.params - auth parameters to use later on for signature
  *                               computation and check
- * @return {object} ret.params.version - the auth scheme version
+ * @return ret.params.version - the auth scheme version
  *                                       (undefined, 2, 4)
- * @return {object} ret.params.data - the auth scheme's specific data
+ * @return ret.params.data - the auth scheme's specific data
  */
-function extractParams(request, log, awsService, data) {
+function extractParams(
+    request: any,
+    log: Logger,
+    awsService: string,
+    data: { [key: string]: string }
+) {
     log.trace('entered', { method: 'Arsenal.auth.server.extractParams' });
     const authHeader = request.headers.authorization;
-    let version = null;
-    let method = null;
+    let version: 'v2' |'v4' | null = null;
+    let method: 'query' | 'headers' | null = null;
 
     // Identify auth version and method to dispatch to the right check function
     if (authHeader) {
@@ -104,16 +108,21 @@ function extractParams(request, log, awsService, data) {
 /**
  * This function will check validity of request parameters to authenticate
  *
- * @param {Http.Request} request - Http request object
- * @param {object} log - Logger object
- * @param {function} cb - the callback
- * @param {string} awsService - Aws service related
+ * @param request - Http request object
+ * @param log - Logger object
+ * @param cb - the callback
+ * @param awsService - Aws service related
  * @param {RequestContext[] | null} requestContexts - array of RequestContext
  * or null if no requestContexts to be sent to Vault (for instance,
  * in multi-object delete request)
- * @return {undefined}
  */
-function doAuth(request, log, cb, awsService, requestContexts) {
+function doAuth(
+    request: any,
+    log: Logger,
+    cb: (err: Error | null, data?: any) => void,
+    awsService: string,
+    requestContexts: any[] | null
+) {
     const res = extractParams(request, log, awsService, request.query);
     if (res.err) {
         return cb(res.err);
@@ -121,23 +130,31 @@ function doAuth(request, log, cb, awsService, requestContexts) {
         return cb(null, res.params);
     }
     if (requestContexts) {
-        requestContexts.forEach(requestContext => {
-            requestContext.setAuthType(res.params.data.authType);
-            requestContext.setSignatureVersion(res.params
-                .data.signatureVersion);
-            requestContext.setSignatureAge(res.params.data.signatureAge);
-            requestContext.setSecurityToken(res.params.data.securityToken);
+        requestContexts.forEach((requestContext) => {
+            const { params } = res
+            if ('data' in params) {
+                const { data } = params
+                requestContext.setAuthType(data.authType);
+                requestContext.setSignatureVersion(data.signatureVersion);
+                requestContext.setSecurityToken(data.securityToken);
+                if ('signatureAge' in data) {
+                    requestContext.setSignatureAge(data.signatureAge);
+                }
+            }
         });
     }
 
     // Corner cases managed, we're left with normal auth
+    // TODO What's happening here?
+    // @ts-ignore
     res.params.log = log;
     if (res.params.version === 2) {
-        return vault.authenticateV2Request(res.params, requestContexts, cb);
+        // @ts-ignore
+        return vault!.authenticateV2Request(res.params, requestContexts, cb);
     }
     if (res.params.version === 4) {
-        return vault.authenticateV4Request(res.params, requestContexts, cb,
-            awsService);
+        // @ts-ignore
+        return vault!.authenticateV4Request(res.params, requestContexts, cb);
     }
 
     log.error('authentication method not found', {
@@ -149,19 +166,25 @@ function doAuth(request, log, cb, awsService, requestContexts) {
 /**
  * This function will generate a version 4 header
  *
- * @param {Http.Request} request - Http request object
- * @param {object} data - Parameters from queryString parsing or body of
+ * @param request - Http request object
+ * @param data - Parameters from queryString parsing or body of
  *                        POST request
- * @param {string} accessKey - the accessKey
- * @param {string} secretKeyValue - the secretKey
- * @param {string} awsService - Aws service related
- * @param {sting} [proxyPath] - path that gets proxied by reverse proxy
- * @param {string} [sessionToken] - security token if the access/secret keys
+ * @param accessKey - the accessKey
+ * @param secretKeyValue - the secretKey
+ * @param awsService - Aws service related
+ * @param [proxyPath] - path that gets proxied by reverse proxy
+ * @param [sessionToken] - security token if the access/secret keys
  *                                are temporary credentials from STS
- * @return {undefined}
  */
-function generateV4Headers(request, data, accessKey, secretKeyValue,
-    awsService, proxyPath, sessionToken) {
+function generateV4Headers(
+    request: any,
+    data: { [key: string]: string },
+    accessKey: string,
+    secretKeyValue: string,
+    awsService: string,
+    proxyPath: string,
+    sessionToken: string
+) {
     Object.assign(request, { headers: {} });
     const amzDate = convertUTCtoISO8601(Date.now());
     // get date without time
@@ -175,7 +198,7 @@ function generateV4Headers(request, data, accessKey, secretKeyValue,
 
     let payload = '';
     if (request.method === 'POST') {
-        payload = queryString.stringify(data, null, null, {
+        payload = queryString.stringify(data, undefined, undefined, {
             encodeURIComponent,
         });
     }
@@ -205,7 +228,7 @@ function generateV4Headers(request, data, accessKey, secretKeyValue,
         scopeDate,
         service);
     const signature = crypto.createHmac('sha256', signingKey)
-        .update(stringToSign, 'binary').digest('hex');
+        .update(stringToSign as string, 'binary').digest('hex');
     const authorizationHeader = `${algorithm} Credential=${accessKey}` +
         `/${credentialScope}, SignedHeaders=${signedHeaders}, ` +
         `Signature=${signature}`;
@@ -213,25 +236,16 @@ function generateV4Headers(request, data, accessKey, secretKeyValue,
     Object.assign(request, { headers: {} });
 }
 
-module.exports = {
-    setHandler: setAuthHandler,
-    server: {
-        extractParams,
-        doAuth,
-    },
-    client: {
-        generateV4Headers,
-        constructStringToSignV2,
-    },
-    inMemory: {
-        backend: inMemoryBackend,
-        validateAuthConfig,
-        AuthLoader,
-    },
-    backends: {
-        baseBackend,
-        chainBackend,
-    },
+export const server = { extractParams, doAuth }
+export const client = { generateV4Headers, constructStringToSignV2 }
+export const inMemory = {
+    backend: inMemoryBackend,
+    validateAuthConfig,
+    AuthLoader
+}
+export const backends = { baseBackend, chainBackend }
+export {
+    setAuthHandler as setHandler,
     AuthInfo,
-    Vault,
-};
+    Vault
+}

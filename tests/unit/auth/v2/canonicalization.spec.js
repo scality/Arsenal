@@ -3,9 +3,9 @@
 const assert = require('assert');
 
 const getCanonicalizedAmzHeaders =
-    require('../../../../lib/auth/v2/getCanonicalizedAmzHeaders');
+    require('../../../../lib/auth/v2/getCanonicalizedAmzHeaders').default;
 const getCanonicalizedResource =
-    require('../../../../lib/auth/v2/getCanonicalizedResource');
+    require('../../../../lib/auth/v2/getCanonicalizedResource').default;
 
 const getCanonicalizedGcpHeaders = headers =>
     getCanonicalizedAmzHeaders(headers, 'GCP');

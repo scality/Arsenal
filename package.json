@@ -5,7 +5,7 @@
   },
   "version": "8.1.32",
   "description": "Common utilities for the S3 project components",
-  "main": "index.js",
+  "main": "build/index.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/scality/Arsenal.git"
@@ -17,7 +17,6 @@
   },
   "homepage": "https://github.com/scality/Arsenal#readme",
   "dependencies": {
-    "@hapi/joi": "^15.1.0",
     "JSONStream": "^1.0.0",
     "agentkeepalive": "^4.1.3",
     "ajv": "6.12.2",
@@ -36,6 +35,7 @@
     "https-proxy-agent": "^2.2.0",
     "ioredis": "^4.28.5",
     "ipaddr.js": "1.9.1",
+    "joi": "^17.6.0",
     "level": "~5.0.1",
     "level-sublevel": "~6.6.5",
     "mongodb": "^3.0.1",
@@ -54,8 +54,14 @@
     "ioctl": "^2.0.2"
   },
   "devDependencies": {
+    "@babel/preset-env": "^7.16.11",
+    "@babel/preset-typescript": "^7.16.7",
     "@sinonjs/fake-timers": "^6.0.1",
-    "eslint": "^8.9.0",
+    "@types/async": "^3.2.12",
+    "@types/jest": "^27.4.1",
+    "@types/node": "^17.0.21",
+    "@types/utf8": "^3.0.1",
+    "eslint": "^8.10.0",
     "eslint-config-airbnb": "6.2.0",
     "eslint-config-scality": "scality/Guidelines#ec33dfb",
     "eslint-plugin-react": "^4.3.0",
@@ -63,16 +69,22 @@
     "mongodb-memory-server": "^6.0.2",
     "nyc": "^15.1.0",
     "sinon": "^9.0.2",
-    "temp": "0.9.1"
+    "temp": "0.9.1",
+    "ts-jest": "^27.1.3",
+    "ts-node": "^10.6.0",
+    "typescript": "^4.6.2"
   },
   "scripts": {
     "lint": "eslint $(git ls-files '*.js')",
     "lint_md": "mdlint $(git ls-files '*.md')",
     "lint_yml": "yamllint $(git ls-files '*.yml')",
     "test": "jest tests/unit",
+    "build": "tsc",
+    "prepare": "yarn build || true",
     "ft_test": "jest tests/functional --testTimeout=120000 --forceExit",
     "coverage": "nyc --clean jest tests --coverage --testTimeout=120000 --forceExit"
   },
+  "private": true,
   "jest": {
     "maxWorkers": 1,
     "coverageReporters": [
@@ -81,7 +93,15 @@
     "collectCoverageFrom": [
       "lib/**/*.{js,ts}",
       "index.js"
-    ]
+    ],
+    "preset": "ts-jest",
+    "globals": {
+      "test-jest": {
+        "diagnostics": {
+          "warnOnly": true
+        }
+      }
+    }
   },
   "nyc": {
     "tempDirectory": "coverage",

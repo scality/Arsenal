@@ -283,7 +283,7 @@ function generateParsedXml(errorTag, tagObj, cb) {
 function checkError(parsedXml, error, errMessage, cb) {
     const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig)
         .getLifecycleConfiguration();
-    assert.strictEqual(lcConfig.error[error], true);
+    assert.strictEqual(lcConfig.error.is[error], true);
     assert.strictEqual(lcConfig.error.description, errMessage);
     cb();
 }
