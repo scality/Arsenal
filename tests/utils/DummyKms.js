@@ -1,7 +1,7 @@
 const async = require('async');
 const crypto = require('crypto');
 
-const errors = require('../../lib/errors');
+const errors = require('../../lib/errors').default;
 const kms = [];
 let count = 1;
 

@@ -3,7 +3,7 @@ const assert = require('assert');
 const werelogs = require('werelogs');
 const { MongoMemoryReplSet } = require('mongodb-memory-server');
 
-const errors = require('../../../../lib/errors');
+const errors = require('../../../../lib/errors').default;
 const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
 const BucketInfo = require('../../../../lib/models/BucketInfo');
 const MetadataWrapper =

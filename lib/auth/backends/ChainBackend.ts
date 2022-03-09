@@ -1,8 +1,8 @@
-'use strict'; // eslint-disable-line strict
-
 import { Callback } from './in_memory/types';
 import errors from '../../errors';
 import BaseBackend from './BaseBackend';
+import assert from 'assert';
+import * as async from 'async';
 
 export type Policy = {
     [key: string]: any;

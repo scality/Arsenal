@@ -2,9 +2,9 @@ const assert = require('assert');
 const { Readable } = require('stream');
 
 const V4Transform =
-    require('../../../../../lib/auth/v4/streamingV4/V4Transform');
+    require('../../../../../lib/auth/v4/streamingV4/V4Transform').default;
 const Backend = require('../../../../../lib/auth/backends/in_memory/Backend').s3;
-const Vault = require('../../../../../lib/auth/Vault');
+const Vault = require('../../../../../lib/auth/Vault').default;
 const { DummyRequestLogger } = require('../../../helpers');
 
 const log = new DummyRequestLogger();

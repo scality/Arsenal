@@ -2,7 +2,7 @@ const assert = require('assert');
 
 const ChainBackend = require('../../../lib/auth/auth').backends.chainBackend;
 const BaseBackend = require('../../../lib/auth/auth').backends.baseBackend;
-const errors = require('../../../lib/errors');
+const errors = require('../../../lib/errors').default;
 
 
 const testError = new Error('backend error');

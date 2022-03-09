@@ -9,12 +9,12 @@ import * as constants from '../constants';
 import constructStringToSignV2 from './v2/constructStringToSign';
 import constructStringToSignV4 from './v4/constructStringToSign';
 import { convertUTCtoISO8601 } from './v4/timeUtils';
-import * as vaultUtilities from './in_memory/vaultUtilities';
-import * as inMemoryBackend from './in_memory/Backend';
-import validateAuthConfig from './in_memory/validateAuthConfig';
-import AuthLoader from './in_memory/AuthLoader';
+import * as vaultUtilities from './backends/in_memory/vaultUtilities';
+import * as inMemoryBackend from './backends/in_memory/Backend';
+import validateAuthConfig from './backends/in_memory/validateAuthConfig';
+import AuthLoader from './backends/in_memory/AuthLoader';
 import Vault from './Vault';
-import baseBackend from './backends/base';
+import baseBackend from './backends/BaseBackend';
 import chainBackend from './backends/ChainBackend';
 
 let vault: Vault | null = null;

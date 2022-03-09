@@ -56,7 +56,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
         return { err: errors.RequestTimeTooSkewed };
     }
 
-    let proxyPath = null;
+    let proxyPath: string | null = null;
     if (request.headers.proxy_path) {
         try {
             proxyPath = decodeURIComponent(request.headers.proxy_path);
@@ -92,7 +92,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
         credentialScope:
             `${scopeDate}/${region}/${service}/${requestType}`,
         awsService: service,
-        proxyPath,
+        proxyPath: proxyPath!,
     });
     if (stringToSign instanceof Error) {
         return { err: stringToSign };

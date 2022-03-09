@@ -168,7 +168,7 @@ export default class Vault {
                 log: Logger;
             };
         },
-        requestContexts: any[],
+        requestContexts: any[] | null,
         callback: (err: Error | null, data?: any) => void
     ) {
         params.log.debug('authenticating V4 request');

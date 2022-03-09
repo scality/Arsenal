@@ -1,7 +1,5 @@
-const assert = require('assert');
-
-const errors = require('../../../../../lib/errors');
-
+const index = require('../../../../..');
+const errors = index.errors;
 const {
     credPrefix,
     translateConditions,
@@ -9,23 +7,24 @@ const {
 
 describe('auth credentials', () => {
     it('should return an empty string if missing creds', () => {
-        assert.strictEqual(credPrefix(null), '');
+        const result = credPrefix(null);
+        expect(result).toStrictEqual('');
     });
 
     it('should return an empty string if missing username', () => {
-        assert.strictEqual(credPrefix({ password: 'p' }), '');
+        const result = credPrefix({ password: 'p' });
+        expect(result).toStrictEqual('');
     });
 
     it('should return an empty string if missing password', () => {
-        assert.strictEqual(credPrefix({ username: 'u' }), '');
+        const result = credPrefix({ username: 'u' });
+        expect(result).toStrictEqual('');
     });
 
     it('should return an url-compatible auth prefix', () => {
-        const creds = {
-            username: 'u:',
-            password: '@p',
-        };
-        assert.strictEqual(credPrefix(creds), 'u%3A:%40p@');
+        const creds = { username: 'u:', password: '@p' };
+        const result = credPrefix(creds);
+        expect(result).toStrictEqual('u%3A:%40p@');
     });
 });
 
@@ -210,16 +209,17 @@ describe('translate query object', () => {
             },
         ],
     ];
-    tests.forEach(([msg, params]) => it(msg, () => {
-        const { depth, prefix, query, error, result } = params;
-        if (error) {
-            assert.throws(
-                () => translateConditions(depth, prefix, {}, query),
-                error);
-            return;
-        }
-        const filter = {};
-        translateConditions(depth, prefix, filter, query);
-        assert.deepStrictEqual(filter, result);
-    }));
+    for (const [msg, params] of tests) {
+        it(msg, () => {
+            const { depth, prefix, query, error, result } = params;
+            if (error) {
+                const fn = () => translateConditions(depth, prefix, {}, query);
+                expect(fn).toThrow(error);
+            } else {
+                const filter = {};
+                translateConditions(depth, prefix, filter, query);
+                expect(filter).toStrictEqual(result);
+            }
+        });
+    }
 });

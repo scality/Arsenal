@@ -132,7 +132,7 @@ export function check(
         return { err: errors.RequestTimeTooSkewed };
     }
 
-    let proxyPath = null;
+    let proxyPath: string | null = null;
     if (request.headers.proxy_path) {
         try {
             proxyPath = decodeURIComponent(request.headers.proxy_path);
@@ -152,7 +152,7 @@ export function check(
         timestamp,
         payloadChecksum,
         awsService: service,
-        proxyPath,
+        proxyPath: proxyPath!,
     });
     log.trace('constructed stringToSign', { stringToSign });
     if (stringToSign instanceof Error) {
