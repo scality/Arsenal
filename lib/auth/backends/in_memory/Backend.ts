@@ -1,8 +1,9 @@
 import * as crypto from 'crypto';
-import errors from '../../errors';
+import errors from '../../../errors';
 import { calculateSigningKey, hashSignature } from './vaultUtilities';
 import Indexer from './Indexer';
 import { Accounts } from './types';
+import BaseBackend from '../base';
 
 function _formatResponse(userInfoToSend: any) {
     return {
@@ -16,11 +17,12 @@ function _formatResponse(userInfoToSend: any) {
  * Class that provides a memory backend for verifying signatures and getting
  * emails and canonical ids associated with an account.
  */
-class Backend {
+class InMemoryBackend extends BaseBackend {
     indexer: Indexer;
     service: string;
 
     constructor(service: string, indexer: Indexer) {
+        super(service);
         this.service = service;
         this.indexer = indexer;
     }
@@ -181,7 +183,7 @@ class Backend {
     }
 }
 
-class S3AuthBackend extends Backend {
+class S3AuthBackend extends InMemoryBackend {
     constructor(authdata: Accounts) {
         super('s3', new Indexer(authdata));
     }
