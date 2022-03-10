@@ -8,6 +8,8 @@ const BucketInfo = require('../../../../lib/models/BucketInfo');
 const MetadataWrapper =
     require('../../../../lib/storage/metadata/MetadataWrapper');
 const genVID = versioning.VersionID.generateVersionId;
+const { BucketVersioningKeyFormat } = versioning.VersioningConstants;
+const { formatMasterKey } = require('../../../../lib/storage/metadata/mongoclient/utils');
 
 const IMPL_NAME = 'mongodb';
 const DB_NAME = 'metadata';
@@ -33,21 +35,27 @@ function generateVersionId() {
         replicationGroupId);
 }
 
+const variations = [
+    { it: '(v0)', vFormat: BucketVersioningKeyFormat.v0 },
+    { it: '(v1)', vFormat: BucketVersioningKeyFormat.v1 },
+];
+
 describe('MongoClientInterface::metadata.getObjectMD', () => {
     let metadata;
     let collection;
     let versionId1;
+    let versionId2;
 
-    const params = {
+    let params = {
         objName: 'pfx1-test-object',
         objVal: {
             key: 'pfx1-test-object',
             versionId: 'null',
         },
-        vFormat: 'v0',
     };
 
-    function updateMasterObject(mKey, objName, versionId, objVal, vFormat, cb) {
+    function updateMasterObject(objName, versionId, objVal, vFormat, cb) {
+        const mKey = formatMasterKey(objName, vFormat);
         collection.updateOne(
             {
                 _id: mKey,
@@ -64,7 +72,7 @@ describe('MongoClientInterface::metadata.getObjectMD', () => {
                 ],
             },
             {
-                $set: { _id: objName, value: objVal },
+                $set: { _id: mKey, value: objVal },
             },
             { upsert: true },
             err => {
@@ -100,126 +108,151 @@ describe('MongoClientInterface::metadata.getObjectMD', () => {
         ], done);
     });
 
-    beforeEach(done => {
-        const bucketMD = BucketInfo.fromObj({
-            _name: BUCKET_NAME,
-            _owner: 'testowner',
-            _ownerDisplayName: 'testdisplayname',
-            _creationDate: new Date().toJSON(),
-            _acl: {
-                Canned: 'private',
-                FULL_CONTROL: [],
-                WRITE: [],
-                WRITE_ACP: [],
-                READ: [],
-                READ_ACP: [],
-            },
-            _mdBucketModelVersion: 10,
-            _transient: false,
-            _deleted: false,
-            _serverSideEncryption: null,
-            _versioningConfiguration: null,
-            _locationConstraint: 'us-east-1',
-            _readLocationConstraint: null,
-            _cors: null,
-            _replicationConfiguration: null,
-            _lifecycleConfiguration: null,
-            _uid: '',
-            _isNFS: null,
-            ingestion: null,
+    variations.forEach(variation => {
+        describe(`vFormat : ${variation.vFormat}`, () => {
+            beforeEach(done => {
+                const bucketMD = BucketInfo.fromObj({
+                    _name: BUCKET_NAME,
+                    _owner: 'testowner',
+                    _ownerDisplayName: 'testdisplayname',
+                    _creationDate: new Date().toJSON(),
+                    _acl: {
+                        Canned: 'private',
+                        FULL_CONTROL: [],
+                        WRITE: [],
+                        WRITE_ACP: [],
+                        READ: [],
+                        READ_ACP: [],
+                    },
+                    _mdBucketModelVersion: 10,
+                    _transient: false,
+                    _deleted: false,
+                    _serverSideEncryption: null,
+                    _versioningConfiguration: null,
+                    _locationConstraint: 'us-east-1',
+                    _readLocationConstraint: null,
+                    _cors: null,
+                    _replicationConfiguration: null,
+                    _lifecycleConfiguration: null,
+                    _uid: '',
+                    _isNFS: null,
+                    ingestion: null,
+                });
+                const versionParams = {
+                    versioning: true,
+                    versionId: null,
+                    repairMaster: null,
+                };
+                async.series([
+                    next => {
+                        metadata.client.defaultBucketKeyFormat = variation.vFormat;
+                        return next();
+                    },
+                    next => metadata.createBucket(BUCKET_NAME, bucketMD, logger, err => {
+                        if (err) {
+                            return next(err);
+                        }
+                        collection = metadata.client.getCollection(BUCKET_NAME);
+                        return next();
+                    }),
+                    next => {
+                        metadata.putObjectMD(BUCKET_NAME, params.objName, params.objVal,
+                            versionParams, logger, (err, res) => {
+                                if (err) {
+                                    return next(err);
+                                }
+                                versionId1 = JSON.parse(res).versionId;
+                                return next(null);
+                            });
+                    },
+                    next => {
+                        metadata.putObjectMD(BUCKET_NAME, params.objName, params.objVal,
+                            versionParams, logger, (err, res) => {
+                                if (err) {
+                                    return next(err);
+                                }
+                                versionId2 = JSON.parse(res).versionId;
+                                return next(null);
+                            });
+                    },
+                ], done);
+            });
+
+            afterEach(done => {
+                // reset params
+                params = {
+                    objName: 'pfx1-test-object',
+                    objVal: {
+                        key: 'pfx1-test-object',
+                        versionId: 'null',
+                    },
+                };
+                metadata.deleteBucket(BUCKET_NAME, logger, done);
+            });
+
+            it(`Should return latest version of object ${variation.it}`, done =>
+                metadata.getObjectMD(BUCKET_NAME, params.objName, null, logger, (err, object) => {
+                    assert.deepStrictEqual(err, null);
+                    assert.strictEqual(object.key, params.objName);
+                    assert.strictEqual(object.versionId, versionId2);
+                    return done();
+                }));
+
+            it(`Should return the specified version of object ${variation.it}`, done =>
+                metadata.getObjectMD(BUCKET_NAME, params.objName, { versionId: versionId1 }, logger, (err, object) => {
+                    assert.deepStrictEqual(err, null);
+                    assert.strictEqual(object.key, params.objName);
+                    assert.strictEqual(object.versionId, versionId1);
+                    return done();
+                }));
+
+            it(`Should throw error when version non existent ${variation.it}`, done => {
+                const versionId = '1234567890';
+                return metadata.getObjectMD(BUCKET_NAME, params.objName, { versionId }, logger, (err, object) => {
+                    assert.deepStrictEqual(object, undefined);
+                    assert.deepStrictEqual(err, errors.NoSuchKey);
+                    return done();
+                });
+            });
+
+            it(`Should throw error when object non existent ${variation.it}`, done => {
+                const objName = 'non-existent-object';
+                return metadata.getObjectMD(BUCKET_NAME, objName, null, logger, err => {
+                    assert.deepStrictEqual(err, errors.NoSuchKey);
+                    return done();
+                });
+            });
+
+            it(`Should throw error when object non existent ${variation.it}`, done => {
+                const bucketName = 'non-existent-bucket';
+                return metadata.getObjectMD(bucketName, params.objName, null, logger, (err, object) => {
+                    assert.deepStrictEqual(object, undefined);
+                    assert.deepStrictEqual(err, errors.NoSuchKey);
+                    return done();
+                });
+            });
+
+            it(`Should return latest version when master is PHD ${variation.it}`, done => {
+                async.series([
+                    next => {
+                        const objectName = variation.vFormat === 'v0' ? 'pfx1-test-object' : '\x7fMpfx1-test-object';
+                        // adding isPHD flag to master
+                        const phdVersionId = generateVersionId();
+                        params.objVal.versionId = phdVersionId;
+                        params.objVal.isPHD = true;
+                        updateMasterObject(objectName, phdVersionId, params.objVal,
+                            variation.vFormat, next);
+                    },
+                    // Should return latest object version
+                    next => metadata.getObjectMD(BUCKET_NAME, params.objName, null, logger, (err, object) => {
+                        assert.deepStrictEqual(err, null);
+                        assert.strictEqual(object.key, params.objName);
+                        assert.strictEqual(object.versionId, versionId2);
+                        delete params.isPHD;
+                        return next();
+                    }),
+                ], done);
+            });
         });
-        const versionParams = {
-            versioning: true,
-            versionId: null,
-            repairMaster: null,
-        };
-        async.series([
-            next => metadata.createBucket(BUCKET_NAME, bucketMD, logger, err => {
-                if (err) {
-                    return next(err);
-                }
-                collection = metadata.client.getCollection(BUCKET_NAME);
-                return next();
-            }),
-            next => {
-                versionId1 = generateVersionId();
-                params.objVal.versionId = versionId1;
-                versionParams.versionId = versionId1;
-                metadata.putObjectMD(BUCKET_NAME, params.objName, params.objVal,
-                    versionParams, logger, next);
-            },
-            next => {
-                params.objVal.versionId = 'version2';
-                metadata.putObjectMD(BUCKET_NAME, params.objName, params.objVal,
-                    {}, logger, next);
-            },
-        ], done);
-    });
-
-    afterEach(done => {
-        metadata.deleteBucket(BUCKET_NAME, logger, done);
-    });
-
-    it('Should return latest version of object', done =>
-        metadata.getObjectMD(BUCKET_NAME, params.objName, null, logger, (err, object) => {
-            assert.deepStrictEqual(err, null);
-            assert.strictEqual(object.key, params.objName);
-            assert.strictEqual(object.versionId, 'version2');
-            return done();
-        }));
-
-    it('Should return the specified version of object', done =>
-        metadata.getObjectMD(BUCKET_NAME, params.objName, { versionId: versionId1 }, logger, (err, object) => {
-            assert.deepStrictEqual(err, null);
-            assert.strictEqual(object.key, params.objName);
-            assert.strictEqual(object.versionId, versionId1);
-            return done();
-        }));
-
-    it('Should throw error when version non existent', done => {
-        const versionId = '1234567890';
-        return metadata.getObjectMD(BUCKET_NAME, params.objName, { versionId }, logger, (err, object) => {
-            assert.deepStrictEqual(object, undefined);
-            assert.deepStrictEqual(err, errors.NoSuchKey);
-            return done();
-        });
-    });
-
-    it('Should throw error when object non existent', done => {
-        const objName = 'non-existent-object';
-        return metadata.getObjectMD(BUCKET_NAME, objName, null, logger, err => {
-            assert.deepStrictEqual(err, errors.NoSuchKey);
-            return done();
-        });
-    });
-
-    it('Should throw error when object non existent', done => {
-        const bucketName = 'non-existent-bucket';
-        return metadata.getObjectMD(bucketName, params.objName, null, logger, (err, object) => {
-            assert.deepStrictEqual(object, undefined);
-            assert.deepStrictEqual(err, errors.NoSuchKey);
-            return done();
-        });
-    });
-
-    it('Should return latest version when master is PHD', done => {
-        async.waterfall([
-            next => {
-                // adding isPHD flag to master
-                const phdVersionId = generateVersionId();
-                params.objVal.versionId = phdVersionId;
-                params.objVal.isPHD = true;
-                updateMasterObject('pfx1-test-object', params.objName, phdVersionId, params.objVal,
-                    params.vFormat, next);
-            },
-            // Should return latest object version
-            next => metadata.getObjectMD(BUCKET_NAME, params.objName, null, logger, (err, object) => {
-                assert.deepStrictEqual(err, null);
-                assert.strictEqual(object.key, params.objName);
-                assert.strictEqual(object.versionId, versionId1);
-                delete params.objVal.isPHD;
-                return next();
-            }),
-        ], done);
     });
 });
