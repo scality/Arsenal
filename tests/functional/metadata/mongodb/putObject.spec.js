@@ -2,11 +2,12 @@ const async = require('async');
 const assert = require('assert');
 const werelogs = require('werelogs');
 const { MongoMemoryReplSet } = require('mongodb-memory-server');
-const { errors } = require('../../../../index');
+const { errors, versioning } = require('../../../../index');
 const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
 const BucketInfo = require('../../../../lib/models/BucketInfo');
 const MetadataWrapper =
     require('../../../../lib/storage/metadata/MetadataWrapper');
+const { BucketVersioningKeyFormat } = versioning.VersioningConstants;
 
 const IMPL_NAME = 'mongodb';
 const DB_NAME = 'metadata';
@@ -33,6 +34,11 @@ function unescape(obj) {
         replace(/\uFF0E/g, '.'));
 }
 
+const variations = [
+    { it: '(v0)', vFormat: BucketVersioningKeyFormat.v0 },
+    { it: '(v1)', vFormat: BucketVersioningKeyFormat.v1 },
+];
+
 describe('MongoClientInterface:metadata.putObjectMD', () => {
     let metadata;
     let collection;
@@ -56,7 +62,7 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
     }
 
     function getObjectCount(cb) {
-        collection.count((err, count) => {
+        collection.countDocuments((err, count) => {
             if (err) {
                 cb(err);
             }
@@ -89,249 +95,277 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
         ], done);
     });
 
-    beforeEach(done => {
-        const bucketMD = BucketInfo.fromObj({
-            _name: BUCKET_NAME,
-            _owner: 'testowner',
-            _ownerDisplayName: 'testdisplayname',
-            _creationDate: new Date().toJSON(),
-            _acl: {
-                Canned: 'private',
-                FULL_CONTROL: [],
-                WRITE: [],
-                WRITE_ACP: [],
-                READ: [],
-                READ_ACP: [],
-            },
-            _mdBucketModelVersion: 10,
-            _transient: false,
-            _deleted: false,
-            _serverSideEncryption: null,
-            _versioningConfiguration: null,
-            _locationConstraint: 'us-east-1',
-            _readLocationConstraint: null,
-            _cors: null,
-            _replicationConfiguration: null,
-            _lifecycleConfiguration: null,
-            _uid: '',
-            _isNFS: null,
-            ingestion: null,
+    variations.forEach(variation => {
+        describe(`vFormat : ${variation.vFormat}`, () => {
+            beforeEach(done => {
+                const bucketMD = BucketInfo.fromObj({
+                    _name: BUCKET_NAME,
+                    _owner: 'testowner',
+                    _ownerDisplayName: 'testdisplayname',
+                    _creationDate: new Date().toJSON(),
+                    _acl: {
+                        Canned: 'private',
+                        FULL_CONTROL: [],
+                        WRITE: [],
+                        WRITE_ACP: [],
+                        READ: [],
+                        READ_ACP: [],
+                    },
+                    _mdBucketModelVersion: 10,
+                    _transient: false,
+                    _deleted: false,
+                    _serverSideEncryption: null,
+                    _versioningConfiguration: null,
+                    _locationConstraint: 'us-east-1',
+                    _readLocationConstraint: null,
+                    _cors: null,
+                    _replicationConfiguration: null,
+                    _lifecycleConfiguration: null,
+                    _uid: '',
+                    _isNFS: null,
+                    ingestion: null,
+                });
+                async.series([
+                    next => {
+                        metadata.client.defaultBucketKeyFormat = variation.vFormat;
+                        return next();
+                    },
+                    next => metadata.createBucket(BUCKET_NAME, bucketMD, logger, err => {
+                        if (err) {
+                            return next(err);
+                        }
+                        collection = metadata.client.getCollection(BUCKET_NAME);
+                        return next();
+                    }),
+                ], done);
+            });
+
+            afterEach(done => {
+                metadata.deleteBucket(BUCKET_NAME, logger, done);
+            });
+
+            it(`Should put a new non versionned object ${variation.it}`, done => {
+                const objVal = {
+                    key: OBJECT_NAME,
+                    versionId: 'null',
+                    updated: false,
+                };
+                const params = {
+                    versioning: null,
+                    versionId: null,
+                    repairMaster: null,
+                };
+                async.series([
+                    next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
+                    next => {
+                        const key = variation.vFormat === 'v0' ? 'test-object' : '\x7fMtest-object';
+                        getObject(key, (err, object) => {
+                            assert.deepStrictEqual(err, null);
+                            assert.strictEqual(object.key, OBJECT_NAME);
+                            return next();
+                        });
+                    },
+                    // When versionning not active only one document is created (master)
+                    next => getObjectCount((err, count) => {
+                        assert.deepStrictEqual(err, null);
+                        assert.strictEqual(count, 1);
+                        return next();
+                    }),
+                ], done);
+            });
+
+            it(`Should update the metadata ${variation.it}`, done => {
+                const objVal = {
+                    key: OBJECT_NAME,
+                    versionId: 'null',
+                    updated: false,
+                };
+                const params = {
+                    versioning: null,
+                    versionId: null,
+                    repairMaster: null,
+                };
+                async.series([
+                    next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
+                    next => {
+                        objVal.updated = true;
+                        metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next);
+                    },
+                    // object metadata must be updated
+                    next => {
+                        const key = variation.vFormat === 'v0' ? 'test-object' : '\x7fMtest-object';
+                        getObject(key, (err, object) => {
+                            assert.deepStrictEqual(err, null);
+                            assert.strictEqual(object.key, OBJECT_NAME);
+                            assert.strictEqual(object.updated, true);
+                            return next();
+                        });
+                    },
+                    // Only a master version should be created
+                    next => getObjectCount((err, count) => {
+                        assert.deepStrictEqual(err, null);
+                        assert.strictEqual(count, 1);
+                        return next();
+                    }),
+                ], done);
+            });
+
+            it(`Should put versionned object with the specific versionId ${variation.it}`, done => {
+                const objVal = {
+                    key: OBJECT_NAME,
+                    versionId: VERSION_ID,
+                    updated: false,
+                };
+                const params = {
+                    versioning: true,
+                    versionId: VERSION_ID,
+                    repairMaster: null,
+                };
+                async.series([
+                    next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
+                    // checking if metadata corresponds to what was given to the function
+                    next => {
+                        const key = variation.vFormat === 'v0' ? 'test-object' : '\x7fMtest-object';
+                        getObject(key, (err, object) => {
+                            assert.deepStrictEqual(err, null);
+                            assert.strictEqual(object.key, OBJECT_NAME);
+                            assert.strictEqual(object.versionId, VERSION_ID);
+                            return next();
+                        });
+                    },
+                    // We'll have one master and one version
+                    next => getObjectCount((err, count) => {
+                        assert.deepStrictEqual(err, null);
+                        assert.strictEqual(count, 2);
+                        return next();
+                    }),
+                ], done);
+            });
+
+            it(`Should put new version and update master ${variation.it}`, done => {
+                const objVal = {
+                    key: OBJECT_NAME,
+                    versionId: VERSION_ID,
+                    updated: false,
+                };
+                const params = {
+                    versioning: true,
+                    versionId: null,
+                    repairMaster: null,
+                };
+                let versionId = null;
+
+                async.series([
+                    // We first create a master and a version
+                    next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, (err, data) => {
+                        assert.deepStrictEqual(err, null);
+                        versionId = data.versionId;
+                        return next();
+                    }),
+                    // We put another version of the object
+                    next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
+                    // Master must be updated
+                    next => {
+                        const key = variation.vFormat === 'v0' ? 'test-object' : '\x7fMtest-object';
+                        getObject(key, (err, object) => {
+                            assert.deepStrictEqual(err, null);
+                            assert.strictEqual(object.key, OBJECT_NAME);
+                            assert.notStrictEqual(object.versionId, versionId);
+                            return next();
+                        });
+                    },
+                    // we'll have two versions and one master
+                    next => getObjectCount((err, count) => {
+                        assert.deepStrictEqual(err, null);
+                        assert.strictEqual(count, 3);
+                        return next();
+                    }),
+                ], done);
+            });
+
+            it(`Should update master when versionning is disabled ${variation.it}`, done => {
+                const objVal = {
+                    key: OBJECT_NAME,
+                    versionId: VERSION_ID,
+                    updated: false,
+                };
+                const params = {
+                    versioning: true,
+                    versionId: null,
+                    repairMaster: null,
+                };
+                let versionId = null;
+                async.series([
+                    // We first create a new version and master
+                    next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, (err, data) => {
+                        assert.deepStrictEqual(err, null);
+                        versionId = data.versionId;
+                        return next();
+                    }),
+                    next => {
+                        // Disabling versionning and putting new version
+                        params.versioning = false;
+                        params.versionId = '';
+                        return metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next);
+                    },
+                    // Master must be updated
+                    next => {
+                        const key = variation.vFormat === 'v0' ? 'test-object' : '\x7fMtest-object';
+                        getObject(key, (err, object) => {
+                            assert.deepStrictEqual(err, null);
+                            assert.strictEqual(object.key, OBJECT_NAME);
+                            assert.notStrictEqual(object.versionId, versionId);
+                            return next();
+                        });
+                    },
+                    // The second put shouldn't create a new version
+                    next => getObjectCount((err, count) => {
+                        assert.deepStrictEqual(err, null);
+                        assert.strictEqual(count, 2);
+                        return next();
+                    }),
+                ], done);
+            });
+
+            it(`Should update latest version and repair master ${variation.it}`, done => {
+                const objVal = {
+                    key: OBJECT_NAME,
+                    versionId: VERSION_ID,
+                    updated: false,
+                };
+                const params = {
+                    versioning: true,
+                    versionId: VERSION_ID,
+                    repairMaster: null,
+                };
+                async.series([
+                    // We first create a new version and master
+                    next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
+                    next => {
+                        // Updating the version and repairing master
+                        params.repairMaster = true;
+                        objVal.updated = true;
+                        return metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next);
+                    },
+                    // Master must be updated
+                    next => {
+                        const key = variation.vFormat === 'v0' ? 'test-object' : '\x7fMtest-object';
+                        getObject(key, (err, object) => {
+                            assert.deepStrictEqual(err, null);
+                            assert.strictEqual(object.key, OBJECT_NAME);
+                            assert.strictEqual(object.versionId, VERSION_ID);
+                            assert.strictEqual(object.updated, true);
+                            return next();
+                        });
+                    },
+                    // The second put shouldn't create a new version
+                    next => getObjectCount((err, count) => {
+                        assert.deepStrictEqual(err, null);
+                        assert.strictEqual(count, 2);
+                        return next();
+                    }),
+                ], done);
+            });
         });
-        metadata.createBucket(BUCKET_NAME, bucketMD, logger, err => {
-            if (err) {
-                return done(err);
-            }
-            collection = metadata.client.getCollection(BUCKET_NAME);
-            return done();
-        });
-    });
-
-    afterEach(done => {
-        metadata.deleteBucket(BUCKET_NAME, logger, done);
-    });
-
-    it('Should put a new non versionned object', done => {
-        const objVal = {
-            key: OBJECT_NAME,
-            versionId: 'null',
-            updated: false,
-        };
-        const params = {
-            versioning: null,
-            versionId: null,
-            repairMaster: null,
-        };
-        async.series([
-            next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
-            next => getObject('test-object', (err, object) => {
-                assert.deepStrictEqual(err, null);
-                assert.strictEqual(object.key, OBJECT_NAME);
-                return next();
-            }),
-            // When versionning not active only one document is created (master)
-            next => getObjectCount((err, count) => {
-                assert.deepStrictEqual(err, null);
-                assert.strictEqual(count, 1);
-                return next();
-            }),
-        ], done);
-    });
-
-    it('Should update the metadata', done => {
-        const objVal = {
-            key: OBJECT_NAME,
-            versionId: 'null',
-            updated: false,
-        };
-        const params = {
-            versioning: null,
-            versionId: null,
-            repairMaster: null,
-        };
-        async.series([
-            next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
-            next => {
-                objVal.updated = true;
-                metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next);
-            },
-            // object metadata must be updated
-            next => getObject('test-object', (err, object) => {
-                assert.deepStrictEqual(err, null);
-                assert.strictEqual(object.key, OBJECT_NAME);
-                assert.strictEqual(object.updated, true);
-                return next();
-            }),
-            // Only a master version should be created
-            next => getObjectCount((err, count) => {
-                assert.deepStrictEqual(err, null);
-                assert.strictEqual(count, 1);
-                return next();
-            }),
-        ], done);
-    });
-
-    it('Should put versionned object with the specific versionId', done => {
-        const objVal = {
-            key: OBJECT_NAME,
-            versionId: VERSION_ID,
-            updated: false,
-        };
-        const params = {
-            versioning: true,
-            versionId: VERSION_ID,
-            repairMaster: null,
-        };
-        async.series([
-            next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
-            // checking if metadata corresponds to what was given to the function
-            next => getObject('test-object', (err, object) => {
-                assert.deepStrictEqual(err, null);
-                assert.strictEqual(object.key, OBJECT_NAME);
-                assert.strictEqual(object.versionId, VERSION_ID);
-                return next();
-            }),
-            // We'll have one master and one version
-            next => getObjectCount((err, count) => {
-                assert.deepStrictEqual(err, null);
-                assert.strictEqual(count, 2);
-                return next();
-            }),
-        ], done);
-    });
-
-    it('Should put new version and update master', done => {
-        const objVal = {
-            key: OBJECT_NAME,
-            versionId: VERSION_ID,
-            updated: false,
-        };
-        const params = {
-            versioning: true,
-            versionId: null,
-            repairMaster: null,
-        };
-        let versionId = null;
-
-        async.series([
-            // We first create a master and a version
-            next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, (err, data) => {
-                assert.deepStrictEqual(err, null);
-                versionId = data.versionId;
-                return next();
-            }),
-            // We put another version of the object
-            next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
-            // Master must be updated
-            next => getObject('test-object', (err, object) => {
-                assert.deepStrictEqual(err, null);
-                assert.strictEqual(object.key, OBJECT_NAME);
-                assert.notStrictEqual(object.versionId, versionId);
-                return next();
-            }),
-            // we'll have two versions and one master
-            next => getObjectCount((err, count) => {
-                assert.deepStrictEqual(err, null);
-                assert.strictEqual(count, 3);
-                return next();
-            }),
-        ], done);
-    });
-
-    it('Should update master when versionning is disabled', done => {
-        const objVal = {
-            key: OBJECT_NAME,
-            versionId: VERSION_ID,
-            updated: false,
-        };
-        const params = {
-            versioning: true,
-            versionId: null,
-            repairMaster: null,
-        };
-        let versionId = null;
-        async.series([
-            // We first create a new version and master
-            next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, (err, data) => {
-                assert.deepStrictEqual(err, null);
-                versionId = data.versionId;
-                return next();
-            }),
-            next => {
-                // Disabling versionning and putting new version
-                params.versioning = false;
-                params.versionId = '';
-                return metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next);
-            },
-            // Master must be updated
-            next => getObject('test-object', (err, object) => {
-                assert.deepStrictEqual(err, null);
-                assert.strictEqual(object.key, OBJECT_NAME);
-                assert.notStrictEqual(object.versionId, versionId);
-                return next();
-            }),
-            // The second put shouldn't create a new version
-            next => getObjectCount((err, count) => {
-                assert.deepStrictEqual(err, null);
-                assert.strictEqual(count, 2);
-                return next();
-            }),
-        ], done);
-    });
-
-    it('Should update latest version and repair master', done => {
-        const objVal = {
-            key: OBJECT_NAME,
-            versionId: VERSION_ID,
-            updated: false,
-        };
-        const params = {
-            versioning: true,
-            versionId: VERSION_ID,
-            repairMaster: null,
-        };
-        async.series([
-            // We first create a new version and master
-            next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
-            next => {
-                // Updating the version and repairing master
-                params.repairMaster = true;
-                objVal.updated = true;
-                return metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next);
-            },
-            // Master must be updated
-            next => getObject('test-object', (err, object) => {
-                assert.deepStrictEqual(err, null);
-                assert.strictEqual(object.key, OBJECT_NAME);
-                assert.strictEqual(object.versionId, VERSION_ID);
-                assert.strictEqual(object.updated, true);
-                return next();
-            }),
-            // The second put shouldn't create a new version
-            next => getObjectCount((err, count) => {
-                assert.deepStrictEqual(err, null);
-                assert.strictEqual(count, 2);
-                return next();
-            }),
-        ], done);
     });
 });
