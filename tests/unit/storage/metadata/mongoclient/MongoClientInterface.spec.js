@@ -7,6 +7,9 @@ const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
 const BucketInfo = require('../../../../../lib/models/BucketInfo');
 const MongoUtils = require('../../../../../lib/storage/metadata/mongoclient/utils');
 const ObjectMD = require('../../../../../lib/models/ObjectMD');
+const { BucketVersioningKeyFormat } = require('../../../../../lib/versioning/constants').VersioningConstants;
+const { formatMasterKey } = require('../../../../../lib/storage/metadata/mongoclient/utils');
+
 const dbName = 'metadata';
 
 const mongoserver = new MongoMemoryReplSet({
@@ -744,8 +747,9 @@ describe('MongoClientInterface, tests', () => {
             },
             next => {
                 const c = client.getCollection(bucketName);
+                const mObjectName = formatMasterKey(objectName, BucketVersioningKeyFormat.v1);
                 c.findOne({
-                    _id: objectName,
+                    _id: mObjectName,
                 }, {}, (err, doc) => {
                     if (err) {
                         return next(err);
