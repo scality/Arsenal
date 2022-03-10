@@ -68,6 +68,111 @@ different products.
 FIXME: Document the versioning internals in the upper layers and
 document the versioning format
 
+#### Versioning key format
+
+Bucket versioning requires to store master objects containing the latest
+object version's metadata and version objects for each version of an object,
+the two types of objects require having key. Key format versioning is the way
+those keys are formatted and stored inside the metadata backend as database
+keys.
+
+The mongo metadata backend supports two different versions of key formatting.
+
+#### Available Bucket Versioning Key Formats
+
+#### v0
+
+v0 is the default bucket key format used for all releases up to Cloudserver
+8.4.2. Internal buckets only support this format.
+
+It stores all master keys and version keys together in the lexicographic key
+order of the database. In a database listing, the master key appears before
+all versions of the key.
+
+The v0 format suffers an issue when listing objects in a bucket where some
+objects have a lot of deleted versions. Because deleted objects (those with
+a delete marker as the latest version) have to be listed and ignored, as they
+are not sent back in the listing, it can take a significant amount of time
+listing and ignoring those entries without sending back any new entry, often
+resulting in listing timeouts on the client side.
+The v1 format has been introduced to provide a solution for this issue (see
+Jira ticket: https://scality.atlassian.net/browse/ARTESCA-3028).
+
+##### Format of master keys
+
+```
+{key}
+```
+
+##### Format of version keys
+
+```
+{key}\x00{versionId}
+```
+
+##### Sizing considerations
+
+- On non-versioned buckets, stored objects have one key containing the object
+ metadata.
+
+- On versioned buckets, stored objects have one master key containing the latest
+ version's metadada, and one key per object version or delete marker.
+
+- On versioning-suspended buckets, all version and master keys created before
+ the suspension of versioning are kept, and all new puts only update the master
+ key.
+
+#### v1
+
+Starting from Cloudserver 8.4.3 the bucket key format version can be configured
+to use either the v0 or v1 format, this can be done by setting the environement
+variable `DEFAULT_BUCKET_KEY_FORMAT` of Cloudserver to either `v0` or `v1`
+(defaults to `v1`).
+
+The v1 key format addresses the issue described in v0: client timeouts when
+doing a regular listing of objects in versioned buckets that contain a lot
+of deleted objects.
+
+Instead of keeping the version keys and master keys mixed together in the
+database, they are now separated using two newly introduced prefixes. In
+v1 master keys are grouped together and put before any version key.
+Master keys are also automaticaly deleted when the last version of an
+object is a delete marker, and is recreated when a new version is put
+on top of the delete marker or if the delete marker is deleted.
+
+##### Format of master keys
+
+```
+\x7fM{{key}
+```
+
+##### Format of version keys
+
+```
+\x7fV{{key}\x00{versionId}
+```
+
+##### Sizing considerations
+
+Sizing is roughly equivalent to a v0 format bucket.
+
+- On non-versioned buckets, similar to v0, stored objects have one key
+ containing the object metadata.
+
+- On versioned buckets, stored objects have one master key containing
+ the latest version's metadada, and one key per object version or delete
+ marker, however if the last version is a delete marker the master is not
+ kept. This makes the storage requirements of the v1 buckets slightly smaller
+ than v0.
+
+- On versioning-suspended buckets, all version and master keys created
+ before the suspension of versioning are kept, and all new puts only update
+ the master key. this is the same behavior as v0.
+
+#### Migration from v0 to v1
+
+No automatic / inline migration of buckets is provided as of now.
+
 ### Dealing with Concurrency
 
 We chose not to use transactions (aka
