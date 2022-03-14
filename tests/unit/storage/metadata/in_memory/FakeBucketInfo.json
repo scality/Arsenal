@@ -1,0 +1,26 @@
+{
+    "acl": {
+        "Canned": "private",
+        "FULL_CONTROL": [],
+        "WRITE": [],
+        "WRITE_ACP": [],
+        "READ": [],
+        "READ_ACP": []
+    },
+    "name": "BucketName",
+    "owner": "9d8fe19a78974c56dceb2ea4a8f01ed0f5fecb9d29f80e9e3b84104e4a3ea520",
+    "ownerDisplayName": "anonymousCoward",
+    "creationDate": "2018-06-04T17:45:42.592Z",
+    "mdBucketModelVersion": 8,
+    "transient": false,
+    "deleted": false,
+    "serverSideEncryption": null,
+    "versioningConfiguration": null,
+    "websiteConfiguration": null,
+    "locationConstraint": "us-east-1",
+    "readLocationConstraint": "us-east-1",
+    "cors": null,
+    "replicationConfiguration": null,
+    "lifecycleConfiguration": null,
+    "uid": "fea97818-6a9a-11e8-9777-e311618cc5d4"
+}

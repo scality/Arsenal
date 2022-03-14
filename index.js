@@ -106,6 +106,13 @@ module.exports = {
             require('./lib/storage/metadata/file/MetadataFileClient'),
             LogConsumer:
             require('./lib/storage/metadata/bucketclient/LogConsumer'),
+            inMemory: {
+                metastore:
+                require('./lib/storage/metadata/in_memory/metastore'),
+                metadata: require('./lib/storage/metadata/in_memory/metadata'),
+                bucketUtilities:
+                require('./lib/storage/metadata/in_memory/bucket_utilities'),
+            },
         },
         data: {
             file: {
