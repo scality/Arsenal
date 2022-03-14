@@ -5,6 +5,8 @@ const errors = require('../../../../../lib/errors');
 const {
     credPrefix,
     translateConditions,
+    formatMasterKey,
+    formatVersionKey,
 } = require('../../../../../lib/storage/metadata/mongoclient/utils');
 
 describe('auth credentials', () => {
@@ -222,4 +224,62 @@ describe('translate query object', () => {
         translateConditions(depth, prefix, filter, query);
         assert.deepStrictEqual(filter, result);
     }));
+});
+
+describe('object key formating', () => {
+    const tests = [
+        [
+            'should correctly format master key for old bucket format',
+            {
+                args: {
+                    objName: 'test-object',
+                    vFormat: 'v0',
+                },
+                fn: formatMasterKey,
+                expected: 'test-object',
+            },
+        ],
+        [
+            'should correctly format master key for new bucket format',
+            {
+                args: {
+                    objName: 'test-object',
+                    vFormat: 'v1',
+                },
+                fn: formatMasterKey,
+                expected: '\x7fMtest-object',
+            },
+        ],
+        [
+            'should correctly format version key for old bucket format',
+            {
+                args: {
+                    objName: 'test-object',
+                    versionId: 'a1234',
+                    vFormat: 'v0',
+                },
+                fn: formatVersionKey,
+                expected: 'test-object\0a1234',
+            },
+        ],
+        [
+            'should correctly format version key for new bucket format',
+            {
+                args: {
+                    objName: 'test-object',
+                    versionId: 'a1234',
+                    vFormat: 'v1',
+                },
+                fn: formatVersionKey,
+                expected: '\x7fVtest-object\0a1234',
+            },
+        ],
+    ];
+    tests.forEach(([message, params]) => {
+        const { args, fn, expected } = params;
+        it(message, done => {
+            assert.strictEqual(fn(...Object.values(args)), expected);
+            return done();
+        });
+    });
 });
