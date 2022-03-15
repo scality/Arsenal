@@ -933,91 +933,92 @@ function getTestListing(test, data, vFormat) {
             });
         });
 
-        if (vFormat === 'v0') {
-            it('should accept a PHD version as first input', () => {
-                const delimiter = new DelimiterVersions({}, logger, vFormat);
-                const keyPHD = 'keyPHD';
-                const objPHD = {
-                    key: keyPHD,
-                    value: Version.generatePHDVersion(generateVersionId('', '')),
-                };
+        it('should accept a PHD version as first input', () => {
+            const delimiter = new DelimiterVersions({}, logger, vFormat);
+            const keyPHD = 'keyPHD';
+            const objPHD = {
+                key: getListingKey(keyPHD, vFormat),
+                value: Version.generatePHDVersion(generateVersionId('', '')),
+            };
 
-                /* When filtered, it should return FILTER_ACCEPT and set the prvKey
-                 * to undefined. It should not be added to the result content or common
-                 * prefixes. */
-                assert.strictEqual(delimiter.filter(objPHD), FILTER_ACCEPT);
-                assert.strictEqual(delimiter.prvKey, undefined);
-                assert.strictEqual(delimiter.NextMarker, undefined);
-                assert.deepStrictEqual(delimiter.result(), EmptyResult);
+            /* When filtered, it should return FILTER_ACCEPT and set the prvKey
+                * to undefined. It should not be added to the result content or common
+                * prefixes. */
+            assert.strictEqual(delimiter.filter(objPHD), FILTER_ACCEPT);
+            assert.strictEqual(delimiter.prvKey, undefined);
+            assert.strictEqual(delimiter.NextMarker, undefined);
+            assert.deepStrictEqual(delimiter.result(), EmptyResult);
+        });
+
+        it('should accept a PHD version', () => {
+            const delimiter = new DelimiterVersions({}, logger, vFormat);
+            const key = 'keyA';
+            const value = '';
+            const keyPHD = 'keyBPHD';
+            const objPHD = {
+                key: getListingKey(keyPHD, vFormat),
+                value: Version.generatePHDVersion(generateVersionId('', '')),
+            };
+
+            /* Filter a master version to set the NextMarker and add
+                * and element in result content. */
+            delimiter.filter({
+                key: getListingKey(key, vFormat),
+                value,
             });
 
-            it('should accept a PHD version', () => {
-                const delimiter = new DelimiterVersions({}, logger, vFormat);
-                const key = 'keyA';
-                const value = '';
-                const keyPHD = 'keyBPHD';
-                const objPHD = {
-                    key: keyPHD,
-                    value: Version.generatePHDVersion(generateVersionId('', '')),
-                };
-
-                /* Filter a master version to set the NextMarker and add
-                 * and element in result content. */
-                delimiter.filter({ key, value });
-
-                /* When filtered, it should return FILTER_ACCEPT. It
-                 * should not be added to the result content or common
-                 * prefixes. */
-                assert.strictEqual(delimiter.filter(objPHD), FILTER_ACCEPT);
-                assert.strictEqual(delimiter.prvKey, undefined);
-                assert.strictEqual(delimiter.NextMarker, key);
-                assert.deepStrictEqual(delimiter.result(), {
-                    CommonPrefixes: [],
-                    Versions: [{
-                        key: 'keyA',
-                        value: '',
-                        versionId: 'null',
-                    }],
-                    Delimiter: undefined,
-                    IsTruncated: false,
-                    NextKeyMarker: undefined,
-                    NextVersionIdMarker: undefined,
-                });
+            /* When filtered, it should return FILTER_ACCEPT. It
+                * should not be added to the result content or common
+                * prefixes. */
+            assert.strictEqual(delimiter.filter(objPHD), FILTER_ACCEPT);
+            assert.strictEqual(delimiter.prvKey, undefined);
+            assert.strictEqual(delimiter.NextMarker, key);
+            assert.deepStrictEqual(delimiter.result(), {
+                CommonPrefixes: [],
+                Versions: [{
+                    key: 'keyA',
+                    value: '',
+                    versionId: 'null',
+                }],
+                Delimiter: undefined,
+                IsTruncated: false,
+                NextKeyMarker: undefined,
+                NextVersionIdMarker: undefined,
             });
+        });
 
-            it('should accept a version after a PHD', () => {
-                const delimiter = new DelimiterVersions({}, logger, vFormat);
-                const masterKey = 'key';
-                const keyVersion = `${masterKey}${VID_SEP}version`;
-                const value = '';
-                const objPHD = {
-                    key: masterKey,
-                    value: Version.generatePHDVersion(generateVersionId('', '')),
-                };
+        it('should accept a version after a PHD', () => {
+            const delimiter = new DelimiterVersions({}, logger, vFormat);
+            const masterKey = 'key';
+            const keyVersion = `${masterKey}${VID_SEP}version`;
+            const value = '';
+            const objPHD = {
+                key: getListingKey(masterKey, vFormat),
+                value: Version.generatePHDVersion(generateVersionId('', '')),
+            };
 
-                /* Filter the PHD object. */
-                delimiter.filter(objPHD);
+            /* Filter the PHD object. */
+            delimiter.filter(objPHD);
 
-                /* The filtering of the PHD object has no impact, the version is
-                 * accepted and added to the result. */
-                assert.strictEqual(delimiter.filter({
-                    key: keyVersion,
-                    value,
-                }), FILTER_ACCEPT);
-                assert.strictEqual(delimiter.NextMarker, masterKey);
-                assert.deepStrictEqual(delimiter.result(), {
-                    CommonPrefixes: [],
-                    Versions: [{
-                        key: 'key',
-                        value: '',
-                        versionId: 'version',
-                    }],
-                    Delimiter: undefined,
-                    IsTruncated: false,
-                    NextKeyMarker: undefined,
-                    NextVersionIdMarker: undefined,
-                });
+            /* The filtering of the PHD object has no impact, the version is
+                * accepted and added to the result. */
+            assert.strictEqual(delimiter.filter({
+                key: getListingKey(keyVersion, vFormat),
+                value,
+            }), FILTER_ACCEPT);
+            assert.strictEqual(delimiter.NextMarker, masterKey);
+            assert.deepStrictEqual(delimiter.result(), {
+                CommonPrefixes: [],
+                Versions: [{
+                    key: 'key',
+                    value: '',
+                    versionId: 'version',
+                }],
+                Delimiter: undefined,
+                IsTruncated: false,
+                NextKeyMarker: undefined,
+                NextVersionIdMarker: undefined,
             });
-        }
+        });
     });
 });
