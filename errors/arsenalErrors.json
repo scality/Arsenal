@@ -26,7 +26,7 @@
   },
   "BucketAlreadyOwnedByYou": {
     "code": 409,
-    "description": "A bucket with this name already exists and owned by you"
+    "description": "A bucket with this name exists and is already owned by you"
   },
   "BucketNotEmpty": {
     "code": 409,
