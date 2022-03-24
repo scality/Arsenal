@@ -85,7 +85,7 @@ describe('LRUCache', () => {
         assert.strictEqual(lru.get(100), undefined);
     });
 
-    it('max 1000000 entries', function lru1M() {
+    it('max 1000000 entries', () => {
         // this test takes ~1-2 seconds on a laptop, nevertheless set a
         // large timeout to reduce the potential of flakiness on possibly
         // slower CI environment.

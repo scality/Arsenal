@@ -32,7 +32,7 @@ describe('StringHash', () => {
         done();
     });
     it(`Should distribute uniformly with a maximum of ${ERROR}% of deviation`,
-        function f(done) {
+        (done) => {
             jest.setTimeout(20000);
             const strings = new Array(STRING_COUNT).fill('')
                                 .map(() => randomString(10));

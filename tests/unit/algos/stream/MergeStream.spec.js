@@ -189,7 +189,7 @@ describe('MergeStream', () => {
                           `${usePauseResume ? ' with pause/resume' : ''}` +
                           `${errorAtEnd ? ' with error' : ''}`;
                     it(`${nbEntries} sequential entries${fixtureDesc}`,
-                    function bigMergeSequential(done) {
+                    (done) => {
                         jest.setTimeout(10000);
                         const stream1 = [];
                         const stream2 = [];
@@ -204,7 +204,7 @@ describe('MergeStream', () => {
                             stream1, stream2, usePauseResume, errorAtEnd, done);
                     });
                     it(`${nbEntries} randomly mingled entries${fixtureDesc}`,
-                    function bigMergeRandom(done) {
+                    (done) => {
                         jest.setTimeout(10000);
                         const stream1 = [];
                         const stream2 = [];
