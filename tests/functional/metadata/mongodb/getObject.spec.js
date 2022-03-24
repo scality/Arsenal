@@ -211,7 +211,7 @@ describe('MongoClientInterface::metadata.getObjectMD', () => {
                 const versionId = '1234567890';
                 return metadata.getObjectMD(BUCKET_NAME, params.objName, { versionId }, logger, (err, object) => {
                     assert.deepStrictEqual(object, undefined);
-                    assert.deepStrictEqual(err, errors.NoSuchKey);
+                    expect(err.is.NoSuchKey).toBeTruthy();
                     return done();
                 });
             });
@@ -219,7 +219,7 @@ describe('MongoClientInterface::metadata.getObjectMD', () => {
             it(`Should throw error when object non existent ${variation.it}`, done => {
                 const objName = 'non-existent-object';
                 return metadata.getObjectMD(BUCKET_NAME, objName, null, logger, err => {
-                    assert.deepStrictEqual(err, errors.NoSuchKey);
+                    expect(err.is.NoSuchKey).toBeTruthy();
                     return done();
                 });
             });
@@ -228,7 +228,7 @@ describe('MongoClientInterface::metadata.getObjectMD', () => {
                 const bucketName = 'non-existent-bucket';
                 return metadata.getObjectMD(bucketName, params.objName, null, logger, (err, object) => {
                     assert.deepStrictEqual(object, undefined);
-                    assert.deepStrictEqual(err, errors.NoSuchKey);
+                    expect(err.is.NoSuchKey).toBeTruthy();
                     return done();
                 });
             });

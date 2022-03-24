@@ -319,7 +319,7 @@ describe('MongoClientInterface:withCond', () => {
                             if (expectedVal) {
                                 assert.deepStrictEqual(res, expectedVal);
                             } else {
-                                assert.deepStrictEqual(err, errors.NoSuchKey);
+                                expect(err.is.NoSuchKey).toBeTruthy();
                             }
                             return next();
                         }),

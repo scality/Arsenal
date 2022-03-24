@@ -1,7 +1,7 @@
 const assert = require('assert');
 const werelogs = require('werelogs');
 const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
-const errors = require('../../../../../lib/errors');
+const errors = require('../../../../../lib/errors').default;
 const sinon = require('sinon');
 const MongoClientInterface =
     require('../../../../../lib/storage/metadata/mongoclient/MongoClientInterface');
@@ -30,7 +30,7 @@ describe('MongoClientInterface:delObject', () => {
         sinon.stub(client, 'getCollection').callsFake(() => null);
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(errors.InternalError));
         client.deleteObject('example-bucket', 'example-object', {}, logger, err => {
-            assert.deepStrictEqual(err, errors.InternalError);
+            expect(err.is.InternalError).toBeTruthy();
             return done();
         });
     });
@@ -66,7 +66,7 @@ describe('MongoClientInterface:delObject', () => {
             findOneAndDelete: (filter, params, cb) => cb(errors.InternalError),
         };
         client.deleteObjectNoVer(collection, 'example-bucket', 'example-object', {}, logger, err => {
-            assert.deepStrictEqual(err, errors.InternalError);
+            expect(err.is.InternalError).toBeTruthy();
             return done();
         });
     });
@@ -86,7 +86,7 @@ describe('MongoClientInterface:delObject', () => {
             findOne: (filter, params, cb) => cb(errors.InternalError),
         };
         client.deleteObjectVer(collection, 'example-bucket', 'example-object', {}, logger, err => {
-            assert.deepStrictEqual(err, errors.InternalError);
+            expect(err.is.InternalError).toBeTruthy();
             return done();
         });
     });
@@ -97,7 +97,7 @@ describe('MongoClientInterface:delObject', () => {
         };
         sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[4](errors.NoSuchKey));
         client.deleteObjectVer(collection, 'example-bucket', 'example-object', {}, logger, err => {
-            assert.deepStrictEqual(err, errors.NoSuchKey);
+            expect(err.is.NoSuchKey).toBeTruthy();
             return done();
         });
     });
@@ -139,7 +139,7 @@ describe('MongoClientInterface:delObject', () => {
             findOneAndDelete: (filter, params, cb) => cb(errors.InternalError),
         };
         client.deleteObjectVerNotMaster(collection, 'example-bucket', 'example-object', {}, logger, err => {
-            assert.deepStrictEqual(err, errors.InternalError);
+            expect(err.is.InternalError).toBeTruthy();
             return done();
         });
     });
@@ -149,7 +149,7 @@ describe('MongoClientInterface:delObject', () => {
             bulkWrite: (ops, params, cb) => cb(errors.InternalError),
         };
         client.deleteObjectVerMaster(collection, 'example-bucket', 'example-object', {}, logger, err => {
-            assert.deepStrictEqual(err, errors.InternalError);
+            expect(err.is.InternalError).toBeTruthy();
             return done();
         });
     });
@@ -160,7 +160,7 @@ describe('MongoClientInterface:delObject', () => {
         };
         sinon.stub(client, 'deleteOrRepairPHD').callsFake((...args) => args[6](errors.InternalError));
         client.deleteObjectVerMaster(collection, 'example-bucket', 'example-object', {}, logger, err => {
-            assert.deepStrictEqual(err, errors.InternalError);
+            expect(err.is.InternalError).toBeTruthy();
             return done();
         });
     });
@@ -198,7 +198,7 @@ describe('MongoClientInterface:delObject', () => {
         sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[4](errors.NoSuchKey));
         sinon.stub(client, 'asyncRepair').callsFake((...args) => args[5](null));
         client.deleteOrRepairPHD(collection, 'example-bucket', 'example-object', {}, 'v0', logger, err => {
-            assert.deepStrictEqual(err, errors.InternalError);
+            expect(err.is.InternalError).toBeTruthy();
             return done();
         });
     });

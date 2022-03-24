@@ -1,7 +1,7 @@
 const assert = require('assert');
 const werelogs = require('werelogs');
 const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
-const errors = require('../../../../../lib/errors');
+const errors = require('../../../../../lib/errors').default;
 const sinon = require('sinon');
 const MongoClientInterface =
     require('../../../../../lib/storage/metadata/mongoclient/MongoClientInterface');
@@ -28,7 +28,7 @@ describe('MongoClientInterface:putObject', () => {
     it('Should fail when getBucketVFormat fails', done => {
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(errors.InternalError));
         client.putObject('example-bucket', 'example-object', {}, {}, {}, err => {
-            assert.deepStrictEqual(err, errors.InternalError);
+            expect(err.is.InternalError).toBeTruthy();
             return done();
         });
     });
@@ -123,7 +123,7 @@ describe('MongoClientInterface:putObject', () => {
         sinon.stub(client, 'putObjectNoVer').callsFake((...args) => args[6](errors.InternalError));
         // checking if function called with correct params
         client.putObject('example-bucket', 'example-object', {}, {}, {}, err => {
-            assert.deepStrictEqual(err, errors.InternalError);
+            expect(err.is.InternalError).toBeTruthy();
             return done();
         });
     });
@@ -138,7 +138,7 @@ describe('MongoClientInterface:putObject', () => {
             repairMaster: null,
         };
         client.putObject('example-bucket', 'example-object', {}, params, {}, err => {
-            assert.deepStrictEqual(err, errors.InternalError);
+            expect(err.is.InternalError).toBeTruthy();
             return done();
         });
     });
@@ -153,7 +153,7 @@ describe('MongoClientInterface:putObject', () => {
             repairMaster: null,
         };
         client.putObject('example-bucket', 'example-object', {}, params, {}, err => {
-            assert.deepStrictEqual(err, errors.InternalError);
+            expect(err.is.InternalError).toBeTruthy();
             return done();
         });
     });
@@ -168,7 +168,7 @@ describe('MongoClientInterface:putObject', () => {
             repairMaster: null,
         };
         client.putObject('example-bucket', 'example-object', {}, params, {}, err => {
-            assert.deepStrictEqual(err, errors.InternalError);
+            expect(err.is.InternalError).toBeTruthy();
             return done();
         });
     });
@@ -183,7 +183,7 @@ describe('MongoClientInterface:putObject', () => {
             repairMaster: true,
         };
         client.putObject('example-bucket', 'example-object', {}, params, {}, err => {
-            assert.deepStrictEqual(err, errors.InternalError);
+            expect(err.is.InternalError).toBeTruthy();
             return done();
         });
     });
@@ -213,7 +213,7 @@ describe('MongoClientInterface:putObjectVerCase1', () => {
             bulkWrite: (ops, params, cb) => cb(errors.InternalError),
         };
         client.putObjectVerCase1(collection, 'example-bucket', 'example-object', {}, {}, logger, err => {
-            assert.deepStrictEqual(err, errors.InternalError);
+            expect(err.is.InternalError).toBeTruthy();
             return done();
         }, false);
     });
@@ -245,7 +245,7 @@ describe('MongoClientInterface:putObjectVerCase1', () => {
             bulkWrite: (ops, params, cb) => cb(error),
         };
         client.putObjectVerCase1(collection, 'example-bucket', 'example-object', {}, {}, logger, err => {
-            assert.deepStrictEqual(err, errors.InternalError);
+            expect(err.is.InternalError).toBeTruthy();
             return done();
         }, true);
     });
@@ -296,7 +296,7 @@ describe('MongoClientInterface:putObjectVerCase2', () => {
             update: (filter, update, params, cb) => cb(errors.InternalError),
         };
         client.putObjectVerCase2(collection, 'example-bucket', 'example-object', {}, {}, logger, err => {
-            assert.deepStrictEqual(err, errors.InternalError);
+            expect(err.is.InternalError).toBeTruthy();
             return done();
         });
     });
@@ -326,7 +326,7 @@ describe('MongoClientInterface:putObjectVerCase3', () => {
             findOne: (filter, cb) => cb(errors.InternalError),
         };
         client.putObjectVerCase3(collection, 'example-bucket', 'example-object', {}, {}, logger, err => {
-            assert.deepStrictEqual(err, errors.InternalError);
+            expect(err.is.InternalError).toBeTruthy();
             return done();
         });
     });
@@ -351,7 +351,7 @@ describe('MongoClientInterface:putObjectVerCase3', () => {
             bulkWrite: (ops, params, cb) => cb(error),
         };
         client.putObjectVerCase3(collection, 'example-bucket', 'example-object', {}, {}, logger, err => {
-            assert.deepStrictEqual(err, errors.InternalError);
+            expect(err.is.InternalError).toBeTruthy();
             return done();
         });
     });
@@ -408,7 +408,7 @@ describe('MongoClientInterface:putObjectVerCase4', () => {
             bulkWrite: (ops, params, cb) => cb(errors.InternalError),
         };
         client.putObjectVerCase4(collection, 'example-bucket', 'example-object', {}, {}, logger, err => {
-            assert.deepStrictEqual(err, errors.InternalError);
+            expect(err.is.InternalError).toBeTruthy();
             return done();
         });
     });
@@ -420,7 +420,7 @@ describe('MongoClientInterface:putObjectVerCase4', () => {
             bulkWrite: (ops, params, cb) => cb(null),
         };
         client.putObjectVerCase4(collection, 'example-bucket', 'example-object', {}, {}, logger, err => {
-            assert.deepStrictEqual(err, errors.InternalError);
+            expect(err.is.InternalError).toBeTruthy();
             return done();
         });
     });
@@ -459,7 +459,7 @@ describe('MongoClientInterface:putObjectNoVer', () => {
             update: (filter, update, params, cb) => cb(errors.InternalError),
         };
         client.putObjectNoVer(collection, 'example-bucket', 'example-object', {}, {}, logger, err => {
-            assert.deepStrictEqual(err, errors.InternalError);
+            expect(err.is.InternalError).toBeTruthy();
             return done();
         }, false);
     });

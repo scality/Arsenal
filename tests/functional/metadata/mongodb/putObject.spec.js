@@ -381,7 +381,7 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
                     },
                     // master must be deleted
                     next => getObject('\x7fMtest-object', err => {
-                        assert.deepStrictEqual(err, errors.NoSuchKey);
+                        expect(err.is.NoSuchKey).toBeTruthy();
                         return next();
                     }),
                 ], done);

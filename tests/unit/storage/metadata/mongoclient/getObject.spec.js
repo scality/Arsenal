@@ -1,7 +1,7 @@
 const assert = require('assert');
 const werelogs = require('werelogs');
 const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
-const errors = require('../../../../../lib/errors');
+const errors = require('../../../../../lib/errors').default;
 const sinon = require('sinon');
 const MongoClientInterface =
     require('../../../../../lib/storage/metadata/mongoclient/MongoClientInterface');
@@ -33,7 +33,7 @@ describe('MongoClientInterface:getObjectNoVer', () => {
         sinon.stub(client, 'getCollection').callsFake(() => collection);
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(errors.InternalError));
         client.getObject('example-bucket', 'example-object', {}, logger, err => {
-            assert.deepStrictEqual(err, errors.InternalError);
+            expect(err.is.InternalError).toBeTruthy();
             return done();
         });
     });
@@ -45,7 +45,7 @@ describe('MongoClientInterface:getObjectNoVer', () => {
         sinon.stub(client, 'getCollection').callsFake(() => collection);
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null, 'v0'));
         client.getObject('example-bucket', 'example-object', {}, logger, err => {
-            assert.deepStrictEqual(err, errors.InternalError);
+            expect(err.is.InternalError).toBeTruthy();
             return done();
         });
     });
@@ -58,7 +58,7 @@ describe('MongoClientInterface:getObjectNoVer', () => {
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null, 'v0'));
         sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[4](errors.NoSuchKey));
         client.getObject('example-bucket', 'example-object', {}, logger, err => {
-            assert.deepStrictEqual(err, errors.NoSuchKey);
+            expect(err.is.NoSuchKey).toBeTruthy();
             return done();
         });
     });
@@ -76,7 +76,7 @@ describe('MongoClientInterface:getObjectNoVer', () => {
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null, 'v0'));
         sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[4](errors.InternalError));
         client.getObject('example-bucket', 'example-object', {}, logger, err => {
-            assert.deepStrictEqual(err, errors.InternalError);
+            expect(err.is.InternalError).toBeTruthy();
             return done();
         });
     });

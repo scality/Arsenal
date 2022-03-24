@@ -187,8 +187,8 @@ describe('checkDateModifiedHeaders util function: ', () => {
             header['if-modified-since'] = afterLastModified;
             const { modifiedSinceRes, unmodifiedSinceRes } =
             checkDateModifiedHeaders(header, lastModified);
-            assert.deepStrictEqual(modifiedSinceRes.error, errors.NotModified);
-            assert.deepStrictEqual(unmodifiedSinceRes, expectedAbsense);
+            expect(modifiedSinceRes.error.is.NotModified).toBeTruthy();
+            expect(unmodifiedSinceRes).toStrictEqual(expectedAbsense);
         });
 
     it('should return PreconditionFailed error for \'if-unmodified-since\' ' +
@@ -197,9 +197,8 @@ describe('checkDateModifiedHeaders util function: ', () => {
         header['if-unmodified-since'] = beforeLastModified;
         const { modifiedSinceRes, unmodifiedSinceRes } =
             checkDateModifiedHeaders(header, lastModified);
-        assert.deepStrictEqual(unmodifiedSinceRes.error,
-            errors.PreconditionFailed);
-        assert.deepStrictEqual(modifiedSinceRes, expectedAbsense);
+        expect(unmodifiedSinceRes.error.is.PreconditionFailed).toBeTruthy();
+        expect(modifiedSinceRes).toStrictEqual(expectedAbsense);
     });
 
     it('should succeed if \'if-modified-since\' header value is earlier ' +
@@ -208,8 +207,8 @@ describe('checkDateModifiedHeaders util function: ', () => {
         header['if-modified-since'] = beforeLastModified;
         const { modifiedSinceRes, unmodifiedSinceRes } =
             checkDateModifiedHeaders(header, lastModified);
-        assert.deepStrictEqual(modifiedSinceRes, expectedSuccess);
-        assert.deepStrictEqual(unmodifiedSinceRes, expectedAbsense);
+        expect(modifiedSinceRes).toStrictEqual(expectedSuccess);
+        expect(unmodifiedSinceRes).toStrictEqual(expectedAbsense);
     });
 
     it('should succeed if \'if-unmodified-since\' header value is later ' +
@@ -218,8 +217,8 @@ describe('checkDateModifiedHeaders util function: ', () => {
         header['if-unmodified-since'] = afterLastModified;
         const { modifiedSinceRes, unmodifiedSinceRes } =
             checkDateModifiedHeaders(header, lastModified);
-        assert.deepStrictEqual(unmodifiedSinceRes, expectedSuccess);
-        assert.deepStrictEqual(modifiedSinceRes, expectedAbsense);
+        expect(unmodifiedSinceRes).toStrictEqual(expectedSuccess);
+        expect(modifiedSinceRes).toStrictEqual(expectedAbsense);
     });
 });
 

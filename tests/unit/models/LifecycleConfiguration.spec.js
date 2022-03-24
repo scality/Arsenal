@@ -1,6 +1,6 @@
 const assert = require('assert');
 const { parseString } = require('xml2js');
-const errors = require('../../../lib/errors');
+const errors = require('../../../lib/errors').default;
 
 const LifecycleConfiguration =
     require('../../../lib/models/LifecycleConfiguration.js');
@@ -813,7 +813,7 @@ describe('LifecycleConfiguration', () => {
                 storageClass: 'a',
             };
             const error = lifecycleConfiguration._checkTimeGap(params);
-            assert(error.InvalidArgument);
+            assert(error.is.InvalidArgument);
         });
 
         it('should not return error when transitions have dates greater than ' +
@@ -852,7 +852,7 @@ describe('LifecycleConfiguration', () => {
                 storageClass: 'a',
             };
             const error = lifecycleConfiguration._checkTimeGap(params);
-            assert(error.InvalidArgument);
+            assert(error.is.InvalidArgument);
         });
     });
 });

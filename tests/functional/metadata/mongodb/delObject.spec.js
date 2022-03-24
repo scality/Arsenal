@@ -174,7 +174,7 @@ describe('MongoClientInterface::metadata.deleteObjectMD', () => {
                     next => {
                         // Object must be removed
                         metadata.getObjectMD(BUCKET_NAME, params.objName, null, logger, err => {
-                            assert.deepStrictEqual(err, errors.NoSuchKey);
+                            expect(err.is.NoSuchKey).toBeTruthy();
                             return next();
                         });
                     },
@@ -245,7 +245,7 @@ describe('MongoClientInterface::metadata.deleteObjectMD', () => {
                     next => {
                         // the first version should no longer be available
                         metadata.getObjectMD(BUCKET_NAME, params.objName, { versionId: versionId1 }, logger, err => {
-                            assert.deepStrictEqual(err, errors.NoSuchKey);
+                            expect(err.is.NoSuchKey).toBeTruthy();
                             return next();
                         });
                     },
@@ -314,7 +314,7 @@ describe('MongoClientInterface::metadata.deleteObjectMD', () => {
                     next => {
                         // latest version must be removed
                         metadata.getObjectMD(BUCKET_NAME, params.objName, { versionId: versionId2 }, logger, err => {
-                            assert.deepStrictEqual(err, errors.NoSuchKey);
+                            expect(err.is.NoSuchKey).toBeTruthy();
                             return next();
                         });
                     },
@@ -341,7 +341,7 @@ describe('MongoClientInterface::metadata.deleteObjectMD', () => {
                 const versionId = generateVersionId(this.replicationGroupId);
                 const objName = 'test-object';
                 metadata.deleteObjectMD(BUCKET_NAME, objName, { versionId }, logger, err => {
-                    assert.deepStrictEqual(err, errors.NoSuchKey);
+                    expect(err.is.NoSuchKey).toBeTruthy();
                     return done();
                 });
             });
@@ -452,7 +452,7 @@ describe('MongoClientInterface::metadata.deleteObjectMD', () => {
                     // master must be deleted
                     next => {
                         getObject('\x7fMtest-object', err => {
-                            assert.deepStrictEqual(err, errors.NoSuchKey);
+                            expect(err.is.NoSuchKey).toBeTruthy();
                             return next();
                         });
                     },

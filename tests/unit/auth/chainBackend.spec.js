@@ -2,7 +2,7 @@ const assert = require('assert');
 
 const ChainBackend = require('../../../lib/auth/auth').backends.chainBackend;
 const BaseBackend = require('../../../lib/auth/auth').backends.baseBackend;
-const errors = require('../../../lib/errors');
+const errors = require('../../../lib/errors').default;
 
 
 const testError = new Error('backend error');
@@ -296,7 +296,7 @@ describe('Auth Backend: Chain Backend', () => {
                 new TestBackend('test3', null, { code: 200 }),
             ]);
             backend.healthcheck(null, (err, res) => {
-                assert.deepStrictEqual(err, errors.InternalError);
+                expect(err.is.InternalError).toBeTruthy();
                 assert.deepStrictEqual(res, [
                     { error: null, status: { code: 200 } },
                     { error: testError, status: { code: 503 } },
