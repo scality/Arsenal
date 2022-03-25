@@ -31,7 +31,7 @@ describe('MongoClientInterface:listObject', () => {
     it('should fail when internalListObject fails', done => {
         sinon.stub(client, 'getCollection').callsFake(() => null);
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null, 'v0'));
-        sinon.stub(client, 'internalListObject').callsFake((...args) => args[4](errors.InternalError));
+        sinon.stub(client, 'internalListObject').callsFake((...args) => args[5](errors.InternalError));
         client.listObject('example-bucket', { listingType: 'DelimiterMaster' }, logger, err => {
             assert.deepStrictEqual(err, errors.InternalError);
             return done();

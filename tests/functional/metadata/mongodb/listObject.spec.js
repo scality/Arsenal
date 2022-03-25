@@ -322,5 +322,91 @@ describe('MongoClientInterface::metadata.listObject', () => {
                 done();
             });
         });
+
+        it(`should not list phd master key when listing masters ${variation.it}`, done => {
+            const objVal = {
+                key: 'pfx1-test-object',
+                versionId: 'null',
+            };
+            const versionParams = {
+                versioning: true,
+            };
+            const params = {
+                listingType: 'DelimiterMaster',
+                prefix: 'pfx1',
+            };
+            let versionId;
+            let lastVersionId;
+            async.series([
+                next => metadata.putObjectMD(BUCKET_NAME, 'pfx1-test-object', objVal, versionParams,
+                    logger, (err, res) => {
+                        if (err) {
+                            return next(err);
+                        }
+                        versionId = JSON.parse(res).versionId;
+                        return next(null);
+                    }),
+                next => metadata.putObjectMD(BUCKET_NAME, 'pfx1-test-object', objVal, versionParams,
+                    logger, (err, res) => {
+                        if (err) {
+                            return next(err);
+                        }
+                        lastVersionId = JSON.parse(res).versionId;
+                        return next(null);
+                    }),
+                // when deleting the last version of an object a PHD master is created
+                // and kept for 15s before it's repaired
+                next => metadata.deleteObjectMD(BUCKET_NAME, 'pfx1-test-object', { versionId: lastVersionId },
+                    logger, next),
+                next => metadata.listObject(BUCKET_NAME, params, logger, (err, data) => {
+                    assert.ifError(err);
+                    assert.strictEqual(data.Contents[0].value.VersionId, versionId);
+                    return next();
+                }),
+            ], done);
+        });
+
+        it(`should not list phd master key when listing versions ${variation.it}`, done => {
+            const objVal = {
+                key: 'pfx1-test-object',
+                versionId: 'null',
+            };
+            const versionParams = {
+                versioning: true,
+            };
+            const params = {
+                listingType: 'DelimiterVersions',
+                prefix: 'pfx1',
+            };
+            let lastVersionId;
+            let versionIds;
+            async.series([
+                next => metadata.listObject(BUCKET_NAME, params, logger, (err, data) => {
+                    assert.ifError(err);
+                    assert.strictEqual(data.Versions.length, 5);
+                    versionIds = data.Versions.map(version => version.VersionId);
+                    return next();
+                }),
+                next => metadata.putObjectMD(BUCKET_NAME, 'pfx1-test-object', objVal, versionParams,
+                    logger, (err, res) => {
+                        if (err) {
+                            return next(err);
+                        }
+                        lastVersionId = JSON.parse(res).versionId;
+                        return next(null);
+                    }),
+                // when deleting the last version of an object a PHD master is created
+                // and kept for 15s before it's repaired
+                next => metadata.deleteObjectMD(BUCKET_NAME, 'pfx1-test-object', { versionId: lastVersionId },
+                    logger, next),
+                next => metadata.listObject(BUCKET_NAME, params, logger, (err, data) => {
+                    assert.ifError(err);
+                    const newVersionIds = data.Versions.map(version => version.VersionId);
+                    assert.strictEqual(data.Versions.length, 5);
+                    assert(versionIds.every(version => newVersionIds.includes(version)));
+                    return next();
+                }),
+            ], done);
+        });
     });
 });
