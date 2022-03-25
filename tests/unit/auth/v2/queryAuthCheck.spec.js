@@ -20,10 +20,10 @@ describe('v2: queryAuthCheck', () => {
         const res = queryAuthCheck(request, log, data);
         if (test.error) {
             assert.notStrictEqual(res.err, undefined);
-            assert.strictEqual(res.err.InvalidToken, true);
+            assert.strictEqual(res.err.is.InvalidToken, true);
         } else {
             assert.notStrictEqual(res.err, undefined);
-            assert.strictEqual(res.err.MissingSecurityHeader, true);
+            assert.strictEqual(res.err.is.MissingSecurityHeader, true);
         }
     }));
 });
@@ -57,8 +57,8 @@ describe('v2: queryAuthCheck', () => {
             Signature: 'sign',
         };
         const res = queryAuthCheck(mockRequest, log, data);
-        assert.notStrictEqual(res.err.AccessDenied, true);
-        assert.notStrictEqual(res.err.RequestTimeTooSkewed, true);
+        assert.notStrictEqual(res.err.is.AccessDenied, true);
+        assert.notStrictEqual(res.err.is.RequestTimeTooSkewed, true);
     });
     it('URL should expire after 7 days with default expiry', () => {
         clock.tick(604800000); // take time 604800000ms (7 days) ahead
@@ -68,7 +68,7 @@ describe('v2: queryAuthCheck', () => {
         const res = queryAuthCheck(request, log, data);
         assert.notStrictEqual(res.err, null);
         assert.notStrictEqual(res.err, undefined);
-        assert.strictEqual(res.err.AccessDenied, true);
+        assert.strictEqual(res.err.is.AccessDenied, true);
     });
     it('URL should not expire before 7 days with custom expiry', () => {
         process.env.PRE_SIGN_URL_EXPIRY = 31556952000; // in ms (1 year)
@@ -90,8 +90,8 @@ describe('v2: queryAuthCheck', () => {
             Signature: 'sign',
         };
         const res = queryAuthCheck(mockRequest, log, data);
-        assert.notStrictEqual(res.err.AccessDenied, true);
-        assert.notStrictEqual(res.err.RequestTimeTooSkewed, true);
+        assert.notStrictEqual(res.err.is.AccessDenied, true);
+        assert.notStrictEqual(res.err.is.RequestTimeTooSkewed, true);
     });
     it('URL should still not expire after 7 days with custom expiry', () => {
         clock.tick(604800000); // take time 604800000ms (7 days) ahead
@@ -100,7 +100,7 @@ describe('v2: queryAuthCheck', () => {
         const request = { method: 'GET', query: { Expires: currentTime } };
         const data = { Expires: currentTime };
         const res = queryAuthCheck(request, log, data);
-        assert.notStrictEqual(res.err.AccessDenied, true);
+        assert.notStrictEqual(res.err.is.AccessDenied, true);
     });
     it('should return RequestTimeTooSkewed with current time > expiry', () => {
         clock.tick(123);
@@ -110,7 +110,7 @@ describe('v2: queryAuthCheck', () => {
         const res = queryAuthCheck(request, log, data);
         assert.notStrictEqual(res.err, null);
         assert.notStrictEqual(res.err, undefined);
-        assert.strictEqual(res.err.RequestTimeTooSkewed, true);
+        assert.strictEqual(res.err.is.RequestTimeTooSkewed, true);
     });
     it('should return MissingSecurityHeader with invalid expires param', () => {
         const request = { method: 'GET', query: { Expires: 'a string' } };
@@ -118,6 +118,6 @@ describe('v2: queryAuthCheck', () => {
         const res = queryAuthCheck(request, log, data);
         assert.notStrictEqual(res.err, null);
         assert.notStrictEqual(res.err, undefined);
-        assert.strictEqual(res.err.MissingSecurityHeader, true);
+        assert.strictEqual(res.err.is.MissingSecurityHeader, true);
     });
 });
