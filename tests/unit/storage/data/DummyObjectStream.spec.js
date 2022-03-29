@@ -19,6 +19,7 @@ async function testStream(startByteOffset, streamSize, expectedData) {
 describe('DummyObjectStream', () => {
     jest.setTimeout(30000);
     it('should return a stream of 8-byte hex-encoded blocks', async () => {
+        /* eslint-disable no-unused-expressions */
         await testStream(0, 0, '');
         await testStream(50, 0, '');
         await testStream(0, 1, ' ');
