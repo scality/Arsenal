@@ -111,7 +111,7 @@ describe('LRUCache', () => {
         // check present (even) and evicted (odd) items
         for (let i = 0; i < 1000000; ++i) {
             assert.strictEqual(lru.get(`${i}`),
-                               i % 2 === 0 ? i : undefined);
+                i % 2 === 0 ? i : undefined);
             assert.strictEqual(lru.remove(`${i}`), i % 2 === 0);
         }
         assert.strictEqual(lru.count(), 500000);

@@ -82,7 +82,6 @@ const malformedLogEntry = new MockStream(malformedLogEntryData);
 
 // mock a simple bucketclient to get a fake raft log
 class BucketClientMock {
-
     getRaftLog(raftId, start, limit, targetLeader, reqUids, callback) {
         switch (raftId) {
         case 0:
@@ -95,10 +94,10 @@ class BucketClientMock {
             return process.nextTick(() => callback(errors.InternalError));
         case 4:
             return process.nextTick(() => callback(null,
-                                                   malformedLogResponse));
+                malformedLogResponse));
         case 5:
             return process.nextTick(() => callback(null,
-                                                   malformedLogEntry));
+                malformedLogEntry));
         default:
             assert.fail();
         }

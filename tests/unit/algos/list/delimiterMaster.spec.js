@@ -63,7 +63,7 @@ function getListingKey(key, vFormat) {
         'NextMarker is set and there is a delimiter', () => {
             const key = 'key';
             const delimiter = new DelimiterMaster({ delimiter: '/', marker: key },
-                                                  fakeLogger, vFormat);
+                fakeLogger, vFormat);
 
             /* Filter a master version to set NextMarker. */
             const listingKey = getListingKey(key, vFormat);
@@ -104,8 +104,8 @@ function getListingKey(key, vFormat) {
              * delimiter it should return the next marker value. */
             assert.strictEqual(delimiter.NextMarker, keyWithEndingDelimiter);
             const skipKey = vFormat === 'v1' ?
-                  `${DbPrefixes.Master}${keyWithEndingDelimiter}` :
-                  keyWithEndingDelimiter;
+                `${DbPrefixes.Master}${keyWithEndingDelimiter}` :
+                keyWithEndingDelimiter;
             assert.strictEqual(delimiter.skipping(), skipKey);
         });
 
@@ -159,7 +159,7 @@ function getListingKey(key, vFormat) {
             const value = 'value';
 
             const delimiter = new DelimiterMaster({ delimiter: delimiterChar },
-                                                  fakeLogger, vFormat);
+                fakeLogger, vFormat);
 
             /* Filter the first entry with a common prefix. It should be
              * accepted and added to the result. */
@@ -167,7 +167,7 @@ function getListingKey(key, vFormat) {
                 key: getListingKey(prefix1Key1, vFormat),
                 value,
             }),
-                               FILTER_ACCEPT);
+            FILTER_ACCEPT);
             assert.deepStrictEqual(delimiter.result(), {
                 CommonPrefixes: [commonPrefix1],
                 Contents: [],
@@ -182,7 +182,7 @@ function getListingKey(key, vFormat) {
                 key: getListingKey(prefix1Key2, vFormat),
                 value,
             }),
-                               FILTER_SKIP);
+            FILTER_SKIP);
             assert.deepStrictEqual(delimiter.result(), {
                 CommonPrefixes: [commonPrefix1],
                 Contents: [],
@@ -197,7 +197,7 @@ function getListingKey(key, vFormat) {
                 key: getListingKey(prefix2Key1, vFormat),
                 value,
             }),
-                               FILTER_ACCEPT);
+            FILTER_ACCEPT);
             assert.deepStrictEqual(delimiter.result(), {
                 CommonPrefixes: [commonPrefix1, commonPrefix2],
                 Contents: [],
@@ -416,7 +416,7 @@ function getListingKey(key, vFormat) {
                 const value = 'value';
 
                 const delimiter = new DelimiterMaster({ delimiter: delimiterChar },
-                                                      fakeLogger, vFormat);
+                    fakeLogger, vFormat);
 
                 /* Filter the two first entries with the same common prefix to add
                  * it to the result and reach the state where an entry is skipped
@@ -448,7 +448,7 @@ function getListingKey(key, vFormat) {
                 const value = 'value';
 
                 const delimiter = new DelimiterMaster({ delimiter: delimiterChar },
-                                                      fakeLogger, vFormat);
+                    fakeLogger, vFormat);
                 /* TODO: should be set to a whole key instead of just a common prefix
                  * once ZENKO-1048 is fixed. */
                 delimiter.NextMarker = commonPrefix;
