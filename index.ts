@@ -100,13 +100,63 @@ export const s3middleware = {
 
 export const storage = {
     metadata: {
-        MetadataFileServer: require('./lib/storage/metadata/file/MetadataFileServer'),
-        MetadataFileClient: require('./lib/storage/metadata/file/MetadataFileClient'),
-        LogConsumer: require('./lib/storage/metadata/bucketclient/LogConsumer'),
+        MetadataWrapper: require('./lib/storage/metadata/MetadataWrapper'),
+        bucketclient: {
+            BucketClientInterface:
+            require('./lib/storage/metadata/bucketclient/' +
+                'BucketClientInterface'),
+            LogConsumer:
+            require('./lib/storage/metadata/bucketclient/LogConsumer'),
+        },
+        file: {
+            BucketFileInterface:
+            require('./lib/storage/metadata/file/BucketFileInterface'),
+            MetadataFileServer:
+            require('./lib/storage/metadata/file/MetadataFileServer'),
+            MetadataFileClient:
+            require('./lib/storage/metadata/file/MetadataFileClient'),
+        },
+        inMemory: {
+            metastore:
+            require('./lib/storage/metadata/in_memory/metastore'),
+            metadata: require('./lib/storage/metadata/in_memory/metadata'),
+            bucketUtilities:
+            require('./lib/storage/metadata/in_memory/bucket_utilities'),
+        },
+        mongoclient: {
+            MongoClientInterface:
+            require('./lib/storage/metadata/mongoclient/' +
+                'MongoClientInterface'),
+            LogConsumer:
+            require('./lib/storage/metadata/mongoclient/LogConsumer'),
+        },
+        proxy: {
+            Server: require('./lib/storage/metadata/proxy/Server'),
+        },
     },
     data: {
+        DataWrapper: require('./lib/storage/data/DataWrapper'),
+        MultipleBackendGateway:
+        require('./lib/storage/data/MultipleBackendGateway'),
+        parseLC: require('./lib/storage/data/LocationConstraintParser'),
         file: {
-            DataFileStore: require('./lib/storage/data/file/DataFileStore'),
+            DataFileStore:
+            require('./lib/storage/data/file/DataFileStore'),
+            DataFileInterface:
+            require('./lib/storage/data/file/DataFileInterface'),
+        },
+        external: {
+            AwsClient: require('./lib/storage/data/external/AwsClient'),
+            AzureClient: require('./lib/storage/data/external/AzureClient'),
+            GcpClient: require('./lib/storage/data/external/GcpClient'),
+            GCP: require('./lib/storage/data/external/GCP/GcpService'),
+            GcpUtils: require('./lib/storage/data/external/GCP/GcpUtils'),
+            GcpSigner: require('./lib/storage/data/external/GCP/GcpSigner'),
+            PfsClient: require('./lib/storage/data/external/PfsClient'),
+            backendUtils: require('./lib/storage/data/external/utils'),
+        },
+        inMemory: {
+            datastore: require('./lib/storage/data/in_memory/datastore'),
         },
     },
     utils: require('./lib/storage/utils'),
