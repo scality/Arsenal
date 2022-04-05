@@ -94,6 +94,7 @@ export const s3middleware = {
         ResultsCollector: require('./lib/s3middleware/azureHelpers/ResultsCollector'),
         SubStreamInterface: require('./lib/s3middleware/azureHelpers/SubStreamInterface'),
     },
+    processMpuParts: require('./lib/s3middleware/processMpuParts'),
     retention: require('./lib/s3middleware/objectRetention'),
     lifecycleHelpers: require('./lib/s3middleware/lifecycleHelpers'),
 };
