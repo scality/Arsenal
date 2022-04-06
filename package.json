@@ -24,6 +24,7 @@
     "async": "~2.1.5",
     "aws-sdk": "2.80.0",
     "azure-storage": "2.10.3",
+    "bucketclient": "scality/bucketclient#7.10.2",
     "backo": "^1.1.0",
     "base-x": "3.0.8",
     "base62": "2.0.1",
