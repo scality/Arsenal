@@ -130,3 +130,15 @@ this._uid = uid || uuid();
 ### Usage
 
 Used to set a unique identifier on a bucket
+
+## Model version 11
+
+### Properties Added
+
+```javascript
+this._tags = tags || null;
+```
+
+### Usage
+
+Used to store bucket tagging
