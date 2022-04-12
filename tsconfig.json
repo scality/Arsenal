@@ -15,7 +15,7 @@
         "noEmitOnError": false,
         "sourceMap": true
     },
-    "include": ["index.ts", "lib"],
+    "include": ["index.ts", "lib", "errors/*.json", "lib/**/*.json"],
     "exclude": ["node_modules/*"],
     "compileOnSave": true
 }
