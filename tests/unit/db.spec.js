@@ -8,7 +8,7 @@ const temp = require('temp');
 temp.track();
 
 const db = require('../../index').db;
-const errors = require('../../lib/errors');
+const errors = require('../../lib/errors').default;
 
 const IndexTransaction = db.IndexTransaction;
 const key1 = 'key1';
@@ -425,7 +425,7 @@ describe('IndexTransaction', () => {
                 value: value3,
             });
             return transaction.commit(err => {
-                if (!err || !err.PreconditionFailed) {
+                if (!err || !err.is.PreconditionFailed) {
                     return done(new Error('should not be able to conditional put for duplicate key'));
                 }
                 return async.parallel([
