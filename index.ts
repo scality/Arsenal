@@ -1,4 +1,5 @@
 export { default as errors } from './lib/errors';
+export * as metrics from './lib/metrics';
 
 export const auth = require('./lib/auth/auth');
 export const constants = require('./lib/constants');
@@ -176,13 +177,6 @@ export const models = {
     BucketPolicy: require('./lib/models/BucketPolicy'),
     ObjectLockConfiguration: require('./lib/models/ObjectLockConfiguration'),
     NotificationConfiguration: require('./lib/models/NotificationConfiguration'),
-};
-
-export const metrics = {
-    StatsClient: require('./lib/metrics/StatsClient'),
-    StatsModel: require('./lib/metrics/StatsModel'),
-    RedisClient: require('./lib/metrics/RedisClient'),
-    ZenkoMetrics: require('./lib/metrics/ZenkoMetrics'),
 };
 
 export const pensieve = {
