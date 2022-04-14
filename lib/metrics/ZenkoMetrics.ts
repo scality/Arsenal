@@ -1,30 +1,30 @@
-const promClient = require('prom-client');
+import promClient from 'prom-client';
 
 const collectDefaultMetricsIntervalMs =
-      process.env.COLLECT_DEFAULT_METRICS_INTERVAL_MS !== undefined ?
-      Number.parseInt(process.env.COLLECT_DEFAULT_METRICS_INTERVAL_MS, 10) :
-      10000;
+    process.env.COLLECT_DEFAULT_METRICS_INTERVAL_MS !== undefined ?
+        Number.parseInt(process.env.COLLECT_DEFAULT_METRICS_INTERVAL_MS, 10) :
+        10000;
 
 promClient.collectDefaultMetrics({ timeout: collectDefaultMetricsIntervalMs });
 
-class ZenkoMetrics {
-    static createCounter(params) {
+export default class ZenkoMetrics {
+    static createCounter(params: promClient.CounterConfiguration) {
         return new promClient.Counter(params);
     }
 
-    static createGauge(params) {
+    static createGauge(params: promClient.GaugeConfiguration) {
         return new promClient.Gauge(params);
     }
 
-    static createHistogram(params) {
+    static createHistogram(params: promClient.HistogramConfiguration) {
         return new promClient.Histogram(params);
     }
 
-    static createSummary(params) {
+    static createSummary(params: promClient.SummaryConfiguration) {
         return new promClient.Summary(params);
     }
 
-    static getMetric(name) {
+    static getMetric(name: string) {
         return promClient.register.getSingleMetric(name);
     }
 
@@ -36,5 +36,3 @@ class ZenkoMetrics {
         return promClient.register.contentType;
     }
 }
-
-module.exports = ZenkoMetrics;
