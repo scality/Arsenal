@@ -1,4 +1,5 @@
 export { default as errors } from './lib/errors';
+export * as https from './lib/https'
 
 export const auth = require('./lib/auth/auth');
 export const constants = require('./lib/constants');
@@ -8,11 +9,6 @@ export const stringHash = require('./lib/stringHash');
 export const ipCheck = require('./lib/ipCheck');
 export const jsutil = require('./lib/jsutil');
 export const Clustering = require('./lib/Clustering');
-
-export const https = {
-    ciphers: require('./lib/https/ciphers.js'),
-    dhparam: require('./lib/https/dh2048.js'),
-};
 
 export const algorithms = {
     list: {
