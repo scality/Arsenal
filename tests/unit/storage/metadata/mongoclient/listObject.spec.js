@@ -1,7 +1,7 @@
 const assert = require('assert');
 const werelogs = require('werelogs');
 const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
-const errors = require('../../../../../lib/errors');
+const errors = require('../../../../../lib/errors').default;
 const sinon = require('sinon');
 const MongoClientInterface =
     require('../../../../../lib/storage/metadata/mongoclient/MongoClientInterface');

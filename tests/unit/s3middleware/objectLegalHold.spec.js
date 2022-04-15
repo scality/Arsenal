@@ -47,7 +47,7 @@ describe('object legal hold helpers: parseLegalHoldXml', () => {
         it(test.description, done => {
             const status = test.params.status;
             parseLegalHoldXml(generateXml(status), log, err => {
-                assert(err[test.error]);
+                assert(err.is[test.error]);
                 assert.strictEqual(err.description, test.errMessage);
                 done();
             });

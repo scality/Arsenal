@@ -22,7 +22,7 @@ function createPolicy(key, value) {
 }
 
 function checkErr(policy, err, message) {
-    assert.strictEqual(policy.error[err], true);
+    assert.strictEqual(policy.error.is[err], true);
     assert.strictEqual(policy.error.description, message);
 }
 

@@ -1,7 +1,7 @@
 const assert = require('assert');
 const werelogs = require('werelogs');
 const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
-const errors = require('../../../../../lib/errors');
+const errors = require('../../../../../lib/errors').default;
 const sinon = require('sinon');
 const MongoClientInterface =
     require('../../../../../lib/storage/metadata/mongoclient/MongoClientInterface');
@@ -198,7 +198,7 @@ describe('MongoClientInterface:delObject', () => {
         sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[4](errors.NoSuchKey));
         sinon.stub(client, 'asyncRepair').callsFake((...args) => args[5](null));
         client.deleteOrRepairPHD(collection, 'example-bucket', 'example-object', {}, 'v0', logger, err => {
-            assert.deepStrictEqual(err, errors.InternalError);
+            assert(err.is.InternalError);
             return done();
         });
     });

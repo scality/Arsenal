@@ -1,6 +1,6 @@
 const assert = require('assert');
 
-const errors = require('../../../../../lib/errors');
+const errors = require('../../../../../lib/errors').default;
 
 const {
     credPrefix,
@@ -215,9 +215,8 @@ describe('translate query object', () => {
     tests.forEach(([msg, params]) => it(msg, () => {
         const { depth, prefix, query, error, result } = params;
         if (error) {
-            assert.throws(
-                () => translateConditions(depth, prefix, {}, query),
-                error);
+            const thrower = () => translateConditions(depth, prefix, {}, query);
+            expect(thrower).toThrowError(error.message);
             return;
         }
         const filter = {};
