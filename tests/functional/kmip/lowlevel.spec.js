@@ -36,17 +36,17 @@ describe('KMIP Low Level Driver', () => {
             const kmip = new KMIP(TTLVCodec, MirrorTransport, options);
             const requestPayload = fixture.payload(kmip);
             kmip.request(logger, fixture.operation,
-                         requestPayload, (err, response) => {
-                             if (err) {
-                                 return done(err);
-                             }
-                             const responsePayload = response.lookup(
-                                 'Response Message/Batch Item/Response Payload'
-                             )[0];
-                             assert.deepStrictEqual(responsePayload,
-                                                    requestPayload);
-                             return done();
-                         });
+                requestPayload, (err, response) => {
+                    if (err) {
+                        return done(err);
+                    }
+                    const responsePayload = response.lookup(
+                        'Response Message/Batch Item/Response Payload',
+                    )[0];
+                    assert.deepStrictEqual(responsePayload,
+                        requestPayload);
+                    return done();
+                });
         });
     });
 });

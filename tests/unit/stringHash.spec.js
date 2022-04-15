@@ -35,7 +35,7 @@ describe('StringHash', () => {
         (done) => {
             jest.setTimeout(20000);
             const strings = new Array(STRING_COUNT).fill('')
-                                .map(() => randomString(10));
+                .map(() => randomString(10));
             const arr = new Array(ARRAY_LENGTH).fill(0);
             strings.forEach(string => {
                 const ind = stringHash(string) % ARRAY_LENGTH;
