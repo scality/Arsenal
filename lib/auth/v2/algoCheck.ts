@@ -1,7 +1,5 @@
-'use strict'; // eslint-disable-line strict
-
-function algoCheck(signatureLength) {
-    let algo;
+export default function algoCheck(signatureLength: number) {
+    let algo: 'sha256' | 'sha1';
     // If the signature sent is 44 characters,
     // this means that sha256 was used:
     // 44 characters in base64
@@ -13,7 +11,6 @@ function algoCheck(signatureLength) {
     if (signatureLength === SHA1LEN) {
         algo = 'sha1';
     }
+    // @ts-ignore
     return algo;
 }
-
-module.exports = algoCheck;

@@ -1,12 +1,11 @@
-'use strict'; // eslint-disable-line strict
+import { Logger } from 'werelogs';
 
 /**
  * Convert timestamp to milliseconds since Unix Epoch
- * @param  {string} timestamp of ISO8601Timestamp format without
+ * @param timestamp of ISO8601Timestamp format without
  * dashes or colons, e.g. 20160202T220410Z
- * @return {number} number of milliseconds since Unix Epoch
  */
-function convertAmzTimeToMs(timestamp) {
+export function convertAmzTimeToMs(timestamp: string) {
     const arr = timestamp.split('');
     // Convert to YYYY-MM-DDTHH:mm:ss.sssZ
     const ISO8601time = `${arr.slice(0, 4).join('')}-${arr[4]}${arr[5]}` +
@@ -15,13 +14,12 @@ function convertAmzTimeToMs(timestamp) {
     return Date.parse(ISO8601time);
 }
 
-
 /**
  * Convert UTC timestamp to ISO 8601 timestamp
- * @param  {string} timestamp of UTC form: Fri, 10 Feb 2012 21:34:55 GMT
- * @return {string} ISO8601 timestamp of form: YYYYMMDDTHHMMSSZ
+ * @param timestamp of UTC form: Fri, 10 Feb 2012 21:34:55 GMT
+ * @return ISO8601 timestamp of form: YYYYMMDDTHHMMSSZ
  */
-function convertUTCtoISO8601(timestamp) {
+export function convertUTCtoISO8601(timestamp: string | number) {
     // convert to ISO string: YYYY-MM-DDTHH:mm:ss.sssZ.
     const converted = new Date(timestamp).toISOString();
     // Remove "-"s and "."s and milliseconds
@@ -30,13 +28,13 @@ function convertUTCtoISO8601(timestamp) {
 
 /**
  * Check whether timestamp predates request or is too old
- * @param  {string} timestamp of ISO8601Timestamp format without
+ * @param timestamp of ISO8601Timestamp format without
  * dashes or colons, e.g. 20160202T220410Z
- * @param {number} expiry - number of seconds signature should be valid
- * @param {object} log - log for request
- * @return {boolean} true if there is a time problem
+ * @param expiry - number of seconds signature should be valid
+ * @param log - log for request
+ * @return true if there is a time problem
  */
-function checkTimeSkew(timestamp, expiry, log) {
+export function checkTimeSkew(timestamp: string, expiry: number, log: Logger) {
     const currentTime = Date.now();
     const fifteenMinutes = (15 * 60 * 1000);
     const parsedTimestamp = convertAmzTimeToMs(timestamp);
@@ -56,5 +54,3 @@ function checkTimeSkew(timestamp, expiry, log) {
     }
     return false;
 }
-
-module.exports = { convertAmzTimeToMs, convertUTCtoISO8601, checkTimeSkew };

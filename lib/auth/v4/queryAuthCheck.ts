@@ -1,24 +1,18 @@
-'use strict'; // eslint-disable-line strict
-
-const constants = require('../../constants');
-const errors = require('../../errors').default;
-
-const constructStringToSign = require('./constructStringToSign');
-const checkTimeSkew = require('./timeUtils').checkTimeSkew;
-const convertAmzTimeToMs = require('./timeUtils').convertAmzTimeToMs;
-const validateCredentials = require('./validateInputs').validateCredentials;
-const extractQueryParams = require('./validateInputs').extractQueryParams;
-const areSignedHeadersComplete =
-    require('./validateInputs').areSignedHeadersComplete;
+import { Logger } from 'werelogs';
+import * as constants from '../../constants';
+import errors from '../../errors';
+import constructStringToSign from './constructStringToSign';
+import { checkTimeSkew, convertAmzTimeToMs } from './timeUtils';
+import { validateCredentials, extractQueryParams } from './validateInputs';
+import { areSignedHeadersComplete } from './validateInputs';
 
 /**
  * V4 query auth check
- * @param {object} request - HTTP request object
- * @param {object} log - logging object
- * @param {object} data - Contain authentification params (GET or POST data)
- * @return {callback} calls callback
+ * @param request - HTTP request object
+ * @param log - logging object
+ * @param data - Contain authentification params (GET or POST data)
  */
-function check(request, log, data) {
+export function check(request: any, log: Logger, data: { [key: string]: string }) {
     const authParams = extractQueryParams(data, log);
 
     if (Object.keys(authParams).length !== 5) {
@@ -33,11 +27,11 @@ function check(request, log, data) {
         return { err: errors.InvalidToken };
     }
 
-    const signedHeaders = authParams.signedHeaders;
-    const signatureFromRequest = authParams.signatureFromRequest;
-    const timestamp = authParams.timestamp;
-    const expiry = authParams.expiry;
-    const credential = authParams.credential;
+    const signedHeaders = authParams.signedHeaders!;
+    const signatureFromRequest = authParams.signatureFromRequest!;
+    const timestamp = authParams.timestamp!;
+    const expiry = authParams.expiry!;
+    const credential = authParams.credential!;
 
     if (!areSignedHeadersComplete(signedHeaders, request.headers)) {
         log.debug('signedHeaders are incomplete', { signedHeaders });
@@ -62,7 +56,7 @@ function check(request, log, data) {
         return { err: errors.RequestTimeTooSkewed };
     }
 
-    let proxyPath = null;
+    let proxyPath: string | undefined;
     if (request.headers.proxy_path) {
         try {
             proxyPath = decodeURIComponent(request.headers.proxy_path);
@@ -122,5 +116,3 @@ function check(request, log, data) {
         },
     };
 }
-
-module.exports = { check };

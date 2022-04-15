@@ -1,6 +1,4 @@
-'use strict'; // eslint-disable-line strict
-
-const constants = require('../constants');
+import * as constants from '../constants';
 
 /**
  * Class containing requester's information received from Vault
@@ -8,9 +6,15 @@ const constants = require('../constants');
  * shortid, email, accountDisplayName and IAMdisplayName (if applicable)
  * @return {AuthInfo} an AuthInfo instance
  */
+export default class AuthInfo {
+    arn: string;
+    canonicalID: string;
+    shortid: string;
+    email: string;
+    accountDisplayName: string;
+    IAMdisplayName: string;
 
-class AuthInfo {
-    constructor(objectFromVault) {
+    constructor(objectFromVault: any) {
         // amazon resource name for IAM user (if applicable)
         this.arn = objectFromVault.arn;
         // account canonicalID
@@ -53,10 +57,8 @@ class AuthInfo {
         return this.canonicalID.startsWith(
             `${constants.zenkoServiceAccount}/`);
     }
-    isRequesterThisServiceAccount(serviceName) {
-        return this.canonicalID ===
-            `${constants.zenkoServiceAccount}/${serviceName}`;
+    isRequesterThisServiceAccount(serviceName: string) {
+        const computedCanonicalID = `${constants.zenkoServiceAccount}/${serviceName}`;
+        return this.canonicalID === computedCanonicalID;
     }
 }
-
-module.exports = AuthInfo;

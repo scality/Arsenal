@@ -1,7 +1,6 @@
 export { default as errors } from './lib/errors';
-
-export const auth = require('./lib/auth/auth');
-export const constants = require('./lib/constants');
+export * as auth from './lib/auth/auth'
+export * as constants from './lib/constants';
 export const db = require('./lib/db');
 export const errorUtils = require('./lib/errorUtils');
 export const shuffle = require('./lib/shuffle');

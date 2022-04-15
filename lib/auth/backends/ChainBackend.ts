@@ -1,10 +1,7 @@
-'use strict'; // eslint-disable-line strict
-
-const assert = require('assert');
-const async = require('async');
-
-const errors = require('../../errors');
-const BaseBackend = require('./base');
+import assert from 'assert';
+import async from 'async';
+import errors from '../../errors';
+import BaseBackend from './base';
 
 /**
  * Class that provides an authentication backend that will verify signatures
@@ -13,13 +10,15 @@ const BaseBackend = require('./base');
  *
  * @class ChainBackend
  */
-class ChainBackend extends BaseBackend {
+export default class ChainBackend extends BaseBackend {
+    _clients: any[];
+
     /**
      * @constructor
      * @param {string} service - service id
      * @param {object[]} clients - list of authentication backends or vault clients
      */
-    constructor(service, clients) {
+    constructor(service: string, clients: any[]) {
         super(service);
 
         assert(Array.isArray(clients) && clients.length > 0, 'invalid client list');
@@ -38,18 +37,25 @@ class ChainBackend extends BaseBackend {
     /*
      * try task against each client for one to be successful
      */
-    _tryEachClient(task, cb) {
+    _tryEachClient(task: any, cb: any) {
+        // @ts-ignore
         async.tryEach(this._clients.map(client => done => task(client, done)), cb);
     }
 
     /*
      * apply task to all clients
      */
-    _forEachClient(task, cb) {
+    _forEachClient(task: any, cb: any) {
         async.map(this._clients, task, cb);
     }
 
-    verifySignatureV2(stringToSign, signatureFromRequest, accessKey, options, callback) {
+    verifySignatureV2(
+        stringToSign: string,
+        signatureFromRequest: string,
+        accessKey: string,
+        options: any,
+        callback: any,
+      ) {
         this._tryEachClient((client, done) => client.verifySignatureV2(
             stringToSign,
             signatureFromRequest,
@@ -59,7 +65,15 @@ class ChainBackend extends BaseBackend {
         ), callback);
     }
 
-    verifySignatureV4(stringToSign, signatureFromRequest, accessKey, region, scopeDate, options, callback) {
+    verifySignatureV4(
+      stringToSign: string,
+      signatureFromRequest: string,
+      accessKey: string,
+      region: string,
+      scopeDate: string,
+      options: any,
+      callback: any,
+    ) {
         this._tryEachClient((client, done) => client.verifySignatureV4(
             stringToSign,
             signatureFromRequest,
@@ -71,13 +85,13 @@ class ChainBackend extends BaseBackend {
         ), callback);
     }
 
-    static _mergeObjects(objectResponses) {
+    static _mergeObjects(objectResponses: any) {
         return objectResponses.reduce(
             (retObj, resObj) => Object.assign(retObj, resObj.message.body),
             {});
     }
 
-    getCanonicalIds(emailAddresses, options, callback) {
+    getCanonicalIds(emailAddresses: string[], options: any, callback: any) {
         this._forEachClient(
             (client, done) => client.getCanonicalIds(emailAddresses, options, done),
             (err, res) => {
@@ -93,7 +107,7 @@ class ChainBackend extends BaseBackend {
             });
     }
 
-    getEmailAddresses(canonicalIDs, options, callback) {
+    getEmailAddresses(canonicalIDs: string[], options: any, callback: any) {
         this._forEachClient(
             (client, done) => client.getEmailAddresses(canonicalIDs, options, done),
             (err, res) => {
@@ -111,8 +125,8 @@ class ChainBackend extends BaseBackend {
     /*
      * merge policy responses into a single message
      */
-    static _mergePolicies(policyResponses) {
-        const policyMap = {};
+    static _mergePolicies(policyResponses: any) {
+        const policyMap: any = {};
 
         policyResponses.forEach(resp => {
             if (!resp.message || !Array.isArray(resp.message.body)) {
@@ -129,7 +143,7 @@ class ChainBackend extends BaseBackend {
         });
 
         return Object.keys(policyMap).map(key => {
-            const policyRes = { isAllowed: policyMap[key].isAllowed };
+            const policyRes: any = { isAllowed: policyMap[key].isAllowed };
             if (policyMap[key].arn !== '') {
                 policyRes.arn = policyMap[key].arn;
             }
@@ -148,7 +162,7 @@ class ChainBackend extends BaseBackend {
                 message: string,
             } }
      */
-    checkPolicies(requestContextParams, userArn, options, callback) {
+    checkPolicies(requestContextParams: any, userArn: string, options: any, callback: any) {
         this._forEachClient((client, done) => client.checkPolicies(
             requestContextParams,
             userArn,
@@ -166,7 +180,7 @@ class ChainBackend extends BaseBackend {
         });
     }
 
-    healthcheck(reqUid, callback) {
+    healthcheck(reqUid: string, callback: any) {
         this._forEachClient((client, done) =>
             client.healthcheck(reqUid, (err, res) => done(null, {
                 error: !!err ? err : null,
@@ -185,5 +199,3 @@ class ChainBackend extends BaseBackend {
         });
     }
 }
-
-module.exports = ChainBackend;
