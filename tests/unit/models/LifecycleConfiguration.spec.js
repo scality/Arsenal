@@ -1,6 +1,5 @@
 const assert = require('assert');
 const { parseString } = require('xml2js');
-const errors = require('../../../lib/errors');
 
 const LifecycleConfiguration =
     require('../../../lib/models/LifecycleConfiguration.js');
@@ -283,7 +282,7 @@ function generateParsedXml(errorTag, tagObj, cb) {
 function checkError(parsedXml, error, errMessage, cb) {
     const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig)
         .getLifecycleConfiguration();
-    assert.strictEqual(lcConfig.error[error], true);
+    assert.strictEqual(lcConfig.error.is[error], true);
     assert.strictEqual(lcConfig.error.description, errMessage);
     cb();
 }
@@ -514,8 +513,8 @@ describe('LifecycleConfiguration', () => {
                 ancestor: 'b',
             });
             const msg = "'a' in b action must not exceed 2147483647";
-            const expected = errors.MalformedXML.customizeDescription(msg);
-            assert.deepStrictEqual(error, expected);
+            expect(error.is.MalformedXML).toBeTruthy();
+            expect(error.description).toEqual(msg);
         });
 
         it('should return error when negative value', () => {
@@ -525,8 +524,8 @@ describe('LifecycleConfiguration', () => {
                 ancestor: 'b',
             });
             const msg = "'a' in b action must be nonnegative";
-            const expected = errors.InvalidArgument.customizeDescription(msg);
-            assert.deepStrictEqual(error, expected);
+            expect(error.is.InvalidArgument).toBeTruthy();
+            expect(error.description).toEqual(msg);
         });
     });
 
@@ -552,8 +551,8 @@ describe('LifecycleConfiguration', () => {
                 storageClass: 'c',
             });
             const msg = "'StorageClass' must be one of 'a', 'b'";
-            const expected = errors.MalformedXML.customizeDescription(msg);
-            assert.deepStrictEqual(error, expected);
+            expect(error.is.MalformedXML).toBeTruthy();
+            expect(error.description).toEqual(msg);
         });
 
         it('should return error when StorageClass has been used', () => {
@@ -566,8 +565,8 @@ describe('LifecycleConfiguration', () => {
             });
             const msg = "'StorageClass' must be different for 'b' actions " +
                 "in same 'Rule' with prefix ''";
-            const expected = errors.InvalidRequest.customizeDescription(msg);
-            assert.deepStrictEqual(error, expected);
+            expect(error.is.InvalidRequest).toBeTruthy();
+            expect(error.description).toEqual(msg);
         });
     });
 
@@ -598,8 +597,8 @@ describe('LifecycleConfiguration', () => {
             });
             const msg = "Found mixed 'Date' and 'Days' based Transition " +
                 "actions in lifecycle rule for prefix ''";
-            const expected = errors.InvalidRequest.customizeDescription(msg);
-            assert.deepStrictEqual(error, expected);
+            expect(error.is.InvalidRequest).toBeTruthy();
+            expect(error.description).toEqual(msg);
         });
 
         it('should return error when time type differs across expiration',
@@ -611,8 +610,8 @@ describe('LifecycleConfiguration', () => {
                 });
                 const msg = "Found mixed 'Date' and 'Days' based Expiration and " +
                 "Transition actions in lifecycle rule for prefix ''";
-                const expected = errors.InvalidRequest.customizeDescription(msg);
-                assert.deepStrictEqual(error, expected);
+                expect(error.is.InvalidRequest).toBeTruthy();
+                expect(error.description).toEqual(msg);
             });
     });
 
@@ -627,8 +626,8 @@ describe('LifecycleConfiguration', () => {
             const date = 'Fri, 01 Jan 2016 00:00:00 GMT';
             const error = lifecycleConfiguration._checkDate(date);
             const msg = 'Date must be in ISO 8601 format';
-            const expected = errors.InvalidArgument.customizeDescription(msg);
-            assert.deepStrictEqual(error, expected);
+            expect(error.is.InvalidArgument).toBeTruthy();
+            expect(error.description).toEqual(msg);
         });
     });
 
@@ -673,8 +672,8 @@ describe('LifecycleConfiguration', () => {
                 lifecycleConfiguration._parseNoncurrentVersionTransition(rule);
             const msg = "'NoncurrentDays' in NoncurrentVersionTransition " +
                 'action must be nonnegative';
-            const error = errors.InvalidArgument.customizeDescription(msg);
-            assert.deepStrictEqual(result.error, error);
+            expect(result.error.is.InvalidArgument).toBeTruthy();
+            expect(result.error.description).toEqual(msg);
         });
     });
 
@@ -717,8 +716,8 @@ describe('LifecycleConfiguration', () => {
             rule.Transition[0].Days[0] = '-1';
             const result = lifecycleConfiguration._parseTransition(rule);
             const msg = "'Days' in Transition action must be nonnegative";
-            const error = errors.InvalidArgument.customizeDescription(msg);
-            assert.deepStrictEqual(result.error, error);
+            expect(result.error.is.InvalidArgument).toBeTruthy();
+            expect(result.error.description).toEqual(msg);
         });
 
         it('should return parsed result object with error when two ' +
@@ -731,8 +730,8 @@ describe('LifecycleConfiguration', () => {
                 "'a' for prefix 'prefix' must be at least one day apart from " +
                 "prefix 'prefix' in the 'Transition' action for StorageClass " +
                 "'b'";
-            const error = errors.InvalidArgument.customizeDescription(msg);
-            assert.deepStrictEqual(result.error, error);
+            expect(result.error.is.InvalidArgument).toBeTruthy();
+            expect(result.error.description).toEqual(msg);
         });
     });
 
@@ -757,8 +756,8 @@ describe('LifecycleConfiguration', () => {
                 "'a' for prefix 'prefix' must be at least one day apart from " +
                 "prefix 'prefix' in the 'Transition' action for StorageClass " +
                 "'b'";
-            const error = errors.InvalidArgument.customizeDescription(msg);
-            assert.deepStrictEqual(result.error, error);
+            expect(result.error.is.InvalidArgument).toBeTruthy();
+            expect(result.error.description).toEqual(msg);
         });
     });
 
@@ -813,7 +812,7 @@ describe('LifecycleConfiguration', () => {
                 storageClass: 'a',
             };
             const error = lifecycleConfiguration._checkTimeGap(params);
-            assert(error.InvalidArgument);
+            expect(error.is.InvalidArgument).toBeTruthy();
         });
 
         it('should not return error when transitions have dates greater than ' +
@@ -852,7 +851,7 @@ describe('LifecycleConfiguration', () => {
                 storageClass: 'a',
             };
             const error = lifecycleConfiguration._checkTimeGap(params);
-            assert(error.InvalidArgument);
+            expect(error.is.InvalidArgument).toBeTruthy();
         });
     });
 });

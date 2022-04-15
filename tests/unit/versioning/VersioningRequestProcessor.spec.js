@@ -3,7 +3,7 @@ const async = require('async');
 
 const Version = require('../../../lib/versioning/Version').Version;
 
-const errors = require('../../../lib/errors');
+const errors = require('../../../lib/errors').default;
 const WGM = require('../../../lib/versioning/WriteGatheringManager');
 const WriteCache = require('../../../lib/versioning/WriteCache');
 const VSP = require('../../../lib/versioning/VersioningRequestProcessor');

@@ -20,10 +20,10 @@ describe('v2: headerAuthCheck', () => {
         const res = headerAuthCheck(request, log, {});
         if (test.error) {
             assert.notStrictEqual(res.err, undefined);
-            assert.strictEqual(res.err.InvalidToken, true);
+            assert.strictEqual(res.err.is.InvalidToken, true);
         } else {
             assert.notStrictEqual(res.err, undefined);
-            assert.notStrictEqual(res.err.InvalidToken, true);
+            assert.notStrictEqual(res.err.is.InvalidToken, true);
         }
     }));
 });
