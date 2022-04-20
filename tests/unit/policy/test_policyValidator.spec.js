@@ -1,6 +1,5 @@
 'use strict'; // eslint-disable-line strict
 
-const assert = require('assert');
 const { validateUserPolicy, validateResourcePolicy } =
     require('../../../lib/policy/policyValidator');
 const { default: errors, ArsenalError } = require('../../../lib/errors');
