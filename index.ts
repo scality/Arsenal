@@ -1,3 +1,5 @@
+import { validateUserPolicy } from './lib/policy/policyValidator'
+
 export { default as errors } from './lib/errors';
 
 export const auth = require('./lib/auth/auth');
@@ -36,7 +38,7 @@ export const algorithms = {
 
 export const policies = {
     evaluators: require('./lib/policyEvaluator/evaluator.js'),
-    validateUserPolicy: require('./lib/policy/policyValidator').validateUserPolicy,
+    validateUserPolicy,
     evaluatePrincipal: require('./lib/policyEvaluator/principal'),
     RequestContext: require('./lib/policyEvaluator/RequestContext.js'),
     requestUtils: require('./lib/policyEvaluator/requestUtils'),

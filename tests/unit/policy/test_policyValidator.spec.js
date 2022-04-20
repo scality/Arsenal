@@ -1,10 +1,9 @@
 'use strict'; // eslint-disable-line strict
 
 const assert = require('assert');
-const policyValidator = require('../../../lib/policy/policyValidator');
-const errors = require('../../../lib/errors').default;
-const validateUserPolicy = policyValidator.validateUserPolicy;
-const validateResourcePolicy = policyValidator.validateResourcePolicy;
+const { validateUserPolicy, validateResourcePolicy } =
+    require('../../../lib/policy/policyValidator');
+const { default: errors, ArsenalError } = require('../../../lib/errors');
 const successRes = { error: null, valid: true };
 const sampleUserPolicy = {
     Version: '2012-10-17',
@@ -48,13 +47,13 @@ const errDict = {
 function failRes(policyType, errDescription) {
     let error;
     if (policyType === 'user') {
-        error = Object.assign({}, errors.MalformedPolicyDocument);
+        error = errors.MalformedPolicyDocument;
     }
     if (policyType === 'resource') {
-        error = Object.assign({}, errors.MalformedPolicy);
+        error = errors.MalformedPolicy;
     }
     if (errDescription || error.description) {
-        error.description = errDescription || error.description;
+        error = error.customizeDescription(errDescription || error.description);
     }
     return { error, valid: false };
 }
@@ -67,7 +66,12 @@ function check(input, expected, policyType) {
     if (policyType === 'resource') {
         result = validateResourcePolicy(JSON.stringify(input));
     }
-    assert.deepStrictEqual(result, expected);
+    expect(result.valid).toEqual(expected.valid);
+    if (!result.valid) {
+        expect(result.error.type).toEqual(expected.error.type);
+        expect(result.error.description).toEqual(expected.error.description);
+        expect(result.error).toBeInstanceOf(ArsenalError);
+    }
 }
 
 let userPolicy;
@@ -85,13 +89,21 @@ describe('Policies validation - Invalid JSON', () => {
         const result = validateUserPolicy('{"Version":"2012-10-17",' +
         '"Statement":{"Effect":"Allow""Action":"s3:PutObject",' +
         '"Resource":"arn:aws:s3*"}}');
-        assert.deepStrictEqual(result, failRes(user));
+        const fail = failRes(user);
+        expect(result.valid).toBeFalsy();
+        expect(result.error.type).toEqual(fail.error.type);
+        expect(result.error.description).toEqual(fail.error.description);
+        expect(result.error).toBeInstanceOf(ArsenalError);
     });
     it('should return error for invaild resource policy JSON', () => {
         const result = validateResourcePolicy('{"Version":"2012-10-17",' +
         '"Statement":{"Effect":"Allow""Action":"s3:PutObject",' +
         '"Resource":"arn:aws:s3*"}}');
-        assert.deepStrictEqual(result, failRes(resource));
+        const fail = failRes(resource);
+        expect(result.valid).toBeFalsy();
+        expect(result.error.type).toEqual(fail.error.type);
+        expect(result.error.description).toEqual(fail.error.description);
+        expect(result.error).toBeInstanceOf(ArsenalError);
     });
 });
 
