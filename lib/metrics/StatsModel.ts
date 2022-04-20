@@ -1,21 +1,21 @@
-const async = require('async');
+import async from 'async';
+import StatsClient from './StatsClient';
+import { Logger } from 'werelogs';
 
-const StatsClient = require('./StatsClient');
+export type Callback = (error: Error | null, value?: any) => void;
 
-/**
- * @class StatsModel
- *
+ /**
  * @classdesc Extend and overwrite how timestamps are normalized by minutes
  * rather than by seconds
  */
-class StatsModel extends StatsClient {
+export default class StatsModel extends StatsClient {
     /**
     * Utility method to convert 2d array rows to columns, and vice versa
     * See also: https://docs.ruby-lang.org/en/2.0.0/Array.html#method-i-zip
-    * @param {array} arrays - 2d array of integers
-    * @return {array} converted array
+    * @param arrays - 2d array of integers
+    * @return converted array
     */
-    _zip(arrays) {
+    _zip(arrays: number[][]) {
         if (arrays.length > 0 && arrays.every(a => Array.isArray(a))) {
             return arrays[0].map((_, i) => arrays.map(a => a[i]));
         }
@@ -24,10 +24,10 @@ class StatsModel extends StatsClient {
 
     /**
     * normalize to the nearest interval
-    * @param {object} d - Date instance
-    * @return {number} timestamp - normalized to the nearest interval
+    * @param d - Date instance
+    * @return timestamp - normalized to the nearest interval
     */
-    _normalizeTimestamp(d) {
+    _normalizeTimestamp(d: Date) {
         const m = d.getMinutes();
         return d.setMinutes(m - m % (Math.floor(this._interval / 60)), 0, 0);
     }
@@ -36,19 +36,20 @@ class StatsModel extends StatsClient {
     * override the method to get the count as an array of integers separated
     * by each interval
     * typical input looks like [[null, '1'], [null, '2'], [null, null]...]
-    * @param {array} arr - each index contains the result of each batch command
+    * @param arr - each index contains the result of each batch command
     *   where index 0 signifies the error and index 1 contains the result
-    * @return {array} array of integers, ordered from most recent interval to
+    * @return array of integers, ordered from most recent interval to
     *   oldest interval with length of (expiry / interval)
     */
-    _getCount(arr) {
+    // @ts-expect-errors
+    _getCount(arr: [any, string | null][]): number[] {
         const size = Math.floor(this._expiry / this._interval);
         const array = arr.reduce((store, i) => {
-            let num = parseInt(i[1], 10);
+            let num = parseInt(i[1] ?? '', 10);
             num = Number.isNaN(num) ? 0 : num;
             store.push(num);
             return store;
-        }, []);
+        }, [] as number[]);
 
         if (array.length < size) {
             array.push(...Array(size - array.length).fill(0));
@@ -59,12 +60,11 @@ class StatsModel extends StatsClient {
     /**
     * wrapper on `getStats` that handles a list of keys
     * override the method to reduce the returned 2d array from `_getCount`
-    * @param {object} log - Werelogs request logger
-    * @param {array} ids - service identifiers
-    * @param {callback} cb - callback to call with the err/result
-    * @return {undefined}
+    * @param log - Werelogs request logger
+    * @param ids - service identifiers
+    * @param cb - callback to call with the err/result
     */
-    getAllStats(log, ids, cb) {
+    getAllStats(log: Logger, ids: string[], cb: Callback) {
         if (!this._redis) {
             return cb(null, {});
         }
@@ -75,8 +75,8 @@ class StatsModel extends StatsClient {
             '500s': Array(size).fill(0),
             'sampleDuration': this._expiry,
         };
-        const requests = [];
-        const errors = [];
+        const requests: any[] = [];
+        const errors: any[] = [];
 
         if (ids.length === 0) {
             return cb(null, statsRes);
@@ -112,12 +112,11 @@ class StatsModel extends StatsClient {
 
     /**
      * Handles getting a list of global keys.
-     * @param {array} ids - Service identifiers
-     * @param {object} log - Werelogs request logger
-     * @param {function} cb - Callback
-     * @return {undefined}
+     * @param ids - Service identifiers
+     * @param log - Werelogs request logger
+     * @param cb - Callback
      */
-    getAllGlobalStats(ids, log, cb) {
+    getAllGlobalStats(ids: string[], log: Logger, cb: Callback) {
         const reqsKeys = ids.map(key => (['get', key]));
         return this._redis.batch(reqsKeys, (err, res) => {
             const statsRes = { requests: 0 };
@@ -145,29 +144,29 @@ class StatsModel extends StatsClient {
 
     /**
      * normalize date timestamp to the nearest hour
-     * @param {Date} d - Date instance
-     * @return {number} timestamp - normalized to the nearest hour
+     * @param d - Date instance
+     * @return timestamp - normalized to the nearest hour
      */
-    normalizeTimestampByHour(d) {
+    normalizeTimestampByHour(d: Date) {
         return d.setMinutes(0, 0, 0);
     }
 
     /**
      * get previous hour to date given
-     * @param {Date} d - Date instance
-     * @return {number} timestamp - one hour prior to date passed
+     * @param d - Date instance
+     * @return timestamp - one hour prior to date passed
      */
-    _getDatePreviousHour(d) {
+    _getDatePreviousHour(d: Date) {
         return d.setHours(d.getHours() - 1);
     }
 
     /**
      * get list of sorted set key timestamps
-     * @param {number} epoch - epoch time
-     * @return {array} array of sorted set key timestamps
+     * @param epoch - epoch time
+     * @return array of sorted set key timestamps
      */
-    getSortedSetHours(epoch) {
-        const timestamps = [];
+    getSortedSetHours(epoch: number) {
+        const timestamps: number[] = [];
         let date = this.normalizeTimestampByHour(new Date(epoch));
         while (timestamps.length < 24) {
             timestamps.push(date);
@@ -178,22 +177,26 @@ class StatsModel extends StatsClient {
 
     /**
      * get the normalized hour timestamp for given epoch time
-     * @param {number} epoch - epoch time
-     * @return {string} normalized hour timestamp for given time
+     * @param epoch - epoch time
+     * @return normalized hour timestamp for given time
      */
-    getSortedSetCurrentHour(epoch) {
+    getSortedSetCurrentHour(epoch: number) {
         return this.normalizeTimestampByHour(new Date(epoch));
     }
 
     /**
      * helper method to add element to a sorted set, applying TTL if new set
-     * @param {string} key - name of key
-     * @param {integer} score - score used to order set
-     * @param {string} value - value to store
-     * @param {callback} cb - callback
-     * @return {undefined}
+     * @param key - name of key
+     * @param score - score used to order set
+     * @param value - value to store
+     * @param cb - callback
      */
-    addToSortedSet(key, score, value, cb) {
+    addToSortedSet(
+        key: string,
+        score: number,
+        value: string,
+        cb: (error: Error | null, value?: any) => void,
+    ) {
         this._redis.exists(key, (err, resCode) => {
             if (err) {
                 return cb(err);
@@ -206,14 +209,14 @@ class StatsModel extends StatsClient {
                 const ttl = Math.ceil(
                     (msInADay - (Date.now() - nearestHour)) / 1000);
                 const cmds = [
-                    ['zadd', key, score, value],
-                    ['expire', key, ttl],
+                    ['zadd', key, score.toString(), value],
+                    ['expire', key, ttl.toString()],
                 ];
                 return this._redis.batch(cmds, (err, res) => {
                     if (err) {
                         return cb(err);
                     }
-                    const cmdErr = res.find(r => r[0] !== null);
+                    const cmdErr = res.find((r: any) => r[0] !== null);
                     if (cmdErr) {
                         return cb(cmdErr);
                     }
@@ -225,5 +228,3 @@ class StatsModel extends StatsClient {
         });
     }
 }
-
-module.exports = StatsModel;

@@ -1,62 +1,68 @@
-const async = require('async');
+import async from 'async';
+import RedisClient from './RedisClient';
+import { Logger } from 'werelogs';
 
-class StatsClient {
+export type Callback = (error: Error | null, value?: any) => void;
+
+export default class StatsClient {
+    _redis: RedisClient;
+    _interval: number;
+    _expiry: number;
+
     /**
     * @constructor
-    * @param {object} redisClient - RedisClient instance
-    * @param {number} interval - sampling interval by seconds
-    * @param {number} expiry - sampling duration by seconds
+    * @param redisClient - RedisClient instance
+    * @param interval - sampling interval by seconds
+    * @param expiry - sampling duration by seconds
     */
-    constructor(redisClient, interval, expiry) {
+    constructor(redisClient: RedisClient, interval: number, expiry: number) {
         this._redis = redisClient;
         this._interval = interval;
         this._expiry = expiry;
         return this;
     }
 
-    /*
-    * Utility function to use when callback is undefined
-    */
+    /** Utility function to use when callback is undefined */
     _noop() {}
 
     /**
     * normalize to the nearest interval
-    * @param {object} d - Date instance
-    * @return {number} timestamp - normalized to the nearest interval
+    * @param d - Date instance
+    * @return timestamp - normalized to the nearest interval
     */
-    _normalizeTimestamp(d) {
+    _normalizeTimestamp(d: Date): number {
         const s = d.getSeconds();
         return d.setSeconds(s - s % this._interval, 0);
     }
 
     /**
     * set timestamp to the previous interval
-    * @param {object} d - Date instance
-    * @return {number} timestamp - set to the previous interval
+    * @param d - Date instance
+    * @return timestamp - set to the previous interval
     */
-    _setPrevInterval(d) {
+    _setPrevInterval(d: Date): number {
         return d.setSeconds(d.getSeconds() - this._interval);
     }
 
     /**
     * build redis key to get total number of occurrences on the server
-    * @param {string} name - key name identifier
-    * @param {Date} date - Date instance
-    * @return {string} key - key for redis
+    * @param name - key name identifier
+    * @param d - Date instance
+    * @return key - key for redis
     */
-    buildKey(name, date) {
-        return `${name}:${this._normalizeTimestamp(date)}`;
+    buildKey(name: string, d: Date): string {
+        return `${name}:${this._normalizeTimestamp(d)}`;
     }
 
     /**
     * reduce the array of values to a single value
     * typical input looks like [[null, '1'], [null, '2'], [null, null]...]
-    * @param {array} arr - Date instance
-    * @return {string} key - key for redis
+    * @param arr - Date instance
+    * @return key - key for redis
     */
-    _getCount(arr) {
+    _getCount(arr: [any, string | null][]): number {
         return arr.reduce((prev, a) => {
-            let num = parseInt(a[1], 10);
+            let num = parseInt(a[1] ?? '', 10);
             num = Number.isNaN(num) ? 0 : num;
             return prev + num;
         }, 0);
@@ -64,18 +70,20 @@ class StatsClient {
 
     /**
     * report/record a new request received on the server
-    * @param {string} id - service identifier
-    * @param {number} incr - optional param increment
-    * @param {function} cb - callback
-    * @return {undefined}
+    * @param id - service identifier
+    * @param incr - optional param increment
     */
-    reportNewRequest(id, incr, cb) {
+    reportNewRequest(
+        id: string,
+        incr?: number | ((error: Error | null, value?: any) => void),
+        cb?: (error: Error | null, value?: any) => void,
+    ) {
         if (!this._redis) {
             return undefined;
         }
 
-        let callback;
-        let amount;
+        let callback: (error: Error | null, value?: any) => void;
+        let amount: number;
         if (typeof incr === 'function') {
             // In case where optional `incr` is not passed, but `cb` is passed
             callback = incr;
@@ -92,35 +100,31 @@ class StatsClient {
 
     /**
      * Increment the given key by the given value.
-     * @param {String} key - The Redis key to increment
-     * @param {Number} incr - The value to increment by
-     * @param {function} [cb] - callback
-     * @return {undefined}
+     * @param key - The Redis key to increment
+     * @param incr - The value to increment by
+     * @param [cb] - callback
      */
-    incrementKey(key, incr, cb) {
+    incrementKey(key: string, incr: number, cb: Callback) {
         const callback = cb || this._noop;
         return this._redis.incrby(key, incr, callback);
     }
 
     /**
      * Decrement the given key by the given value.
-     * @param {String} key - The Redis key to decrement
-     * @param {Number} decr - The value to decrement by
-     * @param {function} [cb] - callback
-     * @return {undefined}
+     * @param key - The Redis key to decrement
+     * @param decr - The value to decrement by
+     * @param [cb] - callback
      */
-    decrementKey(key, decr, cb) {
+    decrementKey(key: string, decr: number, cb: Callback) {
         const callback = cb || this._noop;
         return this._redis.decrby(key, decr, callback);
     }
 
     /**
     * report/record a request that ended up being a 500 on the server
-    * @param {string} id - service identifier
-    * @param {callback} cb - callback
-    * @return {undefined}
+    * @param id - service identifier
     */
-    report500(id, cb) {
+    report500(id: string, cb: (error: Error | null, value?: any) => void) {
         if (!this._redis) {
             return undefined;
         }
@@ -131,12 +135,11 @@ class StatsClient {
 
     /**
     * wrapper on `getStats` that handles a list of keys
-    * @param {object} log - Werelogs request logger
-    * @param {array} ids - service identifiers
-    * @param {callback} cb - callback to call with the err/result
-    * @return {undefined}
+    * @param log - Werelogs request logger
+    * @param ids - service identifiers
+    * @param cb - callback to call with the err/result
     */
-    getAllStats(log, ids, cb) {
+    getAllStats(log: Logger, ids: string[], cb: Callback) {
         if (!this._redis) {
             return cb(null, {});
         }
@@ -150,7 +153,7 @@ class StatsClient {
         let errors = 0;
 
         // for now set concurrency to default of 10
-        return async.eachLimit(ids, 10, (id, done) => {
+        return async.eachLimit(ids, 10, (id: string, done) => {
             this.getStats(log, id, (err, res) => {
                 if (err) {
                     return done(err);
@@ -175,19 +178,17 @@ class StatsClient {
 
     /**
     * get stats for the last x seconds, x being the sampling duration
-    * @param {object} log - Werelogs request logger
-    * @param {string} id - service identifier
-    * @param {callback} cb - callback to call with the err/result
-    * @return {undefined}
+    * @param log - Werelogs request logger
+    * @param id - service identifier
     */
-    getStats(log, id, cb) {
+    getStats(log: Logger, id: string, cb: (error: Error | null, value?: any) => void) {
         if (!this._redis) {
             return cb(null, {});
         }
         const d = new Date();
         const totalKeys = Math.floor(this._expiry / this._interval);
-        const reqsKeys = [];
-        const req500sKeys = [];
+        const reqsKeys: ['get', string][] = [];
+        const req500sKeys: ['get', string][] = [];
         for (let i = 0; i < totalKeys; i++) {
             reqsKeys.push(['get', this.buildKey(`${id}:requests`, d)]);
             req500sKeys.push(['get', this.buildKey(`${id}:500s`, d)]);
@@ -221,11 +222,9 @@ class StatsClient {
                 */
                 return cb(null, statsRes);
             }
-            statsRes.requests = this._getCount(results[0]);
-            statsRes['500s'] = this._getCount(results[1]);
+            statsRes.requests = this._getCount((results as any)[0]);
+            statsRes['500s'] = this._getCount((results as any)[1]);
             return cb(null, statsRes);
         });
     }
 }
-
-module.exports = StatsClient;

@@ -1,6 +1,6 @@
 const assert = require('assert');
 
-const ZenkoMetrics = require('../../../lib/metrics/ZenkoMetrics');
+const ZenkoMetrics = require('../../../lib/metrics/ZenkoMetrics').default;
 
 describe('ZenkoMetrics', () => {
     let counter;
