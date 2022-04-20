@@ -1,15 +1,27 @@
-const ipCheck = require('../ipCheck');
+import * as ipCheck from '../ipCheck'
+import { IncomingMessage } from 'http'
 
+export interface S3Config {
+    requests: {
+        trustedProxyCIDRs: string[],
+        extractClientIPFromHeader: string
+    }
+}
+
+// TODO
+//   I'm not sure about this behavior.
+//   Should it returns string | string[] | undefined or string ?
 /**
  * getClientIp - Gets the client IP from the request
- * @param {object} request - http request object
- * @param {object} s3config - s3 config
- * @return {string} - returns client IP from the request
+ * @param request - http request object
+ * @param s3config - s3 config
+ * @return - returns client IP from the request
  */
-function getClientIp(request, s3config) {
-    const requestConfig = s3config ? s3config.requests : {};
+export function getClientIp(request: IncomingMessage, s3config?: S3Config): string {
+    const requestConfig = s3config?.requests;
     const remoteAddress = request.socket.remoteAddress;
-    const clientIp = requestConfig ? remoteAddress : request.headers['x-forwarded-for'] || remoteAddress;
+    // TODO What to do if clientIp === undefined ?
+    const clientIp = (requestConfig ? remoteAddress : request.headers['x-forwarded-for'] || remoteAddress)?.toString() ?? '';
     if (requestConfig) {
         const { trustedProxyCIDRs, extractClientIPFromHeader } = requestConfig;
         /**
@@ -18,15 +30,11 @@ function getClientIp(request, s3config) {
          * which header to be used to extract client IP
          */
         if (ipCheck.ipMatchCidrList(trustedProxyCIDRs, clientIp)) {
-            const ipFromHeader = request.headers[extractClientIPFromHeader];
+            const ipFromHeader = request.headers[extractClientIPFromHeader]?.toString();
             if (ipFromHeader && ipFromHeader.trim().length) {
                 return ipFromHeader.split(',')[0].trim();
             }
         }
     }
-    return clientIp;
+    return clientIp?.toString() ?? '';
 }
-
-module.exports = {
-    getClientIp,
-};
