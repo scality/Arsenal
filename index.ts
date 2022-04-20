@@ -1,5 +1,9 @@
+import * as evaluators from './lib/policyEvaluator/evaluator';
+import evaluatePrincipal from './lib/policyEvaluator/principal';
+import RequestContext from './lib/policyEvaluator/RequestContext.js';
+import * as requestUtils from './lib/policyEvaluator/requestUtils';
+import * as actionMaps from './lib/policyEvaluator/utils/actionMaps';
 import { validateUserPolicy } from './lib/policy/policyValidator'
-
 export { default as errors } from './lib/errors';
 export * as auth from './lib/auth/auth';
 export * as constants from './lib/constants';
@@ -33,12 +37,12 @@ export const algorithms = {
 };
 
 export const policies = {
-    evaluators: require('./lib/policyEvaluator/evaluator.js'),
+    evaluators,
     validateUserPolicy,
-    evaluatePrincipal: require('./lib/policyEvaluator/principal'),
-    RequestContext: require('./lib/policyEvaluator/RequestContext.js'),
-    requestUtils: require('./lib/policyEvaluator/requestUtils'),
-    actionMaps: require('./lib/policyEvaluator/utils/actionMaps'),
+    evaluatePrincipal,
+    RequestContext,
+    requestUtils,
+    actionMaps,
 };
 
 export const testing = {
