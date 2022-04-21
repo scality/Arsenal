@@ -10,14 +10,23 @@ export type Is = { [_ in Name]: boolean };
 /** Mapping of all possible Errors. It has the format { [Name]: Error } */
 export type Errors = { [_ in Name]: ArsenalError };
 
+// This object is reused constantly through createIs, we store it there
+// to avoid recomputation.
+const isBase = Object.fromEntries(
+    Object.keys(rawErrors).map(key => [key, false])
+) as Is;
+
 // This contains some metaprog. Be careful.
 // Proxy can be found on MDN.
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy
 // While this could seems better to avoid metaprog, this allows us to enforce
 // type-checking properly while avoiding all errors that could happen at runtime.
-const createIs = (type: Name) => {
-    const get = (_: {}, value: string | symbol) => type === value;
-    return new Proxy({}, { get }) as Is;
+// Even if some errors are made in JavaScript, like using err.is.NonExistingError,
+// the Proxy will return false.
+const createIs = (type: Name): Is => {
+    const get = (is: Is, value: string | symbol) => is[value] ?? false;
+    const final = Object.freeze({ ...isBase, [type]: true })
+    return new Proxy(final, { get });
 };
 
 export class ArsenalError extends Error {
