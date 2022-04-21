@@ -1,17 +1,33 @@
-const { meetConditions } = require('./evaluator');
+import { meetConditions } from './evaluator';
+import RequestContext from './RequestContext';
+import { Logger } from 'werelogs';
+
+export type Params = { rc: RequestContext; log: Logger; trustedPolicy: any; targetAccountId: string }
+export type Valid = { Federated: any; AWS: any; Service: any }
+export type Statement = {
+    Condition: any;
+    NotPrincipal?: Valid;
+    Principal?: Valid;
+    Effect: any;
+    Federated: boolean;
+}
 
 /**
  * Class with methods to manage the policy 'principal' validation
  */
-class Principal {
+export default class Principal {
     /**
      * Function to evaluate conditions if needed
      *
-     * @param {object} params - Evaluation parameters
-     * @param {object} statement - Statement policy field
-     * @return {boolean} True if meet conditions
+     * @param params - Evaluation parameters
+     * @param statement - Statement policy field
+     * @return True if meet conditions
      */
-    static _evaluateCondition(params, statement) {
+    static _evaluateCondition(
+        params: Params,
+        statement: Statement,
+        // TODO Fix return type
+    ): any {
         if (statement.Condition) {
             return meetConditions(params.rc, statement.Condition, params.log);
         }
@@ -21,15 +37,19 @@ class Principal {
     /**
      * Checks principal field against valid principals array
      *
-     * @param {object} params - Evaluation parameters
-     * @param {object} statement - Statement policy field
-     * @param {object} valids - Valid principal fields
-     * @return {string} result of principal evaluation, either 'Neutral',
+     * @param params - Evaluation parameters
+     * @param statement - Statement policy field
+     * @param valids - Valid principal fields
+     * @return result of principal evaluation, either 'Neutral',
      *  'Allow' or 'Deny'
      */
-    static _evaluatePrincipalField(params, statement, valids) {
+    static _evaluatePrincipalField(
+        params: Params,
+        statement: Statement,
+        valids: Valid,
+    ): 'Neutral' | 'Allow' | 'Deny' {
         const reverse = !!statement.NotPrincipal;
-        const principal = statement.Principal || statement.NotPrincipal;
+        const principal = (statement.Principal || statement.NotPrincipal)!;
         if (typeof principal === 'string' && principal === '*') {
             if (reverse) {
                 // In case of anonymous NotPrincipal, this will neutral everyone
@@ -44,7 +64,7 @@ class Principal {
             return 'Deny';
         }
         let ref = [];
-        let toCheck = [];
+        let toCheck: string[] = [];
         if (valids.Federated && principal.Federated) {
             ref = valids.Federated;
             toCheck = principal.Federated;
@@ -95,18 +115,18 @@ class Principal {
      * Function to evaluate principal of statements against a valid principal
      * array
      *
-     * @param {object} params - Evaluation parameters
-     * @param {object} valids - Valid principal fields
-     * @return {string} result of principal evaluation, either 'Allow' or 'Deny'
+     * @param params - Evaluation parameters
+     * @param valids - Valid principal fields
+     * @return result of principal evaluation, either 'Allow' or 'Deny'
      */
-    static _evaluatePrincipal(params, valids) {
+    static _evaluatePrincipal(params: Params, valids: Valid): 'Allow' | 'Deny' {
         const doc = params.trustedPolicy;
         let statements = doc.Statement;
         if (!Array.isArray(statements)) {
             statements = [statements];
         }
         const len = statements.length;
-        let authorized = 'Deny';
+        let authorized: 'Allow' | 'Deny' = 'Deny';
         for (let i = 0; i < len; ++i) {
             const statement = statements[i];
             const result = Principal._evaluatePrincipalField(params,
@@ -123,14 +143,10 @@ class Principal {
     /**
      * Function to evaluate principal for a policy
      *
-     * @param {object} params - Evaluation parameters
-     * @return {object} {
-     *  result: 'Allow' or 'Deny',
-     *  checkAction: true or false,
-     * }
+     * @param params - Evaluation parameters
      */
-    static evaluatePrincipal(params) {
-        let valids = null;
+    static evaluatePrincipal(params: Params): { result: 'Allow' | 'Deny'; checkAction: boolean } {
+        let valids: any = null;
         let checkAction = false;
         const account = params.rc.getRequesterAccountId();
         const targetAccount = params.targetAccountId;
@@ -176,5 +192,3 @@ class Principal {
         };
     }
 }
-
-module.exports = Principal;

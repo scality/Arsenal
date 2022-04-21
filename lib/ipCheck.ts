@@ -29,11 +29,11 @@ export function checkIPinRangeOrMatch(
 }
 
 /**
-* Parse IP address into object representation
-* @param ip - IPV4/IPV6/IPV4-mapped IPV6 address
-* @return parsedIp - Object representation of parsed IP
-*/
-export function parseIp(ip: string): ipaddr.IPv4 | ipaddr.IPv6 | undefined {
+ * Parse IP address into object representation
+ * @param ip - IPV4/IPV6/IPV4-mapped IPV6 address
+ * @return parsedIp - Object representation of parsed IP
+ */
+export function parseIp(ip: string): ipaddr.IPv4 | ipaddr.IPv6 | {} {
     if (ipaddr.IPv4.isValid(ip)) {
         return ipaddr.parse(ip);
     }
@@ -41,18 +41,18 @@ export function parseIp(ip: string): ipaddr.IPv4 | ipaddr.IPv6 | undefined {
         // also parses IPv6 mapped IPv4 addresses into IPv4 representation
         return ipaddr.process(ip);
     }
+    return {};
 }
 
-
 /**
-* Checks if an IP adress matches a given list of CIDR ranges
-* @param cidrList - List of CIDR ranges
-* @param ip - IP address
-* @return - true if there is match or false for no match
-*/
+ * Checks if an IP adress matches a given list of CIDR ranges
+ * @param cidrList - List of CIDR ranges
+ * @param ip - IP address
+ * @return - true if there is match or false for no match
+ */
 export function ipMatchCidrList(cidrList: string[], ip: string): boolean {
     const parsedIp = parseIp(ip);
-    return cidrList.some(item => {
+    return cidrList.some((item) => {
         let cidr: string | undefined;
         // patch the cidr if range is not specified
         if (item.indexOf('/') === -1) {
@@ -62,6 +62,10 @@ export function ipMatchCidrList(cidrList: string[], ip: string): boolean {
                 cidr = `${item}/32`;
             }
         }
-        return parsedIp && checkIPinRangeOrMatch(cidr || item, parsedIp);
+        return (
+            (parsedIp instanceof ipaddr.IPv4 ||
+                parsedIp instanceof ipaddr.IPv6) &&
+            checkIPinRangeOrMatch(cidr || item, parsedIp)
+        );
     });
 }

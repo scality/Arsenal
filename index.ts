@@ -1,6 +1,6 @@
 import * as evaluators from './lib/policyEvaluator/evaluator';
 import evaluatePrincipal from './lib/policyEvaluator/principal';
-import RequestContext from './lib/policyEvaluator/RequestContext.js';
+import RequestContext from './lib/policyEvaluator/RequestContext';
 import * as requestUtils from './lib/policyEvaluator/requestUtils';
 import * as actionMaps from './lib/policyEvaluator/utils/actionMaps';
 import { validateUserPolicy } from './lib/policy/policyValidator'

@@ -1,109 +1,125 @@
-'use strict'; // eslint-disable-line strict
+import { parseIp } from '../ipCheck';
 
-const parseIp = require('../ipCheck').parseIp;
 // http://docs.aws.amazon.com/IAM/latest/UserGuide/list_s3.html
 // For MPU actions:
 // http://docs.aws.amazon.com/AmazonS3/latest/dev/mpuAndPermissions.html
 // For bucket head and object head:
 // http://docs.aws.amazon.com/AmazonS3/latest/dev/
 // using-with-s3-actions.html
-const {
+import {
     actionMapRQ,
     actionMapIAM,
     actionMapSSO,
     actionMapSTS,
     actionMapMetadata,
-} = require('./utils/actionMaps');
+} from './utils/actionMaps';
 
 const _actionNeedQuotaCheck = {
     objectPut: true,
     objectPutPart: true,
 };
 
-function _findAction(service, method) {
-    if (service === 's3') {
-        return actionMapRQ[method];
+function _findAction(service: string, method: string) {
+    switch (service) {
+        case 's3':
+            return actionMapRQ[method];
+        case 'iam':
+            return actionMapIAM[method];
+        case 'sso':
+            return actionMapSSO[method];
+        case 'ring':
+            return `ring:${method}`;
+        case 'utapi':
+            // currently only method is ListMetrics
+            return `utapi:${method}`;
+        case 'sts':
+            return actionMapSTS[method];
+        case 'metadata':
+            return actionMapMetadata[method];
+        default:
+            return undefined;
     }
-    if (service === 'iam') {
-        return actionMapIAM[method];
-    }
-    if (service === 'sso') {
-        return actionMapSSO[method];
-    }
-    if (service === 'ring') {
-        return `ring:${method}`;
-    }
-    if (service === 'utapi') {
-        // currently only method is ListMetrics
-        return `utapi:${method}`;
-    }
-    if (service === 'sts') {
-        return actionMapSTS[method];
-    }
-    if (service === 'metadata') {
-        return actionMapMetadata[method];
-    }
-    return undefined;
 }
 
-function _buildArn(service, generalResource, specificResource, requesterInfo) {
+function _buildArn(
+    service: string,
+    generalResource?: string,
+    specificResource?: string,
+    requesterInfo?: { accountid: string, targetAccountId: string },
+) {
     // arn:partition:service:region:account-id:resourcetype/resource
-    if (service === 's3') {
-        // arn:aws:s3:::bucket/object
-        // General resource is bucketName
-        if (generalResource && specificResource) {
-            return `arn:aws:s3:::${generalResource}/${specificResource}`;
-        } else if (generalResource) {
-            return `arn:aws:s3:::${generalResource}`;
+    switch (service) {
+        case 's3': {
+            // arn:aws:s3:::bucket/object
+            // General resource is bucketName
+            if (generalResource && specificResource) {
+                return `arn:aws:s3:::${generalResource}/${specificResource}`;
+            } else if (generalResource) {
+                return `arn:aws:s3:::${generalResource}`;
+            }
+            return 'arn:aws:s3:::';
         }
-        return 'arn:aws:s3:::';
-    }
-    if (service === 'iam' || service === 'sts') {
-        // arn:aws:iam::<account-id>:<resource-type>/<resource>
-        let accountId = requesterInfo.accountid;
-        if (service === 'sts') {
-            accountId = requesterInfo.targetAccountId;
-        }
-        if (specificResource) {
-            return `arn:aws:iam::${accountId}:` +
+        case 'iam':
+        case 'sts': {
+            // arn:aws:iam::<account-id>:<resource-type>/<resource>
+            let accountId = requesterInfo!.accountid;
+            if (service === 'sts') {
+                accountId = requesterInfo!.targetAccountId;
+            }
+            if (specificResource) {
+                return `arn:aws:iam::${accountId}:` +
                 `${generalResource}${specificResource}`;
+            }
+            return `arn:aws:iam::${accountId}:${generalResource}`;
         }
-        return `arn:aws:iam::${accountId}:${generalResource}`;
-    }
-    if (service === 'ring') {
-        // arn:aws:iam::<account-id>:<resource-type>/<resource>
-        if (specificResource) {
-            return `arn:aws:ring::${requesterInfo.accountid}:` +
+        case 'ring': {
+            // arn:aws:iam::<account-id>:<resource-type>/<resource>
+            if (specificResource) {
+                return `arn:aws:ring::${requesterInfo!.accountid}:` +
                 `${generalResource}/${specificResource}`;
+            }
+            return `arn:aws:ring::${requesterInfo!.accountid}:${generalResource}`;
         }
-        return `arn:aws:ring::${requesterInfo.accountid}:${generalResource}`;
-    }
-    if (service === 'utapi') {
-        // arn:scality:utapi:::resourcetype/resource
-        // (possible resource types are buckets, accounts or users)
-        if (specificResource) {
-            return `arn:scality:utapi::${requesterInfo.accountid}:` +
+        case 'utapi': {
+            // arn:scality:utapi:::resourcetype/resource
+            // (possible resource types are buckets, accounts or users)
+            if (specificResource) {
+                return `arn:scality:utapi::${requesterInfo!.accountid}:` +
                 `${generalResource}/${specificResource}`;
-        }
-        return `arn:scality:utapi::${requesterInfo.accountid}:` +
+            }
+            return `arn:scality:utapi::${requesterInfo!.accountid}:` +
             `${generalResource}/`;
-    }
-    if (service === 'sso') {
-        if (specificResource) {
-            return `arn:scality:sso:::${generalResource}/${specificResource}`;
         }
-        return `arn:scality:sso:::${generalResource}`;
-    }
-    if (service === 'metadata') {
-        // arn:scality:metadata::<account-id>:<resource-type>/<resource>
-        if (specificResource) {
-            return `arn:scality:metadata::${requesterInfo.accountid}:` +
+        case 'sso': {
+            if (specificResource) {
+                return `arn:scality:sso:::${generalResource}/${specificResource}`;
+            }
+            return `arn:scality:sso:::${generalResource}`;
+        }
+        case 'metadata': {
+            // arn:scality:metadata::<account-id>:<resource-type>/<resource>
+            if (specificResource) {
+                return `arn:scality:metadata::${requesterInfo!.accountid}:` +
                 `${generalResource}/${specificResource}`;
-        }
-        return `arn:scality:metadata::${requesterInfo.accountid}:` +
+            }
+            return `arn:scality:metadata::${requesterInfo!.accountid}:` +
             `${generalResource}/`;
+        }
+        default:
+            return undefined;
     }
-    return undefined;
+}
+
+export type RequesterInfo = {
+    arn: string;
+    accountid: string;
+    targetAccountId: string;
+    externalId: string;
+    parentArn: string;
+    principalType: string;
+    principaltype: string;
+    userid: string;
+    username: string,
 }
 
 /**
@@ -129,12 +145,53 @@ function _buildArn(service, generalResource, specificResource, requesterInfo) {
  * @return {RequestContext} a RequestContext instance
  */
 
-class RequestContext {
-    constructor(headers, query, generalResource, specificResource,
-        requesterIp, sslEnabled, apiMethod,
-        awsService, locationConstraint, requesterInfo,
-        signatureVersion, authType, signatureAge, securityToken, policyArn,
-        action, postXml) {
+export default class RequestContext {
+    _headers: { [key: string]: string | string[] };
+    _query: any;
+    _requesterIp: string;
+    _sslEnabled: boolean;
+    _apiMethod: string;
+    _awsService: string;
+    _generalResource: string;
+    _specificResource: string;
+    _locationConstraint: string;
+    _multiFactorAuthPresent: boolean | null;
+    _multiFactorAuthAge: number | null;
+    _tokenIssueTime: string | null;
+    _requesterInfo: RequesterInfo;
+    _signatureVersion: string;
+    _authType: string;
+    _signatureAge: number;
+    _securityToken: string;
+    _policyArn: string;
+    _action?: string;
+    _needQuota: boolean;
+    _postXml?: string;
+    _requestObjTags: string | null;
+    _existingObjTag: string | null;
+    _needTagEval: boolean;
+    _foundAction?: string;
+    _foundResource?: string;
+
+    constructor(
+        headers: { [key: string]: string | string[] },
+        query: any,
+        generalResource: string,
+        specificResource: string,
+        requesterIp: string,
+        sslEnabled: boolean,
+        apiMethod: string,
+        awsService: string,
+        locationConstraint: string,
+        requesterInfo: RequesterInfo,
+        signatureVersion: string,
+        authType: string,
+        signatureAge: number,
+        securityToken: string,
+        policyArn: string,
+        action?: string,
+        postXml?: string,
+    ) {
         this._headers = headers;
         this._query = query;
         this._requesterIp = requesterIp;
@@ -172,9 +229,9 @@ class RequestContext {
 
     /**
     * Serialize the object
-    * @return {string} - stringified object
+    * @return - stringified object
     */
-    serialize() {
+    serialize(): string {
         const requestInfo = {
             apiMethod: this._apiMethod,
             headers: this._headers,
@@ -205,15 +262,15 @@ class RequestContext {
 
     /**
      * deSerialize the JSON string
-     * @param {string} stringRequest - the stringified requestContext
-     * @param {string} resource - individual specificResource
-     * @return {object} - parsed string
+     * @param stringRequest - the stringified requestContext
+     * @param resource - individual specificResource
+     * @return - parsed string
      */
-    static deSerialize(stringRequest, resource) {
-        let obj;
+    static deSerialize(stringRequest: string, resource?: string) {
+        let obj: any;
         try {
             obj = JSON.parse(stringRequest);
-        } catch (err) {
+        } catch (err: any) {
             return new Error(err);
         }
         if (resource) {
@@ -229,9 +286,9 @@ class RequestContext {
 
     /**
     * Get the request action
-    * @return {string} action
+    * @return action
     */
-    getAction() {
+    getAction(): string {
         if (this._action) {
             return this._action;
         }
@@ -239,36 +296,36 @@ class RequestContext {
             return this._foundAction;
         }
         this._foundAction = _findAction(this._awsService, this._apiMethod);
-        return this._foundAction;
+        return this._foundAction!;
     }
 
     /**
     * Get the resource impacted by the request
-    * @return {string} arn for the resource
+    * @return arn for the resource
     */
-    getResource() {
+    getResource(): string {
         if (this._foundResource) {
             return this._foundResource;
         }
         this._foundResource =
             _buildArn(this._awsService, this._generalResource,
                 this._specificResource, this._requesterInfo);
-        return this._foundResource;
+        return this._foundResource!;
     }
 
 
     /**
      * Set headers
-     * @param {object} headers - request headers
-     * @return {RequestContext} - RequestContext instance
+     * @param headers - request headers
+     * @return - RequestContext instance
      */
-    setHeaders(headers) {
+    setHeaders(headers: { [key: string]: string | string[] }) {
         this._headers = headers;
         return this;
     }
     /**
      * Get headers
-     * @return {object} request headers
+     * @return request headers
      */
     getHeaders() {
         return this._headers;
@@ -276,16 +333,16 @@ class RequestContext {
 
     /**
      * Set query
-     * @param {object} query - request query
-     * @return {RequestContext} - RequestContext instance
+     * @param query - request query
+     * @return - RequestContext instance
      */
-    setQuery(query) {
+    setQuery(query: any) {
         this._query = query;
         return this;
     }
     /**
      * Get query
-     * @return {object} request query
+     * @return request query
      */
     getQuery() {
         return this._query;
@@ -293,16 +350,16 @@ class RequestContext {
 
     /**
      * Set requesterInfo
-     * @param {object} requesterInfo - info about entity making request
-     * @return {RequestContext} - RequestContext instance
+     * @param requesterInfo - info about entity making request
+     * @return - RequestContext instance
      */
-    setRequesterInfo(requesterInfo) {
+    setRequesterInfo(requesterInfo: any) {
         this._requesterInfo = requesterInfo;
         return this;
     }
     /**
      * Get requesterInfo
-     * @return {object} requesterInfo
+     * @return requesterInfo
      */
     getRequesterInfo() {
         return this._requesterInfo;
@@ -310,16 +367,16 @@ class RequestContext {
 
     /**
      * Set requesterIp
-     * @param {string} requesterIp - ip address of requester
-     * @return {RequestContext} - RequestContext instance
+     * @param requesterIp - ip address of requester
+     * @return - RequestContext instance
      */
-    setRequesterIp(requesterIp) {
+    setRequesterIp(requesterIp: string) {
         this._requesterIp = requesterIp;
         return this;
     }
     /**
      * Get requesterIp
-     * @return {object} requesterIp - parsed requesterIp
+     * @return requesterIp - parsed requesterIp
      */
     getRequesterIp() {
         return parseIp(this._requesterIp);
@@ -347,17 +404,17 @@ class RequestContext {
 
     /**
      * Set sslEnabled
-     * @param {boolean} sslEnabled - true if https used
-     * @return {RequestContext} - RequestContext instance
+     * @param sslEnabled - true if https used
+     * @return - RequestContext instance
      */
-    setSslEnabled(sslEnabled) {
+    setSslEnabled(sslEnabled: boolean) {
         this._sslEnabled = sslEnabled;
         return this;
     }
 
     /**
      * Get sslEnabled
-     * @return {boolean} true if sslEnabled, false if not
+     * @return true if sslEnabled, false if not
      */
     getSslEnabled() {
         return !!this._sslEnabled;
@@ -365,11 +422,11 @@ class RequestContext {
 
     /**
      * Set signatureVersion
-     * @param {string} signatureVersion - "AWS" identifies Signature Version 2
+     * @param signatureVersion - "AWS" identifies Signature Version 2
      * and "AWS4-HMAC-SHA256" identifies Signature Version 4
-     * @return {RequestContext} - RequestContext instance
+     * @return - RequestContext instance
      */
-    setSignatureVersion(signatureVersion) {
+    setSignatureVersion(signatureVersion: string) {
         this._signatureVersion = signatureVersion;
         return this;
     }
@@ -377,7 +434,7 @@ class RequestContext {
     /**
      * Get signatureVersion
      *
-     * @return {string} authentication signature version
+     * @return authentication signature version
      * "AWS" identifies Signature Version 2 and
      * "AWS4-HMAC-SHA256" identifies Signature Version 4
      */
@@ -387,17 +444,17 @@ class RequestContext {
 
     /**
      * Set authType
-     * @param {string} authType - REST-HEADER, REST-QUERY-STRING or POST
-     * @return {RequestContext} - RequestContext instance
+     * @param authType - REST-HEADER, REST-QUERY-STRING or POST
+     * @return - RequestContext instance
      */
-    setAuthType(authType) {
+    setAuthType(authType: string) {
         this._authType = authType;
         return this;
     }
 
     /**
      * Get authType
-     * @return {string} authentication type:
+     * @return authentication type:
      * REST-HEADER, REST-QUERY-STRING or POST
      */
     getAuthType() {
@@ -406,19 +463,19 @@ class RequestContext {
 
     /**
      * Set signatureAge
-     * @param {number} signatureAge -- age of signature in milliseconds
+     * @param signatureAge -- age of signature in milliseconds
      * Note that for v2 query auth this will be undefined (since these
      * requests are pre-signed and only come with an expires time so
      * do not know age)
-     * @return {RequestContext} - RequestContext instance
+     * @return - RequestContext instance
      */
-    setSignatureAge(signatureAge) {
+    setSignatureAge(signatureAge: number) {
         this._signatureAge = signatureAge;
         return this;
     }
     /**
      * Get signatureAge
-     * @return {number} age of signature in milliseconds
+     * @return age of signature in milliseconds
      * Note that for v2 query auth this will be undefined (since these
      * requests are pre-signed and only come with an expires time so
      * do not know age)
@@ -429,16 +486,16 @@ class RequestContext {
 
     /**
      * Set locationConstraint
-     * @param {string} locationConstraint - bucket region constraint
-     * @return {RequestContext} - RequestContext instance
+     * @param locationConstraint - bucket region constraint
+     * @return - RequestContext instance
      */
-    setLocationConstraint(locationConstraint) {
+    setLocationConstraint(locationConstraint: string) {
         this._locationConstraint = locationConstraint;
         return this;
     }
     /**
      * Get locationConstraint
-     * @return {string} location constraint of put bucket request
+     * @return location constraint of put bucket request
      */
     getLocationConstraint() {
         return this._locationConstraint;
@@ -446,16 +503,16 @@ class RequestContext {
 
     /**
      * Set awsService
-     * @param {string} awsService receiving request
-     * @return {RequestContext} - RequestContext instance
+     * @param awsService receiving request
+     * @return - RequestContext instance
      */
-    setAwsService(awsService) {
+    setAwsService(awsService: string) {
         this._awsService = awsService;
         return this;
     }
     /**
      * Get awsService
-     * @return {string} awsService receiving request
+     * @return awsService receiving request
      */
     getAwsService() {
         return this._awsService;
@@ -463,19 +520,19 @@ class RequestContext {
 
     /**
      * Set tokenIssueTime
-     * @param {string} tokenIssueTime - Date/time that
+     * @param tokenIssueTime - Date/time that
      * temporary security credentials were issued
      * Only present in requests that are signed using
      * temporary security credentials.
-     * @return {RequestContext} - RequestContext instance
+     * @return - RequestContext instance
      */
-    setTokenIssueTime(tokenIssueTime) {
+    setTokenIssueTime(tokenIssueTime: string) {
         this._tokenIssueTime = tokenIssueTime;
         return this;
     }
     /**
      * Get tokenIssueTime
-     * @return {string} tokenIssueTime
+     * @return tokenIssueTime
      */
     getTokenIssueTime() {
         return this._tokenIssueTime;
@@ -484,17 +541,17 @@ class RequestContext {
 
     /**
      * Set multiFactorAuthPresent
-     * @param {boolean} multiFactorAuthPresent - sets out whether MFA used
+     * @param multiFactorAuthPresent - sets out whether MFA used
      * for request
-     * @return {RequestContext} - RequestContext instance
+     * @return - RequestContext instance
      */
-    setMultiFactorAuthPresent(multiFactorAuthPresent) {
+    setMultiFactorAuthPresent(multiFactorAuthPresent: boolean) {
         this._multiFactorAuthPresent = multiFactorAuthPresent;
         return this;
     }
     /**
      * Get multiFactorAuthPresent
-     * @return {boolean} multiFactorAuthPresent
+     * @return multiFactorAuthPresent
      */
     getMultiFactorAuthPresent() {
         return this._multiFactorAuthPresent;
@@ -502,17 +559,17 @@ class RequestContext {
 
     /**
      * Set multiFactorAuthAge
-     * @param {number} multiFactorAuthAge - seconds since
+     * @param multiFactorAuthAge - seconds since
      * MFA credentials were issued
-     * @return {RequestContext} - RequestContext instance
+     * @return - RequestContext instance
      */
-    setMultiFactorAuthAge(multiFactorAuthAge) {
+    setMultiFactorAuthAge(multiFactorAuthAge: number) {
         this._multiFactorAuthAge = multiFactorAuthAge;
         return this;
     }
     /**
      * Get multiFactorAuthAge
-     * @return {number} multiFactorAuthAge - seconds since
+     * @return multiFactorAuthAge - seconds since
      *  MFA credentials were issued
      */
     getMultiFactorAuthAge() {
@@ -522,7 +579,7 @@ class RequestContext {
     /**
      * Returns the authentication security token
      *
-     * @return {string} security token
+     * @return security token
      */
     getSecurityToken() {
         return this._securityToken;
@@ -531,10 +588,10 @@ class RequestContext {
     /**
      * Set the authentication security token
      *
-     * @param {string} token - Security token
-     * @return {RequestContext} itself
+     * @param token - Security token
+     * @return itself
      */
-    setSecurityToken(token) {
+    setSecurityToken(token: string) {
         this._securityToken = token;
         return this;
     }
@@ -542,7 +599,7 @@ class RequestContext {
     /**
      * Get the policy arn
      *
-     * @return {string} policyArn - Policy arn
+     * @return policyArn - Policy arn
      */
     getPolicyArn() {
         return this._policyArn;
@@ -551,10 +608,10 @@ class RequestContext {
     /**
      * Set the policy arn
      *
-     * @param {string} policyArn - Policy arn
-     * @return {RequestContext} itself
+     * @param policyArn - Policy arn
+     * @return itself
      */
-    setPolicyArn(policyArn) {
+    setPolicyArn(policyArn: string) {
         this._policyArn = policyArn;
         return this;
     }
@@ -562,7 +619,7 @@ class RequestContext {
     /**
      *  Returns the quota check condition
      *
-     * @returns {boolean} needQuota - check whether quota check is needed
+     * @returns needQuota - check whether quota check is needed
      */
     isQuotaCheckNeeded() {
         return this._needQuota;
@@ -571,10 +628,10 @@ class RequestContext {
     /**
      * Set request post
      *
-     * @param {string} postXml - request post
-     * @return {RequestContext} itself
+     * @param postXml - request post
+     * @return itself
      */
-    setPostXml(postXml) {
+    setPostXml(postXml: string) {
         this._postXml = postXml;
         return this;
     }
@@ -582,7 +639,7 @@ class RequestContext {
     /**
      * Get request post
      *
-     * @return {string} request post
+     * @return request post
      */
     getPostXml() {
         return this._postXml;
@@ -591,10 +648,10 @@ class RequestContext {
     /**
      * Set request object tags
      *
-     * @param {string} requestObjTags - object tag(s) included in request in query string form
-     * @return {RequestContext} itself
+     * @param requestObjTags - object tag(s) included in request in query string form
+     * @return itself
      */
-    setRequestObjTags(requestObjTags) {
+    setRequestObjTags(requestObjTags: string) {
         this._requestObjTags = requestObjTags;
         return this;
     }
@@ -602,7 +659,7 @@ class RequestContext {
     /**
      * Get request object tags
      *
-     * @return {string} request object tag(s)
+     * @return request object tag(s)
      */
     getRequestObjTags() {
         return this._requestObjTags;
@@ -611,10 +668,10 @@ class RequestContext {
     /**
      * Set info on existing tag on object included in request
      *
-     * @param {string} existingObjTag - existing object tag in query string form
-     * @return {RequestContext} itself
+     * @param existingObjTag - existing object tag in query string form
+     * @return itself
      */
-    setExistingObjTag(existingObjTag) {
+    setExistingObjTag(existingObjTag: string) {
         this._existingObjTag = existingObjTag;
         return this;
     }
@@ -622,7 +679,7 @@ class RequestContext {
     /**
      * Get existing object tag
      *
-     * @return {string} existing object tag
+     * @return existing object tag
      */
     getExistingObjTag() {
         return this._existingObjTag;
@@ -631,10 +688,10 @@ class RequestContext {
     /**
      * Set whether IAM policy tag condition keys should be evaluated
      *
-     * @param {boolean} needTagEval - whether to evaluate tags
-     * @return {RequestContext} itself
+     * @param needTagEval - whether to evaluate tags
+     * @return itself
      */
-    setNeedTagEval(needTagEval) {
+    setNeedTagEval(needTagEval: boolean) {
         this._needTagEval = needTagEval;
         return this;
     }
@@ -642,11 +699,9 @@ class RequestContext {
     /**
      * Get needTagEval param
      *
-     * @return {boolean} needTagEval - whether IAM policy tags condition keys should be evaluated
+     * @return needTagEval - whether IAM policy tags condition keys should be evaluated
      */
     getNeedTagEval() {
         return this._needTagEval;
     }
 }
-
-module.exports = RequestContext;

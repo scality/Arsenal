@@ -49,7 +49,7 @@ const sharedActionMap = {
 };
 
 // action map used for request context
-const actionMapRQ = Object.assign({
+const actionMapRQ = {
     bucketPut: 's3:CreateBucket',
     // for bucketDeleteCors need s3:PutBucketCORS permission
     // see http://docs.aws.amazon.com/AmazonS3/latest/API/
@@ -72,16 +72,23 @@ const actionMapRQ = Object.assign({
     objectReplicate: 's3:ReplicateObject',
     objectPutRetentionVersion: 's3:PutObjectVersionRetention',
     objectPutLegalHoldVersion: 's3:PutObjectVersionLegalHold',
-}, sharedActionMap);
+    ...sharedActionMap,
+};
 
 // action map used for bucket policies
-const actionMapBP = Object.assign({}, sharedActionMap);
+const actionMapBP = { ...sharedActionMap };
 
 // action map for all relevant s3 actions
-const actionMapS3 = Object.assign({
+const actionMapS3 = {
+    // TODO
+    // @ts-ignore
     bucketGetNotification: 's3:GetBucketNotification',
+    // @ts-ignore
     bucketPutNotification: 's3:PutBucketNotification',
-}, sharedActionMap, actionMapRQ, actionMapBP);
+    ...sharedActionMap,
+    ...actionMapRQ,
+    ...actionMapBP,
+};
 
 const actionMonitoringMapS3 = {
     bucketDelete: 'DeleteBucket',
@@ -194,7 +201,7 @@ const actionMapMetadata = {
     default: 'metadata:bucketd',
 };
 
-module.exports = {
+export {
     actionMapRQ,
     actionMapBP,
     actionMapS3,

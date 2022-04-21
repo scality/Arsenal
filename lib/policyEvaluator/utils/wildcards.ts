@@ -1,8 +1,3 @@
-'use strict'; // eslint-disable-line strict
-
-
-const wildcards = {};
-
 // * represents any combo of characters
 // ? represents any single character
 
@@ -10,44 +5,45 @@ const wildcards = {};
 // Handle when working with bucket policies.
 
 
+// Replace all '*' with '.*' (allow any combo of letters)
+// and all '?' with '.{1}' (allow for any one character)
+// If *, ? or $ are enclosed in ${}, keep literal *, ?, or $
+function characterMap(char: string) {
+    const map = {
+        '\\*': '.*?',
+        '\\?': '.{1}',
+        '\\$\\{\\*\\}': '\\*',
+        '\\$\\{\\?\\}': '\\?',
+        '\\$\\{\\$\\}': '\\$',
+    };
+    return map[char];
+}
+
 /**
  * Converts string into a string that has all regEx characters escaped except
  * for those needed to check for AWS wildcards.  Converted string can then
  * be used for a regEx comparison.
- * @param {string} string - any input string
- * @return {string} converted string
+ * @param string - any input string
+ * @return converted string
  */
-wildcards.handleWildcards = string => {
-    // Replace all '*' with '.*' (allow any combo of letters)
-    // and all '?' with '.{1}' (allow for any one character)
-    // If *, ? or $ are enclosed in ${}, keep literal *, ?, or $
-    function characterMap(char) {
-        const map = {
-            '\\*': '.*?',
-            '\\?': '.{1}',
-            '\\$\\{\\*\\}': '\\*',
-            '\\$\\{\\?\\}': '\\?',
-            '\\$\\{\\$\\}': '\\$',
-        };
-        return map[char];
-    }
+export const handleWildcards = (string: string) => {
     // Escape all regExp special characters
-    let regExStr = string.replace(/[\\^$*+?.()|[\]{}]/g, '\\$&');
-    // Replace the AWS special characters with regExp equivalents
-    regExStr = regExStr.replace(
+    // Then replace the AWS special characters with regExp equivalents
+    const regExStr = string.replace(/[\\^$*+?.()|[\]{}]/g, '\\$&').replace(
         // eslint-disable-next-line max-len
         /(\\\*)|(\\\?)|(\\\$\\\{\\\*\\\})|(\\\$\\\{\\\?\\\})|(\\\$\\\{\\\$\\\})/g,
-        characterMap);
+        characterMap
+    );
     return `^${regExStr}$`;
 };
 
 /**
  * Converts each portion of an ARN into a converted regEx string
  * to compare against each portion of the ARN from the request
- * @param {string} arn - arn for requested resource
- * @return {[string]} array of strings to be used for regEx comparisons
+ * @param arn - arn for requested resource
+ * @return array of strings to be used for regEx comparisons
  */
-wildcards.handleWildcardInResource = arn => {
+export const handleWildcardInResource = (arn: string) => {
 // Wildcards can be part of the resource ARN.
 // Wildcards do NOT span segments of the ARN (separated by ":")
 
@@ -56,7 +52,5 @@ wildcards.handleWildcardInResource = arn => {
     // ARN format:
     // arn:partition:service:region:namespace:relative-id
     const arnArr = arn.split(':');
-    return arnArr.map(portion => wildcards.handleWildcards(portion));
+    return arnArr.map(portion => handleWildcards(portion));
 };
-
-module.exports = wildcards;
