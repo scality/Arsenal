@@ -1,6 +1,6 @@
 import joi from 'joi';
 
-export type Callback<Data = any> = (err: Error | null | undefined, data?: Data) => void;
+export type Callback<Data = any> = (err?: Error | null | undefined, data?: Data) => void;
 
 export type Credentials = { access: string; secret: string };
 export type Base = {
