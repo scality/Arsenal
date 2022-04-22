@@ -4,7 +4,7 @@ const assert = require('assert');
 
 const errors = require('../../../../lib/errors').default;
 const auth = require('../../../../lib/auth/auth').server.doAuth;
-const AuthInfo = require('../../../../lib/auth/AuthInfo');
+const AuthInfo = require('../../../../lib/auth/AuthInfo').default;
 const constants = require('../../../../lib/constants');
 const DummyRequestLogger = require('../../helpers.js').DummyRequestLogger;
 const RequestContext =
@@ -33,7 +33,7 @@ describe('Public Access', () => {
         auth(request, logger, (err, authInfo) => {
             assert.strictEqual(err, null);
             assert.strictEqual(authInfo.getCanonicalID(),
-                               publicAuthInfo.getCanonicalID());
+                publicAuthInfo.getCanonicalID());
             done();
         }, 's3', requestContext);
     });

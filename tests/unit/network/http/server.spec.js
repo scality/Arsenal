@@ -91,22 +91,22 @@ describe('network.Server: ', () => {
             it('should return EADDRINUSE on binding port already taken',
                 done => {
                     const ws = createServer().onError(done)
-                    .onListening(() => {
-                        const bindingTimeout = setTimeout(() => {
-                            const err =
+                        .onListening(() => {
+                            const bindingTimeout = setTimeout(() => {
+                                const err =
                                 'Server does not send an binding error';
-                            ws.onStop(() => done(new Error(err))).stop();
-                        }, 5000);
-                        const ws2 = new Server(3000, log).onError(err => {
-                            if (err.code === 'EADDRINUSE') {
+                                ws.onStop(() => done(new Error(err))).stop();
+                            }, 5000);
+                            const ws2 = new Server(3000, log).onError(err => {
+                                if (err.code === 'EADDRINUSE') {
+                                    clearTimeout(bindingTimeout);
+                                    return ws.onStop(done).stop();
+                                }
                                 clearTimeout(bindingTimeout);
-                                return ws.onStop(done).stop();
-                            }
-                            clearTimeout(bindingTimeout);
-                            return ws.onStop(() => done(err)).stop();
-                        });
-                        ws2.start();
-                    }).start();
+                                return ws.onStop(() => done(err)).stop();
+                            });
+                            ws2.start();
+                        }).start();
                 });
 
             it('should return InternalError when no request handler', done => {

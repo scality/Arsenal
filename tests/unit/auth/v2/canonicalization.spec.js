@@ -3,9 +3,9 @@
 const assert = require('assert');
 
 const getCanonicalizedAmzHeaders =
-    require('../../../../lib/auth/v2/getCanonicalizedAmzHeaders');
+    require('../../../../lib/auth/v2/getCanonicalizedAmzHeaders').default;
 const getCanonicalizedResource =
-    require('../../../../lib/auth/v2/getCanonicalizedResource');
+    require('../../../../lib/auth/v2/getCanonicalizedResource').default;
 
 const getCanonicalizedGcpHeaders = headers =>
     getCanonicalizedAmzHeaders(headers, 'GCP');
@@ -14,27 +14,27 @@ const gcpCanonicalizedResource = request =>
 
 describe('canonicalization', () => {
     it('should construct a canonicalized header in the correct order for AWS',
-    () => {
-        const headers = {
-            'date': 'Mon, 21 Sep 2015 22:29:27 GMT',
-            'x-amz-request-payer': 'requester',
-            'x-amz-meta-meta': 'something very meta',
-            'x-amz-meta-bits': '0',
-            'x-amz-meta-blksize': '2097152',
-            'x-amz-meta-compress': '0',
-            'authorization': 'AWS accessKey1:V8g5UJUFmMzruMqUHVT6ZwvUw+M=',
-            'host': 's3.amazonaws.com:80',
-            'connection': 'Keep-Alive',
-            'user-agent': 'Cyberduck/4.7.2.18004 (Mac OS X/10.10.5) (x86_64)',
-        };
-        const canonicalizedHeader = getCanonicalizedAmzHeaders(headers);
-        assert.strictEqual(canonicalizedHeader,
-            'x-amz-meta-bits:0\n' +
+        () => {
+            const headers = {
+                'date': 'Mon, 21 Sep 2015 22:29:27 GMT',
+                'x-amz-request-payer': 'requester',
+                'x-amz-meta-meta': 'something very meta',
+                'x-amz-meta-bits': '0',
+                'x-amz-meta-blksize': '2097152',
+                'x-amz-meta-compress': '0',
+                'authorization': 'AWS accessKey1:V8g5UJUFmMzruMqUHVT6ZwvUw+M=',
+                'host': 's3.amazonaws.com:80',
+                'connection': 'Keep-Alive',
+                'user-agent': 'Cyberduck/4.7.2.18004 (Mac OS X/10.10.5) (x86_64)',
+            };
+            const canonicalizedHeader = getCanonicalizedAmzHeaders(headers);
+            assert.strictEqual(canonicalizedHeader,
+                'x-amz-meta-bits:0\n' +
             'x-amz-meta-blksize:2097152\n' +
             'x-amz-meta-compress:0\n' +
             'x-amz-meta-meta:something very meta\n' +
             'x-amz-request-payer:requester\n');
-    });
+        });
 
     it('should return an empty string as the canonicalized ' +
        'header if no amz headers', () => {
@@ -62,7 +62,7 @@ describe('canonicalization', () => {
         };
         const canonicalizedResource = getCanonicalizedResource(request);
         assert.strictEqual(canonicalizedResource,
-                           '/bucket/obj?requestPayment=yes,please');
+            '/bucket/obj?requestPayment=yes,please');
     });
 
     it('should return the path as the canonicalized resource ' +
@@ -92,27 +92,27 @@ describe('canonicalization', () => {
     });
 
     it('should construct a canonicalized header in the correct order for GCP',
-    () => {
-        const headers = {
-            'date': 'Mon, 21 Sep 2015 22:29:27 GMT',
-            'x-goog-request-payer': 'requester',
-            'x-goog-meta-meta': 'something very meta',
-            'x-goog-meta-bits': '0',
-            'x-goog-meta-blksize': '2097152',
-            'x-goog-meta-compress': '0',
-            'authorization': 'GOOG1 accessKey1:V8g5UJUFmMzruMqUHVT6ZwvUw+M=',
-            'host': 's3.amazonaws.com:80',
-            'connection': 'Keep-Alive',
-            'user-agent': 'Cyberduck/4.7.2.18004 (Mac OS X/10.10.5) (x86_64)',
-        };
-        const canonicalizedHeader = getCanonicalizedGcpHeaders(headers);
-        assert.strictEqual(canonicalizedHeader,
-            'x-goog-meta-bits:0\n' +
+        () => {
+            const headers = {
+                'date': 'Mon, 21 Sep 2015 22:29:27 GMT',
+                'x-goog-request-payer': 'requester',
+                'x-goog-meta-meta': 'something very meta',
+                'x-goog-meta-bits': '0',
+                'x-goog-meta-blksize': '2097152',
+                'x-goog-meta-compress': '0',
+                'authorization': 'GOOG1 accessKey1:V8g5UJUFmMzruMqUHVT6ZwvUw+M=',
+                'host': 's3.amazonaws.com:80',
+                'connection': 'Keep-Alive',
+                'user-agent': 'Cyberduck/4.7.2.18004 (Mac OS X/10.10.5) (x86_64)',
+            };
+            const canonicalizedHeader = getCanonicalizedGcpHeaders(headers);
+            assert.strictEqual(canonicalizedHeader,
+                'x-goog-meta-bits:0\n' +
             'x-goog-meta-blksize:2097152\n' +
             'x-goog-meta-compress:0\n' +
             'x-goog-meta-meta:something very meta\n' +
             'x-goog-request-payer:requester\n');
-    });
+        });
 
     it('should return an empty string as the canonicalized ' +
        'header if no goog headers', () => {
@@ -140,7 +140,7 @@ describe('canonicalization', () => {
         };
         const canonicalizedResource = gcpCanonicalizedResource(request);
         assert.strictEqual(canonicalizedResource,
-                           '/bucket/obj?billing=yes,please');
+            '/bucket/obj?billing=yes,please');
     });
 
     it('should return the path as the canonicalized resource ' +

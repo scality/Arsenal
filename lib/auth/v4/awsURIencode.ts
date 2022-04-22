@@ -1,5 +1,3 @@
-'use strict'; // eslint-disable-line strict
-
 /*
 AWS's URI encoding rules:
 URI encode every byte. Uri-Encode() must enforce the following rules:
@@ -19,7 +17,7 @@ See http://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-header-based-auth.html
 */
 
 // converts utf8 character to hex and pads "%" before every two hex digits
-function _toHexUTF8(char) {
+function _toHexUTF8(char: string) {
     const hexRep = Buffer.from(char, 'utf8').toString('hex').toUpperCase();
     let res = '';
     hexRep.split('').forEach((v, n) => {
@@ -32,7 +30,11 @@ function _toHexUTF8(char) {
     return res;
 }
 
-function awsURIencode(input, encodeSlash, noEncodeStar) {
+export default function awsURIencode(
+    input: string,
+    encodeSlash?: boolean,
+    noEncodeStar?: boolean
+) {
     const encSlash = encodeSlash === undefined ? true : encodeSlash;
     let encoded = '';
     /**
@@ -62,5 +64,3 @@ function awsURIencode(input, encodeSlash, noEncodeStar) {
     }
     return encoded;
 }
-
-module.exports = awsURIencode;

@@ -40,7 +40,7 @@ describe('ObjectMDLocation', () => {
             cipheredDataKey: 'CiPhErEdDaTaKeY',
         });
         location.setDataLocation({ key: 'secondkey',
-                                   dataStoreName: 'gcpbackend' });
+            dataStoreName: 'gcpbackend' });
         assert.strictEqual(location.getKey(), 'secondkey');
         assert.strictEqual(location.getDataStoreName(), 'gcpbackend');
         assert.strictEqual(location.getCryptoScheme(), undefined);
@@ -53,9 +53,9 @@ describe('ObjectMDLocation', () => {
             start: 42,
         });
         location.setDataLocation({ key: 'thirdkey',
-                                   dataStoreName: 'azurebackend',
-                                   cryptoScheme: 1,
-                                   cipheredDataKey: 'NeWcIpHeReDdAtAkEy' });
+            dataStoreName: 'azurebackend',
+            cryptoScheme: 1,
+            cipheredDataKey: 'NeWcIpHeReDdAtAkEy' });
         assert.strictEqual(location.getKey(), 'thirdkey');
         assert.strictEqual(location.getDataStoreName(), 'azurebackend');
         assert.strictEqual(location.getCryptoScheme(), 1);

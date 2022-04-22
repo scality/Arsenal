@@ -28,7 +28,7 @@ describe('s3middleware.NullStream', () => {
         it(`should generate ${size} null bytes by range`, done => {
             const dummyOffset = 9320954;
             testNullChunk(0, [dummyOffset, dummyOffset + size - 1],
-                          md5sum, done);
+                md5sum, done);
         });
     }
 });
