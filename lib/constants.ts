@@ -128,6 +128,10 @@ export const supportedNotificationEvents = new Set([
     's3:ObjectRemoved:Delete',
     's3:ObjectRemoved:DeleteMarkerCreated',
     's3:Replication:OperationFailedReplication',
+    's3:ObjectTagging:*',
+    's3:ObjectTagging:Put',
+    's3:ObjectTagging:Delete',
+    's3:ObjectAcl:Put',
 ]);
 export const notificationArnPrefix = 'arn:scality:bucketnotif';
 // HTTP server keep-alive timeout is set to a higher value than
