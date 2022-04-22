@@ -50,9 +50,9 @@ export default class AuthLoader {
     addFile(filePath: string, options?: { legacy: true }): void;
     addFile(filePath: string, options = { legacy: true }) {
         // On deprecation, remove the legacy part and keep the promises.
-        const fn: any = options.legacy ? fs.readFileSync : fs.promises.readFile;
-        const temp = fn(filePath, 'utf8') as Promise<string> | string;
-        const prom = Promise.resolve(temp).then((data) => {
+        const readFunc: any = options.legacy ? fs.readFileSync : fs.promises.readFile;
+        const readResult = readFunc(filePath, 'utf8') as Promise<string> | string;
+        const prom = Promise.resolve(readResult).then((data) => {
             const authData = JSON.parse(data);
             this.addAccounts(authData, filePath);
         });
