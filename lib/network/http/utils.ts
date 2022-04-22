@@ -1,14 +1,12 @@
-'use strict'; // eslint-disable-line
-
-const os = require('os');
-const errors = require('../../errors').default;
+import * as os from 'os';
+import errors, { ArsenalError } from '../../errors';
 
 /**
  * Parse the Range header into an object
  *
- * @param {String} rangeHeader - The 'Range' header value
+ * @param rangeHeader - The 'Range' header value
 
- * @return {Object} object containing a range specification, with
+ * @return object containing a range specification, with
  * either of:
  * - start and end attributes: a fully specified range request
  * - a single start attribute: no end is specified in the range request
@@ -16,7 +14,12 @@ const errors = require('../../errors').default;
  * - an error attribute of type errors.InvalidArgument if the range
  *     syntax is invalid
  */
-function parseRangeSpec(rangeHeader) {
+export function parseRangeSpec(
+    rangeHeader: string
+):
+    | { error: ArsenalError }
+    | { suffix: number }
+    | { start: number; end?: number } {
     const rangeMatch = /^bytes=([0-9]+)?-([0-9]+)?$/.exec(rangeHeader);
     if (rangeMatch) {
         const rangeValues = rangeMatch.slice(1, 3);
@@ -25,7 +28,8 @@ function parseRangeSpec(rangeHeader) {
                 return { suffix: Number.parseInt(rangeValues[1], 10) };
             }
         } else {
-            const rangeSpec = { start: Number.parseInt(rangeValues[0], 10) };
+            const rangeSpec: { start: number; end?: number } =
+                { start: Number.parseInt(rangeValues[0], 10) };
             if (rangeValues[1] === undefined) {
                 return rangeSpec;
             }
@@ -42,11 +46,11 @@ function parseRangeSpec(rangeHeader) {
  * Convert a range specification as given by parseRangeSpec() into a
  * fully specified absolute byte range
  *
- * @param {Number []} rangeSpec - Parsed range specification as returned
+ * @param rangeSpec - Parsed range specification as returned
  *   by parseRangeSpec()
- * @param {Number} objectSize - Total byte size of the whole object
+ * @param objectSize - Total byte size of the whole object
 
- * @return {Object} object containing either:
+ * @return object containing either:
  * - a 'range' attribute which is a fully specified byte range [start,
        end], as the inclusive absolute byte range to request from the
        object
@@ -55,8 +59,11 @@ function parseRangeSpec(rangeHeader) {
  * - or an 'error' attribute of type errors.InvalidRange if the
  *     requested range is out of object's boundaries.
  */
-function getByteRangeFromSpec(rangeSpec, objectSize) {
-    if (rangeSpec.suffix !== undefined) {
+export function getByteRangeFromSpec(
+    rangeSpec: { suffix: number } | { start: number; end?: number },
+    objectSize: number
+): { error: ArsenalError } | { range: [number, number] } | {} {
+    if ('suffix' in rangeSpec) {
         if (rangeSpec.suffix === 0) {
             // 0-byte suffix is always invalid (even on empty objects)
             return { error: errors.InvalidRange };
@@ -72,8 +79,8 @@ function getByteRangeFromSpec(rangeSpec, objectSize) {
     if (rangeSpec.start < objectSize) {
         // test is false if end is undefined
         return { range: [rangeSpec.start,
-            (rangeSpec.end < objectSize ?
-                rangeSpec.end : objectSize - 1)] };
+            (rangeSpec.end ?? 0 < objectSize ?
+            rangeSpec.end : objectSize - 1)] };
     }
     return { error: errors.InvalidRange };
 }
@@ -82,10 +89,10 @@ function getByteRangeFromSpec(rangeSpec, objectSize) {
  * Convenience function that combines parseRangeSpec() and
  * getByteRangeFromSpec()
  *
- * @param {String} rangeHeader - The 'Range' header value
- * @param {Number} objectSize - Total byte size of the whole object
+ * @param rangeHeader - The 'Range' header value
+ * @param objectSize - Total byte size of the whole object
 
- * @return {Object} object containing either:
+ * @return object containing either:
  * - a 'range' attribute which is a fully specified byte range [start,
  *     end], as the inclusive absolute byte range to request from the
  *     object
@@ -95,9 +102,12 @@ function getByteRangeFromSpec(rangeSpec, objectSize) {
  * - or an 'error' attribute instead of type errors.InvalidRange if
  *     the requested range is out of object's boundaries.
  */
-function parseRange(rangeHeader, objectSize) {
+ export function parseRange(
+     rangeHeader: string,
+     objectSize: number
+ ): { range: [number, number] } | {} | { error: ArsenalError } {
     const rangeSpec = parseRangeSpec(rangeHeader);
-    if (rangeSpec.error) {
+    if ('error' in rangeSpec) {
         // invalid range syntax is silently ignored in HTTP spec,
         // hence returns the whole object
         return {};
@@ -105,15 +115,8 @@ function parseRange(rangeHeader, objectSize) {
     return getByteRangeFromSpec(rangeSpec, objectSize);
 }
 
-function checkSupportIPv6() {
+export function checkSupportIPv6() {
     const niList = os.networkInterfaces();
-    return Object.keys(niList).some(network =>
-        niList[network].some(intfc => intfc.family === 'IPv6'));
+    return Object.keys(niList).some((network) =>
+        niList[network]?.some(intfc => intfc.family === 'IPv6'));
 }
-
-module.exports = {
-    parseRangeSpec,
-    getByteRangeFromSpec,
-    parseRange,
-    checkSupportIPv6,
-};

@@ -8,10 +8,10 @@ const { ArsenalError } = require('../../errors');
  * This is done so that JSON.stringify() can properly serialize those
  * attributes (e.g. err.notFound)
  *
- * @param {Error} err error object
- * @return {Object} flattened object containing <tt>err</tt> attributes
+ * @param err error object
+ * @return flattened object containing <tt>err</tt> attributes
  */
-module.exports.flattenError = function flattenError(err) {
+export function flattenError(err: Error) {
     if (!err) {
         return err;
     }
@@ -22,6 +22,8 @@ module.exports.flattenError = function flattenError(err) {
 
     const flattenedErr = {};
 
+    // TODO fix this
+    // @ts-expect-errors
     flattenedErr.message = err.message;
     for (const k in err) {
         if (!(k in flattenedErr)) {
@@ -38,11 +40,11 @@ module.exports.flattenError = function flattenError(err) {
  * @note Its internals may differ from the original Error object but
  * its attributes should be the same.
  *
- * @param {Object} err flattened error object
- * @return {Error} a reconstructed Error object inheriting <tt>err</tt>
+ * @param err flattened error object
+ * @return a reconstructed Error object inheriting <tt>err</tt>
  *   attributes
  */
-module.exports.reconstructError = function reconstructError(err) {
+export function reconstructError(err: Error) {
     if (!err) {
         return err;
     }
