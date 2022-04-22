@@ -143,7 +143,7 @@ describe('v4 headerAuthCheck', () => {
             'x-amz-date': undefined }, 'headers', request, headers);
         const res = headerAuthCheck(alteredRequest, log);
         assert.deepStrictEqual(res.err, errors.AccessDenied.
-          customizeDescription('Authentication requires a valid Date or ' +
+            customizeDescription('Authentication requires a valid Date or ' +
           'x-amz-date header'));
         done();
     });
@@ -171,7 +171,7 @@ describe('v4 headerAuthCheck', () => {
                 '4a789b0bae19307bc' }, 'headers', request, headers);
         const res = headerAuthCheck(alteredRequest, log);
         assert.deepStrictEqual(res.err, errors.AccessDenied.
-        customizeDescription('Authentication requires a valid Date or ' +
+            customizeDescription('Authentication requires a valid Date or ' +
         'x-amz-date header'));
         done();
     });
@@ -202,7 +202,7 @@ describe('v4 headerAuthCheck', () => {
                 'x-amz-date, Signature=abed924c06abf8772c67' +
                 '0064d22eacd6ccb85c06befa15f' +
                 '4a789b0bae19307bc' },
-            'headers', request, headers);
+        'headers', request, headers);
         delete alteredRequest.headers['x-amz-date'];
         const res = headerAuthCheck(alteredRequest, log);
         assert.deepStrictEqual(res.err, errors.RequestTimeTooSkewed);
@@ -220,7 +220,7 @@ describe('v4 headerAuthCheck', () => {
                 'x-amz-date, Signature=abed924c06abf8772c67' +
                 '0064d22eacd6ccb85c06befa15f' +
                 '4a789b0bae19307bc' },
-            'headers', request, headers);
+        'headers', request, headers);
         const res = headerAuthCheck(alteredRequest, log);
         assert.deepStrictEqual(res.err, errors.RequestTimeTooSkewed);
         done();
@@ -237,7 +237,7 @@ describe('v4 headerAuthCheck', () => {
                 'x-amz-date, Signature=abed924c06abf8772c67' +
                 '0064d22eacd6ccb85c06befa15f' +
                 '4a789b0bae19307bc' },
-            'headers', request, headers);
+        'headers', request, headers);
         delete alteredRequest.headers['x-amz-date'];
         const res = headerAuthCheck(alteredRequest, log);
         assert.deepStrictEqual(res.err, errors.RequestTimeTooSkewed);

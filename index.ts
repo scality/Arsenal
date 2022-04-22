@@ -1,8 +1,6 @@
 export { default as errors } from './lib/errors';
-export * as https from './lib/https'
-
-export const auth = require('./lib/auth/auth');
-export const constants = require('./lib/constants');
+export * as auth from './lib/auth/auth'
+export * as constants from './lib/constants';
 export const db = require('./lib/db');
 export const shuffle = require('./lib/shuffle');
 export const stringHash = require('./lib/stringHash');
@@ -55,6 +53,7 @@ export const versioning = {
 export const network = {
     http: {
         server: require('./lib/network/http/server'),
+        utils: require('./lib/network/http/utils'),
     },
     rpc: require('./lib/network/rpc/rpc'),
     level: require('./lib/network/rpc/level-net'),

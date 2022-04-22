@@ -8,8 +8,8 @@ describe('round robin hosts', () => {
     [{
         caption: 'with { host, port } objects in list',
         hostsList: [{ host: '1.2.3.0', port: 1000 },
-                    { host: '1.2.3.1', port: 1001 },
-                    { host: '1.2.3.2' }],
+            { host: '1.2.3.1', port: 1001 },
+            { host: '1.2.3.2' }],
     }, {
         caption: 'with "host:port" strings in list',
         hostsList: ['1.2.3.0:1000',
@@ -89,7 +89,7 @@ describe('round robin hosts', () => {
                 { host: 'zenko.io', port: '10abcde' },
             ]), Error);
             assert.throws(() => new RoundRobin(['zenko.io:1000:bad']),
-                          Error);
+                Error);
 
             // this is valid
             // eslint-disable-next-line no-new
