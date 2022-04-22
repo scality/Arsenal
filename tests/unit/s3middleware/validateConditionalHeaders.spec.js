@@ -187,16 +187,16 @@ describe('_checkEtagMatch function :', () => {
     });
 
     it('should return success for multiple valid values with comma at index 0',
-    () => {
-        const result = _checkEtagMatch(`,${listOfValues}`, contentMD5);
-        expect(result).toStrictEqual(expectedSuccess);
-    });
+        () => {
+            const result = _checkEtagMatch(`,${listOfValues}`, contentMD5);
+            expect(result).toStrictEqual(expectedSuccess);
+        });
 
     it('should return success as long as one value in list is valid',
-    () => {
-        const result = _checkEtagMatch(`${listOfValues},aaa`, contentMD5);
-        expect(result).toStrictEqual(expectedSuccess);
-    });
+        () => {
+            const result = _checkEtagMatch(`${listOfValues},aaa`, contentMD5);
+            expect(result).toStrictEqual(expectedSuccess);
+        });
 
     const failTests = [
         { desc: 'if only value does not match', value: 'aaa' },
@@ -245,22 +245,22 @@ describe('_checkModifiedSince function :', () => {
     });
 
     it('should return success if header value is earlier to than last modified',
-    () => {
-        const result = _checkModifiedSince(beforeLastModified, lastModified);
-        expect(result).toStrictEqual(expectedSuccess);
-    });
+        () => {
+            const result = _checkModifiedSince(beforeLastModified, lastModified);
+            expect(result).toStrictEqual(expectedSuccess);
+        });
 
     it('should return NotModified if header value is later than last modified',
-    () => {
-        const result = _checkModifiedSince(afterLastModified, lastModified);
-        expect(result.error.is.NotModified).toBeTruthy();
-    });
+        () => {
+            const result = _checkModifiedSince(afterLastModified, lastModified);
+            expect(result.error.is.NotModified).toBeTruthy();
+        });
 
     it('should return NotModified if header value is equal to last modified',
-    () => {
-        const result = _checkModifiedSince(lastModified, lastModified);
-        expect(result.error.is.NotModified).toBeTruthy();
-    });
+        () => {
+            const result = _checkModifiedSince(lastModified, lastModified);
+            expect(result.error.is.NotModified).toBeTruthy();
+        });
 });
 
 describe('_checkUnmodifiedSince function :', () => {
@@ -276,14 +276,14 @@ describe('_checkUnmodifiedSince function :', () => {
     });
 
     it('should return success if header value is later to than last modified',
-    () => {
-        const result = _checkUnmodifiedSince(afterLastModified, lastModified);
-        expect(result).toStrictEqual(expectedSuccess);
-    });
+        () => {
+            const result = _checkUnmodifiedSince(afterLastModified, lastModified);
+            expect(result).toStrictEqual(expectedSuccess);
+        });
 
     it('should return success if header value is equal to last modified',
-    () => {
-        const result = _checkUnmodifiedSince(lastModified, lastModified);
-        expect(result).toStrictEqual(expectedSuccess);
-    });
+        () => {
+            const result = _checkUnmodifiedSince(lastModified, lastModified);
+            expect(result).toStrictEqual(expectedSuccess);
+        });
 });

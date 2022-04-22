@@ -2,7 +2,7 @@
 
 const assert = require('assert');
 
-const awsURIencode = require('../../../../lib/auth/v4/awsURIencode');
+const awsURIencode = require('../../../../lib/auth/v4/awsURIencode').default;
 
 // Note that expected outputs came from running node aws-sdk's
 // AWS.util.uriEscapePath and AWS.util.uriEscape functions

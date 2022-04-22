@@ -29,16 +29,11 @@ c2CNfUEqyRbJF4pE9ZcdQReT5p/llmyhQdvq6cHH+cKJk63C6DHRVoStsnsUcvKe
 bLxKsygK77ttjr61cxLoDJeGd5L5h1CPmwIBAg==
 -----END DH PARAMETERS-----
  */
-'use strict'; // eslint-disable-line strict
 
-const dhparam =
+export const dhparam =
     'MIIBCAKCAQEAh99T77KGNuiY9N6xrCJ3QNv4SFADTa3CD+1VMTAdRJLHUNpglB+i' +
     'AoTYiLDFZgtTCpx0ZZUD+JM3qiCZy0OK5/ZGlVD7sZmxjRtdpVK4qIPtwav8t0J7' +
     'c2CNfUEqyRbJF4pE9ZcdQReT5p/llmyhQdvq6cHH+cKJk63C6DHRVoStsnsUcvKe' +
     '23PLGZulKg8H3eRBxHamHkmyuEVDtoNhMIoJONsdXSpo5GgcD4EQMM8xb/qsnCxn' +
     '6QIGTBvcHskxtlTZOfUPk4XQ6Yb3tQi2TurzkQHLln4U7p/GZs+D+6D3SgSPqr6P' +
     'bLxKsygK77ttjr61cxLoDJeGd5L5h1CPmwIBAg==';
-
-module.exports = {
-    dhparam,
-};

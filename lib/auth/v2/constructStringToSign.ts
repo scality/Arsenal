@@ -1,11 +1,14 @@
-'use strict'; // eslint-disable-line strict
+import { Logger } from 'werelogs';
+import utf8 from 'utf8';
+import getCanonicalizedAmzHeaders from './getCanonicalizedAmzHeaders';
+import getCanonicalizedResource from './getCanonicalizedResource';
 
-const utf8 = require('utf8');
-
-const getCanonicalizedAmzHeaders = require('./getCanonicalizedAmzHeaders');
-const getCanonicalizedResource = require('./getCanonicalizedResource');
-
-function constructStringToSign(request, data, log, clientType) {
+export default function constructStringToSign(
+    request: any,
+    data: { [key: string]: string },
+    log: Logger,
+    clientType?: any
+) {
     /*
     Build signature per AWS requirements:
     StringToSign = HTTP-Verb + '\n' +
@@ -42,5 +45,3 @@ function constructStringToSign(request, data, log, clientType) {
         + getCanonicalizedResource(request, clientType);
     return utf8.encode(stringToSign);
 }
-
-module.exports = constructStringToSign;

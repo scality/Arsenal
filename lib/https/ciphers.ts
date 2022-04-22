@@ -1,6 +1,4 @@
-'use strict'; // eslint-disable-line strict
-
-const ciphers = [
+export const ciphers = [
     'DHE-RSA-AES128-GCM-SHA256',
     'ECDHE-ECDSA-AES128-GCM-SHA256',
     'ECDHE-RSA-AES256-GCM-SHA384',
@@ -28,7 +26,3 @@ const ciphers = [
     '!EDH-RSA-DES-CBC3-SHA',
     '!KRB5-DES-CBC3-SHA',
 ].join(':');
-
-module.exports = {
-    ciphers,
-};

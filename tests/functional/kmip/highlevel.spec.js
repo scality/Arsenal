@@ -43,28 +43,28 @@ describe('KMIP High Level Driver', () => {
             it('should work with' +
                ` x-name attribute: ${!!bucketNameAttributeName},` +
                ` compound creation: ${compoundCreateActivate}`,
-               done => {
-                   const kmipClient = new KMIPClient(options, TTLVCodec,
-                                                     LoopbackServerTransport);
-                   const plaintext = Buffer.from(crypto.randomBytes(32));
-                   async.waterfall([
-                       next => kmipClient.createBucketKey('plop', logger, next),
-                       (id, next) =>
-                           kmipClient.cipherDataKey(1, id, plaintext,
-                                                    logger, (err, ciphered) => {
-                                                        next(err, id, ciphered);
-                                                    }),
-                       (id, ciphered, next) =>
-                           kmipClient.decipherDataKey(
-                               1, id, ciphered, logger, (err, deciphered) => {
-                                   assert(plaintext
-                                          .compare(deciphered) === 0);
-                                   next(err, id);
-                               }),
-                       (id, next) =>
-                           kmipClient.destroyBucketKey(id, logger, next),
-                   ], done);
-               });
+            done => {
+                const kmipClient = new KMIPClient(options, TTLVCodec,
+                    LoopbackServerTransport);
+                const plaintext = Buffer.from(crypto.randomBytes(32));
+                async.waterfall([
+                    next => kmipClient.createBucketKey('plop', logger, next),
+                    (id, next) =>
+                        kmipClient.cipherDataKey(1, id, plaintext,
+                            logger, (err, ciphered) => {
+                                next(err, id, ciphered);
+                            }),
+                    (id, ciphered, next) =>
+                        kmipClient.decipherDataKey(
+                            1, id, ciphered, logger, (err, deciphered) => {
+                                assert(plaintext
+                                    .compare(deciphered) === 0);
+                                next(err, id);
+                            }),
+                    (id, next) =>
+                        kmipClient.destroyBucketKey(id, logger, next),
+                ], done);
+            });
         });
     });
     it('should succeed healthcheck with working KMIP client and server', done => {
@@ -84,7 +84,7 @@ describe('KMIP High Level Driver', () => {
             },
         };
         const kmipClient = new KMIPClient(options, TTLVCodec,
-                                          LoopbackServerTransport);
+            LoopbackServerTransport);
         kmipClient.healthcheck(logger, err => {
             assert.ifError(err);
             done();

@@ -1,6 +1,8 @@
 import StatsClient from './StatsClient';
 
- /**
+/**
+ * @class StatsModel
+ *
  * @classdesc Extend and overwrite how timestamps are normalized by minutes
  * rather than by seconds
  */
