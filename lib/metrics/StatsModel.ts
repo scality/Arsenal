@@ -1,5 +1,6 @@
 import StatsClient from './StatsClient';
 import { Logger } from 'werelogs';
+import async from 'async';
 
 export type Callback = (error: Error | null, value?: any) => void;
 
