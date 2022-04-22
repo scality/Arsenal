@@ -1,14 +1,12 @@
-'use strict'; // eslint-disable-line strict
+import crypto from 'crypto';
+import { Logger } from 'werelogs';
+import errors from '../../../errors';
+import { calculateSigningKey, hashSignature } from './vaultUtilities';
+import Indexer from './Indexer';
+import BaseBackend from '../base';
+import { Accounts } from './types';
 
-const crypto = require('crypto');
-
-const errors = require('../../../errors').default;
-const calculateSigningKey = require('./vaultUtilities').calculateSigningKey;
-const hashSignature = require('./vaultUtilities').hashSignature;
-const Indexer = require('./Indexer');
-const BaseBackend = require('../base');
-
-function _formatResponse(userInfoToSend) {
+function _formatResponse(userInfoToSend: any) {
     return {
         message: {
             body: { userInfo: userInfoToSend },
@@ -23,21 +21,29 @@ function _formatResponse(userInfoToSend) {
  * @class InMemoryBackend
  */
 class InMemoryBackend extends BaseBackend {
+    indexer: Indexer;
+    formatResponse: any;
+
     /**
      * @constructor
-     * @param {string} service - service identifer for construction arn
-     * @param {Indexer} indexer - indexer instance for retrieving account info
-     * @param {function} formatter - function which accepts user info to send
+     * @param service - service identifer for construction arn
+     * @param indexer - indexer instance for retrieving account info
+     * @param formatter - function which accepts user info to send
      * back and returns it in an object
      */
-    constructor(service, indexer, formatter) {
+    constructor(service: string, indexer: Indexer, formatter: typeof _formatResponse) {
         super(service);
         this.indexer = indexer;
         this.formatResponse = formatter;
     }
 
-    verifySignatureV2(stringToSign, signatureFromRequest,
-        accessKey, options, callback) {
+    verifySignatureV2(
+        stringToSign: string,
+        signatureFromRequest: string,
+        accessKey: string,
+        options: any,
+        callback: any,
+    ) {
         const entity = this.indexer.getEntityByKey(accessKey);
         if (!entity) {
             return callback(errors.InvalidAccessKeyId);
@@ -52,14 +58,22 @@ class InMemoryBackend extends BaseBackend {
             accountDisplayName: this.indexer.getAcctDisplayName(entity),
             canonicalID: entity.canonicalID,
             arn: entity.arn,
+            // @ts-ignore
             IAMdisplayName: entity.IAMdisplayName,
         };
         const vaultReturnObject = this.formatResponse(userInfoToSend);
         return callback(null, vaultReturnObject);
     }
 
-    verifySignatureV4(stringToSign, signatureFromRequest, accessKey,
-        region, scopeDate, options, callback) {
+    verifySignatureV4(
+        stringToSign: string,
+        signatureFromRequest: string,
+        accessKey: string,
+        region: string,
+        scopeDate: string,
+        options: any,
+        callback: any,
+    ) {
         const entity = this.indexer.getEntityByKey(accessKey);
         if (!entity) {
             return callback(errors.InvalidAccessKeyId);
@@ -75,13 +89,14 @@ class InMemoryBackend extends BaseBackend {
             accountDisplayName: this.indexer.getAcctDisplayName(entity),
             canonicalID: entity.canonicalID,
             arn: entity.arn,
+            // @ts-ignore
             IAMdisplayName: entity.IAMdisplayName,
         };
         const vaultReturnObject = this.formatResponse(userInfoToSend);
         return callback(null, vaultReturnObject);
     }
 
-    getCanonicalIds(emails, log, cb) {
+    getCanonicalIds(emails: string[], log: Logger, cb: any) {
         const results = {};
         emails.forEach(email => {
             const lowercasedEmail = email.toLowerCase();
@@ -101,7 +116,7 @@ class InMemoryBackend extends BaseBackend {
         return cb(null, vaultReturnObject);
     }
 
-    getEmailAddresses(canonicalIDs, options, cb) {
+    getEmailAddresses(canonicalIDs: string[], options: any, cb: any) {
         const results = {};
         canonicalIDs.forEach(canonicalId => {
             const foundEntity = this.indexer.getEntityByCanId(canonicalId);
@@ -122,14 +137,14 @@ class InMemoryBackend extends BaseBackend {
     /**
      * Gets accountIds for a list of accounts based on
      * the canonical IDs associated with the account
-     * @param {array} canonicalIDs - list of canonicalIDs
-     * @param {object} options - to send log id to vault
-     * @param {function} cb - callback to calling function
-     * @returns {function} callback with either error or
+     * @param canonicalIDs - list of canonicalIDs
+     * @param options - to send log id to vault
+     * @param cb - callback to calling function
+     * @returns callback with either error or
      * an object from Vault containing account canonicalID
      * as each object key and an accountId as the value (or "NotFound")
      */
-    getAccountIds(canonicalIDs, options, cb) {
+    getAccountIds(canonicalIDs: string[], options: any, cb: any) {
         const results = {};
         canonicalIDs.forEach(canonicalID => {
             const foundEntity = this.indexer.getEntityByCanId(canonicalID);
@@ -152,27 +167,24 @@ class InMemoryBackend extends BaseBackend {
 class S3AuthBackend extends InMemoryBackend {
     /**
      * @constructor
-     * @param {object} authdata - the authentication config file's data
-     * @param {object[]} authdata.accounts - array of account objects
-     * @param {string=} authdata.accounts[].name - account name
-     * @param {string} authdata.accounts[].email - account email
-     * @param {string} authdata.accounts[].arn - IAM resource name
-     * @param {string} authdata.accounts[].canonicalID - account canonical ID
-     * @param {string} authdata.accounts[].shortid - short account ID
-     * @param {object[]=} authdata.accounts[].keys - array of key objects
-     * @param {string} authdata.accounts[].keys[].access - access key
-     * @param {string} authdata.accounts[].keys[].secret - secret key
-     * @return {undefined}
+     * @param authdata - the authentication config file's data
+     * @param authdata.accounts - array of account objects
+     * @param authdata.accounts[].name - account name
+     * @param authdata.accounts[].email - account email
+     * @param authdata.accounts[].arn - IAM resource name
+     * @param authdata.accounts[].canonicalID - account canonical ID
+     * @param authdata.accounts[].shortid - short account ID
+     * @param authdata.accounts[].keys - array of key objects
+     * @param authdata.accounts[].keys[].access - access key
+     * @param authdata.accounts[].keys[].secret - secret key
      */
-    constructor(authdata) {
+    constructor(authdata?: Accounts) {
         super('s3', new Indexer(authdata), _formatResponse);
     }
 
-    refreshAuthData(authData) {
+    refreshAuthData(authData?: Accounts) {
         this.indexer = new Indexer(authData);
     }
 }
 
-module.exports = {
-    s3: S3AuthBackend,
-};
+export { S3AuthBackend as s3 }

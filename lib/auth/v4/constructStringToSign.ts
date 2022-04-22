@@ -1,17 +1,33 @@
-'use strict'; // eslint-disable-line strict
-
-const crypto = require('crypto');
-
-const createCanonicalRequest = require('./createCanonicalRequest');
+import * as crypto from 'crypto';
+import { Logger } from 'werelogs';
+import createCanonicalRequest from './createCanonicalRequest';
 
 /**
  * constructStringToSign - creates V4 stringToSign
  * @param {object} params - params object
  * @returns {string} - stringToSign
  */
-function constructStringToSign(params) {
-    const { request, signedHeaders, payloadChecksum, credentialScope, timestamp,
-        query, log, proxyPath } = params;
+export default function constructStringToSign(params: {
+    request: any;
+    signedHeaders: any;
+    payloadChecksum: any;
+    credentialScope: string;
+    timestamp: string;
+    query: { [key: string]: string };
+    log?: Logger;
+    proxyPath?: string;
+    awsService: string;
+}): string | Error {
+    const {
+        request,
+        signedHeaders,
+        payloadChecksum,
+        credentialScope,
+        timestamp,
+        query,
+        log,
+        proxyPath,
+    } = params;
     const path = proxyPath || request.path;
 
     const canonicalReqResult = createCanonicalRequest({
@@ -24,6 +40,8 @@ function constructStringToSign(params) {
         service: params.awsService,
     });
 
+    // TODO Why that line?
+    // @ts-ignore
     if (canonicalReqResult instanceof Error) {
         if (log) {
             log.error('error creating canonicalRequest');
@@ -40,5 +58,3 @@ function constructStringToSign(params) {
     `${credentialScope}\n${canonicalHex}`;
     return stringToSign;
 }
-
-module.exports = constructStringToSign;

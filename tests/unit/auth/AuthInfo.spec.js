@@ -2,7 +2,7 @@
 
 const assert = require('assert');
 
-const AuthInfo = require('../../../lib/auth/AuthInfo');
+const AuthInfo = require('../../../lib/auth/AuthInfo').default;
 const constants = require('../../../lib/constants');
 
 const arn = 'arn:aws:iam::123456789012:user/Fred';

@@ -2,9 +2,9 @@
 
 const assert = require('assert');
 const awsURIencode =
-    require('../../../../lib/auth/v4/awsURIencode');
+    require('../../../../lib/auth/v4/awsURIencode').default;
 const createCanonicalRequest =
-    require('../../../../lib/auth/v4/createCanonicalRequest');
+    require('../../../../lib/auth/v4/createCanonicalRequest').default;
 
 describe('createCanonicalRequest function', () => {
     // Example taken from: http://docs.aws.amazon.com/AmazonS3/

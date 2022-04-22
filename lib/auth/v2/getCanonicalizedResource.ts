@@ -1,6 +1,4 @@
-'use strict'; // eslint-disable-line strict
-
-const url = require('url');
+import * as url from 'url';
 
 const gcpSubresources = [
     'acl',
@@ -41,7 +39,7 @@ const awsSubresources = [
     'website',
 ];
 
-function getCanonicalizedResource(request, clientType) {
+export default function getCanonicalizedResource(request: any, clientType: string) {
     /*
     This variable is used to determine whether to insert
     a '?' or '&'.  Once a query parameter is added to the resourceString,
@@ -117,5 +115,3 @@ function getCanonicalizedResource(request, clientType) {
     }
     return resourceString;
 }
-
-module.exports = getCanonicalizedResource;
