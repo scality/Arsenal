@@ -1,10 +1,11 @@
-import async from 'async';
 import StatsClient from './StatsClient';
 import { Logger } from 'werelogs';
 
 export type Callback = (error: Error | null, value?: any) => void;
 
- /**
+/**
+ * @class StatsModel
+ *
  * @classdesc Extend and overwrite how timestamps are normalized by minutes
  * rather than by seconds
  */
