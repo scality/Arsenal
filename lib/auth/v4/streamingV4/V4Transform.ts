@@ -304,7 +304,7 @@ export default class V4Transform extends Transform {
             // final callback
             err => {
                 if (err) {
-                    return this.cb(err);
+                    return this.cb(err as any);
                 }
                 // get next chunk
                 return callback();
