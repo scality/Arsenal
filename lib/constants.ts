@@ -1,3 +1,5 @@
+import * as crypto from 'crypto';
+
 // The min value here is to manage further backward compat if we
 // need it
 const iamSecurityTokenSizeMin = 128;
@@ -71,6 +73,8 @@ export const permittedCapitalizedBuckets = {
 };
 /* eslint-disable camelcase */
 export const externalBackends = { aws_s3: true, azure: true, gcp: true, pfs: true }
+// hex digest of sha256 hash of empty string:
+export const emptyStringHash = crypto.createHash('sha256').update('', 'binary').digest('hex');
 // Default expiration value of the S3 pre-signed URL duration
 // 604800 seconds (seven days).
 export const defaultPreSignedURLExpiry = 7 * 24 * 60 * 60;
