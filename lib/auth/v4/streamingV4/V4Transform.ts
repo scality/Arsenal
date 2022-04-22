@@ -1,8 +1,11 @@
 import { Transform } from 'stream';
-import { Logger } from 'werelogs';
 import async from 'async';
 import errors from '../../../errors';
-import { constructChunkStringToSign } from './constructChunkStringToSign';
+import { Logger } from 'werelogs';
+import Vault, { AuthV4RequestParams } from '../../Vault';
+import { Callback } from '../../backends/in_memory/types';
+
+import constructChunkStringToSign from './constructChunkStringToSign';
 
 /**
  * This class is designed to handle the chunks sent in a streaming
@@ -10,7 +13,7 @@ import { constructChunkStringToSign } from './constructChunkStringToSign';
  */
 export default class V4Transform extends Transform {
     log: Logger;
-    cb: any;
+    cb: Callback;
     accessKey: string;
     region: string;
     scopeDate: string;
@@ -25,24 +28,24 @@ export default class V4Transform extends Transform {
     currentMetadata: any[];
     lastPieceDone: boolean;
     lastChunk: boolean;
-    vault: any;
+    vault: Vault;
 
     /**
      * @constructor
-     * @param {object} streamingV4Params - info for chunk authentication
-     * @param {string} streamingV4Params.accessKey - requester's accessKey
-     * @param {string} streamingV4Params.signatureFromRequest - signature
+     * @param streamingV4Params - info for chunk authentication
+     * @param streamingV4Params.accessKey - requester's accessKey
+     * @param streamingV4Params.signatureFromRequest - signature
      * sent with headers
-     * @param {string} streamingV4Params.region - region sent with auth header
-     * @param {string} streamingV4Params.scopeDate - date sent with auth header
-     * @param {string} streamingV4Params.timestamp - date parsed from headers
+     * @param streamingV4Params.region - region sent with auth header
+     * @param streamingV4Params.scopeDate - date sent with auth header
+     * @param streamingV4Params.timestamp - date parsed from headers
      * in ISO 8601 format: YYYYMMDDTHHMMSSZ
-     * @param {string} streamingV4Params.credentialScope - items from auth
+     * @param streamingV4Params.credentialScope - items from auth
      * header plus the string 'aws4_request' joined with '/':
      * timestamp/region/aws-service/aws4_request
-     * @param {object} vault - Vault instance passed from CloudServer
-     * @param {object} log - logger object
-     * @param {function} cb - callback to api
+     * @param vault - Vault instance passed from CloudServer
+     * @param log - logger object
+     * @param cb - callback to api
      */
     constructor(
         streamingV4Params: {
@@ -53,10 +56,10 @@ export default class V4Transform extends Transform {
             timestamp: string;
             credentialScope: string;
         },
-        vault: any,
+        vault: Vault,
         log: Logger,
-        cb: any,
-      ) {
+        cb: Callback,
+    ) {
         const { accessKey, signatureFromRequest, region, scopeDate, timestamp,
             credentialScope } = streamingV4Params;
         super({});
@@ -133,7 +136,7 @@ export default class V4Transform extends Transform {
             return { err: errors.InvalidArgument };
         }
         // chunk-size is sent in hex
-        let dataSize = Number.parseInt(splitMeta[0], 16);
+        const dataSize = Number.parseInt(splitMeta[0], 16);
         if (Number.isNaN(dataSize)) {
             this.log.trace('chunk body did not contain valid size');
             return { err: errors.InvalidArgument };
@@ -172,23 +175,25 @@ export default class V4Transform extends Transform {
      * @param done - callback to _transform
      * @return executes callback with err if applicable
      */
-    _authenticate(dataToSend: Buffer | null, done: any) {
+    _authenticate(dataToSend: Buffer | null, done: Callback) {
         // use prior sig to construct new string to sign
         const stringToSign = constructChunkStringToSign(this.timestamp,
-            this.credentialScope, this.lastSignature, dataToSend!);
+            this.credentialScope, this.lastSignature, dataToSend ?? undefined);
         this.log.trace('constructed chunk string to sign',
             { stringToSign });
         // once used prior sig to construct string to sign, reassign
         // lastSignature to current signature
         this.lastSignature = this.currentSignature!;
-        const vaultParams = {
+        const vaultParams: AuthV4RequestParams = {
             log: this.log,
             data: {
                 accessKey: this.accessKey,
-                signatureFromRequest: this.currentSignature,
+                signatureFromRequest: this.currentSignature!,
                 region: this.region,
                 scopeDate: this.scopeDate,
                 stringToSign,
+                // TODO FIXME This can not work
+                // @ts-expect-errors
                 timestamp: this.timestamp,
                 credentialScope: this.credentialScope,
             },
@@ -210,11 +215,11 @@ export default class V4Transform extends Transform {
      * data on to be stored if authentication passes
      *
      * @param chunk - chunk from request body
-     * @param encoding - Data encoding
+     * @param _encoding - Data encoding unused
      * @param callback - Callback(err, justDataChunk, encoding)
      * @return executes callback with err if applicable
      */
-    _transform(chunk: Buffer, encoding: string, callback: any) {
+    _transform(chunk: Buffer, _encoding: string, callback: Callback) {
         // 'chunk' here is the node streaming chunk
         // transfer-encoding chunks should be of the format:
         // string(IntHexBase(chunk-size)) + ";chunk-signature=" +
@@ -251,7 +256,9 @@ export default class V4Transform extends Transform {
                     }
                     // have metadata so reset unparsedChunk to remaining
                     // without metadata piece
-                    unparsedChunk = parsedMetadataResults.unparsedChunk!;
+                    // TODO Is that okay?
+                    // @ts-expect-errors
+                    unparsedChunk = parsedMetadataResults.unparsedChunk;
                 }
                 if (this.lastChunk) {
                     this.log.trace('authenticating final chunk with no data');
@@ -297,7 +304,7 @@ export default class V4Transform extends Transform {
             // final callback
             err => {
                 if (err) {
-                    return this.cb(err);
+                    return this.cb(err as any);
                 }
                 // get next chunk
                 return callback();

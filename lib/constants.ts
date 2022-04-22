@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 
 // The min value here is to manage further backward compat if we
 // need it

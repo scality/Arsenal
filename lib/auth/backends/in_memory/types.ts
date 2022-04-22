@@ -1,14 +1,14 @@
 import joi from 'joi';
 
-export type Callback<Data = any> = (err: Error | null | undefined, data?: Data) => void;
+export type Callback<Data = any> = (err?: Error | null | undefined, data?: Data) => void;
 
-export type Key = { access: string; secret: string };
+export type Credentials = { access: string; secret: string };
 export type Base = {
     arn: string;
     canonicalID: string;
     shortid: string;
     email: string;
-    keys: Key[];
+    keys: Credentials[];
 };
 export type Account = Base & { name: string; users: any[] };
 export type Accounts = { accounts: Account[] };

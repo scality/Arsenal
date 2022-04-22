@@ -41,6 +41,25 @@ function vaultSignatureCb(
     return callback(null, userInfo, authorizationResults, streamingV4Params);
 }
 
+export type AuthV4RequestParams = {
+    version: 4;
+    log: Logger;
+    data: {
+        accessKey: string;
+        signatureFromRequest: string;
+        region: string;
+        stringToSign: string;
+        scopeDate: string;
+        authType: 'query' | 'header';
+        signatureVersion: string;
+        signatureAge?: number;
+        timestamp: number;
+        credentialScope: string;
+        securityToken: string;
+        algo: string;
+        log: Logger;
+    };
+};
 
 /**
  * Class that provides common authentication methods against different
@@ -149,26 +168,8 @@ export default class Vault {
      * @param callback - callback with either error or user info
     */
     authenticateV4Request(
-        params: {
-            version: 4;
-            log: Logger;
-            data: {
-                accessKey: string;
-                signatureFromRequest: string;
-                region: string;
-                stringToSign: string;
-                scopeDate: string;
-                authType: 'query' | 'header';
-                signatureVersion: string;
-                signatureAge?: number;
-                timestamp: number;
-                credentialScope: string;
-                securityToken: string;
-                algo: string;
-                log: Logger;
-            };
-        },
-        requestContexts: any[],
+        params: AuthV4RequestParams,
+        requestContexts: any[] | null,
         callback: (err: Error | null, data?: any) => void
     ) {
         params.log.debug('authenticating V4 request');

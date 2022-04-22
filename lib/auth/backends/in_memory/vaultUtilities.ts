@@ -15,7 +15,7 @@ export function hashSignature(
     return hmacObject.update(stringToSign, 'binary').digest('base64');
 }
 
-const sha256 = (key: string | Buffer, data: string) => {
+const sha256Digest = (key: string | Buffer, data: string) => {
     return crypto.createHmac('sha256', key).update(data, 'binary').digest();
 };
 
@@ -32,9 +32,9 @@ export function calculateSigningKey(
     scopeDate: string,
     service?: string
 ): Buffer {
-    const dateKey = sha256(`AWS4${secretKey}`, scopeDate);
-    const dateRegionKey = sha256(dateKey, region);
-    const dateRegionServiceKey = sha256(dateRegionKey, service || 's3');
-    const signingKey = sha256(dateRegionServiceKey, 'aws4_request');
+    const dateKey = sha256Digest(`AWS4${secretKey}`, scopeDate);
+    const dateRegionKey = sha256Digest(dateKey, region);
+    const dateRegionServiceKey = sha256Digest(dateRegionKey, service || 's3');
+    const signingKey = sha256Digest(dateRegionServiceKey, 'aws4_request');
     return signingKey;
 }
