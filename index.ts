@@ -1,7 +1,7 @@
 export { default as errors } from './lib/errors';
 export * as auth from './lib/auth/auth'
 export * as constants from './lib/constants';
-export * as https from './lib/https'
+export * as https from './lib/https';
 export const db = require('./lib/db');
 export const errorUtils = require('./lib/errorUtils');
 export const shuffle = require('./lib/shuffle');
