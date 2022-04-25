@@ -125,8 +125,8 @@ describe('test generating versionIds', () => {
         it('should encode and decode correctly with new 32 byte format', () => {
             const encoded = vids.map(vid => VID.encode(vid));
             const decoded = encoded.map(vid => VID.decode(vid));
-            assert.strictEqual(vids.every(x => x.length === 27), true);
-            assert.strictEqual(encoded.every(x => x.length === 32), true);
+            assert(vids.every(x => x.length === 27));
+            assert(encoded.every(x => x.length === 32));
             assert.deepStrictEqual(vids, decoded);
         });
     });
