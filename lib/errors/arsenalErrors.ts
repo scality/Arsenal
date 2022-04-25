@@ -365,11 +365,6 @@ export const NoSuchWebsiteConfiguration: ErrorFormat = {
     description: 'The specified bucket does not have a website configuration',
 };
 
-export const NoSuchTagSet: ErrorFormat = {
-    code: 404,
-    description: 'The TagSet does not exist',
-};
-
 export const NoSuchUpload: ErrorFormat = {
     code: 404,
     description:
