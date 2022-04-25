@@ -88,7 +88,6 @@ export const zenkoSeparator = ':';
 /* eslint-disable camelcase */
 export const externalBackends = { aws_s3: true, azure: true, gcp: true, pfs: true };
 export const replicationBackends = { aws_s3: true, azure: true, gcp: true };
-
 // hex digest of sha256 hash of empty string:
 export const emptyStringHash = crypto.createHash('sha256')
     .update('', 'binary').digest('hex');
