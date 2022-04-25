@@ -65,8 +65,7 @@ describe('test generating versionIds', () => {
         const vids = generateRandomVIDs(count);
 
         it('sorted in reversed chronological and alphabetical order', () => {
-            for (let i = 0; i < count; i++) {
-                if (i !== 0) {
+            for (let i = 1; i < count; i++) {
                     assert(vids[i - 1] > vids[i],
                         'previous VersionID is higher than its next');
                 }
