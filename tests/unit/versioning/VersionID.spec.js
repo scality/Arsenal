@@ -50,8 +50,8 @@ describe('test generating versionIds', () => {
         });
 
         it('should encode and decode correctly with legacy format', () => {
-            const encoded = vids.map(vid => VID.encode(vid));
-            const decoded = encoded.map(vid => VID.decode(vid));
+            const encoded = vids.map(VID.encode);
+            const decoded = encoded.map(VID.decode);
 
             assert.strictEqual(vids.every(x => x.length > 27), true);
             assert.strictEqual(encoded.every(x => x.length > 32), true);
