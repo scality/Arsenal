@@ -8,7 +8,7 @@ const AuthInfo = require('../../../../lib/auth/AuthInfo').default;
 const constants = require('../../../../lib/constants');
 const DummyRequestLogger = require('../../helpers.js').DummyRequestLogger;
 const RequestContext =
-    require('../../../../lib/policyEvaluator/RequestContext.js');
+    require('../../../../lib/policyEvaluator/RequestContext').default;
 
 const logger = new DummyRequestLogger();
 

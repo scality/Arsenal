@@ -15,8 +15,8 @@ function parseInvalidIpCheck(ip) {
 }
 
 function cidrMatchCheck(cidr, ip, expectedRes) {
-    const actualRes = ipCheck.checkIPinRangeOrMatch(cidr,
-        ipCheck.parseIp(ip));
+    const parsed = ipCheck.parseIp(ip);
+    const actualRes = ipCheck.checkIPinRangeOrMatch(cidr, parsed);
     assert.strictEqual(actualRes, expectedRes);
 }
 

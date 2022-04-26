@@ -1,4 +1,4 @@
-'use strict'; // eslint-disable-line strict
+import RequestContext from '../RequestContext';
 
 // FUNCTIONS TO TRANSLATE VARIABLES
 
@@ -10,11 +10,11 @@
 
 /**
  * findVariable finds the value of a variable based on the requestContext
- * @param {string} variable - variable name
- * @param {RequestContext} requestContext - info sent with request
- * @return {string} variable value
+ * @param variable - variable name
+ * @param requestContext - info sent with request
+ * @return variable value
  */
-function findVariable(variable, requestContext) {
+function findVariable(variable: string, requestContext: RequestContext): string {
     // See http://docs.aws.amazon.com/IAM/latest/UserGuide/
     // reference_policies_variables.html
     const headers = requestContext.getHeaders();
@@ -66,11 +66,11 @@ function findVariable(variable, requestContext) {
 /**
  * substituteVariables replaces variable values for variables in the form of
  * ${variablename}
- * @param {string} string potentially containing a variable
- * @param {RequestContext} requestContext - info sent with request
- * @return {string} string with variable values substituted for variables
+ * @param string potentially containing a variable
+ * @param requestContext - info sent with request
+ * @return string with variable values substituted for variables
  */
-function substituteVariables(string, requestContext) {
+export default function substituteVariables(string: string, requestContext: RequestContext) {
     const arr = string.split('');
     let startOfVariable = arr.indexOf('$');
     while (startOfVariable > -1) {
@@ -103,5 +103,3 @@ function substituteVariables(string, requestContext) {
     }
     return arr.join('');
 }
-
-module.exports = substituteVariables;

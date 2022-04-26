@@ -1,14 +1,10 @@
-'use strict'; // eslint-disable-line strict
-
-const substituteVariables = require('./utils/variables.js');
-const handleWildcards = require('./utils/wildcards.js').handleWildcards;
-const conditions = require('./utils/conditions.js');
-const findConditionKey = conditions.findConditionKey;
-const convertConditionOperator = conditions.convertConditionOperator;
-const checkArnMatch = require('./utils/checkArnMatch.js');
-const { transformTagKeyValue } = require('./utils/objectTags');
-
-const evaluators = {};
+import substituteVariables from './utils/variables';
+import { handleWildcards } from './utils/wildcards';
+import { findConditionKey, convertConditionOperator } from './utils/conditions';
+import checkArnMatch from './utils/checkArnMatch';
+import { transformTagKeyValue } from './utils/objectTags';
+import RequestContext from './RequestContext';
+import { Logger } from 'werelogs';
 
 const operatorsWithVariables = ['StringEquals', 'StringNotEquals',
     'StringEqualsIgnoreCase', 'StringNotEqualsIgnoreCase',
@@ -22,13 +18,17 @@ const tagConditions = new Set(['s3:ExistingObjectTag', 's3:RequestObjectTagKey',
 
 /**
  * Check whether resource in policy statement applies to request resource
- * @param {object} requestContext - info about request
- * @param {string | [string]} statementResource - Resource(s) impacted
+ * @param requestContext - info about request
+ * @param statementResource - Resource(s) impacted
  * by policy statement
- * @param {object} log - logger
- * @return {boolean} true if applicable, false if not
+ * @param log - logger
+ * @return true if applicable, false if not
  */
-evaluators.isResourceApplicable = (requestContext, statementResource, log) => {
+export const isResourceApplicable = (
+    requestContext: RequestContext,
+    statementResource: string | string[],
+    log: Logger,
+): boolean => {
     const resource = requestContext.getResource();
     if (!Array.isArray(statementResource)) {
         // eslint-disable-next-line no-param-reassign
@@ -63,13 +63,17 @@ evaluators.isResourceApplicable = (requestContext, statementResource, log) => {
 
 /**
  * Check whether action in policy statement applies to request
- * @param {Object} requestAction - Type of client request
- * @param {string | [string]} statementAction - Action(s) impacted
+ * @param requestAction - Type of client request
+ * @param statementAction - Action(s) impacted
  * by policy statement
- * @param {Object} log - logger
- * @return {boolean} true if applicable, false if not
+ * @param log - logger
+ * @return true if applicable, false if not
  */
-evaluators.isActionApplicable = (requestAction, statementAction, log) => {
+export const isActionApplicable = (
+    requestAction: string,
+    statementAction: string | string[],
+    log: Logger,
+): boolean => {
     if (!Array.isArray(statementAction)) {
         // eslint-disable-next-line no-param-reassign
         statementAction = [statementAction];
@@ -95,13 +99,17 @@ evaluators.isActionApplicable = (requestAction, statementAction, log) => {
 
 /**
  * Check whether request meets policy conditions
- * @param {RequestContext} requestContext - info about request
- * @param {Object} statementCondition - Condition statement from policy
- * @param {Object} log - logger
- * @return {Object} contains whether conditions are allowed and whether they
+ * @param requestContext - info about request
+ * @param statementCondition - Condition statement from policy
+ * @param log - logger
+ * @return contains whether conditions are allowed and whether they
  * contain any tag condition keys
  */
-evaluators.meetConditions = (requestContext, statementCondition, log) => {
+export const meetConditions = (
+    requestContext: RequestContext,
+    statementCondition: any,
+    log: Logger,
+) => {
     // The Condition portion of a policy is an object with different
     // operators as keys
     const conditionEval = {};
@@ -115,7 +123,7 @@ evaluators.meetConditions = (requestContext, statementCondition, log) => {
         // "For All Values" prefix, find operator name without "IfExists" or prefix
         let bareOperator = hasIfExistsCondition ? operator.slice(0, -8) :
             operator;
-        let prefix;
+        let prefix: string | undefined;
         if (hasPrefix) {
             [prefix, bareOperator] = bareOperator.split(':');
         }
@@ -128,6 +136,7 @@ evaluators.meetConditions = (requestContext, statementCondition, log) => {
         const conditionsWithSameOperator = statementCondition[operator];
         const conditionKeys = Object.keys(conditionsWithSameOperator);
         if (conditionKeys.some(key => tagConditions.has(key)) && !requestContext.getNeedTagEval()) {
+            // @ts-expect-error
             conditionEval.tagConditions = true;
         }
         const conditionKeysLength = conditionKeys.length;
@@ -139,7 +148,7 @@ evaluators.meetConditions = (requestContext, statementCondition, log) => {
             }
             // Handle variables
             if (operatorCanHaveVariables) {
-                value = value.map(item =>
+                value = value.map((item: any) =>
                     substituteVariables(item, requestContext));
             }
             // if condition key is RequestObjectTag or ExistingObjectTag,
@@ -175,6 +184,7 @@ evaluators.meetConditions = (requestContext, statementCondition, log) => {
             }
             // If condition operator prefix is included, the key should be an array
             if (prefix && !Array.isArray(keyBasedOnRequestContext)) {
+                // @ts-expect-error
                 keyBasedOnRequestContext = [keyBasedOnRequestContext];
             }
             // Transalate operator into function using bareOperator
@@ -182,6 +192,7 @@ evaluators.meetConditions = (requestContext, statementCondition, log) => {
             // Note: Wildcards are handled in the comparison operator function
             // itself since StringLike, StringNotLike, ArnLike and ArnNotLike
             // are the only operators where wildcards are allowed
+            // @ts-expect-error
             if (!operatorFunction(keyBasedOnRequestContext, transformedValue, prefix)) {
                 log.trace('did not satisfy condition', { operator: bareOperator,
                     keyBasedOnRequestContext, policyValue: transformedValue });
@@ -189,22 +200,27 @@ evaluators.meetConditions = (requestContext, statementCondition, log) => {
             }
         }
     }
+    // @ts-expect-error
     conditionEval.allow = true;
     return conditionEval;
 };
 
 /**
  * Evaluate whether a request is permitted under a policy.
- * @param {RequestContext} requestContext - Info necessary to
+ * @param requestContext - Info necessary to
  * evaluate permission
  * See http://docs.aws.amazon.com/IAM/latest/UserGuide/
  * reference_policies_evaluation-logic.html#policy-eval-reqcontext
- * @param {object} policy - An IAM or resource policy
- * @param {object} log - logger
- * @return {string} Allow if permitted, Deny if not permitted or Neutral
+ * @param policy - An IAM or resource policy
+ * @param log - logger
+ * @return Allow if permitted, Deny if not permitted or Neutral
  * if not applicable
  */
-evaluators.evaluatePolicy = (requestContext, policy, log) => {
+export const evaluatePolicy = (
+    requestContext: RequestContext,
+    policy: any,
+    log: Logger,
+): string => {
     // TODO: For bucket policies need to add Principal evaluation
     let verdict = 'Neutral';
 
@@ -216,35 +232,36 @@ evaluators.evaluatePolicy = (requestContext, policy, log) => {
         const currentStatement = policy.Statement[i];
         // If affirmative resource is in policy and request resource is
         // not applicable, move on to next statement
-        if (currentStatement.Resource && !evaluators.isResourceApplicable(requestContext,
+        if (currentStatement.Resource && !isResourceApplicable(requestContext,
             currentStatement.Resource, log)) {
             continue;
         }
         // If NotResource is in policy and resource matches NotResource
         // in policy, move on to next statement
         if (currentStatement.NotResource &&
-            evaluators.isResourceApplicable(requestContext,
+            isResourceApplicable(requestContext,
                 currentStatement.NotResource, log)) {
             continue;
         }
         // If affirmative action is in policy and request action is not
         // applicable, move on to next statement
         if (currentStatement.Action &&
-            !evaluators.isActionApplicable(requestContext.getAction(),
+            !isActionApplicable(requestContext.getAction(),
                 currentStatement.Action, log)) {
             continue;
         }
         // If NotAction is in policy and action matches NotAction in policy,
         // move on to next statement
         if (currentStatement.NotAction &&
-            evaluators.isActionApplicable(requestContext.getAction(),
+            isActionApplicable(requestContext.getAction(),
                 currentStatement.NotAction, log)) {
             continue;
         }
         const conditionEval = currentStatement.Condition ?
-            evaluators.meetConditions(requestContext, currentStatement.Condition, log) :
+            meetConditions(requestContext, currentStatement.Condition, log) :
             null;
         // If do not meet conditions move on to next statement
+        // @ts-expect-error
         if (conditionEval && !conditionEval.allow) {
             continue;
         }
@@ -257,6 +274,7 @@ evaluators.evaluatePolicy = (requestContext, policy, log) => {
         // If statement is applicable, conditions are met and Effect is
         // to Allow, set verdict to Allow
         verdict = 'Allow';
+        // @ts-expect-error
         if (conditionEval && conditionEval.tagConditions) {
             verdict = 'NeedTagConditionEval';
         }
@@ -267,21 +285,25 @@ evaluators.evaluatePolicy = (requestContext, policy, log) => {
 
 /**
  * Evaluate whether a request is permitted under a policy.
- * @param {RequestContext} requestContext - Info necessary to
+ * @param requestContext - Info necessary to
  * evaluate permission
  * See http://docs.aws.amazon.com/IAM/latest/UserGuide/
  * reference_policies_evaluation-logic.html#policy-eval-reqcontext
- * @param {[object]} allPolicies - all applicable IAM or resource policies
- * @param {object} log - logger
- * @return {string} Allow if permitted, Deny if not permitted.
+ * @param allPolicies - all applicable IAM or resource policies
+ * @param log - logger
+ * @return Allow if permitted, Deny if not permitted.
  * Default is to Deny. Deny overrides an Allow
  */
-evaluators.evaluateAllPolicies = (requestContext, allPolicies, log) => {
+export const evaluateAllPolicies = (
+    requestContext: RequestContext,
+    allPolicies: any[],
+    log: Logger,
+): string => {
     log.trace('evaluating all policies');
     let verdict = 'Deny';
     for (let i = 0; i < allPolicies.length; i++) {
         const singlePolicyVerdict =
-            evaluators.evaluatePolicy(requestContext, allPolicies[i], log);
+            evaluatePolicy(requestContext, allPolicies[i], log);
         // If there is any Deny, just return Deny
         if (singlePolicyVerdict === 'Deny') {
             return 'Deny';
@@ -293,5 +315,3 @@ evaluators.evaluateAllPolicies = (requestContext, allPolicies, log) => {
     log.trace('result of evaluating all pollicies', { verdict });
     return verdict;
 };
-
-module.exports = evaluators;

@@ -1,19 +1,21 @@
-'use strict'; // eslint-disable-line strict
+import { handleWildcardInResource } from './wildcards';
 
-const handleWildcardInResource =
-    require('./wildcards.js').handleWildcardInResource;
 /**
  * Checks whether an ARN from a request matches an ARN in a policy
  * to compare against each portion of the ARN from the request
- * @param {string} policyArn - arn from policy
- * @param {string} requestRelativeId - last part of the arn from the request
- * @param {[string]} requestArnArr - all parts of request arn split on ":"
- * @param {boolean} caseSensitive - whether the comparison should be
+ * @param policyArn - arn from policy
+ * @param requestRelativeId - last part of the arn from the request
+ * @param requestArnArr - all parts of request arn split on ":"
+ * @param caseSensitive - whether the comparison should be
  * case sensitive
- * @return {boolean} true if match, false if not
+ * @return true if match, false if not
  */
-function checkArnMatch(policyArn, requestRelativeId, requestArnArr,
-    caseSensitive) {
+export default function checkArnMatch(
+    policyArn: string,
+    requestRelativeId: string,
+    requestArnArr: string[],
+    caseSensitive: boolean,
+): boolean {
     const regExofArn = handleWildcardInResource(policyArn);
     // The relativeId is the last part of the ARN (for instance, a bucket and
     // object name in S3)
@@ -47,5 +49,3 @@ function checkArnMatch(policyArn, requestRelativeId, requestArnArr,
     // If there were matches on all parts of the ARN, return true
     return true;
 }
-
-module.exports = checkArnMatch;
