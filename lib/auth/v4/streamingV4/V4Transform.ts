@@ -3,7 +3,7 @@ import async from 'async';
 import errors from '../../../errors';
 import { Logger } from 'werelogs';
 import Vault, { AuthV4RequestParams } from '../../Vault';
-import { Callback } from '../../in_memory/types';
+import { Callback } from '../../backends/in_memory/types';
 
 import constructChunkStringToSign from './constructChunkStringToSign';
 

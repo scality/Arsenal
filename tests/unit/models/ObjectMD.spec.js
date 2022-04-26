@@ -35,6 +35,9 @@ describe('ObjectMD class setters/getters', () => {
         ['LastModified', new Date().toJSON()],
         ['ContentMd5', null, ''],
         ['ContentMd5', 'content-md5'],
+        ['ContentLanguage', null, ''],
+        ['ContentLanguage', 'content-language', ''],
+        ['CreationTime', new Date().toJSON()],
         ['AmzVersionId', null, 'null'],
         ['AmzVersionId', 'version-id'],
         ['AmzServerVersionId', null, ''],
@@ -91,6 +94,7 @@ describe('ObjectMD class setters/getters', () => {
             role: '',
             storageType: '',
             dataStoreVersionId: '',
+            isNFS: null,
         }],
         ['ReplicationInfo', {
             status: 'PENDING',
@@ -106,8 +110,24 @@ describe('ObjectMD class setters/getters', () => {
                 'arn:aws:iam::account-id:role/dest-resource',
             storageType: 'aws_s3',
             dataStoreVersionId: '',
+            isNFS: null,
         }],
         ['DataStoreName', null, ''],
+        ['ReplicationIsNFS', null, null],
+        ['ReplicationIsNFS', true],
+        ['AzureInfo', {
+            containerPublicAccess: 'container',
+            containerStoredAccessPolicies: [],
+            containerImmutabilityPolicy: {},
+            containerLegalHoldStatus: false,
+            containerDeletionInProgress: false,
+            blobType: 'BlockBlob',
+            blobContentMD5: 'ABCDEF==',
+            blobCopyInfo: {},
+            blobSequenceNumber: 42,
+            blobAccessTierChangeTime: 'abcdef',
+            blobUncommitted: false,
+        }],
         ['LegalHold', null, false],
         ['LegalHold', true],
         ['RetentionMode', 'GOVERNANCE'],
@@ -163,6 +183,11 @@ describe('ObjectMD class setters/getters', () => {
         }]);
     });
 
+    it('ObjectMD::setReplicationStorageType', () => {
+        md.setReplicationStorageType('a');
+        assert.strictEqual(md.getReplicationStorageType(), 'a');
+    });
+
     it('ObjectMD::setReplicationStorageClass', () => {
         md.setReplicationStorageClass('a');
         assert.strictEqual(md.getReplicationStorageClass(), 'a');
@@ -205,6 +230,65 @@ describe('ObjectMD class setters/getters', () => {
         });
         assert.strictEqual(
             md.getReplicationSiteDataStoreVersionId('zenko'), 'a');
+    });
+
+    it('ObjectMd::isMultipartUpload', () => {
+        md.setContentMd5('68b329da9893e34099c7d8ad5cb9c940');
+        assert.strictEqual(md.isMultipartUpload(), false);
+        md.setContentMd5('741e0f4bad5b093044dc54a74d911094-1');
+        assert.strictEqual(md.isMultipartUpload(), true);
+        md.setContentMd5('bda0c0bed89c8bdb9e409df7ae7073c5-9876');
+        assert.strictEqual(md.isMultipartUpload(), true);
+    });
+
+    it('ObjectMD::getUserMetadata', () => {
+        md.setUserMetadata({
+            'x-amz-meta-foo': 'bar',
+            'x-amz-meta-baz': 'qux',
+            // This one should be filtered out
+            'x-amz-storage-class': 'STANDARD_IA',
+            // This one should be changed to 'x-amz-meta-foobar'
+            'x-ms-meta-foobar': 'bar',
+            // ACLs are updated
+            'acl': {
+                FULL_CONTROL: ['john'],
+            },
+        });
+        assert.deepStrictEqual(JSON.parse(md.getUserMetadata()), {
+            'x-amz-meta-foo': 'bar',
+            'x-amz-meta-baz': 'qux',
+            'x-amz-meta-foobar': 'bar',
+        });
+        assert.deepStrictEqual(md.getAcl(), {
+            FULL_CONTROL: ['john'],
+        });
+    });
+
+    it('ObjectMD:clearMetadataValues', () => {
+        md.setUserMetadata({
+            'x-amz-meta-foo': 'bar',
+        });
+        md.clearMetadataValues();
+        assert.strictEqual(md.getUserMetadata(), undefined);
+    });
+
+    it('ObjectMD::microVersionId unset', () => {
+        assert.strictEqual(md.getMicroVersionId(), null);
+    });
+
+    it('ObjectMD::microVersionId set', () => {
+        const generatedIds = new Set();
+        for (let i = 0; i < 100; ++i) {
+            md.updateMicroVersionId();
+            generatedIds.add(md.getMicroVersionId());
+        }
+        // all generated IDs should be different
+        assert.strictEqual(generatedIds.size, 100);
+        generatedIds.forEach(key => {
+            // length is always 16 in hex because leading 0s are
+            // also encoded in the 8-byte random buffer.
+            assert.strictEqual(key.length, 16);
+        });
     });
 
     it('ObjectMD::set/getRetentionMode', () => {
@@ -324,6 +408,8 @@ describe('getAttributes static method', () => {
             'content-length': true,
             'content-type': true,
             'content-md5': true,
+            'content-language': true,
+            'creation-time': true,
             'x-amz-version-id': true,
             'x-amz-server-version-id': true,
             'x-amz-storage-class': true,
@@ -334,6 +420,7 @@ describe('getAttributes static method', () => {
             'acl': true,
             'key': true,
             'location': true,
+            'azureInfo': true,
             'isNull': true,
             'nullVersionId': true,
             'nullUploadId': true,
@@ -361,6 +448,8 @@ describe('ObjectMD::getReducedLocations', () => {
                 start: 0,
                 dataStoreName: 'file',
                 dataStoreETag: '1:0e5a6f42662652d44fcf978399ef5709',
+                dataStoreVersionId: 'someversion1',
+                blockId: 'someBlockId1',
             },
             {
                 key: '4e67844b674b093a9e109d42172922ea1f32ec12',
@@ -368,6 +457,8 @@ describe('ObjectMD::getReducedLocations', () => {
                 start: 1,
                 dataStoreName: 'file',
                 dataStoreETag: '2:9ca655158ca025aa00a818b6b81f9e48',
+                dataStoreVersionId: 'someversion2',
+                blockId: 'someBlockId2',
             },
         ];
         md.setLocation(locations);
@@ -383,6 +474,8 @@ describe('ObjectMD::getReducedLocations', () => {
                 start: 0,
                 dataStoreName: 'file',
                 dataStoreETag: '1:0e5a6f42662652d44fcf978399ef5709',
+                dataStoreVersionId: 'someversion',
+                blockId: 'someBlockId',
             },
             {
                 key: 'deebfb287cfcee1d137b0136562d2d776ba491e1',
@@ -390,6 +483,8 @@ describe('ObjectMD::getReducedLocations', () => {
                 start: 1,
                 dataStoreName: 'file',
                 dataStoreETag: '1:0e5a6f42662652d44fcf978399ef5709',
+                dataStoreVersionId: 'someversion',
+                blockId: 'someBlockId',
             },
             {
                 key: '4e67844b674b093a9e109d42172922ea1f32ec12',
@@ -397,6 +492,8 @@ describe('ObjectMD::getReducedLocations', () => {
                 start: 2,
                 dataStoreName: 'file',
                 dataStoreETag: '2:9ca655158ca025aa00a818b6b81f9e48',
+                dataStoreVersionId: 'someversion2',
+                blockId: 'someBlockId2',
             },
         ]);
         assert.deepStrictEqual(md.getReducedLocations(), [
@@ -406,6 +503,8 @@ describe('ObjectMD::getReducedLocations', () => {
                 start: 0,
                 dataStoreName: 'file',
                 dataStoreETag: '1:0e5a6f42662652d44fcf978399ef5709',
+                dataStoreVersionId: 'someversion',
+                blockId: 'someBlockId',
             },
             {
                 key: '4e67844b674b093a9e109d42172922ea1f32ec12',
@@ -413,6 +512,8 @@ describe('ObjectMD::getReducedLocations', () => {
                 start: 2,
                 dataStoreName: 'file',
                 dataStoreETag: '2:9ca655158ca025aa00a818b6b81f9e48',
+                dataStoreVersionId: 'someversion2',
+                blockId: 'someBlockId2',
             },
         ]);
     });
@@ -426,6 +527,8 @@ describe('ObjectMD::getReducedLocations', () => {
                 start: 0,
                 dataStoreName: 'file',
                 dataStoreETag: '1:0e5a6f42662652d44fcf978399ef5709',
+                dataStoreVersionId: 'someversion',
+                blockId: 'someBlockId',
             },
             {
                 key: 'deebfb287cfcee1d137b0136562d2d776ba491e1',
@@ -433,6 +536,8 @@ describe('ObjectMD::getReducedLocations', () => {
                 start: 1,
                 dataStoreName: 'file',
                 dataStoreETag: '2:9ca655158ca025aa00a818b6b81f9e48',
+                dataStoreVersionId: 'someversion2',
+                blockId: 'someBlockId2',
             },
             {
                 key: '4e67844b674b093a9e109d42172922ea1f32ec12',
@@ -440,6 +545,8 @@ describe('ObjectMD::getReducedLocations', () => {
                 start: 2,
                 dataStoreName: 'file',
                 dataStoreETag: '2:9ca655158ca025aa00a818b6b81f9e48',
+                dataStoreVersionId: 'someversion2',
+                blockId: 'someBlockId2',
             },
         ]);
         assert.deepStrictEqual(md.getReducedLocations(), [
@@ -449,6 +556,8 @@ describe('ObjectMD::getReducedLocations', () => {
                 start: 0,
                 dataStoreName: 'file',
                 dataStoreETag: '1:0e5a6f42662652d44fcf978399ef5709',
+                dataStoreVersionId: 'someversion',
+                blockId: 'someBlockId',
             },
             {
                 key: '4e67844b674b093a9e109d42172922ea1f32ec12',
@@ -456,6 +565,8 @@ describe('ObjectMD::getReducedLocations', () => {
                 start: 1,
                 dataStoreName: 'file',
                 dataStoreETag: '2:9ca655158ca025aa00a818b6b81f9e48',
+                dataStoreVersionId: 'someversion2',
+                blockId: 'someBlockId2',
             },
         ]);
     });
@@ -469,6 +580,8 @@ describe('ObjectMD::getReducedLocations', () => {
                 start: 0,
                 dataStoreName: 'file',
                 dataStoreETag: '1:0e5a6f42662652d44fcf978399ef5709',
+                dataStoreVersionId: 'someversion',
+                blockId: 'someBlockId',
             },
             {
                 key: 'c1c1e055b19eb5a61adb8a665e626ff589cff234',
@@ -476,6 +589,8 @@ describe('ObjectMD::getReducedLocations', () => {
                 start: 1,
                 dataStoreName: 'file',
                 dataStoreETag: '1:0e5a6f42662652d44fcf978399ef5709',
+                dataStoreVersionId: 'someversion',
+                blockId: 'someBlockId',
             },
             {
                 key: 'deebfb287cfcee1d137b0136562d2d776ba491e1',
@@ -483,6 +598,8 @@ describe('ObjectMD::getReducedLocations', () => {
                 start: 3,
                 dataStoreName: 'file',
                 dataStoreETag: '1:0e5a6f42662652d44fcf978399ef5709',
+                dataStoreVersionId: 'someversion',
+                blockId: 'someBlockId',
             },
             {
                 key: '8e67844b674b093a9e109d42172922ea1f32ec14',
@@ -490,6 +607,8 @@ describe('ObjectMD::getReducedLocations', () => {
                 start: 4,
                 dataStoreName: 'file',
                 dataStoreETag: '2:9ca655158ca025aa00a818b6b81f9e48',
+                dataStoreVersionId: 'someversion2',
+                blockId: 'someBlockId2',
             },
             {
                 key: 'd1d1e055b19eb5a61adb8a665e626ff589cff233',
@@ -497,6 +616,8 @@ describe('ObjectMD::getReducedLocations', () => {
                 start: 7,
                 dataStoreName: 'file',
                 dataStoreETag: '2:9ca655158ca025aa00a818b6b81f9e48',
+                dataStoreVersionId: 'someversion2',
+                blockId: 'someBlockId2',
             },
             {
                 key: '0e67844b674b093a9e109d42172922ea1f32ec11',
@@ -504,6 +625,8 @@ describe('ObjectMD::getReducedLocations', () => {
                 start: 17,
                 dataStoreName: 'file',
                 dataStoreETag: '2:9ca655158ca025aa00a818b6b81f9e48',
+                dataStoreVersionId: 'someversion2',
+                blockId: 'someBlockId2',
             },
             {
                 key: '8e67844b674b093a9e109d42172922ea1f32ec14',
@@ -511,6 +634,8 @@ describe('ObjectMD::getReducedLocations', () => {
                 start: 27,
                 dataStoreName: 'file',
                 dataStoreETag: '3:1ca655158ca025aa00a818b6b81f9e4c',
+                dataStoreVersionId: 'someversion3',
+                blockId: 'someBlockId3',
             },
             {
                 key: '7e67844b674b093a9e109d42172922ea1f32ec1f',
@@ -518,6 +643,8 @@ describe('ObjectMD::getReducedLocations', () => {
                 start: 42,
                 dataStoreName: 'file',
                 dataStoreETag: '3:1ca655158ca025aa00a818b6b81f9e4c',
+                dataStoreVersionId: 'someversion3',
+                blockId: 'someBlockId3',
             },
             {
                 key: '1237844b674b093a9e109d42172922ea1f32ec19',
@@ -525,6 +652,8 @@ describe('ObjectMD::getReducedLocations', () => {
                 start: 44,
                 dataStoreName: 'file',
                 dataStoreETag: '4:afa655158ca025aa00a818b6b81f9e4d',
+                dataStoreVersionId: 'someversion4',
+                blockId: 'someBlockId4',
             },
             {
                 key: '4567844b674b093a9e109d42172922ea1f32ec00',
@@ -532,6 +661,8 @@ describe('ObjectMD::getReducedLocations', () => {
                 start: 50,
                 dataStoreName: 'file',
                 dataStoreETag: '4:afa655158ca025aa00a818b6b81f9e4d',
+                dataStoreVersionId: 'someversion4',
+                blockId: 'someBlockId4',
             },
             {
                 key: '53d7844b674b093a9e109d42172922ea1f32ec02',
@@ -539,6 +670,8 @@ describe('ObjectMD::getReducedLocations', () => {
                 start: 54,
                 dataStoreName: 'file',
                 dataStoreETag: '4:afa655158ca025aa00a818b6b81f9e4d',
+                dataStoreVersionId: 'someversion4',
+                blockId: 'someBlockId4',
             },
             {
                 key: '6f6d7844b674b093a9e109d42172922ea1f32ec01',
@@ -546,6 +679,8 @@ describe('ObjectMD::getReducedLocations', () => {
                 start: 63,
                 dataStoreName: 'file',
                 dataStoreETag: '4:afa655158ca025aa00a818b6b81f9e4d',
+                dataStoreVersionId: 'someversion4',
+                blockId: 'someBlockId4',
             },
         ]);
         assert.deepStrictEqual(md.getReducedLocations(), [
@@ -555,6 +690,8 @@ describe('ObjectMD::getReducedLocations', () => {
                 start: 0,
                 dataStoreName: 'file',
                 dataStoreETag: '1:0e5a6f42662652d44fcf978399ef5709',
+                dataStoreVersionId: 'someversion',
+                blockId: 'someBlockId',
             },
             {
                 key: '0e67844b674b093a9e109d42172922ea1f32ec11',
@@ -562,6 +699,8 @@ describe('ObjectMD::getReducedLocations', () => {
                 start: 4,
                 dataStoreName: 'file',
                 dataStoreETag: '2:9ca655158ca025aa00a818b6b81f9e48',
+                dataStoreVersionId: 'someversion2',
+                blockId: 'someBlockId2',
             },
             {
                 key: '7e67844b674b093a9e109d42172922ea1f32ec1f',
@@ -569,6 +708,8 @@ describe('ObjectMD::getReducedLocations', () => {
                 start: 27,
                 dataStoreName: 'file',
                 dataStoreETag: '3:1ca655158ca025aa00a818b6b81f9e4c',
+                dataStoreVersionId: 'someversion3',
+                blockId: 'someBlockId3',
             },
             {
                 key: '6f6d7844b674b093a9e109d42172922ea1f32ec01',
@@ -576,6 +717,8 @@ describe('ObjectMD::getReducedLocations', () => {
                 start: 44,
                 dataStoreName: 'file',
                 dataStoreETag: '4:afa655158ca025aa00a818b6b81f9e4d',
+                dataStoreVersionId: 'someversion4',
+                blockId: 'someBlockId4',
             },
         ]);
     });

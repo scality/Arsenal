@@ -54,6 +54,14 @@ describe('should URIencode in accordance with AWS rules', () => {
         assert.strictEqual(actualOutput, expectedOutput);
     });
 
+    it('should encode codepoints that use surrogate pairs in UTF-16 as a ' +
+        'single UTF-8 sequence', () => {
+        const input = '/s3amazonaws.com/I-like-🌮s';
+        const expectedOutput = '%2Fs3amazonaws.com%2FI-like-%F0%9F%8C%AEs';
+        const actualOutput = awsURIencode(input);
+        assert.strictEqual(actualOutput, expectedOutput);
+    });
+
     it('should skip invalid query params', () => {
         const input = ['s3:ObjectCreated:*', 's3:ObjectRemoved:*',
             's3:BucketCreated:*', 's3:BucketRemoved:*'];

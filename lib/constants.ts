@@ -2,18 +2,18 @@ import * as crypto from 'crypto';
 
 // The min value here is to manage further backward compat if we
 // need it
-const iamSecurityTokenSizeMin = 128;
-const iamSecurityTokenSizeMax = 128;
-// Security token is an hex string (no real format from amazon)
-const iamSecurityTokenPattern = new RegExp(
-    `^[a-f0-9]{${iamSecurityTokenSizeMin},${iamSecurityTokenSizeMax}}$`,
-);
+// Default value
+export const vaultGeneratedIamSecurityTokenSizeMin = 128;
+// Safe to assume that a typical token size is less than 8192 bytes
+export const vaultGeneratedIamSecurityTokenSizeMax = 8192;
+// Base-64
+export const vaultGeneratedIamSecurityTokenPattern = /^[A-Za-z0-9/+=]*$/;
 
 // info about the iam security token
 export const iamSecurityToken = {
-    min: iamSecurityTokenSizeMin,
-    max: iamSecurityTokenSizeMax,
-    pattern: iamSecurityTokenPattern,
+    min: vaultGeneratedIamSecurityTokenSizeMin,
+    max: vaultGeneratedIamSecurityTokenSizeMax,
+    pattern: vaultGeneratedIamSecurityTokenPattern,
 };
 // PublicId is used as the canonicalID for a request that contains
 // no authentication information.  Requestor can access
@@ -22,6 +22,7 @@ export const publicId = 'http://acs.amazonaws.com/groups/global/AllUsers';
 export const zenkoServiceAccount = 'http://acs.zenko.io/accounts/service';
 export const metadataFileNamespace = '/MDFile';
 export const dataFileURL = '/DataFile';
+export const passthroughFileURL = '/PassthroughFile';
 // AWS states max size for user-defined metadata
 // (x-amz-meta- headers) is 2 KB:
 // http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPUT.html
@@ -31,7 +32,10 @@ export const maximumMetaHeadersSize = 2136;
 export const emptyFileMd5 = 'd41d8cd98f00b204e9800998ecf8427e';
 // Version 2 changes the format of the data location property
 // Version 3 adds the dataStoreName attribute
-export const mdModelVersion = 3;
+// Version 4 add the Creation-Time and Content-Language attributes,
+//     and add support for x-ms-meta-* headers in UserMetadata
+// Version 5 adds the azureInfo structure
+export const mdModelVersion = 5;
 /*
  * Splitter is used to build the object name for the overview of a
  * multipart upload and to build the object names for each part of a
@@ -71,13 +75,43 @@ export const mpuBucketPrefix = 'mpuShadowBucket';
 export const permittedCapitalizedBuckets = {
     METADATA: true,
 };
+// Setting a lower object key limit to account for:
+// - Mongo key limit of 1012 bytes
+// - Version ID in Mongo Key if versioned of 33
+// - Max bucket name length if bucket match false of 63
+// - Extra prefix slash for bucket prefix if bucket match of 1
+export const objectKeyByteLimit = 915;
+/* delimiter for location-constraint. The location constraint will be able
+ * to include the ingestion flag
+ */
+export const zenkoSeparator = ':';
 /* eslint-disable camelcase */
-export const externalBackends = { aws_s3: true, azure: true, gcp: true, pfs: true }
-export const hasCopyPartBackends = { aws_s3: true, gcp: true }
-export const versioningNotImplBackends = { azure: true, gcp: true }
-export const mpuMDStoredExternallyBackend = { aws_s3: true, gcp: true }
+export const externalBackends = { aws_s3: true, azure: true, gcp: true, pfs: true };
+export const replicationBackends = { aws_s3: true, azure: true, gcp: true };
 // hex digest of sha256 hash of empty string:
-export const emptyStringHash = crypto.createHash('sha256').update('', 'binary').digest('hex');
+export const emptyStringHash = crypto.createHash('sha256')
+    .update('', 'binary').digest('hex');
+export const mpuMDStoredExternallyBackend = { aws_s3: true, gcp: true };
+// AWS sets a minimum size limit for parts except for the last part.
+// http://docs.aws.amazon.com/AmazonS3/latest/API/mpUploadComplete.html
+export const minimumAllowedPartSize = 5242880;
+export const gcpMaximumAllowedPartCount = 1024;
+// GCP Object Tagging Prefix
+export const gcpTaggingPrefix = 'aws-tag-';
+export const productName = 'APN/1.0 Scality/1.0 Scality CloudServer for Zenko';
+export const legacyLocations = ['sproxyd', 'legacy'];
+// healthcheck default call from nginx is every 2 seconds
+// for external backends, don't call unless at least 1 minute
+// (60,000 milliseconds) since last call
+export const externalBackendHealthCheckInterval = 60000;
+// some of the available data backends  (if called directly rather
+// than through the multiple backend gateway) need a key provided
+// as a string as first parameter of the get/delete methods.
+export const clientsRequireStringKey = { sproxyd: true, cdmi: true };
+export const hasCopyPartBackends = { aws_s3: true, gcp: true };
+export const versioningNotImplBackends = { azure: true, gcp: true };
+// user metadata applied on zenko-created objects
+export const zenkoIDHeader = 'x-amz-meta-zenko-instance-id';
 // Default expiration value of the S3 pre-signed URL duration
 // 604800 seconds (seven days).
 export const defaultPreSignedURLExpiry = 7 * 24 * 60 * 60;
@@ -92,12 +126,13 @@ export const supportedNotificationEvents = new Set([
     's3:ObjectRemoved:*',
     's3:ObjectRemoved:Delete',
     's3:ObjectRemoved:DeleteMarkerCreated',
+    's3:Replication:OperationFailedReplication',
+    's3:ObjectTagging:*',
+    's3:ObjectTagging:Put',
+    's3:ObjectTagging:Delete',
+    's3:ObjectAcl:Put',
 ]);
 export const notificationArnPrefix = 'arn:scality:bucketnotif';
-// some of the available data backends  (if called directly rather
-// than through the multiple backend gateway) need a key provided
-// as a string as first parameter of the get/delete methods.
-export const clientsRequireStringKey = { sproxyd: true, cdmi: true };
 // HTTP server keep-alive timeout is set to a higher value than
 // client's free sockets timeout to avoid the risk of triggering
 // ECONNRESET errors if the server closes the connection at the

@@ -29,5 +29,4 @@ server.start(() => {
     logger.info('Metadata Proxy Server successfully started. ' +
                 `Using the ${metadataWrapper.implName} backend`);
 });
-
 ```

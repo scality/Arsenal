@@ -9,10 +9,12 @@ import * as constants from '../constants';
 import constructStringToSignV2 from './v2/constructStringToSign';
 import constructStringToSignV4 from './v4/constructStringToSign';
 import { convertUTCtoISO8601 } from './v4/timeUtils';
-import * as vaultUtilities from './in_memory/vaultUtilities';
-import * as backend from './in_memory/Backend';
-import validateAuthConfig from './in_memory/validateAuthConfig';
-import AuthLoader from './in_memory/AuthLoader';
+import * as vaultUtilities from './backends/in_memory/vaultUtilities';
+import * as inMemoryBackend from './backends/in_memory/Backend';
+import baseBackend from './backends/base';
+import chainBackend from './backends/ChainBackend';
+import validateAuthConfig from './backends/in_memory/validateAuthConfig';
+import AuthLoader from './backends/in_memory/AuthLoader';
 import Vault from './Vault';
 
 let vault: Vault | null = null;
@@ -76,7 +78,7 @@ function extractParams(
             version = 'v4';
         } else {
             log.trace('invalid authorization security header',
-                      { header: authHeader });
+                { header: authHeader });
             return { err: errors.AccessDenied };
         }
     } else if (data.Signature) {
@@ -91,7 +93,7 @@ function extractParams(
     if (version !== null && method !== null) {
         if (!checkFunctions[version] || !checkFunctions[version][method]) {
             log.trace('invalid auth version or method',
-                      { version, authMethod: method });
+                { version, authMethod: method });
             return { err: errors.NotImplemented };
         }
         log.trace('identified auth method', { version, authMethod: method });
@@ -215,16 +217,16 @@ function generateV4Headers(
         .filter(headerName =>
             headerName.startsWith('x-amz-')
             || headerName.startsWith('x-scal-')
-            || headerName === 'host'
+            || headerName === 'host',
         ).sort().join(';');
     const params = { request, signedHeaders, payloadChecksum,
         credentialScope, timestamp, query: data,
         awsService: service, proxyPath };
     const stringToSign = constructStringToSignV4(params);
     const signingKey = vaultUtilities.calculateSigningKey(secretKeyValue,
-                                                          region,
-                                                          scopeDate,
-                                                          service);
+        region,
+        scopeDate,
+        service);
     const signature = crypto.createHmac('sha256', signingKey)
         .update(stringToSign as string, 'binary').digest('hex');
     const authorizationHeader = `${algorithm} Credential=${accessKey}` +
@@ -236,7 +238,8 @@ function generateV4Headers(
 
 export const server = { extractParams, doAuth }
 export const client = { generateV4Headers, constructStringToSignV2 }
-export const inMemory = { backend, validateAuthConfig, AuthLoader }
+export const inMemory = { backend: inMemoryBackend, validateAuthConfig, AuthLoader }
+export const backends = { baseBackend, chainBackend }
 export {
     setAuthHandler as setHandler,
     AuthInfo,

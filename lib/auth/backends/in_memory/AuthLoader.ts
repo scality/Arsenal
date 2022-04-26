@@ -5,7 +5,7 @@ import werelogs from 'werelogs';
 import * as types from './types';
 import { Account, Accounts } from './types';
 
-const ARN = require('../../models/ARN');
+const ARN = require('../../../models/ARN');
 
 /** Load authentication information from files or pre-loaded account objects */
 export default class AuthLoader {

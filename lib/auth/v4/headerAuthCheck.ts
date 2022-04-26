@@ -93,14 +93,14 @@ export function check(
     }
     if (!timestamp) {
         log.debug('missing or invalid date header',
-          { method: 'auth/v4/headerAuthCheck.check' });
+            { method: 'auth/v4/headerAuthCheck.check' });
         return { err: errors.AccessDenied.
-          customizeDescription('Authentication requires a valid Date or ' +
+            customizeDescription('Authentication requires a valid Date or ' +
           'x-amz-date header') };
     }
 
     const validationResult = validateCredentials(credentialsArr, timestamp,
-      log);
+        log);
     if (validationResult instanceof Error) {
         log.debug('credentials in improper format', { credentialsArr,
             timestamp, validationResult });
@@ -132,6 +132,17 @@ export function check(
         return { err: errors.RequestTimeTooSkewed };
     }
 
+    let proxyPath: string | undefined;
+    if (request.headers.proxy_path) {
+        try {
+            proxyPath = decodeURIComponent(request.headers.proxy_path);
+        } catch (err) {
+            log.debug('invalid proxy_path header', { proxyPath, err });
+            return { err: errors.InvalidArgument.customizeDescription(
+                'invalid proxy_path header') };
+        }
+    }
+
     const stringToSign = constructStringToSign({
         log,
         request,
@@ -141,6 +152,7 @@ export function check(
         timestamp,
         payloadChecksum,
         awsService: service,
+        proxyPath,
     });
     log.trace('constructed stringToSign', { stringToSign });
     if (stringToSign instanceof Error) {

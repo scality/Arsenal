@@ -41,12 +41,12 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
 
     if (expirationTime > currentTime + preSignedURLExpiry) {
         log.debug('expires parameter too far in future',
-        { expires: request.query.Expires });
+            { expires: request.query.Expires });
         return { err: errors.AccessDenied };
     }
     if (currentTime > expirationTime) {
         log.debug('current time exceeds expires time',
-        { expires: request.query.Expires });
+            { expires: request.query.Expires });
         return { err: errors.RequestTimeTooSkewed };
     }
     const accessKey = data.AWSAccessKeyId;

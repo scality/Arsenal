@@ -6,6 +6,7 @@ export * as constants from './lib/constants';
 export * as https from './lib/https';
 export * as metrics from './lib/metrics';
 export const db = require('./lib/db');
+export const errorUtils = require('./lib/errorUtils');
 export const shuffle = require('./lib/shuffle');
 export const stringHash = require('./lib/stringHash');
 export const ipCheck = require('./lib/ipCheck');
@@ -13,15 +14,10 @@ export const jsutil = require('./lib/jsutil');
 export const Clustering = require('./lib/Clustering');
 
 export const algorithms = {
-    list: {
-        Basic: require('./lib/algos/list/basic').List,
-        Delimiter: require('./lib/algos/list/delimiter').Delimiter,
-        DelimiterVersions: require('./lib/algos/list/delimiterVersions').DelimiterVersions,
-        DelimiterMaster: require('./lib/algos/list/delimiterMaster').DelimiterMaster,
-        MPU: require('./lib/algos/list/MPU').MultipartUploads,
-    },
+    list: require('./lib/algos/list/exportAlgos'),
     listTools: {
         DelimiterTools: require('./lib/algos/list/tools'),
+        Skip: require('./lib/algos/list/skip'),
     },
     cache: {
         LRUCache: require('./lib/algos/cache/LRUCache'),
@@ -65,10 +61,13 @@ export const network = {
         RESTServer: require('./lib/network/rest/RESTServer'),
         RESTClient: require('./lib/network/rest/RESTClient'),
     },
+    RoundRobin: require('./lib/network/RoundRobin'),
     probe: {
         ProbeServer: require('./lib/network/probe/ProbeServer'),
+        HealthProbeServer:
+            require('./lib/network/probe/HealthProbeServer.js'),
+        Utils: require('./lib/network/probe/Utils.js'),
     },
-    RoundRobin: require('./lib/network/RoundRobin'),
     kmip: require('./lib/network/kmip'),
     kmipClient: require('./lib/network/kmip/Client'),
 };
@@ -84,16 +83,24 @@ export const s3middleware = {
     escapeForXml: require('./lib/s3middleware/escapeForXml'),
     objectLegalHold: require('./lib/s3middleware/objectLegalHold'),
     tagging: require('./lib/s3middleware/tagging'),
+    checkDateModifiedHeaders:
+        require('./lib/s3middleware/validateConditionalHeaders')
+            .checkDateModifiedHeaders,
     validateConditionalHeaders:
-        require('./lib/s3middleware/validateConditionalHeaders').validateConditionalHeaders,
+        require('./lib/s3middleware/validateConditionalHeaders')
+            .validateConditionalHeaders,
     MD5Sum: require('./lib/s3middleware/MD5Sum'),
     NullStream: require('./lib/s3middleware/nullStream'),
     objectUtils: require('./lib/s3middleware/objectUtils'),
     azureHelper: {
-        mpuUtils: require('./lib/s3middleware/azureHelpers/mpuUtils'),
-        ResultsCollector: require('./lib/s3middleware/azureHelpers/ResultsCollector'),
-        SubStreamInterface: require('./lib/s3middleware/azureHelpers/SubStreamInterface'),
+        mpuUtils:
+            require('./lib/s3middleware/azureHelpers/mpuUtils'),
+        ResultsCollector:
+            require('./lib/s3middleware/azureHelpers/ResultsCollector'),
+        SubStreamInterface:
+            require('./lib/s3middleware/azureHelpers/SubStreamInterface'),
     },
+    prepareStream: require('./lib/s3middleware/prepareStream'),
     processMpuParts: require('./lib/s3middleware/processMpuParts'),
     retention: require('./lib/s3middleware/objectRetention'),
     lifecycleHelpers: require('./lib/s3middleware/lifecycleHelpers'),
@@ -164,17 +171,24 @@ export const storage = {
 };
 
 export const models = {
+    BackendInfo: require('./lib/models/BackendInfo'),
     BucketInfo: require('./lib/models/BucketInfo'),
+    BucketAzureInfo: require('./lib/models/BucketAzureInfo'),
     ObjectMD: require('./lib/models/ObjectMD'),
     ObjectMDLocation: require('./lib/models/ObjectMDLocation'),
+    ObjectMDAzureInfo: require('./lib/models/ObjectMDAzureInfo'),
     ARN: require('./lib/models/ARN'),
     WebsiteConfiguration: require('./lib/models/WebsiteConfiguration'),
-    ReplicationConfiguration: require('./lib/models/ReplicationConfiguration'),
-    LifecycleConfiguration: require('./lib/models/LifecycleConfiguration'),
+    ReplicationConfiguration:
+      require('./lib/models/ReplicationConfiguration'),
+    LifecycleConfiguration:
+        require('./lib/models/LifecycleConfiguration'),
     LifecycleRule: require('./lib/models/LifecycleRule'),
     BucketPolicy: require('./lib/models/BucketPolicy'),
-    ObjectLockConfiguration: require('./lib/models/ObjectLockConfiguration'),
-    NotificationConfiguration: require('./lib/models/NotificationConfiguration'),
+    ObjectLockConfiguration:
+        require('./lib/models/ObjectLockConfiguration'),
+    NotificationConfiguration:
+        require('./lib/models/NotificationConfiguration'),
 };
 
 export const pensieve = {
@@ -183,4 +197,8 @@ export const pensieve = {
 
 export const stream = {
     readJSONStreamObject: require('./lib/stream/readJSONStreamObject'),
+};
+
+export const patches = {
+    locationConstraints: require('./lib/patches/locationConstraints'),
 };
