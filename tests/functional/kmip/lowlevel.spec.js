@@ -1,15 +1,15 @@
 'use strict'; // eslint-disable-line strict
 
 const assert = require('assert');
-const TTLVCodec = require('../../../lib/network/kmip/codec/ttlv.js');
+const TTLVCodec = require('../../../lib/network/kmip/codec/ttlv').default;
 const TransportTemplate =
-      require('../../../lib/network/kmip/transport/TransportTemplate.js');
-const KMIP = require('../../../lib/network/kmip');
+      require('../../../lib/network/kmip/transport/TransportTemplate').default;
+const KMIP = require('../../../lib/network/kmip').default;
 const {
     logger,
     MirrorChannel,
-} = require('../../utils/kmip/ersatz.js');
-const lowlevelFixtures = require('../../utils/kmip/lowlevelFixtures.js');
+} = require('../../utils/kmip/ersatz');
+const lowlevelFixtures = require('../../utils/kmip/lowlevelFixtures');
 
 
 class MirrorTransport extends TransportTemplate {

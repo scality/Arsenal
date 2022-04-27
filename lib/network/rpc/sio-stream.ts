@@ -167,7 +167,7 @@ class SIOInputStream extends stream.Readable {
     _onerror(receivedErr: Error) {
         debug('_onerror', this.streamId, 'error', receivedErr);
         const err = reconstructError(receivedErr);
-        // @ts-expect-errors
+        // @ts-expect-error
         err.remote = true;
         this.emit('error', err);
     }

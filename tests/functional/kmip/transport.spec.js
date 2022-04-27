@@ -3,8 +3,8 @@
 const async = require('async');
 const assert = require('assert');
 const TransportTemplate =
-      require('../../../lib/network/kmip/transport/TransportTemplate.js');
-const { logger, EchoChannel } = require('../../utils/kmip/ersatz.js');
+      require('../../../lib/network/kmip/transport/TransportTemplate').default;
+const { logger, EchoChannel } = require('../../utils/kmip/ersatz').default;
 
 describe('KMIP Transport Template Class', () => {
     const pipelineDepths = [1, 2, 4, 8, 16, 32];

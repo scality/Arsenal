@@ -363,6 +363,3 @@ export default class KMIP {
             });
     }
 }
-
-
-module.exports = KMIP;

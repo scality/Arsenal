@@ -1,7 +1,5 @@
-'use strict'; // eslint-disable-line
-
 import tls from 'tls';
-import TransportTemplate, { Options } from './TransportTemplate.js';
+import TransportTemplate, { Options } from './TransportTemplate';
 
 export default class TlsTransport extends TransportTemplate {
     constructor(options: Options) {

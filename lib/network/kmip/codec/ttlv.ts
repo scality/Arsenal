@@ -27,6 +27,7 @@ function _throwError(logger: werelogs.Logger, msg: string, data?: LogDictionnary
 
 export default function TTLVCodec() {
     if (!new.target) {
+        // @ts-ignore
         return new TTLVCodec();
     }
 
@@ -43,7 +44,7 @@ export default function TTLVCodec() {
                 const funcName = 'Structure::decode';
                 const length = value.length;
                 let i = 0;
-                const result = [];
+                const result: any[] = [];
                 let diversion = null;
                 while (i < length) {
                     const element = {};
@@ -51,7 +52,7 @@ export default function TTLVCodec() {
                     const elementType =
                           value.slice(i + 3, i + 4).toString('hex');
                     const elementLength = value.readUInt32BE(i + 4);
-                    const property = {};
+                    const property: any = {};
                     if (!TypeDecoder[elementType]) {
                         _throwError(logger,
                             'Unknown element type',
@@ -98,7 +99,7 @@ export default function TTLVCodec() {
                 const type = Buffer.from(TypeEncoder['Structure'].value, 'hex');
                 const length = Buffer.alloc(4);
                 let vectorLength = 0;
-                let encodedValue = [];
+                let encodedValue: any[] = [];
                 value.forEach(item => {
                     Object.keys(item).forEach(key => {
                         const itemTagName = key;
@@ -111,7 +112,7 @@ export default function TTLVCodec() {
                         if (!TypeEncoder[itemType]) {
                             throw Error(`Unknown Type '${itemType}'`);
                         }
-                        const itemResult =
+                        const itemResult: any[] =
                               TypeEncoder[itemType].encode(itemTagName,
                                   itemValue,
                                   itemDiversion);
@@ -343,7 +344,7 @@ export default function TTLVCodec() {
 
     /* Construct TagDecoder */
     Object.keys(TagDecoder).forEach(key => {
-        const element = {};
+        const element: any = {};
         element.value = key;
         if (TagDecoder[key]['enumeration']) {
             const enumeration = {};
@@ -368,7 +369,7 @@ export default function TTLVCodec() {
 
 
     /* Public Methods Definition */
-
+    // @ts-ignore
     this.encodeMask = (tagName, value) => {
         let mask = 0;
         value.forEach(item => {
@@ -381,9 +382,10 @@ export default function TTLVCodec() {
         return mask;
     };
 
+    // @ts-ignore
     this.decodeMask = (tagName, givenMask) => {
         let mask = givenMask;
-        const value = [];
+        const value: any[] = [];
         const tag = TagEncoder[tagName].value;
         Object.keys(TagDecoder[tag].enumeration).forEach(key => {
             const bit = Buffer.from(key, 'hex').readUInt32BE(0);
@@ -395,15 +397,17 @@ export default function TTLVCodec() {
         return value;
     };
 
+    // @ts-ignore
     this.decode = (logger, rawMessage) => {
         const messageContent =
               TypeDecoder['01'].decode(logger, null, rawMessage);
         return new KMIPMessage(messageContent);
     };
 
+    // @ts-ignore
     this.encode = message => {
         const value = message.content;
-        let result = [];
+        let result: any[] = [];
         value.forEach(item => {
             Object.keys(item).forEach(key => {
                 if (!TagEncoder[key]) {
@@ -422,10 +426,13 @@ export default function TTLVCodec() {
         return Buffer.concat(_ttlvPadVector(result));
     };
 
+    // @ts-ignore
     this.mapExtension = (tagName, tagValue) => {
         const tagValueStr = tagValue.toString(16);
         TagDecoder[tagValueStr] = { name: tagName };
         TagEncoder[tagName] = { value: tagValueStr };
     };
+
+    // @ts-ignore
     return this;
 }

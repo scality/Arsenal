@@ -1,4 +1,4 @@
-const { ArsenalError } = require('../../errors');
+import { ArsenalError } from '../../errors';
 
  // eslint-disable-line
 
