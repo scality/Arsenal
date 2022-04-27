@@ -1,12 +1,13 @@
+import { Logger } from 'werelogs';
+
 const DEFAULT_STICKY_COUNT = 100;
 
 /**
  * Shuffle an array in-place
  *
- * @param {Array} array - The array to shuffle
- * @return {undefined}
+ * @param array - The array to shuffle
  */
-function shuffle(array) {
+function shuffle(array: any[]) {
     for (let i = array.length - 1; i > 0; i--) {
         const randIndex = Math.floor(Math.random() * (i + 1));
         /* eslint-disable no-param-reassign */
@@ -17,19 +18,29 @@ function shuffle(array) {
     }
 }
 
-class RoundRobin {
+export default class RoundRobin {
+    logger?: Logger;
+    stickyCount: number;
+    defaultPort?: number;
+    hostsList: { host: string; port?: number }[]
+    hostIndex: number;
+    pickCount: number;
+
     /**
      * @constructor
      * @param {object[]|string[]} hostsList - list of hosts to query
      *   in round-robin fashion.
      * @param {string} hostsList[].host - host name or IP address
-     * @param {number} [hostsList[].port] - port number to contact
+     * @param {number} [hostsList[].port] - port number to contacts
      * @param {object} [options] - options object
      * @param {number} [options.stickyCount=100] - number of requests
      *   to send to the same host before switching to the next one
      * @param {Logger} [options.logger] - logger object
      */
-    constructor(hostsList, options) {
+    constructor(
+        hostsList: { host: string; port: number }[] | string[],
+        options?: { stickyCount?: number; logger?: Logger; defaultPort?: string },
+    ) {
         if (hostsList.length === 0) {
             throw new Error(
                 'at least one host must be provided for round robin');
@@ -44,9 +55,12 @@ class RoundRobin {
         }
         if (options && options.defaultPort) {
             this.defaultPort = Number.parseInt(options.defaultPort, 10);
+            if (isNaN(this.defaultPort)) {
+                this.defaultPort = undefined;
+            }
         }
 
-        this.hostsList = hostsList.map(item => this._validateHostObj(item));
+        this.hostsList = hostsList.map((item: any) => this._validateHostObj(item));
 
         // TODO: add blacklisting capability
 
@@ -55,8 +69,8 @@ class RoundRobin {
         this.pickCount = 0;
     }
 
-    _validateHostObj(hostItem) {
-        const hostItemObj = {};
+    _validateHostObj(hostItem: string | { host: string; port: string }): { host: string; port?: number } {
+        const hostItemObj: { host: string; port: string } = { host: '', port: '' };
 
         if (typeof hostItem === 'string') {
             const hostParts = hostItem.split(':');
@@ -106,7 +120,7 @@ class RoundRobin {
      * Once all hosts have been returned once, the list is shuffled
      * and a new round-robin cycle starts.
      *
-     * @return {object} a host object with { host, port } attributes
+     * @return a host object with { host, port } attributes
      */
     pickHost() {
         if (this.logger) {
@@ -131,7 +145,7 @@ class RoundRobin {
      * Once all hosts have been returned once, the list is shuffled
      * and a new round-robin cycle starts.
      *
-     * @return {object} a host object with { host, port } attributes
+     * @return a host object with { host, port } attributes
      */
     pickNextHost() {
         // don't shuffle in this case because we want to force picking
@@ -145,13 +159,13 @@ class RoundRobin {
      * return the current host in round-robin, without changing the
      * round-robin state
      *
-     * @return {object} a host object with { host, port } attributes
+     * @return a host object with { host, port } attributes
      */
     getCurrentHost() {
         return this.hostsList[this.hostIndex];
     }
 
-    _roundRobinCurrentHost(params) {
+    _roundRobinCurrentHost(params: { shuffle?: boolean }) {
         this.hostIndex += 1;
         if (this.hostIndex === this.hostsList.length) {
             this.hostIndex = 0;
@@ -167,5 +181,3 @@ class RoundRobin {
         }
     }
 }
-
-module.exports = RoundRobin;

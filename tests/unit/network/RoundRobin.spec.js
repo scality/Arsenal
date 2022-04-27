@@ -1,6 +1,6 @@
 const assert = require('assert');
 
-const RoundRobin = require('../../../lib/network/RoundRobin');
+const RoundRobin = require('../../../lib/network/RoundRobin').default;
 
 describe('round robin hosts', () => {
     let roundRobin;

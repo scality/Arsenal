@@ -2,8 +2,8 @@ const assert = require('assert');
 const net = require('net');
 const tls = require('tls');
 const TransportTemplate =
-      require('../../../lib/network/kmip/transport/TransportTemplate.js');
-const { logger } = require('../../utils/kmip/ersatz.js');
+      require('../../../lib/network/kmip/transport/TransportTemplate').default;
+const { logger } = require('../../utils/kmip/ersatz');
 
 describe('KMIP Connection Management', () => {
     let server;

@@ -8,8 +8,8 @@ const werelogs = require('werelogs');
 
 const DataFileStore = require(
     '../../../../lib/storage/data/file/DataFileStore');
-const RESTClient = require('../../../../lib/network/rest/RESTClient');
-const RESTServer = require('../../../../lib/network/rest/RESTServer');
+const RESTClient = require('../../../../lib/network/rest/RESTClient').default;
+const RESTServer = require('../../../../lib/network/rest/RESTServer').default;
 
 function createReadStream(contents) {
     const rs = new stream.Readable();

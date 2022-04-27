@@ -1,7 +1,7 @@
 'use strict'; // eslint-disable-line strict
 /* eslint new-cap: "off" */
 
-const KMIP = require('../../../lib/network/kmip');
+const KMIP = require('../../../lib/network/kmip').default;
 
 module.exports = [
     {

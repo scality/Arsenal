@@ -1,35 +1,36 @@
-'use strict'; // eslint-disable-line
+import assert from 'assert';
+import * as url from 'url';
+import * as werelogs from 'werelogs';
+import * as http from 'http';
+import httpServer from '../http/server';
+import * as constants from '../../constants';
+import { parseURL } from './utils';
+import * as httpUtils from '../http/utils';
+import errors, { ArsenalError } from '../../errors';
 
-const assert = require('assert');
-const url = require('url');
-
-const werelogs = require('werelogs');
-
-const httpServer = require('../http/server');
-const constants = require('../../constants');
-const { parseURL } = require('./utils');
-const httpUtils = require('../http/utils');
-const errors = require('../../errors').default;
-
-function setContentLength(response, contentLength) {
+function setContentLength(response: http.ServerResponse, contentLength: number) {
     response.setHeader('Content-Length', contentLength.toString());
 }
 
-function setContentRange(response, byteRange, objectSize) {
+function setContentRange(
+    response: http.ServerResponse,
+    byteRange: [number | undefined, number | undefined],
+    objectSize: number,
+) {
     const [start, end] = byteRange;
     assert(start !== undefined && end !== undefined);
     response.setHeader('Content-Range',
         `bytes ${start}-${end}/${objectSize}`);
 }
 
-function sendError(res, log, error, optMessage) {
+function sendError(
+    res: http.ServerResponse,
+    log: RequestLogger,
+    error: ArsenalError,
+    optMessage?: string,
+) {
     res.writeHead(error.code);
-    let message;
-    if (optMessage) {
-        message = optMessage;
-    } else {
-        message = error.description || '';
-    }
+    const message = optMessage ?? error.description ?? '';
     log.debug('sending back error response', { httpCode: error.code,
         errorType: error.message,
         error: message });
@@ -44,20 +45,30 @@ function sendError(res, log, error, optMessage) {
  * You have to call setup() to initialize the storage backend, then
  * start() to start listening to the configured port.
  */
-class RESTServer extends httpServer {
+export default class RESTServer extends httpServer {
+    logging: werelogs.Logger;
+    dataStore: any;
+    reqMethods: { [key: string]: any };
+
     /**
      * @constructor
-     * @param {Object} params - constructor params
-     * @param {Number} params.port - TCP port where the server listens to
+     * @param params - constructor params
+     * @param params.port - TCP port where the server listens to
      * @param {arsenal.storage.data.file.Store} params.dataStore -
      *   data store object
-     * @param {Number} [params.bindAddress='localhost'] - address
+     * @param [params.bindAddress='localhost'] - address
      * bound to the socket
-     * @param {Object} [params.log] - logger configuration
+     * @param [params.log] - logger configuration
      */
-    constructor(params) {
+    constructor(params: {
+        port: number;
+        dataStore: any;
+        bindAddress?: string;
+        log: { logLevel: any; dumpLevel: any; };
+    }) {
         assert(params.port);
 
+        // @ts-expect-error
         werelogs.configure({
             level: params.log.logLevel,
             dump: params.log.dumpLevel,
@@ -81,21 +92,20 @@ class RESTServer extends httpServer {
     /**
      * Setup the storage backend
      *
-     * @param {function} callback - called when finished
-     * @return {undefined}
+     * @param callback - called when finished
      */
-    setup(callback) {
+    setup(callback: any) {
         this.dataStore.setup(callback);
     }
 
     /**
      * Create a new request logger object
      *
-     * @param {String} reqUids - serialized request UIDs (as received in
+     * @param reqUids - serialized request UIDs (as received in
      * the X-Scal-Request-Uids header)
-     * @return {werelogs.RequestLogger} new request logger
+     * @return new request logger
      */
-    createLogger(reqUids) {
+    createLogger(reqUids?: string) {
         return reqUids ?
             this.logging.newRequestLoggerFromSerializedUids(reqUids) :
             this.logging.newRequestLogger();
@@ -105,17 +115,17 @@ class RESTServer extends httpServer {
      * Main incoming request handler, dispatches to method-specific
      * handlers
      *
-     * @param {http.IncomingMessage} req - HTTP request object
-     * @param {http.ServerResponse} res - HTTP response object
-     * @return {undefined}
+     * @param req - HTTP request object
+     * @param res - HTTP response object
      */
-    _onRequest(req, res) {
+    _onRequest(req: http.IncomingMessage, res: http.ServerResponse) {
         const reqUids = req.headers['x-scal-request-uids'];
-        const log = this.createLogger(reqUids);
+        const log = this.createLogger(reqUids as string);
         log.debug('request received', { method: req.method,
             url: req.url });
-        if (req.method in this.reqMethods) {
-            this.reqMethods[req.method](req, res, log);
+        const method = req.method ?? '';
+        if (method in this.reqMethods) {
+            this.reqMethods[method](req, res, log);
         } else {
             // Method Not Allowed
             sendError(res, log, errors.MethodNotAllowed);
@@ -125,15 +135,18 @@ class RESTServer extends httpServer {
     /**
      * Handler for PUT requests
      *
-     * @param {http.IncomingMessage} req - HTTP request object
-     * @param {http.ServerResponse} res - HTTP response object
-     * @param {werelogs.RequestLogger} log - logger object
-     * @return {undefined}
+     * @param req - HTTP request object
+     * @param res - HTTP response object
+     * @param log - logger object
      */
-    _onPut(req, res, log) {
-        let size;
+    _onPut(
+        req: http.IncomingMessage,
+        res: http.ServerResponse,
+        log: RequestLogger,
+    ) {
+        let size: number;
         try {
-            parseURL(req.url, false);
+            parseURL(req.url ?? '', false);
             const contentLength = req.headers['content-length'];
             if (contentLength === undefined) {
                 throw errors.MissingContentLength;
@@ -143,7 +156,7 @@ class RESTServer extends httpServer {
                 throw errors.InvalidInput.customizeDescription(
                     'bad Content-Length');
             }
-        } catch (err) {
+        } catch (err: any) {
             return sendError(res, log, err);
         }
         this.dataStore.put(req, size, log, (err, key) => {
@@ -164,17 +177,21 @@ class RESTServer extends httpServer {
     /**
      * Handler for GET requests
      *
-     * @param {http.IncomingMessage} req - HTTP request object
-     * @param {http.ServerResponse} res - HTTP response object
-     * @param {werelogs.RequestLogger} log - logger object
-     * @return {undefined}
+     * @param req - HTTP request object
+     * @param res - HTTP response object
+     * @param log - logger object
      */
-    _onGet(req, res, log) {
-        let pathInfo;
-        let rangeSpec = undefined;
+    _onGet(
+        req: http.IncomingMessage,
+        res: http.ServerResponse,
+        log: RequestLogger,
+    ) {
+        let pathInfo: ReturnType<typeof parseURL>;
+        let rangeSpec: ReturnType<typeof httpUtils.parseRangeSpec> | undefined =
+            undefined;
 
         // Get request on the toplevel endpoint with ?action
-        if (req.url.startsWith(`${constants.dataFileURL}?`)) {
+        if (req.url?.startsWith(`${constants.dataFileURL}?`)) {
             const queryParam = url.parse(req.url).query;
             if (queryParam === 'diskUsage') {
                 return this.dataStore.getDiskUsage((err, result) => {
@@ -190,31 +207,27 @@ class RESTServer extends httpServer {
 
         // Get request on an actual object
         try {
-            pathInfo = parseURL(req.url, true);
+            pathInfo = parseURL(req.url ?? '', true);
             const rangeHeader = req.headers.range;
             if (rangeHeader !== undefined) {
                 rangeSpec = httpUtils.parseRangeSpec(rangeHeader);
-                if (rangeSpec.error) {
-                    // ignore header if syntax is invalid
-                    rangeSpec = undefined;
-                }
             }
-        } catch (err) {
+        } catch (err: any) {
             return sendError(res, log, err);
         }
         this.dataStore.stat(pathInfo.key, log, (err, info) => {
             if (err) {
                 return sendError(res, log, err);
             }
-            let byteRange;
-            let contentLength;
-            if (rangeSpec) {
-                const { range, error } = httpUtils.getByteRangeFromSpec(
-                    rangeSpec, info.objectSize);
-                if (error) {
-                    return sendError(res, log, error);
+            let byteRange: [number, number] | undefined;
+            let contentLength: number;
+            if (rangeSpec && !('error' in rangeSpec)) {
+                const result = httpUtils.getByteRangeFromSpec(rangeSpec, info.objectSize);
+                if ('error' in result) {
+                    return sendError(res, log, result.error);
+                } else if ('range' in result) {
+                    byteRange = result.range;
                 }
-                byteRange = range;
             }
             if (byteRange) {
                 contentLength = byteRange[1] - byteRange[0] + 1;
@@ -247,16 +260,19 @@ class RESTServer extends httpServer {
     /**
      * Handler for DELETE requests
      *
-     * @param {http.IncomingMessage} req - HTTP request object
-     * @param {http.ServerResponse} res - HTTP response object
-     * @param {werelogs.RequestLogger} log - logger object
-     * @return {undefined}
+     * @param req - HTTP request object
+     * @param res - HTTP response object
+     * @param log - logger object
      */
-    _onDelete(req, res, log) {
-        let pathInfo;
+    _onDelete(
+        req: http.IncomingMessage,
+        res: http.ServerResponse,
+        log: RequestLogger,
+    ) {
+        let pathInfo: ReturnType<typeof parseURL>;
         try {
-            pathInfo = parseURL(req.url, true);
-        } catch (err) {
+            pathInfo = parseURL(req.url ?? '', true);
+        } catch (err: any) {
             return sendError(res, log, err);
         }
         this.dataStore.delete(pathInfo.key, log, err => {
@@ -273,5 +289,3 @@ class RESTServer extends httpServer {
         return undefined;
     }
 }
-
-module.exports = RESTServer;

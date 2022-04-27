@@ -3,8 +3,8 @@
 
 const assert = require('assert');
 
-const TTLVCodec = require('../../../lib/network/kmip/codec/ttlv.js');
-const KMIP = require('../../../lib/network/kmip');
+const TTLVCodec = require('../../../lib/network/kmip/codec/ttlv').default;
+const KMIP = require('../../../lib/network/kmip').default;
 const ttlvFixtures = require('../../utils/kmip/ttlvFixtures');
 const badTtlvFixtures = require('../../utils/kmip/badTtlvFixtures');
 const messageFixtures = require('../../utils/kmip/messageFixtures');
