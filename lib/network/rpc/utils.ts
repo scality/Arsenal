@@ -55,6 +55,7 @@ export function reconstructError(err: Error) {
     }
 
     const reconstructedErr = new Error(err.message);
+    // @ts-expect-error
     reconstructedErr.is = {
         [err.message]: true,
     };
