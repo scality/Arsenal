@@ -1,12 +1,10 @@
 'use strict'; // eslint-disable-line
 
-const tls = require('tls');
-const TransportTemplate = require('./TransportTemplate.js');
+import tls from 'tls';
+import TransportTemplate, { Options } from './TransportTemplate.js';
 
-class TlsTransport extends TransportTemplate {
-    constructor(options) {
+export default class TlsTransport extends TransportTemplate {
+    constructor(options: Options) {
         super(tls, options);
     }
 }
-
-module.exports = TlsTransport;

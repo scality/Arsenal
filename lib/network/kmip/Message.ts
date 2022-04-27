@@ -1,13 +1,10 @@
-'use strict'; // eslint-disable-line
+import assert from 'assert';
 
-const assert = require('assert');
-
-
-function _lookup(decodedTTLV, path) {
+function _lookup(decodedTTLV: any[], path: string) {
     const xpath = path.split('/').filter(word => word.length > 0);
     const canonicalPath = xpath.join('/');
     const obj = decodedTTLV;
-    let res = [];
+    let res: any[] = [];
     assert(Array.isArray(obj));
     for (let current = xpath.shift(); current; current = xpath.shift()) {
         for (let i = 0; i < obj.length; ++i) {
@@ -31,24 +28,24 @@ function _lookup(decodedTTLV, path) {
     return res;
 }
 
-class Message {
+export default class Message {
+    content: any[];
+
     /**
      * Construct a new abstract Message
-     * @param {Object} content - the content  of the message
+     * @param content - the content  of the message
      */
-    constructor(content) {
+    constructor(content: any[]) {
         this.content = content;
     }
 
     /**
      * Lookup the values corresponding to the provided path
-     * @param {String} path - the path in the hierarchy of the values
+     * @param path - the path in the hierarchy of the values
      *                        of interest
-     * @return {Object} - an array of the values matching the provided path
+     * @return - an array of the values matching the provided path
      */
-    lookup(path) {
+    lookup(path: string) {
         return _lookup(this.content, path);
     }
 }
-
-module.exports = Message;

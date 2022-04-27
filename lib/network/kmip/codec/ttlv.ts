@@ -1,12 +1,11 @@
-'use strict'; // eslint-disable-line
 /* eslint dot-notation: "off" */
-
-const KMIPTags = require('../tags.json');
-const KMIPMessage = require('../Message.js');
+import KMIPTags from '../tags.json';
+import KMIPMessage from '../Message';
+import * as werelogs from 'werelogs';
 
 const UINT32_MAX = Math.pow(2, 32);
 
-function _ttlvPadVector(vec) {
+function _ttlvPadVector(vec: any[]) {
     let length = 0;
     vec.forEach(buf => {
         if (!(buf instanceof Buffer)) {
@@ -21,12 +20,12 @@ function _ttlvPadVector(vec) {
     return vec;
 }
 
-function _throwError(logger, msg, data) {
+function _throwError(logger: werelogs.Logger, msg: string, data?: LogDictionnary) {
     logger.error(msg, data);
     throw Error(msg);
 }
 
-function TTLVCodec() {
+export default function TTLVCodec() {
     if (!new.target) {
         return new TTLVCodec();
     }
@@ -430,5 +429,3 @@ function TTLVCodec() {
     };
     return this;
 }
-
-module.exports = TTLVCodec;
