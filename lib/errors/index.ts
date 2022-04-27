@@ -55,6 +55,30 @@ export class ArsenalError extends Error {
         return JSON.stringify({ errorType, errorMessage });
     }
 
+    flatten() {
+        return {
+            is_arsenal_error: true,
+            code: this.#code,
+            description: this.#description,
+            type: this.#type,
+            stack: this.stack
+        }
+    }
+
+    static unflatten(flat_obj) {
+        if (!flat_obj.is_arsenal_error) {
+            return null;
+        }
+
+        const err = new ArsenalError(
+            flat_obj.type,
+            flat_obj.code,
+            flat_obj.description
+        )
+        err.stack = flat_obj.stack
+        return err;
+    }
+
     /** Write the error in an HTTP response */
     writeResponse(res: ServerResponse) {
         res.writeHead(this.#code);
