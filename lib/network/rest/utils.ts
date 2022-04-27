@@ -35,25 +35,26 @@ export function explodePath(path: string) {
  *   - pathInfo.key {String} - The requested key
  */
 export function parseURL(urlStr: string, expectKey: boolean) {
-   const urlObj = url.parse(urlStr);
-   const pathInfo = explodePath(urlObj.path!);
-   if (pathInfo.service !== constants.dataFileURL) {
-       throw errors.InvalidAction.customizeDescription(
-           `unsupported service '${pathInfo.service}'`);
-   }
-   if (expectKey && pathInfo.key === undefined) {
-       throw errors.MissingParameter.customizeDescription(
-           'URL is missing key');
-   }
-   if (!expectKey && pathInfo.key !== undefined) {
-       // note: we may implement rewrite functionality by allowing a
-       // key in the URL, though we may still provide the new key in
-       // the Location header to keep immutability property and
-       // atomicity of the update (we would just remove the old
-       // object when the new one has been written entirely in this
-       // case, saving a request over an equivalent PUT + DELETE).
-       throw errors.InvalidURI.customizeDescription(
-           'PUT url cannot contain a key');
-   }
-   return pathInfo;
+    const urlObj = url.parse(urlStr);
+    const pathInfo = explodePath(decodeURI(urlObj.path!));
+    if ((pathInfo.service !== constants.dataFileURL)
+        && (pathInfo.service !== constants.passthroughFileURL)) {
+        throw errors.InvalidAction.customizeDescription(
+            `unsupported service '${pathInfo.service}'`);
+    }
+    if (expectKey && pathInfo.key === undefined) {
+        throw errors.MissingParameter.customizeDescription(
+            'URL is missing key');
+    }
+    if (!expectKey && pathInfo.key !== undefined) {
+        // note: we may implement rewrite functionality by allowing a
+        // key in the URL, though we may still provide the new key in
+        // the Location header to keep immutability property and
+        // atomicity of the update (we would just remove the old
+        // object when the new one has been written entirely in this
+        // case, saving a request over an equivalent PUT + DELETE).
+        throw errors.InvalidURI.customizeDescription(
+            'PUT url cannot contain a key');
+    }
+    return pathInfo;
 }
