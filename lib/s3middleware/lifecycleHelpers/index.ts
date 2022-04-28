@@ -1,4 +1,2 @@
-module.exports = {
-    LifecycleDateTime: require('./LifecycleDateTime'),
-    LifecycleUtils: require('./LifecycleUtils'),
-};
+export { default as LifecycleDateTime } from './LifecycleDateTime';
+export { default as LifecycleUtils } from './LifecycleUtils';
