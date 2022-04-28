@@ -1,14 +1,14 @@
-const Transform = require('stream').Transform;
-const crypto = require('crypto');
+import { Transform } from 'stream';
+import * as crypto from 'crypto';
 
 /**
  * This class is design to compute md5 hash at the same time as sending
  * data through a stream
  */
-class MD5Sum extends Transform {
-    /**
-     * @constructor
-     */
+export default class MD5Sum extends Transform {
+    hash: ReturnType<typeof crypto.createHash>;
+    completedHash?: string;
+
     constructor() {
         super({});
         this.hash = crypto.createHash('md5');
@@ -18,12 +18,19 @@ class MD5Sum extends Transform {
     /**
      * This function will update the current md5 hash with the next chunk
      *
-     * @param {Buffer|string} chunk - Chunk to compute
-     * @param {string} encoding - Data encoding
-     * @param {function} callback - Callback(err, chunk, encoding)
-     * @return {undefined}
+     * @param chunk - Chunk to compute
+     * @param encoding - Data encoding
+     * @param callback - Callback(err, chunk, encoding)
      */
-    _transform(chunk, encoding, callback) {
+    _transform(
+        chunk: string,
+        encoding: crypto.Encoding,
+        callback: (
+            err: Error | null,
+            chunk: string,
+            encoding: crypto.Encoding,
+        ) => void,
+    ) {
         this.hash.update(chunk, encoding);
         callback(null, chunk, encoding);
     }
@@ -31,14 +38,11 @@ class MD5Sum extends Transform {
     /**
      * This function will end the hash computation
      *
-     * @param {function} callback(err)
-     * @return {undefined}
+     * @param callback(err)
      */
-    _flush(callback) {
+    _flush(callback: (err: Error | null) => void) {
         this.completedHash = this.hash.digest('hex');
         this.emit('hashed');
         callback(null);
     }
 }
-
-module.exports = MD5Sum;
