@@ -1,39 +1,82 @@
-const querystring = require('querystring');
-const escapeForXml = require('./escapeForXml');
+import * as querystring from 'querystring';
+import escapeForXml from './escapeForXml';
 
-const convertMethods = {};
+export type Params = {
+    bucketName: string;
+    hostname: string;
+    objectKey: string;
+    eTag: string;
+    uploadId: string;
+    list: string;
+}
 
-convertMethods.completeMultipartUpload = xmlParams => {
-    const escapedBucketName = escapeForXml(xmlParams.bucketName);
-    return '<?xml version="1.0" encoding="UTF-8"?>' +
-    '<CompleteMultipartUploadResult ' +
-        'xmlns="http://s3.amazonaws.com/doc/2006-03-01/">' +
-    `<Location>http://${escapedBucketName}.` +
-        `${escapeForXml(xmlParams.hostname)}/` +
-        `${escapeForXml(xmlParams.objectKey)}</Location>` +
-    `<Bucket>${escapedBucketName}</Bucket>` +
-    `<Key>${escapeForXml(xmlParams.objectKey)}</Key>` +
-    `<ETag>${escapeForXml(xmlParams.eTag)}</ETag>` +
-    '</CompleteMultipartUploadResult>';
-};
+export type CompleteParams = { bucketName: string; hostname: string; objectKey: string; eTag: string }
+export const completeMultipartUpload = (xmlParams: CompleteParams) => {
+    const bucketName = escapeForXml(xmlParams.bucketName);
+    const hostname = escapeForXml(xmlParams.hostname);
+    const objectKey = escapeForXml(xmlParams.objectKey);
+    const location = `http://${bucketName}.${hostname}/${objectKey}`;
+    const eTag = escapeForXml(xmlParams.eTag);
+    return `
+        <?xml version="1.0" encoding="UTF-8"?>
+        <CompleteMultipartUploadResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+            <Location>${location}</Location>
+            <Bucket>${bucketName}</Bucket>
+            <Key>${objectKey}</Key>
+            <ETag>${eTag}</ETag>
+        </CompleteMultipartUploadResult>
+    `.trim();
+}
 
-convertMethods.initiateMultipartUpload = xmlParams =>
-    '<?xml version="1.0" encoding="UTF-8"?>' +
-     '<InitiateMultipartUploadResult ' +
-        'xmlns="http://s3.amazonaws.com/doc/2006-03-01/">' +
-     `<Bucket>${escapeForXml(xmlParams.bucketName)}</Bucket>` +
-     `<Key>${escapeForXml(xmlParams.objectKey)}</Key>` +
-     `<UploadId>${escapeForXml(xmlParams.uploadId)}</UploadId>` +
-     '</InitiateMultipartUploadResult>';
+export type InitParams = { bucketName: string; objectKey: string; uploadId: string }
+export const initiateMultipartUpload = (xmlParams: InitParams) => `
+    <?xml version="1.0" encoding="UTF-8"?>
+    <InitiateMultipartUploadResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+        <Bucket>${escapeForXml(xmlParams.bucketName)}</Bucket>
+        <Key>${escapeForXml(xmlParams.objectKey)}</Key>
+        <UploadId>${escapeForXml(xmlParams.uploadId)}</UploadId>
+    </InitiateMultipartUploadResult>
+`.trim();
 
-convertMethods.listMultipartUploads = xmlParams => {
-    const xml = [];
+export type ListParams = {
+    list: {
+        NextKeyMarker?: string;
+        NextUploadIdMarker?: string;
+        Delimiter?: string;
+        MaxKeys: string;
+        IsTruncated: string;
+        CommonPrefixes: string[];
+        Uploads: Array<{
+            key: string;
+            value: {
+                UploadId: string;
+                Initiator: {
+                    ID: string;
+                    DisplayName: string;
+                };
+                Owner: {
+                    ID: string;
+                    DisplayName: string;
+                };
+                StorageClass: string;
+                Initiated: string;
+            };
+        }>;
+    };
+    encoding: 'url';
+    bucketName: string;
+    keyMarker: string;
+    uploadIdMarker: string;
+    prefix?: string;
+}
+export const listMultipartUploads = (xmlParams: ListParams) => {
+    const xml: string[] = [];
     const l = xmlParams.list;
 
-    xml.push('<?xml version="1.0" encoding="UTF-8"?>',
-        '<ListMultipartUploadsResult ' +
-                'xmlns="http://s3.amazonaws.com/doc/2006-03-01/">',
-        `<Bucket>${escapeForXml(xmlParams.bucketName)}</Bucket>`,
+    xml.push(
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<ListMultipartUploadsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">',
+        `   <Bucket>${escapeForXml(xmlParams.bucketName)}</Bucket>`,
     );
 
     // For certain XML elements, if it is `undefined`, AWS returns either an
@@ -50,14 +93,18 @@ convertMethods.listMultipartUploads = xmlParams => {
 
     params.forEach(param => {
         if (param.value) {
-            xml.push(`<${param.tag}>${escapeForXml(param.value)}` +
-                `</${param.tag}>`);
+            xml.push(
+                `<${param.tag}>
+                    ${escapeForXml(param.value)}
+                </${param.tag}>`
+            );
         } else if (!param.optional) {
             xml.push(`<${param.tag} />`);
         }
     });
 
-    xml.push(`<MaxUploads>${escapeForXml(l.MaxKeys)}</MaxUploads>`,
+    xml.push(
+        `<MaxUploads>${escapeForXml(l.MaxKeys)}</MaxUploads>`,
         `<IsTruncated>${escapeForXml(l.IsTruncated)}</IsTruncated>`,
     );
 
@@ -68,29 +115,34 @@ convertMethods.listMultipartUploads = xmlParams => {
             key = querystring.escape(key);
         }
 
-        xml.push('<Upload>',
-            `<Key>${escapeForXml(key)}</Key>`,
-            `<UploadId>${escapeForXml(val.UploadId)}</UploadId>`,
-            '<Initiator>',
-            `<ID>${escapeForXml(val.Initiator.ID)}</ID>`,
-            `<DisplayName>${escapeForXml(val.Initiator.DisplayName)}` +
+        xml.push(
+            '<Upload>',
+                `<Key>${escapeForXml(key)}</Key>`,
+                `<UploadId>${escapeForXml(val.UploadId)}</UploadId>`,
+                '<Initiator>',
+                    `<ID>${escapeForXml(val.Initiator.ID)}</ID>`,
+                    `<DisplayName>`,
+                        escapeForXml(val.Initiator.DisplayName),
+                    '/DisplayName>',
+                '</Initiator>',
+                '<Owner>',
+                    `<ID>${escapeForXml(val.Owner.ID)}</ID>`,
+                    `<DisplayName>`,
+                        escapeForXml(val.Owner.DisplayName),
                     '</DisplayName>',
-            '</Initiator>',
-            '<Owner>',
-            `<ID>${escapeForXml(val.Owner.ID)}</ID>`,
-            `<DisplayName>${escapeForXml(val.Owner.DisplayName)}` +
-                    '</DisplayName>',
-            '</Owner>',
-            `<StorageClass>${escapeForXml(val.StorageClass)}` +
-                    '</StorageClass>',
-            `<Initiated>${escapeForXml(val.Initiated)}</Initiated>`,
+                '</Owner>',
+                `<StorageClass>`,
+                    escapeForXml(val.StorageClass),
+                '</StorageClass>',
+                `<Initiated>${escapeForXml(val.Initiated)}</Initiated>`,
             '</Upload>',
         );
     });
 
     l.CommonPrefixes.forEach(prefix => {
-        xml.push('<CommonPrefixes>',
-            `<Prefix>${escapeForXml(prefix)}</Prefix>`,
+        xml.push(
+            '<CommonPrefixes>',
+                `<Prefix>${escapeForXml(prefix)}</Prefix>`,
             '</CommonPrefixes>',
         );
     });
@@ -98,10 +150,17 @@ convertMethods.listMultipartUploads = xmlParams => {
     xml.push('</ListMultipartUploadsResult>');
 
     return xml.join('');
-};
-
-function convertToXml(method, xmlParams) {
-    return convertMethods[method](xmlParams);
 }
 
-module.exports = convertToXml;
+const methods = {
+    listMultipartUploads,
+    initiateMultipartUpload,
+    completeMultipartUpload,
+}
+
+export default function convertToXml(method: 'initiateMultipartUpload', params: InitParams): string;
+export default function convertToXml(method: 'listMultipartUploads', params: ListParams): string;
+export default function convertToXml(method: 'completeMultipartUpload', params: CompleteParams): string;
+export default function convertToXml(method: keyof typeof methods, xmlParams: any) {
+    return methods[method](xmlParams);
+}
