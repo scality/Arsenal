@@ -1,19 +1,20 @@
-'use strict'; // eslint-disable-line strict
-
-
-const checkIPinRangeOrMatch = require('../../ipCheck').checkIPinRangeOrMatch;
-const handleWildcards = require('./wildcards.js').handleWildcards;
-const checkArnMatch = require('./checkArnMatch.js');
-const { getTagKeys } = require('./objectTags');
-const conditions = {};
+import { checkIPinRangeOrMatch } from '../../ipCheck';
+import { handleWildcards } from './wildcards';
+import checkArnMatch from './checkArnMatch';
+import { getTagKeys } from './objectTags';
+import RequestContext from '../RequestContext';
+import ipaddr from 'ipaddr.js';
 
 /**
  * findConditionKey finds the value of a condition key based on requestContext
- * @param {string} key - condition key name
- * @param {RequestContext} requestContext - info sent with request
- * @return {string} condition key value
+ * @param key - condition key name
+ * @param requestContext - info sent with request
+ * @return condition key value
  */
-conditions.findConditionKey = (key, requestContext) => {
+export const findConditionKey = (
+    key: string,
+    requestContext: RequestContext,
+): string => {
     // TODO: Consider combining with findVariable function if no benefit
     // to keeping separate
     const headers = requestContext.getHeaders();
@@ -166,8 +167,9 @@ conditions.findConditionKey = (key, requestContext) => {
     // so evaluation should be skipped
     map.set('s3:RequestObjectTagKeys',
         requestContext.getNeedTagEval() && requestContext.getRequestObjTags()
-            ? getTagKeys(requestContext.getRequestObjTags())
-            : undefined);
+        ? getTagKeys(requestContext.getRequestObjTags()!)
+        : undefined,
+    );
     return map.get(key);
 };
 
@@ -181,8 +183,8 @@ conditions.findConditionKey = (key, requestContext) => {
 // ArnNotEquals conditions where wildcards
 // not allowed but variables are allowed).  For those 4 operators, we switch
 // out ${*}, ${?} and ${$} in the convertConditionOperator function.
-function convertSpecialChars(string) {
-    function characterMap(char) {
+function convertSpecialChars(string: string) {
+    function characterMap(char: string) {
         const map = {
             '${*}': '*',
             '${?}': '?',
@@ -197,11 +199,13 @@ function convertSpecialChars(string) {
 /**
  * convertToEpochTime checks whether epoch or ISO time and converts to epoch
  * if necessary
- * @param {string | array} time - value or values to be converted
- * @return {string | array} converted value or values
+ * @param time - value or values to be converted
+ * @return converted value or values
  */
-function convertToEpochTime(time) {
-    function convertSingle(item) {
+function convertToEpochTime(time: string): string;
+function convertToEpochTime(time: string[]): string[];
+function convertToEpochTime(time: string | string[]) {
+    function convertSingle(item: string) {
         // If ISO time
         if (item.indexOf(':') > -1) {
             return new Date(item).getTime().toString();
@@ -221,28 +225,28 @@ function convertToEpochTime(time) {
  * Variables in the value are handled before calling this function but
  * wildcards and switching ${$}, ${*} and ${?} are handled here because
  * whether wildcards allowed depends on operator
- * @param {string} operator - condition operator
+ * @param operator - condition operator
  * Possible Condition Operators:
  * (http://docs.aws.amazon.com/IAM/latest/UserGuide/
  * reference_policies_elements.html)
- * @return {boolean} true if condition passes and false if not
+ * @return true if condition passes and false if not
  */
-conditions.convertConditionOperator = operator => {
+export const convertConditionOperator = (operator: string): boolean => {
     // Policy Validator checks that the condition operator
     // is only one of these strings so should not have undefined
     // or security issue with object assignment
     const operatorMap = {
-        StringEquals: function stringEquals(key, value) {
+        StringEquals: function stringEquals(key: string, value: string[]) {
             return value.some(item => {
                 const swtichedOutChars = convertSpecialChars(item);
                 return swtichedOutChars === key;
             });
         },
-        StringNotEquals: function stringNotEquals(key, value) {
+        StringNotEquals: function stringNotEquals(key: string, value: string[]) {
             // eslint-disable-next-line new-cap
             return !operatorMap.StringEquals(key, value);
         },
-        StringEqualsIgnoreCase: function stringEqualsIgnoreCase(key, value) {
+        StringEqualsIgnoreCase: function stringEqualsIgnoreCase(key: string, value: string[]) {
             const lowerKey = key.toLowerCase();
             return value.some(item => {
                 const swtichedOutChars = convertSpecialChars(item);
@@ -250,31 +254,34 @@ conditions.convertConditionOperator = operator => {
             });
         },
         StringNotEqualsIgnoreCase:
-            function stringNotEqualsIgnoreCase(key, value) {
+            function stringNotEqualsIgnoreCase(key: string, value: string[]) {
                 // eslint-disable-next-line new-cap
                 return !operatorMap.StringEqualsIgnoreCase(key, value);
             },
-        StringLike: function stringLike(key, value, prefix) {
-            function policyValRegex(testKey) {
+        StringLike: function stringLike(key: string | string[], value: string[], prefix?: string) {
+            function policyValRegex(testKey: string) {
                 return value.some(item => {
                     const wildItem = handleWildcards(item);
                     const wildRegEx = new RegExp(wildItem);
                     return wildRegEx.test(testKey);
                 });
             }
-            if (prefix === 'ForAnyValue') {
-                return key.some(policyValRegex);
+            if (Array.isArray(key)) {
+                if (prefix === 'ForAnyValue') {
+                    return key.some(policyValRegex);
+                }
+                if (prefix === 'ForAllValues') {
+                    return key.every(policyValRegex);
+                }
+            } else {
+                return policyValRegex(key);
             }
-            if (prefix === 'ForAllValues') {
-                return key.every(policyValRegex);
-            }
-            return policyValRegex(key);
         },
-        StringNotLike: function stringNotLike(key, value) {
+        StringNotLike: function stringNotLike(key: string, value: string[]) {
             // eslint-disable-next-line new-cap
             return !operatorMap.StringLike(key, value);
         },
-        NumericEquals: function numericEquals(key, value) {
+        NumericEquals: function numericEquals(key: string, value: string[]) {
             const numberKey = Number.parseInt(key, 10);
             if (Number.isNaN(numberKey)) {
                 return false;
@@ -287,11 +294,11 @@ conditions.convertConditionOperator = operator => {
                 return numberKey === numberItem;
             });
         },
-        NumericNotEquals: function numericNotEquals(key, value) {
+        NumericNotEquals: function numericNotEquals(key: string, value: string[]) {
             // eslint-disable-next-line new-cap
             return !operatorMap.NumericEquals(key, value);
         },
-        NumericLessThan: function lessThan(key, value) {
+        NumericLessThan: function lessThan(key: string, value: string[]) {
             const numberKey = Number.parseInt(key, 10);
             if (Number.isNaN(numberKey)) {
                 return false;
@@ -304,7 +311,7 @@ conditions.convertConditionOperator = operator => {
                 return numberKey < numberItem;
             });
         },
-        NumericLessThanEquals: function lessThanOrEquals(key, value) {
+        NumericLessThanEquals: function lessThanOrEquals(key: string, value: string[]) {
             const numberKey = Number.parseInt(key, 10);
             if (Number.isNaN(numberKey)) {
                 return false;
@@ -317,7 +324,7 @@ conditions.convertConditionOperator = operator => {
                 return numberKey <= numberItem;
             });
         },
-        NumericGreaterThan: function greaterThan(key, value) {
+        NumericGreaterThan: function greaterThan(key: string, value: string[]) {
             const numberKey = Number.parseInt(key, 10);
             if (Number.isNaN(numberKey)) {
                 return false;
@@ -330,7 +337,7 @@ conditions.convertConditionOperator = operator => {
                 return numberKey > numberItem;
             });
         },
-        NumericGreaterThanEquals: function greaterThanOrEquals(key, value) {
+        NumericGreaterThanEquals: function greaterThanOrEquals(key: string, value: string[]) {
             const numberKey = Number.parseInt(key, 10);
             if (Number.isNaN(numberKey)) {
                 return false;
@@ -343,74 +350,74 @@ conditions.convertConditionOperator = operator => {
                 return numberKey >= numberItem;
             });
         },
-        DateEquals: function dateEquals(key, value) {
+        DateEquals: function dateEquals(key: string, value: string[]) {
             const epochKey = convertToEpochTime(key);
             const epochValues = convertToEpochTime(value);
             // eslint-disable-next-line new-cap
             return operatorMap.NumericEquals(epochKey, epochValues);
         },
-        DateNotEquals: function dateNotEquals(key, value) {
+        DateNotEquals: function dateNotEquals(key: string, value: string[]) {
             const epochKey = convertToEpochTime(key);
             const epochValues = convertToEpochTime(value);
             // eslint-disable-next-line new-cap
             return operatorMap.NumericNotEquals(epochKey, epochValues);
         },
-        DateLessThan: function dateLessThan(key, value) {
+        DateLessThan: function dateLessThan(key: string, value: string[]) {
             const epochKey = convertToEpochTime(key);
             const epochValues = convertToEpochTime(value);
             // eslint-disable-next-line new-cap
             return operatorMap.NumericLessThan(epochKey, epochValues);
         },
-        DateLessThanEquals: function dateLessThanEquals(key, value) {
+        DateLessThanEquals: function dateLessThanEquals(key: string, value: string[]) {
             const epochKey = convertToEpochTime(key);
             const epochValues = convertToEpochTime(value);
             // eslint-disable-next-line new-cap
             return operatorMap.NumericLessThanEquals(epochKey, epochValues);
         },
-        DateGreaterThan: function dateGreaterThan(key, value) {
+        DateGreaterThan: function dateGreaterThan(key: string, value: string[]) {
             const epochKey = convertToEpochTime(key);
             const epochValues = convertToEpochTime(value);
             // eslint-disable-next-line new-cap
             return operatorMap.NumericGreaterThan(epochKey, epochValues);
         },
-        DateGreaterThanEquals: function dateGreaterThanEquals(key, value) {
+        DateGreaterThanEquals: function dateGreaterThanEquals(key: string, value: string[]) {
             const epochKey = convertToEpochTime(key);
             const epochValues = convertToEpochTime(value);
             // eslint-disable-next-line new-cap
             return operatorMap.NumericGreaterThanEquals(epochKey, epochValues);
         },
-        Bool: function bool(key, value) {
+        Bool: function bool(key: string, value: string[]) {
             // Tested with policy validator and it just appears to be a string
             // comparison (can send in values other than true or false)
             // eslint-disable-next-line new-cap
             return operatorMap.StringEquals(key, value);
         },
-        BinaryEquals: function binaryEquals(key, value) {
+        BinaryEquals: function binaryEquals(key: string, value: string[]) {
             const base64Key = Buffer.from(key, 'utf8').toString('base64');
             return value.some(item => item === base64Key);
         },
-        BinaryNotEquals: function binaryNotEquals(key, value) {
+        BinaryNotEquals: function binaryNotEquals(key: string, value: string[]) {
             // eslint-disable-next-line new-cap
             return !operatorMap.BinaryEquals(key, value);
         },
-        IpAddress: function ipAddress(key, value) {
+        IpAddress: function ipAddress(key: ipaddr.IPv4 | ipaddr.IPv6, value: string[]) {
             return value.some(item => checkIPinRangeOrMatch(item, key));
         },
-        NotIpAddress: function notIpAddress(key, value) {
+        NotIpAddress: function notIpAddress(key: ipaddr.IPv4 | ipaddr.IPv6, value: string[]) {
             // eslint-disable-next-line new-cap
             return !operatorMap.IpAddress(key, value);
         },
         // Note that ARN operators are for comparing a source ARN
         // against a given value (such as an EC2 instance) so N/A here.
-        ArnEquals: function ArnEquals(key, value) {
+        ArnEquals: function ArnEquals(key: string, value: string[]) {
             // eslint-disable-next-line new-cap
             return operatorMap.StringEquals(key, value);
         },
-        ArnNotEquals: function ArnNotEquals(key, value) {
+        ArnNotEquals: function ArnNotEquals(key: string, value: string[]) {
             // eslint-disable-next-line new-cap
             return !operatorMap.StringEquals(key, value);
         },
-        ArnLike: function ArnLike(key, value) {
+        ArnLike: function ArnLike(key: string, value: string[]) {
             // ARN format:
             // arn:partition:service:region:namespace:relative-id
             const requestArnArr = key.split(':');
@@ -420,15 +427,15 @@ conditions.convertConditionOperator = operator => {
             return value.some(policyArn => checkArnMatch(policyArn,
                 requestRelativeId, requestArnArr, false));
         },
-        ArnNotLike: function ArnNotLike(key, value) {
+        ArnNotLike: function ArnNotLike(key: string, value: string[]) {
             // eslint-disable-next-line new-cap
             return !operatorMap.ArnLike(key, value);
         },
-        Null: function nullOperator(key, value) {
-            // Null is used to check if a condition key is present.
-            // The policy statement value should be either true (the key doesn't
-            // exist — it is null) or false (the key exists and its value is
-            // not null).
+        Null: function nullOperator(key: string, value: string[]) {
+         // Null is used to check if a condition key is present.
+         // The policy statement value should be either true (the key doesn't
+         // exist — it is null) or false (the key exists and its value is
+         // not null).
             if ((key === undefined || key === null)
                 && value[0] === 'true' ||
                 (key !== undefined && key !== null)
@@ -440,6 +447,3 @@ conditions.convertConditionOperator = operator => {
     };
     return operatorMap[operator];
 };
-
-
-module.exports = conditions;

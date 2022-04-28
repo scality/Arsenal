@@ -1,6 +1,6 @@
 const assert = require('assert');
 const checkArnMatch
-    = require('../../../../lib/policyEvaluator/utils/checkArnMatch');
+    = require('../../../../lib/policyEvaluator/utils/checkArnMatch').default;
 
 const tests = [
     {

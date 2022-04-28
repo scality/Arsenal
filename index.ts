@@ -1,6 +1,11 @@
+import * as evaluators from './lib/policyEvaluator/evaluator';
+import evaluatePrincipal from './lib/policyEvaluator/principal';
+import RequestContext from './lib/policyEvaluator/RequestContext';
+import * as requestUtils from './lib/policyEvaluator/requestUtils';
+import * as actionMaps from './lib/policyEvaluator/utils/actionMaps';
 import { validateUserPolicy } from './lib/policy/policyValidator'
-
 export { default as errors } from './lib/errors';
+export * as ipCheck from './lib/ipCheck';
 export * as auth from './lib/auth/auth';
 export * as constants from './lib/constants';
 export * as https from './lib/https';
@@ -11,7 +16,6 @@ export const db = require('./lib/db');
 export const errorUtils = require('./lib/errorUtils');
 export const shuffle = require('./lib/shuffle');
 export const stringHash = require('./lib/stringHash');
-export const ipCheck = require('./lib/ipCheck');
 export const jsutil = require('./lib/jsutil');
 export const Clustering = require('./lib/Clustering');
 
@@ -31,12 +35,12 @@ export const algorithms = {
 };
 
 export const policies = {
-    evaluators: require('./lib/policyEvaluator/evaluator.js'),
+    evaluators,
     validateUserPolicy,
-    evaluatePrincipal: require('./lib/policyEvaluator/principal'),
-    RequestContext: require('./lib/policyEvaluator/RequestContext.js'),
-    requestUtils: require('./lib/policyEvaluator/requestUtils'),
-    actionMaps: require('./lib/policyEvaluator/utils/actionMaps'),
+    evaluatePrincipal,
+    RequestContext,
+    requestUtils,
+    actionMaps,
 };
 
 export const testing = {

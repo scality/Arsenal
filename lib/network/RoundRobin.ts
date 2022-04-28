@@ -31,7 +31,7 @@ export default class RoundRobin {
      * @param {object[]|string[]} hostsList - list of hosts to query
      *   in round-robin fashion.
      * @param {string} hostsList[].host - host name or IP address
-     * @param {number} [hostsList[].port] - port number to contacts
+     * @param {number} [hostsList[].port] - port number to contact
      * @param {object} [options] - options object
      * @param {number} [options.stickyCount=100] - number of requests
      *   to send to the same host before switching to the next one
@@ -70,7 +70,7 @@ export default class RoundRobin {
     }
 
     _validateHostObj(hostItem: string | { host: string; port: string }): { host: string; port?: number } {
-        const hostItemObj: { host: string; port: string } = { host: '', port: '' };
+        const hostItemObj = { host: '', port: '' };
 
         if (typeof hostItem === 'string') {
             const hostParts = hostItem.split(':');

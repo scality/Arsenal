@@ -1,10 +1,10 @@
 /**
  * Removes tag key value from condition key and adds it to value if needed
- * @param {string} key - condition key
- * @param {string} value - condition value
- * @return {array} key/value pair to use
+ * @param key - condition key
+ * @param value - condition value
+ * @return key/value pair to use
  */
-function transformTagKeyValue(key, value) {
+export function transformTagKeyValue(key: string, value: string): [string, string | string[]] {
     const patternKeys = ['s3:ExistingObjectTag/', 's3:RequestObjectTagKey/'];
     if (!patternKeys.some(k => key.includes(k))) {
         return [key, value];
@@ -19,15 +19,10 @@ function transformTagKeyValue(key, value) {
 
 /**
  * Gets array of tag key names from request tag query string
- * @param {string} tagQuery - request tags in query string format
- * @return {array} array of tag key names
+ * @param tagQuery - request tags in query string format
+ * @return array of tag key names
  */
-function getTagKeys(tagQuery) {
+export function getTagKeys(tagQuery: string) {
     return tagQuery.split('&')
         .map(tag => tag.split('=')[0]);
 }
-
-module.exports = {
-    transformTagKeyValue,
-    getTagKeys,
-};

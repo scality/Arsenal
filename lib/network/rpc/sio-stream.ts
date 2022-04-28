@@ -6,7 +6,7 @@ import async from 'async';
 import { flattenError, reconstructError } from './utils';
 import { Logger } from 'werelogs';
 
-const debug = debug_('sio-stream')
+const debug = debug_('sio-stream');
 
 const DEFAULT_MAX_PENDING_ACK = 4;
 const DEFAULT_ACK_TIMEOUT_MS = 5000;

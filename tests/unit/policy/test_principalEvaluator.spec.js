@@ -1,6 +1,6 @@
 const assert = require('assert');
-const Principal = require('../../../lib/policyEvaluator/principal');
-const RequestContext = require('../../../lib/policyEvaluator/RequestContext');
+const Principal = require('../../../lib/policyEvaluator/principal').default;
+const RequestContext = require('../../../lib/policyEvaluator/RequestContext').default;
 
 const defaultAccountId = '123456789012';
 const anotherAccountId = '098765432112';

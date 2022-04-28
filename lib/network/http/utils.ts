@@ -79,7 +79,7 @@ export function getByteRangeFromSpec(
     if (rangeSpec.start < objectSize) {
         // test is false if end is undefined
         return { range: [rangeSpec.start,
-            (rangeSpec.end && rangeSpec.end < objectSize ?
+            ((rangeSpec.end && (rangeSpec.end < objectSize)) ?
             rangeSpec.end : objectSize - 1)] };
     }
     return { error: errors.InvalidRange };
