@@ -1,5 +1,6 @@
-const { parseString } = require('xml2js');
-const errors = require('../errors').default;
+import { parseString } from 'xml2js';
+import errors, { ArsenalError } from '../errors';
+import * as werelogs from 'werelogs';
 
 /*
     Format of the xml request:
@@ -9,65 +10,65 @@ const errors = require('../errors').default;
 */
 
 /**
- * @param {string[]} status - legal hold status parsed from xml to be validated
- * @return {Error|object} - legal hold status or error
+ * @param status - legal hold status parsed from xml to be validated
+ * @return - legal hold status or error
  */
-function _validateStatus(status) {
-    const validatedStatus = {};
+function _validateStatus(status?: string[]) {
     const expectedValues = new Set(['OFF', 'ON']);
     if (!status || status[0] === '') {
-        validatedStatus.error = errors.MalformedXML.customizeDescription(
-            'request xml does not contain Status');
-        return validatedStatus;
+        const desc = 'request xml does not contain Status';
+        const error = errors.MalformedXML.customizeDescription(desc);
+        return { error };
     }
     if (status.length > 1) {
-        validatedStatus.error = errors.MalformedXML.customizeDescription(
-            'request xml contains more than one Status');
-        return validatedStatus;
+        const desc = 'request xml contains more than one Status';
+        const error = errors.MalformedXML.customizeDescription(desc);
+        return { error };
     }
     if (!expectedValues.has(status[0])) {
-        validatedStatus.error = errors.MalformedXML.customizeDescription(
-            'Status request xml must be one of "ON", "OFF"');
-        return validatedStatus;
+        const desc = 'Status request xml must be one of "ON", "OFF"';
+        const error = errors.MalformedXML.customizeDescription(desc);
+        return { error };
     }
-    validatedStatus.status = status[0];
-    return validatedStatus;
+    return { status: status[0] as 'OFF' | 'ON' }
 }
 
 /**
  * validate legal hold - validates legal hold xml
- * @param {object} parsedXml - parsed legal hold xml object
- * @return {object} - object with status or error
+ * @param parsedXml - parsed legal hold xml object
+ * @return - object with status or error
  */
-function _validateLegalHold(parsedXml) {
-    const validatedLegalHold = {};
+function _validateLegalHold(parsedXml?: { LegalHold: { Status: string[] } }) {
     if (!parsedXml) {
-        validatedLegalHold.error = errors.MalformedXML.customizeDescription(
-            'request xml is undefined or empty');
-        return validatedLegalHold;
+        const desc = 'request xml is undefined or empty';
+        const error = errors.MalformedXML.customizeDescription(desc);
+        return { error };
     }
     if (!parsedXml.LegalHold) {
-        validatedLegalHold.error = errors.MalformedXML.customizeDescription(
-            'request xml does not contain LegalHold');
-        return validatedLegalHold;
+        const desc = 'request xml does not contain LegalHold';
+        const error = errors.MalformedXML.customizeDescription(desc);
+        return { error };
     }
     const validatedStatus = _validateStatus(parsedXml.LegalHold.Status);
     if (validatedStatus.error) {
-        validatedLegalHold.error = validatedStatus.error;
-        return validatedLegalHold;
+        const error = validatedStatus.error;
+        return { error };
     }
-    validatedLegalHold.status = validatedStatus.status;
-    return validatedLegalHold;
+    return { status: validatedStatus.status };
 }
 
 /**
  * parse object legal hold - parse and validate xml body
- * @param {string} xml - xml body to parse and validate
- * @param {object} log - werelogs logger
- * @param {function} cb - callback to server
- * @return {undefined} - calls callback with legal hold status or error
+ * @param xml - xml body to parse and validate
+ * @param log - werelogs logger
+ * @param cb - callback to server
+ * @return - calls callback with legal hold status or error
  */
-function parseLegalHoldXml(xml, log, cb) {
+export function parseLegalHoldXml(
+    xml: string,
+    log: werelogs.Logger,
+    cb: (err: ArsenalError | null, data?: boolean) => void,
+) {
     parseString(xml, (err, result) => {
         if (err) {
             log.debug('xml parsing failed', {
@@ -93,20 +94,18 @@ function parseLegalHoldXml(xml, log, cb) {
 
 /**
  * convert to xml - generates legal hold xml
- * @param {(boolean|undefined)} legalHold - true if legal hold is on
+ * @param legalHold - true if legal hold is on
  * false if legal hold is off, undefined if legal hold is not set
- * @return {string} - returns legal hold xml
+ * @return - returns legal hold xml
  */
-function convertToXml(legalHold) {
+export function convertToXml(legalHold?: boolean) {
     if (!legalHold && legalHold !== false) {
         return '';
     }
-    const xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
-        `<LegalHold><Status>${legalHold ? 'ON' : 'OFF'}</Status></LegalHold>`;
-    return xml;
+    return `
+        <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <LegalHold>
+            <Status>${legalHold ? 'ON' : 'OFF'}</Status>
+        </LegalHold>
+    `.trim();
 }
-
-module.exports = {
-    convertToXml,
-    parseLegalHoldXml,
-};
