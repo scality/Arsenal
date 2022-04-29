@@ -55,6 +55,9 @@ export function reconstructError(err: Error) {
     }
 
     const reconstructedErr = new Error(err.message);
+    // This restores the old behavior of errors. This should be removed as soon
+    // as old codebase as been migrated.
+    reconstructedErr[err.message] = true;
     // @ts-expect-error
     reconstructedErr.is = {
         [err.message]: true,
