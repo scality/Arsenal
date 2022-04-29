@@ -1,4 +1,4 @@
-const EventEmitter = require('events');
+import { EventEmitter } from 'events';
 
 /**
  * Class to collect results of streaming subparts.
@@ -8,10 +8,12 @@ const EventEmitter = require('events');
  * streaming is in-progress
  * @class ResultsCollector
  */
-class ResultsCollector extends EventEmitter {
-    /**
-     * @constructor
-     */
+export default class ResultsCollector extends EventEmitter {
+    // TODO Add better type.
+    _results: any[];
+    _queue: number;
+    _streamingFinished: boolean;
+
     constructor() {
         super();
         this._results = [];
@@ -22,14 +24,13 @@ class ResultsCollector extends EventEmitter {
     /**
      * ResultsCollector.pushResult - register result of putting one subpart
      * and emit "done" or "error" events if appropriate
-     * @param {(Error|undefined)} err - error returned from Azure after
+     * @param err - error returned from Azure after
      *  putting a subpart
-     * @param {number} subPartIndex - the index of the subpart
+     * @param subPartIndex - the index of the subpart
      * @emits ResultCollector#done
      * @emits ResultCollector#error
-     * @return {undefined}
      */
-    pushResult(err, subPartIndex) {
+    pushResult(err: Error | undefined, subPartIndex: number) {
         this._results.push({
             error: err,
             subPartIndex,
@@ -44,7 +45,6 @@ class ResultsCollector extends EventEmitter {
 
     /**
      * ResultsCollector.pushOp - register operation to put another subpart
-     * @return {undefined};
      */
     pushOp() {
         this._queue++;
@@ -54,7 +54,6 @@ class ResultsCollector extends EventEmitter {
      * ResultsCollector.enableComplete - register streaming has finished,
      * allowing ResultCollector#done event to be emitted when last result
      * has been returned
-     * @return {undefined};
      */
     enableComplete() {
         this._streamingFinished = true;
@@ -79,5 +78,3 @@ class ResultsCollector extends EventEmitter {
   * @type {(Error|undefined)} error - error returned by Azure last subpart
   * @type {number} subPartIndex - index of the subpart
   */
-
-module.exports = ResultsCollector;
