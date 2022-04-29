@@ -1,6 +1,6 @@
-const { parseString } = require('xml2js');
-
-const errors = require('../errors').default;
+import { parseString } from 'xml2js';
+import errors, { ArsenalError } from '../errors';
+import * as werelogs from 'werelogs';
 
 /*
     Format of xml request:
@@ -12,102 +12,97 @@ const errors = require('../errors').default;
 
 /**
  * validateMode - validate retention mode
- * @param {array} mode - parsed xml mode array
- * @return {object} - contains mode or error
+ * @param mode - parsed xml mode array
+ * @return - contains mode or error
  */
-function validateMode(mode) {
-    const modeObj = {};
+function validateMode(mode?: string[]) {
     const expectedModes = new Set(['GOVERNANCE', 'COMPLIANCE']);
     if (!mode || !mode[0]) {
-        modeObj.error = errors.MalformedXML.customizeDescription(
-            'request xml does not contain Mode');
-        return modeObj;
+        const desc = 'request xml does not contain Mode';
+        const error = errors.MalformedXML.customizeDescription(desc);
+        return { error };
     }
     if (mode.length > 1) {
-        modeObj.error = errors.MalformedXML.customizeDescription(
-            'request xml contains more than one Mode');
-        return modeObj;
+        const desc = 'request xml contains more than one Mode';
+        const error = errors.MalformedXML.customizeDescription(desc);
+        return { error };
     }
     if (!expectedModes.has(mode[0])) {
-        modeObj.error = errors.MalformedXML.customizeDescription(
-            'Mode request xml must be one of "GOVERNANCE", "COMPLIANCE"');
-        return modeObj;
+        const desc = 'Mode request xml must be one of "GOVERNANCE", "COMPLIANCE"';
+        const error = errors.MalformedXML.customizeDescription(desc);
+        return { error };
     }
-    modeObj.mode = mode[0];
-    return modeObj;
+    return { mode: mode[0] as 'GOVERNANCE' | 'COMPLIANCE' }
 }
 
 /**
  * validateRetainDate - validate retain until date
- * @param {array} retainDate - parsed xml retention date array
- * @return {object} - contains retain until date or error
+ * @param retainDate - parsed xml retention date array
+ * @return - contains retain until date or error
  */
-function validateRetainDate(retainDate) {
-    const dateObj = {};
+function validateRetainDate(retainDate?: string[]) {
     if (!retainDate || !retainDate[0]) {
-        dateObj.error = errors.MalformedXML.customizeDescription(
-            'request xml does not contain RetainUntilDate');
-        return dateObj;
+        const desc = 'request xml does not contain RetainUntilDate';
+        const error = errors.MalformedXML.customizeDescription(desc);
+        return { error };
     }
     const retentionDate = Date.parse(retainDate[0]);
     if (isNaN(retentionDate)) {
-        dateObj.error = errors.InvalidRequest.customizeDescription(
-            'RetainUntilDate is not a valid timestamp');
-        return dateObj;
+        const desc = 'RetainUntilDate is not a valid timestamp';
+        const error = errors.InvalidRequest.customizeDescription(desc);
+        return { error };
     }
     const date = new Date(retentionDate);
-    if (date < Date.now()) {
-        dateObj.error = errors.InvalidRequest.customizeDescription(
-            'RetainUntilDate must be in the future');
-        return dateObj;
+    if (date < new Date()) {
+        const desc = 'RetainUntilDate must be in the future';
+        const error = errors.InvalidRequest.customizeDescription(desc);
+        return { error };
     }
-    dateObj.date = retainDate[0];
-    return dateObj;
+    return { date: retainDate[0] };
 }
 
 /**
  * validate retention - validate retention xml
- * @param {object} parsedXml - parsed retention xml object
- * @return {object} - contains retention information on success,
+ * @param parsedXml - parsed retention xml object
+ * @return - contains retention information on success,
  * error on failure
  */
-function validateRetention(parsedXml) {
-    const retentionObj = {};
+function validateRetention(parsedXml?: any) {
     if (!parsedXml) {
-        retentionObj.error = errors.MalformedXML.customizeDescription(
-            'request xml is undefined or empty');
-        return retentionObj;
+        const desc = 'request xml is undefined or empty';
+        const error = errors.MalformedXML.customizeDescription(desc);
+        return { error };
     }
     const retention = parsedXml.Retention;
     if (!retention) {
-        retentionObj.error = errors.MalformedXML.customizeDescription(
-            'request xml does not contain Retention');
-        return retentionObj;
+        const desc = 'request xml does not contain Retention';
+        const error = errors.MalformedXML.customizeDescription(desc);
+        return { error };
     }
     const modeObj = validateMode(retention.Mode);
     if (modeObj.error) {
-        retentionObj.error = modeObj.error;
-        return retentionObj;
+        return { error: modeObj.error };
     }
     const dateObj = validateRetainDate(retention.RetainUntilDate);
     if (dateObj.error) {
-        retentionObj.error = dateObj.error;
-        return retentionObj;
+        return { error: dateObj.error };
     }
-    retentionObj.mode = modeObj.mode;
-    retentionObj.date = dateObj.date;
-    return retentionObj;
+    return { mode: modeObj.mode, date: dateObj.date };
 }
 
 /**
  * parseRetentionXml - Parse and validate xml body, returning callback with
  * object retentionObj: { mode: <value>, date: <value> }
- * @param {string} xml - xml body to parse and validate
- * @param {object} log - Werelogs logger
- * @param {function} cb - callback to server
- * @return {undefined} - calls callback with object retention or error
+ * @param xml - xml body to parse and validate
+ * @param log - Werelogs logger
+ * @param cb - callback to server
+ * @return - calls callback with object retention or error
  */
-function parseRetentionXml(xml, log, cb) {
+export function parseRetentionXml(
+    xml: string,
+    log: werelogs.Logger,
+    cb: (err: ArsenalError | null, data?: any) => void,
+) {
     parseString(xml, (err, result) => {
         if (err) {
             log.trace('xml parsing failed', {
@@ -132,24 +127,18 @@ function parseRetentionXml(xml, log, cb) {
 
 /**
  * convertToXml - Convert retention info object to xml
- * @param {string} mode - retention mode
- * @param {string} date - retention retain until date
- * @return {string} - returns retention information xml string
+ * @param mode - retention mode
+ * @param date - retention retain until date
+ * @return - returns retention information xml string
  */
-function convertToXml(mode, date) {
-    const xml = [];
-    xml.push('<Retention xmlns="http://s3.amazonaws.com/doc/2006-03-01/">');
-    if (mode && date) {
-        xml.push(`<Mode>${mode}</Mode>`);
-        xml.push(`<RetainUntilDate>${date}</RetainUntilDate>`);
-    } else {
-        return '';
+export function convertToXml(mode: string, date: string) {
+    if (!(mode && date)) {
+        return ''
     }
-    xml.push('</Retention>');
-    return xml.join('');
+    return [
+        '<Retention xmlns="http://s3.amazonaws.com/doc/2006-03-01/">',
+            `<Mode>${mode}</Mode>`,
+            `<RetainUntilDate>${date}</RetainUntilDate>`,
+        '</Retention>',
+    ].join('');
 }
-
-module.exports = {
-    parseRetentionXml,
-    convertToXml,
-};
