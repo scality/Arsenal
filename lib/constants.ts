@@ -76,6 +76,9 @@ export const externalBackends = { aws_s3: true, azure: true, gcp: true, pfs: tru
 export const hasCopyPartBackends = { aws_s3: true, gcp: true }
 export const versioningNotImplBackends = { azure: true, gcp: true }
 export const mpuMDStoredExternallyBackend = { aws_s3: true, gcp: true }
+// AWS sets a minimum size limit for parts except for the last part.
+// http://docs.aws.amazon.com/AmazonS3/latest/API/mpUploadComplete.html
+export const minimumAllowedPartSize = 5242880;
 // hex digest of sha256 hash of empty string:
 export const emptyStringHash = crypto.createHash('sha256').update('', 'binary').digest('hex');
 // Default expiration value of the S3 pre-signed URL duration
