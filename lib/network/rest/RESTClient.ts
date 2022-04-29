@@ -1,49 +1,52 @@
-'use strict'; // eslint-disable-line
+import assert from 'assert';
+import * as http from 'http';
+import * as werelogs from 'werelogs';
+import * as constants from '../../constants';
+import * as utils from './utils';
+import errors, { ArsenalError } from '../../errors';
+import HttpAgent from 'agentkeepalive';
+import * as stream from 'stream';
 
-const assert = require('assert');
-const http = require('http');
-const werelogs = require('werelogs');
-
-const constants = require('../../constants');
-const utils = require('./utils');
-const errors = require('../../errors').default;
-
-const HttpAgent = require('agentkeepalive');
-
-function setRequestUids(reqHeaders, reqUids) {
+function setRequestUids(reqHeaders: http.IncomingHttpHeaders, reqUids: string) {
     // inhibit 'assignment to property of function parameter' -
     // this is what we want
     // eslint-disable-next-line
     reqHeaders['X-Scal-Request-Uids'] = reqUids;
 }
 
-function setRange(reqHeaders, range) {
-    const rangeStart = range[0] !== undefined ? range[0].toString() : '';
-    const rangeEnd = range[1] !== undefined ? range[1].toString() : '';
+function setRange(
+    reqHeaders: http.IncomingHttpHeaders,
+    range: [number | undefined, number | undefined],
+) {
+    const rangeStart = range[0]?.toString() ?? '';
+    const rangeEnd = range[1]?.toString() ?? '';
     // inhibit 'assignment to property of function parameter' -
     // this is what we want
     // eslint-disable-next-line
     reqHeaders['Range'] = `bytes=${rangeStart}-${rangeEnd}`;
 }
 
-function setContentType(reqHeaders, contentType) {
+function setContentType(
+    reqHeaders: http.IncomingHttpHeaders,
+    contentType: string,
+) {
     // inhibit 'assignment to property of function parameter' -
     // this is what we want
     // eslint-disable-next-line
     reqHeaders['Content-Type'] = contentType;
 }
 
-function setContentLength(reqHeaders, size) {
+function setContentLength(reqHeaders: http.IncomingHttpHeaders, size: number) {
     // inhibit 'assignment to property of function parameter' -
     // this is what we want
     // eslint-disable-next-line
     reqHeaders['Content-Length'] = size.toString();
 }
 
-function makeErrorFromHTTPResponse(response) {
+function makeErrorFromHTTPResponse(response: http.IncomingMessage) {
     const rawBody = response.read();
     const body = (rawBody !== null ? rawBody.toString() : '');
-    let error;
+    let error : ArsenalError | Error;
     try {
         const fields = JSON.parse(body);
         error = errors[fields.errorType]
@@ -53,6 +56,7 @@ function makeErrorFromHTTPResponse(response) {
     }
     // error is always a newly created object, so we can modify its
     // properties
+    // @ts-expect-error
     error.remote = true;
     return error;
 }
@@ -64,59 +68,57 @@ function makeErrorFromHTTPResponse(response) {
  *
  * The API is usable when the object is constructed.
  */
-class RESTClient {
+export default class RESTClient {
+    host: string;
+    port: number;
+    httpAgent: HttpAgent;
+    logging: werelogs.Logger;
+
     /**
      * Interface to the data file server
      * @constructor
-     * @param {Object} params - Contains the basic configuration.
-     * @param {String} params.host - hostname or ip address of the
+     * @param params - Contains the basic configuration.
+     * @param params.host - hostname or ip address of the
      *   RESTServer instance
-     * @param {Number} params.port - port number that the RESTServer
+     * @param params.port - port number that the RESTServer
      *   instance listens to
-     * @param {Werelogs.API} [params.logApi] - logging API instance object
+     * @param [params.logApi] - logging API instance object
      */
-    constructor(params) {
+    constructor(params: {
+        host: string;
+        port: number;
+        logApi: { Logger: typeof werelogs.Logger };
+    }) {
         assert(params.host);
         assert(params.port);
 
         this.host = params.host;
         this.port = params.port;
-        this.setupLogging(params.logApi);
+        this.logging = new (params.logApi || werelogs).Logger('DataFileRESTClient');
         this.httpAgent = new HttpAgent({
             keepAlive: true,
             freeSocketTimeout: constants.httpClientFreeSocketTimeout,
         });
     }
 
-    /**
-     * Destroy the HTTP agent, forcing a close of the remaining open
-     * connections
-     *
-     * @return {undefined}
-     */
+    /** Destroy the HTTP agent, forcing a close of the remaining open connections */
     destroy() {
         this.httpAgent.destroy();
     }
 
-    /*
-     * Create a dedicated logger for RESTClient, from the provided werelogs API
-     * instance.
-     *
-     * @param {werelogs.API} logApi - object providing a constructor function
-     *                                for the Logger object
-     * @return {undefined}
-     */
-    setupLogging(logApi) {
-        this.logging = new (logApi || werelogs).Logger('DataFileRESTClient');
-    }
-
-    createLogger(reqUids) {
+    createLogger(reqUids?: string) {
         return reqUids ?
             this.logging.newRequestLoggerFromSerializedUids(reqUids) :
             this.logging.newRequestLogger();
     }
 
-    doRequest(method, headers, key, log, responseCb) {
+    doRequest(
+        method: string,
+        headers: http.OutgoingHttpHeaders | null,
+        key: string | null,
+        log: RequestLogger,
+        responseCb: (res: http.IncomingMessage) => void,
+    ) {
         const reqHeaders = headers || {};
         const urlKey = key || '';
         const reqParams = {
@@ -141,14 +143,18 @@ class RESTClient {
 
     /**
      * This sends a PUT request to the the REST server
-     * @param {http.IncomingMessage} stream - Request with the data to send
-     * @param {string} stream.contentHash - hash of the data to send
-     * @param {integer} size - size
-     * @param {string} reqUids - The serialized request ids
-     * @param {RESTClient~putCallback} callback - callback
-     * @returns {undefined}
+     * @param stream - Request with the data to send
+     * @param stream.contentHash - hash of the data to send
+     * @param size - size
+     * @param reqUids - The serialized request ids
+     * @param callback - callback
      */
-    put(stream, size, reqUids, callback) {
+    put(
+        stream: http.IncomingMessage,
+        size: number,
+        reqUids: string,
+        callback: (error: Error | null, key?: string) => void,
+    ) {
         const log = this.createLogger(reqUids);
         const headers = {};
         setRequestUids(headers, reqUids);
@@ -197,15 +203,19 @@ class RESTClient {
 
     /**
      * send a GET request to the REST server
-     * @param {String} key - The key associated to the value
-     * @param { Number [] | Undefined} range - range (if any) a
+     * @param key - The key associated to the value
+     * @param range - range (if any) a
      *   [start, end] inclusive range specification, as defined in
      *   HTTP/1.1 RFC.
-     * @param {String} reqUids - The serialized request ids
-     * @param {RESTClient~getCallback} callback - callback
-     * @returns {undefined}
+     * @param reqUids - The serialized request ids
+     * @param callback - callback
      */
-    get(key, range, reqUids, callback) {
+    get(
+        key: string,
+        range: [number, number] | undefined,
+        reqUids: string,
+        callback: (error: Error | null, stream?: stream.Readable) => void,
+    ) {
         const log = this.createLogger(reqUids);
         const headers = {};
         setRequestUids(headers, reqUids);
@@ -230,12 +240,15 @@ class RESTClient {
      * than an object. Response will be truncated at the high watermark for
      * the internal buffer of the stream, which is 16KB.
      *
-     * @param {String} action - The action to query
-     * @param {String} reqUids - The serialized request ids
-     * @param {RESTClient~getCallback} callback - callback
-     * @returns {undefined}
+     * @param action - The action to query
+     * @param reqUids - The serialized request ids
+     * @param callback - callback
      */
-    getAction(action, reqUids, callback) {
+    getAction(
+        action: string,
+        reqUids: string,
+        callback: (error: Error | null, stream?: stream.Readable) => void,
+    ) {
         const log = this.createLogger(reqUids);
         const headers = {};
         setRequestUids(headers, reqUids);
@@ -268,12 +281,15 @@ class RESTClient {
 
     /**
      * send a DELETE request to the REST server
-     * @param {String} key - The key associated to the values
-     * @param {String} reqUids - The serialized request ids
-     * @param {RESTClient~deleteCallback} callback - callback
-     * @returns {undefined}
+     * @param key - The key associated to the values
+     * @param reqUids - The serialized request ids
+     * @param callback - callback
      */
-    delete(key, reqUids, callback) {
+    delete(
+        key: string,
+        reqUids: string,
+        callback: (error: Error | null) => void,
+    ) {
         const log = this.createLogger(reqUids);
         const headers = {};
         setRequestUids(headers, reqUids);
@@ -291,22 +307,3 @@ class RESTClient {
         request.end();
     }
 }
-
-/**
- * @callback RESTClient~putCallback
- * @param {Error} - The encountered error
- * @param {String} key - The key to access the data
- */
-
-/**
- * @callback RESTClient~getCallback
- * @param {Error} - The encountered error
- * @param {stream.Readable} stream - The stream of values fetched
- */
-
-/**
- * @callback RESTClient~deleteCallback
- * @param {Error} - The encountered error
- */
-
-module.exports = RESTClient;

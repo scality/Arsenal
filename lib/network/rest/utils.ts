@@ -1,8 +1,6 @@
-'use strict'; // eslint-disable-line
+import errors from '../../errors';
 
-const errors = require('../../errors').default;
-
-module.exports.explodePath = function explodePath(path) {
+export function explodePath(path: string) {
     const pathMatch = /^(\/[a-zA-Z0-9]+)(\/([0-9a-f]*))?$/.exec(path);
     if (pathMatch) {
         return {

@@ -1,21 +1,40 @@
-'use strict'; // eslint-disable-line
-
-const assert = require('assert');
+import assert from 'assert';
+import tls from 'tls';
+import * as werelogs from 'werelogs';
 
 const DEFAULT_PIPELINE_DEPTH = 8;
 const DEFAULT_KMIP_PORT = 5696;
 
-class TransportTemplate {
+export type Options = {
+    pipelineDepth: number;
+    tls: {
+        port: number;
+    };
+}
+
+export default class TransportTemplate {
+    channel: typeof tls;
+    options: Options;
+    pipelineDepth: number;
+    callbackPipeline: ((error: Error | null, socket?: any, data?: any) => void)[];
+    deferedRequests: Array<{
+        encodedMessage: Buffer;
+        cb: ((error: Error | null, data?: any) => void)
+    }>;
+    pipelineDrainedCallback: any | null;
+    handshakeFunction: any | null;
+    socket: any;
+
     /**
      * Construct a new object of the TransportTemplate class
-     * @param {Object} channel - Typically the tls object
-     * @param {Object} options - Instance options
-     * @param {Number} options.pipelineDepth - depth of the pipeline
-     * @param {Object} options.tls - Standard TLS socket initialization
+     * @param channel - Typically the tls object
+     * @param options - Instance options
+     * @param options.pipelineDepth - depth of the pipeline
+     * @param options.tls - Standard TLS socket initialization
      *                               parameters
-     * @param {Number} options.tls.port - TLS server port to connect to
+     * @param options.tls.port - TLS server port to connect to
      */
-    constructor(channel, options) {
+    constructor(channel: typeof tls, options: Options) {
         this.channel = channel;
         this.options = options;
         this.pipelineDepth = Math.max(1, options.pipelineDepth ||
@@ -30,10 +49,9 @@ class TransportTemplate {
     /**
      * Drain the outstanding and defered request queues by
      * calling the associated callback with an error
-     * @param {Error} error - the error to call the callback function with.
-     * @returns {undefined}
+     * @param error - the error to call the callback function with.
      */
-    _drainQueuesWithError(error) {
+    _drainQueuesWithError(error: Error) {
         this.callbackPipeline.forEach(queuedCallback => {
             queuedCallback(error);
         });
@@ -48,23 +66,29 @@ class TransportTemplate {
      * Register a higher level handshake function to be called
      * after the connection is initialized and before the first
      * message is sent.
-     * @param {Function} handshakeFunction - (logger: Object, cb: Function(err))
-     * @returns {undefined}
+     * @param handshakeFunction - (logger: Object, cb: Function(err))
      */
-    registerHandshakeFunction(handshakeFunction) {
+    registerHandshakeFunction(
+        handshakeFunction: (
+            logger: werelogs.Logger,
+            cb: (error: Error | null) => void,
+        ) => void,
+    ) {
         this.handshakeFunction = handshakeFunction;
     }
 
     /**
      * Create a new conversation (e.g. a socket) between the client
      * and the server.
-     * @param {Object} logger - Werelogs logger object
-     * @param {Function} readyCallback - callback function to call when the
+     * @param logger - Werelogs logger object
+     * @param readyCallback - callback function to call when the
      *                                   conversation is ready to be initiated
      *                                   func(err: Error)
-     * @returns {undefined}
      */
-    _createConversation(logger, readyCallback) {
+    _createConversation(
+        logger: werelogs.Logger,
+        readyCallback: (error: Error | null) => void,
+    ) {
         try {
             const socket = this.channel.connect(
                 this.options.tls.port || DEFAULT_KMIP_PORT,
@@ -78,16 +102,18 @@ class TransportTemplate {
                 });
             socket.on('data', data => {
                 const queuedCallback = this.callbackPipeline.shift();
-                queuedCallback(null, socket, data);
+                queuedCallback?.(null, socket, data);
 
                 if (this.callbackPipeline.length <
                     this.pipelineDepth &&
                     this.deferedRequests.length > 0) {
                     const deferedRequest = this.deferedRequests.shift();
                     process.nextTick(() => {
-                        this.send(logger,
-                            deferedRequest.encodedMessage,
-                            deferedRequest.cb);
+                        if (deferedRequest) {
+                            this.send(logger,
+                                deferedRequest.encodedMessage,
+                                deferedRequest.cb);
+                        }
                     });
                 } else if (this.callbackPipeline.length === 0 &&
                            this.deferedRequests.length === 0 &&
@@ -105,14 +131,18 @@ class TransportTemplate {
                 this._drainQueuesWithError(err);
             });
             this.socket = socket;
-        } catch (err) {
+        } catch (err: any) {
             logger.error(err);
             this._drainQueuesWithError(err);
             readyCallback(err);
         }
     }
 
-    _doSend(logger, encodedMessage, cb) {
+    _doSend(
+        logger: werelogs.Logger,
+        encodedMessage: Buffer,
+        cb: (error: Error | null, socket?: any, data?: any) => void,
+    ) {
         this.callbackPipeline.push(cb);
         if (this.socket === null || this.socket.destroyed) {
             this._createConversation(logger, () => {});
@@ -128,13 +158,16 @@ class TransportTemplate {
 
     /**
      * Send an encoded message to the server
-     * @param {Object} logger - Werelogs logger object
-     * @param {Buffer} encodedMessage - the encoded message to send to the
+     * @param logger - Werelogs logger object
+     * @param encodedMessage - the encoded message to send to the
      *                                  server
-     * @param {Function} cb - (err, conversation, rawResponse)
-     * @returns {undefined}
+     * @param cb - (err, conversation, rawResponse)
      */
-    send(logger, encodedMessage, cb) {
+    send(
+        logger: werelogs.Logger,
+        encodedMessage: Buffer,
+        cb: (error: Error | null, conversation?: any, rawResponse?: any) => void,
+    ) {
         if (this.callbackPipeline.length >= this.pipelineDepth) {
             return this.deferedRequests.push({ encodedMessage, cb });
         }
@@ -146,7 +179,6 @@ class TransportTemplate {
      * Gracefuly interrupt the conversation. If the caller keeps sending
      * message after calling this function, the conversation won't
      * converge to its end.
-     * @returns {undefined}
      */
     end() {
         if (!this.socket) {
@@ -163,12 +195,9 @@ class TransportTemplate {
     /**
      * Abruptly interrupt the conversation and cancel the outstanding and
      * defered requests
-     * @param {Object} conversation - the conversation to abort
-     * @returns {undefined}
+     * @param conversation - the conversation to abort
      */
-    abortPipeline(conversation) {
+    abortPipeline(conversation: any) {
         conversation.end();
     }
 }
-
-module.exports = TransportTemplate;
