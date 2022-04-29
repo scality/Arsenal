@@ -102,10 +102,10 @@ export function convertToXml(legalHold?: boolean) {
     if (!legalHold && legalHold !== false) {
         return '';
     }
-    return `
-        <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-        <LegalHold>
-            <Status>${legalHold ? 'ON' : 'OFF'}</Status>
-        </LegalHold>
-    `.trim();
+    return [
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
+        '<LegalHold>',
+            `<Status>${legalHold ? 'ON' : 'OFF'}</Status>`,
+        '</LegalHold>',
+    ].join('');
 }
