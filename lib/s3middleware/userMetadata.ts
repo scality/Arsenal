@@ -1,27 +1,22 @@
-const constants = require('../constants');
-const errors = require('../errors').default;
+import * as http from 'http';
+import * as constants from '../constants';
+import errors from '../errors';
 
-const userMetadata = {};
 /**
  * Pull user provided meta headers from request headers
- * @param {object} headers - headers attached to the http request (lowercased)
- * @return {(object|Error)} all user meta headers or MetadataTooLarge
+ * @param headers - headers attached to the http request (lowercased)
+ * @return all user meta headers or MetadataTooLarge
  */
-userMetadata.getMetaHeaders = headers => {
-    const metaHeaders = Object.create(null);
-    let totalLength = 0;
-    const metaHeaderKeys = Object.keys(headers).filter(h =>
-        h.startsWith('x-amz-meta-'));
-    const validHeaders = metaHeaderKeys.every(k => {
-        totalLength += k.length;
-        totalLength += headers[k].length;
-        metaHeaders[k] = headers[k];
-        return (totalLength <= constants.maximumMetaHeadersSize);
-    });
-    if (validHeaders) {
-        return metaHeaders;
+export function getMetaHeaders(headers: http.IncomingHttpHeaders) {
+    const rawHeaders = Object.entries(headers);
+    const filtered = rawHeaders.filter(([k]) => k.startsWith('x-amz-meta-'));
+    const totalLength = filtered.reduce((length, [k, v]) => {
+        if (!v) return length;
+        return length + k.length + v.toString().length;
+    }, 0);
+    if (totalLength < constants.maximumMetaHeadersSize) {
+        return Object.fromEntries(filtered);
+    } else {
+        return errors.MetadataTooLarge;
     }
-    return errors.MetadataTooLarge;
-};
-
-module.exports = userMetadata;
+}
