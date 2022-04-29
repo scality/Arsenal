@@ -1,12 +1,9 @@
-'use strict'; // eslint-disable-line
-
-const errors = require('../../errors').default;
-const constants = require('../../constants');
-const url = require('url');
-
+import errors from '../../errors';
+import * as constants from '../../constants';
+import * as url from 'url';
 const passthroughPrefixLength = constants.passthroughFileURL.length;
 
-function explodePath(path) {
+export function explodePath(path: string) {
     if (path.startsWith(constants.passthroughFileURL)) {
         const key = path.slice(passthroughPrefixLength + 1);
         return {
@@ -29,17 +26,17 @@ function explodePath(path) {
  * Parse the given url and return a pathInfo object. Sanity checks are
  * performed.
  *
- * @param {String} urlStr - URL to parse
- * @param {Boolean} expectKey - whether the command expects to see a
+ * @param urlStr - URL to parse
+ * @param expectKey - whether the command expects to see a
  *   key in the URL
- * @return {Object} a pathInfo object with URL items containing the
+ * @return a pathInfo object with URL items containing the
  * following attributes:
  *   - pathInfo.service {String} - The name of REST service ("DataFile")
  *   - pathInfo.key {String} - The requested key
  */
-function parseURL(urlStr, expectKey) {
+export function parseURL(urlStr: string, expectKey: boolean) {
     const urlObj = url.parse(urlStr);
-    const pathInfo = explodePath(decodeURI(urlObj.path));
+    const pathInfo = explodePath(decodeURI(urlObj.path!));
     if ((pathInfo.service !== constants.dataFileURL)
         && (pathInfo.service !== constants.passthroughFileURL)) {
         throw errors.InvalidAction.customizeDescription(
@@ -61,8 +58,3 @@ function parseURL(urlStr, expectKey) {
     }
     return pathInfo;
 }
-
-module.exports = {
-    explodePath,
-    parseURL,
-};

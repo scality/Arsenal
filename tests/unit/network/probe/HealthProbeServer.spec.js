@@ -1,6 +1,6 @@
 const assert = require('assert');
 const HealthProbeServer =
-      require('../../../../lib/network/probe/HealthProbeServer');
+      require('../../../../lib/network/probe/HealthProbeServer').default;
 const http = require('http');
 
 function makeRequest(meth, uri) {

@@ -1,12 +1,12 @@
 'use strict'; // eslint-disable-line
 /* eslint new-cap: "off" */
 
-const async = require('async');
-
-const errors = require('../../errors').default;
-const TTLVCodec = require('./codec/ttlv.js');
-const TlsTransport = require('./transport/tls.js');
-const KMIP = require('.');
+import async from 'async';
+import errors from '../../errors';
+import TTLVCodec from './codec/ttlv';
+import TlsTransport from './transport/tls';
+import KMIP from '.';
+import * as werelogs from 'werelogs';
 
 const CRYPTOGRAPHIC_OBJECT_TYPE = 'Symmetric Key';
 const CRYPTOGRAPHIC_ALGORITHM = 'AES';
@@ -47,10 +47,10 @@ const searchFilter = {
 
 /**
  * Normalize errors according to arsenal definitions
- * @param {string | Error} err - an Error instance or a message string
- * @returns {arsenal.errors} - arsenal error
+ * @param err - an Error instance or a message string
+ * @returns - arsenal error
  */
-function _arsenalError(err) {
+function _arsenalError(err: string | Error) {
     const messagePrefix = 'KMIP:';
     if (typeof err === 'string') {
         return errors.InternalError
@@ -59,6 +59,7 @@ function _arsenalError(err) {
         err instanceof Error ||
         // INFO: The second part is here only for Jest, to remove when we'll be
         //   fully migrated to TS
+        // @ts-expect-error
         (err && typeof err.message === 'string')
     ) {
         return errors.InternalError
@@ -72,12 +73,11 @@ function _arsenalError(err) {
 /**
  * Negotiate with the server the use of a recent version of the protocol and
  * update the low level driver with this new knowledge.
- * @param {Object} client - The Client instance
- * @param {Object} logger - Werelog logger object
- * @param {Function} cb - The callback triggered after the negotiation.
- * @returns {undefined}
+ * @param client - The Client instance
+ * @param logger - Werelog logger object
+ * @param cb - The callback triggered after the negotiation.
  */
-function _negotiateProtocolVersion(client, logger, cb) {
+function _negotiateProtocolVersion(client: any, logger: werelogs.Logger, cb: any) {
     return client.kmip.request(logger, 'Discover Versions', [
         KMIP.Structure('Protocol Version', [
             KMIP.Integer('Protocol Version Major', 1),
@@ -119,12 +119,11 @@ function _negotiateProtocolVersion(client, logger, cb) {
 /**
  * Obtain from the server the various extensions defined by the vendor
  * and update the low level driver with this new knowledge.
- * @param {Object} client - The Client instance
- * @param {Object} logger - Werelog logger object
- * @param {Function} cb - The callback triggered after the extension mapping
- * @returns {undefined}
+ * @param client - The Client instance
+ * @param logger - Werelog logger object
+ * @param cb - The callback triggered after the extension mapping
  */
-function _mapExtensions(client, logger, cb) {
+function _mapExtensions(client: any, logger: werelogs.Logger, cb: any) {
     return client.kmip.request(logger, 'Query', [
         KMIP.Enumeration('Query Function', 'Query Extension Map'),
     ], (err, response) => {
@@ -153,12 +152,11 @@ function _mapExtensions(client, logger, cb) {
 
 /**
  * Query the Server information and identify its vendor
- * @param {Object} client - The Client instance
- * @param {Object} logger - Werelog logger object
- * @param {Function} cb - The callback triggered after the information discovery
- * @returns {undefined}
+ * @param client - The Client instance
+ * @param logger - Werelog logger object
+ * @param cb - The callback triggered after the information discovery
  */
-function _queryServerInformation(client, logger, cb) {
+function _queryServerInformation(client: any, logger: werelogs.Logger, cb: any) {
     client.kmip.request(logger, 'Query', [
         KMIP.Enumeration('Query Function', 'Query Server Information'),
     ], (err, response) => {
@@ -188,12 +186,11 @@ function _queryServerInformation(client, logger, cb) {
  * is not a show stopper because some vendor support more or less what they
  * announce. If a subsequent request fails, this information can be used to
  * figure out the reason for the failure.
- * @param {Object} client - The Client instance
- * @param {Object} logger - Werelog logger object
- * @param {Function} cb - The callback triggered after the information discovery
- * @returns {undefined}
+ * @param client - The Client instance
+ * @param logger - Werelog logger object
+ * @param cb - The callback triggered after the information discovery
  */
-function _queryOperationsAndObjects(client, logger, cb) {
+function _queryOperationsAndObjects(client: any, logger: werelogs.Logger, cb: any) {
     return client.kmip.request(logger, 'Query', [
         KMIP.Enumeration('Query Function', 'Query Operations'),
         KMIP.Enumeration('Query Function', 'Query Objects'),
@@ -242,29 +239,47 @@ function _queryOperationsAndObjects(client, logger, cb) {
 }
 
 
-class Client {
+export default class Client {
+    options: any;
+    vendorIdentification: string;
+    serverInformation: any[];
+    kmip: KMIP;
+
     /**
      * Construct a high level KMIP driver suitable for cloudserver
-     * @param {Object} options - Instance options
-     * @param {Object} options.kmip - Low level driver options
-     * @param {Object} options.kmip.client - This high level driver options
-     * @param {Object} options.kmip.client.compoundCreateActivate -
+     * @param options - Instance options
+     * @param options.kmip - Low level driver options
+     * @param options.kmip.client - This high level driver options
+     * @param options.kmip.client.compoundCreateActivate -
      *                 Depends on the server's ability. False offers the best
      *                 compatibility. True does not offer a significant
      *                 performance gain, but can be useful in case of unreliable
      *                 time synchronization between the client and the server.
-     * @param {Object} options.kmip.client.bucketNameAttributeName -
+     * @param options.kmip.client.bucketNameAttributeName -
      *                 Depends on the server's ability. Not specifying this
      *                 offers the best compatibility and disable the attachement
      *                 of the bucket name as a key attribute.
-     * @param {Object} options.kmip.codec - KMIP Codec options
-     * @param {Object} options.kmip.transport - KMIP Transport options
-     * @param {Class} CodecClass - diversion for the Codec class,
+     * @param options.kmip.codec - KMIP Codec options
+     * @param options.kmip.transport - KMIP Transport options
+     * @param CodecClass - diversion for the Codec class,
      *                             defaults to TTLVCodec
-     * @param {Class} TransportClass - diversion for the Transport class,
+     * @param TransportClass - diversion for the Transport class,
      *                                 defaults to TlsTransport
      */
-    constructor(options, CodecClass, TransportClass) {
+    constructor(
+        options: {
+            kmip: {
+                codec: any;
+                transport: any;
+                client: {
+                    compoundCreateActivate: any;
+                    bucketNameAttributeName: any;
+                };
+            }
+        },
+        CodecClass: any,
+        TransportClass: any,
+    ) {
         this.options = options.kmip.client || {};
         this.vendorIdentification = '';
         this.serverInformation = [];
@@ -278,30 +293,27 @@ class Client {
 
     /**
      * Update this client with the vendor identification of the server
-     * @param {String} vendorIdentification - Vendor identification string
-     * @returns {undefined}
+     * @param vendorIdentification - Vendor identification string
      */
-    _setVendorIdentification(vendorIdentification) {
+    _setVendorIdentification(vendorIdentification: string) {
         this.vendorIdentification = vendorIdentification;
     }
 
     /**
      * Update this client with the information about the server
-     * @param {Object} serverInformation - Server information object
-     * @returns {undefined}
+     * @param serverInformation - Server information object
      */
-    _setServerInformation(serverInformation) {
+    _setServerInformation(serverInformation: any) {
         this.serverInformation = serverInformation;
     }
 
     /**
      * Perform the KMIP level handshake with the server
-     * @param {Object} logger - Werelog logger object
-     * @param {Function} cb - Callback to be triggered at the end of the
+     * @param logger - Werelog logger object
+     * @param cb - Callback to be triggered at the end of the
      *                        handshake. cb(err: Error)
-     * @returns {undefined}
      */
-    _kmipHandshake(logger, cb) {
+    _kmipHandshake(logger: werelogs.Logger, cb: any) {
         return async.waterfall([
             next => _negotiateProtocolVersion(this, logger, next),
             next => _mapExtensions(this, logger, next),
@@ -315,12 +327,11 @@ class Client {
      * Activate a cryptographic key managed by the server,
      * for a specific bucket. This is a required action to perform after
      * the key creation.
-     * @param {string} keyIdentifier - The bucket key Id
-     * @param {object} logger - Werelog logger object
-     * @param {function} cb - The callback(err: Error)
-     * @returns {undefined}
+     * @param keyIdentifier - The bucket key Id
+     * @param logger - Werelog logger object
+     * @param cb - The callback(err: Error)
      */
-    _activateBucketKey(keyIdentifier, logger, cb) {
+    _activateBucketKey(keyIdentifier: string, logger: werelogs.Logger, cb: any) {
         return this.kmip.request(logger, 'Activate', [
             KMIP.TextString('Unique Identifier', keyIdentifier),
         ], (err, response) => {
@@ -347,13 +358,12 @@ class Client {
     /**
      * Create a new cryptographic key managed by the server,
      * for a specific bucket
-     * @param {string} bucketName - The bucket name
-     * @param {object} logger - Werelog logger object
-     * @param {function} cb - The callback(err: Error, bucketKeyId: String)
-     * @returns {undefined}
+     * @param bucketName - The bucket name
+     * @param logger - Werelog logger object
+     * @param cb - The callback(err: Error, bucketKeyId: String)
      */
-    createBucketKey(bucketName, logger, cb) {
-        const attributes = [];
+    createBucketKey(bucketName: string, logger: werelogs.Logger, cb: any) {
+        const attributes: any = [];
         if (!!this.options.bucketNameAttributeName) {
             attributes.push(KMIP.Attribute('TextString',
                 this.options.bucketNameAttributeName,
@@ -369,6 +379,8 @@ class Client {
                     CRYPTOGRAPHIC_USAGE_MASK))]);
         if (this.options.compoundCreateActivate) {
             attributes.push(KMIP.Attribute('Date-Time', 'Activation Date',
+                // TODO What's happening here? That can not work.
+                // @ts-expect-error
                 new Date(Date.UTC())));
         }
 
@@ -405,12 +417,11 @@ class Client {
      * Revoke a cryptographic key managed by the server, for a specific bucket.
      * This is a required action to perform before being able to destroy the
      * managed key.
-     * @param {string} bucketKeyId - The bucket key Id
-     * @param {object} logger - Werelog logger object
-     * @param {function} cb - The callback(err: Error)
-     * @returns {undefined}
+     * @param bucketKeyId - The bucket key Id
+     * @param logger - Werelog logger object
+     * @param cb - The callback(err: Error)
      */
-    _revokeBucketKey(bucketKeyId, logger, cb) {
+    _revokeBucketKey(bucketKeyId: string, logger: werelogs.Logger, cb: any) {
         // maybe revoke first
         return this.kmip.request(logger, 'Revoke', [
             KMIP.TextString('Unique Identifier', bucketKeyId),
@@ -443,12 +454,11 @@ class Client {
 
     /**
      * Destroy a cryptographic key managed by the server, for a specific bucket.
-     * @param {string} bucketKeyId - The bucket key Id
-     * @param {object} logger - Werelog logger object
-     * @param {function} cb - The callback(err: Error)
-     * @returns {undefined}
+     * @param bucketKeyId - The bucket key Id
+     * @param logger - Werelog logger object
+     * @param cb - The callback(err: Error)
      */
-    destroyBucketKey(bucketKeyId, logger, cb) {
+    destroyBucketKey(bucketKeyId: string, logger: werelogs.Logger, cb: any) {
         return this._revokeBucketKey(bucketKeyId, logger, err => {
             if (err) {
                 const error = _arsenalError(err);
@@ -483,19 +493,20 @@ class Client {
 
     /**
      *
-     * @param {number} cryptoScheme - crypto scheme version number
-     * @param {string} masterKeyId - key to retrieve master key
-     * @param {buffer} plainTextDataKey - data key
-     * @param {object} logger - werelog logger object
-     * @param {function} cb - callback
-     * @returns {undefined}
+     * @param cryptoScheme - crypto scheme version number
+     * @param masterKeyId - key to retrieve master key
+     * @param plainTextDataKey - data key
+     * @param logger - werelog logger object
+     * @param cb - callback
      * @callback called with (err, cipheredDataKey: Buffer)
      */
-    cipherDataKey(cryptoScheme,
-        masterKeyId,
-        plainTextDataKey,
-        logger,
-        cb) {
+    cipherDataKey(
+        cryptoScheme: number,
+        masterKeyId: string,
+        plainTextDataKey: Buffer,
+        logger: werelogs.Logger,
+        cb: any,
+    ) {
         return this.kmip.request(logger, 'Encrypt', [
             KMIP.TextString('Unique Identifier', masterKeyId),
             KMIP.Structure('Cryptographic Parameters', [
@@ -532,19 +543,20 @@ class Client {
 
     /**
      *
-     * @param {number} cryptoScheme - crypto scheme version number
-     * @param {string} masterKeyId - key to retrieve master key
-     * @param {buffer} cipheredDataKey - data key
-     * @param {object} logger - werelog logger object
-     * @param {function} cb - callback
-     * @returns {undefined}
+     * @param cryptoScheme - crypto scheme version number
+     * @param masterKeyId - key to retrieve master key
+     * @param cipheredDataKey - data key
+     * @param logger - werelog logger object
+     * @param cb - callback
      * @callback called with (err, plainTextDataKey: Buffer)
      */
-    decipherDataKey(cryptoScheme,
-        masterKeyId,
-        cipheredDataKey,
-        logger,
-        cb) {
+    decipherDataKey(
+        cryptoScheme: number,
+        masterKeyId: string,
+        cipheredDataKey: Buffer,
+        logger: werelogs.Logger,
+        cb: any,
+    ) {
         return this.kmip.request(logger, 'Decrypt', [
             KMIP.TextString('Unique Identifier', masterKeyId),
             KMIP.Structure('Cryptographic Parameters', [
@@ -604,5 +616,3 @@ class Client {
         });
     }
 }
-
-module.exports = Client;

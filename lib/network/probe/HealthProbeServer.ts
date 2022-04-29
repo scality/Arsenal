@@ -1,15 +1,27 @@
-const httpServer = require('../http/server');
-const werelogs = require('werelogs');
-const errors = require('../../errors').default;
-const ZenkoMetrics = require('../../metrics/ZenkoMetrics').default;
-const { sendSuccess, sendError } = require('./Utils');
+import * as http from 'http';
+import httpServer from '../http/server';
+import * as werelogs from 'werelogs';
+import errors from '../../errors';
+import ZenkoMetrics from '../../metrics/ZenkoMetrics';
+import { sendSuccess, sendError } from './Utils';
 
-function checkStub(log) { // eslint-disable-line
+function checkStub(_log: any) {
+    // eslint-disable-line
     return true;
 }
 
-class HealthProbeServer extends httpServer {
-    constructor(params) {
+export default class HealthProbeServer extends httpServer {
+    logging: werelogs.Logger;
+    _reqHandlers: { [key: string]: any };
+    _livenessCheck: (log: any) => boolean;
+    _readinessCheck: (log: any) => boolean;
+
+    constructor(params: {
+        port: number;
+        bindAddress: string;
+        livenessCheck?: (log: any) => boolean;
+        readinessCheck?: (log: any) => boolean;
+    }) {
         const logging = new werelogs.Logger('HealthProbeServer');
         super(params.port, logging);
         this.logging = logging;
@@ -26,29 +38,32 @@ class HealthProbeServer extends httpServer {
         this._readinessCheck = params.readinessCheck || checkStub;
     }
 
-    onLiveCheck(f) {
+    onLiveCheck(f: (log: any) => boolean) {
         this._livenessCheck = f;
     }
 
-    onReadyCheck(f) {
+    onReadyCheck(f: (log: any) => boolean) {
         this._readinessCheck = f;
     }
 
-    _onRequest(req, res) {
+    _onRequest(req: http.IncomingMessage, res: http.ServerResponse) {
         const log = this.logging.newRequestLogger();
-        log.debug('request received', { method: req.method,
-            url: req.url });
+        log.debug('request received', { method: req.method, url: req.url });
 
         if (req.method !== 'GET') {
             sendError(res, log, errors.MethodNotAllowed);
-        } else if (req.url in this._reqHandlers) {
+        } else if (req.url && req.url in this._reqHandlers) {
             this._reqHandlers[req.url](req, res, log);
         } else {
             sendError(res, log, errors.InvalidURI);
         }
     }
 
-    _onLiveness(req, res, log) {
+    _onLiveness(
+        _req: http.IncomingMessage,
+        res: http.ServerResponse,
+        log: RequestLogger,
+    ) {
         if (this._livenessCheck(log)) {
             sendSuccess(res, log);
         } else {
@@ -56,7 +71,11 @@ class HealthProbeServer extends httpServer {
         }
     }
 
-    _onReadiness(req, res, log) {
+    _onReadiness(
+        _req: http.IncomingMessage,
+        res: http.ServerResponse,
+        log: RequestLogger,
+    ) {
         if (this._readinessCheck(log)) {
             sendSuccess(res, log);
         } else {
@@ -65,12 +84,10 @@ class HealthProbeServer extends httpServer {
     }
 
     // expose metrics to Prometheus
-    _onMetrics(req, res) {
+    _onMetrics(_req: http.IncomingMessage, res: http.ServerResponse) {
         res.writeHead(200, {
             'Content-Type': ZenkoMetrics.asPrometheusContentType(),
         });
         res.end(ZenkoMetrics.asPrometheus());
     }
 }
-
-module.exports = HealthProbeServer;

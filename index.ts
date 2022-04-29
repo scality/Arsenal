@@ -10,6 +10,8 @@ export * as auth from './lib/auth/auth';
 export * as constants from './lib/constants';
 export * as https from './lib/https';
 export * as metrics from './lib/metrics';
+export * as network from './lib/network';
+
 export const db = require('./lib/db');
 export const errorUtils = require('./lib/errorUtils');
 export const shuffle = require('./lib/shuffle');
@@ -52,28 +54,6 @@ export const versioning = {
     WriteGatheringManager: require('./lib/versioning/WriteGatheringManager.js'),
     WriteCache: require('./lib/versioning/WriteCache.js'),
     VersioningRequestProcessor: require('./lib/versioning/VersioningRequestProcessor.js'),
-};
-
-export const network = {
-    http: {
-        server: require('./lib/network/http/server'),
-        utils: require('./lib/network/http/utils'),
-    },
-    rpc: require('./lib/network/rpc/rpc'),
-    level: require('./lib/network/rpc/level-net'),
-    rest: {
-        RESTServer: require('./lib/network/rest/RESTServer'),
-        RESTClient: require('./lib/network/rest/RESTClient'),
-    },
-    RoundRobin: require('./lib/network/RoundRobin'),
-    probe: {
-        ProbeServer: require('./lib/network/probe/ProbeServer'),
-        HealthProbeServer:
-            require('./lib/network/probe/HealthProbeServer.js'),
-        Utils: require('./lib/network/probe/Utils.js'),
-    },
-    kmip: require('./lib/network/kmip'),
-    kmipClient: require('./lib/network/kmip/Client'),
 };
 
 export const s3routes = {

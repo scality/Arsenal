@@ -1,19 +1,18 @@
-'use strict'; // eslint-disable-line
-
-const http = require('http');
-const io = require('socket.io');
-const ioClient = require('socket.io-client');
-const sioStream = require('./sio-stream');
-const async = require('async');
-const assert = require('assert');
-const EventEmitter = require('events').EventEmitter;
-
-const flattenError = require('./utils').flattenError;
-const reconstructError = require('./utils').reconstructError;
-const errors = require('../../errors').default;
-const jsutil = require('../../jsutil');
+import ioClient from 'socket.io-client';
+import * as http from 'http';
+import io from 'socket.io';
+import * as sioStream from './sio-stream';
+import async from 'async';
+import assert from 'assert';
+import { EventEmitter } from 'events';
+import { flattenError, reconstructError } from './utils';
+import errors, { ArsenalError } from '../../errors';
+import * as jsutil from '../../jsutil';
+import { Logger } from 'werelogs';
 
 const DEFAULT_CALL_TIMEOUT_MS = 30000;
+
+export type Callback = (err?: Error | null, data?: any) => void;
 
 // to handle recursion without no-use-before-define warning
 // eslint-disable-next-line prefer-const
@@ -36,22 +35,38 @@ let streamRPCJSONObj;
  * - the return value is passed as callback's second argument (unless
  *   an error occurred).
  */
-class BaseClient extends EventEmitter {
+export class BaseClient extends EventEmitter {
+    url: string;
+    logger: Logger;
+    callTimeoutMs?: number;
+    streamMaxPendingAck?: number;
+    streamAckTimeoutMs?: number;
+    requestInfoProducers: any[];
+    socketStreams: any;
+    socket: any;
+    withReqUids?: any;
+
     /**
      * @constructor
      *
-     * @param {Object} params - constructor params
-     * @param {String} params.url - URL of the socket.io namespace,
+     * @param params - constructor params
+     * @param params.url - URL of the socket.io namespace,
      *   e.g. 'http://localhost:9990/metadata'
-     * @param {Logger} params.logger - logger object
-     * @param {Number} [params.callTimeoutMs] - timeout for remote calls
-     * @param {Number} [params.streamMaxPendingAck] - max number of
+     * @param params.logger - logger object
+     * @param [params.callTimeoutMs] - timeout for remote calls
+     * @param [params.streamMaxPendingAck] - max number of
      *   in-flight output stream packets sent to the server without an ack
      *   received yet
-     * @param {Number} [params.streamAckTimeoutMs] - timeout for receiving
+     * @param [params.streamAckTimeoutMs] - timeout for receiving
      *   an ack after an output stream packet is sent to the server
      */
-    constructor(params) {
+    constructor(params: {
+        url: string;
+        logger: Logger;
+        callTimeoutMs?: number;
+        streamMaxPendingAck?: number;
+        streamAckTimeoutMs?: number;
+    }) {
         const { url, logger, callTimeoutMs,
             streamMaxPendingAck, streamAckTimeoutMs } = params;
         assert(url);
@@ -73,12 +88,11 @@ class BaseClient extends EventEmitter {
     /**
      * @brief internal RPC implementation w/o timeout
      *
-     * @param {String} remoteCall - name of the remote function to call
-     * @param {Array} args - list of arguments to the remote function
-     * @param {function} cb - callback called when done
-     * @return {undefined}
+     * @param remoteCall - name of the remote function to call
+     * @param args - list of arguments to the remote function
+     * @param cb - callback called when done
      */
-    _call(remoteCall, args, cb) {
+    _call(remoteCall: string, args: { rpcArgs: any[] }, cb: Callback) {
         const wrapCb = (err, data) => {
             cb(reconstructError(err),
                 this.socketStreams.decodeStreams(data));
@@ -101,18 +115,19 @@ class BaseClient extends EventEmitter {
      * 'ETIMEDOUT' property, and a self-described string in the 'info'
      * property.
      *
-     * @param {String} remoteCall - name of the remote function to call
-     * @param {Array} args - list of arguments to the remote function
-     * @param {function} cb - callback called when done or timeout
-     * @param {Number} timeoutMs - timeout in milliseconds
-     * @return {undefined}
+     * @param remoteCall - name of the remote function to call
+     * @param args - list of arguments to the remote function
+     * @param cb - callback called when done or timeout
+     * @param timeoutMs - timeout in milliseconds
      */
-    callTimeout(remoteCall, args, cb, timeoutMs = DEFAULT_CALL_TIMEOUT_MS) {
+    callTimeout(remoteCall: string, args: { rpcArgs: any[] }, cb: Callback, timeoutMs = DEFAULT_CALL_TIMEOUT_MS) {
         if (typeof cb !== 'function') {
             throw new Error(`argument cb=${cb} is not a callback`);
         }
+        // @ts-ignore
         async.timeout(this._call.bind(this), timeoutMs,
             `operation ${remoteCall} timed out`)(remoteCall,
+            // @ts-ignore
             args, cb);
         return undefined;
     }
@@ -120,18 +135,17 @@ class BaseClient extends EventEmitter {
     getCallTimeout() {
         return this.callTimeoutMs;
     }
-    setCallTimeout(newTimeoutMs) {
+    setCallTimeout(newTimeoutMs: number) {
         this.callTimeoutMs = newTimeoutMs;
     }
 
     /**
      * connect to the remote RPC server
      *
-     * @param {function} cb - callback when connection is complete or
+     * @param cb - callback when connection is complete or
      *   if there is an error
-     * @return {undefined}
      */
-    connect(cb) {
+    connect(cb: Callback) {
         this.socket = ioClient(this.url);
         this.socketStreams = sioStream.createSocket(
             this.socket,
@@ -152,6 +166,7 @@ class BaseClient extends EventEmitter {
 
         // only hard-coded call necessary to discover the others
         this.createCall('getManifest');
+        // @ts-expect-errors
         this.getManifest((err, manifest) => {
             if (err) {
                 this.logger.error('Error fetching manifest from RPC server',
@@ -171,8 +186,6 @@ class BaseClient extends EventEmitter {
     /**
      * disconnect this client from the RPC server. A disconnect event
      * is emitted when done.
-     *
-     * @return {undefined}
      */
     disconnect() {
         this.socket.disconnect();
@@ -185,10 +198,9 @@ class BaseClient extends EventEmitter {
      * because the API is automatically exposed by reading the
      * manifest from the server.
      *
-     * @param {String} remoteCall - name of the API call to create
-     * @return {undefined}
+     * @param remoteCall - name of the API call to create
      */
-    createCall(remoteCall) {
+    createCall(remoteCall: string) {
         this[remoteCall] = function onCall(...rpcArgs) {
             const cb = rpcArgs.pop();
             const args = { rpcArgs };
@@ -207,12 +219,11 @@ class BaseClient extends EventEmitter {
      * along each request. It will be called before every single
      * request, so the parameters can be dynamic.
      *
-     * @param {function} f - function returning an object that
+     * @param f - function returning an object that
      *   contains the additional parameters for the request. It is
      *   called with the client object passed as a parameter.
-     * @return {undefined}
      */
-    addRequestInfoProducer(f) {
+    addRequestInfoProducer(f: any) {
         this.requestInfoProducers.push(f);
     }
 
@@ -227,11 +238,12 @@ class BaseClient extends EventEmitter {
      * rpcClient.withRequestLogger(logger).callSomeFunction(params);
      * ```
      *
-     * @param {Object} logger - werelogs logger object
-     * @return {BaseClient} returns the original called client object
+     * @param logger - werelogs logger object
+     * @return returns the original called client object
      * so that the result can be chained with further calls
      */
-    withRequestLogger(logger) {
+    withRequestLogger(logger: Logger) {
+        // @ts-expect-errors
         this.withReqUids = logger.getSerializedUids();
         return this;
     }
@@ -249,23 +261,37 @@ class BaseClient extends EventEmitter {
  * method.
  *
  */
-class BaseService {
+export class BaseService {
+    namespace: string;
+    logger: Logger;
+    apiVersion: string;
+    server: any;
+    requestInfoConsumers: any[];
+    syncAPI: {};
+    asyncAPI: {};
+    requestParams: any;
+
     /**
      * @constructor
      *
-     * @param {Object} params - constructor parameters
-     * @param {String} params.namespace - socket.io namespace, a free
+     * @param params - constructor parameters
+     * @param params.namespace - socket.io namespace, a free
      *   string name that must start with '/'. The client will have to
      *   provide the same namespace in the URL
      *   (http://host:port/namespace)
-     * @param {Object} params.logger - logger object
-     * @param {String} [params.apiVersion="1.0"] - Version number that
+     * @param params.logger - logger object
+     * @param [params.apiVersion="1.0"] - Version number that
      *   is shared with clients in the manifest (may be used to ensure
      *   backward compatibility)
      * @param {RPCServer} [params.server] - convenience parameter,
      * calls server.registerServices() automatically
      */
-    constructor(params) {
+    constructor(params: {
+        namespace: string;
+        logger: Logger;
+        apiVersion?: string;
+        server: any;
+    }) {
         const { namespace, logger, apiVersion, server } = params;
         assert(namespace);
         assert(namespace.startsWith('/'));
@@ -281,7 +307,7 @@ class BaseService {
         this.asyncAPI = {};
         this.registerSyncAPI({
             getManifest: () => {
-                const exposedAPI = [];
+                const exposedAPI: any[] = [];
                 Object.keys(this.syncAPI).forEach(callName => {
                     if (callName !== 'getManifest') {
                         exposedAPI.push({ name: callName });
@@ -296,7 +322,7 @@ class BaseService {
         });
 
         this.addRequestInfoConsumer((dbService, params) => {
-            const env = {};
+            const env: any = {};
             if (params.reqUids) {
                 env.reqUids = params.reqUids;
                 env.requestLogger = dbService.logger
@@ -315,14 +341,13 @@ class BaseService {
     /**
      * register a set of API functions that return a result synchronously
      *
-     * @param {Object} apiExtension - Object mapping names to API
+     * @param apiExtension - Object mapping names to API
      *   function implementation. Each API function gets an
      *   environment object as first parameter that contains various
      *   useful attributes, while the rest of parameters are the RPC
      *   parameters as passed by the client in the call.
-     * @return {undefined}
      */
-    registerSyncAPI(apiExtension) {
+    registerSyncAPI(apiExtension: any) {
         Object.assign(this.syncAPI, apiExtension);
         Object.keys(apiExtension).forEach(callName => {
             this[callName] = function localCall(...args) {
@@ -340,16 +365,15 @@ class BaseService {
      * register a set of API functions that return a result through a
      * callback passed as last argument
      *
-     * @param {Object} apiExtension - Object mapping names to API
+     * @param apiExtension - Object mapping names to API
      *   function implementation. Each API function gets an
      *   environment object as first parameter that contains various
      *   useful attributes, while the rest of parameters are the RPC
      *   parameters as passed by the client in the call, followed by a
      *   callback function to call with an error status and optional
      *   additional response values.
-     * @return {undefined}
      */
-    registerAsyncAPI(apiExtension) {
+    registerAsyncAPI(apiExtension: any) {
         Object.assign(this.asyncAPI, apiExtension);
         Object.keys(apiExtension).forEach(callName => {
             this[callName] = function localCall(...args) {
@@ -364,7 +388,7 @@ class BaseService {
         });
     }
 
-    withRequestParams(params) {
+    withRequestParams(params: any) {
         this.requestParams = params;
         return this;
     }
@@ -373,11 +397,10 @@ class BaseService {
      * set the API version string, that is communicated to connecting
      * clients in the manifest
      *
-     * @param {String} apiVersion - arbitrary version string
+     * @param apiVersion - arbitrary version string
      * (suggested format "x.y")
-     * @return {undefined}
      */
-    setAPIVersion(apiVersion) {
+    setAPIVersion(apiVersion: string) {
         this.apiVersion = apiVersion;
     }
 
@@ -387,23 +410,22 @@ class BaseService {
      * arguments) into environment attributes directly usable by the
      * API implementation
      *
-     * @param {function} f - function to be called with two arguments:
+     * @param f - function to be called with two arguments:
      * the service object and the params object received from the
      * client, and which returns an object with the additional
      * environment attributes
-     * @return {undefined}
      */
-    addRequestInfoConsumer(f) {
+    addRequestInfoConsumer(f: any) {
         this.requestInfoConsumers.push(f);
     }
 
-    _onCall(remoteCall, args, cb) {
+    _onCall(remoteCall: string, args: any, cb: any) {
         if (remoteCall in this.asyncAPI) {
             try {
                 this.onAsyncCall(remoteCall, args, (err, data) => {
                     cb(flattenError(err), data);
                 });
-            } catch (err) {
+            } catch (err: any) {
                 return cb(flattenError(err));
             }
         } else if (remoteCall in this.syncAPI) {
@@ -412,7 +434,7 @@ class BaseService {
             try {
                 result = this.onSyncCall(remoteCall, args);
                 return cb(null, result);
-            } catch (err) {
+            } catch (err: any) {
                 return cb(flattenError(err));
             }
         } else {
@@ -423,7 +445,7 @@ class BaseService {
         return undefined;
     }
 
-    _createCallEnv(params) {
+    _createCallEnv(params: any) {
         const env = {};
         this.requestInfoConsumers.forEach(f => {
             const extraEnv = f(this, params);
@@ -432,13 +454,13 @@ class BaseService {
         return env;
     }
 
-    onSyncCall(remoteCall, params) {
+    onSyncCall(remoteCall: string, params: any) {
         const env = this._createCallEnv(params);
         return this.syncAPI[remoteCall].apply(
             this, [env].concat(params.rpcArgs));
     }
 
-    onAsyncCall(remoteCall, params, cb) {
+    onAsyncCall(remoteCall: string, params: any, cb: any) {
         const env = this._createCallEnv(params);
         this.asyncAPI[remoteCall].apply(
             this, [env].concat(params.rpcArgs).concat(cb));
@@ -457,17 +479,21 @@ class BaseService {
  * particular sub-level before forwarding the RPC, providing it the
  * target sub-level handle.
  *
- * @param {Object} params - params object
- * @param {Object} params.logger - logger object
- * @param {Number} [params.streamMaxPendingAck] - max number of
+ * @param params - params object
+ * @param params.logger - logger object
+ * @param [params.streamMaxPendingAck] - max number of
  *   in-flight output stream packets sent to the server without an ack
  *   received yet
- * @param {Number} [params.streamAckTimeoutMs] - timeout for receiving
+ * @param [params.streamAckTimeoutMs] - timeout for receiving
  *   an ack after an output stream packet is sent to the server
- * @return {Object} a server object, not yet listening on a TCP port
+ * @return a server object, not yet listening on a TCP port
  * (you must call listen(port) on the returned object)
  */
-function RPCServer(params) {
+export function RPCServer(params: {
+    logger: Logger;
+    streamMaxPendingAck?: number;
+    streamAckTimeoutMs?: number;
+}) {
     assert(params.logger);
 
     const httpServer = http.createServer();
@@ -481,9 +507,8 @@ function RPCServer(params) {
      * "server" parameter to the service constructor.
      *
      * @param {BaseService} serviceList - list of services to register
-     * @return {undefined}
      */
-    server.registerServices = function registerServices(...serviceList) {
+    server.registerServices = function registerServices(...serviceList: any[]) {
         serviceList.forEach(service => {
             const sock = this.of(service.namespace);
             sock.on('connection', conn => {
@@ -519,7 +544,7 @@ function RPCServer(params) {
 }
 
 
-function sendHTTPError(res, err) {
+function sendHTTPError(res: http.ServerResponse, err: ArsenalError) {
     res.writeHead(err.code || 500);
     return res.end(`${JSON.stringify({ error: err.message,
         message: err.description })}\n`);
@@ -661,12 +686,12 @@ streamRPCJSONObj = function _streamRPCJSONObj(obj, wstream, cb) {
  * Services associated to namespaces (aka. URL base path) must be
  * registered thereafter on this server.
  *
- * @param {Object} params - params object
- * @param {Object} params.logger - logger object
- * @return {Object} a HTTP server object, not yet listening on a TCP
+ * @param params - params object
+ * @param params.logger - logger object
+ * @return a HTTP server object, not yet listening on a TCP
  * port (you must call listen(port) on the returned object)
  */
-function RESTServer(params) {
+export function RESTServer(params: { logger: Logger }) {
     assert(params);
     assert(params.logger);
     const httpServer = http.createServer((req, res) => {
@@ -675,6 +700,8 @@ function RESTServer(params) {
                 res, errors.MethodNotAllowed.customizeDescription(
                     'only POST requests are supported for RPC calls'));
         }
+        // @ts-expect-errors
+        // TODO
         const matchingService = httpServer.serviceList.find(
             service => req.url === service.namespace);
         if (!matchingService) {
@@ -682,7 +709,7 @@ function RESTServer(params) {
                 res, errors.InvalidArgument.customizeDescription(
                     `unknown service in URL ${req.url}`));
         }
-        const reqBody = [];
+        const reqBody: any = [];
         req.on('data', data => {
             reqBody.push(data);
         });
@@ -714,12 +741,14 @@ function RESTServer(params) {
                     });
                 });
                 return undefined;
-            } catch (err) {
+            } catch (err: any) {
                 return sendHTTPError(res, err);
             }
         });
     });
 
+    // @ts-expect-errors
+    // TODO
     httpServer.serviceList = [];
 
     /**
@@ -731,17 +760,12 @@ function RESTServer(params) {
      * @param {BaseService} serviceList - list of services to register
      * @return {undefined}
      */
+    // @ts-expect-errors
+    // TODO
     httpServer.registerServices = function registerServices(...serviceList) {
+        // @ts-expect-errors
         this.serviceList.push(...serviceList);
     };
 
     return httpServer;
 }
-
-
-module.exports = {
-    BaseClient,
-    BaseService,
-    RPCServer,
-    RESTServer,
-};

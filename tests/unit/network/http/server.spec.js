@@ -7,7 +7,7 @@ const https = require('https');
 const dhparam = require('../../../../lib/https/dh2048').dhparam;
 const ciphers = require('../../../../lib/https/ciphers').ciphers;
 const werelogs = require('werelogs');
-const Server = require('../../../../lib/network/http/server');
+const Server = require('../../../../lib/network/http/server').default;
 werelogs.configure({
     level: 'info',
     dump: 'error',

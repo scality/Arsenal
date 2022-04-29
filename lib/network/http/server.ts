@@ -1,22 +1,45 @@
-'use strict'; // eslint-disable-line
+import * as http from 'http';
+import * as https from 'https';
+import * as tls from 'tls';
+import * as net from 'net';
+import assert from 'assert';
+import { dhparam } from '../../https/dh2048';
+import { ciphers } from '../../https/ciphers';
+import errors from '../../errors';
+import { checkSupportIPv6 } from './utils';
+import { Logger } from 'werelogs';
 
-const http = require('http');
-const https = require('https');
-const assert = require('assert');
-const dhparam = require('../../https/dh2048').dhparam;
-const ciphers = require('../../https/ciphers').ciphers;
-const errors = require('../../errors').default;
-const { checkSupportIPv6 } = require('./utils');
+export default class Server {
+    _noDelay: boolean;
+    _cbOnListening: () => void;
+    _cbOnRequest: (req: http.IncomingMessage, res: http.ServerResponse) => void;
+    _cbOnCheckContinue: (req: http.IncomingMessage, res: http.ServerResponse) => void;
+    _cbOnCheckExpectation: (req: http.IncomingMessage, res: http.ServerResponse) => void;
+    _cbOnError: (err: Error) => boolean;
+    _cbOnStop: () => void;
+    _https: {
+        agent?: https.Agent;
+        ciphers: string;
+        dhparam: string;
+        cert?: string;
+        key?: string;
+        ca?: string[];
+        requestCert: boolean;
+        rejectUnauthorized: boolean;
+    };
+    _port: number;
+    _address: string;
+    _server: http.Server | https.Server | null;
+    _logger: Logger;
+    _keepAliveTimeout: number | null;
 
-
-class Server {
     /**
      * @constructor
      *
-     * @param {number} port - Port to listen into
-     * @param {werelogs.Logger} logger - Logger object
+     * @param port - Port to listen into
+     * @param logger - Logger object
      */
-    constructor(port, logger) {
+    constructor(port: number, logger: Logger) {
         assert.strictEqual(typeof port, 'number', 'Port must be a number');
         this._noDelay = true;
         this._cbOnListening = () => {};
@@ -33,9 +56,6 @@ class Server {
         this._https = {
             ciphers,
             dhparam,
-            cert: null,
-            key: null,
-            ca: null,
             requestCert: false,
             rejectUnauthorized: true,
         };
@@ -50,10 +70,10 @@ class Server {
      * Setter to noDelay, this disable the nagle tcp algorithm, reducing
      * latency for each request
      *
-     * @param {boolean} value - { true: Disable, false: Enable }
-     * @return {Server} itself
+     * @param value - { true: Disable, false: Enable }
+     * @return itself
      */
-    setNoDelay(value) {
+    setNoDelay(value: boolean) {
         this._noDelay = value;
         return this;
     }
@@ -63,10 +83,10 @@ class Server {
      * connections are automatically closed (default should be
      * 5 seconds in node.js)
      *
-     * @param {number} keepAliveTimeout - keep-alive timeout in milliseconds
-     * @return {Server} - returns this
+     * @param keepAliveTimeout - keep-alive timeout in milliseconds
+     * @return - returns this
      */
-    setKeepAliveTimeout(keepAliveTimeout) {
+    setKeepAliveTimeout(keepAliveTimeout: number) {
         this._keepAliveTimeout = keepAliveTimeout;
         return this;
     }
@@ -74,7 +94,7 @@ class Server {
     /**
      * Getter to access to the http/https server
      *
-     * @return {http.Server|https.Server} http/https server
+     * @return http/https server
      */
     getServer() {
         return this._server;
@@ -83,7 +103,7 @@ class Server {
     /**
      * Getter to access to the current authority certificate
      *
-     * @return {string} Authority certificate
+     * @return Authority certificate
      */
     getAuthorityCertificate() {
         return this._https.ca;
@@ -92,17 +112,16 @@ class Server {
     /**
      * Setter to the listening port
      *
-     * @param {number} port - Port to listen into
-     * @return {undefined}
+     * @param port - Port to listen into
      */
-    setPort(port) {
+    setPort(port: number) {
         this._port = port;
     }
 
     /**
      * Getter to access to the listening port
      *
-     * @return {number} listening port
+     * @return listening port
      */
     getPort() {
         return this._port;
@@ -111,17 +130,16 @@ class Server {
     /**
      * Setter to the bind address
      *
-     * @param {String} address - address bound to the socket
-     * @return {undefined}
+     * @param address - address bound to the socket
      */
-    setBindAddress(address) {
+    setBindAddress(address: string) {
         this._address = address;
     }
 
     /**
      * Getter to access the bind address
      *
-     * @return {String} address bound to the socket
+     * @return address bound to the socket
      */
     getBindAddress() {
         return this._address;
@@ -130,7 +148,7 @@ class Server {
     /**
      * Getter to access to the noDelay (nagle algorithm) configuration
      *
-     * @return {boolean} { true: Disable, false: Enable }
+     * @return - { true: Disable, false: Enable }
      */
     isNoDelay() {
         return this._noDelay;
@@ -139,7 +157,7 @@ class Server {
     /**
      * Getter to know if the server run under https or http
      *
-     * @return {boolean} { true: Https server, false: http server }
+     * @return - { true: Https server, false: http server }
      */
     isHttps() {
         return !!this._https.cert && !!this._https.key;
@@ -148,20 +166,17 @@ class Server {
     /**
      * Setter for the https configuration
      *
-     * @param {string} [cert] - Content of the certificate
-     * @param {string} [key] - Content of the key
-     * @param {string} [ca] - Content of the authority certificate
-     * @param {boolean} [twoWay] - Enable the two way exchange, which means
+     * @param [cert] - Content of the certificate
+     * @param [key] - Content of the key
+     * @param [ca] - Content of the authority certificate
+     * @param [twoWay] - Enable the two way exchange, which means
      *   each client needs to set up an ssl certificate
-     * @return {Server} itself
+     * @return itself
      */
-    setHttps(cert, key, ca, twoWay) {
+    setHttps(cert: string, key: string, ca: string, twoWay: boolean) {
         this._https = {
             ciphers,
             dhparam,
-            cert: null,
-            key: null,
-            ca: null,
             requestCert: false,
             rejectUnauthorized: true,
         };
@@ -185,11 +200,10 @@ class Server {
     /**
      * Function called when no handler specified in the server
      *
-     * @param {http.IncomingMessage|https.IncomingMessage} req - Request object
-     * @param {http.ServerResponse} res - Response object
-     * @return {undefined}
+     * @param _req - Request object
+     * @param res - Response object
      */
-    _noHandlerCb(req, res) {
+    _noHandlerCb(_req: http.IncomingMessage, res: http.ServerResponse) {
         // if no handler on the Server, send back an internal error
         const err = errors.InternalError;
         const msg = `${err.message}: No handler in Server`;
@@ -203,23 +217,18 @@ class Server {
     /**
      * Function called when request received
      *
-     * @param {http.IncomingMessage} req - Request object
-     * @param {http.ServerResponse} res - Response object
-     * @return {undefined}
+     * @param req - Request object
+     * @param res - Response object
      */
-    _onRequest(req, res) {
+    _onRequest(req: http.IncomingMessage, res: http.ServerResponse) {
         return this._cbOnRequest(req, res);
     }
 
-    /**
-     * Function called when the Server is listening
-     *
-     * @return {undefined}
-     */
+    /** Function called when the Server is listening */
     _onListening() {
         this._logger.info('Server is listening', {
             method: 'arsenal.network.Server._onListening',
-            address: this._server.address(),
+            address: this._server?.address(),
             serverIP: this._address,
             serverPort: this._port,
         });
@@ -229,10 +238,10 @@ class Server {
     /**
      * Function called when the Server sends back an error
      *
-     * @param {Error} err - Error to be sent back
-     * @return {undefined}
+     * @param err - Error to be sent back
+     * @return
      */
-    _onError(err) {
+    _onError(err: Error) {
         this._logger.error('Server error', {
             method: 'arsenal.network.Server._onError',
             port: this._port,
@@ -245,13 +254,9 @@ class Server {
         }
     }
 
-    /**
-     * Function called when the Server is stopped
-     *
-     * @return {undefined}
-     */
+    /** Function called when the Server is stopped */
     _onClose() {
-        if (this._server.listening) {
+        if (this._server?.listening) {
             this._logger.info('Server is stopped', {
                 address: this._server.address(),
             });
@@ -263,10 +268,10 @@ class Server {
     /**
      * Set the listening callback
      *
-     * @param {function} cb - Callback()
-     * @return {Server} itself
+     * @param cb - Callback()
+     * @return itself
      */
-    onListening(cb) {
+    onListening(cb: () => void) {
         assert.strictEqual(typeof cb, 'function',
             'Callback must be a function');
         this._cbOnListening = cb;
@@ -276,10 +281,10 @@ class Server {
     /**
      * Set the request handler callback
      *
-     * @param {function} cb - Callback(req, res)
-     * @return {Server} itself
+     * @param cb - Callback(req, res)
+     * @return itself
      */
-    onRequest(cb) {
+    onRequest(cb: (req: http.IncomingMessage, res: http.ServerResponse) => void) {
         assert.strictEqual(typeof cb, 'function',
             'Callback must be a function');
         this._cbOnRequest = cb;
@@ -289,10 +294,10 @@ class Server {
     /**
      * Set the checkExpectation handler callback
      *
-     * @param {function} cb - Callback(req, res)
-     * @return {Server} itself
+     * @param cb - Callback(req, res)
+     * @return itself
      */
-    onCheckExpectation(cb) {
+    onCheckExpectation(cb: (req: http.IncomingMessage, res: http.ServerResponse) => void) {
         assert.strictEqual(typeof cb, 'function',
             'Callback must be a function');
         this._cbOnCheckExpectation = cb;
@@ -302,10 +307,10 @@ class Server {
     /**
      * Set the checkContinue handler callback
      *
-     * @param {function} cb - Callback(req, res)
-     * @return {Server} itself
+     * @param cb - Callback(req, res)
+     * @return itself
      */
-    onCheckContinue(cb) {
+    onCheckContinue(cb: (req: http.IncomingMessage, res: http.ServerResponse) => void) {
         assert.strictEqual(typeof cb, 'function',
             'Callback must be a function');
         this._cbOnCheckContinue = cb;
@@ -316,10 +321,10 @@ class Server {
      * Set the error handler callback, if this handler returns true when an
      * error is triggered, the server will restart
      *
-     * @param {function} cb - Callback(err)
-     * @return {Server} itself
+     * @param cb - Callback(err)
+     * @return itself
      */
-    onError(cb) {
+    onError(cb: (err: Error) => boolean) {
         assert.strictEqual(typeof cb, 'function',
             'Callback must be a function');
         this._cbOnError = cb;
@@ -329,10 +334,10 @@ class Server {
     /**
      * Set the stop handler callback
      *
-     * @param {function} cb - Callback()
-     * @return {Server} itself
+     * @param cb - Callback()
+     * @return itself
      */
-    onStop(cb) {
+    onStop(cb: () => void) {
         assert.strictEqual(typeof cb, 'function',
             'Callback must be a function');
         this._cbOnStop = cb;
@@ -342,10 +347,9 @@ class Server {
     /**
      * Function called when a secure connection is etablished
      *
-     * @param {tls.TlsSocket} sock - socket
-     * @return {undefined}
+     * @param sock - socket
      */
-    _onSecureConnection(sock) {
+    _onSecureConnection(sock: tls.TLSSocket) {
         if (this._https.requestCert && !sock.authorized) {
             this._logger.error('rejected secure connection', {
                 address: sock.address(),
@@ -358,11 +362,10 @@ class Server {
     /**
      * function called when an error came from the client request
      *
-     * @param {Error} err - Error
-     * @param {net.Socket|tls.TlsSocket} sock - Socket
-     * @return {undefined}
+     * @param err - Error
+     * @param sock - Socket
      */
-    _onClientError(err, sock) {
+    _onClientError(err: Error, sock: net.Socket | tls.TLSSocket) {
         this._logger.error('client error', {
             method: 'arsenal.network.Server._onClientError',
             error: err.stack || err,
@@ -376,11 +379,10 @@ class Server {
      * Function called when request with an HTTP Expect header is received,
      * where the value is not 100-continue
      *
-     * @param {http.IncomingMessage|https.IncomingMessage} req - Request object
-     * @param {http.ServerResponse} res - Response object
-     * @return {undefined}
+     * @param req - Request object
+     * @param res - Response object
      */
-    _onCheckExpectation(req, res) {
+    _onCheckExpectation(req: http.IncomingMessage, res: http.ServerResponse) {
         return this._cbOnCheckExpectation(req, res);
     }
 
@@ -388,18 +390,17 @@ class Server {
      * Function called when request with an HTTP Expect: 100-continue
      * is received
      *
-     * @param {http.IncomingMessage|https.IncomingMessage} req - Request object
-     * @param {http.ServerResponse} res - Response object
-     * @return {undefined}
+     * @param req - Request object
+     * @param res - Response object
      */
-    _onCheckContinue(req, res) {
+    _onCheckContinue(req: http.IncomingMessage, res: http.ServerResponse) {
         return this._cbOnCheckContinue(req, res);
     }
 
     /**
      * Function to start the Server
      *
-     * @return {Server} itself
+     * @return itself
      */
     start() {
         if (!this._server) {
@@ -428,6 +429,8 @@ class Server {
                 sock => this._onSecureConnection(sock));
             this._server.on('connection', sock => {
                 // Setting no delay of the socket to the value configured
+                // TODO fix this
+                // @ts-expect-errors
                 sock.setNoDelay(this.isNoDelay());
                 sock.on('error', err => this._logger.info(
                     'socket error - request rejected', { error: err }));
@@ -435,6 +438,7 @@ class Server {
             this._server.on('tlsClientError', (err, sock) =>
                 this._onClientError(err, sock));
             this._server.on('clientError', (err, sock) =>
+                // @ts-expect-errors
                 this._onClientError(err, sock));
             this._server.on('checkContinue', (req, res) =>
                 this._onCheckContinue(req, res));
@@ -449,7 +453,7 @@ class Server {
     /**
      * Function to stop the Server
      *
-     * @return {Server} itself
+     * @return itself
      */
     stop() {
         if (this._server) {
@@ -458,5 +462,3 @@ class Server {
         return this;
     }
 }
-
-module.exports = Server;
