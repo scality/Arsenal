@@ -2,7 +2,7 @@ import type { ServerResponse } from 'http';
 import * as rawErrors from './arsenalErrors';
 
 /** All possible errors names. */
-export type Name = keyof typeof rawErrors
+export type Name = keyof typeof rawErrors;
 /** Object containing all errors names. It has the format { [Name]: "Name" } */
 export type Names = { [Name_ in Name]: Name_ };
 /** Mapping used to determine an error type. It has the format { [Name]: boolean } */
@@ -13,7 +13,7 @@ export type Errors = { [_ in Name]: ArsenalError };
 // This object is reused constantly through createIs, we store it there
 // to avoid recomputation.
 const isBase = Object.fromEntries(
-    Object.keys(rawErrors).map(key => [key, false])
+    Object.keys(rawErrors).map((key) => [key, false])
 ) as Is;
 
 // This contains some metaprog. Be careful.
@@ -25,7 +25,7 @@ const isBase = Object.fromEntries(
 // the Proxy will return false.
 const createIs = (type: Name): Is => {
     const get = (is: Is, value: string | symbol) => is[value] ?? false;
-    const final = Object.freeze({ ...isBase, [type]: true })
+    const final = Object.freeze({ ...isBase, [type]: true });
     return new Proxy(final, { get });
 };
 
@@ -39,13 +39,18 @@ export class ArsenalError extends Error {
     /** Object used to determine the error type.
      * Example: error.is.InternalError */
     #is: Is;
+    /** A map of error metadata (can be extra fields
+     * that only show in debug mode) */
+    #metadata: Map<string, Object[]>;
 
-    private constructor(type: Name, code: number, description: string) {
+    private constructor(type: Name, code: number, description: string,
+        metadata?: Map<string, Object[]>) {
         super(type);
         this.#code = code;
         this.#description = description;
         this.#type = type;
         this.#is = createIs(type);
+        this.#metadata = metadata ?? new Map<string, Object[]>();
     }
 
     /** Output the error as a JSON string */
@@ -90,7 +95,22 @@ export class ArsenalError extends Error {
     customizeDescription(description: string): ArsenalError {
         const type = this.#type;
         const code = this.#code;
-        return new ArsenalError(type, code, description);
+        const metadata = new Map(this.#metadata);
+        const err = new ArsenalError(type, code, description, metadata);
+        err.stack = this.stack;
+        return err;
+    }
+
+    /** Clone the error with a new metadata field */
+    addMetadataEntry(key: string, value: Object[]): ArsenalError {
+        const type = this.#type;
+        const code = this.#code;
+        const description = this.#description;
+        const metadata = new Map(this.#metadata);
+        metadata.set(key, value);
+        const err = new ArsenalError(type, code, description, metadata);
+        err.stack = this.stack;
+        return err;
     }
 
     /** Used to determine the error type. Example: error.is.InternalError */
@@ -115,9 +135,14 @@ export class ArsenalError extends Error {
         return this.#type;
     }
 
+    /** A map of error metadata */
+    get metadata() {
+        return this.#metadata;
+    }
+
     /** Generate all possible errors. An instance is created by default. */
     static errors() {
-        const errors = {}
+        const errors = {};
         Object.entries(rawErrors).forEach((value) => {
             const name = value[0] as Name;
             const error = value[1];
@@ -125,7 +150,7 @@ export class ArsenalError extends Error {
             const get = () => new ArsenalError(name, code, description);
             Object.defineProperty(errors, name, { get });
         });
-        return errors as Errors
+        return errors as Errors;
     }
 }
 
