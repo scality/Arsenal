@@ -55,6 +55,9 @@ export function reconstructError(err: Error) {
     }
 
     const reconstructedErr = new Error(err.message);
+    // This restores the old behavior of errors. This should be removed as soon
+    // as all dependent codebases have been migrated to `is` accessors (ARSN-176).
+    reconstructedErr[err.message] = true;
     // @ts-expect-error
     reconstructedErr.is = {
         [err.message]: true,
