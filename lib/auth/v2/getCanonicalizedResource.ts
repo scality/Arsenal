@@ -37,6 +37,7 @@ const awsSubresources = [
     'replication',
     'versions',
     'website',
+    'restore',
 ];
 
 export default function getCanonicalizedResource(request: any, clientType: string) {
