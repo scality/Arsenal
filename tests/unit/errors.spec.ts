@@ -37,3 +37,61 @@ describe('Errors: ', () => {
         });
     });
 });
+
+describe('Backward compatibility flag', () => {
+
+    const env = process.env;
+
+    beforeEach(() => {
+        jest.resetModules();
+        process.env = { ...env };
+    });
+
+    afterEach(() => {
+        process.env = { ...env };
+    })
+
+    it('should be enabled when no env variable is present', () => {
+        const errors = require('../../lib/errors');
+        const err = errors.default.InternalError;
+        expect(errors.allowUnsafeErrComp).toBe(true);
+        expect(err.InternalError).toBe(true);
+        expect(err.is.InternalError).toBe(true);
+    });
+
+    it('should be enabled when `true` is specified', () => {
+        process.env = {
+            ALLOW_UNSAFE_ERROR_COMPARISON: 'true',
+            ...env
+        };
+        const errors = require('../../lib/errors');
+        const err = errors.default.InternalError;
+        expect(errors.allowUnsafeErrComp).toBe(true);
+        expect(err.InternalError).toBe(true);
+        expect(err.is.InternalError).toBe(true);
+    });
+
+    it('should be disabled when `false` is specified', () => {
+        process.env = {
+            ALLOW_UNSAFE_ERROR_COMPARISON: 'false',
+            ...env
+        };
+        const errors = require('../../lib/errors');
+        const err = errors.default.InternalError;
+        expect(errors.allowUnsafeErrComp).toBe(false);
+        expect(err).not.toHaveProperty(err.type);
+        expect(err.is.InternalError).toBe(true);
+    });
+
+    it('should be disabled when `foo` is specified', () => {
+        process.env = {
+            ALLOW_UNSAFE_ERROR_COMPARISON: 'foo',
+            ...env
+        };
+        const errors = require('../../lib/errors');
+        const err = errors.default.InternalError;
+        expect(errors.allowUnsafeErrComp).toBe(false);
+        expect(err).not.toHaveProperty(err.type);
+        expect(err.is.InternalError).toBe(true);
+    });
+});

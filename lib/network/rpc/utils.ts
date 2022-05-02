@@ -1,4 +1,4 @@
-import { ArsenalError } from '../../errors';
+import { ArsenalError, allowUnsafeErrComp } from '../../errors';
 
  // eslint-disable-line
 
@@ -55,10 +55,13 @@ export function reconstructError(err: Error) {
     }
 
     const reconstructedErr = new Error(err.message);
-    // @ts-expect-error
-    reconstructedErr.is = {
-        [err.message]: true,
-    };
+    // This restores the old behavior of errors. This should be removed as soon
+    // as all dependent codebases have been migrated to `is` accessors (ARSN-176).
+    reconstructedErr[err.message] = true;
+    if (allowUnsafeErrComp){
+        // @ts-expect-error
+        reconstructedErr.is = { [err.message]: true };
+    }
     Object.keys(err).forEach(k => {
         reconstructedErr[k] = err[k];
     });
