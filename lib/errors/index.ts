@@ -16,6 +16,13 @@ const isBase = Object.fromEntries(
     Object.keys(rawErrors).map((key) => [key, false])
 ) as Is;
 
+// This allows to conditionally add the old behavior of errors to properly
+// test migration.
+// Activate CI tests with `ALLOW_UNSAFE_ERROR_COMPARISON=false yarn test`.
+// Remove this mechanism in ARSN-176.
+export const allowUnsafeErrComp = (
+    process.env.ALLOW_UNSAFE_ERROR_COMPARISON ?? 'true') === 'true'
+
 // This contains some metaprog. Be careful.
 // Proxy can be found on MDN.
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy
@@ -51,6 +58,15 @@ export class ArsenalError extends Error {
         this.#type = type;
         this.#is = createIs(type);
         this.#metadata = metadata ?? new Map<string, Object[]>();
+
+        // This restores the old behavior of errors, to make sure they're now
+        // backward-compatible. Fortunately it's handled by TS, but it cannot
+        // be type-checked. This means we have to be extremely careful about
+        // what we're doing when using errors.
+        // Disables the feature when in CI tests but not in production.
+        if (allowUnsafeErrComp) {
+            this[type] = true;
+        }
     }
 
     /** Output the error as a JSON string */
