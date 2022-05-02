@@ -6,7 +6,7 @@ const amzRestore = new ObjectMDAmzRestore(false, new Date());
 describe('ObjectMDAmzRestore value', () => {
     it('should return the correct value', () => {
         const amzRestoreObj = amzRestore.getValue();
-        assert.deepStrictEqual(amzRestoreObj, amzRestore._data);
+        assert.deepStrictEqual(amzRestoreObj, amzRestore);
     });
 });
 

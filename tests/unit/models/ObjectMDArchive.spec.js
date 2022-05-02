@@ -22,7 +22,7 @@ const archive = new ObjectMDArchive(
 describe('ObjectMDArchive value', () => {
     it('should return the correct value', () => {
         const amzRestoreObj = archive.getValue();
-        assert.deepStrictEqual(amzRestoreObj, archive._data);
+        assert.deepStrictEqual(amzRestoreObj, archive);
     });
 });
 
