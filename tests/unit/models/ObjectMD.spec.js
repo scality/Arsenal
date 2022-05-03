@@ -44,6 +44,12 @@ describe('ObjectMD class setters/getters', () => {
         ['AmzServerVersionId', 'server-version-id'],
         ['AmzStorageClass', null, 'STANDARD'],
         ['AmzStorageClass', 'storage-class'],
+        ['AmzRestore', null, {
+            'ongoing-request': false,
+        }],
+        ['AmzRestore', {
+            'ongoing-request': false,
+        }],
         ['AmzServerSideEncryption', null, ''],
         ['AmzServerSideEncryption', 'server-side-encryption'],
         ['AmzEncryptionKeyId', null, ''],
@@ -417,6 +423,7 @@ describe('getAttributes static method', () => {
             'x-amz-server-side-encryption-aws-kms-key-id': true,
             'x-amz-server-side-encryption-customer-algorithm': true,
             'x-amz-website-redirect-location': true,
+            'x-amz-restore': true,
             'acl': true,
             'key': true,
             'location': true,
