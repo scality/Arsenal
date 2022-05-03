@@ -180,7 +180,7 @@ export const pensieve = {
 };
 
 export const stream = {
-    readJSONStreamObject: require('./lib/stream/readJSONStreamObject'),
+    readJSONStreamObject: require('./lib/stream/readJSONStreamObject').default,
 };
 
 export const patches = {
