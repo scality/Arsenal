@@ -4,6 +4,7 @@ import RequestContext from './lib/policyEvaluator/RequestContext';
 import * as requestUtils from './lib/policyEvaluator/requestUtils';
 import * as actionMaps from './lib/policyEvaluator/utils/actionMaps';
 import { validateUserPolicy } from './lib/policy/policyValidator'
+import * as locationConstraints from './lib/patches/locationConstraints';
 export { default as errors } from './lib/errors';
 export * as ipCheck from './lib/ipCheck';
 export * as auth from './lib/auth/auth';
@@ -184,5 +185,5 @@ export const stream = {
 };
 
 export const patches = {
-    locationConstraints: require('./lib/patches/locationConstraints'),
+    locationConstraints,
 };
