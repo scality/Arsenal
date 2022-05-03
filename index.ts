@@ -5,6 +5,7 @@ import * as requestUtils from './lib/policyEvaluator/requestUtils';
 import * as actionMaps from './lib/policyEvaluator/utils/actionMaps';
 import { validateUserPolicy } from './lib/policy/policyValidator'
 export { default as errors } from './lib/errors';
+export { default as Clustering } from './lib/Clustering';
 export * as ipCheck from './lib/ipCheck';
 export * as auth from './lib/auth/auth';
 export * as constants from './lib/constants';
@@ -16,7 +17,6 @@ export const db = require('./lib/db');
 export const shuffle = require('./lib/shuffle');
 export const stringHash = require('./lib/stringHash');
 export const jsutil = require('./lib/jsutil');
-export const Clustering = require('./lib/Clustering');
 
 export const algorithms = {
     list: {
