@@ -1,7 +1,7 @@
-const errors = require('../../errors').default;
-const routesUtils = require('../routesUtils');
+import * as routesUtils from '../routesUtils';
+import errors from '../../errors';
 
-function routerGET(request, response, api, log, statsClient, dataRetrievalParams) {
+export default function routerGET(request, response, api, log, statsClient, dataRetrievalParams) {
     log.debug('routing request', { method: 'routerGET' });
     if (request.bucketName === undefined && request.objectKey !== undefined) {
         routesUtils.responseXMLBody(errors.NoSuchBucket, null, response, log);
@@ -170,5 +170,3 @@ function routerGET(request, response, api, log, statsClient, dataRetrievalParams
         }
     }
 }
-
-module.exports = routerGET;

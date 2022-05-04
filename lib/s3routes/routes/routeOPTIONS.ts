@@ -1,7 +1,7 @@
-const errors = require('../../errors').default;
-const routesUtils = require('../routesUtils');
+import * as routesUtils from '../routesUtils';
+import errors from '../../errors';
 
-function routeOPTIONS(request, response, api, log, statsClient) {
+export default function routeOPTIONS(request, response, api, log, statsClient) {
     log.debug('routing request', { method: 'routeOPTION' });
 
     const corsMethod = request.headers['access-control-request-method'] || null;
@@ -27,5 +27,3 @@ function routeOPTIONS(request, response, api, log, statsClient) {
                 log);
         });
 }
-
-module.exports = routeOPTIONS;

@@ -1,8 +1,8 @@
-const errors = require('../../errors').default;
-const routesUtils = require('../routesUtils');
+import * as routesUtils from '../routesUtils';
+import errors from '../../errors';
 
 /* eslint-disable no-param-reassign */
-function routePOST(request, response, api, log) {
+export default function routePOST(request, response, api, log) {
     log.debug('routing request', { method: 'routePOST' });
 
     const invalidMultiObjectDelReq = request.query.delete !== undefined
@@ -50,5 +50,3 @@ function routePOST(request, response, api, log) {
     return routesUtils.responseNoBody(errors.NotImplemented, null, response,
         200, log);
 }
-/* eslint-enable no-param-reassign */
-module.exports = routePOST;

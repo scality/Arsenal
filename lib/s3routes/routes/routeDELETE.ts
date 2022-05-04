@@ -1,10 +1,28 @@
-const routesUtils = require('../routesUtils');
-const errors = require('../../errors').default;
+import * as routesUtils from '../routesUtils';
+import errors, { ArsenalError } from '../../errors';
+import StatsClient from '../../metrics/StatsClient';
+import * as http from 'http';
 
-function routeDELETE(request, response, api, log, statsClient) {
+export default function routeDELETE(
+    request: http.IncomingMessage,
+    response: http.ServerResponse,
+    api: {
+        callApiMethod: (
+            methodName: string,
+            request: http.IncomingMessage,
+            response: http.ServerResponse,
+            log: RequestLogger,
+            callback: (err: ArsenalError | null, data?: any) => void,
+        ) => void;
+    },
+    log: RequestLogger,
+    statsClient: StatsClient,
+) {
     log.debug('routing request', { method: 'routeDELETE' });
 
+    // @ts-ignore
     if (request.query.uploadId) {
+        // @ts-ignore
         if (request.objectKey === undefined) {
             return routesUtils.responseNoBody(
                 errors.InvalidRequest.customizeDescription('A key must be ' +
@@ -16,7 +34,9 @@ function routeDELETE(request, response, api, log, statsClient) {
                 return routesUtils.responseNoBody(err, corsHeaders, response,
                     204, log);
             });
+    // @ts-ignore
     } else if (request.objectKey === undefined) {
+        // @ts-ignore
         if (request.query.website !== undefined) {
             return api.callApiMethod('bucketDeleteWebsite', request,
                 response, log, (err, corsHeaders) => {
@@ -24,6 +44,7 @@ function routeDELETE(request, response, api, log, statsClient) {
                     return routesUtils.responseNoBody(err, corsHeaders,
                         response, 204, log);
                 });
+        // @ts-ignore
         } else if (request.query.cors !== undefined) {
             return api.callApiMethod('bucketDeleteCors', request, response,
                 log, (err, corsHeaders) => {
@@ -31,6 +52,7 @@ function routeDELETE(request, response, api, log, statsClient) {
                     return routesUtils.responseNoBody(err, corsHeaders,
                         response, 204, log);
                 });
+        // @ts-ignore
         } else if (request.query.replication !== undefined) {
             return api.callApiMethod('bucketDeleteReplication', request,
                 response, log, (err, corsHeaders) => {
@@ -38,6 +60,7 @@ function routeDELETE(request, response, api, log, statsClient) {
                     return routesUtils.responseNoBody(err, corsHeaders,
                         response, 204, log);
                 });
+        // @ts-ignore
         } else if (request.query.lifecycle !== undefined) {
             return api.callApiMethod('bucketDeleteLifecycle', request,
                 response, log, (err, corsHeaders) => {
@@ -45,6 +68,7 @@ function routeDELETE(request, response, api, log, statsClient) {
                     return routesUtils.responseNoBody(err, corsHeaders,
                         response, 204, log);
                 });
+        // @ts-ignore
         } else if (request.query.policy !== undefined) {
             return api.callApiMethod('bucketDeletePolicy', request,
                 response, log, (err, corsHeaders) => {
@@ -52,6 +76,7 @@ function routeDELETE(request, response, api, log, statsClient) {
                     return routesUtils.responseNoBody(err, corsHeaders,
                         response, 204, log);
                 });
+        // @ts-ignore
         } else if (request.query.encryption !== undefined) {
             return api.callApiMethod('bucketDeleteEncryption', request,
                 response, log, (err, corsHeaders) => {
@@ -59,6 +84,7 @@ function routeDELETE(request, response, api, log, statsClient) {
                     return routesUtils.responseNoBody(err, corsHeaders,
                         response, 204, log);
                 });
+        // @ts-ignore
         } else if (request.query.tagging !== undefined) {
             return api.callApiMethod('bucketDeleteTagging', request,
                 response, log, (err, corsHeaders) => {
@@ -74,6 +100,7 @@ function routeDELETE(request, response, api, log, statsClient) {
                     204, log);
             });
     } else {
+        // @ts-ignore
         if (request.query.tagging !== undefined) {
             return api.callApiMethod('objectDeleteTagging', request,
                 response, log, (err, resHeaders) => {
@@ -91,7 +118,7 @@ function routeDELETE(request, response, api, log, statsClient) {
               */
                 if (err && !err.is.NoSuchKey && !err.is.NoSuchVersion) {
                     return routesUtils.responseNoBody(err, corsHeaders,
-                        response, null, log);
+                        response, undefined, log);
                 }
                 routesUtils.statsReport500(err, statsClient);
                 return routesUtils.responseNoBody(null, corsHeaders, response,
@@ -100,5 +127,3 @@ function routeDELETE(request, response, api, log, statsClient) {
     }
     return undefined;
 }
-
-module.exports = routeDELETE;

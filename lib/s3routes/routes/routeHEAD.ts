@@ -1,7 +1,7 @@
-const errors = require('../../errors').default;
-const routesUtils = require('../routesUtils');
+import * as routesUtils from '../routesUtils';
+import errors from '../../errors';
 
-function routeHEAD(request, response, api, log, statsClient) {
+export default function routeHEAD(request, response, api, log, statsClient) {
     log.debug('routing request', { method: 'routeHEAD' });
     if (request.bucketName === undefined) {
         log.trace('head request without bucketName');
@@ -25,5 +25,3 @@ function routeHEAD(request, response, api, log, statsClient) {
             });
     }
 }
-
-module.exports = routeHEAD;

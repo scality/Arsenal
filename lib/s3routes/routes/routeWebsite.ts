@@ -1,7 +1,7 @@
-const errors = require('../../errors').default;
-const routesUtils = require('../routesUtils');
+import * as routesUtils from '../routesUtils';
+import errors from '../../errors';
 
-function routerWebsite(request, response, api, log, statsClient,
+export default function routerWebsite(request, response, api, log, statsClient,
     dataRetrievalFn) {
     log.debug('routing request', { method: 'routerWebsite' });
     // website endpoint only supports GET and HEAD and must have a bucket
@@ -61,5 +61,3 @@ function routerWebsite(request, response, api, log, statsClient,
     }
     return undefined;
 }
-
-module.exports = routerWebsite;

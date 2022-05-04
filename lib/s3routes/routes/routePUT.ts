@@ -1,8 +1,8 @@
-const errors = require('../../errors').default;
-const routesUtils = require('../routesUtils');
+import * as routesUtils from '../routesUtils';
+import errors from '../../errors';
 
 /* eslint-disable no-param-reassign */
-function routePUT(request, response, api, log, statsClient) {
+export default function routePUT(request, response, api, log, statsClient) {
     log.debug('routing request', { method: 'routePUT' });
 
     if (request.objectKey === undefined) {
@@ -218,5 +218,3 @@ function routePUT(request, response, api, log, statsClient) {
     }
     return undefined;
 }
-/* eslint-enable no-param-reassign */
-module.exports = routePUT;
