@@ -1,158 +1,78 @@
 import * as routesUtils from '../routesUtils';
 import errors from '../../errors';
+import * as http from 'http';
+import StatsClient from '../../metrics/StatsClient';
 
-export default function routerGET(request, response, api, log, statsClient, dataRetrievalParams) {
+export default function routerGET(
+    request: http.IncomingMessage,
+    response: http.ServerResponse,
+    api: { callApiMethod: routesUtils.CallApiMethod },
+    log: RequestLogger,
+    statsClient?: StatsClient,
+    dataRetrievalParams?: any,
+) {
     log.debug('routing request', { method: 'routerGET' });
-    if (request.bucketName === undefined && request.objectKey !== undefined) {
-        routesUtils.responseXMLBody(errors.NoSuchBucket, null, response, log);
-    } else if (request.bucketName === undefined
-        && request.objectKey === undefined) {
-        // GET service
-        api.callApiMethod('serviceGet', request, response, log, (err, xml) => {
+
+    const { bucketName, objectKey, query } = request as any
+
+    const call = (name: string) => {
+        api.callApiMethod(name, request, response, log, (err, xml, corsHeaders) => {
             routesUtils.statsReport500(err, statsClient);
-            return routesUtils.responseXMLBody(err, xml, response, log);
+            return routesUtils.responseXMLBody(err, xml, response, log, corsHeaders);
         });
-    } else if (request.objectKey === undefined) {
+    }
+
+    if (bucketName === undefined && objectKey !== undefined) {
+        routesUtils.responseXMLBody(errors.NoSuchBucket, null, response, log);
+    } else if (bucketName === undefined && objectKey === undefined) {
+        // GET service
+        call('serviceGet');
+    } else if (objectKey === undefined) {
         // GET bucket ACL
-        if (request.query.acl !== undefined) {
-            api.callApiMethod('bucketGetACL', request, response, log,
-                (err, xml, corsHeaders) => {
-                    routesUtils.statsReport500(err, statsClient);
-                    return routesUtils.responseXMLBody(err, xml, response, log,
-                        corsHeaders);
-                });
-        } else if (request.query.replication !== undefined) {
-            api.callApiMethod('bucketGetReplication', request, response, log,
-                (err, xml, corsHeaders) => {
-                    routesUtils.statsReport500(err, statsClient);
-                    return routesUtils.responseXMLBody(err, xml, response, log,
-                        corsHeaders);
-                });
-        } else if (request.query.cors !== undefined) {
-            api.callApiMethod('bucketGetCors', request, response, log,
-                (err, xml, corsHeaders) => {
-                    routesUtils.statsReport500(err, statsClient);
-                    routesUtils.responseXMLBody(err, xml, response, log,
-                        corsHeaders);
-                });
-        } else if (request.query.versioning !== undefined) {
-            api.callApiMethod('bucketGetVersioning', request, response, log,
-                (err, xml, corsHeaders) => {
-                    routesUtils.statsReport500(err, statsClient);
-                    routesUtils.responseXMLBody(err, xml, response, log,
-                        corsHeaders);
-                });
-        } else if (request.query.website !== undefined) {
-            api.callApiMethod('bucketGetWebsite', request, response, log,
-                (err, xml, corsHeaders) => {
-                    routesUtils.statsReport500(err, statsClient);
-                    routesUtils.responseXMLBody(err, xml, response, log,
-                        corsHeaders);
-                });
-        } else if (request.query.tagging !== undefined) {
-            api.callApiMethod('bucketGetTagging', request, response, log,
-                (err, xml, corsHeaders) => {
-                    routesUtils.statsReport500(err, statsClient);
-                    routesUtils.responseXMLBody(err, xml, response, log,
-                        corsHeaders);
-                });
-        } else if (request.query.lifecycle !== undefined) {
-            api.callApiMethod('bucketGetLifecycle', request, response, log,
-                (err, xml, corsHeaders) => {
-                    routesUtils.statsReport500(err, statsClient);
-                    routesUtils.responseXMLBody(err, xml, response, log,
-                        corsHeaders);
-                });
-        } else if (request.query.uploads !== undefined) {
+        if (query.acl !== undefined) {
+            call('bucketGetACL');
+        } else if (query.replication !== undefined) {
+            call('bucketGetReplication');
+        } else if (query.cors !== undefined) {
+            call('bucketGetCors');
+        } else if (query.versioning !== undefined) {
+            call('bucketGetVersioning');
+        } else if (query.website !== undefined) {
+            call('bucketGetWebsite');
+        } else if (query.tagging !== undefined) {
+            call('bucketGetTagging');
+        } else if (query.lifecycle !== undefined) {
+            call('bucketGetLifecycle');
+        } else if (query.uploads !== undefined) {
             // List MultipartUploads
-            api.callApiMethod('listMultipartUploads', request, response, log,
-                (err, xml, corsHeaders) => {
-                    routesUtils.statsReport500(err, statsClient);
-                    return routesUtils.responseXMLBody(err, xml, response, log,
-                        corsHeaders);
-                });
-        } else if (request.query.location !== undefined) {
-            api.callApiMethod('bucketGetLocation', request, response, log,
-                (err, xml, corsHeaders) => {
-                    routesUtils.statsReport500(err, statsClient);
-                    return routesUtils.responseXMLBody(err, xml, response, log,
-                        corsHeaders);
-                });
-        } else if (request.query.policy !== undefined) {
-            api.callApiMethod('bucketGetPolicy', request, response, log,
-                (err, xml, corsHeaders) => {
-                    routesUtils.statsReport500(err, statsClient);
-                    return routesUtils.responseXMLBody(err, xml, response,
-                        log, corsHeaders);
-                });
-        } else if (request.query['object-lock'] !== undefined) {
-            api.callApiMethod('bucketGetObjectLock', request, response, log,
-                (err, xml, corsHeaders) => {
-                    routesUtils.statsReport500(err, statsClient);
-                    return routesUtils.responseXMLBody(err, xml, response,
-                        log, corsHeaders);
-                });
-        } else if (request.query.notification !== undefined) {
-            api.callApiMethod('bucketGetNotification', request, response, log,
-                (err, xml, corsHeaders) => {
-                    routesUtils.statsReport500(err, statsClient);
-                    return routesUtils.responseXMLBody(err, xml, response,
-                        log, corsHeaders);
-                });
-        } else if (request.query.encryption !== undefined) {
-            api.callApiMethod('bucketGetEncryption', request, response, log,
-                (err, xml, corsHeaders) => {
-                    routesUtils.statsReport500(err, statsClient);
-                    return routesUtils.responseXMLBody(err, xml, response,
-                        log, corsHeaders);
-                });
+            call('listMultipartUploads');
+        } else if (query.location !== undefined) {
+            call('bucketGetLocation');
+        } else if (query.policy !== undefined) {
+            call('bucketGetPolicy');
+        } else if (query['object-lock'] !== undefined) {
+            call('bucketGetObjectLock');
+        } else if (query.notification !== undefined) {
+            call('bucketGetNotification');
+        } else if (query.encryption !== undefined) {
+            call('bucketGetEncryption');
         } else {
             // GET bucket
-            api.callApiMethod('bucketGet', request, response, log,
-                (err, xml, corsHeaders) => {
-                    routesUtils.statsReport500(err, statsClient);
-                    return routesUtils.responseXMLBody(err, xml, response, log,
-                        corsHeaders);
-                });
+            call('bucketGet');
         }
     } else {
-        if (request.query.acl !== undefined) {
+        if (query.acl !== undefined) {
             // GET object ACL
-            api.callApiMethod('objectGetACL', request, response, log,
-                (err, xml, corsHeaders) => {
-                    routesUtils.statsReport500(err, statsClient);
-                    return routesUtils.responseXMLBody(err, xml, response, log,
-                        corsHeaders);
-                });
-        } else if (request.query['legal-hold'] !== undefined) {
-            api.callApiMethod('objectGetLegalHold', request, response, log,
-                (err, xml, corsHeaders) => {
-                    routesUtils.statsReport500(err, statsClient);
-                    return routesUtils.responseXMLBody(err, xml, response, log,
-                        corsHeaders);
-                });
-        } else if (request.query.tagging !== undefined) {
-            api.callApiMethod('objectGetTagging', request, response, log,
-                (err, xml, corsHeaders) => {
-                    routesUtils.statsReport500(err, statsClient);
-                    return routesUtils.responseXMLBody(err, xml, response, log,
-                        corsHeaders);
-                });
+            call('objectGetACL');
+        } else if (query['legal-hold'] !== undefined) {
+            call('objectGetLegalHold');
+        } else if (query.tagging !== undefined) {
+            call('objectGetTagging');
             // List parts of an open multipart upload
-        } else if (request.query.uploadId !== undefined) {
-            api.callApiMethod('listParts', request, response, log,
-                (err, xml, corsHeaders) => {
-                    routesUtils.statsReport500(err, statsClient);
-                    return routesUtils.responseXMLBody(err, xml, response, log,
-                        corsHeaders);
-                });
-        } else if (request.query.retention !== undefined) {
-            api.callApiMethod('objectGetRetention', request, response, log,
-                (err, xml, corsHeaders) => {
-                    routesUtils.statsReport500(err, statsClient);
-                    return routesUtils.responseXMLBody(err, xml, response, log,
-                        corsHeaders);
-                });
+        } else if (query.uploadId !== undefined) {
+            call('listParts');
+        } else if (query.retention !== undefined) {
+            call('objectGetRetention');
         } else {
             // GET object
             api.callApiMethod('objectGet', request, response, log,
@@ -161,9 +81,11 @@ export default function routerGET(request, response, api, log, statsClient, data
                     if (resMetaHeaders && resMetaHeaders['Content-Length']) {
                         contentLength = resMetaHeaders['Content-Length'];
                     }
+                    // TODO What's happening?
+                    // @ts-ignore
                     log.end().addDefaultFields({ contentLength });
                     routesUtils.statsReport500(err, statsClient);
-                    return routesUtils.responseStreamData(err, request.query,
+                    return routesUtils.responseStreamData(err, query,
                         resMetaHeaders, dataGetInfo, dataRetrievalParams, response,
                         range, log);
                 });
