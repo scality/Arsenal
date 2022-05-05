@@ -146,15 +146,7 @@ export type Params = {
         object: string[];
     };
     unsupportedQueries: any;
-    api: {
-        callApiMethod: (
-            methodName: string,
-            request: http.IncomingMessage,
-            response: http.ServerResponse,
-            log: RequestLogger,
-            callback: (err: Error | null, data?: any) => void,
-        ) => void;
-    };
+    api: { callApiMethod: routesUtils.CallApiMethod };
 }
 
 /** routes - route request to appropriate method
@@ -232,7 +224,7 @@ export default function routes(
         }
         if (internalHandlers[internalServiceName] === undefined) {
             return routesUtils.responseXMLBody(
-                errors.InvalidURI, '', res, log);
+                errors.InvalidURI, null, res, log);
         }
         return internalHandlers[internalServiceName](
             clientInfo.clientIP, req, res, log, statsClient);
@@ -251,7 +243,7 @@ export default function routes(
         return routesUtils.responseXMLBody(
             errors.InvalidURI.customizeDescription('Could not parse the ' +
                 'specified URI. Check your restEndpoints configuration.'),
-            '', res, log);
+            null, res, log);
     }
 
     log.addDefaultFields({
@@ -282,7 +274,7 @@ export default function routes(
     if (bucketOrKeyError) {
         log.trace('error with bucket or key value',
             { error: bucketOrKeyError });
-        return routesUtils.responseXMLBody(bucketOrKeyError, '', res, log);
+        return routesUtils.responseXMLBody(bucketOrKeyError, null, res, log);
     }
 
     // bucket website request
