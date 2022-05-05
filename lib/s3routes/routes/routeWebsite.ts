@@ -1,15 +1,24 @@
 import * as routesUtils from '../routesUtils';
 import errors from '../../errors';
+import * as http from 'http';
+import StatsClient from '../../metrics/StatsClient';
 
-export default function routerWebsite(request, response, api, log, statsClient,
-    dataRetrievalFn) {
+export default function routerWebsite(
+    request: http.IncomingMessage,
+    response: http.ServerResponse,
+    api: { callApiMethod: routesUtils.CallApiMethod },
+    log: RequestLogger,
+    statsClient?: StatsClient,
+    dataRetrievalFn?: any,
+) {
+    const { bucketName, query } = request as any
     log.debug('routing request', { method: 'routerWebsite' });
     // website endpoint only supports GET and HEAD and must have a bucket
     // http://docs.aws.amazon.com/AmazonS3/latest/dev/WebsiteEndpoints.html
     if ((request.method !== 'GET' && request.method !== 'HEAD')
-        || !request.bucketName) {
+        || !bucketName) {
         return routesUtils.errorHtmlResponse(errors.MethodNotAllowed,
-            false, request.bucketName, response, null, log);
+            false, bucketName, response, null, log);
     }
     if (request.method === 'GET') {
         return api.callApiMethod('websiteGet', request, response, log,
@@ -21,8 +30,10 @@ export default function routerWebsite(request, response, api, log, statsClient,
                     // note that key might have been modified in websiteGet
                     // api to add index document
                     return routesUtils.redirectRequest(redirectInfo,
+                        // TODO Fix this
+                        // @ts-ignore
                         key, request.connection.encrypted,
-                        response, request.headers.host, resMetaHeaders, log);
+                        response, request.headers.host!, resMetaHeaders, log);
                 }
                 // user has their own error page
                 if (err && dataGetInfo) {
@@ -32,13 +43,13 @@ export default function routerWebsite(request, response, api, log, statsClient,
                 // send default error html response
                 if (err) {
                     return routesUtils.errorHtmlResponse(err,
-                        userErrorPageFailure, request.bucketName,
+                        userErrorPageFailure, bucketName,
                         response, resMetaHeaders, log);
                 }
                 // no error, stream data
-                return routesUtils.responseStreamData(null, request.query,
+                return routesUtils.responseStreamData(null, query,
                     resMetaHeaders, dataGetInfo, dataRetrievalFn, response,
-                    null, log);
+                    undefined, log);
             });
     }
     if (request.method === 'HEAD') {
@@ -47,8 +58,10 @@ export default function routerWebsite(request, response, api, log, statsClient,
                 routesUtils.statsReport500(err, statsClient);
                 if (redirectInfo) {
                     return routesUtils.redirectRequest(redirectInfo,
+                        // TODO Fix this
+                        // @ts-ignore
                         key, request.connection.encrypted,
-                        response, request.headers.host, resMetaHeaders, log);
+                        response, request.headers.host!, resMetaHeaders, log);
                 }
                 // could redirect on err so check for redirectInfo first
                 if (err) {
