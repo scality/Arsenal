@@ -47,6 +47,7 @@ const sharedActionMap = {
     objectPutLegalHold: 's3:PutObjectLegalHold',
     objectPutRetention: 's3:PutObjectRetention',
     objectPutTagging: 's3:PutObjectTagging',
+    objectRestore: 's3:RestoreObject',
 };
 
 // action map used for request context
@@ -149,6 +150,7 @@ const actionMonitoringMapS3 = {
     objectPutPart: 'UploadPart',
     objectPutRetention: 'PutObjectRetention',
     objectPutTagging: 'PutObjectTagging',
+    objectRestore: 'RestoreObject',
     serviceGet: 'ListBuckets',
 };
 
