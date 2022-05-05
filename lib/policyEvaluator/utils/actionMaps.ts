@@ -150,6 +150,7 @@ const actionMonitoringMapS3 = {
     objectPutPart: 'UploadPart',
     objectPutRetention: 'PutObjectRetention',
     objectPutTagging: 'PutObjectTagging',
+    objectRestore: 'RestoreObject',
     serviceGet: 'ListBuckets',
 };
 
