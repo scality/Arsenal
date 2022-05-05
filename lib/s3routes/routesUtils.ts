@@ -7,6 +7,14 @@ import DataWrapper from '../storage/data/DataWrapper';
 import * as http from 'http';
 import StatsClient from '../metrics/StatsClient';
 
+export type CallApiMethod = (
+    methodName: string,
+    request: http.IncomingMessage,
+    response: http.ServerResponse,
+    log: RequestLogger,
+    callback: (err: ArsenalError | null, ...data: any[]) => void,
+) => void;
+
 /**
  * setCommonResponseHeaders - Set HTTP response headers
  * @param headers - key and value of new headers to add
@@ -430,7 +438,7 @@ function retrieveData(
 function _responseBody(
     responseBackend: typeof XMLResponseBackend,
     errCode: ArsenalError | null | undefined,
-    payload: string,
+    payload: string | null,
     response: http.ServerResponse,
     log: RequestLogger,
     additionalHeaders?: { [key: string]: string } | null,
@@ -439,7 +447,7 @@ function _responseBody(
         return responseBackend.errorResponse(errCode, response, log,
             additionalHeaders);
     }
-    if (!response.headersSent) {
+    if (!response.headersSent && payload) {
         return responseBackend.okResponse(payload, response, log,
             additionalHeaders);
     }
@@ -480,7 +488,7 @@ function _contentLengthMatchesLocations(
  */
 export function responseXMLBody(
     errCode: ArsenalError | null | undefined,
-    xml: string,
+    xml: string | null,
     response: http.ServerResponse,
     log: RequestLogger,
     additionalHeaders?: { [key: string]: string },
@@ -499,8 +507,22 @@ export function responseXMLBody(
  * @return - error or success response utility
  */
 export function responseJSONBody(
-    errCode: ArsenalError | null | undefined,
+    errCode: null | undefined,
     json: string,
+    response: http.ServerResponse,
+    log: RequestLogger,
+    additionalHeaders?: { [key: string]: string },
+) : http.ServerResponse | undefined;
+export function responseJSONBody(
+    errCode: ArsenalError,
+    json: null,
+    response: http.ServerResponse,
+    log: RequestLogger,
+    additionalHeaders?: { [key: string]: string },
+) : http.ServerResponse | undefined;
+export function responseJSONBody(
+    errCode: ArsenalError | null | undefined,
+    json: string | null,
     response: http.ServerResponse,
     log: RequestLogger,
     additionalHeaders?: { [key: string]: string } | null,
@@ -545,7 +567,7 @@ export function responseNoBody(
  * @return - router's response object
  */
 export function responseContentHeaders(
-    errCode: ArsenalError,
+    errCode: ArsenalError | null,
     overrideParams: { [key: string]: string },
     resHeaders: { [key: string]: string },
     response: http.ServerResponse,
@@ -586,7 +608,7 @@ export function responseContentHeaders(
  * @param log - Werelogs logger
  */
 export function responseStreamData(
-    errCode: ArsenalError,
+    errCode: ArsenalError | null,
     overrideParams: { [key: string]: string },
     resHeaders: { [key: string]: string },
     dataLocations: { size: string | number }[],
@@ -681,7 +703,7 @@ export function errorHtmlResponse(
     userErrorPageFailure: boolean,
     bucketName: string,
     response: http.ServerResponse,
-    corsHeaders: { [key: string]: string },
+    corsHeaders: { [key: string]: string } | null,
     log: RequestLogger,
 ) {
     log.trace('sending generic html error page',
