@@ -1,113 +1,51 @@
 import * as routesUtils from '../routesUtils';
-import errors, { ArsenalError } from '../../errors';
+import errors from '../../errors';
 import StatsClient from '../../metrics/StatsClient';
 import * as http from 'http';
 
 export default function routeDELETE(
     request: http.IncomingMessage,
     response: http.ServerResponse,
-    api: {
-        callApiMethod: (
-            methodName: string,
-            request: http.IncomingMessage,
-            response: http.ServerResponse,
-            log: RequestLogger,
-            callback: (err: ArsenalError | null, data?: any) => void,
-        ) => void;
-    },
+    api: { callApiMethod: routesUtils.CallApiMethod },
     log: RequestLogger,
-    statsClient: StatsClient,
+    statsClient?: StatsClient,
 ) {
+    const call = (name: string) => {
+        return api.callApiMethod(name, request, response, log, (err, corsHeaders) => {
+            routesUtils.statsReport500(err, statsClient);
+            return routesUtils.responseNoBody(err, corsHeaders, response, 204, log);
+        });
+    }
     log.debug('routing request', { method: 'routeDELETE' });
 
-    // @ts-ignore
-    if (request.query.uploadId) {
-        // @ts-ignore
-        if (request.objectKey === undefined) {
-            return routesUtils.responseNoBody(
-                errors.InvalidRequest.customizeDescription('A key must be ' +
-              'specified'), null, response, 200, log);
+    const { query, objectKey } = request as any
+    if (query?.uploadId) {
+        if (objectKey === undefined) {
+            const message = 'A key must be specified';
+            const err = errors.InvalidRequest.customizeDescription(message);
+            return routesUtils.responseNoBody(err, null, response, 200, log);
         }
-        api.callApiMethod('multipartDelete', request, response, log,
-            (err, corsHeaders) => {
-                routesUtils.statsReport500(err, statsClient);
-                return routesUtils.responseNoBody(err, corsHeaders, response,
-                    204, log);
-            });
-    // @ts-ignore
-    } else if (request.objectKey === undefined) {
-        // @ts-ignore
-        if (request.query.website !== undefined) {
-            return api.callApiMethod('bucketDeleteWebsite', request,
-                response, log, (err, corsHeaders) => {
-                    routesUtils.statsReport500(err, statsClient);
-                    return routesUtils.responseNoBody(err, corsHeaders,
-                        response, 204, log);
-                });
-        // @ts-ignore
-        } else if (request.query.cors !== undefined) {
-            return api.callApiMethod('bucketDeleteCors', request, response,
-                log, (err, corsHeaders) => {
-                    routesUtils.statsReport500(err, statsClient);
-                    return routesUtils.responseNoBody(err, corsHeaders,
-                        response, 204, log);
-                });
-        // @ts-ignore
-        } else if (request.query.replication !== undefined) {
-            return api.callApiMethod('bucketDeleteReplication', request,
-                response, log, (err, corsHeaders) => {
-                    routesUtils.statsReport500(err, statsClient);
-                    return routesUtils.responseNoBody(err, corsHeaders,
-                        response, 204, log);
-                });
-        // @ts-ignore
-        } else if (request.query.lifecycle !== undefined) {
-            return api.callApiMethod('bucketDeleteLifecycle', request,
-                response, log, (err, corsHeaders) => {
-                    routesUtils.statsReport500(err, statsClient);
-                    return routesUtils.responseNoBody(err, corsHeaders,
-                        response, 204, log);
-                });
-        // @ts-ignore
-        } else if (request.query.policy !== undefined) {
-            return api.callApiMethod('bucketDeletePolicy', request,
-                response, log, (err, corsHeaders) => {
-                    routesUtils.statsReport500(err, statsClient);
-                    return routesUtils.responseNoBody(err, corsHeaders,
-                        response, 204, log);
-                });
-        // @ts-ignore
-        } else if (request.query.encryption !== undefined) {
-            return api.callApiMethod('bucketDeleteEncryption', request,
-                response, log, (err, corsHeaders) => {
-                    routesUtils.statsReport500(err, statsClient);
-                    return routesUtils.responseNoBody(err, corsHeaders,
-                        response, 204, log);
-                });
-        // @ts-ignore
-        } else if (request.query.tagging !== undefined) {
-            return api.callApiMethod('bucketDeleteTagging', request,
-                response, log, (err, corsHeaders) => {
-                    routesUtils.statsReport500(err, statsClient);
-                    return routesUtils.responseNoBody(err, corsHeaders,
-                        response, 204, log);
-                });
+        return call('multipartDelete');
+    } else if (objectKey === undefined) {
+        if (query?.website !== undefined) {
+            return call('bucketDeleteWebsite');
+        } else if (query?.cors !== undefined) {
+            return call('bucketDeleteCors');
+        } else if (query?.replication !== undefined) {
+            return call('bucketDeleteReplication');
+        } else if (query?.lifecycle !== undefined) {
+            return call('bucketDeleteLifecycle');
+        } else if (query?.policy !== undefined) {
+            return call('bucketDeletePolicy');
+        } else if (query?.encryption !== undefined) {
+            return call('bucketDeleteEncryption');
+        } else if (query?.tagging !== undefined) {
+            return call('bucketDeleteTagging');
         }
-        api.callApiMethod('bucketDelete', request, response, log,
-            (err, corsHeaders) => {
-                routesUtils.statsReport500(err, statsClient);
-                return routesUtils.responseNoBody(err, corsHeaders, response,
-                    204, log);
-            });
+        call('bucketDelete');
     } else {
-        // @ts-ignore
-        if (request.query.tagging !== undefined) {
-            return api.callApiMethod('objectDeleteTagging', request,
-                response, log, (err, resHeaders) => {
-                    routesUtils.statsReport500(err, statsClient);
-                    return routesUtils.responseNoBody(err, resHeaders,
-                        response, 204, log);
-                });
+        if (query?.tagging !== undefined) {
+            return call('objectDeleteTagging');
         }
         api.callApiMethod('objectDelete', request, response, log,
             (err, corsHeaders) => {
@@ -125,5 +63,4 @@ export default function routeDELETE(
                     204, log);
             });
     }
-    return undefined;
 }
