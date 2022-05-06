@@ -1,5 +1,5 @@
 const assert = require('assert');
-const routesUtils = require('../../../../lib/s3routes/routesUtils.js');
+const routesUtils = require('../../../../lib/s3routes/routesUtils');
 
 const bannedStr = 'banned';
 const prefixBlacklist = [];
