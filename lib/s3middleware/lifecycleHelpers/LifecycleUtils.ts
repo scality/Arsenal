@@ -1,10 +1,13 @@
-const assert = require('assert');
+import assert from 'assert';
 
-const LifecycleDateTime = require('./LifecycleDateTime');
-const { supportedLifecycleRules } = require('../../constants');
+import LifecycleDateTime from './LifecycleDateTime';
+import { supportedLifecycleRules } from '../../constants';
 
-class LifecycleUtils {
-    constructor(supportedRules, datetime) {
+export default class LifecycleUtils {
+    _supportedRules: string[];
+    _datetime: LifecycleDateTime;
+
+    constructor(supportedRules?: string[], datetime?: LifecycleDateTime) {
         if (supportedRules) {
             assert(Array.isArray(supportedRules));
         }
@@ -19,14 +22,33 @@ class LifecycleUtils {
 
     /**
     * Compare two transition rules and return the one that is most recent.
-    * @param {object} params - The function parameters
-    * @param {object} params.transition1 - A transition from the current rule
-    * @param {object} params.transition2 - A transition from the previous rule
-    * @param {string} params.lastModified - The object's last modified
+    * @param params - The function parameters
+    * @param params.transition1 - A transition from the current rule
+    * @param params.transition2 - A transition from the previous rule
+    * @param params.lastModified - The object's last modified
     * date
-    * @return {object} The most applicable transition rule
+    * @return The most applicable transition rule
     */
-    compareTransitions(params) {
+    compareTransitions(params: {
+        lastModified: string;
+        transition1: any;
+        transition2?: any;
+    }): number | undefined;
+    compareTransitions(params: {
+        lastModified: string;
+        transition1?: any;
+        transition2: any;
+    }): number | undefined;
+    compareTransitions(params: {
+        lastModified: string;
+        transition1: any;
+        transition2: any;
+    }): number | undefined;
+    compareTransitions(params: {
+        lastModified: string;
+        transition1?: any;
+        transition2?: any;
+    }) {
         const { transition1, transition2, lastModified } = params;
         if (transition1 === undefined) {
             return transition2;
@@ -34,29 +56,32 @@ class LifecycleUtils {
         if (transition2 === undefined) {
             return transition1;
         }
-        return this._datetime.getTransitionTimestamp(transition1, lastModified)
-            > this._datetime.getTransitionTimestamp(transition2, lastModified)
-            ? transition1 : transition2;
+        const trans1 = this._datetime.getTransitionTimestamp(transition1!, lastModified)!;
+        const trans2 = this._datetime.getTransitionTimestamp(transition2!, lastModified)!;
+        return trans1 > trans2 ? transition1 : transition2;
     }
 
+    // TODO Fix This
     /**
     * Find the most relevant trantition rule for the given transitions array
     * and any previously stored transition from another rule.
-    * @param {object} params - The function parameters
-    * @param {array} params.transitions - Array of lifecycle rule transitions
-    * @param {string} params.lastModified - The object's last modified
+    * @param params - The function parameters
+    * @param params.transitions - Array of lifecycle rule transitions
+    * @param params.lastModified - The object's last modified
     * date
-    * @return {object} The most applicable transition rule
+    * @return The most applicable transition rule
     */
-    getApplicableTransition(params) {
-        const {
-            transitions, store, lastModified, currentDate,
-        } = params;
-
+    getApplicableTransition(params: {
+        store: any;
+        currentDate: Date;
+        transitions: any[];
+        lastModified: string;
+    }) {
+        const { transitions, store, lastModified, currentDate } = params;
         const transition = transitions.reduce((result, transition) => {
             const isApplicable = // Is the transition time in the past?
                 this._datetime.getTimestamp(currentDate) >=
-                this._datetime.getTransitionTimestamp(transition, lastModified);
+                this._datetime.getTransitionTimestamp(transition, lastModified)!;
             if (!isApplicable) {
                 return result;
             }
@@ -73,14 +98,15 @@ class LifecycleUtils {
         });
     }
 
+    // TODO
     /**
     * Filter out all rules based on `Status` and `Filter` (Prefix and Tags)
-    * @param {array} bucketLCRules - array of bucket lifecycle rules
-    * @param {object} item - represents a single object, version, or upload
-    * @param {object} objTags - all tags for given `item`
-    * @return {array} list of all filtered rules that apply to `item`
+    * @param bucketLCRules - array of bucket lifecycle rules
+    * @param item - represents a single object, version, or upload
+    * @param objTags - all tags for given `item`
+    * @return list of all filtered rules that apply to `item`
     */
-    filterRules(bucketLCRules, item, objTags) {
+    filterRules(bucketLCRules: any[], item: any, objTags: any) {
         /*
             Bucket Tags must be included in the list of object tags.
             So if a bucket tag with "key1/value1" exists, and an object with
@@ -91,14 +117,14 @@ class LifecycleUtils {
             rule is "key1/value1", this buckets rule does not apply to this
             object.
         */
-        function deepCompare(rTags, oTags) {
+        function deepCompare(rTags: any, oTags: any) {
             // check to make sure object tags length matches or is greater
             if (rTags.length > oTags.length) {
                 return false;
             }
             // all key/value tags of bucket rules must be within object tags
             for (let i = 0; i < rTags.length; i++) {
-                const oTag = oTags.find(pair => pair.Key === rTags[i].Key);
+                const oTag = oTags.find((pair: any) => pair.Key === rTags[i].Key);
                 if (!oTag || rTags[i].Value !== oTag.Value) {
                     return false;
                 }
@@ -134,16 +160,17 @@ class LifecycleUtils {
         });
     }
 
+    // TODO
     /**
     * For all filtered rules, get rules that apply the earliest
-    * @param {array} rules - list of filtered rules that apply to a specific
+    * @param rules - list of filtered rules that apply to a specific
     *   object, version, or upload
-    * @param {object} metadata - metadata about the object to transition
-    * @return {object} all applicable rules with earliest dates of action
+    * @param metadata - metadata about the object to transition
+    * @return all applicable rules with earliest dates of action
     *  i.e. { Expiration: { Date: <DateObject>, Days: 10 },
     *         NoncurrentVersionExpiration: { NoncurrentDays: 5 } }
     */
-    getApplicableRules(rules, metadata) {
+    getApplicableRules(rules: any[], metadata: any) {
         // Declare the current date before the reducing function so that all
         // rule comparisons use the same date.
         const currentDate = new Date();
@@ -224,5 +251,3 @@ class LifecycleUtils {
         /* eslint-enable no-param-reassign */
     }
 }
-
-module.exports = LifecycleUtils;

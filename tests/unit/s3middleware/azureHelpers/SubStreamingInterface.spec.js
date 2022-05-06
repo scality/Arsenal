@@ -1,7 +1,7 @@
 const assert = require('assert');
 const stream = require('stream');
 const SubStreamInterface =
-    require('../../../../lib/s3middleware/azureHelpers/SubStreamInterface');
+    require('../../../../lib/s3middleware/azureHelpers/SubStreamInterface').default;
 
 describe('s3middleware SubStreamInterface.stopStreaming()', () => {
     const eventsEmitted = {

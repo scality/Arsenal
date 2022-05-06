@@ -1,6 +1,6 @@
 const assert = require('assert');
 const DummyRequest = require('../../utils/DummyRequest');
-const MD5Sum = require('../../../lib/s3middleware/MD5Sum');
+const MD5Sum = require('../../../lib/s3middleware/MD5Sum').default;
 const constants = require('../../../lib/constants');
 
 function consume(stream) {

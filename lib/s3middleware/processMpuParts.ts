@@ -1,14 +1,15 @@
-const errors = require('../errors').default;
-const crypto = require('crypto');
-const constants = require('../constants');
+import errors from '../errors';
+import * as crypto from 'crypto';
+import * as constants from '../constants';
+import * as werelogs from 'werelogs';
 
 /**
  * createAggregateETag - creates ETag from concatenated MPU part ETags to
  * mimic AWS
- * @param {array} partETags - array of all parts' unquoted ETags
- * @return {string} aggregateETag - final complete MPU obj ETag
+ * @param partETags - array of all parts' unquoted ETags
+ * @return aggregateETag - final complete MPU obj ETag
  */
-function createAggregateETag(partETags) {
+export function createAggregateETag(partETags: string[]) {
     // AWS documentation is unclear on what the MD5 is that it returns
     // in the response for a complete multipart upload request.
     // The docs state that they might or might not
@@ -27,31 +28,29 @@ function createAggregateETag(partETags) {
     const bufferedHex = Buffer.from(concatETags, 'hex');
     // Convert the buffer to a binary string
     const binaryString = bufferedHex.toString('binary');
-    // Get the md5 of the binary string
-    const md5Hash = crypto.createHash('md5');
-    md5Hash.update(binaryString, 'binary');
-    // Get the hex digest of the md5
-    let aggregateETag = md5Hash.digest('hex');
+    // Get the md5 of the binary string and the hex digest of the md5
+    const md5Hash =
+        crypto
+            .createHash('md5')
+            .update(binaryString, 'binary')
+            .digest('hex');
     // Add the number of parts at the end
-    aggregateETag = `${aggregateETag}-${partETags.length}`;
-
-    return aggregateETag;
+    return `${md5Hash}-${partETags.length}`;
 }
 
 /**
  * generateMpuPartStorageInfo - generates info needed for storage of
  * completed MPU object
- * @param {array} filteredPartList - list of parts filtered from metadata
- * @return {object} partsInfo - contains three keys: aggregateETag,
+ * @param filteredPartList - list of parts filtered from metadata
+ * @return partsInfo - contains three keys: aggregateETag,
  * dataLocations, and calculatedSize
  */
-function generateMpuPartStorageInfo(filteredPartList) {
+export function generateMpuPartStorageInfo(filteredPartList: any[]) {
     // Assemble array of part locations, aggregate size
     // and build string to create aggregate ETag
     let calculatedSize = 0;
-    const dataLocations = [];
-    const partETags = [];
-    const partsInfo = {};
+    const dataLocations: any[] = [];
+    const partETags: string[] = [];
 
     filteredPartList.forEach((storedPart, index) => {
         const partETagWithoutQuotes = storedPart.ETag.slice(1, -1);
@@ -92,10 +91,11 @@ function generateMpuPartStorageInfo(filteredPartList) {
         }
     });
 
-    partsInfo.aggregateETag = createAggregateETag(partETags);
-    partsInfo.dataLocations = dataLocations;
-    partsInfo.calculatedSize = calculatedSize;
-    return partsInfo;
+    return {
+        aggregateETag: createAggregateETag(partETags),
+        dataLocations,
+        calculatedSize,
+    };
 }
 
 /**
@@ -109,14 +109,19 @@ function generateMpuPartStorageInfo(filteredPartList) {
  * @return {object} filtersPartsObj - contains 3 keys: partList, keysToDelete,
  * and extraPartLocations
  */
-function validateAndFilterMpuParts(storedParts, jsonList, mpuOverviewKey,
-    splitter, log) {
-    let storedPartsCopy = [];
-    const filteredPartsObj = {};
+export function validateAndFilterMpuParts(
+    storedParts: any[],
+    jsonList: { Part: any[] },
+    mpuOverviewKey: string,
+    splitter: string,
+    log: werelogs.Logger,
+) {
+    let storedPartsCopy: any[] = [];
+    const filteredPartsObj: any = {};
     filteredPartsObj.partList = [];
 
-    const keysToDelete = [];
-    storedParts.forEach(item => {
+    const keysToDelete: string[] = [];
+    storedParts.forEach((item: any) => {
         keysToDelete.push(item.key);
         storedPartsCopy.push({
             // In order to delete the part listing in the shadow
@@ -140,8 +145,8 @@ function validateAndFilterMpuParts(storedParts, jsonList, mpuOverviewKey,
         return filteredPartsObj;
     }
 
-    let extraParts = [];
-    const extraPartLocations = [];
+    let extraParts: any = [];
+    const extraPartLocations: any = [];
 
     for (let i = 0; i < partLength; i++) {
         const part = jsonList.Part[i];
@@ -232,9 +237,3 @@ function validateAndFilterMpuParts(storedParts, jsonList, mpuOverviewKey,
     filteredPartsObj.extraPartLocations = extraPartLocations;
     return filteredPartsObj;
 }
-
-module.exports = {
-    generateMpuPartStorageInfo,
-    validateAndFilterMpuParts,
-    createAggregateETag,
-};
