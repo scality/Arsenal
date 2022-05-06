@@ -311,6 +311,23 @@ describe('ObjectMD class setters/getters', () => {
         md.setOriginOp('Copy');
         assert.deepStrictEqual(md.getOriginOp(), 'Copy');
     });
+
+    it('ObjectMD::set/getAmzRestore', () => {
+        md.setAmzRestore({
+            'ongoing-request': false,
+        });
+        assert.deepStrictEqual(md.getAmzRestore(), {
+            'ongoing-request': false,
+        });
+    });
+
+    it('ObjectMD::setAmzRestore should throw if not valid', () => {
+        assert.throws(() => {
+            md.setAmzRestore({
+                'ongoing-request': 'bad',
+            });
+        });
+    });
 });
 
 describe('ObjectMD import from stored blob', () => {
