@@ -57,7 +57,7 @@ export default function routePOST(
     }
 
     // POST Object restore
-    if (request.query.restore !== undefined) {
+    if (query.restore !== undefined) {
         return api.callApiMethod('objectRestore', request, response,
             log, (err, statusCode, resHeaders) =>
                 routesUtils.responseNoBody(err, resHeaders, response,
