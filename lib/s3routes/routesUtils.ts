@@ -532,20 +532,6 @@ export function responseXMLBody(
  * @return - error or success response utility
  */
 export function responseJSONBody(
-    errCode: null | undefined,
-    json: string,
-    response: http.ServerResponse,
-    log: RequestLogger,
-    additionalHeaders?: { [key: string]: string },
-) : http.ServerResponse | undefined;
-export function responseJSONBody(
-    errCode: ArsenalError,
-    json: null,
-    response: http.ServerResponse,
-    log: RequestLogger,
-    additionalHeaders?: { [key: string]: string },
-) : http.ServerResponse | undefined;
-export function responseJSONBody(
     errCode: ArsenalError | null | undefined,
     json: string | null,
     response: http.ServerResponse,

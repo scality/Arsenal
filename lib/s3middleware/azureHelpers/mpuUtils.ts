@@ -1,27 +1,27 @@
-const assert = require('assert');
-const crypto = require('crypto');
-const stream = require('stream');
+import assert from 'assert';
+import * as crypto from 'crypto';
+import * as stream from 'stream';
+import ResultsCollector from './ResultsCollector';
+import SubStreamInterface from './SubStreamInterface';
+import * as objectUtils from '../objectUtils';
+import MD5Sum from '../MD5Sum';
+import errors from '../../errors';
 
-const ResultsCollector = require('./ResultsCollector');
-const SubStreamInterface = require('./SubStreamInterface');
-const objectUtils = require('../objectUtils');
-const MD5Sum = require('../MD5Sum');
-const errors = require('../../errors').default;
-
-const azureMpuUtils = {};
-
-azureMpuUtils.splitter = '|';
-azureMpuUtils.overviewMpuKey = 'azure_mpu';
-azureMpuUtils.maxSubPartSize = 104857600;
-azureMpuUtils.zeroByteETag = crypto.createHash('md5').update('').digest('hex');
+export const splitter = '|';
+export const overviewMpuKey = 'azure_mpu';
+export const maxSubPartSize = 104857600;
+export const zeroByteETag = crypto.createHash('md5').update('').digest('hex');
 
 // TODO: S3C-4657
-azureMpuUtils.padString = (str, category) => {
+export const padString = (
+    str: number | string,
+    category: 'partNumber' | 'subPart' | 'part',
+) => {
     const _padFn = {
-        left: (str, padString) =>
-            `${padString}${str}`.substr(-padString.length),
-        right: (str, padString) =>
-            `${str}${padString}`.substr(0, padString.length),
+        left: (str: number | string, padString: string) =>
+            `${padString}${str}`.slice(-padString.length),
+        right: (str: number | string, padString: string) =>
+            `${str}${padString}`.slice(0, padString.length),
     };
     // It's a little more performant if we add pre-generated strings for each
     // type of padding we want to apply, instead of using string.repeat() to
@@ -42,40 +42,43 @@ azureMpuUtils.padString = (str, category) => {
         },
     };
     const { direction, padString } = padSpec[category];
-    return _padFn[direction](str, padString);
+    const fun = _padFn[direction as 'left' | 'right'];
+    return fun(str, padString);
 };
 
 // NOTE: If we want to extract the object name from these keys, we will need
 // to use a similar method to _getKeyAndUploadIdFromMpuKey since the object
 // name may have instances of the splitter used to delimit arguments
-azureMpuUtils.getMpuSummaryKey = (objectName, uploadId) =>
-    `${objectName}${azureMpuUtils.splitter}${uploadId}`;
+export const getMpuSummaryKey = (objectName: string, uploadId: string) =>
+    `${objectName}${splitter}${uploadId}`;
 
-azureMpuUtils.getBlockId = (uploadId, partNumber, subPartIndex) => {
-    const paddedPartNumber = azureMpuUtils.padString(partNumber, 'partNumber');
-    const paddedSubPart = azureMpuUtils.padString(subPartIndex, 'subPart');
-    const splitter = azureMpuUtils.splitter;
+export const getBlockId = (
+    uploadId: string,
+    partNumber: number,
+    subPartIndex: number,
+) => {
+    const paddedPartNumber = padString(partNumber, 'partNumber');
+    const paddedSubPart = padString(subPartIndex, 'subPart');
     const blockId = `${uploadId}${splitter}partNumber${paddedPartNumber}` +
         `${splitter}subPart${paddedSubPart}${splitter}`;
-    return azureMpuUtils.padString(blockId, 'part');
+    return padString(blockId, 'part');
 };
 
-azureMpuUtils.getSummaryPartId = (partNumber, eTag, size) => {
-    const paddedPartNumber = azureMpuUtils.padString(partNumber, 'partNumber');
+export const getSummaryPartId = (partNumber: number, eTag: string, size: number) => {
+    const paddedPartNumber = padString(partNumber, 'partNumber');
     const timestamp = Date.now();
-    const splitter = azureMpuUtils.splitter;
     const summaryKey = `${paddedPartNumber}${splitter}${timestamp}` +
         `${splitter}${eTag}${splitter}${size}${splitter}`;
-    return azureMpuUtils.padString(summaryKey, 'part');
+    return padString(summaryKey, 'part');
 };
 
-azureMpuUtils.getSubPartInfo = dataContentLength => {
+export const getSubPartInfo = (dataContentLength: number) => {
     const numberFullSubParts =
-        Math.floor(dataContentLength / azureMpuUtils.maxSubPartSize);
-    const remainder = dataContentLength % azureMpuUtils.maxSubPartSize;
+        Math.floor(dataContentLength / maxSubPartSize);
+    const remainder = dataContentLength % maxSubPartSize;
     const numberSubParts = remainder ?
         numberFullSubParts + 1 : numberFullSubParts;
-    const lastPartSize = remainder || azureMpuUtils.maxSubPartSize;
+    const lastPartSize = remainder || maxSubPartSize;
     return {
         expectedNumberSubParts: numberSubParts,
         lastPartIndex: numberSubParts - 1,
@@ -83,31 +86,47 @@ azureMpuUtils.getSubPartInfo = dataContentLength => {
     };
 };
 
-azureMpuUtils.getSubPartSize = (subPartInfo, subPartIndex) => {
+export const getSubPartSize = (
+    subPartInfo: { lastPartIndex: number; lastPartSize: number },
+    subPartIndex: number,
+) => {
     const { lastPartIndex, lastPartSize } = subPartInfo;
-    return subPartIndex === lastPartIndex ?
-        lastPartSize : azureMpuUtils.maxSubPartSize;
+    return subPartIndex === lastPartIndex ? lastPartSize : maxSubPartSize;
 };
 
-azureMpuUtils.getSubPartIds = (part, uploadId) =>
-    [...Array(part.numberSubParts).keys()].map(subPartIndex =>
-        azureMpuUtils.getBlockId(uploadId, part.partNumber, subPartIndex));
+export const getSubPartIds = (
+    part: { numberSubParts: number; partNumber: number },
+    uploadId: string,
+) => [...Array(part.numberSubParts).keys()].map(subPartIndex =>
+        getBlockId(uploadId, part.partNumber, subPartIndex));
 
-azureMpuUtils.putSinglePart = (errorWrapperFn, request, params, dataStoreName,
-    log, cb) => {
+// TODO Better type this
+export const putSinglePart = (
+    errorWrapperFn: (first: string, second: string, third: any, log: any, cb: any) => void,
+    request: any,
+    params: {
+        bucketName: string;
+        partNumber: number;
+        size: number;
+        objectKey: string;
+        contentMD5: string;
+        uploadId: string;
+    },
+    dataStoreName: string,
+    log: RequestLogger,
+    cb: any,
+) => {
     const { bucketName, partNumber, size, objectKey, contentMD5, uploadId }
         = params;
-    const blockId = azureMpuUtils.getBlockId(uploadId, partNumber, 0);
+    const blockId = getBlockId(uploadId, partNumber, 0);
     const passThrough = new stream.PassThrough();
-    const options = {};
-    if (contentMD5) {
-        options.useTransactionalMD5 = true;
-        options.transactionalContentMD5 = contentMD5;
-    }
+    const options = contentMD5
+        ? { useTransactionalMD5: true, transactionalContentMD5: contentMD5 }
+        : {};
     request.pipe(passThrough);
     return errorWrapperFn('uploadPart', 'createBlockFromStream',
         [blockId, bucketName, objectKey, passThrough, size, options,
-            (err, result) => {
+            (err: any | null, result: any) => {
                 if (err) {
                     log.error('Error from Azure data backend uploadPart',
                         { error: err.message, dataStoreName });
@@ -130,12 +149,26 @@ azureMpuUtils.putSinglePart = (errorWrapperFn, request, params, dataStoreName,
             }], log, cb);
 };
 
-azureMpuUtils.putNextSubPart = (errorWrapperFn, partParams, subPartInfo,
-    subPartStream, subPartIndex, resultsCollector, log, cb) => {
+// TODO type this
+export const putNextSubPart = (
+    errorWrapperFn: any,
+    partParams: {
+        uploadId: string;
+        partNumber: number;
+        bucketName: string;
+        objectKey: string;
+    },
+    subPartInfo: { lastPartIndex: number; lastPartSize: number },
+    subPartStream: any,
+    subPartIndex: number,
+    resultsCollector: ResultsCollector,
+    log: RequestLogger,
+    cb: any,
+) => {
     const { uploadId, partNumber, bucketName, objectKey } = partParams;
-    const subPartSize = azureMpuUtils.getSubPartSize(
+    const subPartSize = getSubPartSize(
         subPartInfo, subPartIndex);
-    const subPartId = azureMpuUtils.getBlockId(uploadId, partNumber,
+    const subPartId = getBlockId(uploadId, partNumber,
         subPartIndex);
     resultsCollector.pushOp();
     errorWrapperFn('uploadPart', 'createBlockFromStream',
@@ -143,9 +176,21 @@ azureMpuUtils.putNextSubPart = (errorWrapperFn, partParams, subPartInfo,
             {}, err => resultsCollector.pushResult(err, subPartIndex)], log, cb);
 };
 
-azureMpuUtils.putSubParts = (errorWrapperFn, request, params,
-    dataStoreName, log, cb) => {
-    const subPartInfo = azureMpuUtils.getSubPartInfo(params.size);
+export const putSubParts = (
+    errorWrapperFn: any,
+    request: any,
+    params: {
+        uploadId: string;
+        partNumber: number;
+        bucketName: string;
+        objectKey: string;
+        size: number;
+    },
+    dataStoreName: string,
+    log: RequestLogger,
+    cb: any,
+) => {
+    const subPartInfo = getSubPartInfo(params.size);
     const resultsCollector = new ResultsCollector();
     const hashedStream = new MD5Sum();
     const streamInterface = new SubStreamInterface(hashedStream);
@@ -196,7 +241,7 @@ azureMpuUtils.putSubParts = (errorWrapperFn, request, params,
 
     const currentStream = streamInterface.getCurrentStream();
     // start first put to Azure before we start streaming the data
-    azureMpuUtils.putNextSubPart(errorWrapperFn, params, subPartInfo,
+    putNextSubPart(errorWrapperFn, params, subPartInfo,
         currentStream, 0, resultsCollector, log, cb);
 
     request.pipe(hashedStream);
@@ -206,8 +251,8 @@ azureMpuUtils.putSubParts = (errorWrapperFn, request, params,
     });
     hashedStream.on('data', data => {
         const currentLength = streamInterface.getLengthCounter();
-        if (currentLength + data.length > azureMpuUtils.maxSubPartSize) {
-            const bytesToMaxSize = azureMpuUtils.maxSubPartSize - currentLength;
+        if (currentLength + data.length > maxSubPartSize) {
+            const bytesToMaxSize = maxSubPartSize - currentLength;
             const firstChunk = bytesToMaxSize === 0 ? data :
                 data.slice(bytesToMaxSize);
             if (bytesToMaxSize !== 0) {
@@ -217,7 +262,7 @@ azureMpuUtils.putSubParts = (errorWrapperFn, request, params,
             }
             const { nextStream, subPartIndex } =
                 streamInterface.transitionToNextStream();
-            azureMpuUtils.putNextSubPart(errorWrapperFn, params, subPartInfo,
+            putNextSubPart(errorWrapperFn, params, subPartInfo,
                 nextStream, subPartIndex, resultsCollector, log, cb);
             streamInterface.write(firstChunk);
         } else {
@@ -225,6 +270,3 @@ azureMpuUtils.putSubParts = (errorWrapperFn, request, params,
         }
     });
 };
-
-
-module.exports = azureMpuUtils;

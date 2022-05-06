@@ -1,6 +1,6 @@
 const assert = require('assert');
-const NullStream = require('../../../lib/s3middleware/nullStream');
-const MD5Sum = require('../../../lib/s3middleware/MD5Sum');
+const NullStream = require('../../../lib/s3middleware/nullStream').default;
+const MD5Sum = require('../../../lib/s3middleware/MD5Sum').default;
 
 const nullChunks = [
     { size: 1, md5sum: '93b885adfe0da089cdf634904fd59f71' },
