@@ -327,6 +327,23 @@ describe('ObjectMD class setters/getters', () => {
         md.setAmzRestore();
         assert.deepStrictEqual(md.getAmzRestore(), undefined);
     });
+
+    it('ObjectMD::set/getArchive', () => {
+        md.setArchive({
+            archiveInfo: {},
+        });
+        assert.deepStrictEqual(md.getArchive(), {
+            archiveInfo: {},
+        });
+    });
+
+    it('ObjectMD::setArchive should throw if invalid', () => {
+        assert.throws(() => {
+            md.setArchive({
+                wrong: 'data',
+            });
+        });
+    });
 });
 
 describe('ObjectMD import from stored blob', () => {
