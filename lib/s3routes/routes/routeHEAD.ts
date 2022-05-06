@@ -1,13 +1,22 @@
-const errors = require('../../errors').default;
-const routesUtils = require('../routesUtils');
+import * as routesUtils from '../routesUtils';
+import errors from '../../errors';
+import StatsClient from '../../metrics/StatsClient';
+import * as http from 'http';
 
-function routeHEAD(request, response, api, log, statsClient) {
+export default function routeHEAD(
+    request: http.IncomingMessage,
+    response: http.ServerResponse,
+    api: { callApiMethod: routesUtils.CallApiMethod },
+    log: RequestLogger,
+    statsClient?: StatsClient,
+) {
     log.debug('routing request', { method: 'routeHEAD' });
-    if (request.bucketName === undefined) {
+    const { bucketName, objectKey } = request as any
+    if (bucketName === undefined) {
         log.trace('head request without bucketName');
         routesUtils.responseXMLBody(errors.MethodNotAllowed,
             null, response, log);
-    } else if (request.objectKey === undefined) {
+    } else if (objectKey === undefined) {
         // HEAD bucket
         api.callApiMethod('bucketHead', request, response, log,
             (err, corsHeaders) => {
@@ -25,5 +34,3 @@ function routeHEAD(request, response, api, log, statsClient) {
             });
     }
 }
-
-module.exports = routeHEAD;

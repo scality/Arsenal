@@ -11,6 +11,7 @@ export * as constants from './lib/constants';
 export * as https from './lib/https';
 export * as metrics from './lib/metrics';
 export * as network from './lib/network';
+export * as s3routes from './lib/s3routes';
 
 export const db = require('./lib/db');
 export const errorUtils = require('./lib/errorUtils');
@@ -54,11 +55,6 @@ export const versioning = {
     WriteGatheringManager: require('./lib/versioning/WriteGatheringManager.js'),
     WriteCache: require('./lib/versioning/WriteCache.js'),
     VersioningRequestProcessor: require('./lib/versioning/VersioningRequestProcessor.js'),
-};
-
-export const s3routes = {
-    routes: require('./lib/s3routes/routes'),
-    routesUtils: require('./lib/s3routes/routesUtils'),
 };
 
 export const s3middleware = {

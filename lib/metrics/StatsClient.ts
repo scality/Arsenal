@@ -124,7 +124,7 @@ export default class StatsClient {
     * report/record a request that ended up being a 500 on the server
     * @param id - service identifier
     */
-    report500(id: string, cb: (error: Error | null, value?: any) => void) {
+    report500(id: string, cb?: (error: Error | null, value?: any) => void) {
         if (!this._redis) {
             return undefined;
         }

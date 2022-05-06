@@ -1,30 +1,39 @@
-const errors = require('../../errors').default;
-const routesUtils = require('../routesUtils');
+import * as routesUtils from '../routesUtils';
+import errors from '../../errors';
+import * as http from 'http';
 
 /* eslint-disable no-param-reassign */
-function routePOST(request, response, api, log) {
+export default function routePOST(
+    request: http.IncomingMessage,
+    response: http.ServerResponse,
+    api: { callApiMethod: routesUtils.CallApiMethod },
+    log: RequestLogger,
+) {
     log.debug('routing request', { method: 'routePOST' });
 
-    const invalidMultiObjectDelReq = request.query.delete !== undefined
-        && request.bucketName === undefined;
+    const { query, bucketName, objectKey } = request as any
+
+    const invalidMultiObjectDelReq = query.delete !== undefined
+        && bucketName === undefined;
     if (invalidMultiObjectDelReq) {
         return routesUtils.responseNoBody(errors.MethodNotAllowed, null,
-            response, null, log);
+            response, undefined, log);
     }
 
+    // @ts-ignore
     request.post = '';
 
-    const invalidInitiateMpuReq = request.query.uploads !== undefined
-        && request.objectKey === undefined;
-    const invalidCompleteMpuReq = request.query.uploadId !== undefined
-        && request.objectKey === undefined;
+    const invalidInitiateMpuReq = query.uploads !== undefined
+        && objectKey === undefined;
+    const invalidCompleteMpuReq = query.uploadId !== undefined
+        && objectKey === undefined;
     if (invalidInitiateMpuReq || invalidCompleteMpuReq) {
         return routesUtils.responseNoBody(errors.InvalidURI, null,
-            response, null, log);
+            response, undefined, log);
     }
 
     // POST initiate multipart upload
-    if (request.query.uploads !== undefined) {
+    if (query.uploads !== undefined) {
         return api.callApiMethod('initiateMultipartUpload', request,
             response, log, (err, result, corsHeaders) =>
                 routesUtils.responseXMLBody(err, result, response, log,
@@ -32,7 +41,7 @@ function routePOST(request, response, api, log) {
     }
 
     // POST complete multipart upload
-    if (request.query.uploadId !== undefined) {
+    if (query.uploadId !== undefined) {
         return api.callApiMethod('completeMultipartUpload', request,
             response, log, (err, result, resHeaders) =>
                 routesUtils.responseXMLBody(err, result, response, log,
@@ -40,7 +49,7 @@ function routePOST(request, response, api, log) {
     }
 
     // POST multiObjectDelete
-    if (request.query.delete !== undefined) {
+    if (query.delete !== undefined) {
         return api.callApiMethod('multiObjectDelete', request, response,
             log, (err, xml, corsHeaders) =>
                 routesUtils.responseXMLBody(err, xml, response, log,
@@ -58,5 +67,3 @@ function routePOST(request, response, api, log) {
     return routesUtils.responseNoBody(errors.NotImplemented, null, response,
         200, log);
 }
-/* eslint-enable no-param-reassign */
-module.exports = routePOST;
