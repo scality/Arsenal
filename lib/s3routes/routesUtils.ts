@@ -1053,9 +1053,9 @@ export function normalizeRequest(
     const contentLength = request.headers['x-amz-decoded-content-length'] ?
         request.headers['x-amz-decoded-content-length'] :
         request.headers['content-length'];
-        // @ts-expect-error
+    // @ts-expect-error
     request.parsedContentLength =
-        Number.parseInt(contentLength!.toString(), 10);
+        Number.parseInt(contentLength?.toString() ?? '', 10);
 
     if (process.env.ALLOW_INVALID_META_HEADERS) {
         const headersArr = Object.keys(request.headers);
