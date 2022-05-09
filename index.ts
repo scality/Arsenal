@@ -9,6 +9,7 @@ import convertToXml from './lib/s3middleware/convertToXml';
 import escapeForXml from './lib/s3middleware/escapeForXml';
 import * as objectLegalHold from './lib/s3middleware/objectLegalHold';
 import * as tagging from './lib/s3middleware/tagging';
+import { checkDateModifiedHeaders } from './lib/s3middleware/validateConditionalHeaders';
 import { validateConditionalHeaders } from './lib/s3middleware/validateConditionalHeaders';
 import MD5Sum from './lib/s3middleware/MD5Sum';
 import NullStream from './lib/s3middleware/nullStream';
@@ -16,6 +17,7 @@ import * as objectUtils from './lib/s3middleware/objectUtils';
 import * as mpuUtils from './lib/s3middleware/azureHelpers/mpuUtils';
 import ResultsCollector from './lib/s3middleware/azureHelpers/ResultsCollector';
 import SubStreamInterface from './lib/s3middleware/azureHelpers/SubStreamInterface';
+import { prepareStream } from './lib/s3middleware/prepareStream';
 import * as processMpuParts from './lib/s3middleware/processMpuParts';
 import * as retention from './lib/s3middleware/objectRetention';
 import * as lifecycleHelpers from './lib/s3middleware/lifecycleHelpers';
@@ -82,6 +84,7 @@ export const s3middleware = {
     escapeForXml,
     objectLegalHold,
     tagging,
+    checkDateModifiedHeaders,
     validateConditionalHeaders,
     MD5Sum,
     NullStream,
@@ -91,6 +94,7 @@ export const s3middleware = {
         ResultsCollector,
         SubStreamInterface,
     },
+    prepareStream,
     processMpuParts,
     retention,
     lifecycleHelpers,
