@@ -31,10 +31,6 @@ describe('ObjectMDArchive setters/getters', () => {
     beforeEach(() => {
         archived = new ObjectMDArchive(
             testArchive.archiveInfo,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
         );
     });
     it('should control the archiveInfo attribute', () => {
