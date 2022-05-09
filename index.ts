@@ -62,32 +62,32 @@ export const s3routes = {
 };
 
 export const s3middleware = {
-    userMetadata: require('./lib/s3middleware/userMetadata').default,
+    userMetadata: require('./lib/s3middleware/userMetadata'),
     convertToXml: require('./lib/s3middleware/convertToXml').default,
     escapeForXml: require('./lib/s3middleware/escapeForXml').default,
-    objectLegalHold: require('./lib/s3middleware/objectLegalHold').default,
-    tagging: require('./lib/s3middleware/tagging').default,
+    objectLegalHold: require('./lib/s3middleware/objectLegalHold'),
+    tagging: require('./lib/s3middleware/tagging'),
     checkDateModifiedHeaders:
-        require('./lib/s3middleware/validateConditionalHeaders').default
+        require('./lib/s3middleware/validateConditionalHeaders')
             .checkDateModifiedHeaders,
     validateConditionalHeaders:
-        require('./lib/s3middleware/validateConditionalHeaders').default
+        require('./lib/s3middleware/validateConditionalHeaders')
             .validateConditionalHeaders,
     MD5Sum: require('./lib/s3middleware/MD5Sum').default,
     NullStream: require('./lib/s3middleware/nullStream').default,
-    objectUtils: require('./lib/s3middleware/objectUtils').default,
+    objectUtils: require('./lib/s3middleware/objectUtils'),
     azureHelper: {
         mpuUtils:
-            require('./lib/s3middleware/azureHelpers/mpuUtils').default,
+            require('./lib/s3middleware/azureHelpers/mpuUtils'),
         ResultsCollector:
             require('./lib/s3middleware/azureHelpers/ResultsCollector').default,
         SubStreamInterface:
             require('./lib/s3middleware/azureHelpers/SubStreamInterface').default,
     },
-    prepareStream: require('./lib/s3middleware/prepareStream').default,
-    processMpuParts: require('./lib/s3middleware/processMpuParts').default,
-    retention: require('./lib/s3middleware/objectRetention').default,
-    lifecycleHelpers: require('./lib/s3middleware/lifecycleHelpers').default,
+    prepareStream: require('./lib/s3middleware/prepareStream'),
+    processMpuParts: require('./lib/s3middleware/processMpuParts'),
+    retention: require('./lib/s3middleware/objectRetention'),
+    lifecycleHelpers: require('./lib/s3middleware/lifecycleHelpers'),
 };
 
 export const storage = {
