@@ -14,7 +14,7 @@ export function getMetaHeaders(headers: http.IncomingHttpHeaders) {
         if (!v) return length;
         return length + k.length + v.toString().length;
     }, 0);
-    if (totalLength < constants.maximumMetaHeadersSize) {
+    if (totalLength <= constants.maximumMetaHeadersSize) {
         return Object.fromEntries(filtered);
     } else {
         return errors.MetadataTooLarge;
