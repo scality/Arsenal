@@ -94,9 +94,7 @@ export const listMultipartUploads = (xmlParams: ListParams) => {
     params.forEach(param => {
         if (param.value) {
             xml.push(
-                `<${param.tag}>
-                    ${escapeForXml(param.value)}
-                </${param.tag}>`
+                `<${param.tag}>${escapeForXml(param.value)}</${param.tag}>`
             );
         } else if (!param.optional) {
             xml.push(`<${param.tag} />`);
