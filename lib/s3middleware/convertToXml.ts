@@ -123,7 +123,7 @@ export const listMultipartUploads = (xmlParams: ListParams) => {
                     `<ID>${escapeForXml(val.Initiator.ID)}</ID>`,
                     `<DisplayName>`,
                         escapeForXml(val.Initiator.DisplayName),
-                    '/DisplayName>',
+                    '</DisplayName>',
                 '</Initiator>',
                 '<Owner>',
                     `<ID>${escapeForXml(val.Owner.ID)}</ID>`,
