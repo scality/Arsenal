@@ -4,6 +4,21 @@ import RequestContext from './lib/policyEvaluator/RequestContext';
 import * as requestUtils from './lib/policyEvaluator/requestUtils';
 import * as actionMaps from './lib/policyEvaluator/utils/actionMaps';
 import { validateUserPolicy } from './lib/policy/policyValidator'
+import * as userMetadata from './lib/s3middleware/userMetadata';
+import convertToXml from './lib/s3middleware/convertToXml';
+import escapeForXml from './lib/s3middleware/escapeForXml';
+import * as objectLegalHold from './lib/s3middleware/objectLegalHold';
+import * as tagging from './lib/s3middleware/tagging';
+import { validateConditionalHeaders } from './lib/s3middleware/validateConditionalHeaders';
+import MD5Sum from './lib/s3middleware/MD5Sum';
+import NullStream from './lib/s3middleware/nullStream';
+import * as objectUtils from './lib/s3middleware/objectUtils';
+import * as mpuUtils from './lib/s3middleware/azureHelpers/mpuUtils';
+import ResultsCollector from './lib/s3middleware/azureHelpers/ResultsCollector';
+import SubStreamInterface from './lib/s3middleware/azureHelpers/SubStreamInterface';
+import * as processMpuParts from './lib/s3middleware/processMpuParts';
+import * as retention from './lib/s3middleware/objectRetention';
+import * as lifecycleHelpers from './lib/s3middleware/lifecycleHelpers';
 export { default as errors } from './lib/errors';
 export * as ipCheck from './lib/ipCheck';
 export * as auth from './lib/auth/auth';
@@ -62,32 +77,23 @@ export const s3routes = {
 };
 
 export const s3middleware = {
-    userMetadata: require('./lib/s3middleware/userMetadata'),
-    convertToXml: require('./lib/s3middleware/convertToXml'),
-    escapeForXml: require('./lib/s3middleware/escapeForXml'),
-    objectLegalHold: require('./lib/s3middleware/objectLegalHold'),
-    tagging: require('./lib/s3middleware/tagging'),
-    checkDateModifiedHeaders:
-        require('./lib/s3middleware/validateConditionalHeaders')
-            .checkDateModifiedHeaders,
-    validateConditionalHeaders:
-        require('./lib/s3middleware/validateConditionalHeaders')
-            .validateConditionalHeaders,
-    MD5Sum: require('./lib/s3middleware/MD5Sum'),
-    NullStream: require('./lib/s3middleware/nullStream'),
-    objectUtils: require('./lib/s3middleware/objectUtils'),
+    userMetadata,
+    convertToXml,
+    escapeForXml,
+    objectLegalHold,
+    tagging,
+    validateConditionalHeaders,
+    MD5Sum,
+    NullStream,
+    objectUtils,
     azureHelper: {
-        mpuUtils:
-            require('./lib/s3middleware/azureHelpers/mpuUtils'),
-        ResultsCollector:
-            require('./lib/s3middleware/azureHelpers/ResultsCollector'),
-        SubStreamInterface:
-            require('./lib/s3middleware/azureHelpers/SubStreamInterface'),
+        mpuUtils,
+        ResultsCollector,
+        SubStreamInterface,
     },
-    prepareStream: require('./lib/s3middleware/prepareStream'),
-    processMpuParts: require('./lib/s3middleware/processMpuParts'),
-    retention: require('./lib/s3middleware/objectRetention'),
-    lifecycleHelpers: require('./lib/s3middleware/lifecycleHelpers'),
+    processMpuParts,
+    retention,
+    lifecycleHelpers,
 };
 
 export const storage = {
