@@ -44,12 +44,6 @@ describe('ObjectMD class setters/getters', () => {
         ['AmzServerVersionId', 'server-version-id'],
         ['AmzStorageClass', null, 'STANDARD'],
         ['AmzStorageClass', 'storage-class'],
-        ['AmzRestore', null, {
-            'ongoing-request': false,
-        }],
-        ['AmzRestore', {
-            'ongoing-request': false,
-        }],
         ['AmzServerSideEncryption', null, ''],
         ['AmzServerSideEncryption', 'server-side-encryption'],
         ['AmzEncryptionKeyId', null, ''],
