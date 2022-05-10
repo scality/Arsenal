@@ -185,6 +185,8 @@ export const models = {
         require('./lib/models/NotificationConfiguration'),
     ObjectMDAmzRestore:
         require('./lib/models/ObjectMDAmzRestore'),
+    ObjectMDArchive:
+        require('./lib/models/ObjectMDArchive'),
 };
 
 export const pensieve = {
