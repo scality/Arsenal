@@ -59,9 +59,9 @@ function validateTier(tier?: string) {
 }
 
 /**
- * validate retention - validate retention xml
- * @param parsedXml - parsed retention xml object
- * @return - contains retention information on success,
+ * validate restore request xml
+ * @param parsedXml - parsed restore request xml object
+ * @return - contains restore request information on success,
  * error on failure
  */
 function validateRestoreRequestParameters(parsedXml?: any) {
@@ -88,12 +88,12 @@ function validateRestoreRequestParameters(parsedXml?: any) {
 }
 
 /**
- * parseRetentionXml - Parse and validate xml body, returning callback with
- * object retentionObj: { mode: <value>, date: <value> }
+ * parseRestoreRequestXml - Parse and validate xml body, returning callback with
+ * object restoreReqObj: { days: <value>, tier: <value> }
  * @param xml - xml body to parse and validate
  * @param log - Werelogs logger
  * @param cb - callback to server
- * @return - calls callback with object retention or error
+ * @return - calls callback with object restore request or error
  */
 export function parseRestoreRequestXml(
     xml: string,
