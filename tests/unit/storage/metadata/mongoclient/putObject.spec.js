@@ -45,6 +45,36 @@ describe('MongoClientInterface:putObject', () => {
         return done();
     });
 
+    it('Should call putObjectMasterVer with correct params', () => {
+        // Stubbing functions
+        const putObjectMasterVer = sinon.spy();
+        sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null, 'v0'));
+        sinon.stub(client, 'putObjectMasterVer').callsFake(putObjectMasterVer);
+        // checking if function called with correct params
+        const params = {
+            masterVersionId: '1234',
+            vFormat: 'v0',
+        };
+        client.putObject('example-bucket', 'example-object', {}, params, {}, {});
+        const args = [null, 'example-bucket', 'example-object', {}, params, {}, {}];
+        assert(putObjectMasterVer.calledOnceWith(...args));
+    });
+
+    it('Should call putObjectMasterVer with empty masterVersionId', () => {
+        // Stubbing functions
+        const putObjectMasterVer = sinon.spy();
+        sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null, 'v0'));
+        sinon.stub(client, 'putObjectMasterVer').callsFake(putObjectMasterVer);
+        // checking if function called with correct params
+        const params = {
+            masterVersionId: '',
+            vFormat: 'v0',
+        };
+        client.putObject('example-bucket', 'example-object', {}, params, {}, {});
+        const args = [null, 'example-bucket', 'example-object', {}, params, {}, {}];
+        assert(putObjectMasterVer.calledOnceWith(...args));
+    });
+
     it('Should call putObjectVerCase1 with correct params', done => {
         // Stubbing functions
         const putObjectVerCase1Spy = sinon.spy();
@@ -296,6 +326,65 @@ describe('MongoClientInterface:putObjectVerCase2', () => {
             update: (filter, update, params, cb) => cb(errors.InternalError),
         };
         client.putObjectVerCase2(collection, 'example-bucket', 'example-object', {}, {}, logger, err => {
+            assert.deepStrictEqual(err, errors.InternalError);
+            return done();
+        });
+    });
+});
+
+describe('MongoClientInterface:putObjectMasterVer', () => {
+    let client;
+
+    beforeAll(done => {
+        client = new MongoClientInterface({});
+        return done();
+    });
+
+    beforeEach(done => {
+        sinon.stub(utils, 'formatMasterKey').callsFake(() => 'example-master-key');
+        return done();
+    });
+
+    afterEach(done => {
+        sinon.restore();
+        return done();
+    });
+
+    it('should return empty versionId if empty masterVersionId provided', done => {
+        const collection = {
+            update: (filter, update, params, cb) => cb(null),
+        };
+        const params = {
+            masterVersionId: '',
+        };
+        client.putObjectMasterVer(collection, 'example-bucket', 'example-object', {}, params, logger, (err, res) => {
+            assert.deepStrictEqual(err, null);
+            const expectedRes = '{"versionId": ""}';
+            assert.deepStrictEqual(res, expectedRes);
+            return done();
+        });
+    });
+
+    it('should return the updated object versionId', done => {
+        const collection = {
+            update: (filter, update, params, cb) => cb(null),
+        };
+        const params = {
+            masterVersionId: '1234',
+        };
+        client.putObjectMasterVer(collection, 'example-bucket', 'example-object', {}, params, logger, (err, res) => {
+            assert.deepStrictEqual(err, null);
+            const expectedRes = '{"versionId": "1234"}';
+            assert.deepStrictEqual(res, expectedRes);
+            return done();
+        });
+    });
+
+    it('should fail when update fails', done => {
+        const collection = {
+            update: (filter, update, params, cb) => cb(errors.InternalError),
+        };
+        client.putObjectMasterVer(collection, 'example-bucket', 'example-object', {}, {}, logger, err => {
             assert.deepStrictEqual(err, errors.InternalError);
             return done();
         });

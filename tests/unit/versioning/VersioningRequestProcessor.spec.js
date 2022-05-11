@@ -219,4 +219,37 @@ describe('test VSP', () => {
         }],
         done);
     });
+
+    it('should update master when using masterVersionId', done => {
+        async.waterfall([next => {
+            const request = {
+                db: 'foo',
+                key: 'bar',
+                value: '{"qux":"quz"}',
+                options: { versioning: true },
+            };
+            vsp.put(request, logger, next);
+        },
+        (res, next) => {
+            const v1 = Version.from(res).getVersionId();
+            const request = {
+                db: 'foo',
+                key: 'bar',
+                value: '{"qux":"quz2"}',
+                options: { masterVersionId: v1 },
+            };
+            vsp.put(request, logger, next);
+        },
+        (res, next) => {
+            const request = {
+                db: 'foo',
+                key: 'bar',
+            };
+            vsp.get(request, logger, next);
+        },
+        (res, next) => {
+            assert.strictEqual(JSON.parse(res).qux, 'quz2');
+            next();
+        }], done);
+    });
 });
