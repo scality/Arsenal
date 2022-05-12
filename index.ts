@@ -23,6 +23,7 @@ import * as processMpuParts from './lib/s3middleware/processMpuParts';
 import * as retention from './lib/s3middleware/objectRetention';
 import * as lifecycleHelpers from './lib/s3middleware/lifecycleHelpers';
 export { default as errors } from './lib/errors';
+export { default as Clustering } from './lib/Clustering';
 export * as ipCheck from './lib/ipCheck';
 export * as auth from './lib/auth/auth';
 export * as constants from './lib/constants';
@@ -36,7 +37,6 @@ export const errorUtils = require('./lib/errorUtils');
 export const shuffle = require('./lib/shuffle');
 export const stringHash = require('./lib/stringHash');
 export const jsutil = require('./lib/jsutil');
-export const Clustering = require('./lib/Clustering');
 
 export const algorithms = {
     list: require('./lib/algos/list/exportAlgos'),
