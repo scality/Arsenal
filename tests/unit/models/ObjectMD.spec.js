@@ -322,6 +322,11 @@ describe('ObjectMD class setters/getters', () => {
             });
         });
     });
+
+    it('ObjectMD::setAmzRestore should clear AmzRestore', () => {
+        md.setAmzRestore();
+        assert.deepStrictEqual(md.getAmzRestore(), undefined);
+    });
 });
 
 describe('ObjectMD import from stored blob', () => {
