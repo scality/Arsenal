@@ -1,90 +1,49 @@
-import { parseString } from 'xml2js';
-import errors, { ArsenalError } from '../errors';
+import {parseStringPromise} from 'xml2js';
+import errors, {ArsenalError} from '../errors';
 import * as werelogs from 'werelogs';
+import {validRestoreObjectTiers} from "../constants";
 
 /*
     Format of xml request:
     <RestoreRequest>
       <Days>integer</Days>
-      <Tier>Standard|Bulk|Expedited</RetainUntilDate>
+      <Tier>Standard|Bulk|Expedited</Tier>
     </RestoreRequest>
 */
 
 /**
- * validateDays - validate restore days
- * @param days - parsed days string
- * @return - contains days or error
- */
-function validateDays(days?: string) {
-    if (!days || !days[0]) {
-        const desc = 'request xml does not contain RestoreRequest.Days';
-        const error = errors.MalformedXML.customizeDescription(desc);
-        return { error };
-    }
-    // RestoreRequest.Days must be greater than or equal to 1
-    const daysValue = Number.parseInt(days[0], 10);
-    if (Number.isNaN(daysValue)) {
-        const desc = `RestoreRequest.Days is invalid type. [${days}]`;
-        const error = errors.MalformedXML.customizeDescription(desc);
-        return { error };
-    }
-    if (daysValue < 1) {
-        const desc = `RestoreRequest.Days must be greater than 0. [${days}]`;
-        const error = errors.MalformedXML.customizeDescription(desc);
-        return { error };
-    }
-    if (daysValue > 2147483647) {
-        const desc = `RestoreRequest.Days must be less than 2147483648. [${days}]`;
-        const error = errors.MalformedXML.customizeDescription(desc);
-        return { error };
-    }
-    return { days: daysValue }
-}
-
-/**
- * validateTier - validate retain until date
- * @param tier - parsed tier string
- * @return - contains retain until date or error
- */
-function validateTier(tier?: string) {
-    // If Tier is specified, must be "Expedited" or "Standard" or "Bulk"
-    const tierList = ['Expedited', 'Standard', 'Bulk'];
-    if (tier && tier[0] && !tierList.includes(tier[0])) {
-        const desc = `RestoreRequest.Tier is invalid value. [${tier}]`;
-        const error = errors.MalformedXML.customizeDescription(desc);
-        return { error };
-    }
-    // If do not specify, set "Standard"
-    return { tier: tier && tier[0] ? tier[0] : 'Standard' };
-}
-
-/**
  * validate restore request xml
- * @param parsedXml - parsed restore request xml object
- * @return - contains restore request information on success,
- * error on failure
+ * @param restoreRequest - parsed restore request object
+ * @return{ArsenalError|undefined} - error on failure, undefined on success
  */
-function validateRestoreRequestParameters(parsedXml?: any) {
-    if (!parsedXml) {
-        const desc = 'request xml is undefined or empty';
-        const error = errors.MalformedXML.customizeDescription(desc);
-        return { error };
-    }
-    const restoreRequest = parsedXml.RestoreRequest;
+function validateRestoreRequest(restoreRequest?: any) {
     if (!restoreRequest) {
         const desc = 'request xml does not contain RestoreRequest';
-        const error = errors.MalformedXML.customizeDescription(desc);
-        return { error };
+        return errors.MalformedXML.customizeDescription(desc);
     }
-    const daysObj = validateDays(restoreRequest.Days);
-    if (daysObj.error) {
-        return { error: daysObj.error };
+    if (!restoreRequest.Days || !restoreRequest.Days[0]) {
+        const desc = 'request xml does not contain RestoreRequest.Days';
+        return errors.MalformedXML.customizeDescription(desc);
     }
-    const tierObj = validateTier(restoreRequest.Tier);
-    if (tierObj.error) {
-        return { error: tierObj.error };
+    // RestoreRequest.Days must be greater than or equal to 1
+    const daysValue = Number.parseInt(restoreRequest.Days[0], 10);
+    if (Number.isNaN(daysValue)) {
+        const desc = `RestoreRequest.Days is invalid type. [${restoreRequest.Days[0]}]`;
+        return errors.MalformedXML.customizeDescription(desc);
     }
-    return { days: daysObj.days, tier: tierObj.tier };
+    if (daysValue < 1) {
+        const desc = `RestoreRequest.Days must be greater than 0. [${restoreRequest.Days[0]}]`;
+        return errors.MalformedXML.customizeDescription(desc);
+    }
+    if (daysValue > 2147483647) {
+        const desc = `RestoreRequest.Days must be less than 2147483648. [${restoreRequest.Days[0]}]`;
+        return errors.MalformedXML.customizeDescription(desc);
+    }
+    if (restoreRequest.Tier && restoreRequest.Tier[0] && !validRestoreObjectTiers.has(restoreRequest.Tier[0])) {
+        const desc = `RestoreRequest.Tier is invalid value. [${restoreRequest.Tier[0]}]`;
+        return errors.MalformedXML.customizeDescription(desc);
+    }
+    return undefined;
 }
 
 /**
@@ -95,30 +54,40 @@ function validateRestoreRequestParameters(parsedXml?: any) {
  * @param cb - callback to server
  * @return - calls callback with object restore request or error
  */
-export function parseRestoreRequestXml(
+export async function parseRestoreRequestXml(
     xml: string,
     log: werelogs.Logger,
     cb: (err: ArsenalError | null, data?: any) => void,
 ) {
-    parseString(xml, (err, result) => {
-        if (err) {
-            log.trace('xml parsing failed', {
-                error: err,
-                method: 'parseRestoreXml',
-            });
-            log.debug('invalid xml', { xml });
-            return cb(errors.MalformedXML);
-        }
-        const restoreReqObj = validateRestoreRequestParameters(result);
-        if (restoreReqObj.error) {
-            log.debug('restore request validation failed', {
-                error: restoreReqObj.error,
-                method: 'validateRestoreRequestParameters',
-                xml,
-            });
-            return cb(restoreReqObj.error);
-        }
-        return cb(null, restoreReqObj);
+    let result;
+    try {
+        result = await parseStringPromise(xml);
+    } catch (err) {
+        log.trace('xml parsing failed', {
+            error: err,
+            method: 'parseRestoreXml',
+        });
+        log.debug('invalid xml', { xml });
+        return cb(errors.MalformedXML);
+    }
+    if (!result) {
+        const desc = 'request xml is undefined or empty';
+        return cb(errors.MalformedXML.customizeDescription(desc));
+    }
+    const restoreRequest = result.RestoreRequest;
+    const restoreReqError = validateRestoreRequest(restoreRequest);
+    if (restoreReqError) {
+        log.debug('restore request validation failed', {
+            error: restoreReqError,
+            method: 'validateRestoreRequest',
+            xml,
+        });
+        return cb(restoreReqError);
+    }
+    // If do not specify Tier, set "Standard"
+    return cb(null, {
+        days: Number.parseInt(restoreRequest.Days, 10),
+        tier: restoreRequest.Tier && restoreRequest.Tier[0] ? restoreRequest.Tier[0] : 'Standard',
     });
 }
 
