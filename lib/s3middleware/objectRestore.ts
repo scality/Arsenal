@@ -63,11 +63,11 @@ export async function parseRestoreRequestXml(
     try {
         result = await parseStringPromise(xml);
     } catch (err) {
-        log.trace('xml parsing failed', {
+        log.debug('xml parsing failed', {
             error: err,
             method: 'parseRestoreXml',
+            xml,
         });
-        log.debug('invalid xml', { xml });
         return cb(errors.MalformedXML);
     }
     if (!result) {
@@ -99,7 +99,7 @@ export async function parseRestoreRequestXml(
  */
 export function convertToXml(days: string, tier: string) {
     if (!(days && tier)) {
-        return ''
+        return '';
     }
     return [
         '<RestoreRequest xmlns="http://s3.amazonaws.com/doc/2006-03-01/">',
