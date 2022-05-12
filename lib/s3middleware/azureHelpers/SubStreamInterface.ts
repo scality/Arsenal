@@ -1,10 +1,10 @@
-const stream = require('stream');
+import * as stream from 'stream';
 
 class SubStream extends stream.PassThrough {
-    constructor(options) {
+    constructor(options?: stream.TransformOptions) {
         super(options);
 
-        this.on('stopStreamingToAzure', function stopStreamingToAzure() {
+        this.on('stopStreamingToAzure', () => {
             this._abortStreaming();
         });
     }
@@ -19,12 +19,19 @@ class SubStream extends stream.PassThrough {
  * Interface for streaming subparts.
  * @class SubStreamInterface
  */
-class SubStreamInterface {
+export default class SubStreamInterface {
+    _sourceStream: stream.Readable;
+    _totalLengthCounter: number;
+    _lengthCounter: number;
+    _subPartIndex: number;
+    _currentStream: SubStream;
+    _streamingAborted: boolean;
+
     /**
      * @constructor
-     * @param {stream.Readable} sourceStream - stream to read for data
+     * @param sourceStream - stream to read for data
      */
-    constructor(sourceStream) {
+    constructor(sourceStream: stream.Readable) {
         this._sourceStream = sourceStream;
         this._totalLengthCounter = 0;
         this._lengthCounter = 0;
@@ -35,7 +42,6 @@ class SubStreamInterface {
 
     /**
      * SubStreamInterface.pauseStreaming - pause data flow
-     * @return {undefined}
      */
     pauseStreaming() {
         this._sourceStream.pause();
@@ -43,7 +49,6 @@ class SubStreamInterface {
 
     /**
      * SubStreamInterface.resumeStreaming - resume data flow
-     * @return {undefined}
      */
     resumeStreaming() {
         this._sourceStream.resume();
@@ -52,7 +57,6 @@ class SubStreamInterface {
     /**
      * SubStreamInterface.endStreaming - signal end of data for last stream,
      * to be called when source stream has ended
-     * @return {undefined}
      */
     endStreaming() {
         this._totalLengthCounter += this._lengthCounter;
@@ -62,11 +66,10 @@ class SubStreamInterface {
     /**
      * SubStreamInterface.stopStreaming - destroy streams,
      * to be called when streaming must be stopped externally
-     * @param {stream.Readable} [piper] - a stream that is piping data into
+     * @param [piper] - a stream that is piping data into
      * source stream
-     * @return {undefined}
      */
-    stopStreaming(piper) {
+    stopStreaming(piper?: stream.Readable) {
         this._streamingAborted = true;
         if (piper) {
             piper.unpipe();
@@ -77,7 +80,7 @@ class SubStreamInterface {
     /**
      * SubStreamInterface.getLengthCounter - return length of bytes streamed
      * for current subpart
-     * @return {number} - this._lengthCounter
+     * @return - this._lengthCounter
      */
     getLengthCounter() {
         return this._lengthCounter;
@@ -85,7 +88,7 @@ class SubStreamInterface {
 
     /**
      * SubStreamInterface.getTotalBytesStreamed - return total bytes streamed
-     * @return {number} - this._totalLengthCounter
+     * @return - this._totalLengthCounter
      */
     getTotalBytesStreamed() {
         return this._totalLengthCounter;
@@ -94,7 +97,7 @@ class SubStreamInterface {
     /**
      * SubStreamInterface.getCurrentStream - return subpart stream currently
      * being written to from source stream
-     * @return {number} - this._currentStream
+     * @return - this._currentStream
      */
     getCurrentStream() {
         return this._currentStream;
@@ -103,7 +106,7 @@ class SubStreamInterface {
     /**
      * SubStreamInterface.transitionToNextStream - signal end of data for
      * current stream, generate a new stream and start streaming to new stream
-     * @return {object} - return object containing new current stream and
+     * @return - return object containing new current stream and
      * subpart index of current subpart
      */
     transitionToNextStream() {
@@ -122,10 +125,9 @@ class SubStreamInterface {
 
     /**
      * SubStreamInterface.write - write to the current stream
-     * @param {Buffer} chunk - a chunk of data
-     * @return {undefined}
+     * @param chunk - a chunk of data
      */
-    write(chunk) {
+    write(chunk: Buffer) {
         if (this._streamingAborted) {
             // don't write
             return;
@@ -141,5 +143,3 @@ class SubStreamInterface {
         this._lengthCounter += chunk.length;
     }
 }
-
-module.exports = SubStreamInterface;

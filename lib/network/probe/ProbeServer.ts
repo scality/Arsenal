@@ -4,7 +4,7 @@ import * as werelogs from 'werelogs';
 import errors from '../../errors';
 
 export const DEFAULT_LIVE_ROUTE = '/_/live';
-export const DEFAULT_READY_ROUTE = '/_/live';
+export const DEFAULT_READY_ROUTE = '/_/ready';
 export const DEFAULT_METRICS_ROUTE = '/metrics';
 
 /**
