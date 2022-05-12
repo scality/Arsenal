@@ -344,6 +344,11 @@ describe('ObjectMD class setters/getters', () => {
             });
         });
     });
+
+    it('ObjectMD::setArchive should clear Archive', () => {
+        md.setArchive();
+        assert.deepStrictEqual(md.getArchive(), undefined);
+    });
 });
 
 describe('ObjectMD import from stored blob', () => {
