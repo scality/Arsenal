@@ -7,6 +7,15 @@ import { Callback } from '../../backends/in_memory/types';
 
 import constructChunkStringToSign from './constructChunkStringToSign';
 
+export type TransformParams = {
+    accessKey: string;
+    signatureFromRequest: string;
+    region: string;
+    scopeDate: string;
+    timestamp: string;
+    credentialScope: string;
+};
+
 /**
  * This class is designed to handle the chunks sent in a streaming
  * v4 Auth request
@@ -48,14 +57,7 @@ export default class V4Transform extends Transform {
      * @param cb - callback to api
      */
     constructor(
-        streamingV4Params: {
-            accessKey: string;
-            signatureFromRequest: string;
-            region: string;
-            scopeDate: string;
-            timestamp: string;
-            credentialScope: string;
-        },
+        streamingV4Params: TransformParams,
         vault: Vault,
         log: Logger,
         cb: Callback,

@@ -10,10 +10,8 @@ const XML_CHARACTER_MAP = {
     '>': '&gt;',
 };
 
-function escapeForXml(string) {
+export default function escapeForXml(string: string) {
     return string && string.replace
         ? string.replace(/([&"<>'])/g, (str, item) => XML_CHARACTER_MAP[item])
         : string;
 }
-
-module.exports = escapeForXml;
