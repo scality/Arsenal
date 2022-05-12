@@ -26,6 +26,7 @@ export * as constants from './lib/constants';
 export * as https from './lib/https';
 export * as metrics from './lib/metrics';
 export * as network from './lib/network';
+export * as stream from './lib/stream';
 
 export const db = require('./lib/db');
 export const shuffle = require('./lib/shuffle');
@@ -180,8 +181,4 @@ export const models = {
 
 export const pensieve = {
     credentialUtils: require('./lib/executables/pensieveCreds/utils'),
-};
-
-export const stream = {
-    readJSONStreamObject: require('./lib/stream/readJSONStreamObject'),
 };
