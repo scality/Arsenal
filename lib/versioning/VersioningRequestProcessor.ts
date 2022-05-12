@@ -1,18 +1,20 @@
-const errors = require('../errors').default;
-const Version = require('./Version').Version;
-
-const genVID = require('./VersionID').generateVersionId;
+import errors, { ArsenalError } from '../errors';
+import { Version } from './Version';
+import { generateVersionId as genVID } from './VersionID';
+import WriteCache from './WriteCache';
+import WriteGatheringManager from './WriteGatheringManager';
 
 // some predefined constants
-const VID_SEP = require('./constants').VersioningConstants.VersionId.Separator;
+import { VersioningConstants } from './constants';
+const VID_SEP = VersioningConstants.VersionId.Separator;
 
 /**
  * Increment the charCode of the last character of a valid string.
  *
- * @param {string} prefix - the input string
- * @return {string} - the incremented string, or the input if it is not valid
+ * @param prefix - the input string
+ * @return - the incremented string, or the input if it is not valid
  */
-function getPrefixUpperBoundary(prefix) {
+function getPrefixUpperBoundary(prefix: string): string {
     if (prefix) {
         return prefix.slice(0, prefix.length - 1) +
             String.fromCharCode(prefix.charCodeAt(prefix.length - 1) + 1);
@@ -20,30 +22,41 @@ function getPrefixUpperBoundary(prefix) {
     return prefix;
 }
 
-function formatVersionKey(key, versionId) {
+function formatVersionKey(key: string, versionId: string) {
     return `${key}${VID_SEP}${versionId}`;
 }
 
-function formatCacheKey(db, key) {
+function formatCacheKey(db: string, key: string) {
     // using double VID_SEP to make sure the cache key is unique
     return `${db}${VID_SEP}${VID_SEP}${key}`;
 }
 
 const VID_SEPPLUS = getPrefixUpperBoundary(VID_SEP);
 
-class VersioningRequestProcessor {
+export default class VersioningRequestProcessor {
+    writeCache: WriteCache;
+    wgm: WriteGatheringManager;
+    replicationGroupId: string;
+    uidCounter: number;
+    queue: {};
+    repairing: {};
+
     /**
      * This class takes a random string generator as additional input.
-     * @param {WriteCache} writeCache - the WriteCache to which this
+     * @param writeCache - the WriteCache to which this
      *   will forward the cachable processed requests
-     * @param {writeGatheringManager} writeGatheringManager - the
+     * @param writeGatheringManager - the
      *   WriteGatheringManager to which this will forward the
      *   non-cachable processed requests
-     * @param {object} versioning - versioning configurations
-     * @param {string} versioning.replicationGroupId - replication group id
+     * @param versioning - versioning configurations
+     * @param versioning.replicationGroupId - replication group id
      * @constructor
      */
-    constructor(writeCache, writeGatheringManager, versioning) {
+    constructor(
+        writeCache: WriteCache,
+        writeGatheringManager: WriteGatheringManager,
+        versioning: { replicationGroupId: string },
+    ) {
         this.writeCache = writeCache;
         this.wgm = writeGatheringManager;
         this.replicationGroupId = versioning.replicationGroupId;
@@ -54,7 +67,8 @@ class VersioningRequestProcessor {
     }
 
     generateVersionId() {
-        return genVID(this.uidCounter++, this.replicationGroupId);
+        const info = this.uidCounter++;
+        return genVID(info.toString(), this.replicationGroupId);
     }
 
     /**
@@ -62,14 +76,18 @@ class VersioningRequestProcessor {
      * deletion, search by listing for the latest version then repair
      * it.
      *
-     * @param {object} request - the request in original
+     * @param request - the request in original
      *                           RepdConnection format { db, key
      *                           [, value][, type], method, options }
-     * @param {object} logger - logger
-     * @param {function} callback - callback function
-     * @return {any} - to finish the call
+     * @param logger - logger
+     * @param callback - callback function
+     * @return - to finish the call
      */
-    get(request, logger, callback) {
+    get(
+        request: any,
+        logger: RequestLogger,
+        callback: (error: ArsenalError | null, data?: any) => void,
+    ) {
         const { db, key, options } = request;
         if (options && options.versionId) {
             const versionKey = formatVersionKey(key, options.versionId);
@@ -96,14 +114,18 @@ class VersioningRequestProcessor {
      * single process is performed at any moment. Subsequent get-by-listing
      * requests are queued up and these requests will have the same response.
      *
-     * @param {object} request - the request in original
+     * @param request - the request in original
      *                           RepdConnection format { db, key
      *                           [, value][, type], method, options }
-     * @param {object} logger - logger
-     * @param {function} callback - callback function
-     * @return {any} - to finish the call
+     * @param logger - logger
+     * @param callback - callback function
+     * @return - to finish the call
      */
-    getByListing(request, logger, callback) {
+    getByListing(
+        request: any,
+        logger: RequestLogger,
+        callback: (error: ArsenalError | null, data?: any) => void,
+    ) {
         // enqueue the get entry; do nothing if another is processing it
         // this is to manage the number of expensive listings when there
         // are multiple concurrent gets on the same key which is a PHD version
@@ -149,14 +171,18 @@ class VersioningRequestProcessor {
     /**
      * Enqueue a get-by-listing request.
      *
-     * @param {object} request - the request in original
+     * @param request - the request in original
      *                           RepdConnection format { db, key
      *                           [, value][, type], method, options }
-     * @param {object} logger - logger
-     * @param {function} callback - callback function
-     * @return {boolean} - this request is the first in the queue or not
+     * @param logger - logger
+     * @param callback - callback function
+     * @return - this request is the first in the queue or not
      */
-    enqueueGet(request, logger, callback) {
+    enqueueGet(
+        request: any,
+        logger: RequestLogger,
+        callback: (error: ArsenalError | null, data?: any) => void,
+    ): boolean {
         const cacheKey = formatCacheKey(request.db, request.key);
         // enqueue the get entry if another is processing it
         if (this.queue[cacheKey]) {
@@ -172,14 +198,14 @@ class VersioningRequestProcessor {
      * Dequeue all pending get-by-listing requests by the result of the first
      * request in the queue.
      *
-     * @param {object} request - the request in original
+     * @param request - the request in original
      *                           RepdConnection format { db, key
      *                           [, value][, type], method, options }
-     * @param {object} err - resulting error of the first request
-     * @param {string} value - resulting value of the first request
-     * @return {undefined}
+     * @param err - resulting error of the first request
+     * @param value - resulting value of the first request
+     * @return
      */
-    dequeueGet(request, err, value) {
+    dequeueGet(request: any, err: ArsenalError | null, value?: string) {
         const cacheKey = formatCacheKey(request.db, request.key);
         if (this.queue[cacheKey]) {
             this.queue[cacheKey].forEach(entry => {
@@ -197,18 +223,22 @@ class VersioningRequestProcessor {
      * Search for the latest version of an object to update its master version
      * in an atomic manner when the master version is a PHD.
      *
-     * @param {object} request - the request in original
+     * @param request - the request in original
      *                           RepdConnection format { db, key
      *                           [, value][, type], method, options }
-     * @param {object} logger - logger
-     * @param {object} hints - storing reparing hints
-     * @param {string} hints.type - type of repair operation ('put' or 'del')
-     * @param {string} hints.value - existing value of the master version (PHD)
-     * @param {string} hints.nextValue - the suggested latest version
+     * @param logger - logger
+     * @param hints - storing reparing hints
+     * @param hints.type - type of repair operation ('put' or 'del')
+     * @param hints.value - existing value of the master version (PHD)
+     * @param hints.nextValue - the suggested latest version
          (for 'put')
-     * @return {any} - to finish the call
+     * @return - to finish the call
      */
-    repairMaster(request, logger, hints) {
+    repairMaster(request: any, logger: RequestLogger, hints: {
+        type: 'put' | 'del';
+        value: string;
+        nextValue?: string;
+    }) {
         const { db, key } = request;
         logger.info('start repair process', { request });
         this.writeCache.get({ db, key }, logger, (err, value) => {
@@ -241,14 +271,18 @@ class VersioningRequestProcessor {
      * Process the request if it is a versioning request, or send it to the
      * next level replicator if it is not.
      *
-     * @param {object} request - the request in original
+     * @param request - the request in original
      *                           RepdConnection format { db, key
      *                           [, value][, type], method, options }
-     * @param {object} logger - logger
-     * @param {function} callback - expect callback(err, data)
-     * @return {any} - to finish the call
+     * @param logger - logger
+     * @param callback - expect callback(err, data)
+     * @return - to finish the call
      */
-    put(request, logger, callback) {
+    put(
+        request: any,
+        logger: RequestLogger,
+        callback: (error: ArsenalError | null, data?: any) => void,
+    ) {
         const { db, key, value, options } = request;
         // valid combinations of versioning options:
         // - !versioning && !versionId: normal non-versioning put
@@ -287,14 +321,22 @@ class VersioningRequestProcessor {
      * operations for updating the master version and creating the specific
      * version.
      *
-     * @param {object} request - the request in original
+     * @param request - the request in original
      *                           RepdConnection format { db, key
      *                           [, value][, type], method, options }
-     * @param {object} logger - logger
-     * @param {function} callback - expect callback(err, batch, versionId)
-     * @return {any} - to finish the call
+     * @param logger - logger
+     * @param callback - expect callback(err, batch, versionId)
+     * @return - to finish the call
      */
-    processNewVersionPut(request, logger, callback) {
+    processNewVersionPut(
+        request: any,
+        logger: RequestLogger,
+        callback: (
+            error: null,
+            data: { key: string; value: string }[],
+            versionId: string,
+        ) => void,
+    ) {
         // making a new versionId and a new version key
         const versionId = this.generateVersionId();
         const versionKey = formatVersionKey(request.key, versionId);
@@ -311,14 +353,18 @@ class VersioningRequestProcessor {
      * of operations for updating the target version, and the master version if
      * the target version is the latest.
      *
-     * @param {object} request - the request in original
+     * @param request - the request in original
      *                           RepdConnection format { db, key
      *                           [, value][, type], method, options }
-     * @param {object} logger - logger
-     * @param {function} callback - expect callback(err, batch, versionId)
-     * @return {any} - to finish the call
+     * @param logger - logger
+     * @param callback - expect callback(err, batch, versionId)
+     * @return - to finish the call
      */
-    processVersionSpecificPut(request, logger, callback) {
+    processVersionSpecificPut(
+        request: any,
+        logger: RequestLogger,
+        callback: (err: ArsenalError | null, data?: any, versionId?: string) => void,
+    ) {
         const { db, key } = request;
         // versionId is empty: update the master version
         if (request.options.versionId === '') {
@@ -335,7 +381,7 @@ class VersioningRequestProcessor {
             const versionKey = formatVersionKey(request.key, versionId);
             const ops = [{ key: versionKey, value: request.value }];
             if (data === undefined ||
-                Version.from(data).getVersionId() >= versionId) {
+                (Version.from(data).getVersionId() ?? '') >= versionId) {
                 // master does not exist or is not newer than put
                 // version and needs to be updated as well.
                 // Note that older versions have a greater version ID.
@@ -347,7 +393,11 @@ class VersioningRequestProcessor {
     }
 
 
-    del(request, logger, callback) {
+    del(
+        request: any,
+        logger: RequestLogger,
+        callback: (err: ArsenalError | null, data?: any) => void,
+    ) {
         const { db, key, options } = request;
         // no versioning or versioning configuration off
         if (!(options && options.versionId)) {
@@ -372,14 +422,22 @@ class VersioningRequestProcessor {
      * master version of the object as a place holder for deletion if the
      * specific version is also the master version.
      *
-     * @param {object} request - the request in original
+     * @param request - the request in original
      *                           RepdConnection format { db, key
      *                           [, value][, type], method, options }
-     * @param {object} logger - logger
-     * @param {function} callback - expect callback(err, batch, versionId)
-     * @return {any} - to finish the call
+     * @param logger - logger
+     * @param callback - expect callback(err, batch, versionId)
+     * @return - to finish the call
      */
-    processVersionSpecificDelete(request, logger, callback) {
+    processVersionSpecificDelete(
+        request: any,
+        logger: RequestLogger,
+        callback: (
+            error: ArsenalError | null,
+            batch?: any,
+            versionId?: string,
+        ) => void,
+    ) {
         const { db, key, options } = request;
         // deleting a specific version
         this.writeCache.get({ db, key }, logger, (err, data) => {
@@ -389,7 +447,7 @@ class VersioningRequestProcessor {
             // delete the specific version
             const versionId = options.versionId;
             const versionKey = formatVersionKey(key, versionId);
-            const ops = [{ key: versionKey, type: 'del' }];
+            const ops: any = [{ key: versionKey, type: 'del' }];
             // update the master version as PHD if it is the deleting version
             if (Version.isPHD(data) ||
                 Version.from(data).getVersionId() === versionId) {
@@ -405,5 +463,3 @@ class VersioningRequestProcessor {
         });
     }
 }
-
-module.exports = VersioningRequestProcessor;

@@ -1,4 +1,4 @@
-module.exports.VersioningConstants = {
+export const VersioningConstants = {
     VersionId: {
         Separator: '\0',
     },

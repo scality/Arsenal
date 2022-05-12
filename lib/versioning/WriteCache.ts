@@ -1,8 +1,7 @@
-'use strict'; // eslint-disable-line
+import errors, { ArsenalError } from '../errors';
+import WriteGatheringManager from './WriteGatheringManager';
 
-const errors = require('../errors').default;
-
-function formatCacheKey(db, key) {
+function formatCacheKey(db: string, key: string) {
     return `${db}\0\0${key}`;
 }
 
@@ -24,8 +23,14 @@ function formatCacheKey(db, key) {
  * the latest value of that object, thus ensuring isolation. This cached entry
  * remains only until the write is done and no other update is using it.
  */
-class WriteCache {
-    constructor(wgm) {
+export default class WriteCache {
+    // TODO Fix this
+    wgm: WriteGatheringManager;
+    cache: {};
+    queue: {};
+    counter: number;
+
+    constructor(wgm: WriteGatheringManager) {
         this.wgm = wgm;
         // internal state
         this.cache = {};
@@ -36,14 +41,18 @@ class WriteCache {
     /**
      * Get the value of an entry either in temporary cache, cache, or database.
      *
-     * @param {object} request - the request in original
+     * @param request - the request in original
      *                           RepdConnection format { db, key
      *                           [, value][, type], method, options }
-     * @param {object} logger - logger
-     * @param {function} callback - callback function: callback(error, value)
-     * @return {any} - to finish the call
+     * @param logger - logger
+     * @param callback - callback function: callback(error, value)
+     * @return - to finish the call
      */
-    get(request, logger, callback) {
+    get(
+        request: any,
+        logger: RequestLogger,
+        callback: (err: ArsenalError | null, data?: any) => void
+    ) {
         const { db, key } = request;
 
         const cacheKey = formatCacheKey(db, key);
@@ -69,13 +78,16 @@ class WriteCache {
     /**
      * Queue up a get request.
      *
-     * @param {string} cacheKey - key of the cache entry
-     * @param {function} callback - callback
-     * @return {number} - the signature of the request if this is the first
+     * @param cacheKey - key of the cache entry
+     * @param callback - callback
+     * @return - the signature of the request if this is the first
      *                    entry in the queue (which will do the get from the
      *                    database), undefined otherwise
      */
-    _enqueue(cacheKey, callback) {
+    _enqueue(
+        cacheKey: string,
+        callback: (err: ArsenalError | null, data?: any) => void
+    ) {
         if (this.queue[cacheKey]) {
             this.queue[cacheKey].queue.push(callback);
             return undefined;
@@ -87,14 +99,19 @@ class WriteCache {
     /**
      * Dequeue the concurrent get requests on the same object.
      *
-     * @param {string} cacheKey - key of the cache entry
-     * @param {number} signature - signature of the first request of the queue
-     * @param {object} err - the error from the get
-     * @param {string} value - the value of the object to seed dequeueing
-     * @param {boolean} force - force dequeuing even on signature mismatch
-     * @return {undefined} - nothing
+     * @param cacheKey - key of the cache entry
+     * @param signature - signature of the first request of the queue
+     * @param err - the error from the get
+     * @param value - the value of the object to seed dequeueing
+     * @param force - force dequeuing even on signature mismatch
      */
-    _dequeue(cacheKey, signature, err, value, force = false) {
+    _dequeue(
+        cacheKey: string,
+        signature: number | null,
+        err: ArsenalError | null,
+        value: string,
+        force = false
+    ) {
         if (this.queue[cacheKey] === undefined) {
             return;
         }
@@ -109,7 +126,7 @@ class WriteCache {
             // dequeueing will read, compute, and update the cache
             const dequeueSignature = this.counter++;
             this.cache[cacheKey] = { signature: dequeueSignature, value };
-            this.queue[cacheKey].queue.forEach(callback => {
+            this.queue[cacheKey].queue.forEach((callback) => {
                 // always return the value from cache, not the value that
                 // started dequeueing, because the cache might be updated
                 // synchronously by a dequeued request
@@ -133,13 +150,16 @@ class WriteCache {
     /**
      * Replicate the latest value of an entry and cache it during replication.
      *
-     * @param {object} request - the request in format { db,
+     * @param request - the request in format { db,
      *                           array, options }
-     * @param {object} logger - logger of the operation
-     * @param {function} callback - asynchronous callback of the call
-     * @return {undefined}
+     * @param logger - logger of the operation
+     * @param callback - asynchronous callback of the call
      */
-    batch(request, logger, callback) {
+    batch(
+        request: { db: any; array: any[]; options?: any },
+        logger: RequestLogger,
+        callback: (err: ArsenalError | null, data?: any) => void
+    ) {
         const { db, array } = request;
         const signature = this._cacheWrite(db, array);
         this.wgm.batch(request, logger, (err, data) => {
@@ -155,13 +175,13 @@ class WriteCache {
      * it. The newly put value is always the latest; we have to use it instead
      * of using the potentially more stale value in the database.
      *
-     * @param {string} db - name of the database
-     * @param {object} array - batch operation to apply on the database
-     * @return {string} - signature of the request
+     * @param db - name of the database
+     * @param array - batch operation to apply on the database
+     * @return - signature of the request
      */
-    _cacheWrite(db, array) {
+    _cacheWrite(db: string, array: { key: string; value: any }[]) {
         const signature = this.counter++;
-        array.forEach(entry => {
+        array.forEach((entry) => {
             const cacheKey = formatCacheKey(db, entry.key);
             this.cache[cacheKey] = { signature, value: entry.value };
             this._dequeue(cacheKey, null, null, entry.value, true);
@@ -172,13 +192,12 @@ class WriteCache {
     /**
      * Clear the cached entries after a successful write.
      *
-     * @param {string} db - name of the database
-     * @param {object} array - batch operation to apply on the database
-     * @param {string} signature - signature if temporarily cached
-     * @return {undefined}
+     * @param db - name of the database
+     * @param array - batch operation to apply on the database
+     * @param signature - signature if temporarily cached
      */
-    _cacheClear(db, array, signature) {
-        array.forEach(entry => {
+    _cacheClear(db: string, array: { key: string }[], signature: number) {
+        array.forEach((entry) => {
             const key = formatCacheKey(db, entry.key);
             if (this.cache[key] && this.cache[key].signature === signature) {
                 // only clear cache when the temporarily cached entry
@@ -189,5 +208,3 @@ class WriteCache {
         });
     }
 }
-
-module.exports = WriteCache;
