@@ -6,14 +6,15 @@ const DummyRequestLogger = require('../helpers').DummyRequestLogger;
 const log = new DummyRequestLogger();
 
 const generateXml = (days, tier) => {
-    const daysElement = days ? `<Days>${days}</Days>` : '';
-    const tierElement = tier ? `<Tier>${tier}</Tier>` : '';
-    return [
-        '<RestoreRequest xmlns="http://s3.amazonaws.com/doc/2006-03-01/">',
-        `${daysElement}`,
-        `${tierElement}`,
-        '</RestoreRequest>',
-    ].join('');
+    const ret = ['<RestoreRequest xmlns="http://s3.amazonaws.com/doc/2006-03-01/">'];
+    if (days) {
+        ret.push(`<Days>${days}</Days>`);
+    }
+    if (tier) {
+        ret.push(`<Tier>${tier}</Tier>`);
+    }
+    ret.push('</RestoreRequest>');
+    return ret.join('');
 };
 
 const validDay = '1';
