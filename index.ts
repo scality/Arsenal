@@ -28,8 +28,8 @@ export * as https from './lib/https';
 export * as metrics from './lib/metrics';
 export * as network from './lib/network';
 export * as stream from './lib/stream';
+export * as db from './lib/db';
 
-export const db = require('./lib/db');
 export const shuffle = require('./lib/shuffle');
 export const stringHash = require('./lib/stringHash');
 export const jsutil = require('./lib/jsutil');
