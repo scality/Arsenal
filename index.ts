@@ -31,11 +31,11 @@ export * as https from './lib/https';
 export * as metrics from './lib/metrics';
 export * as network from './lib/network';
 export * as stream from './lib/stream';
+export { default as stringHash } from './lib/stringHash';
 
 export const db = require('./lib/db');
 export const errorUtils = require('./lib/errorUtils');
 export const shuffle = require('./lib/shuffle');
-export const stringHash = require('./lib/stringHash');
 export const jsutil = require('./lib/jsutil');
 
 export const algorithms = {
