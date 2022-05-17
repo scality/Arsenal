@@ -1,22 +1,38 @@
-class RoutingRule {
+export type Redirect = {
+    protocol?: string;
+    hostName?: string;
+    replaceKeyPrefixWith?: string;
+    replaceKeyWith?: string;
+    httpRedirectCode: string;
+};
+export type Condition = {
+    keyPrefixEquals?: string;
+    httpErrorCodeReturnedEquals?: string;
+};
+export type RoutingRuleParams = { redirect: Redirect; condition?: Condition };
+
+export class RoutingRule {
+    _redirect?: Redirect;
+    _condition?: Condition;
+
     /**
     * Represents a routing rule in a website configuration.
     * @constructor
-    * @param {object} params - object containing redirect and condition objects
-    * @param {object} params.redirect - specifies how to redirect requests
-    * @param {string} [params.redirect.protocol] - protocol to use for redirect
-    * @param {string} [params.redirect.hostName] - hostname to use for redirect
-    * @param {string} [params.redirect.replaceKeyPrefixWith] - string to replace
+    * @param params - object containing redirect and condition objects
+    * @param params.redirect - specifies how to redirect requests
+    * @param [params.redirect.protocol] - protocol to use for redirect
+    * @param [params.redirect.hostName] - hostname to use for redirect
+    * @param [params.redirect.replaceKeyPrefixWith] - string to replace
     *   keyPrefixEquals specified in condition
-    * @param {string} [params.redirect.replaceKeyWith] - string to replace key
-    * @param {string} [params.redirect.httpRedirectCode] - http redirect code
-    * @param {object} [params.condition] - specifies conditions for a redirect
-    * @param {string} [params.condition.keyPrefixEquals] - key prefix that
+    * @param [params.redirect.replaceKeyWith] - string to replace key
+    * @param [params.redirect.httpRedirectCode] - http redirect code
+    * @param [params.condition] - specifies conditions for a redirect
+    * @param [params.condition.keyPrefixEquals] - key prefix that
     *   triggers a redirect
-    * @param {string} [params.condition.httpErrorCodeReturnedEquals] - http code
+    * @param [params.condition.httpErrorCodeReturnedEquals] - http code
     *   that triggers a redirect
     */
-    constructor(params) {
+    constructor(params?: RoutingRuleParams) {
         if (params) {
             this._redirect = params.redirect;
             this._condition = params.condition;
@@ -25,7 +41,7 @@ class RoutingRule {
 
     /**
     * Return copy of rule as plain object
-    * @return {object} rule;
+    * @return rule;
     */
     getRuleObject() {
         const rule = {
@@ -37,7 +53,7 @@ class RoutingRule {
 
     /**
     * Return the condition object
-    * @return {object} condition;
+    * @return condition;
     */
     getCondition() {
         return this._condition;
@@ -45,31 +61,45 @@ class RoutingRule {
 
     /**
     * Return the redirect object
-    * @return {object} redirect;
+    * @return redirect;
     */
     getRedirect() {
         return this._redirect;
     }
 }
 
-class WebsiteConfiguration {
+export type RedirectAllRequestsTo = {
+    hostName: string;
+    protocol?: string;
+};
+export class WebsiteConfiguration {
+    _indexDocument?: string;
+    _errorDocument?: string;
+    _redirectAllRequestsTo?: RedirectAllRequestsTo;
+    _routingRules?: RoutingRule[];
+
     /**
     * Object that represents website configuration
     * @constructor
-    * @param {object} params - object containing params to construct Object
-    * @param {string} params.indexDocument - key for index document object
+    * @param params - object containing params to construct Object
+    * @param params.indexDocument - key for index document object
     *   required when redirectAllRequestsTo is undefined
-    * @param {string} [params.errorDocument] - key for error document object
-    * @param {object} params.redirectAllRequestsTo - object containing info
+    * @param [params.errorDocument] - key for error document object
+    * @param params.redirectAllRequestsTo - object containing info
     *   about how to redirect all requests
-    * @param {string} params.redirectAllRequestsTo.hostName - hostName to use
+    * @param params.redirectAllRequestsTo.hostName - hostName to use
     *   when redirecting all requests
-    * @param {string} [params.redirectAllRequestsTo.protocol] - protocol to use
+    * @param [params.redirectAllRequestsTo.protocol] - protocol to use
     *   when redirecting all requests ('http' or 'https')
-    * @param {(RoutingRule[]|object[])} params.routingRules - array of Routing
+    * @param params.routingRules - array of Routing
     *   Rule instances or plain routing rule objects to cast as RoutingRule's
     */
-    constructor(params) {
+    constructor(params: {
+        indexDocument: string;
+        errorDocument: string;
+        redirectAllRequestsTo: RedirectAllRequestsTo;
+        routingRules: RoutingRule[] | any[],
+    }) {
         if (params) {
             this._indexDocument = params.indexDocument;
             this._errorDocument = params.errorDocument;
@@ -80,35 +110,34 @@ class WebsiteConfiguration {
 
     /**
     * Return plain object with configuration info
-    * @return {object} - Object copy of class instance
+    * @return - Object copy of class instance
     */
     getConfig() {
-        const websiteConfig = {
+        const base = {
             indexDocument: this._indexDocument,
             errorDocument: this._errorDocument,
             redirectAllRequestsTo: this._redirectAllRequestsTo,
         };
         if (this._routingRules) {
-            websiteConfig.routingRules =
-            this._routingRules.map(rule => rule.getRuleObject());
+            const routingRules = this._routingRules.map(r => r.getRuleObject());
+            return { ...base, routingRules };
         }
-        return websiteConfig;
+        return { ...base };
     }
 
     /**
     * Set the redirectAllRequestsTo
-    * @param {object} obj - object to set as redirectAllRequestsTo
-    * @param {string} obj.hostName - hostname for redirecting all requests
-    * @param {object} [obj.protocol] - protocol for redirecting all requests
-    * @return {undefined};
+    * @param obj - object to set as redirectAllRequestsTo
+    * @param obj.hostName - hostname for redirecting all requests
+    * @param [obj.protocol] - protocol for redirecting all requests
     */
-    setRedirectAllRequestsTo(obj) {
+    setRedirectAllRequestsTo(obj: { hostName: string; protocol?: string }) {
         this._redirectAllRequestsTo = obj;
     }
 
     /**
     * Return the redirectAllRequestsTo object
-    * @return {object} redirectAllRequestsTo;
+    * @return redirectAllRequestsTo;
     */
     getRedirectAllRequestsTo() {
         return this._redirectAllRequestsTo;
@@ -116,16 +145,15 @@ class WebsiteConfiguration {
 
     /**
     * Set the index document object name
-    * @param {string} suffix - index document object key
-    * @return {undefined};
+    * @param suffix - index document object key
     */
-    setIndexDocument(suffix) {
+    setIndexDocument(suffix: string) {
         this._indexDocument = suffix;
     }
 
     /**
      * Get the index document object name
-     * @return {string} indexDocument
+     * @return indexDocument
      */
     getIndexDocument() {
         return this._indexDocument;
@@ -133,16 +161,15 @@ class WebsiteConfiguration {
 
     /**
      * Set the error document object name
-     * @param {string} key - error document object key
-     * @return {undefined};
+     * @param key - error document object key
      */
-    setErrorDocument(key) {
+    setErrorDocument(key: string) {
         this._errorDocument = key;
     }
 
     /**
      * Get the error document object name
-     * @return {string} errorDocument
+     * @return errorDocument
      */
     getErrorDocument() {
         return this._errorDocument;
@@ -150,10 +177,9 @@ class WebsiteConfiguration {
 
     /**
     * Set the whole RoutingRules array
-    * @param {array} array - array to set as instance's RoutingRules
-    * @return {undefined};
+    * @param array - array to set as instance's RoutingRules
     */
-    setRoutingRules(array) {
+    setRoutingRules(array?: (RoutingRule | RoutingRuleParams)[]) {
         if (array) {
             this._routingRules = array.map(rule => {
                 if (rule instanceof RoutingRule) {
@@ -166,10 +192,9 @@ class WebsiteConfiguration {
 
     /**
      * Add a RoutingRule instance to routingRules array
-     * @param {object} obj - rule to add to array
-     * @return {undefined};
+     * @param obj - rule to add to array
      */
-    addRoutingRule(obj) {
+    addRoutingRule(obj?: RoutingRule | RoutingRuleParams) {
         if (!this._routingRules) {
             this._routingRules = [];
         }
@@ -182,14 +207,9 @@ class WebsiteConfiguration {
 
     /**
      * Get routing rules
-     * @return {RoutingRule[]} - array of RoutingRule instances
+     * @return - array of RoutingRule instances
      */
     getRoutingRules() {
         return this._routingRules;
     }
 }
-
-module.exports = {
-    RoutingRule,
-    WebsiteConfiguration,
-};
