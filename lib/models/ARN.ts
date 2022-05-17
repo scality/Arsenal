@@ -1,23 +1,35 @@
-const errors = require('../errors').default;
+import errors from '../errors'
 
 const validServices = {
     aws: ['s3', 'iam', 'sts', 'ring'],
     scality: ['utapi', 'sso'],
 };
 
-class ARN {
+export default class ARN {
+    _partition: string;
+    _service: string;
+    _region: string | null;
+    _accountId?: string | null;
+    _resource: string;
+
     /**
      *
      * Create an ARN object from its individual components
      *
      * @constructor
-     * @param {string} partition - ARN partition (e.g. 'aws')
-     * @param {string} service - service name in partition (e.g. 's3')
-     * @param {string} [region] - AWS region
-     * @param {string} [accountId] - AWS 12-digit account ID
-     * @param {string} resource - AWS resource path (e.g. 'foo/bar')
+     * @param partition - ARN partition (e.g. 'aws')
+     * @param service - service name in partition (e.g. 's3')
+     * @param [region] - AWS region
+     * @param [accountId] - AWS 12-digit account ID
+     * @param resource - AWS resource path (e.g. 'foo/bar')
      */
-    constructor(partition, service, region, accountId, resource) {
+    constructor(
+        partition: string,
+        service: string,
+        region: string | undefined | null,
+        accountId: string | undefined | null,
+        resource: string,
+    ) {
         this._partition = partition;
         this._service = service;
         this._region = region || null;
@@ -25,7 +37,7 @@ class ARN {
         this._resource = resource;
     }
 
-    static createFromString(arnStr) {
+    static createFromString(arnStr: string) {
         const [arn, partition, service, region, accountId,
             resourceType, resource] = arnStr.split(':');
 
@@ -102,5 +114,3 @@ class ARN {
             .join(':');
     }
 }
-
-module.exports = ARN;
