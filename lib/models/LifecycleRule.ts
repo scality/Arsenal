@@ -1,12 +1,32 @@
-const uuid = require('uuid/v4');
+import uuid from 'uuid/v4';
+
+export type Status = 'Disabled' | 'Enabled';
+export type Tag = { Key: string; Value: string };
+export type Tags = Tag[];
+export type And = { Prefix?: string; Tags: Tags };
+export type Filter = { Prefix?: string; Tag?: Tag } | { And: And };
+export type Expiration = {
+    ExpiredObjectDeleteMarker?: number | boolean;
+    Date?: number | boolean;
+    Days?: number | boolean;
+};
 
 /**
  * @class LifecycleRule
  *
  * @classdesc Simple get/set class to build a single Rule
  */
-class LifecycleRule {
-    constructor(id, status) {
+export default class LifecycleRule {
+    id: string;
+    status: Status;
+    tags: Tags;
+    expiration?: Expiration;
+    ncvExpiration?: { NoncurrentDays: number };
+    abortMPU?: { DaysAfterInitiation: number };
+    transitions?: any[];
+    prefix?: string;
+
+    constructor(id: string, status: Status) {
         // defaults
         this.id = id || uuid();
         this.status = status === 'Disabled' ? 'Disabled' : 'Enabled';
@@ -14,10 +34,16 @@ class LifecycleRule {
     }
 
     build() {
-        const rule = {};
-
-        rule.ID = this.id;
-        rule.Status = this.status;
+        const rule: {
+            ID: string;
+            Status: Status;
+            Expiration?: Expiration;
+            NoncurrentVersionExpiration?: { NoncurrentDays: number };
+            AbortIncompleteMultipartUpload?: { DaysAfterInitiation: number };
+            Transitions?: any[];
+            Filter?: Filter;
+            Prefix?: '';
+        } = { ID: this.id, Status: this.status };
 
         if (this.expiration) {
             rule.Expiration = this.expiration;
@@ -32,25 +58,7 @@ class LifecycleRule {
             rule.Transitions = this.transitions;
         }
 
-
-        const filter = {};
-        if ((this.prefix && this.tags.length) || (this.tags.length > 1)) {
-            // And rule
-            const andRule = {};
-
-            if (this.prefix) {
-                andRule.Prefix = this.prefix;
-            }
-            andRule.Tags = this.tags;
-            filter.And = andRule;
-        } else {
-            if (this.prefix) {
-                filter.Prefix = this.prefix;
-            }
-            if (this.tags.length) {
-                filter.Tag = this.tags[0];
-            }
-        }
+        const filter = this.buildFilter();
 
         if (Object.keys(filter).length > 0) {
             rule.Filter = filter;
@@ -61,7 +69,27 @@ class LifecycleRule {
         return rule;
     }
 
-    addID(id) {
+    buildFilter() {
+        if ((this.prefix && this.tags.length) || this.tags.length > 1) {
+            // And rule
+            const And: And = { Tags: this.tags };
+            if (this.prefix) {
+                And.Prefix = this.prefix;
+            }
+            return { And };
+        } else {
+            const filter: Filter = {};
+            if (this.prefix) {
+                filter.Prefix = this.prefix;
+            }
+            if (this.tags.length > 0) {
+                filter.Tag = this.tags[0];
+            }
+            return filter;
+        }
+    }
+
+    addID(id: string) {
         this.id = id;
         return this;
     }
@@ -71,12 +99,12 @@ class LifecycleRule {
         return this;
     }
 
-    addPrefix(prefix) {
+    addPrefix(prefix: string) {
         this.prefix = prefix;
         return this;
     }
 
-    addTag(key, value) {
+    addTag(key: string, value: string) {
         this.tags.push({
             Key: key,
             Value: value,
@@ -85,17 +113,19 @@ class LifecycleRule {
     }
 
     /**
-    * Expiration
-    * @param {string} prop - Property must be defined in `validProps`
-    * @param {integer|boolean} value - integer for `Date` or `Days`, or
-    *   boolean for `ExpiredObjectDeleteMarker`
-    * @return {undefined}
-    */
-    addExpiration(prop, value) {
+     * Expiration
+     * @param prop - Property must be defined in `validProps`
+     * @param value - integer for `Date` or `Days`, or boolean for `ExpiredObjectDeleteMarker`
+     */
+    addExpiration(prop: 'ExpiredObjectDeleteMarker', value: boolean): this;
+    addExpiration(prop: 'Date' | 'Days', value: number): this;
+    addExpiration(prop: string, value: number | boolean) {
         const validProps = ['Date', 'Days', 'ExpiredObjectDeleteMarker'];
-        if (validProps.indexOf(prop) > -1) {
+        if (validProps.includes(prop)) {
             this.expiration = this.expiration || {};
             if (prop === 'ExpiredObjectDeleteMarker') {
+                // FIXME
+                // @ts-expect-error
                 this.expiration[prop] = JSON.parse(value);
             } else {
                 this.expiration[prop] = value;
@@ -105,34 +135,29 @@ class LifecycleRule {
     }
 
     /**
-    * NoncurrentVersionExpiration
-    * @param {integer} days - NoncurrentDays
-    * @return {undefined}
-    */
-    addNCVExpiration(days) {
+     * NoncurrentVersionExpiration
+     * @param days - NoncurrentDays
+     */
+    addNCVExpiration(days: number) {
         this.ncvExpiration = { NoncurrentDays: days };
         return this;
     }
 
     /**
-    * AbortIncompleteMultipartUpload
-    * @param {integer} days - DaysAfterInitiation
-    * @return {undefined}
-    */
-    addAbortMPU(days) {
+     * AbortIncompleteMultipartUpload
+     * @param days - DaysAfterInitiation
+     */
+    addAbortMPU(days: number) {
         this.abortMPU = { DaysAfterInitiation: days };
         return this;
     }
 
     /**
      * Transitions
-     * @param {array} transitions - transitions
-     * @return {undefined}
+     * @param transitions - transitions
      */
-    addTransitions(transitions) {
+    addTransitions(transitions: any[]) {
         this.transitions = transitions;
         return this;
     }
 }
-
-module.exports = LifecycleRule;
