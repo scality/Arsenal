@@ -33,6 +33,7 @@ export * as jsutil from './lib/jsutil';
 export { default as stringHash } from './lib/stringHash';
 export * as db from './lib/db';
 export { default as shuffle } from './lib/shuffle';
+export * as models from './lib/models';
 
 export const algorithms = {
     list: {
@@ -154,20 +155,6 @@ export const storage = {
         },
     },
     utils: require('./lib/storage/utils'),
-};
-
-export const models = {
-    BucketInfo: require('./lib/models/BucketInfo'),
-    ObjectMD: require('./lib/models/ObjectMD'),
-    ObjectMDLocation: require('./lib/models/ObjectMDLocation'),
-    ARN: require('./lib/models/ARN'),
-    WebsiteConfiguration: require('./lib/models/WebsiteConfiguration'),
-    ReplicationConfiguration: require('./lib/models/ReplicationConfiguration'),
-    LifecycleConfiguration: require('./lib/models/LifecycleConfiguration'),
-    LifecycleRule: require('./lib/models/LifecycleRule'),
-    BucketPolicy: require('./lib/models/BucketPolicy'),
-    ObjectLockConfiguration: require('./lib/models/ObjectLockConfiguration'),
-    NotificationConfiguration: require('./lib/models/NotificationConfiguration'),
 };
 
 export const pensieve = {
