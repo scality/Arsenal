@@ -153,3 +153,5 @@ export const supportedLifecycleRules = [
 // Maximum number of buckets to cache (bucket metadata)
 export const maxCachedBuckets = process.env.METADATA_MAX_CACHED_BUCKETS ?
     Number(process.env.METADATA_MAX_CACHED_BUCKETS) : 1000;
+
+export const validRestoreObjectTiers = new Set(['Expedited', 'Standard', 'Bulk']);
