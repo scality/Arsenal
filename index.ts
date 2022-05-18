@@ -29,10 +29,9 @@ export * as metrics from './lib/metrics';
 export * as network from './lib/network';
 export * as stream from './lib/stream';
 export * as jsutil from './lib/jsutil';
-
-export const db = require('./lib/db');
-export const shuffle = require('./lib/shuffle');
-export const stringHash = require('./lib/stringHash');
+export { default as stringHash } from './lib/stringHash';
+export * as db from './lib/db';
+export { default as shuffle } from './lib/shuffle';
 
 export const algorithms = {
     list: {
