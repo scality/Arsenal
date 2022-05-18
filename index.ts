@@ -21,6 +21,7 @@ import SubStreamInterface from './lib/s3middleware/azureHelpers/SubStreamInterfa
 import { prepareStream } from './lib/s3middleware/prepareStream';
 import * as processMpuParts from './lib/s3middleware/processMpuParts';
 import * as retention from './lib/s3middleware/objectRetention';
+import * as objectRestore from './lib/s3middleware/objectRestore';
 import * as lifecycleHelpers from './lib/s3middleware/lifecycleHelpers';
 export { default as errors } from './lib/errors';
 export { default as Clustering } from './lib/Clustering';
@@ -32,11 +33,10 @@ export * as metrics from './lib/metrics';
 export * as network from './lib/network';
 export * as stream from './lib/stream';
 export * as jsutil from './lib/jsutil';
-
-export const db = require('./lib/db');
-export const errorUtils = require('./lib/errorUtils');
-export const shuffle = require('./lib/shuffle');
-export const stringHash = require('./lib/stringHash');
+export { default as stringHash } from './lib/stringHash';
+export * as db from './lib/db';
+export * as errorUtils from './lib/errorUtils';
+export { default as shuffle } from './lib/shuffle';
 
 export const algorithms = {
     list: require('./lib/algos/list/exportAlgos'),
@@ -99,6 +99,7 @@ export const s3middleware = {
     prepareStream,
     processMpuParts,
     retention,
+    objectRestore,
     lifecycleHelpers,
 };
 
@@ -185,6 +186,10 @@ export const models = {
         require('./lib/models/ObjectLockConfiguration'),
     NotificationConfiguration:
         require('./lib/models/NotificationConfiguration'),
+    ObjectMDAmzRestore:
+        require('./lib/models/ObjectMDAmzRestore'),
+    ObjectMDArchive:
+        require('./lib/models/ObjectMDArchive'),
 };
 
 export const pensieve = {
