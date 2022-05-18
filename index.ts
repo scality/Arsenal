@@ -20,6 +20,7 @@ import * as processMpuParts from './lib/s3middleware/processMpuParts';
 import * as retention from './lib/s3middleware/objectRetention';
 import * as lifecycleHelpers from './lib/s3middleware/lifecycleHelpers';
 export { default as errors } from './lib/errors';
+export { default as Clustering } from './lib/Clustering';
 export * as ipCheck from './lib/ipCheck';
 export * as auth from './lib/auth/auth';
 export * as constants from './lib/constants';
@@ -27,12 +28,12 @@ export * as https from './lib/https';
 export * as metrics from './lib/metrics';
 export * as network from './lib/network';
 export * as versioning from './lib/versioning';
+export * as stream from './lib/stream';
+export { default as shuffle } from './lib/shuffle';
 
 export const db = require('./lib/db');
-export const shuffle = require('./lib/shuffle');
 export const stringHash = require('./lib/stringHash');
 export const jsutil = require('./lib/jsutil');
-export const Clustering = require('./lib/Clustering');
 
 export const algorithms = {
     list: {
@@ -172,8 +173,4 @@ export const models = {
 
 export const pensieve = {
     credentialUtils: require('./lib/executables/pensieveCreds/utils'),
-};
-
-export const stream = {
-    readJSONStreamObject: require('./lib/stream/readJSONStreamObject'),
 };
