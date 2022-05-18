@@ -51,6 +51,32 @@ const sharedActionMap = {
     objectPutVersion: 's3:PutObjectVersion',
 };
 
+const actionBackbeatMapS3 = {
+    objectReplicate: 's3:ReplicateObject',
+    batchDelete: 's3:DeleteObject',
+    dataPut: 's3:PutData',
+    metadataPut: 's3:PutMetadata',
+    metadataGet: 's3:GetMetadata',
+    multipleBackendObjectPut: 's3:PutObject',
+    multipleBackendObjectDelete: 's3:DeleteObject',
+    multipleBackendObjectHead: 's3:HeadObject',
+    multipleBackendObjectPutPart: 's3:PutObject',
+    multipleBackendInitiateMPU: 's3:PutObject',
+    multipleBackendAbortMPU: 's3:AbortMultipartUpload',
+    multipleBackendCompleteMPU: 's3:PutObject',
+    multipleBackendPutObjectTagging: 's3:PutObjectTagging',
+    multipleBackendDeleteObjectTagging: 's3:DeleteObjectTagging',
+};
+
+const actionMetadataMapS3 = {
+    getRaftBuckets: 's3:GetRaftBuckets',
+    getRaftId: 's3:GetRaftId',
+    getRaftLog: 's3:GetRaftLog',
+    getBucketMetadata: 's3:GetBucketMetadata',
+    getObjectList: 's3:GetObjectList',
+    getBucketCseq: 's3:GetBucketCseq',
+};
+
 // action map used for request context
 const actionMapRQ = {
     bucketPut: 's3:CreateBucket',
@@ -72,10 +98,11 @@ const actionMapRQ = {
     objectPutPart: 's3:PutObject',
     objectPutTaggingVersion: 's3:PutObjectVersionTagging',
     serviceGet: 's3:ListAllMyBuckets',
-    objectReplicate: 's3:ReplicateObject',
     objectPutRetentionVersion: 's3:PutObjectVersionRetention',
     objectPutLegalHoldVersion: 's3:PutObjectVersionLegalHold',
     ...sharedActionMap,
+    ...actionBackbeatMapS3,
+    ...actionMetadataMapS3,
 };
 
 // action map used for bucket policies
