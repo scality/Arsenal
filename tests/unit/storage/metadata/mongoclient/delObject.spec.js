@@ -202,4 +202,25 @@ describe('MongoClientInterface:delObject', () => {
             return done();
         });
     });
+
+    it('repair:: should set correct originOp', done => {
+        const collection = {
+            findOneAndReplace: sinon.stub().callsArgWith(3, null, { ok: 1 }),
+        };
+        const master = {
+            versionId: '1234',
+        };
+        const objVal = {
+            originOp: 's3:ObjectCreated:Put',
+        };
+        client.repair(collection, 'example-bucket', 'example-object', objVal, master, 'v0', logger, () => {
+            assert.deepEqual(collection.findOneAndReplace.args[0][1], {
+                _id: 'example-object',
+                value: {
+                    originOp: 's3:ObjectRemoved:Delete',
+                },
+            });
+            return done();
+        });
+    });
 });

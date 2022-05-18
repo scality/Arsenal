@@ -4,6 +4,7 @@ import RequestContext from './lib/policyEvaluator/RequestContext';
 import * as requestUtils from './lib/policyEvaluator/requestUtils';
 import * as actionMaps from './lib/policyEvaluator/utils/actionMaps';
 import { validateUserPolicy } from './lib/policy/policyValidator'
+import * as locationConstraints from './lib/patches/locationConstraints';
 import * as userMetadata from './lib/s3middleware/userMetadata';
 import convertToXml from './lib/s3middleware/convertToXml';
 import escapeForXml from './lib/s3middleware/escapeForXml';
@@ -20,8 +21,10 @@ import SubStreamInterface from './lib/s3middleware/azureHelpers/SubStreamInterfa
 import { prepareStream } from './lib/s3middleware/prepareStream';
 import * as processMpuParts from './lib/s3middleware/processMpuParts';
 import * as retention from './lib/s3middleware/objectRetention';
+import * as objectRestore from './lib/s3middleware/objectRestore';
 import * as lifecycleHelpers from './lib/s3middleware/lifecycleHelpers';
 export { default as errors } from './lib/errors';
+export { default as Clustering } from './lib/Clustering';
 export * as ipCheck from './lib/ipCheck';
 export * as auth from './lib/auth/auth';
 export * as constants from './lib/constants';
@@ -29,13 +32,13 @@ export * as https from './lib/https';
 export * as metrics from './lib/metrics';
 export * as network from './lib/network';
 export * as versioning from './lib/versioning';
+export * as stream from './lib/stream';
+export * as errorUtils from './lib/errorUtils';
+export { default as shuffle } from './lib/shuffle';
 
 export const db = require('./lib/db');
-export const errorUtils = require('./lib/errorUtils');
-export const shuffle = require('./lib/shuffle');
 export const stringHash = require('./lib/stringHash');
 export const jsutil = require('./lib/jsutil');
-export const Clustering = require('./lib/Clustering');
 
 export const algorithms = {
     list: require('./lib/algos/list/exportAlgos'),
@@ -89,6 +92,7 @@ export const s3middleware = {
     prepareStream,
     processMpuParts,
     retention,
+    objectRestore,
     lifecycleHelpers,
 };
 
@@ -175,16 +179,16 @@ export const models = {
         require('./lib/models/ObjectLockConfiguration'),
     NotificationConfiguration:
         require('./lib/models/NotificationConfiguration'),
+    ObjectMDAmzRestore:
+        require('./lib/models/ObjectMDAmzRestore'),
+    ObjectMDArchive:
+        require('./lib/models/ObjectMDArchive'),
 };
 
 export const pensieve = {
     credentialUtils: require('./lib/executables/pensieveCreds/utils'),
 };
 
-export const stream = {
-    readJSONStreamObject: require('./lib/stream/readJSONStreamObject'),
-};
-
 export const patches = {
-    locationConstraints: require('./lib/patches/locationConstraints'),
+    locationConstraints,
 };
