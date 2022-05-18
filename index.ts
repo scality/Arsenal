@@ -29,8 +29,8 @@ export * as metrics from './lib/metrics';
 export * as network from './lib/network';
 export * as stream from './lib/stream';
 export * as db from './lib/db';
+export { default as shuffle } from './lib/shuffle';
 
-export const shuffle = require('./lib/shuffle');
 export const stringHash = require('./lib/stringHash');
 export const jsutil = require('./lib/jsutil');
 
