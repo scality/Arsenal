@@ -1,11 +1,11 @@
-const assert = require('assert');
-const UUID = require('uuid');
+import assert from 'assert';
+import UUID from 'uuid';
 
-const {
+import {
     supportedNotificationEvents,
     notificationArnPrefix,
-} = require('../constants');
-const errors = require('../errors').default;
+} from '../constants';
+import errors, { ArsenalError } from '../errors';
 
 /**
  * Format of xml request:
@@ -51,21 +51,27 @@ const errors = require('../errors').default;
   * }
   */
 
-class NotificationConfiguration {
+export default class NotificationConfiguration {
+    _parsedXml: any;
+    _config: {
+        error?: ArsenalError;
+        queueConfig?: any[];
+    };
+    _ids: Set<string>;
     /**
      * Create a Notification Configuration instance
-     * @param {string} xml - parsed configuration xml
-     * @return {object} - NotificationConfiguration instance
+     * @param xml - parsed configuration xml
+     * @return - NotificationConfiguration instance
      */
-    constructor(xml) {
+    constructor(xml: any) {
         this._parsedXml = xml;
         this._config = {};
-        this._ids = new Set([]);
+        this._ids = new Set();
     }
 
     /**
      * Get notification configuration
-     * @return {object} - contains error if parsing failed
+     * @return - contains error if parsing failed
      */
     getValidatedNotificationConfiguration() {
         const validationError = this._parseNotificationConfig();
@@ -77,7 +83,7 @@ class NotificationConfiguration {
 
     /**
      * Check that notification configuration is valid
-     * @return {error | null} - error if parsing failed, else undefined
+     * @return - error if parsing failed, else undefined
      */
     _parseNotificationConfig() {
         if (!this._parsedXml || this._parsedXml === '') {
@@ -95,19 +101,19 @@ class NotificationConfiguration {
             return null;
         }
         this._config.queueConfig = [];
-        let parseError;
+        let parseError: ArsenalError | undefined;
         for (let i = 0; i < queueConfig.length; i++) {
             const eventObj = this._parseEvents(queueConfig[i].Event);
             const filterObj = this._parseFilter(queueConfig[i].Filter);
             const idObj = this._parseId(queueConfig[i].Id);
             const arnObj = this._parseArn(queueConfig[i].Queue);
 
-            if (eventObj.error) {
+            if ('error' in eventObj) {
                 parseError = eventObj.error;
                 this._config = {};
                 break;
             }
-            if (filterObj.error) {
+            if ('error' in filterObj) {
                 parseError = filterObj.error;
                 this._config = {};
                 break;
@@ -129,42 +135,43 @@ class NotificationConfiguration {
                 filterRules: filterObj.filterRules,
             });
         }
-        return parseError;
+        return parseError ?? null;
     }
 
     /**
      * Check that events array is valid
-     * @param {array} events - event array
-     * @return {object} - contains error if parsing failed or events array
+     * @param events - event array
+     * @return - contains error if parsing failed or events array
      */
-    _parseEvents(events) {
-        const eventsObj = {
-            events: [],
-        };
+    _parseEvents(events: any[]) {
         if (!events || !events[0]) {
-            eventsObj.error = errors.MalformedXML.customizeDescription(
-                'each queue configuration must contain an event');
-            return eventsObj;
+            const msg = 'each queue configuration must contain an event';
+            const error = errors.MalformedXML.customizeDescription(msg);
+            return { error };
         }
-        events.forEach(e => {
+        const eventsObj: { error?: ArsenalError, events: any[] } = {
+            events: [] as any[],
+        };
+        for (const e of events) {
             if (!supportedNotificationEvents.has(e)) {
-                eventsObj.error = errors.MalformedXML.customizeDescription(
-                    'event array contains invalid or unsupported event');
+                const msg = 'event array contains invalid or unsupported event';
+                const error = errors.MalformedXML.customizeDescription(msg);
+                return { error };
             } else {
                 eventsObj.events.push(e);
             }
-        });
+        }
         return eventsObj;
     }
 
     /**
      * Check that filter array is valid
-     * @param {array} filter - filter array
-     * @return {object} - contains error if parsing failed or filter array
+     * @param filter - filter array
+     * @return - contains error if parsing failed or filter array
      */
-    _parseFilter(filter) {
+    _parseFilter(filter: any[]) {
         if (!filter || !filter[0]) {
-            return {};
+            return { filterRules: [] };
         }
         if (!filter[0].S3Key || !filter[0].S3Key[0]) {
             return { error: errors.MalformedXML.customizeDescription(
@@ -175,7 +182,7 @@ class NotificationConfiguration {
             return { error: errors.MalformedXML.customizeDescription(
                 'if included, queue configuration filter must contain a rule') };
         }
-        const filterObj = {
+        const filterObj: { filterRules: { name: string; value: string }[] } = {
             filterRules: [],
         };
         const ruleArray = filterRules.FilterRule;
@@ -201,15 +208,15 @@ class NotificationConfiguration {
 
     /**
      * Check that id string is valid
-     * @param {string} id - id string (optional)
-     * @return {object} - contains error if parsing failed or id
+     * @param id - id string (optional)
+     * @return - contains error if parsing failed or id
      */
-    _parseId(id) {
+    _parseId(id: string) {
         if (id && id[0].length > 255) {
             return { error: errors.InvalidArgument.customizeDescription(
                 'queue configuration ID is greater than 255 characters long') };
         }
-        let validId;
+        let validId: string;
         if (!id || !id[0]) {
             // id is optional property, so create one if not provided or is ''
             // We generate 48-character alphanumeric, unique id for rule
@@ -228,10 +235,10 @@ class NotificationConfiguration {
 
     /**
      * Check that arn string is valid
-     * @param {string} arn - queue arn
-     * @return {object} - contains error if parsing failed or queue arn
+     * @param arn - queue arn
+     * @return - contains error if parsing failed or queue arn
      */
-    _parseArn(arn) {
+    _parseArn(arn: string) {
         if (!arn || !arn[0]) {
             return { error: errors.MalformedXML.customizeDescription(
                 'each queue configuration must contain a queue arn'),
@@ -249,11 +256,21 @@ class NotificationConfiguration {
 
     /**
      * Get XML representation of notification configuration object
-     * @param {object} config - notification configuration object
-     * @return {string} - XML representation of config
+     * @param config - notification configuration object
+     * @return - XML representation of config
      */
-    static getConfigXML(config) {
-        const xmlArray = [];
+    static getConfigXML(config: {
+        queueConfig: {
+            id: string;
+            events: string[];
+            queueArn: string;
+            filterRules: {
+                name: string;
+                value: string;
+            }[];
+        }[];
+    }) {
+        const xmlArray: string[] = [];
         if (config && config.queueConfig) {
             config.queueConfig.forEach(c => {
                 xmlArray.push('<QueueConfiguration>');
@@ -284,20 +301,19 @@ class NotificationConfiguration {
     /**
      * Validate the bucket metadata notification configuration structure and
      * value types
-     * @param {object} config - The notificationconfiguration to validate
-     * @return {undefined}
+     * @param config - The notificationconfiguration to validate
      */
-    static validateConfig(config) {
+    static validateConfig(config: any) {
         assert.strictEqual(typeof config, 'object');
         if (!config.queueConfig) {
             return;
         }
-        config.queueConfig.forEach(q => {
+        config.queueConfig.forEach((q: any) => {
             const { events, queueArn, filterRules, id } = q;
-            events.forEach(e => assert.strictEqual(typeof e, 'string'));
+            events.forEach((e: any) => assert.strictEqual(typeof e, 'string'));
             assert.strictEqual(typeof queueArn, 'string');
             if (filterRules) {
-                filterRules.forEach(f => {
+                filterRules.forEach((f: any) => {
                     assert.strictEqual(typeof f.name, 'string');
                     assert.strictEqual(typeof f.value, 'string');
                 });
@@ -307,5 +323,3 @@ class NotificationConfiguration {
         return;
     }
 }
-
-module.exports = NotificationConfiguration;
