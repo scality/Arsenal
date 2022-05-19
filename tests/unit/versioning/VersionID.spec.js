@@ -23,6 +23,16 @@ function generateRandomVIDs(count) {
 const count = 1000000;
 
 describe('test generating versionIds', () => {
+    describe('invalid IDs', () => {
+        // A client can use the CLI to send requests with arbitrary version IDs.
+        // These IDs may contain invalid characters and should be handled gracefully.
+        it.only('should return an error when an ID has unsupported characters', () => {
+            const encoded = 'wHtI53.S4ApsYLRI5VZZ3Iw.7ny4NgQz';
+            const decoded = VID.decode(encoded);
+            assert(decoded instanceof Error);
+            assert.strictEqual(decoded.message, 'Non-base62 character');
+        });
+    });
     describe('legaxy hex encoding', () => {
         env.S3_VERSION_ID_ENCODING_TYPE = 'hex';
         const vids = generateRandomVIDs(count);

@@ -8,7 +8,6 @@
 
 import base62Integer from 'base62';
 import baseX from 'base-x';
-import assert from 'assert/strict';
 const BASE62 = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const base62String = baseX(BASE62);
 
@@ -276,8 +275,8 @@ export function decode(str: string): string | Error {
     // default format is exactly 32 characters when encoded
     if (str.length === 32) {
         const decoded = base62Decode(str);
-        if (typeof decoded === 'string') {
-            assert.strictEqual(decoded.length, 27);
+        if (typeof decoded === 'string' && decoded.length !== 27) {
+            return new Error(`decoded ${str} is not length 27`);
         }
         return decoded;
     }
