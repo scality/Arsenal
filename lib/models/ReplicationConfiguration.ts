@@ -1,17 +1,14 @@
-const assert = require('assert');
-const UUID = require('uuid');
+import assert from 'assert';
+import UUID from 'uuid';
 
-const escapeForXml = require('../s3middleware/escapeForXml').default;
-const errors = require('../errors').default;
-const { isValidBucketName } = require('../s3routes/routesUtils');
+import escapeForXml from '../s3middleware/escapeForXml';
+import errors from '../errors';
+import { isValidBucketName } from '../s3routes/routesUtils';
+import { Status } from './LifecycleRule';
 
 const MAX_RULES = 1000;
 const RULE_ID_LIMIT = 255;
-const validStorageClasses = [
-    'STANDARD',
-    'STANDARD_IA',
-    'REDUCED_REDUNDANCY',
-];
+const validStorageClasses = ['STANDARD', 'STANDARD_IA', 'REDUCED_REDUNDANCY'];
 
 /**
     Example XML request:
@@ -37,15 +34,44 @@ const validStorageClasses = [
     </ReplicationConfiguration>
 */
 
-class ReplicationConfiguration {
+export type Rule = {
+    prefix: string;
+    enabled: boolean;
+    id: string;
+    storageClass?: any;
+};
+
+export type Destination = { StorageClass: string[]; Bucket: string };
+export type XMLRule = {
+    Prefix: string[];
+    Status: Status[];
+    ID?: string[];
+    Destination: Destination[];
+    Transition?: any[];
+    NoncurrentVersionTransition?: any[];
+    Filter?: string;
+};
+
+export default class ReplicationConfiguration {
+    _parsedXML: any;
+    _log: RequestLogger;
+    _config: any;
+    _configPrefixes: string[];
+    _configIDs: string[];
+    _role: string | null;
+    _destination: string | null;
+    _rules: Rule[] | null;
+    _prevStorageClass: null;
+    _hasScalityDestination: boolean;
+
     /**
      * Create a ReplicationConfiguration instance
-     * @param {string} xml - The parsed XML
-     * @param {object} log - Werelogs logger
-     * @param {object} config - S3 server configuration
-     * @return {object} - ReplicationConfiguration instance
+     * @param xml - The parsed XML
+     * @param log - Werelogs logger
+     * @param config - S3 server configuration
+     * @return - ReplicationConfiguration instance
      */
-    constructor(xml, log, config) {
+    constructor(xml: any, log: RequestLogger, config: any) {
         this._parsedXML = xml;
         this._log = log;
         this._config = config;
@@ -58,12 +84,12 @@ class ReplicationConfiguration {
         this._destination = null;
         this._rules = null;
         this._prevStorageClass = null;
-        this._hasScalityDestination = null;
+        this._hasScalityDestination = false;
     }
 
     /**
      * Get the role of the bucket replication configuration
-     * @return {string|null} - The role if defined, otherwise `null`
+     * @return - The role if defined, otherwise `null`
      */
     getRole() {
         return this._role;
@@ -71,7 +97,7 @@ class ReplicationConfiguration {
 
     /**
      * The bucket to replicate data to
-     * @return {string|null} - The bucket if defined, otherwise `null`
+     * @return - The bucket if defined, otherwise `null`
      */
     getDestination() {
         return this._destination;
@@ -79,7 +105,7 @@ class ReplicationConfiguration {
 
     /**
      * The rules for replication configuration
-     * @return {string|null} - The rules if defined, otherwise `null`
+     * @return - The rules if defined, otherwise `null`
      */
     getRules() {
         return this._rules;
@@ -87,7 +113,7 @@ class ReplicationConfiguration {
 
     /**
      * Get the replication configuration
-     * @return {object} - The replication configuration
+     * @return - The replication configuration
      */
     getReplicationConfiguration() {
         return {
@@ -99,18 +125,22 @@ class ReplicationConfiguration {
 
     /**
      * Build the rule object from the parsed XML of the given rule
-     * @param {object} rule - The rule object from this._parsedXML
-     * @return {object} - The rule object to push into the `Rules` array
+     * @param rule - The rule object from this._parsedXML
+     * @return - The rule object to push into the `Rules` array
      */
-    _buildRuleObject(rule) {
-        const obj = {
+    _buildRuleObject(rule: XMLRule) {
+        const base = {
+            id: '',
             prefix: rule.Prefix[0],
             enabled: rule.Status[0] === 'Enabled',
         };
+        const obj: Rule = { ...base };
         // ID is an optional property, but create one if not provided or is ''.
         // We generate a 48-character alphanumeric, unique ID for the rule.
-        obj.id = rule.ID && rule.ID[0] !== '' ? rule.ID[0] :
-            Buffer.from(UUID.v4()).toString('base64');
+        obj.id =
+            rule.ID && rule.ID[0] !== ''
+                ? rule.ID[0]
+                : Buffer.from(UUID.v4()).toString('base64');
         // StorageClass is an optional property.
         if (rule.Destination[0].StorageClass) {
             obj.storageClass = rule.Destination[0].StorageClass[0];
@@ -120,10 +150,10 @@ class ReplicationConfiguration {
 
     /**
      * Check if the Role field of the replication configuration is valid
-     * @param {string} ARN - The Role field value provided in the configuration
-     * @return {boolean} `true` if a valid role ARN, `false` otherwise
+     * @param ARN - The Role field value provided in the configuration
+     * @return `true` if a valid role ARN, `false` otherwise
      */
-    _isValidRoleARN(ARN) {
+    _isValidRoleARN(ARN: string) {
         // AWS accepts a range of values for the Role field. Though this does
         // not encompass all constraints imposed by AWS, we have opted to
         // enforce the following.
@@ -140,30 +170,32 @@ class ReplicationConfiguration {
 
     /**
      * Check that the `Role` property of the configuration is valid
-     * @return {undefined}
      */
     _parseRole() {
         const parsedRole = this._parsedXML.ReplicationConfiguration.Role;
         if (!parsedRole) {
             return errors.MalformedXML;
         }
-        const role = parsedRole[0];
+        const role: string = parsedRole[0];
         const rolesArr = role.split(',');
         if (this._hasScalityDestination && rolesArr.length !== 2) {
             return errors.InvalidArgument.customizeDescription(
                 'Invalid Role specified in replication configuration: ' +
-                'Role must be a comma-separated list of two IAM roles');
+                    'Role must be a comma-separated list of two IAM roles'
+            );
         }
         if (!this._hasScalityDestination && rolesArr.length > 1) {
             return errors.InvalidArgument.customizeDescription(
                 'Invalid Role specified in replication configuration: ' +
-                'Role may not contain a comma separator');
+                    'Role may not contain a comma separator'
+            );
         }
-        const invalidRole = rolesArr.find(r => !this._isValidRoleARN(r));
+        const invalidRole = rolesArr.find((r) => !this._isValidRoleARN(r));
         if (invalidRole !== undefined) {
             return errors.InvalidArgument.customizeDescription(
                 'Invalid Role specified in replication configuration: ' +
-                `'${invalidRole}'`);
+                    `'${invalidRole}'`
+            );
         }
         this._role = role;
         return undefined;
@@ -171,7 +203,6 @@ class ReplicationConfiguration {
 
     /**
      * Check that the `Rules` property array is valid
-     * @return {undefined}
      */
     _parseRules() {
         // Note that the XML uses 'Rule' while the config object uses 'Rules'.
@@ -181,7 +212,8 @@ class ReplicationConfiguration {
         }
         if (Rule.length > MAX_RULES) {
             return errors.InvalidRequest.customizeDescription(
-                'Number of defined replication rules cannot exceed 1000');
+                'Number of defined replication rules cannot exceed 1000'
+            );
         }
         const err = this._parseEachRule(Rule);
         if (err) {
@@ -192,15 +224,16 @@ class ReplicationConfiguration {
 
     /**
      * Check that each rule in the `Rules` property array is valid
-     * @param {array} rules - The rule array from this._parsedXML
-     * @return {undefined}
+     * @param rules - The rule array from this._parsedXML
      */
-    _parseEachRule(rules) {
-        const rulesArr = [];
+    _parseEachRule(rules: XMLRule[]) {
+        const rulesArr: Rule[] = [];
         for (let i = 0; i < rules.length; i++) {
             const err =
-                this._parseStatus(rules[i]) || this._parsePrefix(rules[i]) ||
-                this._parseID(rules[i]) || this._parseDestination(rules[i]);
+                this._parseStatus(rules[i]) ||
+                this._parsePrefix(rules[i]) ||
+                this._parseID(rules[i]) ||
+                this._parseDestination(rules[i]);
             if (err) {
                 return err;
             }
@@ -212,10 +245,9 @@ class ReplicationConfiguration {
 
     /**
      * Check that the `Status` property is valid
-     * @param {object} rule - The rule object from this._parsedXML
-     * @return {undefined}
+     * @param rule - The rule object from this._parsedXML
      */
-    _parseStatus(rule) {
+    _parseStatus(rule: XMLRule) {
         const status = rule.Status && rule.Status[0];
         if (!status || !['Enabled', 'Disabled'].includes(status)) {
             return errors.MalformedXML;
@@ -225,18 +257,19 @@ class ReplicationConfiguration {
 
     /**
      * Check that the `Prefix` property is valid
-     * @param {object} rule - The rule object from this._parsedXML
-     * @return {undefined}
+     * @param rule - The rule object from this._parsedXML
      */
-    _parsePrefix(rule) {
+    _parsePrefix(rule: XMLRule) {
         const prefix = rule.Prefix && rule.Prefix[0];
         // An empty string prefix should be allowed.
         if (!prefix && prefix !== '') {
             return errors.MalformedXML;
         }
         if (prefix.length > 1024) {
-            return errors.InvalidArgument.customizeDescription('Rule prefix ' +
-                'cannot be longer than maximum allowed key length of 1024');
+            return errors.InvalidArgument.customizeDescription(
+                'Rule prefix ' +
+                    'cannot be longer than maximum allowed key length of 1024'
+            );
         }
         // Each Prefix in a list of rules must not overlap. For example, two
         // prefixes 'TaxDocs' and 'TaxDocs/2015' are overlapping. An empty
@@ -244,8 +277,9 @@ class ReplicationConfiguration {
         for (let i = 0; i < this._configPrefixes.length; i++) {
             const used = this._configPrefixes[i];
             if (prefix.startsWith(used) || used.startsWith(prefix)) {
-                return errors.InvalidRequest.customizeDescription('Found ' +
-                    `overlapping prefixes '${used}' and '${prefix}'`);
+                return errors.InvalidRequest.customizeDescription(
+                    'Found ' + `overlapping prefixes '${used}' and '${prefix}'`
+                );
             }
         }
         this._configPrefixes.push(prefix);
@@ -254,19 +288,20 @@ class ReplicationConfiguration {
 
     /**
      * Check that the `ID` property is valid
-     * @param {object} rule - The rule object from this._parsedXML
-     * @return {undefined}
+     * @param rule - The rule object from this._parsedXML
      */
-    _parseID(rule) {
+    _parseID(rule: XMLRule) {
         const id = rule.ID && rule.ID[0];
         if (id && id.length > RULE_ID_LIMIT) {
-            return errors.InvalidArgument
-                .customizeDescription('Rule Id cannot be greater than 255');
+            return errors.InvalidArgument.customizeDescription(
+                'Rule Id cannot be greater than 255'
+            );
         }
         // Each ID in a list of rules must be unique.
-        if (this._configIDs.includes(id)) {
+        if (id && this._configIDs.includes(id)) {
             return errors.InvalidRequest.customizeDescription(
-                'Rule Id must be unique');
+                'Rule Id must be unique'
+            );
         }
         if (id !== undefined) {
             this._configIDs.push(id);
@@ -276,15 +311,14 @@ class ReplicationConfiguration {
 
     /**
      * Check that the `StorageClass` property is valid
-     * @param {object} destination - The destination object from this._parsedXML
-     * @return {undefined}
+     * @param destination - The destination object from this._parsedXML
      */
-    _parseStorageClass(destination) {
+    _parseStorageClass(destination: Destination) {
         const { replicationEndpoints } = this._config;
         // The only condition where the default endpoint is possibly undefined
         // is if there is only a single replication endpoint.
         const defaultEndpoint =
-            replicationEndpoints.find(endpoint => endpoint.default) ||
+            replicationEndpoints.find((endpoint: any) => endpoint.default) ||
             replicationEndpoints[0];
         // StorageClass is optional.
         if (destination.StorageClass === undefined) {
@@ -292,14 +326,15 @@ class ReplicationConfiguration {
             return undefined;
         }
         const storageClasses = destination.StorageClass[0].split(',');
-        const isValidStorageClass = storageClasses.every(storageClass => {
+        const isValidStorageClass = storageClasses.every((storageClass) => {
             if (validStorageClasses.includes(storageClass)) {
                 this._hasScalityDestination =
                     defaultEndpoint.type === undefined;
                 return true;
             }
-            const endpoint = replicationEndpoints.find(endpoint =>
-                endpoint.site === storageClass);
+            const endpoint = replicationEndpoints.find(
+                (endpoint: any) => endpoint.site === storageClass
+            );
             if (endpoint) {
                 // If this._hasScalityDestination was not set to true in any
                 // previous iteration or by a prior rule's storage class, then
@@ -321,10 +356,9 @@ class ReplicationConfiguration {
 
     /**
      * Check that the `Bucket` property is valid
-     * @param {object} destination - The destination object from this._parsedXML
-     * @return {undefined}
+     * @param destination - The destination object from this._parsedXML
      */
-    _parseBucket(destination) {
+    _parseBucket(destination: Destination) {
         const parsedBucketARN = destination.Bucket;
         // If there is no Scality destination, we get the destination bucket
         // from the location configuration.
@@ -337,7 +371,8 @@ class ReplicationConfiguration {
         const bucketARN = parsedBucketARN[0];
         if (!bucketARN) {
             return errors.InvalidArgument.customizeDescription(
-                'Destination bucket cannot be null or empty');
+                'Destination bucket cannot be null or empty'
+            );
         }
         const arr = bucketARN.split(':');
         const isValidARN =
@@ -347,17 +382,20 @@ class ReplicationConfiguration {
             arr[3] === '' &&
             arr[4] === '';
         if (!isValidARN) {
-            return errors.InvalidArgument
-                .customizeDescription('Invalid bucket ARN');
+            return errors.InvalidArgument.customizeDescription(
+                'Invalid bucket ARN'
+            );
         }
         if (!isValidBucketName(arr[5], [])) {
-            return errors.InvalidArgument
-                .customizeDescription('The specified bucket is not valid');
+            return errors.InvalidArgument.customizeDescription(
+                'The specified bucket is not valid'
+            );
         }
         // We can replicate objects only to one destination bucket.
         if (this._destination && this._destination !== bucketARN) {
             return errors.InvalidRequest.customizeDescription(
-                'The destination bucket must be same for all rules');
+                'The destination bucket must be same for all rules'
+            );
         }
         this._destination = bucketARN;
         return undefined;
@@ -365,10 +403,9 @@ class ReplicationConfiguration {
 
     /**
      * Check that the `destination` property is valid
-     * @param {object} rule - The rule object from this._parsedXML
-     * @return {undefined}
+     * @param rule - The rule object from this._parsedXML
      */
-    _parseDestination(rule) {
+    _parseDestination(rule: XMLRule) {
         const dest = rule.Destination && rule.Destination[0];
         if (!dest) {
             return errors.MalformedXML;
@@ -382,7 +419,6 @@ class ReplicationConfiguration {
 
     /**
      * Check that the request configuration is valid
-     * @return {undefined}
      */
     parseConfiguration() {
         const err = this._parseRules();
@@ -394,48 +430,62 @@ class ReplicationConfiguration {
 
     /**
      * Get the XML representation of the configuration object
-     * @param {object} config - The bucket replication configuration
-     * @return {string} - The XML representation of the configuration
+     * @param config - The bucket replication configuration
+     * @return - The XML representation of the configuration
      */
-    static getConfigXML(config) {
+    static getConfigXML(config: {
+        role: string;
+        destination: string;
+        rules: Rule[];
+    }) {
         const { role, destination, rules } = config;
         const Role = `<Role>${escapeForXml(role)}</Role>`;
         const Bucket = `<Bucket>${escapeForXml(destination)}</Bucket>`;
-        const rulesXML = rules.map(rule => {
-            const { prefix, enabled, storageClass, id } = rule;
-            const Prefix = prefix === '' ? '<Prefix/>' :
-                `<Prefix>${escapeForXml(prefix)}</Prefix>`;
-            const Status =
-                `<Status>${enabled ? 'Enabled' : 'Disabled'}</Status>`;
-            const StorageClass = storageClass ?
-                `<StorageClass>${storageClass}</StorageClass>` : '';
-            const Destination =
-                `<Destination>${Bucket}${StorageClass}</Destination>`;
-            // If the ID property was omitted in the configuration object, we
-            // create an ID for the rule. Hence it is always defined.
-            const ID = `<ID>${escapeForXml(id)}</ID>`;
-            return `<Rule>${ID}${Prefix}${Status}${Destination}</Rule>`;
-        }).join('');
-        return '<?xml version="1.0" encoding="UTF-8"?>' +
+        const rulesXML = rules
+            .map((rule) => {
+                const { prefix, enabled, storageClass, id } = rule;
+                const Prefix =
+                    prefix === ''
+                        ? '<Prefix/>'
+                        : `<Prefix>${escapeForXml(prefix)}</Prefix>`;
+                const Status = `<Status>${
+                    enabled ? 'Enabled' : 'Disabled'
+                }</Status>`;
+                const StorageClass = storageClass
+                    ? `<StorageClass>${storageClass}</StorageClass>`
+                    : '';
+                const Destination = `<Destination>${Bucket}${StorageClass}</Destination>`;
+                // If the ID property was omitted in the configuration object, we
+                // create an ID for the rule. Hence it is always defined.
+                const ID = `<ID>${escapeForXml(id)}</ID>`;
+                return `<Rule>${ID}${Prefix}${Status}${Destination}</Rule>`;
+            })
+            .join('');
+        return (
+            '<?xml version="1.0" encoding="UTF-8"?>' +
             '<ReplicationConfiguration ' +
-                'xmlns="http://s3.amazonaws.com/doc/2006-03-01/">' +
-                `${rulesXML}${Role}` +
-            '</ReplicationConfiguration>';
+            'xmlns="http://s3.amazonaws.com/doc/2006-03-01/">' +
+            `${rulesXML}${Role}` +
+            '</ReplicationConfiguration>'
+        );
     }
 
     /**
      * Validate the bucket metadata replication configuration structure and
      * value types
-     * @param {object} config - The replication configuration to validate
-     * @return {undefined}
+     * @param config - The replication configuration to validate
      */
-    static validateConfig(config) {
+    static validateConfig(config: {
+        role: string;
+        destination: string;
+        rules: Rule[];
+    }) {
         assert.strictEqual(typeof config, 'object');
         const { role, rules, destination } = config;
         assert.strictEqual(typeof role, 'string');
         assert.strictEqual(typeof destination, 'string');
         assert.strictEqual(Array.isArray(rules), true);
-        rules.forEach(rule => {
+        rules.forEach((rule) => {
             assert.strictEqual(typeof rule, 'object');
             const { prefix, enabled, id, storageClass } = rule;
             assert.strictEqual(typeof prefix, 'string');
@@ -447,5 +497,3 @@ class ReplicationConfiguration {
         });
     }
 }
-
-module.exports = ReplicationConfiguration;
