@@ -31,6 +31,7 @@ export * as constants from './lib/constants';
 export * as https from './lib/https';
 export * as metrics from './lib/metrics';
 export * as network from './lib/network';
+export * as versioning from './lib/versioning';
 export * as stream from './lib/stream';
 export * as jsutil from './lib/jsutil';
 export { default as stringHash } from './lib/stringHash';
@@ -64,15 +65,6 @@ export const policies = {
 
 export const testing = {
     matrix: require('./lib/testing/matrix.js'),
-};
-
-export const versioning = {
-    VersioningConstants: require('./lib/versioning/constants.js').VersioningConstants,
-    Version: require('./lib/versioning/Version.js').Version,
-    VersionID: require('./lib/versioning/VersionID.js'),
-    WriteGatheringManager: require('./lib/versioning/WriteGatheringManager.js'),
-    WriteCache: require('./lib/versioning/WriteCache.js'),
-    VersioningRequestProcessor: require('./lib/versioning/VersioningRequestProcessor.js'),
 };
 
 export const s3routes = {
