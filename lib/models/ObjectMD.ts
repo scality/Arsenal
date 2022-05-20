@@ -1,5 +1,5 @@
 import * as constants from '../constants';
-import VersionIDUtils from '../versioning/VersionID';
+import * as VersionIDUtils from '../versioning/VersionID';
 import ObjectMDLocation, {
     ObjectMDLocationData,
     Location,
