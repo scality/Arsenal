@@ -7,8 +7,8 @@ const NotificationConfiguration =
 function checkError(parsedXml, err, errMessage, cb) {
     const config = new NotificationConfiguration(parsedXml).
         getValidatedNotificationConfiguration();
-    expect(config.error?.is[err]).toBeTruthy();
-    expect(config.error?.description).toEqual(errMessage);
+    expect(config.error.is[err]).toBeTruthy();
+    expect(config.error.description).toEqual(errMessage);
     cb();
 }
 
