@@ -2,13 +2,13 @@ const assert = require('assert');
 const { parseString } = require('xml2js');
 
 const NotificationConfiguration =
-    require('../../../lib/models/NotificationConfiguration.js');
+    require('../../../lib/models/NotificationConfiguration').default;
 
 function checkError(parsedXml, err, errMessage, cb) {
     const config = new NotificationConfiguration(parsedXml).
         getValidatedNotificationConfiguration();
-    assert.strictEqual(config.error.is[err], true);
-    assert.strictEqual(config.error.description, errMessage);
+    expect(config.error?.is[err]).toBeTruthy();
+    expect(config.error?.description).toEqual(errMessage);
     cb();
 }
 

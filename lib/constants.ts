@@ -114,6 +114,7 @@ export const versioningNotImplBackends = { azure: true, gcp: true };
 export const zenkoIDHeader = 'x-amz-meta-zenko-instance-id';
 // Default expiration value of the S3 pre-signed URL duration
 // 604800 seconds (seven days).
+export const legacyLocations = ['sproxyd', 'legacy'];
 export const defaultPreSignedURLExpiry = 7 * 24 * 60 * 60;
 // Regex for ISO-8601 formatted date
 export const shortIso8601Regex = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z/;

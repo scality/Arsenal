@@ -8,7 +8,7 @@ const AzureClient =
     require('../../../../../lib/storage/data/external/AzureClient');
 const DummyService = require('../DummyService');
 const { DummyRequestLogger } = require('../../../helpers');
-const BucketInfo = require('../../../../../lib/models/BucketInfo');
+const BucketInfo = require('../../../../../lib/models/BucketInfo').default;
 
 const backendClients = [
     {

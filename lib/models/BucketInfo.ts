@@ -1,19 +1,66 @@
-const assert = require('assert');
-const uuid = require('uuid/v4');
+import assert from 'assert';
+import uuid from 'uuid/v4';
 
-const { WebsiteConfiguration } = require('./WebsiteConfiguration');
-const ReplicationConfiguration = require('./ReplicationConfiguration');
-const LifecycleConfiguration = require('./LifecycleConfiguration');
-const ObjectLockConfiguration = require('./ObjectLockConfiguration');
-const BucketPolicy = require('./BucketPolicy');
-const NotificationConfiguration = require('./NotificationConfiguration');
+import { WebsiteConfiguration } from './WebsiteConfiguration';
+import ReplicationConfiguration from './ReplicationConfiguration';
+import LifecycleConfiguration from './LifecycleConfiguration';
+import ObjectLockConfiguration from './ObjectLockConfiguration';
+import BucketPolicy from './BucketPolicy';
+import NotificationConfiguration from './NotificationConfiguration';
+import { ACL as OACL } from './ObjectMD';
 
 // WHEN UPDATING THIS NUMBER, UPDATE BucketInfoModelVersion.md CHANGELOG
 // BucketInfoModelVersion.md can be found in documentation/ at the root
 // of this repository
 const modelVersion = 14;
 
-class BucketInfo {
+export type CORS = {
+    id: string;
+    allowedMethods: string[];
+    allowedOrigins: string[];
+    allowedHeaders: string[];
+    maxAgeSeconds: number;
+    exposeHeaders: string[];
+}[];
+
+export type SSE = {
+    cryptoScheme: number;
+    algorithm: string;
+    masterKeyId: string;
+    configuredMasterKeyId: string;
+    mandatory: boolean;
+};
+
+export type VersioningConfiguration = {
+    Status: string;
+    MfaDelete: any;
+};
+
+export type ACL = OACL & { WRITE: string[] }
+
+export default class BucketInfo {
+    _acl: ACL;
+    _name: string;
+    _owner: string;
+    _ownerDisplayName: string;
+    _creationDate: string;
+    _mdBucketModelVersion: number;
+    _transient: boolean;
+    _deleted: boolean;
+    _serverSideEncryption: SSE;
+    _versioningConfiguration: VersioningConfiguration;
+    _locationConstraint: string | null;
+    _websiteConfiguration?: WebsiteConfiguration | null;
+    _cors: CORS | null;
+    _replicationConfiguration?: any;
+    _lifecycleConfiguration?: any;
+    _bucketPolicy?: any;
+    _uid?: string;
+    _objectLockEnabled?: boolean;
+    _objectLockConfiguration?: any;
+    _notificationConfiguration?: any;
+    _tags?: { key: string; value: string }[] | null;
+
     /**
     * Represents all bucket information.
     * @constructor
@@ -68,14 +115,32 @@ class BucketInfo {
     * @param {object} [objectLockConfiguration] - object lock configuration
     * @param {object} [notificationConfiguration] - bucket notification configuration
     */
-    constructor(name, owner, ownerDisplayName, creationDate,
-        mdBucketModelVersion, acl, transient, deleted,
-        serverSideEncryption, versioningConfiguration,
-        locationConstraint, websiteConfiguration, cors,
-        replicationConfiguration, lifecycleConfiguration,
-        bucketPolicy, uid, readLocationConstraint, isNFS,
-        ingestionConfig, azureInfo, objectLockEnabled,
-        objectLockConfiguration, notificationConfiguration) {
+    constructor(
+        name: string,
+        owner: string,
+        ownerDisplayName: string,
+        creationDate: string,
+        mdBucketModelVersion: number,
+        acl: ACL | undefined,
+        transient: boolean,
+        deleted: boolean,
+        serverSideEncryption: SSE,
+        versioningConfiguration: VersioningConfiguration,
+        locationConstraint: string,
+        websiteConfiguration?: WebsiteConfiguration | null,
+        cors?: CORS,
+        replicationConfiguration?: any,
+        lifecycleConfiguration?: any,
+        bucketPolicy?: any,
+        uid?: string,
+        readLocationConstraint,
+        isNFS,
+        ingestionConfig,
+        azureInfo,
+        objectLockEnabled?: boolean,
+        objectLockConfiguration?: any,
+        notificationConfiguration?: any,
+    ) {
         assert.strictEqual(typeof name, 'string');
         assert.strictEqual(typeof owner, 'string');
         assert.strictEqual(typeof ownerDisplayName, 'string');
@@ -127,8 +192,10 @@ class BucketInfo {
         }
         if (websiteConfiguration) {
             assert(websiteConfiguration instanceof WebsiteConfiguration);
-            const { indexDocument, errorDocument, redirectAllRequestsTo,
-                routingRules } = websiteConfiguration;
+            const indexDocument = websiteConfiguration.getIndexDocument();
+            const errorDocument = websiteConfiguration.getErrorDocument();
+            const redirectAllRequestsTo = websiteConfiguration.getRedirectAllRequestsTo();
+            const routingRules = websiteConfiguration.getRoutingRules();
             assert(indexDocument === undefined ||
                 typeof indexDocument === 'string');
             assert(errorDocument === undefined ||
@@ -160,7 +227,7 @@ class BucketInfo {
         if (notificationConfiguration) {
             NotificationConfiguration.validateConfig(notificationConfiguration);
         }
-        const aclInstance = acl || {
+        const aclInstance: ACL = acl || {
             Canned: 'private',
             FULL_CONTROL: [],
             WRITE: [],
@@ -196,9 +263,10 @@ class BucketInfo {
         this._notificationConfiguration = notificationConfiguration || null;
         return this;
     }
+
     /**
     * Serialize the object
-    * @return {string} - stringified object
+    * @return - stringified object
     */
     serialize() {
         const bucketInfos = {
@@ -227,18 +295,20 @@ class BucketInfo {
             objectLockConfiguration: this._objectLockConfiguration,
             notificationConfiguration: this._notificationConfiguration,
         };
-        if (this._websiteConfiguration) {
-            bucketInfos.websiteConfiguration =
-                this._websiteConfiguration.getConfig();
-        }
-        return JSON.stringify(bucketInfos);
+        const final = this._websiteConfiguration
+            ? {
+                  ...bucketInfos,
+                  websiteConfiguration: this._websiteConfiguration.getConfig(),
+              }
+            : bucketInfos;
+        return JSON.stringify(final);
     }
     /**
      * deSerialize the JSON string
-     * @param {string} stringBucket - the stringified bucket
-     * @return {object} - parsed string
+     * @param stringBucket - the stringified bucket
+     * @return - parsed string
      */
-    static deSerialize(stringBucket) {
+    static deSerialize(stringBucket: string) {
         const obj = JSON.parse(stringBucket);
         const websiteConfig = obj.websiteConfiguration ?
             new WebsiteConfiguration(obj.websiteConfiguration) : null;
@@ -254,7 +324,7 @@ class BucketInfo {
 
     /**
      * Returns the current model version for the data structure
-     * @return {number} - the current model version set above in the file
+     * @return - the current model version set above in the file
      */
     static currentModelVersion() {
         return modelVersion;
@@ -263,10 +333,10 @@ class BucketInfo {
     /**
      * Create a BucketInfo from an object
      *
-     * @param {object} data - object containing data
-     * @return {BucketInfo} Return an BucketInfo
+     * @param data - object containing data
+     * @return Return an BucketInfo
      */
-    static fromObj(data) {
+    static fromObj(data: any) {
         return new BucketInfo(data._name, data._owner, data._ownerDisplayName,
             data._creationDate, data._mdBucketModelVersion, data._acl,
             data._transient, data._deleted, data._serverSideEncryption,
@@ -281,74 +351,74 @@ class BucketInfo {
 
     /**
     * Get the ACLs.
-    * @return {object} acl
+    * @return acl
     */
     getAcl() {
         return this._acl;
     }
     /**
     * Set the canned acl's.
-    * @param {string} cannedACL - canned ACL being set
-    * @return {BucketInfo} - bucket info instance
+    * @param cannedACL - canned ACL being set
+    * @return - bucket info instance
     */
-    setCannedAcl(cannedACL) {
+    setCannedAcl(cannedACL: string) {
         this._acl.Canned = cannedACL;
         return this;
     }
     /**
     * Set a specific ACL.
-    * @param {string} canonicalID - id for account being given access
-    * @param {string} typeOfGrant - type of grant being granted
-    * @return {BucketInfo} - bucket info instance
+    * @param canonicalID - id for account being given access
+    * @param typeOfGrant - type of grant being granted
+    * @return - bucket info instance
     */
-    setSpecificAcl(canonicalID, typeOfGrant) {
+    setSpecificAcl(canonicalID: string, typeOfGrant: string) {
         this._acl[typeOfGrant].push(canonicalID);
         return this;
     }
     /**
     * Set all ACLs.
-    * @param {object} acl - new set of ACLs
-    * @return {BucketInfo} - bucket info instance
+    * @param acl - new set of ACLs
+    * @return - bucket info instance
     */
-    setFullAcl(acl) {
+    setFullAcl(acl: ACL) {
         this._acl = acl;
         return this;
     }
     /**
      * Get the server side encryption information
-     * @return {object} serverSideEncryption
+     * @return serverSideEncryption
      */
     getServerSideEncryption() {
         return this._serverSideEncryption;
     }
     /**
      * Set server side encryption information
-     * @param {object} serverSideEncryption - server side encryption information
-     * @return {BucketInfo} - bucket info instance
+     * @param serverSideEncryption - server side encryption information
+     * @return - bucket info instance
      */
-    setServerSideEncryption(serverSideEncryption) {
+    setServerSideEncryption(serverSideEncryption: SSE) {
         this._serverSideEncryption = serverSideEncryption;
         return this;
     }
     /**
      * Get the versioning configuration information
-     * @return {object} versioningConfiguration
+     * @return versioningConfiguration
      */
     getVersioningConfiguration() {
         return this._versioningConfiguration;
     }
     /**
      * Set versioning configuration information
-     * @param {object} versioningConfiguration - versioning information
-     * @return {BucketInfo} - bucket info instance
+     * @param versioningConfiguration - versioning information
+     * @return - bucket info instance
      */
-    setVersioningConfiguration(versioningConfiguration) {
+    setVersioningConfiguration(versioningConfiguration: VersioningConfiguration) {
         this._versioningConfiguration = versioningConfiguration;
         return this;
     }
     /**
      * Check that versioning is 'Enabled' on the given bucket.
-     * @return {boolean} - `true` if versioning is 'Enabled', otherwise `false`
+     * @return - `true` if versioning is 'Enabled', otherwise `false`
      */
     isVersioningEnabled() {
         const versioningConfig = this.getVersioningConfiguration();
@@ -356,32 +426,32 @@ class BucketInfo {
     }
     /**
      * Get the website configuration information
-     * @return {object} websiteConfiguration
+     * @return websiteConfiguration
      */
     getWebsiteConfiguration() {
         return this._websiteConfiguration;
     }
     /**
      * Set website configuration information
-     * @param {object} websiteConfiguration - configuration for bucket website
-     * @return {BucketInfo} - bucket info instance
+     * @param websiteConfiguration - configuration for bucket website
+     * @return - bucket info instance
      */
-    setWebsiteConfiguration(websiteConfiguration) {
+    setWebsiteConfiguration(websiteConfiguration: WebsiteConfiguration) {
         this._websiteConfiguration = websiteConfiguration;
         return this;
     }
     /**
      * Set replication configuration information
-     * @param {object} replicationConfiguration - replication information
-     * @return {BucketInfo} - bucket info instance
+     * @param replicationConfiguration - replication information
+     * @return - bucket info instance
      */
-    setReplicationConfiguration(replicationConfiguration) {
+    setReplicationConfiguration(replicationConfiguration: any) {
         this._replicationConfiguration = replicationConfiguration;
         return this;
     }
     /**
      * Get replication configuration information
-     * @return {object|null} replication configuration information or `null` if
+     * @return replication configuration information or `null` if
      * the bucket does not have a replication configuration
      */
     getReplicationConfiguration() {
@@ -389,7 +459,7 @@ class BucketInfo {
     }
     /**
      * Get lifecycle configuration information
-     * @return {object|null} lifecycle configuration information or `null` if
+     * @return lifecycle configuration information or `null` if
      * the bucket does not have a lifecycle configuration
      */
     getLifecycleConfiguration() {
@@ -397,16 +467,16 @@ class BucketInfo {
     }
     /**
      * Set lifecycle configuration information
-     * @param {object} lifecycleConfiguration - lifecycle information
-     * @return {BucketInfo} - bucket info instance
+     * @param lifecycleConfiguration - lifecycle information
+     * @return - bucket info instance
      */
-    setLifecycleConfiguration(lifecycleConfiguration) {
+    setLifecycleConfiguration(lifecycleConfiguration: any) {
         this._lifecycleConfiguration = lifecycleConfiguration;
         return this;
     }
     /**
      * Get bucket policy statement
-     * @return {object|null} bucket policy statement or `null` if the bucket
+     * @return bucket policy statement or `null` if the bucket
      * does not have a bucket policy
      */
     getBucketPolicy() {
@@ -414,16 +484,16 @@ class BucketInfo {
     }
     /**
      * Set bucket policy statement
-     * @param {object} bucketPolicy - bucket policy
-     * @return {BucketInfo} - bucket info instance
+     * @param bucketPolicy - bucket policy
+     * @return - bucket info instance
      */
-    setBucketPolicy(bucketPolicy) {
+    setBucketPolicy(bucketPolicy: any) {
         this._bucketPolicy = bucketPolicy;
         return this;
     }
     /**
      * Get object lock configuration
-     * @return {object|null} object lock configuration information or `null` if
+     * @return object lock configuration information or `null` if
      * the bucket does not have an object lock configuration
      */
     getObjectLockConfiguration() {
@@ -431,16 +501,16 @@ class BucketInfo {
     }
     /**
      * Set object lock configuration
-     * @param {object} objectLockConfiguration - object lock information
-     * @return {BucketInfo} - bucket info instance
+     * @param objectLockConfiguration - object lock information
+     * @return - bucket info instance
      */
-    setObjectLockConfiguration(objectLockConfiguration) {
+    setObjectLockConfiguration(objectLockConfiguration: any) {
         this._objectLockConfiguration = objectLockConfiguration;
         return this;
     }
     /**
      * Get notification configuration
-     * @return {object|null} notification configuration information or 'null' if
+     * @return notification configuration information or 'null' if
      * the bucket does not have a notification configuration
      */
     getNotificationConfiguration() {
@@ -448,41 +518,41 @@ class BucketInfo {
     }
     /**
      * Set notification configuraiton
-     * @param {object} notificationConfiguration - bucket notification information
-     * @return {BucketInfo} - bucket info instance
+     * @param notificationConfiguration - bucket notification information
+     * @return - bucket info instance
      */
-    setNotificationConfiguration(notificationConfiguration) {
+    setNotificationConfiguration(notificationConfiguration: any) {
         this._notificationConfiguration = notificationConfiguration;
         return this;
     }
     /**
      * Get cors resource
-     * @return {object[]} cors
+     * @return cors
      */
     getCors() {
         return this._cors;
     }
     /**
      * Set cors resource
-     * @param {object[]} rules - collection of CORS rules
-     * @param {string} [rules.id] - optional id to identify rule
-     * @param {string[]} rules[].allowedMethods - methods allowed for CORS
-     * @param {string[]} rules[].allowedOrigins - origins allowed for CORS
-     * @param {string[]} [rules[].allowedHeaders] - headers allowed in an
+     * @param rules - collection of CORS rules
+     * @param  [rules.id] - optional id to identify rule
+     * @param rules[].allowedMethods - methods allowed for CORS
+     * @param rules[].allowedOrigins - origins allowed for CORS
+     * @param [rules[].allowedHeaders] - headers allowed in an
      * OPTIONS request via the Access-Control-Request-Headers header
-     * @param {number} [rules[].maxAgeSeconds] - seconds browsers should cache
+     * @param [rules[].maxAgeSeconds] - seconds browsers should cache
      * OPTIONS response
-     * @param {string[]} [rules[].exposeHeaders] - headers to expose to external
+     * @param [rules[].exposeHeaders] - headers to expose to external
      * applications
-     * @return {BucketInfo} - bucket info instance
+     * @return - bucket info instance
      */
-    setCors(rules) {
+    setCors(rules: CORS) {
         this._cors = rules;
         return this;
     }
     /**
      * get the serverside encryption algorithm
-     * @return {string} - sse algorithm used by this bucket
+     * @return - sse algorithm used by this bucket
      */
     getSseAlgorithm() {
         if (!this._serverSideEncryption) {
@@ -492,7 +562,7 @@ class BucketInfo {
     }
     /**
      * get the server side encryption master key Id
-     * @return {string} -  sse master key Id used by this bucket
+     * @return -  sse master key Id used by this bucket
      */
     getSseMasterKeyId() {
         if (!this._serverSideEncryption) {
@@ -502,72 +572,72 @@ class BucketInfo {
     }
     /**
     * Get bucket name.
-    * @return {string} - bucket name
+    * @return - bucket name
     */
     getName() {
         return this._name;
     }
     /**
     * Set bucket name.
-    * @param {string} bucketName - new bucket name
-    * @return {BucketInfo} - bucket info instance
+    * @param bucketName - new bucket name
+    * @return - bucket info instance
     */
-    setName(bucketName) {
+    setName(bucketName: string) {
         this._name = bucketName;
         return this;
     }
     /**
     * Get bucket owner.
-    * @return {string} - bucket owner's canonicalID
+    * @return - bucket owner's canonicalID
     */
     getOwner() {
         return this._owner;
     }
     /**
     * Set bucket owner.
-    * @param {string} ownerCanonicalID - bucket owner canonicalID
-    * @return {BucketInfo} - bucket info instance
+    * @param ownerCanonicalID - bucket owner canonicalID
+    * @return - bucket info instance
     */
-    setOwner(ownerCanonicalID) {
+    setOwner(ownerCanonicalID: string) {
         this._owner = ownerCanonicalID;
         return this;
     }
     /**
     * Get bucket owner display name.
-    * @return {string} - bucket owner dispaly name
+    * @return - bucket owner dispaly name
     */
     getOwnerDisplayName() {
         return this._ownerDisplayName;
     }
     /**
     * Set bucket owner display name.
-    * @param {string} ownerDisplayName - bucket owner display name
-    * @return {BucketInfo} - bucket info instance
+    * @param ownerDisplayName - bucket owner display name
+    * @return - bucket info instance
     */
-    setOwnerDisplayName(ownerDisplayName) {
+    setOwnerDisplayName(ownerDisplayName: string) {
         this._ownerDisplayName = ownerDisplayName;
         return this;
     }
     /**
     * Get bucket creation date.
-    * @return {object} - bucket creation date
+    * @return - bucket creation date
     */
     getCreationDate() {
         return this._creationDate;
     }
     /**
     * Set location constraint.
-    * @param {string} location - bucket location constraint
-    * @return {BucketInfo} - bucket info instance
+    * @param location - bucket location constraint
+    * @return - bucket info instance
     */
-    setLocationConstraint(location) {
+    setLocationConstraint(location: string) {
         this._locationConstraint = location;
         return this;
     }
 
     /**
     * Get location constraint.
-    * @return {string} - bucket location constraint
+    * @return - bucket location constraint
     */
     getLocationConstraint() {
         return this._locationConstraint;
@@ -587,24 +657,24 @@ class BucketInfo {
     /**
      * Set Bucket model version
      *
-     * @param {number} version - Model version
-     * @return {BucketInfo} - bucket info instance
+     * @param version - Model version
+     * @return - bucket info instance
      */
-    setMdBucketModelVersion(version) {
+    setMdBucketModelVersion(version: number) {
         this._mdBucketModelVersion = version;
         return this;
     }
     /**
      * Get Bucket model version
      *
-     * @return {number} Bucket model version
+     * @return Bucket model version
      */
     getMdBucketModelVersion() {
         return this._mdBucketModelVersion;
     }
     /**
     * Add transient flag.
-    * @return {BucketInfo} - bucket info instance
+    * @return - bucket info instance
     */
     addTransientFlag() {
         this._transient = true;
@@ -612,7 +682,7 @@ class BucketInfo {
     }
     /**
     * Remove transient flag.
-    * @return {BucketInfo} - bucket info instance
+    * @return - bucket info instance
     */
     removeTransientFlag() {
         this._transient = false;
@@ -620,14 +690,14 @@ class BucketInfo {
     }
     /**
     * Check transient flag.
-    * @return {boolean} - depending on whether transient flag in place
+    * @return - depending on whether transient flag in place
     */
     hasTransientFlag() {
         return !!this._transient;
     }
     /**
     * Add deleted flag.
-    * @return {BucketInfo} - bucket info instance
+    * @return - bucket info instance
     */
     addDeletedFlag() {
         this._deleted = true;
@@ -635,7 +705,7 @@ class BucketInfo {
     }
     /**
     * Remove deleted flag.
-    * @return {BucketInfo} - bucket info instance
+    * @return - bucket info instance
     */
     removeDeletedFlag() {
         this._deleted = false;
@@ -643,14 +713,14 @@ class BucketInfo {
     }
     /**
     * Check deleted flag.
-    * @return {boolean} - depending on whether deleted flag in place
+    * @return - depending on whether deleted flag in place
     */
     hasDeletedFlag() {
         return !!this._deleted;
     }
     /**
      * Check if the versioning mode is on.
-     * @return {boolean} - versioning mode status
+     * @return - versioning mode status
      */
     isVersioningOn() {
         return this._versioningConfiguration &&
@@ -658,17 +728,17 @@ class BucketInfo {
     }
     /**
      * Get unique id of bucket.
-     * @return {string} - unique id
+     * @return - unique id
      */
     getUid() {
         return this._uid;
     }
     /**
      * Set unique id of bucket.
-     * @param {string} uid - unique identifier for the bucket
-     * @return {BucketInfo} - bucket info instance
+     * @param uid - unique identifier for the bucket
+     * @return - bucket info instance
      */
-    setUid(uid) {
+    setUid(uid: string) {
         this._uid = uid;
         return this;
     }
@@ -753,20 +823,18 @@ class BucketInfo {
     }
     /**
     * Check if object lock is enabled.
-    * @return {boolean} - depending on whether object lock is enabled
+    * @return - depending on whether object lock is enabled
     */
     isObjectLockEnabled() {
         return !!this._objectLockEnabled;
     }
     /**
     * Set the value of objectLockEnabled field.
-    * @param {boolean} enabled - true if object lock enabled else false.
-    * @return {BucketInfo} - bucket info instance
+    * @param enabled - true if object lock enabled else false.
+    * @return - bucket info instance
     */
-    setObjectLockEnabled(enabled) {
+    setObjectLockEnabled(enabled: boolean) {
         this._objectLockEnabled = enabled;
         return this;
     }
 }
-
-module.exports = BucketInfo;
