@@ -2,7 +2,7 @@ const assert = require('assert');
 const {
     WebsiteConfiguration,
     RoutingRule,
-} = require('../../../lib/models/WebsiteConfiguration.js');
+} = require('../../../lib/models/WebsiteConfiguration');
 
 const testRoutingRuleParams = {
     redirect: {

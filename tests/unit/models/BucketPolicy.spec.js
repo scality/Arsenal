@@ -1,6 +1,6 @@
 const assert = require('assert');
 
-const BucketPolicy = require('../../../lib/models/BucketPolicy');
+const BucketPolicy = require('../../../lib/models/BucketPolicy').default;
 
 const testBucketPolicy = {
     Version: '2012-10-17',
