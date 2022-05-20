@@ -60,60 +60,64 @@ export default class BucketInfo {
     _objectLockConfiguration?: any;
     _notificationConfiguration?: any;
     _tags?: { key: string; value: string }[] | null;
+    _readLocationConstraint: string | null;
+    _isNFS: boolean | null;
+    _azureInfo: any | null;
+    _ingestion: { status: 'enabled' | 'disabled' } | null;
 
     /**
     * Represents all bucket information.
     * @constructor
-    * @param {string} name - bucket name
-    * @param {string} owner - bucket owner's name
-    * @param {string} ownerDisplayName - owner's display name
-    * @param {object} creationDate - creation date of bucket
-    * @param {number} mdBucketModelVersion - bucket model version
-    * @param {object} [acl] - bucket ACLs (no need to copy
+    * @param name - bucket name
+    * @param owner - bucket owner's name
+    * @param ownerDisplayName - owner's display name
+    * @param creationDate - creation date of bucket
+    * @param mdBucketModelVersion - bucket model version
+    * @param [acl] - bucket ACLs (no need to copy
     * ACL object since referenced object will not be used outside of
     * BucketInfo instance)
-    * @param {boolean} transient - flag indicating whether bucket is transient
-    * @param {boolean} deleted - flag indicating whether attempt to delete
-    * @param {object} serverSideEncryption - sse information for this bucket
-    * @param {number} serverSideEncryption.cryptoScheme -
+    * @param transient - flag indicating whether bucket is transient
+    * @param deleted - flag indicating whether attempt to delete
+    * @param serverSideEncryption - sse information for this bucket
+    * @param serverSideEncryption.cryptoScheme -
     * cryptoScheme used
-    * @param {string} serverSideEncryption.algorithm -
+    * @param serverSideEncryption.algorithm -
     * algorithm to use
-    * @param {string} serverSideEncryption.masterKeyId -
+    * @param serverSideEncryption.masterKeyId -
     * key to get master key
-    * @param {string} serverSideEncryption.configuredMasterKeyId -
+    * @param serverSideEncryption.configuredMasterKeyId -
     * custom KMS key id specified by user
-    * @param {boolean} serverSideEncryption.mandatory -
+    * @param serverSideEncryption.mandatory -
     * true for mandatory encryption
     * bucket has been made
-    * @param {object} versioningConfiguration - versioning configuration
-    * @param {string} versioningConfiguration.Status - versioning status
-    * @param {object} versioningConfiguration.MfaDelete - versioning mfa delete
-    * @param {string} locationConstraint - locationConstraint for bucket that
+    * @param versioningConfiguration - versioning configuration
+    * @param versioningConfiguration.Status - versioning status
+    * @param versioningConfiguration.MfaDelete - versioning mfa delete
+    * @param locationConstraint - locationConstraint for bucket that
     * also includes the ingestion flag
-    * @param {WebsiteConfiguration} [websiteConfiguration] - website
+    * @param [websiteConfiguration] - website
     * configuration
-    * @param {object[]} [cors] - collection of CORS rules to apply
-    * @param {string} [cors[].id] - optional ID to identify rule
-    * @param {string[]} cors[].allowedMethods - methods allowed for CORS request
-    * @param {string[]} cors[].allowedOrigins - origins allowed for CORS request
-    * @param {string[]} [cors[].allowedHeaders] - headers allowed in an OPTIONS
+    * @param [cors] - collection of CORS rules to apply
+    * @param [cors[].id] - optional ID to identify rule
+    * @param cors[].allowedMethods - methods allowed for CORS request
+    * @param cors[].allowedOrigins - origins allowed for CORS request
+    * @param [cors[].allowedHeaders] - headers allowed in an OPTIONS
     * request via the Access-Control-Request-Headers header
-    * @param {number} [cors[].maxAgeSeconds] - seconds browsers should cache
+    * @param [cors[].maxAgeSeconds] - seconds browsers should cache
     * OPTIONS response
-    * @param {string[]} [cors[].exposeHeaders] - headers expose to applications
-    * @param {object} [replicationConfiguration] - replication configuration
-    * @param {object} [lifecycleConfiguration] - lifecycle configuration
-    * @param {object} [bucketPolicy] - bucket policy
-    * @param {string} [uid] - unique identifier for the bucket, necessary
-    * @param {string} readLocationConstraint - readLocationConstraint for bucket
+    * @param [cors[].exposeHeaders] - headers expose to applications
+    * @param [replicationConfiguration] - replication configuration
+    * @param [lifecycleConfiguration] - lifecycle configuration
+    * @param [bucketPolicy] - bucket policy
+    * @param [uid] - unique identifier for the bucket, necessary
+    * @param readLocationConstraint - readLocationConstraint for bucket
     * addition for use with lifecycle operations
-    * @param {boolean} [isNFS] - whether the bucket is on NFS
-    * @param {object} [ingestionConfig] - object for ingestion status: en/dis
-    * @param {object} [azureInfo] - Azure storage account specific info
-    * @param {boolean} [objectLockEnabled] - true when object lock enabled
-    * @param {object} [objectLockConfiguration] - object lock configuration
-    * @param {object} [notificationConfiguration] - bucket notification configuration
+    * @param [isNFS] - whether the bucket is on NFS
+    * @param [ingestionConfig] - object for ingestion status: en/dis
+    * @param [azureInfo] - Azure storage account specific info
+    * @param [objectLockEnabled] - true when object lock enabled
+    * @param [objectLockConfiguration] - object lock configuration
+    * @param [notificationConfiguration] - bucket notification configuration
     */
     constructor(
         name: string,
@@ -133,10 +137,10 @@ export default class BucketInfo {
         lifecycleConfiguration?: any,
         bucketPolicy?: any,
         uid?: string,
-        readLocationConstraint,
-        isNFS,
-        ingestionConfig,
-        azureInfo,
+        readLocationConstraint?: string,
+        isNFS?: boolean,
+        ingestionConfig?: { status: 'enabled' | 'disabled' },
+        azureInfo?: any,
         objectLockEnabled?: boolean,
         objectLockConfiguration?: any,
         notificationConfiguration?: any,
@@ -645,7 +649,7 @@ export default class BucketInfo {
 
     /**
     * Get read location constraint.
-    * @return {string} - bucket read location constraint
+    * @return - bucket read location constraint
     */
     getReadLocationConstraint() {
         if (this._readLocationConstraint) {
@@ -744,23 +748,23 @@ export default class BucketInfo {
     }
     /**
      * Check if the bucket is an NFS bucket.
-     * @return {boolean} - Wether the bucket is NFS or not
+     * @return - Wether the bucket is NFS or not
      */
     isNFS() {
         return this._isNFS;
     }
     /**
      * Set whether the bucket is an NFS bucket.
-     * @param {boolean} isNFS - Wether the bucket is NFS or not
-     * @return {BucketInfo} - bucket info instance
+     * @param isNFS - Wether the bucket is NFS or not
+     * @return - bucket info instance
      */
-    setIsNFS(isNFS) {
+    setIsNFS(isNFS: boolean) {
         this._isNFS = isNFS;
         return this;
     }
     /**
      * enable ingestion, set 'this._ingestion' to { status: 'enabled' }
-     * @return {BucketInfo} - bucket info instance
+     * @return - bucket info instance
      */
     enableIngestion() {
         this._ingestion = { status: 'enabled' };
@@ -768,7 +772,7 @@ export default class BucketInfo {
     }
     /**
      * disable ingestion, set 'this._ingestion' to { status: 'disabled' }
-     * @return {BucketInfo} - bucket info instance
+     * @return - bucket info instance
      */
     disableIngestion() {
         this._ingestion = { status: 'disabled' };
@@ -776,7 +780,7 @@ export default class BucketInfo {
     }
     /**
      * Get ingestion configuration
-     * @return {object} - bucket ingestion configuration: Enabled or Disabled
+     * @return - bucket ingestion configuration: Enabled or Disabled
      */
     getIngestion() {
         return this._ingestion;
@@ -784,7 +788,7 @@ export default class BucketInfo {
 
     /**
      ** Check if bucket is an ingestion bucket
-     * @return {boolean} - 'true' if bucket is ingestion bucket, 'false' if
+     * @return - 'true' if bucket is ingestion bucket, 'false' if
      * otherwise
      */
     isIngestionBucket() {
@@ -796,7 +800,7 @@ export default class BucketInfo {
     }
     /**
      * Check if ingestion is enabled
-     * @return {boolean} - 'true' if ingestion is enabled, otherwise 'false'
+     * @return - 'true' if ingestion is enabled, otherwise 'false'
      */
     isIngestionEnabled() {
         const ingestionConfig = this.getIngestion();
@@ -805,7 +809,7 @@ export default class BucketInfo {
 
     /**
      * Return the Azure specific storage account information for this bucket
-     * @return {object} - a structure suitable for {@link BucketAzureIno}
+     * @return - a structure suitable for {@link BucketAzureIno}
      *   constructor
      */
     getAzureInfo() {
@@ -813,11 +817,11 @@ export default class BucketInfo {
     }
     /**
      * Set the Azure specific storage account information for this bucket
-     * @param {object} azureInfo - a structure suitable for
+     * @param azureInfo - a structure suitable for
      *   {@link BucketAzureInfo} construction
-     * @return {BucketInfo} - bucket info instance
+     * @return - bucket info instance
      */
-    setAzureInfo(azureInfo) {
+    setAzureInfo(azureInfo: any) {
         this._azureInfo = azureInfo;
         return this;
     }

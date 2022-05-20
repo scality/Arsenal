@@ -501,17 +501,17 @@ export default class LifecycleConfiguration {
 
     /**
      * Finds the prefix and/or tags of the given rule and gets the error message
-     * @param {object} rule - The rule to find the prefix in
-     * @return {string} - The prefix of filter information
+     * @param rule - The rule to find the prefix in
+     * @return - The prefix of filter information
      */
-    _getRuleFilterDesc(rule) {
+    _getRuleFilterDesc(rule: { Prefix?: string[]; Filter?: any[] }) {
         if (rule.Prefix) {
             return `prefix '${rule.Prefix[0]}'`;
         }
         // There must be a filter if no top-level prefix is provided. First
         // check if there are multiple filters (i.e. `Filter.And`).
-        if (rule.Filter[0] === undefined || rule.Filter[0].And === undefined) {
-            const { Prefix, Tag } = rule.Filter[0] || {};
+        if (rule.Filter?.[0] === undefined || rule.Filter[0].And === undefined) {
+            const { Prefix, Tag } = rule.Filter?.[0] || {};
             if (Prefix) {
                 return `filter '(prefix=${Prefix[0]})'`;
             }
@@ -521,12 +521,12 @@ export default class LifecycleConfiguration {
             }
             return 'filter (all)';
         }
-        const filters = [];
+        const filters: string[] = [];
         const { Prefix, Tag } = rule.Filter[0].And[0];
         if (Prefix) {
             filters.push(`prefix=${Prefix[0]}`);
         }
-        Tag.forEach(tag => {
+        Tag.forEach((tag: { Key: string[]; Value: string[] }) => {
             const { Key, Value } = tag;
             filters.push(`tag: key=${Key[0]}, value=${Value[0]}`);
         });
@@ -536,13 +536,13 @@ export default class LifecycleConfiguration {
 
     /**
      * Checks the validity of the given field
-     * @param {object} params - Given function parameters
-     * @param {string} params.days - The value of the field to check
-     * @param {string} params.field - The field name with the value
-     * @param {string} params.ancestor - The immediate ancestor field
-     * @return {object|null} Returns an error object or `null`
+     * @param params - Given function parameters
+     * @param params.days - The value of the field to check
+     * @param params.field - The field name with the value
+     * @param params.ancestor - The immediate ancestor field
+     * @return Returns an error object or `null`
      */
-    _checkDays(params) {
+    _checkDays(params: { days: number; field: string; ancestor: string }) {
         const { days, field, ancestor } = params;
         if (days < 0) {
             const msg = `'${field}' in ${ancestor} action must be nonnegative`;
@@ -557,16 +557,21 @@ export default class LifecycleConfiguration {
 
     /**
      * Checks the validity of the given storage class
-     * @param {object} params - Given function parameters
-     * @param {array} params.usedStorageClasses - Storage classes used in other
+     * @param params - Given function parameters
+     * @param params.usedStorageClasses - Storage classes used in other
      * rules
-     * @param {string} params.storageClass - The storage class of the current
+     * @param params.storageClass - The storage class of the current
      * rule
-     * @param {string} params.ancestor - The immediate ancestor field
-     * @param {string} params.prefix - The prefix of the rule
-     * @return {object|null} Returns an error object or `null`
+     * @param params.ancestor - The immediate ancestor field
+     * @param params.prefix - The prefix of the rule
+     * @return Returns an error object or `null`
      */
-    _checkStorageClasses(params) {
+    _checkStorageClasses(params: {
+        usedStorageClasses: string[];
+        storageClass: string;
+        ancestor: string;
+        rule: { Prefix?: string[]; Filter?: any };
+    }) {
         const { usedStorageClasses, storageClass, ancestor, rule } = params;
         if (!this._storageClasses.includes(storageClass)) {
             // This differs from the AWS message. This will help the user since
@@ -585,15 +590,19 @@ export default class LifecycleConfiguration {
 
     /**
      * Ensure that transition rules are at least a day apart from each other.
-     * @param {object} params - Given function parameters
-     * @param {string} [params.days] - The days of the current transition
-     * @param {string} [params.date] - The date of the current transition
-     * @param {string} params.storageClass - The storage class of the current
+     * @param params - Given function parameters
+     * @param [params.days] - The days of the current transition
+     * @param [params.date] - The date of the current transition
+     * @param params.storageClass - The storage class of the current
      * rule
-     * @param {string} params.rule - The current rule
-     * @return {undefined}
+     * @param params.rule - The current rule
      */
-    _checkTimeGap(params) {
+    _checkTimeGap(params: {
+        days?: number;
+        date?: string;
+        storageClass: string;
+        rule: { Transition: any[]; Prefix?: string[]; Filter?: any };
+    }) {
         const { days, date, storageClass, rule } = params;
         const invalidTransition = rule.Transition.find(transition => {
             if (storageClass === transition.StorageClass[0]) {
@@ -620,21 +629,25 @@ export default class LifecycleConfiguration {
                 `action for StorageClass '${compareStorageClass}'`;
             return errors.InvalidArgument.customizeDescription(msg);
         }
-        return undefined;
+        return null;
     }
 
     /**
      * Checks transition time type (i.e. 'Date' or 'Days') only occurs once
      * across transitions and across transitions and expiration policies
-     * @param {object} params - Given function parameters
-     * @param {string} params.usedTimeType - The time type that has been used by
+     * @param params - Given function parameters
+     * @param params.usedTimeType - The time type that has been used by
      * another rule
-     * @param {string} params.currentTimeType - the time type used by the
+     * @param params.currentTimeType - the time type used by the
      * current rule
-     * @param {string} params.rule - The current rule
-     * @return {object|null} Returns an error object or `null`
+     * @param params.rule - The current rule
+     * @return Returns an error object or `null`
      */
-    _checkTimeType(params) {
+    _checkTimeType(params: {
+        usedTimeType: string | null;
+        currentTimeType: string;
+        rule: { Prefix?: string[]; Filter?: any; Expiration?: any[] };
+    }) {
         const { usedTimeType, currentTimeType, rule } = params;
         if (usedTimeType && usedTimeType !== currentTimeType) {
             const msg = "Found mixed 'Date' and 'Days' based Transition " +
@@ -655,10 +668,10 @@ export default class LifecycleConfiguration {
 
     /**
      * Checks the validity of the given date
-     * @param {string} date - The date the check
-     * @return {object|null} Returns an error object or `null`
+     * @param date - The date the check
+     * @return Returns an error object or `null`
      */
-    _checkDate(date) {
+    _checkDate(date: string) {
         const isoRegex = new RegExp('^(-?(?:[1-9][0-9]*)?[0-9]{4})-' +
             '(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9])T(2[0-3]|[01][0-9])' +
             ':([0-5][0-9]):([0-5][0-9])(.[0-9]+)?(Z)?$');
@@ -671,8 +684,8 @@ export default class LifecycleConfiguration {
 
     /**
      * Parses the NonCurrentVersionTransition value
-     * @param {object} rule - Rule object from Rule array from this._parsedXml
-     * @return {object} - Contains error if parsing failed, otherwise contains
+     * @param rule - Rule object from Rule array from this._parsedXml
+     * @return - Contains error if parsing failed, otherwise contains
      * the parsed nonCurrentVersionTransition array
      *
      * Format of result:
@@ -687,14 +700,21 @@ export default class LifecycleConfiguration {
      *      ]
      * }
      */
-    _parseNoncurrentVersionTransition(rule) {
-        const nonCurrentVersionTransition = [];
-        const usedStorageClasses = [];
+    _parseNoncurrentVersionTransition(rule: {
+        NoncurrentVersionTransition: any[];
+        Prefix?: string[];
+        Filter?: any;
+    }) {
+        const nonCurrentVersionTransition: {
+            noncurrentDays: number;
+            storageClass: string;
+        }[] = [];
+        const usedStorageClasses: string[] = [];
         for (let i = 0; i < rule.NoncurrentVersionTransition.length; i++) {
             const t = rule.NoncurrentVersionTransition[i]; // Transition object
-            const noncurrentDays =
+            const noncurrentDays: number | undefined =
                 t.NoncurrentDays && Number.parseInt(t.NoncurrentDays[0], 10);
-            const storageClass = t.StorageClass && t.StorageClass[0];
+            const storageClass: string | undefined = t.StorageClass && t.StorageClass[0];
             if (noncurrentDays === undefined || storageClass === undefined) {
                 return { error: errors.MalformedXML };
             }
@@ -723,8 +743,8 @@ export default class LifecycleConfiguration {
 
     /**
      * Parses the Transition value
-     * @param {object} rule - Rule object from Rule array from this._parsedXml
-     * @return {object} - Contains error if parsing failed, otherwise contains
+     * @param rule - Rule object from Rule array from this._parsedXml
+     * @return - Contains error if parsing failed, otherwise contains
      * the parsed transition array
      *
      * Format of result:
@@ -740,10 +760,16 @@ export default class LifecycleConfiguration {
      *      ]
      * }
      */
-    _parseTransition(rule) {
-        const transition = [];
-        const usedStorageClasses = [];
-        let usedTimeType = null;
+    _parseTransition(rule: {
+        Transition: any[];
+        Prefix?: string[];
+        Filter?: any;
+    }) {
+        const transition:
+            ({ days: number; storageClass: string }
+            | { date: string; storageClass: string })[] = [];
+        const usedStorageClasses: string[] = [];
+        let usedTimeType: string | null = null;
         for (let i = 0; i < rule.Transition.length; i++) {
             const t = rule.Transition[i]; // Transition object
             const days = t.Days && Number.parseInt(t.Days[0], 10);
@@ -1160,8 +1186,8 @@ export default class LifecycleConfiguration {
                         `</${actionName}>`;
                 }
                 if (actionName === 'NoncurrentVersionTransition') {
-                    const xml = [];
-                    nonCurrentVersionTransition.forEach(transition => {
+                    const xml: string[] = [];
+                    nonCurrentVersionTransition!.forEach(transition => {
                         const { noncurrentDays, storageClass } = transition;
                         xml.push(
                             `<${actionName}>`,
@@ -1174,10 +1200,10 @@ export default class LifecycleConfiguration {
                     Action = xml.join('');
                 }
                 if (actionName === 'Transition') {
-                    const xml = [];
-                    transition.forEach(transition => {
+                    const xml: string[] = [];
+                    transition!.forEach(transition => {
                         const { days, date, storageClass } = transition;
-                        let element;
+                        let element: string = '';
                         if (days !== undefined) {
                             element = `<Days>${days}</Days>`;
                         }
@@ -1269,6 +1295,15 @@ export type Rule = {
         days?: number;
         date?: number;
         deleteMarker?: boolean;
+        nonCurrentVersionTransition?: {
+            noncurrentDays: number;
+            storageClass: string;
+        }[];
+        transition?: {
+            days?: number;
+            date?: string;
+            storageClass: string;
+        }[];
     }[];
     filter?: {
         rulePrefix?: string;

@@ -774,7 +774,7 @@ describe('LifecycleConfiguration', () => {
                 storageClass: 'a',
             };
             const error = lifecycleConfiguration._checkTimeGap(params);
-            assert.strictEqual(error, undefined);
+            assert.strictEqual(error, null);
         });
 
         it('should not return error when transitions have days greater than ' +
@@ -793,7 +793,7 @@ describe('LifecycleConfiguration', () => {
                 storageClass: 'a',
             };
             const error = lifecycleConfiguration._checkTimeGap(params);
-            assert.strictEqual(error, undefined);
+            assert.strictEqual(error, null);
         });
 
         it('should return error when transitions have same day', () => {
@@ -831,7 +831,7 @@ describe('LifecycleConfiguration', () => {
                 storageClass: 'a',
             };
             const error = lifecycleConfiguration._checkTimeGap(params);
-            assert.strictEqual(error, undefined);
+            assert.strictEqual(error, null);
         });
 
         it('should return error when transitions have dates less than 24 ' +

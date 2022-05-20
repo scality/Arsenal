@@ -1,5 +1,5 @@
 const assert = require('assert');
-const ObjectMDArchive = require('../../../lib/models/ObjectMDArchive');
+const ObjectMDArchive = require('../../../lib/models/ObjectMDArchive').default;
 
 const testArchive = {
     archiveInfo: {

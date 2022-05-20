@@ -1,5 +1,5 @@
 const assert = require('assert');
-const BackendInfo = require('../../../lib/models/BackendInfo');
+const BackendInfo = require('../../../lib/models/BackendInfo').default;
 const { DummyRequestLogger } = require('../helpers');
 const DummyConfig = require('../../utils/DummyConfig');
 
