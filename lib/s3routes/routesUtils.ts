@@ -66,7 +66,7 @@ function okHeaderResponse(
     log.debug('response http code', { httpCode });
     response.writeHead(httpCode);
     return response.end(() => {
-        // TODO What's happening ?
+        // TODO ARSN-216 Fix logger
         // @ts-expect-error
         log.end().info('responded to request', {
             httpCode: response.statusCode,
@@ -101,7 +101,7 @@ const XMLResponseBackend = {
         log.debug('response http code', { httpCode: 200 });
         log.trace('xml response', { xml });
         return response.end(xml, 'utf8', () => {
-            // TODO What's happening ?
+            // TODO ARSN-216 Fix logger
             // @ts-expect-error
             log.end().info('responded with XML', {
                 httpCode: response.statusCode,
@@ -120,7 +120,7 @@ const XMLResponseBackend = {
         if (errCode.code === 304) {
             response.writeHead(errCode.code);
             return response.end('', 'utf8', () => {
-                // TODO What's happening ?
+                // TODO ARSN-216 Fix logger
                 // @ts-expect-error
                 log.end().info('responded with empty body', {
                     httpCode: response.statusCode,
@@ -156,7 +156,7 @@ const XMLResponseBackend = {
             'Content-Length': bytesSent ,
         });
         return response.end(xmlStr, 'utf8', () => {
-            // TODO What's happening ?
+            // TODO ARSN-216 Fix logger
             // @ts-expect-error
             log.end().info('responded with error XML', {
                 httpCode: response.statusCode,
@@ -190,7 +190,7 @@ const JSONResponseBackend = {
         log.debug('response http code', { httpCode: 200 });
         log.trace('json response', { json });
         return response.end(json, 'utf8', () => {
-            // TODO What's happening ?
+            // TODO ARSN-216 Fix logger
             // @ts-expect-error
             log.end().info('responded with JSON', {
                 httpCode: response.statusCode,
@@ -227,7 +227,7 @@ const JSONResponseBackend = {
             'Content-Length': bytesSent,
         });
         return response.end(data, 'utf8', () => {
-            // TODO What's happening ?
+            // TODO ARSN-216 Fix logger
             // @ts-expect-error
             log.end().info('responded with error JSON', {
                 httpCode: response.statusCode,
@@ -306,7 +306,7 @@ function okContentHeadersResponse(
 
 function retrieveDataAzure(
     locations: unknown[],
-    // TODO type check here
+    // TODO ARSN-174 type check missing
     retrieveDataParams: any,
     response: http.ServerResponse,
     logger: RequestLogger,
@@ -570,7 +570,7 @@ export function responseContentHeaders(
             undefined, log);
     }
     return response.end(() => {
-        // TODO What's happening ?
+        // TODO ARSN-216 Fix logger
         // @ts-expect-error
         log.end().info('responded with content headers', {
             httpCode: response.statusCode,
@@ -628,7 +628,7 @@ export function responseStreamData(
     }
     if (dataLocations === null || _computeContentLengthFromLocation(dataLocations) === 0) {
         return response.end(() => {
-            // TODO What's happening ?
+            // TODO ARSN-216 Fix logger
             // @ts-expect-error
             log.end().info('responded with only metadata', {
                 httpCode: response.statusCode,
@@ -636,7 +636,7 @@ export function responseStreamData(
         });
     }
     response.on('finish', () => {
-        // TODO What's happening ?
+        // TODO ARSN-216 Fix logger
         // @ts-expect-error
         log.end().info('responded with streamed content', {
             httpCode: response.statusCode,
@@ -666,7 +666,7 @@ export function streamUserErrorPage(
     setCommonResponseHeaders(corsHeaders, response, log);
     response.writeHead(err.code, { 'Content-type': 'text/html' });
     response.on('finish', () => {
-        // TODO What's happening ?
+        // TODO ARSN-216 Fix logger
         // @ts-expect-error
         log.end().info('responded with streamed content', {
             httpCode: response.statusCode,
@@ -738,7 +738,7 @@ export function errorHtmlResponse(
     );
 
     return response.end(html.join(''), 'utf8', () => {
-        // TODO What's happening ?
+        // TODO ARSN-216 Fix logger
         // @ts-expect-error
         log.end().info('responded with error html', {
             httpCode: response.statusCode,
@@ -765,7 +765,7 @@ export function errorHeaderResponse(
     response.setHeader('x-amz-error-message', err.description);
     response.writeHead(err.code);
     return response.end(() => {
-        // TODO What's happening ?
+        // TODO ARSN-216 Fix logger
         // @ts-expect-error
         log.end().info('responded with error headers', {
             httpCode: response.statusCode,
@@ -850,7 +850,7 @@ export function redirectRequest(
         // remove hanging slash
         redirectLocation = redirectLocation.slice(0, -1);
     }
-    // TODO What's happening ?
+    // TODO ARSN-216 Fix logger
     // @ts-expect-error
     log.end().info('redirecting request', {
         httpCode: redirectCode,
