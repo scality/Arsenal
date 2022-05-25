@@ -1,12 +1,10 @@
-'use strict';// eslint-disable-line strict
-
 /**
  * This function compute a hash from a string
  * https://github.com/darkskyapp/string-hash/blob/master/index.js
- * @param {String} str - The string to compute the hash
- * @return {Number} The computed hash
+ * @param str - The string to compute the hash
+ * @return The computed hash
  */
-function stringHash(str) {
+export default function stringHash(str: string): number {
     let hash = 5381;
     let i = str.length;
 
@@ -21,5 +19,3 @@ function stringHash(str) {
      */
     return hash >>> 0;
 }
-
-module.exports = stringHash;

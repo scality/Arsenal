@@ -48,6 +48,7 @@ const sharedActionMap = {
     objectPutRetention: 's3:PutObjectRetention',
     objectPutTagging: 's3:PutObjectTagging',
     objectRestore: 's3:RestoreObject',
+    objectPutVersion: 's3:PutObjectVersion',
 };
 
 // action map used for request context
