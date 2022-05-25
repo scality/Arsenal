@@ -4,7 +4,23 @@ import RequestContext from './lib/policyEvaluator/RequestContext';
 import * as requestUtils from './lib/policyEvaluator/requestUtils';
 import * as actionMaps from './lib/policyEvaluator/utils/actionMaps';
 import { validateUserPolicy } from './lib/policy/policyValidator'
+import * as userMetadata from './lib/s3middleware/userMetadata';
+import convertToXml from './lib/s3middleware/convertToXml';
+import escapeForXml from './lib/s3middleware/escapeForXml';
+import * as objectLegalHold from './lib/s3middleware/objectLegalHold';
+import * as tagging from './lib/s3middleware/tagging';
+import { validateConditionalHeaders } from './lib/s3middleware/validateConditionalHeaders';
+import MD5Sum from './lib/s3middleware/MD5Sum';
+import NullStream from './lib/s3middleware/nullStream';
+import * as objectUtils from './lib/s3middleware/objectUtils';
+import * as mpuUtils from './lib/s3middleware/azureHelpers/mpuUtils';
+import ResultsCollector from './lib/s3middleware/azureHelpers/ResultsCollector';
+import SubStreamInterface from './lib/s3middleware/azureHelpers/SubStreamInterface';
+import * as processMpuParts from './lib/s3middleware/processMpuParts';
+import * as retention from './lib/s3middleware/objectRetention';
+import * as lifecycleHelpers from './lib/s3middleware/lifecycleHelpers';
 export { default as errors } from './lib/errors';
+export { default as Clustering } from './lib/Clustering';
 export * as ipCheck from './lib/ipCheck';
 export * as auth from './lib/auth/auth';
 export * as constants from './lib/constants';
@@ -12,12 +28,12 @@ export * as https from './lib/https';
 export * as metrics from './lib/metrics';
 export * as network from './lib/network';
 export * as s3routes from './lib/s3routes';
-
-export const db = require('./lib/db');
-export const shuffle = require('./lib/shuffle');
-export const stringHash = require('./lib/stringHash');
-export const jsutil = require('./lib/jsutil');
-export const Clustering = require('./lib/Clustering');
+export * as versioning from './lib/versioning';
+export * as stream from './lib/stream';
+export * as jsutil from './lib/jsutil';
+export { default as stringHash } from './lib/stringHash';
+export * as db from './lib/db';
+export { default as shuffle } from './lib/shuffle';
 
 export const algorithms = {
     list: {
@@ -52,34 +68,24 @@ export const testing = {
     matrix: require('./lib/testing/matrix.js'),
 };
 
-export const versioning = {
-    VersioningConstants: require('./lib/versioning/constants.js').VersioningConstants,
-    Version: require('./lib/versioning/Version.js').Version,
-    VersionID: require('./lib/versioning/VersionID.js'),
-    WriteGatheringManager: require('./lib/versioning/WriteGatheringManager.js'),
-    WriteCache: require('./lib/versioning/WriteCache.js'),
-    VersioningRequestProcessor: require('./lib/versioning/VersioningRequestProcessor.js'),
-};
-
 export const s3middleware = {
-    userMetadata: require('./lib/s3middleware/userMetadata'),
-    convertToXml: require('./lib/s3middleware/convertToXml'),
-    escapeForXml: require('./lib/s3middleware/escapeForXml'),
-    objectLegalHold: require('./lib/s3middleware/objectLegalHold'),
-    tagging: require('./lib/s3middleware/tagging'),
-    validateConditionalHeaders:
-        require('./lib/s3middleware/validateConditionalHeaders').validateConditionalHeaders,
-    MD5Sum: require('./lib/s3middleware/MD5Sum'),
-    NullStream: require('./lib/s3middleware/nullStream'),
-    objectUtils: require('./lib/s3middleware/objectUtils'),
+    userMetadata,
+    convertToXml,
+    escapeForXml,
+    objectLegalHold,
+    tagging,
+    validateConditionalHeaders,
+    MD5Sum,
+    NullStream,
+    objectUtils,
     azureHelper: {
-        mpuUtils: require('./lib/s3middleware/azureHelpers/mpuUtils'),
-        ResultsCollector: require('./lib/s3middleware/azureHelpers/ResultsCollector'),
-        SubStreamInterface: require('./lib/s3middleware/azureHelpers/SubStreamInterface'),
+        mpuUtils,
+        ResultsCollector,
+        SubStreamInterface,
     },
-    processMpuParts: require('./lib/s3middleware/processMpuParts'),
-    retention: require('./lib/s3middleware/objectRetention'),
-    lifecycleHelpers: require('./lib/s3middleware/lifecycleHelpers'),
+    processMpuParts,
+    retention,
+    lifecycleHelpers,
 };
 
 export const storage = {
@@ -162,8 +168,4 @@ export const models = {
 
 export const pensieve = {
     credentialUtils: require('./lib/executables/pensieveCreds/utils'),
-};
-
-export const stream = {
-    readJSONStreamObject: require('./lib/stream/readJSONStreamObject'),
 };
