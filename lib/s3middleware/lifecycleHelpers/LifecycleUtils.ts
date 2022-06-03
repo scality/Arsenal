@@ -170,7 +170,7 @@ export default class LifecycleUtils {
         }, undefined);
         return this.compareNCVTransitions({
             transition1: transition,
-            transition2: store.Transition,
+            transition2: store.NoncurrentVersionTransition,
             lastModified,
         });
     }
@@ -317,7 +317,8 @@ export default class LifecycleUtils {
                 });
             }
 
-            const hasNoncurrentVersionTransitions = Array.isArray(rule.NoncurrentVersionTransitions) && rule.NoncurrentVersionTransitions.length > 0;
+            const ncvt = 'NoncurrentVersionTransitions';
+            const hasNoncurrentVersionTransitions = Array.isArray(rule[ncvt]) && rule[ncvt].length > 0;
             if (hasNoncurrentVersionTransitions && this._supportedRules.includes('noncurrentVersionTransition')) {
                 store.NoncurrentVersionTransition = this.getApplicableNCVTransition({
                     transitions: rule.NoncurrentVersionTransitions,
@@ -326,7 +327,6 @@ export default class LifecycleUtils {
                     currentDate,
                 });
             }
-            // TODO: Add support for NoncurrentVersionTransitions.
             return store;
         }, {});
         // Do not transition to a location where the object is already stored.

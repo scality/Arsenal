@@ -24,6 +24,7 @@ export default class LifecycleRule {
     ncvExpiration?: { NoncurrentDays: number };
     abortMPU?: { DaysAfterInitiation: number };
     transitions?: any[];
+    ncvTransitions?: any[];
     prefix?: string;
 
     constructor(id: string, status: Status) {
@@ -41,6 +42,7 @@ export default class LifecycleRule {
             NoncurrentVersionExpiration?: { NoncurrentDays: number };
             AbortIncompleteMultipartUpload?: { DaysAfterInitiation: number };
             Transitions?: any[];
+            NoncurrentVersionTransitions?: any[];
             Filter?: Filter;
             Prefix?: '';
         } = { ID: this.id, Status: this.status };
@@ -56,6 +58,9 @@ export default class LifecycleRule {
         }
         if (this.transitions) {
             rule.Transitions = this.transitions;
+        }
+        if (this.ncvTransitions) {
+            rule.NoncurrentVersionTransitions = this.ncvTransitions;
         }
 
         const filter = this.buildFilter();
@@ -158,6 +163,15 @@ export default class LifecycleRule {
      */
     addTransitions(transitions: any[]) {
         this.transitions = transitions;
+        return this;
+    }
+
+    /**
+     * NonCurrentVersionTransitions
+     * @param nvcTransitions - NonCurrentVersionTransitions 
+     */
+    addNCVTransitions(nvcTransitions) {
+        this.ncvTransitions = nvcTransitions;
         return this;
     }
 }
