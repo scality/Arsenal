@@ -1,3 +1,10 @@
+/**
+ * @param protocol - protocol to use for redirect
+ * @param hostName - hostname to use for redirect
+ * @param replaceKeyPrefixWith - string to replace keyPrefixEquals specified in condition
+ * @param replaceKeyWith - string to replace key
+ * @param httpRedirectCode - http redirect code
+ */
 export type Redirect = {
     protocol?: string;
     hostName?: string;
@@ -5,10 +12,16 @@ export type Redirect = {
     replaceKeyWith?: string;
     httpRedirectCode: string;
 };
+
+/**
+ * @param keyPrefixEquals - key prefix that triggers a redirect
+ * @param httpErrorCodeReturnedEquals - http code that triggers a redirect
+ */
 export type Condition = {
     keyPrefixEquals?: string;
     httpErrorCodeReturnedEquals?: string;
 };
+
 export type RoutingRuleParams = { redirect: Redirect; condition?: Condition };
 
 export class RoutingRule {
@@ -20,17 +33,7 @@ export class RoutingRule {
     * @constructor
     * @param params - object containing redirect and condition objects
     * @param params.redirect - specifies how to redirect requests
-    * @param [params.redirect.protocol] - protocol to use for redirect
-    * @param [params.redirect.hostName] - hostname to use for redirect
-    * @param [params.redirect.replaceKeyPrefixWith] - string to replace
-    *   keyPrefixEquals specified in condition
-    * @param [params.redirect.replaceKeyWith] - string to replace key
-    * @param [params.redirect.httpRedirectCode] - http redirect code
     * @param [params.condition] - specifies conditions for a redirect
-    * @param [params.condition.keyPrefixEquals] - key prefix that
-    *   triggers a redirect
-    * @param [params.condition.httpErrorCodeReturnedEquals] - http code
-    *   that triggers a redirect
     */
     constructor(params?: RoutingRuleParams) {
         if (params) {
