@@ -1,93 +1,102 @@
-const errors = require('../../errors').default;
-const routesUtils = require('../routesUtils');
+import * as routesUtils from '../routesUtils';
+import errors from '../../errors';
+import * as http from 'http';
+import StatsClient from '../../metrics/StatsClient';
 
-/* eslint-disable no-param-reassign */
-function routePUT(request, response, api, log, statsClient) {
+export default function routePUT(
+    request: http.IncomingMessage,
+    response: http.ServerResponse,
+    api: { callApiMethod: routesUtils.CallApiMethod },
+    log: RequestLogger,
+    statsClient?: StatsClient,
+) {
     log.debug('routing request', { method: 'routePUT' });
 
-    if (request.objectKey === undefined) {
+    const { objectKey, query, bucketName, parsedContentLength } = request as any
+
+    if (objectKey === undefined) {
         // PUT bucket - PUT bucket ACL
 
         // content-length for object is handled separately below
         const contentLength = request.headers['content-length'];
-        if ((contentLength && (Number.isNaN(Number(contentLength))
-        || contentLength < 0)) || contentLength === '') {
+        const len = Number(contentLength);
+        if ((contentLength && (Number.isNaN(len) || len < 0)) || contentLength === '') {
             log.debug('invalid content-length header');
             return routesUtils.responseNoBody(
-                errors.BadRequest, null, response, null, log);
+                errors.BadRequest, null, response, undefined, log);
         }
         // PUT bucket ACL
-        if (request.query.acl !== undefined) {
+        if (query.acl !== undefined) {
             api.callApiMethod('bucketPutACL', request, response, log,
                 (err, corsHeaders) => {
                     routesUtils.statsReport500(err, statsClient);
                     return routesUtils.responseNoBody(err, corsHeaders,
                         response, 200, log);
                 });
-        } else if (request.query.versioning !== undefined) {
+        } else if (query.versioning !== undefined) {
             api.callApiMethod('bucketPutVersioning', request, response, log,
                 (err, corsHeaders) => {
                     routesUtils.statsReport500(err, statsClient);
                     routesUtils.responseNoBody(err, corsHeaders, response, 200,
                         log);
                 });
-        } else if (request.query.website !== undefined) {
+        } else if (query.website !== undefined) {
             api.callApiMethod('bucketPutWebsite', request, response, log,
                 (err, corsHeaders) => {
                     routesUtils.statsReport500(err, statsClient);
                     return routesUtils.responseNoBody(err, corsHeaders,
                         response, 200, log);
                 });
-        } else if (request.query.tagging !== undefined) {
+        } else if (query.tagging !== undefined) {
             api.callApiMethod('bucketPutTagging', request, response, log,
                 (err, corsHeaders) => {
                     routesUtils.statsReport500(err, statsClient);
                     return routesUtils.responseNoBody(err, corsHeaders,
                         response, 200, log);
                 });
-        } else if (request.query.cors !== undefined) {
+        } else if (query.cors !== undefined) {
             api.callApiMethod('bucketPutCors', request, response, log,
                 (err, corsHeaders) => {
                     routesUtils.statsReport500(err, statsClient);
                     return routesUtils.responseNoBody(err, corsHeaders,
                         response, 200, log);
                 });
-        } else if (request.query.replication !== undefined) {
+        } else if (query.replication !== undefined) {
             api.callApiMethod('bucketPutReplication', request, response, log,
                 (err, corsHeaders) => {
                     routesUtils.statsReport500(err, statsClient);
                     routesUtils.responseNoBody(err, corsHeaders, response, 200,
                         log);
                 });
-        } else if (request.query.lifecycle !== undefined) {
+        } else if (query.lifecycle !== undefined) {
             api.callApiMethod('bucketPutLifecycle', request, response, log,
                 (err, corsHeaders) => {
                     routesUtils.statsReport500(err, statsClient);
                     routesUtils.responseNoBody(err, corsHeaders, response, 200,
                         log);
                 });
-        } else if (request.query.policy !== undefined) {
+        } else if (query.policy !== undefined) {
             api.callApiMethod('bucketPutPolicy', request, response, log,
                 (err, corsHeaders) => {
                     routesUtils.statsReport500(err, statsClient);
                     routesUtils.responseNoBody(err, corsHeaders, response, 200,
                         log);
                 });
-        } else if (request.query['object-lock'] !== undefined) {
+        } else if (query['object-lock'] !== undefined) {
             api.callApiMethod('bucketPutObjectLock', request, response, log,
                 (err, corsHeaders) => {
                     routesUtils.statsReport500(err, statsClient);
                     routesUtils.responseNoBody(err, corsHeaders, response, 200,
                         log);
                 });
-        } else if (request.query.notification !== undefined) {
+        } else if (query.notification !== undefined) {
             api.callApiMethod('bucketPutNotification', request, response, log,
                 (err, corsHeaders) => {
                     routesUtils.statsReport500(err, statsClient);
                     routesUtils.responseNoBody(err, corsHeaders, response, 200,
                         log);
                 });
-        } else if (request.query.encryption !== undefined) {
+        } else if (query.encryption !== undefined) {
             api.callApiMethod('bucketPutEncryption', request, response, log,
                 (err, corsHeaders) => {
                     routesUtils.statsReport500(err, statsClient);
@@ -99,7 +108,7 @@ function routePUT(request, response, api, log, statsClient) {
             return api.callApiMethod('bucketPut', request, response, log,
                 (err, corsHeaders) => {
                     routesUtils.statsReport500(err, statsClient);
-                    const location = { Location: `/${request.bucketName}` };
+                    const location = { Location: `/${bucketName}` };
                     const resHeaders = corsHeaders ?
                         Object.assign({}, location, corsHeaders) : location;
                     return routesUtils.responseNoBody(err, resHeaders,
@@ -120,23 +129,26 @@ function routePUT(request, response, api, log, statsClient) {
                 .responseNoBody(errors.InvalidDigest, null, response, 200, log);
         }
         if (request.headers['content-md5']) {
+            // @ts-ignore
             request.contentMD5 = request.headers['content-md5'];
         } else {
+            // @ts-ignore
             request.contentMD5 = routesUtils.parseContentMD5(request.headers);
         }
+        // @ts-ignore
         if (request.contentMD5 && request.contentMD5.length !== 32) {
-            request.contentMD5 = Buffer.from(request.contentMD5, 'base64')
-                .toString('hex');
+            // @ts-ignore
+            request.contentMD5 = Buffer.from(request.contentMD5, 'base64').toString('hex');
+            // @ts-ignore
             if (request.contentMD5 && request.contentMD5.length !== 32) {
-                log.debug('invalid md5 digest', {
-                    contentMD5: request.contentMD5,
-                });
+                // @ts-ignore
+                log.debug('invalid md5 digest', { contentMD5: request.contentMD5 });
                 return routesUtils
                     .responseNoBody(errors.InvalidDigest, null, response, 200,
                         log);
             }
         }
-        if (request.query.partNumber) {
+        if (query.partNumber) {
             if (request.headers['x-amz-copy-source']) {
                 api.callApiMethod('objectPutCopyPart', request, response, log,
                     (err, xml, additionalHeaders) => {
@@ -159,28 +171,28 @@ function routePUT(request, response, api, log, statsClient) {
                             response, 200, log);
                     });
             }
-        } else if (request.query.acl !== undefined) {
+        } else if (query.acl !== undefined) {
             api.callApiMethod('objectPutACL', request, response, log,
                 (err, resHeaders) => {
                     routesUtils.statsReport500(err, statsClient);
                     return routesUtils.responseNoBody(err, resHeaders,
                         response, 200, log);
                 });
-        } else if (request.query['legal-hold'] !== undefined) {
+        } else if (query['legal-hold'] !== undefined) {
             api.callApiMethod('objectPutLegalHold', request, response, log,
                 (err, resHeaders) => {
                     routesUtils.statsReport500(err, statsClient);
                     return routesUtils.responseNoBody(err, resHeaders,
                         response, 200, log);
                 });
-        } else if (request.query.tagging !== undefined) {
+        } else if (query.tagging !== undefined) {
             api.callApiMethod('objectPutTagging', request, response, log,
                 (err, resHeaders) => {
                     routesUtils.statsReport500(err, statsClient);
                     return routesUtils.responseNoBody(err, resHeaders,
                         response, 200, log);
                 });
-        } else if (request.query.retention !== undefined) {
+        } else if (query.retention !== undefined) {
             api.callApiMethod('objectPutRetention', request, response, log,
                 (err, resHeaders) => {
                     routesUtils.statsReport500(err, statsClient);
@@ -200,14 +212,13 @@ function routePUT(request, response, api, log, statsClient) {
                 return routesUtils.responseNoBody(errors.MissingContentLength,
                     null, response, 411, log);
             }
-            if (Number.isNaN(request.parsedContentLength) ||
-            request.parsedContentLength < 0) {
+            if (Number.isNaN(parsedContentLength) || parsedContentLength < 0) {
                 return routesUtils.responseNoBody(errors.BadRequest,
                     null, response, 400, log);
             }
-            log.end().addDefaultFields({
-                contentLength: request.parsedContentLength,
-            });
+            // TODO ARSN-216 What's happening?
+            // @ts-ignore
+            log.end().addDefaultFields({ contentLength: request.parsedContentLength });
             api.callApiMethod('objectPut', request, response, log,
                 (err, resHeaders) => {
                     routesUtils.statsReport500(err, statsClient);
@@ -218,5 +229,3 @@ function routePUT(request, response, api, log, statsClient) {
     }
     return undefined;
 }
-/* eslint-enable no-param-reassign */
-module.exports = routePUT;

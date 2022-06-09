@@ -225,12 +225,6 @@ export default class LifecycleConfiguration {
      * }
      */
     _parseRule(rule: XMLRule) {
-        if (rule.NoncurrentVersionTransition) {
-            const error = errors.NotImplemented.customizeDescription(
-                'NoncurrentVersionTransition lifecycle action not yet ' +
-                'implemented');
-            return { error };
-        }
         // Either Prefix or Filter must be included, but can be empty string
         if ((!rule.Filter && rule.Filter !== '') &&
         (!rule.Prefix && rule.Prefix !== '')) {

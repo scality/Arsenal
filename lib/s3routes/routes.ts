@@ -1,17 +1,17 @@
-const assert = require('assert');
-
-const errors = require('../errors').default;
-const routeGET = require('./routes/routeGET');
-const routePUT = require('./routes/routePUT');
-const routeDELETE = require('./routes/routeDELETE');
-const routeHEAD = require('./routes/routeHEAD');
-const routePOST = require('./routes/routePOST');
-const routeOPTIONS = require('./routes/routeOPTIONS');
-const routesUtils = require('./routesUtils');
-const routeWebsite = require('./routes/routeWebsite');
-
-const { objectKeyByteLimit } = require('../constants');
-const requestUtils = require('../../lib/policyEvaluator/requestUtils');
+import assert from 'assert';
+import errors from '../errors';
+import routeGET from './routes/routeGET';
+import routePUT from './routes/routePUT';
+import routeDELETE from './routes/routeDELETE';
+import routeHEAD from './routes/routeHEAD';
+import routePOST from './routes/routePOST';
+import routeOPTIONS from './routes/routeOPTIONS';
+import * as routesUtils from './routesUtils';
+import routeWebsite from './routes/routeWebsite';
+import * as http from 'http';
+import StatsClient from '../metrics/StatsClient';
+import { objectKeyByteLimit } from '../constants';
+import * as requestUtils from '../../lib/policyEvaluator/requestUtils';
 
 const routeMap = {
     GET: routeGET,
@@ -22,13 +22,13 @@ const routeMap = {
     OPTIONS: routeOPTIONS,
 };
 
-function isValidReqUids(reqUids) {
+function isValidReqUids(reqUids: string | string[]) {
     // baseline check, to avoid the risk of running into issues if
     // users craft a large x-scal-request-uids header
     return reqUids.length < 128;
 }
 
-function checkUnsupportedRoutes(reqMethod) {
+function checkUnsupportedRoutes(reqMethod: keyof typeof routeMap) {
     const method = routeMap[reqMethod];
     if (!method) {
         return { error: errors.MethodNotAllowed };
@@ -36,8 +36,14 @@ function checkUnsupportedRoutes(reqMethod) {
     return { method };
 }
 
-function checkBucketAndKey(bucketName, objectKey, method, reqQuery,
-    blacklistedPrefixes, log) {
+function checkBucketAndKey(
+    bucketName: string,
+    objectKey: string,
+    method: keyof typeof routeMap,
+    reqQuery: any,
+    blacklistedPrefixes: any,
+    log: RequestLogger,
+) {
     // if empty name and request not a List Buckets
     if (!bucketName && !(method === 'GET' && !objectKey)) {
         log.debug('empty bucket name', { method: 'routes' });
@@ -77,7 +83,13 @@ function checkBucketAndKey(bucketName, objectKey, method, reqQuery,
 }
 
 // TODO: ARSN-59 remove assertions or restrict it to dev environment only.
-function checkTypes(req, res, params, logger, s3config) {
+function checkTypes(
+    req: http.IncomingMessage,
+    res: http.ServerResponse,
+    params: Params,
+    logger: RequestLogger,
+    s3config?: any,
+) {
     assert.strictEqual(typeof req, 'object',
         'bad routes param: req must be an object');
     assert.strictEqual(typeof res, 'object',
@@ -129,29 +141,48 @@ function checkTypes(req, res, params, logger, s3config) {
     }
 }
 
+export type Params = {
+    allEndpoints: string[];
+    statsClient?: StatsClient;
+    internalHandlers: any;
+    websiteEndpoints: string[];
+    dataRetrievalParams: any;
+    blacklistedPrefixes: {
+        bucket: string[];
+        object: string[];
+    };
+    unsupportedQueries: any;
+    api: { callApiMethod: routesUtils.CallApiMethod };
+}
+
 /** routes - route request to appropriate method
- * @param {Http.Request} req - http request object
- * @param {Http.ServerResponse} res - http response sent to the client
- * @param {object} params - additional routing parameters
- * @param {object} params.api - all api methods and method to call an api method
+ * @param req - http request object
+ * @param res - http response sent to the client
+ * @param params - additional routing parameters
+ * @param params.api - all api methods and method to call an api method
  *  i.e. api.callApiMethod(methodName, request, response, log, callback)
- * @param {function} params.internalHandlers - internal handlers API object
+ * @param params.internalHandlers - internal handlers API object
  *  for queries beginning with '/_/'
- * @param {StatsClient} [params.statsClient] - client to report stats to Redis
- * @param {string[]} params.allEndpoints - all accepted REST endpoints
- * @param {string[]} params.websiteEndpoints - all accepted website endpoints
- * @param {object} params.blacklistedPrefixes - blacklisted prefixes
- * @param {string[]} params.blacklistedPrefixes.bucket - bucket prefixes
- * @param {string[]} params.blacklistedPrefixes.object - object prefixes
- * @param {object} params.unsupportedQueries - object containing true/false
+ * @param [params.statsClient] - client to report stats to Redis
+ * @param params.allEndpoints - all accepted REST endpoints
+ * @param params.websiteEndpoints - all accepted website endpoints
+ * @param params.blacklistedPrefixes - blacklisted prefixes
+ * @param params.blacklistedPrefixes.bucket - bucket prefixes
+ * @param params.blacklistedPrefixes.object - object prefixes
+ * @param params.unsupportedQueries - object containing true/false
  *  values for whether queries are supported
- * @param {function} params.dataRetrievalParams - params to create instance of
+ * @param params.dataRetrievalParams - params to create instance of
  * data retrieval function
- * @param {RequestLogger} logger - werelogs logger instance
- * @param {String} [s3config] - s3 configuration
- * @returns {undefined}
+ * @param logger - werelogs logger instance
+ * @param [s3config] - s3 configuration
  */
-function routes(req, res, params, logger, s3config) {
+export default function routes(
+    req: http.IncomingMessage,
+    res: http.ServerResponse,
+    params: Params,
+    logger: RequestLogger,
+    s3config?: any,
+) {
     checkTypes(req, res, params, logger);
 
     const {
@@ -169,6 +200,7 @@ function routes(req, res, params, logger, s3config) {
         clientPort: req.socket.remotePort,
         httpMethod: req.method,
         httpURL: req.url,
+        // @ts-ignore
         endpoint: req.endpoint,
     };
 
@@ -179,25 +211,27 @@ function routes(req, res, params, logger, s3config) {
         reqUids = undefined;
     }
     const log = (reqUids !== undefined ?
+        // @ts-ignore
         logger.newRequestLoggerFromSerializedUids(reqUids) :
+        // @ts-ignore
         logger.newRequestLogger());
 
-    if (!req.url.startsWith('/_/healthcheck') &&
-        !req.url.startsWith('/_/report')) {
+    if (!req.url!.startsWith('/_/healthcheck') &&
+        !req.url!.startsWith('/_/report')) {
         log.info('received request', clientInfo);
     }
 
     log.end().addDefaultFields(clientInfo);
 
-    if (req.url.startsWith('/_/')) {
-        let internalServiceName = req.url.slice(3);
+    if (req.url!.startsWith('/_/')) {
+        let internalServiceName = req.url!.slice(3);
         const serviceDelim = internalServiceName.indexOf('/');
         if (serviceDelim !== -1) {
             internalServiceName = internalServiceName.slice(0, serviceDelim);
         }
         if (internalHandlers[internalServiceName] === undefined) {
             return routesUtils.responseXMLBody(
-                errors.InvalidURI, undefined, res, log);
+                errors.InvalidURI, null, res, log);
         }
         return internalHandlers[internalServiceName](
             clientInfo.clientIP, req, res, log, statsClient);
@@ -211,29 +245,37 @@ function routes(req, res, params, logger, s3config) {
     try {
         const validHosts = allEndpoints.concat(websiteEndpoints);
         routesUtils.normalizeRequest(req, validHosts);
-    } catch (err) {
+    } catch (err: any) {
         log.debug('could not normalize request', { error: err.stack });
         return routesUtils.responseXMLBody(
             errors.InvalidURI.customizeDescription('Could not parse the ' +
                 'specified URI. Check your restEndpoints configuration.'),
-            undefined, res, log);
+            null, res, log);
     }
 
     log.addDefaultFields({
+        // @ts-ignore
         bucketName: req.bucketName,
+        // @ts-ignore
         objectKey: req.objectKey,
+        // @ts-ignore
         bytesReceived: req.parsedContentLength || 0,
+        // @ts-ignore
         bodyLength: parseInt(req.headers['content-length'], 10) || 0,
     });
 
+    // @ts-ignore
     const { error, method } = checkUnsupportedRoutes(req.method, req.query);
 
     if (error) {
         log.trace('error validating route or uri params', { error });
-        return routesUtils.responseXMLBody(error, null, res, log);
+        // @ts-ignore
+        return routesUtils.responseXMLBody(error, '', res, log);
     }
 
+    // @ts-ignore
     const bucketOrKeyError = checkBucketAndKey(req.bucketName, req.objectKey,
+        // @ts-ignore
         req.method, req.query, blacklistedPrefixes, log);
 
     if (bucketOrKeyError) {
@@ -243,11 +285,10 @@ function routes(req, res, params, logger, s3config) {
     }
 
     // bucket website request
+    // @ts-ignore
     if (websiteEndpoints && websiteEndpoints.indexOf(req.parsedHost) > -1) {
         return routeWebsite(req, res, api, log, statsClient, dataRetrievalParams);
     }
 
     return method(req, res, api, log, statsClient, dataRetrievalParams);
 }
-
-module.exports = routes;

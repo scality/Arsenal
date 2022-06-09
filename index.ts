@@ -31,6 +31,7 @@ export * as constants from './lib/constants';
 export * as https from './lib/https';
 export * as metrics from './lib/metrics';
 export * as network from './lib/network';
+export * as s3routes from './lib/s3routes';
 export * as versioning from './lib/versioning';
 export * as stream from './lib/stream';
 export * as jsutil from './lib/jsutil';
@@ -66,11 +67,6 @@ export const policies = {
 
 export const testing = {
     matrix: require('./lib/testing/matrix.js'),
-};
-
-export const s3routes = {
-    routes: require('./lib/s3routes/routes'),
-    routesUtils: require('./lib/s3routes/routesUtils'),
 };
 
 export const s3middleware = {
