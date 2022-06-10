@@ -171,7 +171,7 @@ export default class NotificationConfiguration {
      */
     _parseFilter(filter: any[]) {
         if (!filter || !filter[0]) {
-            return { filterRules: [] };
+            return { filterRules: undefined };
         }
         if (!filter[0].S3Key || !filter[0].S3Key[0]) {
             return { error: errors.MalformedXML.customizeDescription(
