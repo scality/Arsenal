@@ -1,17 +1,90 @@
-const crypto = require('crypto');
+import * as crypto from 'crypto';
+import * as constants from '../constants';
+import * as VersionIDUtils from '../versioning/VersionID';
+import ObjectMDLocation, {
+    ObjectMDLocationData,
+    Location,
+} from './ObjectMDLocation';
+import ObjectMDAmzRestore from './ObjectMDAmzRestore';
+import ObjectMDArchive from './ObjectMDArchive';
 
-const constants = require('../constants');
-const VersionIDUtils = require('../versioning/VersionID');
+export type ACL = {
+    Canned: string;
+    FULL_CONTROL: string[];
+    WRITE_ACP: string[];
+    READ: string[];
+    READ_ACP: string[];
+};
 
-const ObjectMDLocation = require('./ObjectMDLocation');
-const ObjectMDAmzRestore = require('./ObjectMDAmzRestore');
-const ObjectMDArchive = require('./ObjectMDArchive');
+export type Backend = {
+    site: string;
+    status: string;
+    dataStoreVersionId: string;
+};
+
+export type ReplicationInfo = {
+    status: string;
+    backends: Backend[];
+    content: string[];
+    destination: string;
+    storageClass: string;
+    role: string;
+    storageType: string;
+    dataStoreVersionId: string;
+    isNFS: boolean | null;
+};
+
+export type ObjectMDData = {
+    'owner-display-name': string;
+    'owner-id': string;
+    'cache-control': string;
+    'content-disposition': string;
+    'content-language': string;
+    'content-encoding': string;
+    'creation-time'?: string;
+    'last-modified'?: string;
+    expires: string;
+    'content-length': number;
+    'content-type': string;
+    'content-md5': string;
+    'x-amz-version-id': 'null' | string;
+    'x-amz-server-version-id': string;
+    'x-amz-restore'?: ObjectMDAmzRestore;
+    archive?: ObjectMDArchive;
+    'x-amz-storage-class': string;
+    'x-amz-server-side-encryption': string;
+    'x-amz-server-side-encryption-aws-kms-key-id': string;
+    'x-amz-server-side-encryption-customer-algorithm': string;
+    'x-amz-website-redirect-location': string;
+    azureInfo?: any;
+    acl: ACL;
+    key: string;
+    location: null | Location[];
+    // versionId, isNull, nullVersionId and isDeleteMarker
+    // should be undefined when not set explicitly
+    isNull?: boolean;
+    nullVersionId?: string;
+    nullUploadId?: string;
+    isDeleteMarker?: boolean;
+    versionId?: string;
+    uploadId?: string;
+    legalHold?: boolean;
+    retentionMode?: string;
+    retentionDate?: string;
+    tags: {};
+    replicationInfo: ReplicationInfo;
+    dataStoreName: string;
+    originOp: string;
+    microVersionId?: string;
+};
 
 /**
  * Class to manage metadata object for regular s3 objects (instead of
  * mpuPart metadata for example)
  */
-class ObjectMD {
+export default class ObjectMD {
+    _data: ObjectMDData;
+
     /**
      * Create a new instance of ObjectMD. Parameter <tt>objMd</tt> is
      * reserved for internal use, users should call
@@ -19,12 +92,12 @@ class ObjectMD {
      * metadata blob and check the returned value for errors.
      *
      * @constructor
-     * @param {ObjectMD|object} [objMd] - object metadata source,
+     * @param [objMd] - object metadata source,
      *   either an ObjectMD instance or a native JS object parsed from
      *   JSON
      */
-    constructor(objMd = undefined) {
-        this._initMd();
+    constructor(objMd?: Object | ObjectMD) {
+        this._data = this._initMd();
         if (objMd !== undefined) {
             if (objMd instanceof ObjectMD) {
                 this._updateFromObjectMD(objMd);
@@ -32,7 +105,10 @@ class ObjectMD {
                 this._updateFromParsedJSON(objMd);
             }
             if (!this._data['creation-time']) {
-                this.setCreationTime(this.getLastModified());
+                const lastModified = this.getLastModified();
+                if (lastModified) {
+                    this.setCreationTime(lastModified);
+                }
             }
         } else {
             // set newly-created object md modified time to current time
@@ -48,14 +124,14 @@ class ObjectMD {
     /**
      * create an ObjectMD instance from stored metadata
      *
-     * @param {String|Buffer} storedBlob - serialized metadata blob
-     * @return {object} a result object containing either a 'result'
+     * @param storedBlob - serialized metadata blob
+     * @return a result object containing either a 'result'
      *   property which value is a new ObjectMD instance on success, or
      *   an 'error' property on error
      */
-    static createFromBlob(storedBlob) {
+    static createFromBlob(storedBlob: string | Buffer) {
         try {
-            const objMd = JSON.parse(storedBlob);
+            const objMd = JSON.parse(storedBlob.toString());
             return { result: new ObjectMD(objMd) };
         } catch (err) {
             return { error: err };
@@ -65,13 +141,13 @@ class ObjectMD {
     /**
      * Returns metadata attributes for the current model
      *
-     * @return {object} object with keys of existing attributes
+     * @return object with keys of existing attributes
      * and value set to true
      */
     static getAttributes() {
         const sample = new ObjectMD();
-        const attributes = {};
-        Object.keys(sample.getValue()).forEach(key => {
+        const attributes: { [key in keyof ObjectMDData]?: true } = {};
+        Object.keys(sample.getValue()).forEach((key) => {
             attributes[key] = true;
         });
         return attributes;
@@ -81,15 +157,15 @@ class ObjectMD {
         return JSON.stringify(this.getValue());
     }
 
-    _initMd() {
+    _initMd(): ObjectMDData {
         // initialize md with default values
-        this._data = {
+        return {
             'owner-display-name': '',
             'owner-id': '',
             'cache-control': '',
             'content-disposition': '',
             'content-encoding': '',
-            'expires': '',
+            expires: '',
             'content-length': 0,
             'content-type': '',
             'content-md5': '',
@@ -107,26 +183,26 @@ class ObjectMD {
             'x-amz-server-side-encryption-aws-kms-key-id': '',
             'x-amz-server-side-encryption-customer-algorithm': '',
             'x-amz-website-redirect-location': '',
-            'acl': {
+            acl: {
                 Canned: 'private',
                 FULL_CONTROL: [],
                 WRITE_ACP: [],
                 READ: [],
                 READ_ACP: [],
             },
-            'key': '',
-            'location': null,
-            'azureInfo': undefined,
+            key: '',
+            location: null,
+            azureInfo: undefined,
             // versionId, isNull, nullVersionId and isDeleteMarker
             // should be undefined when not set explicitly
-            'isNull': undefined,
-            'nullVersionId': undefined,
-            'nullUploadId': undefined,
-            'isDeleteMarker': undefined,
-            'versionId': undefined,
-            'uploadId': undefined,
-            'tags': {},
-            'replicationInfo': {
+            isNull: undefined,
+            nullVersionId: undefined,
+            nullUploadId: undefined,
+            isDeleteMarker: undefined,
+            versionId: undefined,
+            uploadId: undefined,
+            tags: {},
+            replicationInfo: {
                 status: '',
                 backends: [],
                 content: [],
@@ -137,23 +213,22 @@ class ObjectMD {
                 dataStoreVersionId: '',
                 isNFS: null,
             },
-            'dataStoreName': '',
-            'originOp': '',
+            dataStoreName: '',
+            originOp: '',
         };
     }
 
-    _updateFromObjectMD(objMd) {
+    _updateFromObjectMD(objMd: ObjectMD) {
         // We only duplicate selected attributes here, where setters
         // allow to change inner values, and let the others as shallow
         // copies. Since performance is a concern, we want to avoid
         // the JSON.parse(JSON.stringify()) method.
 
         Object.assign(this._data, objMd._data);
-        Object.assign(this._data.replicationInfo,
-            objMd._data.replicationInfo);
+        Object.assign(this._data.replicationInfo, objMd._data.replicationInfo);
     }
 
-    _updateFromParsedJSON(objMd) {
+    _updateFromParsedJSON(objMd: Object) {
         // objMd is a new JS object created for the purpose, it's safe
         // to just assign its top-level properties.
 
@@ -163,7 +238,8 @@ class ObjectMD {
 
     _convertToLatestModel() {
         // handle backward-compat stuff
-        if (typeof(this._data.location) === 'string') {
+        if (typeof this._data.location === 'string') {
+            // @ts-ignore
             this.setLocation([{ key: this._data.location }]);
         }
     }
@@ -171,10 +247,10 @@ class ObjectMD {
     /**
      * Set owner display name
      *
-     * @param {string} displayName - Owner display name
-     * @return {ObjectMD} itself
+     * @param displayName - Owner display name
+     * @return itself
      */
-    setOwnerDisplayName(displayName) {
+    setOwnerDisplayName(displayName: string) {
         this._data['owner-display-name'] = displayName;
         return this;
     }
@@ -182,7 +258,7 @@ class ObjectMD {
     /**
      * Returns owner display name
      *
-     * @return {string} Onwer display name
+     * @return Onwer display name
      */
     getOwnerDisplayName() {
         return this._data['owner-display-name'];
@@ -191,10 +267,10 @@ class ObjectMD {
     /**
      * Set owner id
      *
-     * @param {string} id - Owner id
-     * @return {ObjectMD} itself
+     * @param id - Owner id
+     * @return itself
      */
-    setOwnerId(id) {
+    setOwnerId(id: string) {
         this._data['owner-id'] = id;
         return this;
     }
@@ -202,7 +278,7 @@ class ObjectMD {
     /**
      * Returns owner id
      *
-     * @return {string} owner id
+     * @return owner id
      */
     getOwnerId() {
         return this._data['owner-id'];
@@ -211,10 +287,10 @@ class ObjectMD {
     /**
      * Set cache control
      *
-     * @param {string} cacheControl - Cache control
-     * @return {ObjectMD} itself
+     * @param cacheControl - Cache control
+     * @return itself
      */
-    setCacheControl(cacheControl) {
+    setCacheControl(cacheControl: string) {
         this._data['cache-control'] = cacheControl;
         return this;
     }
@@ -222,7 +298,7 @@ class ObjectMD {
     /**
      * Returns cache control
      *
-     * @return {string} Cache control
+     * @return Cache control
      */
     getCacheControl() {
         return this._data['cache-control'];
@@ -231,10 +307,10 @@ class ObjectMD {
     /**
      * Set content disposition
      *
-     * @param {string} contentDisposition - Content disposition
-     * @return {ObjectMD} itself
+     * @param contentDisposition - Content disposition
+     * @return itself
      */
-    setContentDisposition(contentDisposition) {
+    setContentDisposition(contentDisposition: string) {
         this._data['content-disposition'] = contentDisposition;
         return this;
     }
@@ -242,7 +318,7 @@ class ObjectMD {
     /**
      * Returns content disposition
      *
-     * @return {string} Content disposition
+     * @return Content disposition
      */
     getContentDisposition() {
         return this._data['content-disposition'];
@@ -251,10 +327,10 @@ class ObjectMD {
     /**
      * Set content encoding
      *
-     * @param {string} contentEncoding - Content encoding
-     * @return {ObjectMD} itself
+     * @param contentEncoding - Content encoding
+     * @return itself
      */
-    setContentEncoding(contentEncoding) {
+    setContentEncoding(contentEncoding: string) {
         this._data['content-encoding'] = contentEncoding;
         return this;
     }
@@ -262,7 +338,7 @@ class ObjectMD {
     /**
      * Returns content encoding
      *
-     * @return {string} Content encoding
+     * @return Content encoding
      */
     getContentEncoding() {
         return this._data['content-encoding'];
@@ -271,10 +347,10 @@ class ObjectMD {
     /**
      * Set expiration date
      *
-     * @param {string} expires - Expiration date
-     * @return {ObjectMD} itself
+     * @param expires - Expiration date
+     * @return itself
      */
-    setExpires(expires) {
+    setExpires(expires: string) {
         this._data.expires = expires;
         return this;
     }
@@ -282,7 +358,7 @@ class ObjectMD {
     /**
      * Returns expiration date
      *
-     * @return {string} Expiration date
+     * @return Expiration date
      */
     getExpires() {
         return this._data.expires;
@@ -291,10 +367,10 @@ class ObjectMD {
     /**
      * Set content length
      *
-     * @param {number} contentLength - Content length
-     * @return {ObjectMD} itself
+     * @param contentLength - Content length
+     * @return itself
      */
-    setContentLength(contentLength) {
+    setContentLength(contentLength: number) {
         this._data['content-length'] = contentLength;
         return this;
     }
@@ -302,7 +378,7 @@ class ObjectMD {
     /**
      * Returns content length
      *
-     * @return {number} Content length
+     * @return Content length
      */
     getContentLength() {
         return this._data['content-length'];
@@ -311,10 +387,10 @@ class ObjectMD {
     /**
      * Set content type
      *
-     * @param {string} contentType - Content type
-     * @return {ObjectMD} itself
+     * @param contentType - Content type
+     * @return itself
      */
-    setContentType(contentType) {
+    setContentType(contentType: string) {
         this._data['content-type'] = contentType;
         return this;
     }
@@ -322,7 +398,7 @@ class ObjectMD {
     /**
      * Returns content type
      *
-     * @return {string} Content type
+     * @return Content type
      */
     getContentType() {
         return this._data['content-type'];
@@ -331,10 +407,10 @@ class ObjectMD {
     /**
      * Set last modified date
      *
-     * @param {string} lastModified - Last modified date
-     * @return {ObjectMD} itself
+     * @param lastModified - Last modified date
+     * @return itself
      */
-    setLastModified(lastModified) {
+    setLastModified(lastModified: string) {
         this._data['last-modified'] = lastModified;
         return this;
     }
@@ -342,7 +418,7 @@ class ObjectMD {
     /**
      * Returns last modified date
      *
-     * @return {string} Last modified date
+     * @return Last modified date
      */
     getLastModified() {
         return this._data['last-modified'];
@@ -351,10 +427,10 @@ class ObjectMD {
     /**
      * Set content md5 hash
      *
-     * @param {string} contentMd5 - Content md5 hash
-     * @return {ObjectMD} itself
+     * @param contentMd5 - Content md5 hash
+     * @return itself
      */
-    setContentMd5(contentMd5) {
+    setContentMd5(contentMd5: string) {
         this._data['content-md5'] = contentMd5;
         return this;
     }
@@ -362,7 +438,7 @@ class ObjectMD {
     /**
      * Returns content md5 hash
      *
-     * @return {string} content md5 hash
+     * @return content md5 hash
      */
     getContentMd5() {
         return this._data['content-md5'];
@@ -371,10 +447,10 @@ class ObjectMD {
     /**
      * Set content-language
      *
-     * @param {string} contentLanguage - content-language
-     * @return {ObjectMD} itself
+     * @param contentLanguage - content-language
+     * @return itself
      */
-    setContentLanguage(contentLanguage) {
+    setContentLanguage(contentLanguage: string) {
         this._data['content-language'] = contentLanguage;
         return this;
     }
@@ -382,7 +458,7 @@ class ObjectMD {
     /**
      * Returns content-language
      *
-     * @return {string} content-language
+     * @return content-language
      */
     getContentLanguage() {
         return this._data['content-language'];
@@ -391,10 +467,10 @@ class ObjectMD {
     /**
      * Set Creation Date
      *
-     * @param {string} creationTime - Creation Date
-     * @return {ObjectMD} itself
+     * @param creationTime - Creation Date
+     * @return itself
      */
-    setCreationTime(creationTime) {
+    setCreationTime(creationTime: string) {
         this._data['creation-time'] = creationTime;
         return this;
     }
@@ -402,7 +478,7 @@ class ObjectMD {
     /**
      * Returns Creation Date
      *
-     * @return {string} Creation Date
+     * @return Creation Date
      */
     getCreationTime() {
         // If creation-time is not set fallback to LastModified
@@ -415,10 +491,10 @@ class ObjectMD {
     /**
      * Set version id
      *
-     * @param {string} versionId - Version id
-     * @return {ObjectMD} itself
+     * @param versionId - Version id
+     * @return itself
      */
-    setAmzVersionId(versionId) {
+    setAmzVersionId(versionId: string) {
         this._data['x-amz-version-id'] = versionId;
         return this;
     }
@@ -426,7 +502,7 @@ class ObjectMD {
     /**
      * Returns version id
      *
-     * @return {string} Version id
+     * @return Version id
      */
     getAmzVersionId() {
         return this._data['x-amz-version-id'];
@@ -435,10 +511,10 @@ class ObjectMD {
     /**
      * Set server version id
      *
-     * @param {string} versionId - server version id
-     * @return {ObjectMD} itself
+     * @param versionId - server version id
+     * @return itself
      */
-    setAmzServerVersionId(versionId) {
+    setAmzServerVersionId(versionId: string) {
         this._data['x-amz-server-version-id'] = versionId;
         return this;
     }
@@ -446,7 +522,7 @@ class ObjectMD {
     /**
      * Returns server version id
      *
-     * @return {string} server version id
+     * @return server version id
      */
     getAmzServerVersionId() {
         return this._data['x-amz-server-version-id'];
@@ -455,10 +531,10 @@ class ObjectMD {
     /**
      * Set storage class
      *
-     * @param {string} storageClass - Storage class
-     * @return {ObjectMD} itself
+     * @param storageClass - Storage class
+     * @return itself
      */
-    setAmzStorageClass(storageClass) {
+    setAmzStorageClass(storageClass: string) {
         this._data['x-amz-storage-class'] = storageClass;
         return this;
     }
@@ -466,7 +542,7 @@ class ObjectMD {
     /**
      * Returns storage class
      *
-     * @return {string} Storage class
+     * @return Storage class
      */
     getAmzStorageClass() {
         return this._data['x-amz-storage-class'];
@@ -475,10 +551,10 @@ class ObjectMD {
     /**
      * Set server side encryption
      *
-     * @param {string} serverSideEncryption - Server side encryption
-     * @return {ObjectMD} itself
+     * @param serverSideEncryption - Server side encryption
+     * @return itself
      */
-    setAmzServerSideEncryption(serverSideEncryption) {
+    setAmzServerSideEncryption(serverSideEncryption: string) {
         this._data['x-amz-server-side-encryption'] = serverSideEncryption;
         return this;
     }
@@ -486,7 +562,7 @@ class ObjectMD {
     /**
      * Returns server side encryption
      *
-     * @return {string} server side encryption
+     * @return server side encryption
      */
     getAmzServerSideEncryption() {
         return this._data['x-amz-server-side-encryption'];
@@ -495,10 +571,10 @@ class ObjectMD {
     /**
      * Set encryption key id
      *
-     * @param {string} keyId - Encryption key id
-     * @return {ObjectMD} itself
+     * @param keyId - Encryption key id
+     * @return itself
      */
-    setAmzEncryptionKeyId(keyId) {
+    setAmzEncryptionKeyId(keyId: string) {
         this._data['x-amz-server-side-encryption-aws-kms-key-id'] = keyId;
         return this;
     }
@@ -506,7 +582,7 @@ class ObjectMD {
     /**
      * Returns encryption key id
      *
-     * @return {string} Encryption key id
+     * @return Encryption key id
      */
     getAmzEncryptionKeyId() {
         return this._data['x-amz-server-side-encryption-aws-kms-key-id'];
@@ -515,10 +591,10 @@ class ObjectMD {
     /**
      * Set encryption customer algorithm
      *
-     * @param {string} algo - Encryption customer algorithm
-     * @return {ObjectMD} itself
+     * @param algo - Encryption customer algorithm
+     * @return itself
      */
-    setAmzEncryptionCustomerAlgorithm(algo) {
+    setAmzEncryptionCustomerAlgorithm(algo: string) {
         this._data['x-amz-server-side-encryption-customer-algorithm'] = algo;
         return this;
     }
@@ -526,7 +602,7 @@ class ObjectMD {
     /**
      * Returns Encryption customer algorithm
      *
-     * @return {string} Encryption customer algorithm
+     * @return Encryption customer algorithm
      */
     getAmzEncryptionCustomerAlgorithm() {
         return this._data['x-amz-server-side-encryption-customer-algorithm'];
@@ -535,10 +611,10 @@ class ObjectMD {
     /**
      * Set metadata redirectLocation value
      *
-     * @param {string} redirectLocation - The website redirect location
-     * @return {ObjectMD} itself
+     * @param redirectLocation - The website redirect location
+     * @return itself
      */
-    setRedirectLocation(redirectLocation) {
+    setRedirectLocation(redirectLocation: string) {
         this._data['x-amz-website-redirect-location'] = redirectLocation;
         return this;
     }
@@ -546,7 +622,7 @@ class ObjectMD {
     /**
      * Get metadata redirectLocation value
      *
-     * @return {string} Website redirect location
+     * @return Website redirect location
      */
     getRedirectLocation() {
         return this._data['x-amz-website-redirect-location'];
@@ -555,15 +631,15 @@ class ObjectMD {
     /**
      * Set access control list
      *
-     * @param {object} acl - Access control list
-     * @param {string} acl.Canned -
-     * @param {string[]} acl.FULL_CONTROL -
-     * @param {string[]} acl.WRITE_ACP -
-     * @param {string[]} acl.READ -
-     * @param {string[]} acl.READ_ACP -
-     * @return {ObjectMD} itself
+     * @param acl - Access control list
+     * @param acl.Canned -
+     * @param acl.FULL_CONTROL -
+     * @param acl.WRITE_ACP -
+     * @param acl.READ -
+     * @param acl.READ_ACP -
+     * @return itself
      */
-    setAcl(acl) {
+    setAcl(acl: ACL) {
         this._data.acl = acl;
         return this;
     }
@@ -571,7 +647,7 @@ class ObjectMD {
     /**
      * Returns access control list
      *
-     * @return {object} Access control list
+     * @return Access control list
      */
     getAcl() {
         return this._data.acl;
@@ -580,10 +656,10 @@ class ObjectMD {
     /**
      * Set object key
      *
-     * @param {string} key - Object key
-     * @return {ObjectMD} itself
+     * @param key - Object key
+     * @return itself
      */
-    setKey(key) {
+    setKey(key: string) {
         this._data.key = key;
         return this;
     }
@@ -591,7 +667,7 @@ class ObjectMD {
     /**
      * Returns object key
      *
-     * @return {string} object key
+     * @return object key
      */
     getKey() {
         return this._data.key;
@@ -600,12 +676,12 @@ class ObjectMD {
     /**
      * Set location
      *
-     * @param {object[]} location - array of data locations (see
+     * @param location - array of data locations (see
      *   constructor of {@link ObjectMDLocation} for a description of
      *   fields for each array object)
-     * @return {ObjectMD} itself
+     * @return itself
      */
-    setLocation(location) {
+    setLocation(location: Location[]) {
         if (!Array.isArray(location) || location.length === 0) {
             this._data.location = null;
         } else {
@@ -617,7 +693,7 @@ class ObjectMD {
     /**
      * Returns location
      *
-     * @return {object[]} location
+     * @return location
      */
     getLocation() {
         const { location } = this._data;
@@ -629,16 +705,16 @@ class ObjectMD {
     // locations array to a single element for each part.
     getReducedLocations() {
         const locations = this.getLocation();
-        const reducedLocations = [];
+        const reducedLocations: ObjectMDLocationData[] = [];
         let partTotal = 0;
-        let start;
+        let start: number;
         for (let i = 0; i < locations.length; i++) {
             const currPart = new ObjectMDLocation(locations[i]);
             if (i === 0) {
                 start = currPart.getPartStart();
             }
             const currPartNum = currPart.getPartNumber();
-            let nextPartNum = undefined;
+            let nextPartNum: number | undefined = undefined;
             if (i < locations.length - 1) {
                 const nextPart = new ObjectMDLocation(locations[i + 1]);
                 nextPartNum = nextPart.getPartNumber();
@@ -646,8 +722,10 @@ class ObjectMD {
             partTotal += currPart.getPartSize();
             if (currPartNum !== nextPartNum) {
                 currPart.setPartSize(partTotal);
+                // @ts-ignore
                 currPart.setPartStart(start);
                 reducedLocations.push(currPart.getValue());
+                // @ts-ignore
                 start += partTotal;
                 partTotal = 0;
             }
@@ -657,20 +735,20 @@ class ObjectMD {
 
     /**
      * Set the Azure specific information
-     * @param {object} azureInfo - a plain JS structure representing the
+     * @param azureInfo - a plain JS structure representing the
      *   Azure specific information for a Blob or a Container (see constructor
      *   of {@link ObjectMDAzureInfo} for a description of the fields of this
      *   structure
-     * @return {ObjectMD} itself
+     * @return itself
      */
-    setAzureInfo(azureInfo) {
+    setAzureInfo(azureInfo: any) {
         this._data.azureInfo = azureInfo;
         return this;
     }
 
     /**
      * Get the Azure specific information
-     * @return {object} a plain JS structure representing the Azure specific
+     * @return a plain JS structure representing the Azure specific
      *   information for a Blob or a Container an suitable for the constructor
      *   of {@link ObjectMDAzureInfo}.
      */
@@ -681,10 +759,10 @@ class ObjectMD {
     /**
      * Set metadata isNull value
      *
-     * @param {boolean} isNull - Whether new version is null or not
-     * @return {ObjectMD} itself
+     * @param isNull - Whether new version is null or not
+     * @return itself
      */
-    setIsNull(isNull) {
+    setIsNull(isNull: boolean) {
         this._data.isNull = isNull;
         return this;
     }
@@ -692,7 +770,7 @@ class ObjectMD {
     /**
      * Get metadata isNull value
      *
-     * @return {boolean} Whether new version is null or not
+     * @return Whether new version is null or not
      */
     getIsNull() {
         return this._data.isNull || false;
@@ -701,10 +779,10 @@ class ObjectMD {
     /**
      * Set metadata nullVersionId value
      *
-     * @param {string} nullVersionId - The version id of the null version
-     * @return {ObjectMD} itself
+     * @param nullVersionId - The version id of the null version
+     * @return itself
      */
-    setNullVersionId(nullVersionId) {
+    setNullVersionId(nullVersionId: string) {
         this._data.nullVersionId = nullVersionId;
         return this;
     }
@@ -712,7 +790,7 @@ class ObjectMD {
     /**
      * Get metadata nullVersionId value
      *
-     * @return {string|undefined} The version id of the null version
+     * @return The version id of the null version
      */
     getNullVersionId() {
         return this._data.nullVersionId;
@@ -721,11 +799,11 @@ class ObjectMD {
     /**
      * Set metadata nullUploadId value
      *
-     * @param {string} nullUploadId - The upload ID used to complete
+     * @param nullUploadId - The upload ID used to complete
      * the MPU of the null version
-     * @return {ObjectMD} itself
+     * @return itself
      */
-    setNullUploadId(nullUploadId) {
+    setNullUploadId(nullUploadId: string) {
         this._data.nullUploadId = nullUploadId;
         return this;
     }
@@ -733,7 +811,7 @@ class ObjectMD {
     /**
      * Get metadata nullUploadId value
      *
-     * @return {string|undefined} The object nullUploadId
+     * @return The object nullUploadId
      */
     getNullUploadId() {
         return this._data.nullUploadId;
@@ -742,10 +820,10 @@ class ObjectMD {
     /**
      * Set metadata isDeleteMarker value
      *
-     * @param {boolean} isDeleteMarker - Whether object is a delete marker
-     * @return {ObjectMD} itself
+     * @param isDeleteMarker - Whether object is a delete marker
+     * @return itself
      */
-    setIsDeleteMarker(isDeleteMarker) {
+    setIsDeleteMarker(isDeleteMarker: boolean) {
         this._data.isDeleteMarker = isDeleteMarker;
         return this;
     }
@@ -753,7 +831,7 @@ class ObjectMD {
     /**
      * Get metadata isDeleteMarker value
      *
-     * @return {boolean} Whether object is a delete marker
+     * @return Whether object is a delete marker
      */
     getIsDeleteMarker() {
         return this._data.isDeleteMarker || false;
@@ -766,7 +844,7 @@ class ObjectMD {
      * dash ('-') it is a MPU, as the content-md5 string ends with
      * "-[nbparts]" for MPUs.
      *
-     * @return {boolean} Whether object is a multipart upload
+     * @return Whether object is a multipart upload
      */
     isMultipartUpload() {
         return this.getContentMd5().includes('-');
@@ -775,10 +853,10 @@ class ObjectMD {
     /**
      * Set metadata versionId value
      *
-     * @param {string} versionId - The object versionId
-     * @return {ObjectMD} itself
+     * @param versionId - The object versionId
+     * @return itself
      */
-    setVersionId(versionId) {
+    setVersionId(versionId: string) {
         this._data.versionId = versionId;
         return this;
     }
@@ -786,7 +864,7 @@ class ObjectMD {
     /**
      * Get metadata versionId value
      *
-     * @return {string|undefined} The object versionId
+     * @return The object versionId
      */
     getVersionId() {
         return this._data.versionId;
@@ -796,22 +874,22 @@ class ObjectMD {
      * Get metadata versionId value in encoded form (the one visible
      * to the S3 API user)
      *
-     * @return {string|undefined} The encoded object versionId
+     * @return The encoded object versionId
      */
     getEncodedVersionId() {
-        if (this.getVersionId()) {
-            return VersionIDUtils.encode(this.getVersionId());
+        const versionId = this.getVersionId();
+        if (versionId) {
+            return VersionIDUtils.encode(versionId);
         }
-        return undefined;
     }
 
     /**
      * Set metadata uploadId value
      *
-     * @param {string} uploadId - The upload ID used to complete the MPU object
-     * @return {ObjectMD} itself
+     * @param uploadId - The upload ID used to complete the MPU object
+     * @return itself
      */
-    setUploadId(uploadId) {
+    setUploadId(uploadId: string) {
         this._data.uploadId = uploadId;
         return this;
     }
@@ -819,7 +897,7 @@ class ObjectMD {
     /**
      * Get metadata uploadId value
      *
-     * @return {string|undefined} The object uploadId
+     * @return The object uploadId
      */
     getUploadId() {
         return this._data.uploadId;
@@ -828,10 +906,10 @@ class ObjectMD {
     /**
      * Set tags
      *
-     * @param {object} tags - tags object
-     * @return {ObjectMD} itself
+     * @param tags - tags object
+     * @return itself
      */
-    setTags(tags) {
+    setTags(tags: any) {
         this._data.tags = tags;
         return this;
     }
@@ -839,7 +917,7 @@ class ObjectMD {
     /**
      * Returns tags
      *
-     * @return {object} tags object
+     * @return tags object
      */
     getTags() {
         return this._data.tags;
@@ -862,12 +940,31 @@ class ObjectMD {
     /**
      * Set replication information
      *
-     * @param {object} replicationInfo - replication information object
-     * @return {ObjectMD} itself
+     * @param replicationInfo - replication information object
+     * @return itself
      */
-    setReplicationInfo(replicationInfo) {
-        const { status, backends, content, destination, storageClass, role,
-            storageType, dataStoreVersionId, isNFS } = replicationInfo;
+    setReplicationInfo(replicationInfo: {
+        status: string;
+        backends: Backend[];
+        content: string[];
+        destination: string;
+        storageClass?: string;
+        role: string;
+        storageType?: string;
+        dataStoreVersionId?: string;
+        isNFS?: boolean;
+    }) {
+        const {
+            status,
+            backends,
+            content,
+            destination,
+            storageClass,
+            role,
+            storageType,
+            dataStoreVersionId,
+            isNFS,
+        } = replicationInfo;
         this._data.replicationInfo = {
             status,
             backends,
@@ -885,87 +982,91 @@ class ObjectMD {
     /**
      * Get replication information
      *
-     * @return {object} replication object
+     * @return replication object
      */
     getReplicationInfo() {
         return this._data.replicationInfo;
     }
 
-    setReplicationStatus(status) {
+    setReplicationStatus(status: string) {
         this._data.replicationInfo.status = status;
         return this;
     }
 
     /**
      * Set whether the replication is occurring from an NFS bucket.
-     * @param {Boolean} isNFS - Whether replication from an NFS bucket
-     * @return {ObjectMD} itself
+     * @param isNFS - Whether replication from an NFS bucket
+     * @return itself
      */
-    setReplicationIsNFS(isNFS) {
+    setReplicationIsNFS(isNFS: boolean) {
         this._data.replicationInfo.isNFS = isNFS;
         return this;
     }
 
     /**
      * Get whether the replication is occurring from an NFS bucket.
-     * @return {Boolean} Whether replication from an NFS bucket
+     * @return Whether replication from an NFS bucket
      */
     getReplicationIsNFS() {
         return this._data.replicationInfo.isNFS;
     }
 
-    setReplicationSiteStatus(site, status) {
-        const backend = this._data.replicationInfo.backends
-            .find(o => o.site === site);
+    setReplicationSiteStatus(site: string, status: string) {
+        const backend = this._data.replicationInfo.backends.find(
+            (o) => o.site === site
+        );
         if (backend) {
             backend.status = status;
         }
         return this;
     }
 
-    getReplicationSiteStatus(site) {
-        const backend = this._data.replicationInfo.backends
-            .find(o => o.site === site);
+    getReplicationSiteStatus(site: string) {
+        const backend = this._data.replicationInfo.backends.find(
+            (o) => o.site === site
+        );
         if (backend) {
             return backend.status;
         }
         return undefined;
     }
 
-    setReplicationDataStoreVersionId(versionId) {
+    setReplicationDataStoreVersionId(versionId: string) {
         this._data.replicationInfo.dataStoreVersionId = versionId;
         return this;
     }
 
-    setReplicationSiteDataStoreVersionId(site, versionId) {
-        const backend = this._data.replicationInfo.backends
-            .find(o => o.site === site);
+    setReplicationSiteDataStoreVersionId(site: string, versionId: string) {
+        const backend = this._data.replicationInfo.backends.find(
+            (o) => o.site === site
+        );
         if (backend) {
             backend.dataStoreVersionId = versionId;
         }
         return this;
     }
 
-    getReplicationSiteDataStoreVersionId(site) {
-        const backend = this._data.replicationInfo.backends
-            .find(o => o.site === site);
+    getReplicationSiteDataStoreVersionId(site: string) {
+        const backend = this._data.replicationInfo.backends.find(
+            (o) => o.site === site
+        );
         if (backend) {
             return backend.dataStoreVersionId;
         }
         return undefined;
     }
 
-    setReplicationBackends(backends) {
+    setReplicationBackends(backends: Backend[]) {
         this._data.replicationInfo.backends = backends;
         return this;
     }
 
-    setReplicationStorageType(storageType) {
+    setReplicationStorageType(storageType: string) {
         this._data.replicationInfo.storageType = storageType;
         return this;
     }
 
-    setReplicationStorageClass(storageClass) {
+    setReplicationStorageClass(storageClass: string) {
         this._data.replicationInfo.storageClass = storageClass;
         return this;
     }
@@ -1006,10 +1107,10 @@ class ObjectMD {
     /**
      * Set dataStoreName
      *
-     * @param {string} dataStoreName - name of data backend obj stored in
-     * @return {ObjectMD} itself
+     * @param dataStoreName - name of data backend obj stored in
+     * @return itself
      */
-    setDataStoreName(dataStoreName) {
+    setDataStoreName(dataStoreName: string) {
         this._data.dataStoreName = dataStoreName;
         return this;
     }
@@ -1017,7 +1118,7 @@ class ObjectMD {
     /**
      * Get dataStoreName
      *
-     * @return {string} name of data backend obj stored in
+     * @return name of data backend obj stored in
      */
     getDataStoreName() {
         return this._data.dataStoreName;
@@ -1026,7 +1127,7 @@ class ObjectMD {
     /**
      * Get dataStoreVersionId
      *
-     * @return {string} external backend version id for data
+     * @return external backend version id for data
      */
     getDataStoreVersionId() {
         const location = this.getLocation();
@@ -1039,11 +1140,11 @@ class ObjectMD {
     /**
      * Set custom meta headers
      *
-     * @param {object} metaHeaders - Meta headers
-     * @return {ObjectMD} itself
+     * @param metaHeaders - Meta headers
+     * @return itself
      */
-    setUserMetadata(metaHeaders) {
-        Object.keys(metaHeaders).forEach(key => {
+    setUserMetadata(metaHeaders: any) {
+        Object.keys(metaHeaders).forEach((key) => {
             if (key.startsWith('x-amz-meta-')) {
                 this._data[key] = metaHeaders[key];
             } else if (key.startsWith('x-ms-meta-')) {
@@ -1061,7 +1162,7 @@ class ObjectMD {
     /**
      * Clear all existing meta headers (used for Azure)
      *
-     * @return {ObjectMD} itself
+     * @return itself
      */
     clearMetadataValues() {
         Object.keys(this._data).forEach(key => {
@@ -1075,10 +1176,10 @@ class ObjectMD {
     /**
      * overrideMetadataValues (used for complete MPU and object copy)
      *
-     * @param {object} headers - Headers
-     * @return {ObjectMD} itself
+     * @param headers - Headers
+     * @return itself
      */
-    overrideMetadataValues(headers) {
+    overrideMetadataValues(headers: any) {
         Object.assign(this._data, headers);
         return this;
     }
@@ -1100,7 +1201,7 @@ class ObjectMD {
      *
      * It's a field of 16 hexadecimal characters randomly generated
      *
-     * @return {ObjectMD} itself
+     * @return itself
      */
     updateMicroVersionId() {
         this._data.microVersionId = crypto.randomBytes(8).toString('hex');
@@ -1109,8 +1210,7 @@ class ObjectMD {
     /**
      * Get the microVersionId field, or null if not set
      *
-     * @return {string|null} the microVersionId field if exists, or
-     * {null} if it does not exist
+     * @return the microVersionId field if exists, or {null} if it does not exist
      */
     getMicroVersionId() {
         return this._data.microVersionId || null;
@@ -1118,17 +1218,17 @@ class ObjectMD {
 
     /**
      * Set object legal hold status
-     * @param {boolean} legalHold - true if legal hold is 'ON' false if 'OFF'
-     * @return {ObjectMD} itself
+     * @param legalHold - true if legal hold is 'ON' false if 'OFF'
+     * @return itself
      */
-    setLegalHold(legalHold) {
+    setLegalHold(legalHold: boolean) {
         this._data.legalHold = legalHold || false;
         return this;
     }
 
     /**
      * Get object legal hold status
-     * @return {boolean} legal hold status
+     * @return legal hold status
      */
     getLegalHold() {
         return this._data.legalHold || false;
@@ -1136,27 +1236,27 @@ class ObjectMD {
 
     /**
      * Set object retention mode
-     * @param {string} mode - should be one of 'GOVERNANCE', 'COMPLIANCE'
-     * @return {ObjectMD} itself
+     * @param mode - should be one of 'GOVERNANCE', 'COMPLIANCE'
+     * @return itself
      */
-    setRetentionMode(mode) {
+    setRetentionMode(mode: string) {
         this._data.retentionMode = mode;
         return this;
     }
 
     /**
      * Set object retention retain until date
-     * @param {string} date - date in ISO-8601 format
-     * @return {ObjectMD} itself
+     * @param date - date in ISO-8601 format
+     * @return itself
      */
-    setRetentionDate(date) {
+    setRetentionDate(date: string) {
         this._data.retentionDate = date;
         return this;
     }
 
     /**
      * Returns object retention mode
-     * @return {string} retention mode string
+     * @return retention mode string
      */
     getRetentionMode() {
         return this._data.retentionMode;
@@ -1164,7 +1264,7 @@ class ObjectMD {
 
     /**
      * Returns object retention retain until date
-     * @return {string} retention date string
+     * @return retention date string
      */
     getRetentionDate() {
         return this._data.retentionDate;
@@ -1172,17 +1272,17 @@ class ObjectMD {
 
     /**
      * Set origin operation for object
-     * @param {string} op - name of origin operation
-     * @return {ObjectMD} itself
+     * @param op - name of origin operation
+     * @return itself
      */
-    setOriginOp(op) {
+    setOriginOp(op: string) {
         this._data.originOp = op;
         return this;
     }
 
     /**
      * Returns origin operation of object
-     * @return {string} origin operation string
+     * @return origin operation string
      */
     getOriginOp() {
         return this._data.originOp;
@@ -1191,7 +1291,7 @@ class ObjectMD {
     /**
      * Returns metadata object
      *
-     * @return {object} metadata object
+     * @return metadata object
      */
     getValue() {
         return this._data;
@@ -1200,7 +1300,7 @@ class ObjectMD {
     /**
      * Get x-amz-restore
      *
-     * @returns {ObjectMDAmzRestore} x-amz-restore
+     * @returns x-amz-restore
      */
     getAmzRestore() {
         return this._data['x-amz-restore'];
@@ -1209,11 +1309,11 @@ class ObjectMD {
     /**
      * Set x-amz-restore
      *
-     * @param {ObjectMDAmzRestore|undefined} value x-amz-restore object
-     * @returns {ObjectMD} itself
-     * @throws {Error} case of invalid parameter
+     * @param value x-amz-restore object
+     * @returns itself
+     * @throws case of invalid parameter
      */
-    setAmzRestore(value) {
+    setAmzRestore(value?: ObjectMDAmzRestore) {
         if (value) {
             // Accept object instance of ObjectMDAmzRestore and Object
             if (!(value instanceof ObjectMDAmzRestore) && !ObjectMDAmzRestore.isValid(value)) {
@@ -1229,7 +1329,7 @@ class ObjectMD {
     /**
      * Get archive
      *
-     * @returns {ObjectMDArchive} archive
+     * @returns archive
      */
     getArchive() {
         return this._data.archive;
@@ -1238,11 +1338,11 @@ class ObjectMD {
     /**
      * Set archive
      *
-     * @param {ObjectMDArchive|undefined} value archive object
-     * @returns {ObjectMD} itself
-     * @throws {Error} case of invalid parameter
+     * @param value archive object
+     * @returns itself
+     * @throws case of invalid parameter
      */
-    setArchive(value) {
+    setArchive(value: ObjectMDArchive) {
         if (value) {
             // Accept object instance of ObjectMDArchive and Object
             if (!(value instanceof ObjectMDArchive) && !ObjectMDArchive.isValid(value)) {
@@ -1255,5 +1355,3 @@ class ObjectMD {
         return this;
     }
 }
-
-module.exports = ObjectMD;

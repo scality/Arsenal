@@ -1,9 +1,11 @@
-const assert = require('assert');
-const UUID = require('uuid');
+import assert from 'assert';
+import UUID from 'uuid';
 
-const errors = require('../errors').default;
-const LifecycleRule = require('./LifecycleRule');
-const escapeForXml = require('../s3middleware/escapeForXml').default;
+import errors, { ArsenalError } from '../errors';
+import LifecycleRule from './LifecycleRule';
+import escapeForXml from '../s3middleware/escapeForXml';
+import type { XMLRule } from './ReplicationConfiguration';
+import { Status } from './LifecycleRule';
 
 const MAX_DAYS = 2147483647; // Max 32-bit signed binary integer.
 
@@ -83,14 +85,23 @@ const MAX_DAYS = 2147483647; // Max 32-bit signed binary integer.
   };
  */
 
-class LifecycleConfiguration {
+export default class LifecycleConfiguration {
+    _parsedXML: any;
+    _ruleIDs: string[];
+    _tagKeys: string[];
+    _storageClasses: string[];
+    _config: {
+        error?: ArsenalError;
+        rules?: any[];
+    };
+
     /**
      * Create a Lifecycle Configuration instance
-     * @param {string} xml - the parsed xml
-     * @param {object} config - the CloudServer config
-     * @return {object} - LifecycleConfiguration instance
+     * @param xml - the parsed xml
+     * @param config - the CloudServer config
+     * @return - LifecycleConfiguration instance
      */
-    constructor(xml, config) {
+    constructor(xml: any, config: { replicationEndpoints: { site: string }[] }) {
         this._parsedXML = xml;
         this._storageClasses =
             config.replicationEndpoints.map(endpoint => endpoint.site);
@@ -101,7 +112,7 @@ class LifecycleConfiguration {
 
     /**
      * Get the lifecycle configuration
-     * @return {object} - the lifecycle configuration
+     * @return - the lifecycle configuration
      */
     getLifecycleConfiguration() {
         const rules = this._buildRulesArray();
@@ -113,36 +124,35 @@ class LifecycleConfiguration {
 
     /**
      * Build the this._config.rules array
-     * @return {object} - contains error if any rule returned an error
+     * @return - contains error if any rule returned an error
      * or parsing failed
      */
     _buildRulesArray() {
-        const rules = {};
         this._config.rules = [];
         if (!this._parsedXML || this._parsedXML === '') {
-            rules.error = errors.MalformedXML.customizeDescription(
-                'request xml is undefined or empty');
-            return rules;
+            const msg = 'request xml is undefined or empty';
+            const error = errors.MalformedXML.customizeDescription(msg);
+            return { error };
         }
         if (!this._parsedXML.LifecycleConfiguration &&
             this._parsedXML.LifecycleConfiguration !== '') {
-            rules.error = errors.MalformedXML.customizeDescription(
-                'request xml does not include LifecycleConfiguration');
-            return rules;
+            const msg = 'request xml does not include LifecycleConfiguration';
+            const error = errors.MalformedXML.customizeDescription(msg);
+            return { error };
         }
         const lifecycleConf = this._parsedXML.LifecycleConfiguration;
-        const rulesArray = lifecycleConf.Rule;
-        if (!rulesArray || !Array.isArray(rulesArray)
-        || rulesArray.length === 0) {
-            rules.error = errors.MissingRequiredParameter.customizeDescription(
-                'missing required key \'Rules\' in LifecycleConfiguration');
-            return rules;
+        const rulesArray: any[] = lifecycleConf.Rule;
+        if (!rulesArray || !Array.isArray(rulesArray) || rulesArray.length === 0) {
+            const msg = 'missing required key \'Rules\' in LifecycleConfiguration';
+            const error = errors.MissingRequiredParameter.customizeDescription(msg);
+            return { error };
         }
         if (rulesArray.length > 1000) {
-            rules.error = errors.MalformedXML.customizeDescription(
-                'request xml includes over max limit of 1000 rules');
-            return rules;
+            const msg = 'request xml includes over max limit of 1000 rules';
+            const error = errors.MalformedXML.customizeDescription(msg);
+            return { error };
         }
+        const rules: any = {};
         for (let i = 0; i < rulesArray.length; i++) {
             const rule = this._parseRule(rulesArray[i]);
             if (rule.error) {
@@ -157,10 +167,10 @@ class LifecycleConfiguration {
 
     /**
      * Check that the prefix is valid
-     * @param {string} prefix - The prefix to check
-     * @return {object|null} - The error or null
+     * @param prefix - The prefix to check
+     * @return - The error or null
      */
-    _checkPrefix(prefix) {
+    _checkPrefix(prefix: string) {
         if (prefix.length > 1024) {
             const msg = 'The maximum size of a prefix is 1024';
             return errors.InvalidRequest.customizeDescription(msg);
@@ -170,11 +180,11 @@ class LifecycleConfiguration {
 
     /**
      * Parses the prefix of the config
-     * @param {string} prefix - The prefix to parse
-     * @return {object} - Contains error if parsing returned an error, otherwise
+     * @param prefix - The prefix to parse
+     * @return - Contains error if parsing returned an error, otherwise
      * it contains the parsed rule object
      */
-    _parsePrefix(prefix) {
+    _parsePrefix(prefix: string) {
         const error = this._checkPrefix(prefix);
         if (error) {
             return { error };
@@ -187,8 +197,8 @@ class LifecycleConfiguration {
 
     /**
      * Check that each xml rule is valid
-     * @param {object} rule - a rule object from Rule array from this._parsedXml
-     * @return {object} - contains error if any component returned an error
+     * @param rule - a rule object from Rule array from this._parsedXml
+     * @return - contains error if any component returned an error
      * or parsing failed, else contains parsed rule object
      *
      * Format of ruleObj:
@@ -214,29 +224,28 @@ class LifecycleConfiguration {
      *      ]
      * }
      */
-    _parseRule(rule) {
-        const ruleObj = {};
+    _parseRule(rule: XMLRule) {
         // Either Prefix or Filter must be included, but can be empty string
         if ((!rule.Filter && rule.Filter !== '') &&
         (!rule.Prefix && rule.Prefix !== '')) {
-            ruleObj.error = errors.MalformedXML.customizeDescription(
-                'Rule xml does not include valid Filter or Prefix');
-            return ruleObj;
+            const msg = 'Rule xml does not include valid Filter or Prefix';
+            const error = errors.MalformedXML.customizeDescription(msg);
+            return { error };
         }
         if (rule.Filter && rule.Prefix) {
-            ruleObj.error = errors.MalformedXML.customizeDescription(
-                'Rule xml should not include both Filter and Prefix');
-            return ruleObj;
+            const msg = 'Rule xml should not include both Filter and Prefix';
+            const error = errors.MalformedXML.customizeDescription(msg);
+            return { error };
         }
         if (!rule.Status) {
-            ruleObj.error = errors.MissingRequiredParameter.
-                customizeDescription('Rule xml does not include Status');
-            return ruleObj;
+            const msg = 'Rule xml does not include Status';
+            const error = errors.MissingRequiredParameter.customizeDescription(msg);
+            return { error };
         }
-        const id = this._parseID(rule.ID);
+        const id = this._parseID(rule.ID!);
         const status = this._parseStatus(rule.Status[0]);
         const actions = this._parseAction(rule);
-        const rulePropArray = [id, status, actions];
+        const rulePropArray: any[] = [id, status, actions];
         if (rule.Prefix) {
             // Backward compatibility with deprecated top-level prefix.
             const prefix = this._parsePrefix(rule.Prefix[0]);
@@ -245,6 +254,7 @@ class LifecycleConfiguration {
             const filter = this._parseFilter(rule.Filter[0]);
             rulePropArray.push(filter);
         }
+        const ruleObj: any = {};
         for (let i = 0; i < rulePropArray.length; i++) {
             const prop = rulePropArray[i];
             if (prop.error) {
@@ -266,8 +276,8 @@ class LifecycleConfiguration {
 
     /**
      * Check that filter component of rule is valid
-     * @param {object} filter - filter object from a rule object
-     * @return {object} - contains error if parsing failed, else contains
+     * @param filter - filter object from a rule object
+     * @return - contains error if parsing failed, else contains
      * parsed prefix and tag array
      *
      * Format of filterObj:
@@ -287,9 +297,16 @@ class LifecycleConfiguration {
      *      ]
      * }
      */
-    _parseFilter(filter) {
-        const filterObj = {};
-        filterObj.propName = 'filter';
+    _parseFilter(filter: any) {
+        // @ts-ignore
+        const filterObj: {
+            error?: ArsenalError;
+            propName: 'filter';
+            rulePrefix: string;
+            tags: { key: string; val: string }[]
+        } = {
+            propName: 'filter',
+        };
         if (Array.isArray(filter)) {
             // if Prefix was included, not Filter, filter will be Prefix array
             // if more than one Prefix is included, we ignore all but the last
@@ -302,8 +319,9 @@ class LifecycleConfiguration {
         }
         if (filter.And && (filter.Prefix || filter.Tag) ||
         (filter.Prefix && filter.Tag)) {
-            filterObj.error = errors.MalformedXML.customizeDescription(
-                'Filter should only include one of And, Prefix, or Tag key');
+            const msg = 'Filter should only include one of And, Prefix, or Tag key';
+            const error = errors.MalformedXML.customizeDescription(msg);
+            filterObj.error = error;
             return filterObj;
         }
         if (filter.Prefix) {
@@ -351,8 +369,8 @@ class LifecycleConfiguration {
 
     /**
      * Check that each tag object is valid
-     * @param {object} tags - a tag object from a filter object
-     * @return {boolean} - indicates whether tag object is valid
+     * @param tags - a tag object from a filter object
+     * @return - indicates whether tag object is valid
      *
      * Format of tagObj:
      * tagObj = {
@@ -365,49 +383,56 @@ class LifecycleConfiguration {
      *      ]
      * }
      */
-    _parseTags(tags) {
-        const tagObj = {};
-        tagObj.tags = [];
+    _parseTags(tags: { Key?: string; Value?: any[] }[]) {
+        // FIXME please
+        const tagObj: {
+            error?: ArsenalError;
+            tags: { key: string; val: string }[];
+        } = {
+            tags: [],
+        };
         // reset _tagKeys to empty because keys cannot overlap within a rule,
         // but different rules can have the same tag keys
         this._tagKeys = [];
-        for (let i = 0; i < tags.length; i++) {
-            if (!tags[i].Key || !tags[i].Value) {
-                tagObj.error =
-                    errors.MissingRequiredParameter.customizeDescription(
-                        'Tag XML does not contain both Key and Value');
+        for (const tag of tags) {
+            if (!tag.Key || !tag.Value) {
+                const msg = 'Tag XML does not contain both Key and Value';
+                const err = errors.MissingRequiredParameter.customizeDescription(msg);
+                tagObj.error = err;
                 break;
             }
 
-            if (tags[i].Key[0].length < 1 || tags[i].Key[0].length > 128) {
+            if (tag.Key[0].length < 1 || tag.Key[0].length > 128) {
                 tagObj.error = errors.InvalidRequest.customizeDescription(
-                    'A Tag\'s Key must be a length between 1 and 128');
+                    "A Tag's Key must be a length between 1 and 128"
+                );
                 break;
             }
-            if (tags[i].Value[0].length < 0 || tags[i].Value[0].length > 256) {
+            if (tag.Value[0].length < 0 || tag.Value[0].length > 256) {
                 tagObj.error = errors.InvalidRequest.customizeDescription(
-                    'A Tag\'s Value must be a length between 0 and 256');
+                    "A Tag's Value must be a length between 0 and 256"
+                );
                 break;
             }
-            if (this._tagKeys.includes(tags[i].Key[0])) {
+            if (this._tagKeys.includes(tag.Key[0])) {
                 tagObj.error = errors.InvalidRequest.customizeDescription(
-                    'Tag Keys must be unique');
+                    'Tag Keys must be unique'
+                );
                 break;
             }
-            this._tagKeys.push(tags[i].Key[0]);
-            const tag = {
-                key: tags[i].Key[0],
-                val: tags[i].Value[0],
-            };
-            tagObj.tags.push(tag);
+            this._tagKeys.push(tag.Key[0]);
+            tagObj.tags.push({
+                key: tag.Key[0],
+                val: tag.Value[0],
+            });
         }
         return tagObj;
     }
 
     /**
      * Check that ID component of rule is valid
-     * @param {array} id - contains id string at first index or empty
-     * @return {object} - contains error if parsing failed or id is not unique,
+     * @param id - contains id string at first index or empty
+     * @return - contains error if parsing failed or id is not unique,
      * else contains parsed or generated id
      *
      * Format of idObj:
@@ -417,13 +442,15 @@ class LifecycleConfiguration {
      *      ruleID: <value>
      * }
      */
-    _parseID(id) {
-        const idObj = {};
-        idObj.propName = 'ruleID';
+    _parseID(id: string[]) {
+        // @ts-ignore
+        const idObj:
+            | { error: ArsenalError; propName: 'ruleID', ruleID?: any }
+            | { propName: 'ruleID', ruleID: any } = { propName: 'ruleID' };
         if (id && id[0].length > 255) {
-            idObj.error = errors.InvalidArgument.customizeDescription(
-                'Rule ID is greater than 255 characters long');
-            return idObj;
+            const msg = 'Rule ID is greater than 255 characters long';
+            const error = errors.InvalidArgument.customizeDescription(msg);
+            return { ...idObj, error };
         }
         if (!id || !id[0] || id[0] === '') {
             // ID is optional property, but create one if not provided or is ''
@@ -434,9 +461,9 @@ class LifecycleConfiguration {
         }
         // Each ID in a list of rules must be unique.
         if (this._ruleIDs.includes(idObj.ruleID)) {
-            idObj.error = errors.InvalidRequest.customizeDescription(
-                'Rule ID must be unique');
-            return idObj;
+            const msg = 'Rule ID must be unique';
+            const error = errors.InvalidRequest.customizeDescription(msg);
+            return { ...idObj, error };
         }
         this._ruleIDs.push(idObj.ruleID);
         return idObj;
@@ -444,8 +471,8 @@ class LifecycleConfiguration {
 
     /**
      * Check that status component of rule is valid
-     * @param {string} status - status string
-     * @return {object} - contains error if parsing failed, else contains
+     * @param status - status string
+     * @return - contains error if parsing failed, else contains
      * parsed status
      *
      * Format of statusObj:
@@ -455,32 +482,30 @@ class LifecycleConfiguration {
      *      ruleStatus: <value>
      * }
      */
-    _parseStatus(status) {
-        const statusObj = {};
-        statusObj.propName = 'ruleStatus';
+    _parseStatus(status: string) {
+        const base: { propName: 'ruleStatus' } = { propName: 'ruleStatus' }
         const validStatuses = ['Enabled', 'Disabled'];
         if (!validStatuses.includes(status)) {
-            statusObj.error = errors.MalformedXML.customizeDescription(
-                'Status is not valid');
-            return statusObj;
+            const msg = 'Status is not valid';
+            const error = errors.MalformedXML.customizeDescription(msg);
+            return { ...base, error };
         }
-        statusObj.ruleStatus = status;
-        return statusObj;
+        return { ...base, ruleStatus: status }
     }
 
     /**
      * Finds the prefix and/or tags of the given rule and gets the error message
-     * @param {object} rule - The rule to find the prefix in
-     * @return {string} - The prefix of filter information
+     * @param rule - The rule to find the prefix in
+     * @return - The prefix of filter information
      */
-    _getRuleFilterDesc(rule) {
+    _getRuleFilterDesc(rule: { Prefix?: string[]; Filter?: any[] }) {
         if (rule.Prefix) {
             return `prefix '${rule.Prefix[0]}'`;
         }
         // There must be a filter if no top-level prefix is provided. First
         // check if there are multiple filters (i.e. `Filter.And`).
-        if (rule.Filter[0] === undefined || rule.Filter[0].And === undefined) {
-            const { Prefix, Tag } = rule.Filter[0] || {};
+        if (rule.Filter?.[0] === undefined || rule.Filter[0].And === undefined) {
+            const { Prefix, Tag } = rule.Filter?.[0] || {};
             if (Prefix) {
                 return `filter '(prefix=${Prefix[0]})'`;
             }
@@ -490,12 +515,12 @@ class LifecycleConfiguration {
             }
             return 'filter (all)';
         }
-        const filters = [];
+        const filters: string[] = [];
         const { Prefix, Tag } = rule.Filter[0].And[0];
         if (Prefix) {
             filters.push(`prefix=${Prefix[0]}`);
         }
-        Tag.forEach(tag => {
+        Tag.forEach((tag: { Key: string[]; Value: string[] }) => {
             const { Key, Value } = tag;
             filters.push(`tag: key=${Key[0]}, value=${Value[0]}`);
         });
@@ -505,13 +530,13 @@ class LifecycleConfiguration {
 
     /**
      * Checks the validity of the given field
-     * @param {object} params - Given function parameters
-     * @param {string} params.days - The value of the field to check
-     * @param {string} params.field - The field name with the value
-     * @param {string} params.ancestor - The immediate ancestor field
-     * @return {object|null} Returns an error object or `null`
+     * @param params - Given function parameters
+     * @param params.days - The value of the field to check
+     * @param params.field - The field name with the value
+     * @param params.ancestor - The immediate ancestor field
+     * @return Returns an error object or `null`
      */
-    _checkDays(params) {
+    _checkDays(params: { days: number; field: string; ancestor: string }) {
         const { days, field, ancestor } = params;
         if (days < 0) {
             const msg = `'${field}' in ${ancestor} action must be nonnegative`;
@@ -526,16 +551,21 @@ class LifecycleConfiguration {
 
     /**
      * Checks the validity of the given storage class
-     * @param {object} params - Given function parameters
-     * @param {array} params.usedStorageClasses - Storage classes used in other
+     * @param params - Given function parameters
+     * @param params.usedStorageClasses - Storage classes used in other
      * rules
-     * @param {string} params.storageClass - The storage class of the current
+     * @param params.storageClass - The storage class of the current
      * rule
-     * @param {string} params.ancestor - The immediate ancestor field
-     * @param {string} params.prefix - The prefix of the rule
-     * @return {object|null} Returns an error object or `null`
+     * @param params.ancestor - The immediate ancestor field
+     * @param params.prefix - The prefix of the rule
+     * @return Returns an error object or `null`
      */
-    _checkStorageClasses(params) {
+    _checkStorageClasses(params: {
+        usedStorageClasses: string[];
+        storageClass: string;
+        ancestor: string;
+        rule: { Prefix?: string[]; Filter?: any };
+    }) {
         const { usedStorageClasses, storageClass, ancestor, rule } = params;
         if (!this._storageClasses.includes(storageClass)) {
             // This differs from the AWS message. This will help the user since
@@ -554,15 +584,19 @@ class LifecycleConfiguration {
 
     /**
      * Ensure that transition rules are at least a day apart from each other.
-     * @param {object} params - Given function parameters
-     * @param {string} [params.days] - The days of the current transition
-     * @param {string} [params.date] - The date of the current transition
-     * @param {string} params.storageClass - The storage class of the current
+     * @param params - Given function parameters
+     * @param [params.days] - The days of the current transition
+     * @param [params.date] - The date of the current transition
+     * @param params.storageClass - The storage class of the current
      * rule
-     * @param {string} params.rule - The current rule
-     * @return {undefined}
+     * @param params.rule - The current rule
      */
-    _checkTimeGap(params) {
+    _checkTimeGap(params: {
+        days?: number;
+        date?: string;
+        storageClass: string;
+        rule: { Transition: any[]; Prefix?: string[]; Filter?: any };
+    }) {
         const { days, date, storageClass, rule } = params;
         const invalidTransition = rule.Transition.find(transition => {
             if (storageClass === transition.StorageClass[0]) {
@@ -589,21 +623,25 @@ class LifecycleConfiguration {
                 `action for StorageClass '${compareStorageClass}'`;
             return errors.InvalidArgument.customizeDescription(msg);
         }
-        return undefined;
+        return null;
     }
 
     /**
      * Checks transition time type (i.e. 'Date' or 'Days') only occurs once
      * across transitions and across transitions and expiration policies
-     * @param {object} params - Given function parameters
-     * @param {string} params.usedTimeType - The time type that has been used by
+     * @param params - Given function parameters
+     * @param params.usedTimeType - The time type that has been used by
      * another rule
-     * @param {string} params.currentTimeType - the time type used by the
+     * @param params.currentTimeType - the time type used by the
      * current rule
-     * @param {string} params.rule - The current rule
-     * @return {object|null} Returns an error object or `null`
+     * @param params.rule - The current rule
+     * @return Returns an error object or `null`
      */
-    _checkTimeType(params) {
+    _checkTimeType(params: {
+        usedTimeType: string | null;
+        currentTimeType: string;
+        rule: { Prefix?: string[]; Filter?: any; Expiration?: any[] };
+    }) {
         const { usedTimeType, currentTimeType, rule } = params;
         if (usedTimeType && usedTimeType !== currentTimeType) {
             const msg = "Found mixed 'Date' and 'Days' based Transition " +
@@ -624,10 +662,10 @@ class LifecycleConfiguration {
 
     /**
      * Checks the validity of the given date
-     * @param {string} date - The date the check
-     * @return {object|null} Returns an error object or `null`
+     * @param date - The date the check
+     * @return Returns an error object or `null`
      */
-    _checkDate(date) {
+    _checkDate(date: string) {
         const isoRegex = new RegExp('^(-?(?:[1-9][0-9]*)?[0-9]{4})-' +
             '(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9])T(2[0-3]|[01][0-9])' +
             ':([0-5][0-9]):([0-5][0-9])(.[0-9]+)?(Z)?$');
@@ -640,8 +678,8 @@ class LifecycleConfiguration {
 
     /**
      * Parses the NonCurrentVersionTransition value
-     * @param {object} rule - Rule object from Rule array from this._parsedXml
-     * @return {object} - Contains error if parsing failed, otherwise contains
+     * @param rule - Rule object from Rule array from this._parsedXml
+     * @return - Contains error if parsing failed, otherwise contains
      * the parsed nonCurrentVersionTransition array
      *
      * Format of result:
@@ -656,14 +694,21 @@ class LifecycleConfiguration {
      *      ]
      * }
      */
-    _parseNoncurrentVersionTransition(rule) {
-        const nonCurrentVersionTransition = [];
-        const usedStorageClasses = [];
+    _parseNoncurrentVersionTransition(rule: {
+        NoncurrentVersionTransition: any[];
+        Prefix?: string[];
+        Filter?: any;
+    }) {
+        const nonCurrentVersionTransition: {
+            noncurrentDays: number;
+            storageClass: string;
+        }[] = [];
+        const usedStorageClasses: string[] = [];
         for (let i = 0; i < rule.NoncurrentVersionTransition.length; i++) {
             const t = rule.NoncurrentVersionTransition[i]; // Transition object
-            const noncurrentDays =
+            const noncurrentDays: number | undefined =
                 t.NoncurrentDays && Number.parseInt(t.NoncurrentDays[0], 10);
-            const storageClass = t.StorageClass && t.StorageClass[0];
+            const storageClass: string | undefined = t.StorageClass && t.StorageClass[0];
             if (noncurrentDays === undefined || storageClass === undefined) {
                 return { error: errors.MalformedXML };
             }
@@ -692,8 +737,8 @@ class LifecycleConfiguration {
 
     /**
      * Parses the Transition value
-     * @param {object} rule - Rule object from Rule array from this._parsedXml
-     * @return {object} - Contains error if parsing failed, otherwise contains
+     * @param rule - Rule object from Rule array from this._parsedXml
+     * @return - Contains error if parsing failed, otherwise contains
      * the parsed transition array
      *
      * Format of result:
@@ -709,10 +754,16 @@ class LifecycleConfiguration {
      *      ]
      * }
      */
-    _parseTransition(rule) {
-        const transition = [];
-        const usedStorageClasses = [];
-        let usedTimeType = null;
+    _parseTransition(rule: {
+        Transition: any[];
+        Prefix?: string[];
+        Filter?: any;
+    }) {
+        const transition:
+            ({ days: number; storageClass: string }
+            | { date: string; storageClass: string })[] = [];
+        const usedStorageClasses: string[] = [];
+        let usedTimeType: string | null = null;
         for (let i = 0; i < rule.Transition.length; i++) {
             const t = rule.Transition[i]; // Transition object
             const days = t.Days && Number.parseInt(t.Days[0], 10);
@@ -779,8 +830,8 @@ class LifecycleConfiguration {
 
     /**
      * Check that action component of rule is valid
-     * @param {object} rule - a rule object from Rule array from this._parsedXml
-     * @return {object} - contains error if parsing failed, else contains
+     * @param rule - a rule object from Rule array from this._parsedXml
+     * @return - contains error if parsing failed, else contains
      * parsed action information
      *
      * Format of actionObj:
@@ -797,10 +848,20 @@ class LifecycleConfiguration {
      *      ],
      * }
      */
-    _parseAction(rule) {
-        const actionsObj = {};
-        actionsObj.propName = 'actions';
-        actionsObj.actions = [];
+    _parseAction(rule: any) {
+        const actionsObj: {
+            error?: ArsenalError;
+            propName: 'actions';
+            actions: {
+                actionName: string;
+                days?: number;
+                date?: number;
+                deleteMarker?: boolean
+            }[];
+        } = {
+            propName: 'actions',
+            actions: [],
+        };
         const validActions = [
             'AbortIncompleteMultipartUpload',
             'Expiration',
@@ -814,9 +875,9 @@ class LifecycleConfiguration {
             }
         });
         if (actionsObj.actions.length === 0) {
-            actionsObj.error = errors.InvalidRequest.customizeDescription(
-                'Rule does not include valid action');
-            return actionsObj;
+            const msg = 'Rule does not include valid action';
+            const error = errors.InvalidRequest.customizeDescription(msg);
+            return { ...actionsObj, error };
         }
         actionsObj.actions.forEach(a => {
             const actionFn = `_parse${a.actionName}`;
@@ -839,8 +900,8 @@ class LifecycleConfiguration {
 
     /**
      * Check that AbortIncompleteMultipartUpload action is valid
-     * @param {object} rule - a rule object from Rule array from this._parsedXml
-     * @return {object} - contains error if parsing failed, else contains
+     * @param rule - a rule object from Rule array from this._parsedXml
+     * @return - contains error if parsing failed, else contains
      * parsed action time
      *
      * Format of abortObj:
@@ -849,9 +910,9 @@ class LifecycleConfiguration {
      *      days: <value>
      * }
      */
-    _parseAbortIncompleteMultipartUpload(rule) {
-        const abortObj = {};
-        let filter = null;
+    _parseAbortIncompleteMultipartUpload(rule: any) {
+        const abortObj: { error?: ArsenalError, days?: number } = {};
+        let filter: any = null;
         if (rule.Filter && rule.Filter[0]) {
             if (rule.Filter[0].And) {
                 filter = rule.Filter[0].And[0];
@@ -862,7 +923,8 @@ class LifecycleConfiguration {
         if (filter && filter.Tag) {
             abortObj.error = errors.InvalidRequest.customizeDescription(
                 'Tag-based filter cannot be used with ' +
-                'AbortIncompleteMultipartUpload action');
+                'AbortIncompleteMultipartUpload action',
+            );
             return abortObj;
         }
         const subAbort = rule.AbortIncompleteMultipartUpload[0];
@@ -884,8 +946,8 @@ class LifecycleConfiguration {
 
     /**
      * Check that Expiration action is valid
-     * @param {object} rule - a rule object from Rule array from this._parsedXml
-     * @return {object} - contains error if parsing failed, else contains
+     * @param rule - a rule object from Rule array from this._parsedXml
+     * @return - contains error if parsing failed, else contains
      * parsed action time
      *
      * Format of expObj:
@@ -896,20 +958,26 @@ class LifecycleConfiguration {
      *      deleteMarker: <value>
      * }
      */
-    _parseExpiration(rule) {
-        const expObj = {};
+    _parseExpiration(rule: any) {
+        const expObj: {
+            error?: ArsenalError;
+            days?: number;
+            date?: number;
+            deleteMarker?: boolean;
+        } = {};
         const subExp = rule.Expiration[0];
         if (!subExp.Date && !subExp.Days && !subExp.ExpiredObjectDeleteMarker) {
-            expObj.error = errors.MalformedXML.customizeDescription(
-                'Expiration action does not include an action time');
-            return expObj;
+            const msg = 'Expiration action does not include an action time';
+            const error = errors.MalformedXML.customizeDescription(msg);
+            return { error };
         }
         const eodm = 'ExpiredObjectDeleteMarker';
-        if (subExp.Date && (subExp.Days || subExp[eodm]) ||
-        (subExp.Days && subExp[eodm])) {
-            expObj.error = errors.MalformedXML.customizeDescription(
-                'Expiration action includes more than one time');
-            return expObj;
+        if (subExp.Date &&
+            (subExp.Days || subExp[eodm]) ||
+            (subExp.Days && subExp[eodm])) {
+            const msg = 'Expiration action includes more than one time';
+            const error = errors.MalformedXML.customizeDescription(msg);
+            return { error };
         }
         if (subExp.Date) {
             const error = this._checkDate(subExp.Date[0]);
@@ -929,7 +997,7 @@ class LifecycleConfiguration {
             }
         }
         if (subExp.ExpiredObjectDeleteMarker) {
-            let filter = null;
+            let filter: any = null;
             if (rule.Filter && rule.Filter[0]) {
                 if (rule.Filter[0].And) {
                     filter = rule.Filter[0].And[0];
@@ -956,8 +1024,8 @@ class LifecycleConfiguration {
 
     /**
      * Check that NoncurrentVersionExpiration action is valid
-     * @param {object} rule - a rule object from Rule array from this._parsedXml
-     * @return {object} - contains error if parsing failed, else contains
+     * @param rule - a rule object from Rule array from this._parsedXml
+     * @return - contains error if parsing failed, else contains
      * parsed action time
      *
      * Format of nvExpObj:
@@ -966,36 +1034,34 @@ class LifecycleConfiguration {
      *      days: <value>,
      * }
      */
-    _parseNoncurrentVersionExpiration(rule) {
-        const nvExpObj = {};
+    _parseNoncurrentVersionExpiration(rule: any) {
         const subNVExp = rule.NoncurrentVersionExpiration[0];
         if (!subNVExp.NoncurrentDays) {
-            nvExpObj.error = errors.MalformedXML.customizeDescription(
+            const error = errors.MalformedXML.customizeDescription(
                 'NoncurrentVersionExpiration action does not include ' +
                 'NoncurrentDays');
-            return nvExpObj;
+            return { error };
         }
         const daysInt = parseInt(subNVExp.NoncurrentDays[0], 10);
         if (daysInt < 1) {
-            nvExpObj.error = errors.InvalidArgument.customizeDescription(
-                'NoncurrentDays is not a positive integer');
+            const msg = 'NoncurrentDays is not a positive integer';
+            const error = errors.InvalidArgument.customizeDescription(msg);
+            return { error };
         } else {
-            nvExpObj.days = daysInt;
+            return { days: daysInt };
         }
-        return nvExpObj;
     }
 
     /**
      * Validate the bucket metadata lifecycle configuration structure and
      * value types
-     * @param {object} config - The lifecycle configuration to validate
-     * @return {undefined}
+     * @param config - The lifecycle configuration to validate
      */
-    static validateConfig(config) {
+    static validateConfig(config: any) {
         assert.strictEqual(typeof config, 'object');
         const rules = config.rules;
         assert.strictEqual(Array.isArray(rules), true);
-        rules.forEach(rule => {
+        rules.forEach((rule: any) => {
             const { ruleID, ruleStatus, prefix, filter, actions } = rule;
             assert.strictEqual(typeof ruleID, 'string');
             assert.strictEqual(typeof ruleStatus, 'string');
@@ -1009,13 +1075,13 @@ class LifecycleConfiguration {
                 }
                 if (filter.tags) {
                     assert.strictEqual(Array.isArray(filter.tags), true);
-                    filter.tags.forEach(t => {
+                    filter.tags.forEach((t: any) => {
                         assert.strictEqual(typeof t.key, 'string');
                         assert.strictEqual(typeof t.val, 'string');
                     });
                 }
             }
-            actions.forEach(a => {
+            actions.forEach((a: any) => {
                 assert.strictEqual(typeof a.actionName, 'string');
                 if (a.days) {
                     assert.strictEqual(typeof a.days, 'number');
@@ -1052,20 +1118,20 @@ class LifecycleConfiguration {
 
     /**
      * Get XML representation of lifecycle configuration object
-     * @param {object} config - Lifecycle configuration object
-     * @return {string} - XML representation of config
+     * @param config - Lifecycle configuration object
+     * @return - XML representation of config
      */
-    static getConfigXml(config) {
+    static getConfigXml(config: { rules: Rule[] }) {
         const rules = config.rules;
-        const rulesXML = rules.map(rule => {
+        const rulesXML = rules.map((rule) => {
             const { ruleID, ruleStatus, filter, actions, prefix } = rule;
             const ID = `<ID>${escapeForXml(ruleID)}</ID>`;
             const Status = `<Status>${ruleStatus}</Status>`;
-            let rulePrefix;
+            let rulePrefix: string | undefined;
             if (prefix !== undefined) {
                 rulePrefix = prefix;
             } else {
-                rulePrefix = filter.rulePrefix;
+                rulePrefix = filter?.rulePrefix;
             }
             const tags = filter && filter.tags;
             const Prefix = rulePrefix !== undefined ?
@@ -1079,12 +1145,12 @@ class LifecycleConfiguration {
                     return Tag;
                 }).join('');
             }
-            let Filter;
+            let Filter: string;
             if (prefix !== undefined) {
                 // Prefix is in the top-level of the config, so we can skip the
                 // filter property.
                 Filter = Prefix;
-            } else if (filter.rulePrefix !== undefined && !tags) {
+            } else if (filter?.rulePrefix !== undefined && !tags) {
                 Filter = `<Filter>${Prefix}</Filter>`;
             } else if (tags &&
                 (filter.rulePrefix !== undefined || tags.length > 1)) {
@@ -1097,7 +1163,7 @@ class LifecycleConfiguration {
             const Actions = actions.map(action => {
                 const { actionName, days, date, deleteMarker,
                     nonCurrentVersionTransition, transition } = action;
-                let Action;
+                let Action: any;
                 if (actionName === 'AbortIncompleteMultipartUpload') {
                     Action = `<${actionName}><DaysAfterInitiation>${days}` +
                         `</DaysAfterInitiation></${actionName}>`;
@@ -1114,8 +1180,8 @@ class LifecycleConfiguration {
                         `</${actionName}>`;
                 }
                 if (actionName === 'NoncurrentVersionTransition') {
-                    const xml = [];
-                    nonCurrentVersionTransition.forEach(transition => {
+                    const xml: string[] = [];
+                    nonCurrentVersionTransition!.forEach(transition => {
                         const { noncurrentDays, storageClass } = transition;
                         xml.push(
                             `<${actionName}>`,
@@ -1128,10 +1194,10 @@ class LifecycleConfiguration {
                     Action = xml.join('');
                 }
                 if (actionName === 'Transition') {
-                    const xml = [];
-                    transition.forEach(transition => {
+                    const xml: string[] = [];
+                    transition!.forEach(transition => {
                         const { days, date, storageClass } = transition;
-                        let element;
+                        let element: string = '';
                         if (days !== undefined) {
                             element = `<Days>${days}</Days>`;
                         }
@@ -1160,15 +1226,14 @@ class LifecycleConfiguration {
 
     /**
      * Get JSON representation of lifecycle configuration object
-     * @param {object} config - Lifecycle configuration object
-     * @return {string} - XML representation of config
+     * @param config - Lifecycle configuration object
+     * @return - XML representation of config
      */
-    static getConfigJson(config) {
+    static getConfigJson(config: { rules: Rule[] }) {
         const rules = config.rules;
         const rulesJSON = rules.map(rule => {
             const { ruleID, ruleStatus, filter, actions, prefix } = rule;
             const entry = new LifecycleRule(ruleID, ruleStatus);
-
             if (prefix !== undefined) {
                 entry.addPrefix(prefix);
             } else if (filter && filter.rulePrefix !== undefined) {
@@ -1183,11 +1248,11 @@ class LifecycleConfiguration {
             actions.forEach(action => {
                 const { actionName, days, date, deleteMarker } = action;
                 if (actionName === 'AbortIncompleteMultipartUpload') {
-                    entry.addAbortMPU(days);
+                    entry.addAbortMPU(days!);
                     return;
                 }
                 if (actionName === 'NoncurrentVersionExpiration') {
-                    entry.addNCVExpiration(days);
+                    entry.addNCVExpiration(days!);
                     return;
                 }
                 if (actionName === 'Expiration') {
@@ -1215,4 +1280,27 @@ class LifecycleConfiguration {
     }
 }
 
-module.exports = LifecycleConfiguration;
+export type Rule = {
+    ruleID: string;
+    prefix?: string;
+    ruleStatus: Status;
+    actions: {
+        actionName: string;
+        days?: number;
+        date?: number;
+        deleteMarker?: boolean;
+        nonCurrentVersionTransition?: {
+            noncurrentDays: number;
+            storageClass: string;
+        }[];
+        transition?: {
+            days?: number;
+            date?: string;
+            storageClass: string;
+        }[];
+    }[];
+    filter?: {
+        rulePrefix?: string;
+        tags: { key: string; val: string }[];
+    };
+};

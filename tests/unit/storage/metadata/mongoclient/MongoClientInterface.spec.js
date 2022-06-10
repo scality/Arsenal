@@ -4,9 +4,9 @@ const werelogs = require('werelogs');
 const { MongoMemoryReplSet } = require('mongodb-memory-server');
 
 const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
-const BucketInfo = require('../../../../../lib/models/BucketInfo');
+const BucketInfo = require('../../../../../lib/models/BucketInfo').default;
 const MongoUtils = require('../../../../../lib/storage/metadata/mongoclient/utils');
-const ObjectMD = require('../../../../../lib/models/ObjectMD');
+const ObjectMD = require('../../../../../lib/models/ObjectMD').default;
 const { BucketVersioningKeyFormat } = require('../../../../../lib/versioning/constants').VersioningConstants;
 const { formatMasterKey } = require('../../../../../lib/storage/metadata/mongoclient/utils');
 

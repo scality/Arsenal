@@ -39,6 +39,7 @@ export { default as stringHash } from './lib/stringHash';
 export * as db from './lib/db';
 export * as errorUtils from './lib/errorUtils';
 export { default as shuffle } from './lib/shuffle';
+export * as models from './lib/models';
 
 export const algorithms = {
     list: require('./lib/algos/list/exportAlgos'),
@@ -153,31 +154,6 @@ export const storage = {
         },
     },
     utils: require('./lib/storage/utils'),
-};
-
-export const models = {
-    BackendInfo: require('./lib/models/BackendInfo'),
-    BucketInfo: require('./lib/models/BucketInfo'),
-    BucketAzureInfo: require('./lib/models/BucketAzureInfo'),
-    ObjectMD: require('./lib/models/ObjectMD'),
-    ObjectMDLocation: require('./lib/models/ObjectMDLocation'),
-    ObjectMDAzureInfo: require('./lib/models/ObjectMDAzureInfo'),
-    ARN: require('./lib/models/ARN'),
-    WebsiteConfiguration: require('./lib/models/WebsiteConfiguration'),
-    ReplicationConfiguration:
-      require('./lib/models/ReplicationConfiguration'),
-    LifecycleConfiguration:
-        require('./lib/models/LifecycleConfiguration'),
-    LifecycleRule: require('./lib/models/LifecycleRule'),
-    BucketPolicy: require('./lib/models/BucketPolicy'),
-    ObjectLockConfiguration:
-        require('./lib/models/ObjectLockConfiguration'),
-    NotificationConfiguration:
-        require('./lib/models/NotificationConfiguration'),
-    ObjectMDAmzRestore:
-        require('./lib/models/ObjectMDAmzRestore'),
-    ObjectMDArchive:
-        require('./lib/models/ObjectMDArchive'),
 };
 
 export const pensieve = {

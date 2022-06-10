@@ -1,5 +1,5 @@
 const assert = require('assert');
-const ObjectMDAmzRestore = require('../../../lib/models/ObjectMDAmzRestore');
+const ObjectMDAmzRestore = require('../../../lib/models/ObjectMDAmzRestore').default;
 
 const amzRestore = new ObjectMDAmzRestore(false, new Date());
 

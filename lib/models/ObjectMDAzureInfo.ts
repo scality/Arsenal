@@ -2,33 +2,61 @@
  * Helper class to ease access to the Azure specific information for
  * Blob and Container objects.
  */
-class ObjectMDAzureInfo {
+export default class ObjectMDAzureInfo {
+    _data: {
+        containerPublicAccess: string;
+        containerStoredAccessPolicies: any[];
+        containerImmutabilityPolicy: any;
+        containerLegalHoldStatus: boolean;
+        containerDeletionInProgress: boolean;
+        blobType: string;
+        blobContentMD5: string;
+        blobIssuedETag: string;
+        blobCopyInfo: any;
+        blobSequenceNumber: number;
+        blobAccessTierChangeTime: Date;
+        blobUncommitted: boolean;
+    };
+
     /**
      * @constructor
-     * @param {object} obj - Raw structure for the Azure info on Blob/Container
-     * @param {string} obj.containerPublicAccess - Public access authorization
+     * @param obj - Raw structure for the Azure info on Blob/Container
+     * @param obj.containerPublicAccess - Public access authorization
      *   type
-     * @param {object[]} obj.containerStoredAccessPolicies - Access policies
+     * @param obj.containerStoredAccessPolicies - Access policies
      *   for Shared Access Signature bearer
-     * @param {object} obj.containerImmutabilityPolicy - data immutability
+     * @param obj.containerImmutabilityPolicy - data immutability
      *   policy for this container
-     * @param {boolean} obj.containerLegalHoldStatus - legal hold status for
+     * @param obj.containerLegalHoldStatus - legal hold status for
      *   this container
-     * @param {boolean} obj.containerDeletionInProgress - deletion in progress
+     * @param obj.containerDeletionInProgress - deletion in progress
      *   indicator for this container
-     * @param {string} obj.blobType - defines the type of blob for this object
-     * @param {string} obj.blobContentMD5 - whole object MD5 sum set by the
+     * @param obj.blobType - defines the type of blob for this object
+     * @param obj.blobContentMD5 - whole object MD5 sum set by the
      *   client through the Azure API
-     * @param {string} obj.blobIssuedETag - backup of the issued ETag on MD only
+     * @param obj.blobIssuedETag - backup of the issued ETag on MD only
      *   operations like Set Blob Properties and Set Blob Metadata
-     * @param {object} obj.blobCopyInfo - information pertaining to past and
+     * @param obj.blobCopyInfo - information pertaining to past and
      *   pending copy operation targeting this object
-     * @param {number} obj.blobSequenceNumber - sequence number for a PageBlob
-     * @param {Date} obj.blobAccessTierChangeTime - date of change of tier
-     * @param {boolean} obj.blobUncommitted - A block has been put for a
+     * @param obj.blobSequenceNumber - sequence number for a PageBlob
+     * @param obj.blobAccessTierChangeTime - date of change of tier
+     * @param obj.blobUncommitted - A block has been put for a
      *   nonexistent blob which is about to be created
      */
-    constructor(obj) {
+    constructor(obj: {
+        containerPublicAccess: string;
+        containerStoredAccessPolicies: any[];
+        containerImmutabilityPolicy: any;
+        containerLegalHoldStatus: boolean;
+        containerDeletionInProgress: boolean;
+        blobType: string;
+        blobContentMD5: string;
+        blobIssuedETag: string;
+        blobCopyInfo: any;
+        blobSequenceNumber: number;
+        blobAccessTierChangeTime: Date;
+        blobUncommitted: boolean;
+    }) {
         this._data = {
             containerPublicAccess: obj.containerPublicAccess,
             containerStoredAccessPolicies: obj.containerStoredAccessPolicies,
@@ -49,7 +77,7 @@ class ObjectMDAzureInfo {
         return this._data.containerPublicAccess;
     }
 
-    setContainerPublicAccess(containerPublicAccess) {
+    setContainerPublicAccess(containerPublicAccess: string) {
         this._data.containerPublicAccess = containerPublicAccess;
         return this;
     }
@@ -58,7 +86,7 @@ class ObjectMDAzureInfo {
         return this._data.containerStoredAccessPolicies;
     }
 
-    setContainerStoredAccessPolicies(containerStoredAccessPolicies) {
+    setContainerStoredAccessPolicies(containerStoredAccessPolicies: any[]) {
         this._data.containerStoredAccessPolicies =
             containerStoredAccessPolicies;
         return this;
@@ -68,7 +96,7 @@ class ObjectMDAzureInfo {
         return this._data.containerImmutabilityPolicy;
     }
 
-    setContainerImmutabilityPolicy(containerImmutabilityPolicy) {
+    setContainerImmutabilityPolicy(containerImmutabilityPolicy: any) {
         this._data.containerImmutabilityPolicy = containerImmutabilityPolicy;
         return this;
     }
@@ -77,7 +105,7 @@ class ObjectMDAzureInfo {
         return this._data.containerLegalHoldStatus;
     }
 
-    setContainerLegalHoldStatus(containerLegalHoldStatus) {
+    setContainerLegalHoldStatus(containerLegalHoldStatus: boolean) {
         this._data.containerLegalHoldStatus = containerLegalHoldStatus;
         return this;
     }
@@ -86,7 +114,7 @@ class ObjectMDAzureInfo {
         return this._data.containerDeletionInProgress;
     }
 
-    setContainerDeletionInProgress(containerDeletionInProgress) {
+    setContainerDeletionInProgress(containerDeletionInProgress: boolean) {
         this._data.containerDeletionInProgress = containerDeletionInProgress;
         return this;
     }
@@ -95,7 +123,7 @@ class ObjectMDAzureInfo {
         return this._data.blobType;
     }
 
-    setBlobType(blobType) {
+    setBlobType(blobType: string) {
         this._data.blobType = blobType;
         return this;
     }
@@ -104,7 +132,7 @@ class ObjectMDAzureInfo {
         return this._data.blobContentMD5;
     }
 
-    setBlobContentMD5(blobContentMD5) {
+    setBlobContentMD5(blobContentMD5: string) {
         this._data.blobContentMD5 = blobContentMD5;
         return this;
     }
@@ -113,7 +141,7 @@ class ObjectMDAzureInfo {
         return this._data.blobIssuedETag;
     }
 
-    setBlobIssuedETag(blobIssuedETag) {
+    setBlobIssuedETag(blobIssuedETag: string) {
         this._data.blobIssuedETag = blobIssuedETag;
         return this;
     }
@@ -122,7 +150,7 @@ class ObjectMDAzureInfo {
         return this._data.blobCopyInfo;
     }
 
-    setBlobCopyInfo(blobCopyInfo) {
+    setBlobCopyInfo(blobCopyInfo: any) {
         this._data.blobCopyInfo = blobCopyInfo;
         return this;
     }
@@ -131,7 +159,7 @@ class ObjectMDAzureInfo {
         return this._data.blobSequenceNumber;
     }
 
-    setBlobSequenceNumber(blobSequenceNumber) {
+    setBlobSequenceNumber(blobSequenceNumber: number) {
         this._data.blobSequenceNumber = blobSequenceNumber;
         return this;
     }
@@ -140,7 +168,7 @@ class ObjectMDAzureInfo {
         return this._data.blobAccessTierChangeTime;
     }
 
-    setBlobAccessTierChangeTime(blobAccessTierChangeTime) {
+    setBlobAccessTierChangeTime(blobAccessTierChangeTime: Date) {
         this._data.blobAccessTierChangeTime = blobAccessTierChangeTime;
         return this;
     }
@@ -149,7 +177,7 @@ class ObjectMDAzureInfo {
         return this._data.blobUncommitted;
     }
 
-    setBlobUncommitted(blobUncommitted) {
+    setBlobUncommitted(blobUncommitted: boolean) {
         this._data.blobUncommitted = blobUncommitted;
         return this;
     }
@@ -158,5 +186,3 @@ class ObjectMDAzureInfo {
         return this._data;
     }
 }
-
-module.exports = ObjectMDAzureInfo;

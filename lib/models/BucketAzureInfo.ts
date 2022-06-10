@@ -1,40 +1,86 @@
+export type DeleteRetentionPolicy = {
+    enabled: boolean;
+    days: number;
+};
+
 /**
  * Helper class to ease access to the Azure specific information for
  * storage accounts mapped to buckets.
  */
-class BucketAzureInfo {
+export default class BucketAzureInfo {
+    _data: {
+        sku: string;
+        accessTier: string;
+        kind: string;
+        systemKeys: string[];
+        tenantKeys: string[];
+        subscriptionId: string;
+        resourceGroup: string;
+        deleteRetentionPolicy: DeleteRetentionPolicy;
+        managementPolicies: any[];
+        httpsOnly: boolean;
+        tags: any;
+        networkACL: any[];
+        cname: string;
+        azureFilesAADIntegration: boolean;
+        hnsEnabled: boolean;
+        logging: any;
+        hourMetrics: any;
+        minuteMetrics: any;
+        serviceVersion: string;
+    }
     /**
      * @constructor
-     * @param {object} obj - Raw structure for the Azure info on storage account
-     * @param {string} obj.sku - SKU name of this storage account
-     * @param {string} obj.accessTier - Access Tier name of this storage account
-     * @param {string} obj.kind - Kind name of this storage account
-     * @param {string[]} obj.systemKeys - pair of shared keys for the system
-     * @param {string[]} obj.tenantKeys - pair of shared keys for the tenant
-     * @param {string} obj.subscriptionId - subscription ID the storage account
+     * @param obj - Raw structure for the Azure info on storage account
+     * @param obj.sku - SKU name of this storage account
+     * @param obj.accessTier - Access Tier name of this storage account
+     * @param obj.kind - Kind name of this storage account
+     * @param obj.systemKeys - pair of shared keys for the system
+     * @param obj.tenantKeys - pair of shared keys for the tenant
+     * @param obj.subscriptionId - subscription ID the storage account
      *   belongs to
-     * @param {string} obj.resourceGroup - Resource group name the storage
+     * @param obj.resourceGroup - Resource group name the storage
      *   account belongs to
-     * @param {object} obj.deleteRetentionPolicy - Delete retention policy
-     * @param {boolean} obj.deleteRetentionPolicy.enabled -
-     * @param {number} obj.deleteRetentionPolicy.days -
-     * @param {object[]} obj.managementPolicies - Management policies for this
+     * @param obj.deleteRetentionPolicy - Delete retention policy
+     * @param obj.deleteRetentionPolicy.enabled -
+     * @param obj.deleteRetentionPolicy.days -
+     * @param obj.managementPolicies - Management policies for this
      *   storage account
-     * @param {boolean} obj.httpsOnly - Server the content of this storage
+     * @param obj.httpsOnly - Server the content of this storage
      *   account through HTTPS only
-     * @param {object} obj.tags - Set of tags applied on this storage account
-     * @param {object[]} obj.networkACL - Network ACL of this storage account
-     * @param {string} obj.cname - CNAME of this storage account
-     * @param {boolean} obj.azureFilesAADIntegration - whether or not Azure
+     * @param obj.tags - Set of tags applied on this storage account
+     * @param obj.networkACL - Network ACL of this storage account
+     * @param obj.cname - CNAME of this storage account
+     * @param obj.azureFilesAADIntegration - whether or not Azure
      *   Files AAD Integration is enabled for this storage account
-     * @param {boolean} obj.hnsEnabled - whether or not a hierarchical namespace
+     * @param obj.hnsEnabled - whether or not a hierarchical namespace
      *   is enabled for this storage account
-     * @param {object} obj.logging - service properties: logging
-     * @param {object} obj.hourMetrics - service properties: hourMetrics
-     * @param {object} obj.minuteMetrics - service properties: minuteMetrics
-     * @param {string} obj.serviceVersion - service properties: serviceVersion
+     * @param obj.logging - service properties: logging
+     * @param obj.hourMetrics - service properties: hourMetrics
+     * @param obj.minuteMetrics - service properties: minuteMetrics
+     * @param obj.serviceVersion - service properties: serviceVersion
      */
-    constructor(obj) {
+    constructor(obj: {
+        sku: string;
+        accessTier: string;
+        kind: string;
+        systemKeys: string[];
+        tenantKeys: string[];
+        subscriptionId: string;
+        resourceGroup: string;
+        deleteRetentionPolicy: DeleteRetentionPolicy;
+        managementPolicies: any[];
+        httpsOnly: boolean;
+        tags: any;
+        networkACL: any[];
+        cname: string;
+        azureFilesAADIntegration: boolean;
+        hnsEnabled: boolean;
+        logging: any;
+        hourMetrics: any;
+        minuteMetrics: any;
+        serviceVersion: string;
+    }) {
         this._data = {
             sku: obj.sku,
             accessTier: obj.accessTier,
@@ -62,7 +108,7 @@ class BucketAzureInfo {
         return this._data.sku;
     }
 
-    setSku(sku) {
+    setSku(sku: string) {
         this._data.sku = sku;
         return this;
     }
@@ -71,7 +117,7 @@ class BucketAzureInfo {
         return this._data.accessTier;
     }
 
-    setAccessTier(accessTier) {
+    setAccessTier(accessTier: string) {
         this._data.accessTier = accessTier;
         return this;
     }
@@ -80,7 +126,7 @@ class BucketAzureInfo {
         return this._data.kind;
     }
 
-    setKind(kind) {
+    setKind(kind: string) {
         this._data.kind = kind;
         return this;
     }
@@ -89,7 +135,7 @@ class BucketAzureInfo {
         return this._data.systemKeys;
     }
 
-    setSystemKeys(systemKeys) {
+    setSystemKeys(systemKeys: string[]) {
         this._data.systemKeys = systemKeys;
         return this;
     }
@@ -98,7 +144,7 @@ class BucketAzureInfo {
         return this._data.tenantKeys;
     }
 
-    setTenantKeys(tenantKeys) {
+    setTenantKeys(tenantKeys: string[]) {
         this._data.tenantKeys = tenantKeys;
         return this;
     }
@@ -107,7 +153,7 @@ class BucketAzureInfo {
         return this._data.subscriptionId;
     }
 
-    setSubscriptionId(subscriptionId) {
+    setSubscriptionId(subscriptionId: string) {
         this._data.subscriptionId = subscriptionId;
         return this;
     }
@@ -116,7 +162,7 @@ class BucketAzureInfo {
         return this._data.resourceGroup;
     }
 
-    setResourceGroup(resourceGroup) {
+    setResourceGroup(resourceGroup: string) {
         this._data.resourceGroup = resourceGroup;
         return this;
     }
@@ -125,7 +171,7 @@ class BucketAzureInfo {
         return this._data.deleteRetentionPolicy;
     }
 
-    setDeleteRetentionPolicy(deleteRetentionPolicy) {
+    setDeleteRetentionPolicy(deleteRetentionPolicy: DeleteRetentionPolicy) {
         this._data.deleteRetentionPolicy = deleteRetentionPolicy;
         return this;
     }
@@ -134,7 +180,7 @@ class BucketAzureInfo {
         return this._data.managementPolicies;
     }
 
-    setManagementPolicies(managementPolicies) {
+    setManagementPolicies(managementPolicies: any[]) {
         this._data.managementPolicies = managementPolicies;
         return this;
     }
@@ -143,7 +189,7 @@ class BucketAzureInfo {
         return this._data.httpsOnly;
     }
 
-    setHttpsOnly(httpsOnly) {
+    setHttpsOnly(httpsOnly: boolean) {
         this._data.httpsOnly = httpsOnly;
         return this;
     }
@@ -152,7 +198,7 @@ class BucketAzureInfo {
         return this._data.tags;
     }
 
-    setTags(tags) {
+    setTags(tags: any) {
         this._data.tags = tags;
         return this;
     }
@@ -161,7 +207,7 @@ class BucketAzureInfo {
         return this._data.networkACL;
     }
 
-    setNetworkACL(networkACL) {
+    setNetworkACL(networkACL: any[]) {
         this._data.networkACL = networkACL;
         return this;
     }
@@ -170,7 +216,7 @@ class BucketAzureInfo {
         return this._data.cname;
     }
 
-    setCname(cname) {
+    setCname(cname: string) {
         this._data.cname = cname;
         return this;
     }
@@ -179,7 +225,7 @@ class BucketAzureInfo {
         return this._data.azureFilesAADIntegration;
     }
 
-    setAzureFilesAADIntegration(azureFilesAADIntegration) {
+    setAzureFilesAADIntegration(azureFilesAADIntegration: boolean) {
         this._data.azureFilesAADIntegration = azureFilesAADIntegration;
         return this;
     }
@@ -188,7 +234,7 @@ class BucketAzureInfo {
         return this._data.hnsEnabled;
     }
 
-    setHnsEnabled(hnsEnabled) {
+    setHnsEnabled(hnsEnabled: boolean) {
         this._data.hnsEnabled = hnsEnabled;
         return this;
     }
@@ -197,7 +243,7 @@ class BucketAzureInfo {
         return this._data.logging;
     }
 
-    setLogging(logging) {
+    setLogging(logging: any) {
         this._data.logging = logging;
         return this;
     }
@@ -206,7 +252,7 @@ class BucketAzureInfo {
         return this._data.hourMetrics;
     }
 
-    setHourMetrics(hourMetrics) {
+    setHourMetrics(hourMetrics: any) {
         this._data.hourMetrics = hourMetrics;
         return this;
     }
@@ -215,7 +261,7 @@ class BucketAzureInfo {
         return this._data.minuteMetrics;
     }
 
-    setMinuteMetrics(minuteMetrics) {
+    setMinuteMetrics(minuteMetrics: any) {
         this._data.minuteMetrics = minuteMetrics;
         return this;
     }
@@ -224,7 +270,7 @@ class BucketAzureInfo {
         return this._data.serviceVersion;
     }
 
-    setServiceVersion(serviceVersion) {
+    setServiceVersion(serviceVersion: any) {
         this._data.serviceVersion = serviceVersion;
         return this;
     }
@@ -233,5 +279,3 @@ class BucketAzureInfo {
         return this._data;
     }
 }
-
-module.exports = BucketAzureInfo;
