@@ -1,6 +1,6 @@
 const assert = require('assert');
 
-const ARN = require('../../../lib/models/ARN');
+const ARN = require('../../../lib/models/ARN').default;
 
 describe('ARN object model', () => {
     describe('valid ARNs', () => {

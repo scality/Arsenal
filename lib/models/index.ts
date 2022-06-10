@@ -1,0 +1,11 @@
+export { default as ARN } from './ARN';
+export { default as BucketInfo } from './BucketInfo';
+export { default as ObjectMD } from './ObjectMD';
+export { default as ObjectMDLocation } from './ObjectMDLocation';
+export * as WebsiteConfiguration from './WebsiteConfiguration';
+export { default as ReplicationConfiguration } from './ReplicationConfiguration';
+export { default as LifecycleConfiguration } from './LifecycleConfiguration';
+export { default as LifecycleRule } from './LifecycleRule';
+export { default as BucketPolicy } from './BucketPolicy';
+export { default as ObjectLockConfiguration } from './ObjectLockConfiguration';
+export { default as NotificationConfiguration } from './NotificationConfiguration';

@@ -1,7 +1,7 @@
 const assert = require('assert');
-const BucketInfo = require('../../../lib/models/BucketInfo');
+const BucketInfo = require('../../../lib/models/BucketInfo').default;
 const { WebsiteConfiguration } =
-    require('../../../lib/models/WebsiteConfiguration.js');
+    require('../../../lib/models/WebsiteConfiguration');
 
 // create variables to populate dummyBucket
 const bucketName = 'nameOfBucket';

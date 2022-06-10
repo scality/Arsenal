@@ -1,7 +1,6 @@
-const assert = require('assert');
-
-const errors = require('../errors').default;
-const { validateResourcePolicy } = require('../policy/policyValidator');
+import assert from 'assert';
+import errors, { ArsenalError } from '../errors';
+import { validateResourcePolicy } from '../policy/policyValidator';
 
 /**
  * Format of json policy:
@@ -49,20 +48,22 @@ const objectActions = [
     's3:PutObjectTagging',
 ];
 
-class BucketPolicy {
+export default class BucketPolicy {
+    _json: string;
+    _policy: any;
     /**
      * Create a Bucket Policy instance
-     * @param {string} json - the json policy
-     * @return {object} - BucketPolicy instance
+     * @param json - the json policy
+     * @return - BucketPolicy instance
      */
-    constructor(json) {
+    constructor(json: string) {
         this._json = json;
         this._policy = {};
     }
 
     /**
      * Get the bucket policy
-     * @return {object} - the bucket policy or error
+     * @return - the bucket policy or error
      */
     getBucketPolicy() {
         const policy = this._getPolicy();
@@ -71,9 +72,9 @@ class BucketPolicy {
 
     /**
      * Get the bucket policy array
-     * @return {object} - contains error if policy validation fails
+     * @return - contains error if policy validation fails
      */
-    _getPolicy() {
+    _getPolicy(): { error: ArsenalError } | any {
         if (!this._json || this._json === '') {
             return { error: errors.MalformedPolicy.customizeDescription(
                 'request json is empty or undefined') };
@@ -101,13 +102,13 @@ class BucketPolicy {
 
     /**
      * Validate action and resource are compatible
-     * @return {error} - contains error or empty obj
+     * @return - contains error or empty obj
      */
-    _validateActionResource() {
-        const invalid = this._policy.Statement.every(s => {
-            const actions = typeof s.Action === 'string' ?
+    _validateActionResource(): { error?: ArsenalError } {
+        const invalid = this._policy.Statement.every((s: any) => {
+            const actions: string[] = typeof s.Action === 'string' ?
                 [s.Action] : s.Action;
-            const resources = typeof s.Resource === 'string' ?
+            const resources: string[] = typeof s.Resource === 'string' ?
                 [s.Resource] : s.Resource;
             const objectAction = actions.some(a =>
                 a.includes('Object') || objectActions.includes(a));
@@ -129,15 +130,12 @@ class BucketPolicy {
 
     /**
      * Call resource policy schema validation function
-     * @param {object} policy - the bucket policy object to validate
-     * @return {undefined}
+     * @param policy - the bucket policy object to validate
      */
-    static validatePolicy(policy) {
+    static validatePolicy(policy: any) {
         // only the BucketInfo constructor calls this function
         // and BucketInfo will always be passed an object
         const validated = validateResourcePolicy(JSON.stringify(policy));
         assert.deepStrictEqual(validated, { error: null, valid: true });
     }
 }
-
-module.exports = BucketPolicy;
