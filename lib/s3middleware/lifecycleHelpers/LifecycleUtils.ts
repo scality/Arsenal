@@ -98,6 +98,46 @@ export default class LifecycleUtils {
         });
     }
 
+    /**
+    * Find the most relevant trantition rule for the given transitions array
+    * and any previously stored transition from another rule.
+    * @param params.noncurrentTransitions - Array of lifecycle rule noncurrent
+    * transitions
+    * @param params.lastModified - The object's last modified
+    * @param params.currentDate - current date
+    * @param params.store - object containing applicable rules
+    * date
+    * @return The most applicable transition rule
+    */
+    getApplicableNoncurrentVersionTransition(params: {
+        store: any;
+        currentDate: Date;
+        noncurrentTransitions: any[];
+        lastModified: string;
+    }) {
+        const { noncurrentTransitions, store, lastModified, currentDate } = params;
+        const ncvt = noncurrentTransitions.reduce((result, ncvt) => {
+            const isApplicable = // Is the transition time in the past?
+                this._datetime.getTimestamp(currentDate) >=
+                this._datetime.getTransitionTimestamp(ncvt, lastModified)!;
+            if (!isApplicable) {
+                return result;
+            }
+            return this.compareTransitions({
+                transition1: ncvt,
+                transition2: result,
+                lastModified,
+            });
+        }, undefined);
+
+
+        return this.compareTransitions({
+            transition1: ncvt,
+            transition2: store.NoncurrentVersionTransition,
+            lastModified,
+        });
+    }
+
     // TODO
     /**
     * Filter out all rules based on `Status` and `Filter` (Prefix and Tags)
@@ -239,7 +279,18 @@ export default class LifecycleUtils {
                     currentDate,
                 });
             }
-            // TODO: Add support for NoncurrentVersionTransitions.
+
+            const ncvt = 'NoncurrentVersionTransitions';
+            const hasNoncurrentTransitions = Array.isArray(rule[ncvt]) && rule[ncvt].length > 0;
+            if (hasNoncurrentTransitions && this._supportedRules.includes('noncurrentVersionTransitions')) {
+                store.NoncurrentVersionTransition = this.getApplicableNoncurrentVersionTransition({
+                    noncurrentTransitions: rule.NoncurrentVersionTransitions,
+                    lastModified: metadata.LastModified,
+                    store,
+                    currentDate,
+                });
+            }
+
             return store;
         }, {});
         // Do not transition to a location where the object is already stored.
@@ -247,6 +298,12 @@ export default class LifecycleUtils {
             && applicableRules.Transition.StorageClass === metadata.StorageClass) {
             applicableRules.Transition = undefined;
         }
+
+        if (applicableRules.NoncurrentVersionTransition
+            && applicableRules.NoncurrentVersionTransition.StorageClass === metadata.StorageClass) {
+            applicableRules.NoncurrentVersionTransition = undefined;
+        }
+
         return applicableRules;
         /* eslint-enable no-param-reassign */
     }

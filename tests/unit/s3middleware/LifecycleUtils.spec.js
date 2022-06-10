@@ -40,6 +40,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
             'noncurrentVersionExpiration',
             'abortIncompleteMultipartUpload',
             'transitions',
+            'noncurrentVersionTransitions',
         ]);
     });
 
@@ -383,6 +384,208 @@ describe('LifecycleUtils::getApplicableRules', () => {
         assert.strictEqual(rules.Transition, undefined);
     });
 
+    it('should return NoncurrentVersionTransition with Days', () => {
+        const applicableRules = [
+            new LifecycleRule()
+                .addNCVTransitions([
+                    {
+                        NoncurrentDays: 1,
+                        StorageClass: 'zenko',
+                    },
+                ])
+                .build(),
+        ];
+        const lastModified = getDate({ numberOfDaysFromNow: -2 });
+        const object = getMetadataObject(lastModified);
+        const rules = lutils.getApplicableRules(applicableRules, object);
+        assert.deepStrictEqual(rules, {
+            NoncurrentVersionTransition: {
+                NoncurrentDays: 1,
+                StorageClass: 'zenko',
+            },
+        });
+    });
+
+    it('should return Transition when multiple rule transitions', () => {
+        const applicableRules = [
+            new LifecycleRule()
+                .addNCVTransitions([
+                    {
+                        NoncurrentDays: 1,
+                        StorageClass: 'zenko-1',
+                    },
+                    {
+                        NoncurrentDays: 3,
+                        StorageClass: 'zenko-3',
+                    },
+                ])
+                .build(),
+        ];
+        const lastModified = getDate({ numberOfDaysFromNow: -4 });
+        const object = getMetadataObject(lastModified);
+        const rules = lutils.getApplicableRules(applicableRules, object);
+        assert.deepStrictEqual(rules, {
+            NoncurrentVersionTransition: {
+                NoncurrentDays: 3,
+                StorageClass: 'zenko-3',
+            },
+        });
+    });
+
+    it('should return Transition across many rules: first rule', () => {
+        const applicableRules = [
+            new LifecycleRule()
+                .addNCVTransitions([{
+                    NoncurrentDays: 1,
+                    StorageClass: 'zenko-1',
+                }])
+                .build(),
+            new LifecycleRule()
+                .addNCVTransitions([{
+                    NoncurrentDays: 3,
+                    StorageClass: 'zenko-3',
+                }])
+                .build(),
+        ];
+        const lastModified = getDate({ numberOfDaysFromNow: -2 });
+        const object = getMetadataObject(lastModified);
+        const rules = lutils.getApplicableRules(applicableRules, object);
+        assert.deepStrictEqual(rules, {
+            NoncurrentVersionTransition: {
+                NoncurrentDays: 1,
+                StorageClass: 'zenko-1',
+            },
+        });
+    });
+
+    it('should return Transition across many rules: second rule', () => {
+        const applicableRules = [
+            new LifecycleRule()
+                .addNCVTransitions([{
+                    NoncurrentDays: 1,
+                    StorageClass: 'zenko-1',
+                }])
+                .build(),
+            new LifecycleRule()
+                .addNCVTransitions([{
+                    NoncurrentDays: 3,
+                    StorageClass: 'zenko-3',
+                }])
+                .build(),
+        ];
+        const lastModified = getDate({ numberOfDaysFromNow: -4 });
+        const object = getMetadataObject(lastModified);
+        const rules = lutils.getApplicableRules(applicableRules, object);
+        assert.deepStrictEqual(rules, {
+            NoncurrentVersionTransition: {
+                NoncurrentDays: 3,
+                StorageClass: 'zenko-3',
+            },
+        });
+    });
+
+    it('should return Transition across many rules: first rule with ' +
+    'multiple transitions', () => {
+        const applicableRules = [
+            new LifecycleRule()
+                .addNCVTransitions([{
+                    NoncurrentDays: 1,
+                    StorageClass: 'zenko-1',
+                }, {
+                    NoncurrentDays: 3,
+                    StorageClass: 'zenko-3',
+                }])
+                .build(),
+            new LifecycleRule()
+                .addNCVTransitions([{
+                    NoncurrentDays: 4,
+                    StorageClass: 'zenko-4',
+                }])
+                .build(),
+        ];
+        const lastModified = getDate({ numberOfDaysFromNow: -2 });
+        const object = getMetadataObject(lastModified);
+        const rules = lutils.getApplicableRules(applicableRules, object);
+        assert.deepStrictEqual(rules, {
+            NoncurrentVersionTransition: {
+                NoncurrentDays: 1,
+                StorageClass: 'zenko-1',
+            },
+        });
+    });
+
+    it('should return Transition across many rules: second rule with ' +
+    'multiple transitions', () => {
+        const applicableRules = [
+            new LifecycleRule()
+                .addNCVTransitions([{
+                    NoncurrentDays: 1,
+                    StorageClass: 'zenko-1',
+                }, {
+                    NoncurrentDays: 3,
+                    StorageClass: 'zenko-3',
+                }])
+                .build(),
+            new LifecycleRule()
+                .addNCVTransitions([{
+                    NoncurrentDays: 4,
+                    StorageClass: 'zenko-4',
+                }, {
+                    NoncurrentDays: 6,
+                    StorageClass: 'zenko-6',
+                }])
+                .build(),
+        ];
+        const lastModified = getDate({ numberOfDaysFromNow: -5 });
+        const object = getMetadataObject(lastModified);
+        const rules = lutils.getApplicableRules(applicableRules, object);
+        assert.deepStrictEqual(rules, {
+            NoncurrentVersionTransition: {
+                NoncurrentDays: 4,
+                StorageClass: 'zenko-4',
+            },
+        });
+    });
+
+    it('should not return transition when Transitions has no applicable ' +
+    'rule: Days', () => {
+        const applicableRules = [
+            new LifecycleRule()
+                .addNCVTransitions([
+                    {
+                        NoncurrentDays: 3,
+                        StorageClass: 'zenko',
+                    },
+                ])
+                .build(),
+        ];
+        const lastModified = getDate({ numberOfDaysFromNow: -2 });
+        const object = getMetadataObject(lastModified);
+        const rules = lutils.getApplicableRules(applicableRules, object);
+        assert.strictEqual(rules.Transition, undefined);
+    });
+
+    it('should not return transition when Transitions is an empty ' +
+    'array', () => {
+        const applicableRules = [
+            new LifecycleRule()
+                .addNCVTransitions([])
+                .build(),
+        ];
+        const rules = lutils.getApplicableRules(applicableRules, {});
+        assert.strictEqual(rules.Transition, undefined);
+    });
+
+    it('should not return noncurrentTransition when undefined', () => {
+        const applicableRules = [
+            new LifecycleRule()
+                .addExpiration('Days', 1)
+                .build(),
+        ];
+        const rules = lutils.getApplicableRules(applicableRules, {});
+        assert.strictEqual(rules.Transition, undefined);
+    });
+
     describe('transitioning to the same storage class', () => {
         it('should not return transition when applicable transition is ' +
         'already stored at the destination', () => {
@@ -415,6 +618,50 @@ describe('LifecycleUtils::getApplicableRules', () => {
                     .build(),
                 new LifecycleRule()
                     .addTransitions([
+                        {
+                            Days: 1,
+                            StorageClass: 'STANDARD',
+                        },
+                    ])
+                    .build(),
+            ];
+            const lastModified = getDate({ numberOfDaysFromNow: -3 });
+            const object = getMetadataObject(lastModified, 'zenko');
+            const rules = lutils.getApplicableRules(applicableRules, object);
+            assert.strictEqual(rules.Transition, undefined);
+        });
+
+        it('should not return transition when applicable transition is ' +
+        'already stored at the destination', () => {
+            const applicableRules = [
+                new LifecycleRule()
+                    .addNCVTransitions([
+                        {
+                            NoncurrentDays: 1,
+                            StorageClass: 'zenko',
+                        },
+                    ])
+                    .build(),
+            ];
+            const lastModified = getDate({ numberOfDaysFromNow: -2 });
+            const object = getMetadataObject(lastModified, 'zenko');
+            const rules = lutils.getApplicableRules(applicableRules, object);
+            assert.strictEqual(rules.Transition, undefined);
+        });
+
+        it('should not return transition when applicable transition is ' +
+        'already stored at the destination: multiple rules', () => {
+            const applicableRules = [
+                new LifecycleRule()
+                    .addNCVTransitions([
+                        {
+                            Days: 2,
+                            StorageClass: 'zenko',
+                        },
+                    ])
+                    .build(),
+                new LifecycleRule()
+                    .addNCVTransitions([
                         {
                             Days: 1,
                             StorageClass: 'STANDARD',
@@ -852,5 +1099,142 @@ describe('LifecycleUtils::compareTransitions', () => {
         });
         assert.deepStrictEqual(result, transition2);
     });
+
+    it('should return the first rule if older than the second rule (noncurrent)', () => {
+        const transition1 = {
+            NoncurrentDays: 2,
+            StorageClass: 'zenko',
+        };
+        const transition2 = {
+            NoncurrentDays: 1,
+            StorageClass: 'zenko',
+        };
+        const result = lutils.compareTransitions({
+            transition1,
+            transition2,
+            lastModified: '1970-01-01T00:00:00.000Z',
+        });
+        assert.deepStrictEqual(result, transition1);
+    });
+
+    it('should return the second rule if older than the first rule (noncurrent)', () => {
+        const transition1 = {
+            NoncurrentDays: 1,
+            StorageClass: 'zenko',
+        };
+        const transition2 = {
+            NoncurrentDays: 2,
+            StorageClass: 'zenko',
+        };
+        const result = lutils.compareTransitions({
+            transition1,
+            transition2,
+            lastModified: '1970-01-01T00:00:00.000Z',
+        });
+        assert.deepStrictEqual(result, transition2);
+    });
 });
 
+describe('LifecycleUtils::getApplicableNoncurrentVersionTransition', () => {
+    let lutils;
+
+    beforeAll(() => {
+        lutils = new LifecycleUtils();
+    });
+
+    describe('using NoncurrentDays time type', () => {
+        it('should return undefined if no rules given', () => {
+            const result = lutils.getApplicableNoncurrentVersionTransition({
+                noncurrentTransitions: [],
+                currentDate: '1970-01-03T00:00:00.000Z',
+                lastModified: '1970-01-01T00:00:00.000Z',
+                store: {},
+            });
+            assert.deepStrictEqual(result, undefined);
+        });
+
+        it('should return undefined when no rule applies', () => {
+            const result = lutils.getApplicableNoncurrentVersionTransition({
+                noncurrentTransitions: [
+                    {
+                        NoncurrentDays: 1,
+                        StorageClass: 'zenko',
+                    },
+                ],
+                currentDate: '1970-01-01T23:59:59.999Z',
+                lastModified: '1970-01-01T00:00:00.000Z',
+                store: {},
+            });
+            assert.deepStrictEqual(result, undefined);
+        });
+
+        it('should return a single rule if it applies', () => {
+            const result = lutils.getApplicableNoncurrentVersionTransition({
+                noncurrentTransitions: [
+                    {
+                        NoncurrentDays: 1,
+                        StorageClass: 'zenko',
+                    },
+                ],
+                currentDate: '1970-01-02T00:00:00.000Z',
+                lastModified: '1970-01-01T00:00:00.000Z',
+                store: {},
+            });
+            const expected = {
+                NoncurrentDays: 1,
+                StorageClass: 'zenko',
+            };
+            assert.deepStrictEqual(result, expected);
+        });
+
+        it('should return the most applicable rule: last rule', () => {
+            const result = lutils.getApplicableNoncurrentVersionTransition({
+                noncurrentTransitions: [
+                    {
+                        NoncurrentDays: 1,
+                        StorageClass: 'zenko',
+                    },
+                    {
+                        NoncurrentDays: 10,
+                        StorageClass: 'zenko',
+                    },
+                ],
+                currentDate: '1970-01-11T00:00:00.000Z',
+                lastModified: '1970-01-01T00:00:00.000Z',
+                store: {},
+            });
+            const expected = {
+                NoncurrentDays: 10,
+                StorageClass: 'zenko',
+            };
+            assert.deepStrictEqual(result, expected);
+        });
+
+        it('should return the most applicable rule: middle rule', () => {
+            const result = lutils.getApplicableNoncurrentVersionTransition({
+                noncurrentTransitions: [
+                    {
+                        NoncurrentDays: 1,
+                        StorageClass: 'zenko',
+                    },
+                    {
+                        NoncurrentDays: 4,
+                        StorageClass: 'zenko',
+                    },
+                    {
+                        NoncurrentDays: 10,
+                        StorageClass: 'zenko',
+                    },
+                ],
+                currentDate: '1970-01-05T00:00:00.000Z',
+                lastModified: '1970-01-01T00:00:00.000Z',
+                store: {},
+            });
+            const expected = {
+                NoncurrentDays: 4,
+                StorageClass: 'zenko',
+            };
+            assert.deepStrictEqual(result, expected);
+        });
+    });
+});

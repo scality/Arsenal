@@ -150,7 +150,7 @@ export const supportedLifecycleRules = [
     'noncurrentVersionExpiration',
     'abortIncompleteMultipartUpload',
     'transitions',
-    'noncurrentVersionTransition',
+    'noncurrentVersionTransitions',
 ];
 // Maximum number of buckets to cache (bucket metadata)
 export const maxCachedBuckets = process.env.METADATA_MAX_CACHED_BUCKETS ?
