@@ -57,9 +57,9 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
     }
 
     let proxyPath: string | undefined;
-    if (request.headers.proxy_path) {
+    if (request.headers.proxypath) {
         try {
-            proxyPath = decodeURIComponent(request.headers.proxy_path);
+            proxyPath = decodeURIComponent(request.headers.proxypath);
         } catch (err) {
             log.debug('invalid proxy_path header', { proxyPath });
             return { err: errors.InvalidArgument.customizeDescription(
