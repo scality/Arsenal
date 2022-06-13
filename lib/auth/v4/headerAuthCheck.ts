@@ -133,13 +133,13 @@ export function check(
     }
 
     let proxyPath: string | undefined;
-    if (request.headers.proxy_path) {
+    if (request.headers.proxypath) {
         try {
-            proxyPath = decodeURIComponent(request.headers.proxy_path);
+            proxyPath = decodeURIComponent(request.headers.proxypath);
         } catch (err) {
-            log.debug('invalid proxy_path header', { proxyPath, err });
+            log.debug('invalid proxypath header', { proxyPath, err });
             return { err: errors.InvalidArgument.customizeDescription(
-                'invalid proxy_path header') };
+                'invalid proxypath header') };
         }
     }
 

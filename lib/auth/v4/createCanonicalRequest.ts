@@ -69,11 +69,15 @@ export default function createCanonicalRequest(
     const signedHeadersList = pSignedHeaders.split(';');
     signedHeadersList.sort((a: any, b: any) => a.localeCompare(b));
     const signedHeaders = signedHeadersList.join(';');
-
+    const isProxyHost = !!pHeaders['proxyhost'];
     // canonical headers
     const canonicalHeadersList = signedHeadersList.map((signedHeader: any) => {
         if (pHeaders[signedHeader] !== undefined) {
-            const trimmedHeader = pHeaders[signedHeader]
+            let header = pHeaders[signedHeader];
+            if (isProxyHost && signedHeader.toLowerCase() === 'host') {
+                header = pHeaders['proxyhost'];
+            }
+            const trimmedHeader = header
                 .trim().replace(/\s+/g, ' ');
             return `${signedHeader}:${trimmedHeader}\n`;
         }
