@@ -34,7 +34,7 @@ const request = {
     query,
 };
 
-describe('v4 queryAuthCheck', () => {
+describe.skip('v4 queryAuthCheck', () => {
     it('should return error if algorithm param incorrect', done => {
         const alteredRequest = createAlteredRequest({ 'X-Amz-Algorithm':
             'AWS4-HMAC-SHA1' }, 'query', request, query);
