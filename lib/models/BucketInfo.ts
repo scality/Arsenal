@@ -144,6 +144,7 @@ export default class BucketInfo {
         objectLockEnabled?: boolean,
         objectLockConfiguration?: any,
         notificationConfiguration?: any,
+        tags?: { key: string; value: string }[] | null,
     ) {
         assert.strictEqual(typeof name, 'string');
         assert.strictEqual(typeof owner, 'string');
@@ -240,6 +241,10 @@ export default class BucketInfo {
             READ_ACP: [],
         };
 
+        if (tags) {
+            assert(Array.isArray(tags));
+        }
+
         // IF UPDATING PROPERTIES, INCREMENT MODELVERSION NUMBER ABOVE
         this._acl = aclInstance;
         this._name = name;
@@ -265,6 +270,7 @@ export default class BucketInfo {
         this._objectLockEnabled = objectLockEnabled || false;
         this._objectLockConfiguration = objectLockConfiguration || null;
         this._notificationConfiguration = notificationConfiguration || null;
+        this._tags = tags || null;
         return this;
     }
 
@@ -298,6 +304,7 @@ export default class BucketInfo {
             objectLockEnabled: this._objectLockEnabled,
             objectLockConfiguration: this._objectLockConfiguration,
             notificationConfiguration: this._notificationConfiguration,
+            tags: this._tags,
         };
         const final = this._websiteConfiguration
             ? {
@@ -323,7 +330,7 @@ export default class BucketInfo {
             obj.cors, obj.replicationConfiguration, obj.lifecycleConfiguration,
             obj.bucketPolicy, obj.uid, obj.readLocationConstraint, obj.isNFS,
             obj.ingestion, obj.azureInfo, obj.objectLockEnabled,
-            obj.objectLockConfiguration, obj.notificationConfiguration);
+            obj.objectLockConfiguration, obj.notificationConfiguration, obj.tags);
     }
 
     /**
@@ -350,7 +357,7 @@ export default class BucketInfo {
             data._bucketPolicy, data._uid, data._readLocationConstraint,
             data._isNFS, data._ingestion, data._azureInfo,
             data._objectLockEnabled, data._objectLockConfiguration,
-            data._notificationConfiguration);
+            data._notificationConfiguration, data._tags);
     }
 
     /**
@@ -839,6 +846,23 @@ export default class BucketInfo {
     */
     setObjectLockEnabled(enabled: boolean) {
         this._objectLockEnabled = enabled;
+        return this;
+    }
+
+    /**
+     * Get the value of bucket tags
+     * @return - Array of bucket tags
+     */
+    getTags() {
+        return this._tags;
+    }
+    
+    /**
+     * Set bucket tags
+     * @return - bucket info instance
+     */
+    setTags(tags: { key: string; value: string }[] | null) {
+        this._tags = tags;
         return this;
     }
 }
