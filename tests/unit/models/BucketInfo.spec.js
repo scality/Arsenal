@@ -184,6 +184,21 @@ const testNotificationConfiguration = {
     ],
 };
 
+const testBucketTagging = [
+    {
+        key: 'testKey1',
+        value: 'testValue1',
+    },
+    {
+        key: 'testKey2',
+        value: 'testValue2',
+    },
+    {
+        key: 'testKey3',
+        value: 'testValue3',
+    },
+];
+
 // create a dummy bucket to test getters and setters
 Object.keys(acl).forEach(
     aclObj => describe(`different acl configurations : ${aclObj}`, () => {
@@ -205,7 +220,8 @@ Object.keys(acl).forEach(
             true, undefined, testAzureInfo,
             testobjectLockEnabled,
             testObjectLockConfiguration,
-            testNotificationConfiguration);
+            testNotificationConfiguration,
+            testBucketTagging);
 
         describe('serialize/deSerialize on BucketInfo class', () => {
             const serialized = dummyBucket.serialize();
@@ -241,6 +257,7 @@ Object.keys(acl).forEach(
                     objectLockConfiguration:
                         dummyBucket._objectLockConfiguration,
                     notificationConfiguration: dummyBucket._notificationConfiguration,
+                    tags: dummyBucket._tags,
                 };
                 assert.strictEqual(serialized, JSON.stringify(bucketInfos));
                 done();
@@ -288,6 +305,7 @@ Object.keys(acl).forEach(
                         dummyBucket._objectLockConfiguration,
                     _notificationConfiguration:
                         dummyBucket._notificationConfiguration,
+                    _tags: dummyBucket._tags,
                 };
                 const fromObj = BucketInfo.fromObj(dataObj);
                 assert(fromObj instanceof BucketInfo);
