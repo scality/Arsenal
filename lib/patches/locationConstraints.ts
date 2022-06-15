@@ -37,7 +37,8 @@ export type Location = {
         | 'gcp'
         | 'scality'
         | 'pfs'
-        | 'scality';
+        | 'scality'
+        | 'dmf';
     name: string;
     objectId: string;
     details: { [key: string]: any };
