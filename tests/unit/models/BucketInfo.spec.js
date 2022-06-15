@@ -186,16 +186,16 @@ const testNotificationConfiguration = {
 
 const testBucketTagging = [
     {
-        key: 'testKey1',
-        value: 'testValue1',
+        Key: 'testKey1',
+        Value: 'testValue1',
     },
     {
-        key: 'testKey2',
-        value: 'testValue2',
+        Key: 'testKey2',
+        Value: 'testValue2',
     },
     {
-        key: 'testKey3',
-        value: 'testValue3',
+        Key: 'testKey3',
+        Value: 'testValue3',
     },
 ];
 
@@ -221,7 +221,8 @@ Object.keys(acl).forEach(
             testobjectLockEnabled,
             testObjectLockConfiguration,
             testNotificationConfiguration,
-            testBucketTagging);
+            testBucketTagging,
+        );
 
         describe('serialize/deSerialize on BucketInfo class', () => {
             const serialized = dummyBucket.serialize();

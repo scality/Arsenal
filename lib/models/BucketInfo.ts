@@ -8,6 +8,7 @@ import ObjectLockConfiguration from './ObjectLockConfiguration';
 import BucketPolicy from './BucketPolicy';
 import NotificationConfiguration from './NotificationConfiguration';
 import { ACL as OACL } from './ObjectMD';
+import { validateTags, BucketTag } from '../s3middleware/tagging';
 
 // WHEN UPDATING THIS NUMBER, UPDATE BucketInfoModelVersion.md CHANGELOG
 // BucketInfoModelVersion.md can be found in documentation/ at the root
@@ -59,7 +60,7 @@ export default class BucketInfo {
     _objectLockEnabled?: boolean;
     _objectLockConfiguration?: any;
     _notificationConfiguration?: any;
-    _tags?: { key: string; value: string }[] | null;
+    _tags?: Array<BucketTag> | [];
     _readLocationConstraint: string | null;
     _isNFS: boolean | null;
     _azureInfo: any | null;
@@ -118,6 +119,7 @@ export default class BucketInfo {
     * @param [objectLockEnabled] - true when object lock enabled
     * @param [objectLockConfiguration] - object lock configuration
     * @param [notificationConfiguration] - bucket notification configuration
+    * @param [tags] - bucket tag set
     */
     constructor(
         name: string,
@@ -144,7 +146,7 @@ export default class BucketInfo {
         objectLockEnabled?: boolean,
         objectLockConfiguration?: any,
         notificationConfiguration?: any,
-        tags?: { key: string; value: string }[] | null,
+        tags?: Array<BucketTag> | [],
     ) {
         assert.strictEqual(typeof name, 'string');
         assert.strictEqual(typeof owner, 'string');
@@ -241,9 +243,10 @@ export default class BucketInfo {
             READ_ACP: [],
         };
 
-        if (tags) {
-            assert(Array.isArray(tags));
+        if (tags === undefined) {
+            tags = [];
         }
+        validateTags(tags);
 
         // IF UPDATING PROPERTIES, INCREMENT MODELVERSION NUMBER ABOVE
         this._acl = aclInstance;
@@ -270,7 +273,7 @@ export default class BucketInfo {
         this._objectLockEnabled = objectLockEnabled || false;
         this._objectLockConfiguration = objectLockConfiguration || null;
         this._notificationConfiguration = notificationConfiguration || null;
-        this._tags = tags || null;
+        this._tags = tags;
         return this;
     }
 
@@ -861,7 +864,7 @@ export default class BucketInfo {
      * Set bucket tags
      * @return - bucket info instance
      */
-    setTags(tags: { key: string; value: string }[] | null) {
+    setTags(tags: Array<BucketTag> | []) {
         this._tags = tags;
         return this;
     }

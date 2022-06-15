@@ -187,6 +187,17 @@ Used to store the users configured KMS key id
 this._tags = tags || null;
 ```
 
+The Tag Set of a bucket is an array of objects with Key and Value:
+
+```javascript
+[
+    {
+        Key: 'something',
+        Value: 'some_data'
+    }
+]
+```
+
 ### Usage
 
 Used to store bucket tagging

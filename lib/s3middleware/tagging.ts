@@ -3,6 +3,11 @@ import * as werelogs from 'werelogs';
 import errors, { ArsenalError } from '../errors';
 import escapeForXml from './escapeForXml';
 
+export interface BucketTag {
+    Key: string;
+    Value: string;
+};
+
 const errorInvalidArgument = () => errors.InvalidArgument
     .customizeDescription('The header \'x-amz-tagging\' shall be ' +
   'encoded as UTF-8 then URLEncoded URL query parameters without ' +
@@ -31,6 +36,12 @@ export const _validator = {
         && tag.Key.length === 1 && tag.Value.length === 1
         && tag.Key[0] !== undefined && tag.Value[0] !== undefined
         && typeof tag.Key[0] === 'string' && typeof tag.Value[0] === 'string',
+
+    validateTagObjectStructure: (tag: BucketTag) => tag
+        && Object.keys(tag).length === 2
+        && tag.Key && tag.Value
+        && tag.Key.length >= 1 && tag.Value.length >= 1
+        && typeof tag.Key === 'string' && typeof tag.Value === 'string',
 
     validateXMLStructure: (result: any) =>
         result && Object.keys(result).length === 1 &&
@@ -101,6 +112,54 @@ function _validateTags(tags: Array<{ Key: string[], Value: string[] }>) {
     // not repeating keys
     if (tags.length > Object.keys(tagsResult).length) {
         return errors.InvalidTag.customizeDescription('Cannot provide ' +
+        'multiple Tags with the same key');
+    }
+    return tagsResult;
+}
+
+/** validateTags - Validate tags, throwing an error if tags are invalid
+* @param tags - tags parsed from xml to be validated
+* @param tags[].Key - Name of the tag
+* @param tags[].Value - Value of the tag
+* @return tagsResult - return object tags on success
+* { key: value }; error on failure
+*/
+export function validateTags(tags: Array<BucketTag>) {
+    if (tags.length === 0) {
+        return {};
+    }
+    // Maximum number of tags per resource: 50
+    if (tags.length > 50) {
+        return errorBadRequestLimit50();
+    }
+
+    const tagsResult = {};
+    for (const tag of tags) {
+        if (!_validator.validateTagObjectStructure(tag)) {
+            throw errors.MalformedXML;
+        }
+        const key = tag.Key;
+        const value = tag.Value;
+
+        if (!key) {
+            throw errors.InvalidTag.customizeDescription('The TagKey you ' +
+            'have provided is invalid');
+        }
+
+        // Allowed characters are letters, whitespace, and numbers, plus
+        // the following special characters: + - = . _ : /
+        // Maximum key length: 128 Unicode characters
+        // Maximum value length: 256 Unicode characters
+        const result = _validator.validateKeyValue(key, value);
+        if (result instanceof Error) {
+            throw result;
+        }
+
+        tagsResult[key] = value;
+    }
+    // not repeating keys
+    if (tags.length > Object.keys(tagsResult).length) {
+        throw errors.InvalidTag.customizeDescription('Cannot provide ' +
         'multiple Tags with the same key');
     }
     return tagsResult;
