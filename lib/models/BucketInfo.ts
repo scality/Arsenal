@@ -60,7 +60,7 @@ export default class BucketInfo {
     _objectLockEnabled?: boolean;
     _objectLockConfiguration?: any;
     _notificationConfiguration?: any;
-    _tags?: Array<BucketTag> | [];
+    _tags?: Array<BucketTag>;
     _readLocationConstraint: string | null;
     _isNFS: boolean | null;
     _azureInfo: any | null;
@@ -244,7 +244,7 @@ export default class BucketInfo {
         };
 
         if (tags === undefined) {
-            tags = [];
+            tags = [] as BucketTag[];
         }
         validateTags(tags);
 
@@ -864,7 +864,7 @@ export default class BucketInfo {
      * Set bucket tags
      * @return - bucket info instance
      */
-    setTags(tags: Array<BucketTag> | []) {
+    setTags(tags: Array<BucketTag>) {
         this._tags = tags;
         return this;
     }

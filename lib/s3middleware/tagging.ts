@@ -37,11 +37,14 @@ export const _validator = {
         && tag.Key[0] !== undefined && tag.Value[0] !== undefined
         && typeof tag.Key[0] === 'string' && typeof tag.Value[0] === 'string',
 
+    // Allowed characters are letters, whitespace, and numbers, plus
+    // the following special characters: + - = . _ : /
+    // Maximum key length: 128 Unicode characters
+    // Maximum value length: 256 Unicode characters
     validateTagObjectStructure: (tag: BucketTag) => tag
         && Object.keys(tag).length === 2
-        && tag.Key && tag.Value
-        && tag.Key.length >= 1 && tag.Value.length >= 1
-        && typeof tag.Key === 'string' && typeof tag.Value === 'string',
+        && typeof tag.Key === 'string' && typeof tag.Value === 'string'
+        && tag.Key.length >= 1 && tag.Value.length >= 1,
 
     validateXMLStructure: (result: any) =>
         result && Object.keys(result).length === 1 &&
@@ -111,8 +114,9 @@ function _validateTags(tags: Array<{ Key: string[], Value: string[] }>) {
     }
     // not repeating keys
     if (tags.length > Object.keys(tagsResult).length) {
-        return errors.InvalidTag.customizeDescription('Cannot provide ' +
-        'multiple Tags with the same key');
+        return errors.InvalidTag.customizeDescription(
+            'Cannot provide multiple Tags with the same key'
+        );
     }
     return tagsResult;
 }
@@ -138,18 +142,8 @@ export function validateTags(tags: Array<BucketTag>) {
         if (!_validator.validateTagObjectStructure(tag)) {
             throw errors.MalformedXML;
         }
-        const key = tag.Key;
-        const value = tag.Value;
+        const { Key: key, Value: value } = tag;
 
-        if (!key) {
-            throw errors.InvalidTag.customizeDescription('The TagKey you ' +
-            'have provided is invalid');
-        }
-
-        // Allowed characters are letters, whitespace, and numbers, plus
-        // the following special characters: + - = . _ : /
-        // Maximum key length: 128 Unicode characters
-        // Maximum value length: 256 Unicode characters
         const result = _validator.validateKeyValue(key, value);
         if (result instanceof Error) {
             throw result;
