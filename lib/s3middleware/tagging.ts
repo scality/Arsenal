@@ -121,42 +121,38 @@ function _validateTags(tags: Array<{ Key: string[], Value: string[] }>) {
     return tagsResult;
 }
 
-/** validateTags - Validate tags, throwing an error if tags are invalid
+/** areTagsValid - Validate bucket tags
 * @param tags - tags parsed from xml to be validated
-* @param tags[].Key - Name of the tag
-* @param tags[].Value - Value of the tag
-* @return tagsResult - return object tags on success
-* { key: value }; error on failure
+* @return result - true if the tags are valide, false otherwise
 */
-export function validateTags(tags: Array<BucketTag>) {
+export function areTagsValid(tags: Array<BucketTag>) {
     if (tags.length === 0) {
-        return {};
+        return true;
     }
     // Maximum number of tags per resource: 50
     if (tags.length > 50) {
-        return errorBadRequestLimit50();
+        return false;
     }
 
     const tagsResult = {};
     for (const tag of tags) {
         if (!_validator.validateTagObjectStructure(tag)) {
-            throw errors.MalformedXML;
+            return false;
         }
         const { Key: key, Value: value } = tag;
 
         const result = _validator.validateKeyValue(key, value);
         if (result instanceof Error) {
-            throw result;
+            return false;
         }
 
         tagsResult[key] = value;
     }
     // not repeating keys
     if (tags.length > Object.keys(tagsResult).length) {
-        throw errors.InvalidTag.customizeDescription('Cannot provide ' +
-        'multiple Tags with the same key');
+        return false;
     }
-    return tagsResult;
+    return true;
 }
 
 /** parseTagXml - Parse and validate xml body, returning callback with object

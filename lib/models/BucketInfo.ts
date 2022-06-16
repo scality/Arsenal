@@ -8,7 +8,7 @@ import ObjectLockConfiguration from './ObjectLockConfiguration';
 import BucketPolicy from './BucketPolicy';
 import NotificationConfiguration from './NotificationConfiguration';
 import { ACL as OACL } from './ObjectMD';
-import { validateTags, BucketTag } from '../s3middleware/tagging';
+import { areTagsValid, BucketTag } from '../s3middleware/tagging';
 
 // WHEN UPDATING THIS NUMBER, UPDATE BucketInfoModelVersion.md CHANGELOG
 // BucketInfoModelVersion.md can be found in documentation/ at the root
@@ -246,7 +246,7 @@ export default class BucketInfo {
         if (tags === undefined) {
             tags = [] as BucketTag[];
         }
-        validateTags(tags);
+        assert.strictEqual(areTagsValid(tags), true);
 
         // IF UPDATING PROPERTIES, INCREMENT MODELVERSION NUMBER ABOVE
         this._acl = aclInstance;
