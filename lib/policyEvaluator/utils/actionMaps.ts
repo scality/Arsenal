@@ -194,6 +194,9 @@ const actionMapIAM = {
     getAccessKeyLastUsed: 'iam:GetAccessKeyLastUsed',
     generateCredentialReport: 'iam:GenerateCredentialReport',
     getCredentialReport: 'iam:GetCredentialReport',
+    tagUser: 'iam:TagUser',
+    unTagUser: 'iam:UnTagUser',
+    listUserTags: 'iam:ListUserTags',
 };
 
 const actionMapSSO = {
