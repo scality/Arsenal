@@ -187,7 +187,7 @@ const actionMapIAM = {
     generateCredentialReport: 'iam:GenerateCredentialReport',
     getCredentialReport: 'iam:GetCredentialReport',
     tagUser: 'iam:TagUser',
-    unTagUser: 'iam:UnTagUser',
+    unTagUser: 'iam:UntagUser',
     listUserTags: 'iam:ListUserTags',
 };
 
