@@ -24,7 +24,7 @@
     "ajv": "6.12.3",
     "async": "~2.6.4",
     "aws-sdk": "2.80.0",
-    "azure-storage": "2.10.3",
+    "azure-storage": "~2.10.7",
     "backo": "^1.1.0",
     "base-x": "3.0.8",
     "base62": "2.0.1",
