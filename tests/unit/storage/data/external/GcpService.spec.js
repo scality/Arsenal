@@ -33,7 +33,6 @@ const invalidBucketNames = [
     'bucketName.',
     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
     '256.256.256.256',
-    '',
 ];
 
 function badBucketNameHandler(req, res) {
