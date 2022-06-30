@@ -95,15 +95,13 @@ describe('MongoClientInterface:deleteObjectWithCond', () => {
         });
     });
 
-    it('should fail when findOneAndUpdate fails', done => {
-        const collection = {
-            findOneAndDelete: (filter, cb) => cb(errors.InternalError),
-        };
-        sinon.stub(client, 'getCollection').callsFake(() => collection);
+    it('should fail when internalDeleteObject fails', done => {
+        sinon.stub(client, 'getCollection').callsFake(() => {});
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null));
         sinon.stub(utils, 'translateConditions').callsFake(() => null);
+        sinon.stub(client, 'internalDeleteObject').callsArgWith(5, errors.InternalError);
         client.deleteObjectWithCond('example-bucket', 'example-object', {}, logger, err => {
-            assert.deepStrictEqual(err, errors.InternalError);
+            assert(err.is.InternalError);
             return done();
         });
     });
