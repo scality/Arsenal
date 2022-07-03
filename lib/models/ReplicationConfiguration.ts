@@ -359,6 +359,11 @@ export default class ReplicationConfiguration {
                 (endpoint: any) => endpoint.site === storageClass
             );
             if (endpoint) {
+                // We do not support replication to cold location. 
+                // Only transition to cold location is supported.
+                if (endpoint.site && this._config.locationConstraints[endpoint.site]?.isCold) {
+                    return false;
+                }
                 // If this._hasScalityDestination was not set to true in any
                 // previous iteration or by a prior rule's storage class, then
                 // check if the current endpoint is a Scality destination.
