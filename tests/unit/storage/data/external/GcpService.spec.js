@@ -26,21 +26,20 @@ function handler(isPathStyle) {
     };
 }
 
-const invalidBucketNames = [
+const invalidDnsBucketNames = [
     '..',
     '.bucketname',
     'bucketname.',
     'bucketName.',
     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
     '256.256.256.256',
-    '',
 ];
 
-function badBucketNameHandler(req, res) {
+function invalidDnsBucketNameHandler(req, res) {
     assert(req.headers.host, host);
     const bucketFromUrl = req.url.split('/')[1];
     assert.strictEqual(typeof bucketFromUrl, 'string');
-    assert(invalidBucketNames.includes(bucketFromUrl));
+    assert(invalidDnsBucketNames.includes(bucketFromUrl));
     res.end();
 }
 
@@ -101,7 +100,7 @@ describe('GcpService request behavior', () => {
             secretAccessKey,
         });
         httpServer =
-            http.createServer(badBucketNameHandler).listen(httpPort);
+            http.createServer(invalidDnsBucketNameHandler).listen(httpPort);
         httpServer.on('listening', done);
         httpServer.on('error', err => {
             process.stdout.write(`https server: ${err.stack}\n`);
@@ -114,10 +113,15 @@ describe('GcpService request behavior', () => {
     });
 
 
-    invalidBucketNames.forEach(bucket => {
+    invalidDnsBucketNames.forEach(bucket => {
+        // This test verifies that populateURI() properly sticks to path-based bucket name,
+        // when the bucket is not DNS-compatible
         it(`should not use dns-style if bucket isn't dns compatible: ${bucket}`,
             done => {
                 client.headBucket({ Bucket: bucket }, err => {
+                    // We expect no error here: the invalidDnsBucketNameHandler() function
+                    // will verify that the `host` has indeed not be updated and that
+                    // bucket name is provided through the `path`.
                     assert.ifError(err);
                     done();
                 });
