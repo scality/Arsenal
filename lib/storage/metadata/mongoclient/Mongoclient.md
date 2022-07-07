@@ -272,6 +272,21 @@ The mongoclient backend implements a readable key/value stream called
 in Arsenal/lib/algos listing algorithms. Note it does not require any
 LevelDB package.
 
+A versioned object in MongoDB is stored using two types of documents:
+a version document for each version of the object, and a master document
+containing the data of the latest version of the object.
+
+When deleting the latest version of an object, the master document is replaced
+by a temporary placeholder document (marked with `isPHD: true` in its metadata)
+that gets resolved later with the data
+of the new latest version of the object.
+
+Listing a bucket’s objects (not versions) is done in two steps.
+First, all master documents are listed internally
+(these can contain the placeholder documents).
+Next, the placeholder documents are resolved by listing
+the object’s versions and returning the latest one’s data.
+
 #### Generating the UUID
 
 To avoid race conditions we always (try to) generate a new UUID and we
