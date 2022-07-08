@@ -56,6 +56,7 @@ export type ObjectMDData = {
     'x-amz-server-side-encryption-aws-kms-key-id': string;
     'x-amz-server-side-encryption-customer-algorithm': string;
     'x-amz-website-redirect-location': string;
+    'x-amz-scal-transition-in-progress'?: boolean;
     azureInfo?: any;
     acl: ACL;
     key: string;
@@ -183,6 +184,7 @@ export default class ObjectMD {
             'x-amz-server-side-encryption-aws-kms-key-id': '',
             'x-amz-server-side-encryption-customer-algorithm': '',
             'x-amz-website-redirect-location': '',
+            'x-amz-scal-transition-in-progress': false,
             acl: {
                 Canned: 'private',
                 FULL_CONTROL: [],
@@ -626,6 +628,26 @@ export default class ObjectMD {
      */
     getRedirectLocation() {
         return this._data['x-amz-website-redirect-location'];
+    }
+
+    /**
+     * Set metadata transition in progress value
+     *
+     * @param inProgress - True if transition is in progress, false otherwise
+     * @return itself
+     */
+    setTransitionInProgress(inProgress: boolean) {
+        this._data['x-amz-scal-transition-in-progress'] = inProgress;
+        return this;
+    }
+
+    /**
+     * Get metadata transition in progress value
+     *
+     * @return True if transition is in progress, false otherwise
+     */
+    getTransitionInProgress() {
+        return this._data['x-amz-scal-transition-in-progress'];
     }
 
     /**
