@@ -61,6 +61,47 @@ export default class LifecycleUtils {
         return trans1 > trans2 ? transition1 : transition2;
     }
 
+    /**
+    * Compare two non-current version transition rules and return the one that is most recent.
+    * @param params - The function parameters
+    * @param params.transition1 - A non-current version transition from the current rule
+    * @param params.transition2 - A non-current version transition from the previous rule
+    * @param params.lastModified - The object's last modified
+    * date
+    * @return The most applicable transition rule
+    */
+    compareNCVTransitions(params: {
+        lastModified: string;
+        transition1: any;
+        transition2?: any;
+    }): number | undefined;
+    compareNCVTransitions(params: {
+        lastModified: string;
+        transition1?: any;
+        transition2: any;
+    }): number | undefined;
+    compareNCVTransitions(params: {
+        lastModified: string;
+        transition1: any;
+        transition2: any;
+    }): number | undefined;
+    compareNCVTransitions(params: {
+        lastModified: string;
+        transition1?: any;
+        transition2?: any;
+    }) {
+        const { transition1, transition2, lastModified } = params;
+        if (transition1 === undefined) {
+            return transition2;
+        }
+        if (transition2 === undefined) {
+            return transition1;
+        }
+        const trans1 = this._datetime.getNCVTransitionTimestamp(transition1!, lastModified)!;
+        const trans2 = this._datetime.getNCVTransitionTimestamp(transition2!, lastModified)!;
+        return trans1 > trans2 ? transition1 : transition2;
+    }
+
     // TODO Fix This
     /**
     * Find the most relevant trantition rule for the given transitions array
@@ -92,6 +133,42 @@ export default class LifecycleUtils {
             });
         }, undefined);
         return this.compareTransitions({
+            transition1: transition,
+            transition2: store.Transition,
+            lastModified,
+        });
+    }
+
+    /**
+    * Find the most relevant non-current version transition rule for the given transitions array
+    * and any previously stored non-current version transition from another rule.
+    * @param params - The function parameters
+    * @param params.transitions - Array of lifecycle non-current version transitions
+    * @param params.lastModified - The object's last modified
+    * date
+    * @return The most applicable non-current version transition rule
+    */
+    getApplicableNCVTransition(params: {
+        store: any;
+        currentDate: Date;
+        transitions: any[];
+        lastModified: string;
+    }) {
+        const { transitions, store, lastModified, currentDate } = params;
+        const transition = transitions.reduce((result, transition) => {
+            const isApplicable = // Is the transition time in the past?
+            this._datetime.getTimestamp(currentDate) >=
+                this._datetime.getNCVTransitionTimestamp(transition, lastModified)!;
+            if (!isApplicable) {
+                return result;
+            }
+            return this.compareNCVTransitions({
+                transition1: transition,
+                transition2: result,
+                lastModified,
+            });
+        }, undefined);
+        return this.compareNCVTransitions({
             transition1: transition,
             transition2: store.Transition,
             lastModified,
@@ -239,6 +316,16 @@ export default class LifecycleUtils {
                     currentDate,
                 });
             }
+
+            const hasNoncurrentVersionTransitions = Array.isArray(rule.NoncurrentVersionTransitions) && rule.NoncurrentVersionTransitions.length > 0;
+            if (hasNoncurrentVersionTransitions && this._supportedRules.includes('noncurrentVersionTransition')) {
+                store.NoncurrentVersionTransition = this.getApplicableNCVTransition({
+                    transitions: rule.NoncurrentVersionTransitions,
+                    lastModified: metadata.LastModified,
+                    store,
+                    currentDate,
+                });
+            }
             // TODO: Add support for NoncurrentVersionTransitions.
             return store;
         }, {});
@@ -247,6 +334,12 @@ export default class LifecycleUtils {
             && applicableRules.Transition.StorageClass === metadata.StorageClass) {
             applicableRules.Transition = undefined;
         }
+
+        if (applicableRules.NoncurrentVersionTransition
+            && applicableRules.NoncurrentVersionTransition.StorageClass === metadata.StorageClass) {
+            applicableRules.NoncurrentVersionTransition = undefined;
+        }
+
         return applicableRules;
         /* eslint-enable no-param-reassign */
     }

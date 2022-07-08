@@ -789,6 +789,110 @@ describe('LifecycleUtils::getApplicableTransition', () => {
     });
 });
 
+describe('LifecycleUtils::getApplicableNCVTransition', () => {
+    let lutils;
+
+    beforeAll(() => {
+        lutils = new LifecycleUtils();
+    });
+
+    describe('using NoncurrentDays time type', () => {
+        it('should return undefined if no rules given', () => {
+            const result = lutils.getApplicableNCVTransition({
+                transitions: [],
+                currentDate: '1970-01-03T00:00:00.000Z',
+                lastModified: '1970-01-01T00:00:00.000Z',
+                store: {},
+            });
+            assert.deepStrictEqual(result, undefined);
+        });
+
+        it('should return undefined when no rule applies', () => {
+            const result = lutils.getApplicableNCVTransition({
+                transitions: [
+                    {
+                        NoncurrentDays: 1,
+                        StorageClass: 'zenko',
+                    },
+                ],
+                currentDate: '1970-01-01T23:59:59.999Z',
+                lastModified: '1970-01-01T00:00:00.000Z',
+                store: {},
+            });
+            assert.deepStrictEqual(result, undefined);
+        });
+
+        it('should return a single rule if it applies', () => {
+            const result = lutils.getApplicableNCVTransition({
+                transitions: [
+                    {
+                        NoncurrentDays: 1,
+                        StorageClass: 'zenko',
+                    },
+                ],
+                currentDate: '1970-01-02T00:00:00.000Z',
+                lastModified: '1970-01-01T00:00:00.000Z',
+                store: {},
+            });
+            const expected = {
+                NoncurrentDays: 1,
+                StorageClass: 'zenko',
+            };
+            assert.deepStrictEqual(result, expected);
+        });
+
+        it('should return the most applicable rule: last rule', () => {
+            const result = lutils.getApplicableNCVTransition({
+                transitions: [
+                    {
+                        NoncurrentDays: 1,
+                        StorageClass: 'zenko',
+                    },
+                    {
+                        NoncurrentDays: 10,
+                        StorageClass: 'zenko',
+                    },
+                ],
+                currentDate: '1970-01-11T00:00:00.000Z',
+                lastModified: '1970-01-01T00:00:00.000Z',
+                store: {},
+            });
+            const expected = {
+                NoncurrentDays: 10,
+                StorageClass: 'zenko',
+            };
+            assert.deepStrictEqual(result, expected);
+        });
+
+        it('should return the most applicable rule: middle rule', () => {
+            const result = lutils.getApplicableNCVTransition({
+                transitions: [
+                    {
+                        NoncurrentDays: 1,
+                        StorageClass: 'zenko',
+                    },
+                    {
+                        NoncurrentDays: 4,
+                        StorageClass: 'zenko',
+                    },
+                    {
+                        NoncurrentDays: 10,
+                        StorageClass: 'zenko',
+                    },
+                ],
+                currentDate: '1970-01-05T00:00:00.000Z',
+                lastModified: '1970-01-01T00:00:00.000Z',
+                store: {},
+            });
+            const expected = {
+                NoncurrentDays: 4,
+                StorageClass: 'zenko',
+            };
+            assert.deepStrictEqual(result, expected);
+        });
+    });
+});
+
 describe('LifecycleUtils::compareTransitions', () => {
     let lutils;
 
