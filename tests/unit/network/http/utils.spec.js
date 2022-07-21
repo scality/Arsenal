@@ -64,6 +64,8 @@ describe('getByteRangeFromSpec function', () => {
         expectedByteRange: { } },
     { rangeSpec: { suffix: 0 }, objectSize: 0,
         expectedByteRange: { error: errors.InvalidRange } },
+    { rangeSpec: { start: 0, end: 0 }, objectSize: 7340032,
+        expectedByteRange: { range: [0, 0] } },
     ].forEach(testCase => {
         const { rangeSpec, objectSize, expectedByteRange } = testCase;
 
