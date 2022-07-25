@@ -59,6 +59,65 @@ function getListingKey(key, vFormat) {
             assert.strictEqual(delimiter.skipping(), SKIP_NONE);
         });
 
+        it.skip('should not hide versioned keys when a common prefix master is filtered first', () => {
+            // See S3C-4682 for details.
+            // Delimiter will call .filter multiple times with different keys.
+            // It should list them all except those with delete markers despite large size.
+            const delimiter = new DelimiterMaster({}, fakeLogger, vFormat);
+            const masterKey = '_EFICAAS-ConnectExpress-ProxyIN';
+            const delimiterChar = '/';
+            const commonPrefix = `${masterKey}${delimiterChar}`;
+            const key = `${commonPrefix}`;
+
+            // This should be an unversioned master.
+            // TODO: verify this is really unversioned
+
+            const version = new Version({ isNull: true });
+            const obj = {
+                key,
+                value: version.toString(),
+            };
+            // do not skip master with lexicographically smallest key
+            assert.strictEqual(delimiter.filter(obj), FILTER_ACCEPT);
+
+            // Skip these with delete markers
+            // in S3C-4682 there are 514 ids with delete markers and a common prefix.
+            // Note: This step doesn't matter currently but leaving as is to ensure correct 
+            // behavior when  bug is fixed.
+            for (let idx = 0; idx < 514; idx++) {
+                // delete markers and versioned
+                const keyVersion = `${masterKey}${VID_SEP}${idx}`;
+                const version = new Version({ versionId: idx, isDeleteMarker: true });
+                const obj = {
+                    key: keyVersion,
+                    value: version.toString(),
+                };
+                assert.strictEqual(delimiter.filter(obj), FILTER_SKIP);
+            }
+
+            // Do not skip these as there's no delete markers.
+            const versionedSuffixes = [
+                'test.truc',
+                'test.truc.truc',
+                'test.trucc',
+                'TRANSTOM.HEFSLX01.URK77186.VACI02.D050721.RECU.ENCRYPTED',
+            ];
+
+            let idx = 0;
+            for (const key of versionedSuffixes) {
+                // Does not contain delete markers but contains versions to simulate turning on versioning.
+                const keyVersion = `${masterKey}${VID_SEP}${key}`;
+                const version = new Version({ versionId: idx });
+                const obj = {
+                    key: keyVersion,
+                    value: version.toString(),
+                };
+                // TODO: this currently returns FILTER_SKIP. The state machine logic needs to handle this case.
+                assert.strictEqual(delimiter.filter(obj), FILTER_ACCEPT);
+                idx += 1;
+            }
+        });
+
         it('should return <key><VersionIdSeparator> for DelimiterMaster when ' +
         'NextMarker is set and there is a delimiter', () => {
             const key = 'key';
