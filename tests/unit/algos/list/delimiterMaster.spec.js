@@ -63,7 +63,7 @@ function getListingKey(key, vFormat) {
             // See S3C-4682 for details.
             // Delimiter will call .filter multiple times with different keys.
             // It should list them all except those with delete markers despite large size.
-            const delimiter = new DelimiterMaster({}, fakeLogger, vFormat);
+            const delimiter = new DelimiterMaster({delimiter: '/'}, fakeLogger, vFormat);
             const masterKey = '_EFICAAS-ConnectExpress-ProxyIN';
             const delimiterChar = '/';
             const commonPrefix = `${masterKey}${delimiterChar}`;
@@ -117,11 +117,17 @@ function getListingKey(key, vFormat) {
                 { name: 'TRANSTOM.HEFSLX01.KMADT01T.Q18TI10.D030721.RECU.ENCRYPTED', vid: '98341720870177999996RG001  1.20780.271545'},
                 { name: 'TRANSTOM.HEFSLX01.CDNZOSHM.RDS.2107050200-01.ZIP.RECU.ENCRYPTED', vid: '98341720870177999994RG001  1.20780.271547'}
             ];
-
-            const og = Array.from(versionedSuffixes);
-            versionedSuffixes.sort((a, b) => a.vid < b.vid);
-            assert.deepEqual(og, versionedSuffixes);
-
+            // const name = 'a';
+            // const versionedSuffixes = [
+            //     {name, vid: 'e  5'},
+            //     {name, vid: 'd  4'},
+            //     {name, vid: 'c  3'},
+            //     {name, vid: 'b  2'},
+            //     {name, vid: 'a  1'}
+            // ];
+            // const og = Array.from(versionedSuffixes);
+            // versionedSuffixes.sort((a, b) => a.vid < b.vid);
+            // assert.deepEqual(og, versionedSuffixes);
             const accepted = [];
             const skipped = [];
 
