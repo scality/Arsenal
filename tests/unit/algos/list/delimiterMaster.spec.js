@@ -46,7 +46,7 @@ function getListingKey(key, vFormat) {
     return assert.fail(`bad vFormat ${vFormat}`);
 }
 
-['v0', 'v1'].forEach(vFormat => {
+['v1'].forEach(vFormat => {
     describe(`Delimiter All masters listing algorithm vFormat=${vFormat}`, () => {
         it('should return SKIP_NONE for DelimiterMaster when both NextMarker ' +
         'and NextContinuationToken are undefined', () => {
@@ -59,7 +59,7 @@ function getListingKey(key, vFormat) {
             assert.strictEqual(delimiter.skipping(), SKIP_NONE);
         });
 
-        it.skip('should not hide versioned keys when a common prefix master is filtered first', () => {
+        it.only('should not hide versioned keys when a common prefix master is filtered first', () => {
             // See S3C-4682 for details.
             // Delimiter will call .filter multiple times with different keys.
             // It should list them all except those with delete markers despite large size.
@@ -72,9 +72,17 @@ function getListingKey(key, vFormat) {
             // This should be an unversioned master.
             // TODO: verify this is really unversioned
 
-            const version = new Version({ isNull: true });
+            // const version = new Version({ isDeleteMarker: true });
+            //     const key = 'key';
+            //     const obj = {
+            //         key: `${key}${VID_SEP}version`,
+            //         value: version.toString(),
+            //     };
+
+
+            const version = new Version({ isDeleteMarker: true });
             const obj = {
-                key,
+                key: `${key}${VID_SEP}version`,
                 value: version.toString(),
             };
             // do not skip master with lexicographically smallest key
@@ -82,40 +90,62 @@ function getListingKey(key, vFormat) {
 
             // Skip these with delete markers
             // in S3C-4682 there are 514 ids with delete markers and a common prefix.
-            // Note: This step doesn't matter currently but leaving as is to ensure correct 
+            // Note: This step doesn't matter currently but leaving as is to ensure correct
             // behavior when  bug is fixed.
-            for (let idx = 0; idx < 514; idx++) {
-                // delete markers and versioned
-                const keyVersion = `${masterKey}${VID_SEP}${idx}`;
-                const version = new Version({ versionId: idx, isDeleteMarker: true });
-                const obj = {
-                    key: keyVersion,
-                    value: version.toString(),
-                };
-                assert.strictEqual(delimiter.filter(obj), FILTER_SKIP);
-            }
+            // for (let idx = 0; idx < 514; idx++) {
+            //     // delete markers and versioned
+            //     const keyVersion = `${masterKey}${VID_SEP}${idx}`;
+            //     const version = new Version({ versionId: idx, isDeleteMarker: true });
+            //     const obj = {
+            //         key: keyVersion,
+            //         value: version.toString(),
+            //     };
+            //     assert.strictEqual(delimiter.filter(obj), FILTER_SKIP);
+            // }
 
             // Do not skip these as there's no delete markers.
             const versionedSuffixes = [
-                'test.truc',
-                'test.truc.truc',
-                'test.trucc',
-                'TRANSTOM.HEFSLX01.URK77186.VACI02.D050721.RECU.ENCRYPTED',
+                { name: 'test.truc', vid: '98341720869888999999RG001  1.20793.271751'},
+                { name: 'test.truc.truc', vid: '98341720869886999997RG001  1.20793.271755'},
+                { name: 'test.trucc', vid: '98341720869827999999RG001  1.20794.271788'},
+                { name: 'TRANSTOM.HEFSLX01.URK77186.VACI02.D050721.RECU.ENCRYPTED', vid: '98341720869889999999RG001  1.20793.271747'},
+                { name: 'TRANSTOM.HEFSLX01.URK77186.VACI02.D060721.RECU', vid: '98341720869889999998RG001  1.20793.271748'},
+                { name: 'TRANSTOM.HEFSLX01.URK77185.VACJ03.D050721.RECU.ENCRYPTED', vid: '98341720870040999997RG001  1.20789.271637'},
+                { name: 'TRANSTOM.HEFSLX01.URK77185.VACJ02.D050721.RECU.ENCRYPTED', vid: '98341720870063999999RG001  1.20787.271622'},
+                { name: 'TRANSTOM.HEFSLX01.URK77185.VACJ01.D050721.RECU.ENCRYPTED', vid: '98341720869970999996RG001  1.20790.271681'},
+                { name: 'TRANSTOM.HEFSLX01.KMADT01T.Q18TI10.D050721.RECU.ENCRYPTED', vid: '98341720870094999999RG001  1.20785.271606' },
+                { name: 'TRANSTOM.HEFSLX01.KMADT01T.Q18TI10.D030721.RECU.ENCRYPTED', vid: '98341720870177999996RG001  1.20780.271545'},
+                { name: 'TRANSTOM.HEFSLX01.CDNZOSHM.RDS.2107050200-01.ZIP.RECU.ENCRYPTED', vid: '98341720870177999994RG001  1.20780.271547'}
             ];
 
-            let idx = 0;
-            for (const key of versionedSuffixes) {
+            const og = Array.from(versionedSuffixes);
+            versionedSuffixes.sort((a, b) => a.vid < b.vid);
+            assert.deepEqual(og, versionedSuffixes);
+
+            const accepted = [];
+            const skipped = [];
+
+            for (const ob of versionedSuffixes) {
+                const { name, vid } = ob;
                 // Does not contain delete markers but contains versions to simulate turning on versioning.
-                const keyVersion = `${masterKey}${VID_SEP}${key}`;
-                const version = new Version({ versionId: idx });
+                const keyVersion = `${commonPrefix}${name}${VID_SEP}${vid}`;
+                const version = new Version({ versionId: vid });
                 const obj = {
                     key: keyVersion,
                     value: version.toString(),
                 };
                 // TODO: this currently returns FILTER_SKIP. The state machine logic needs to handle this case.
-                assert.strictEqual(delimiter.filter(obj), FILTER_ACCEPT);
-                idx += 1;
+                const recieved = delimiter.filter(obj);
+                // assert.strictEqual(expected, FILTER_ACCEPT);
+                if (recieved === FILTER_ACCEPT) {
+                    accepted.push(ob);
+                } else {
+                    skipped.push(ob);
+                }
             }
+            console.log({ accepted, skipped });
+            assert.equal(accepted.length, 8);
+            assert.equal(skipped.length, 0);
         });
 
         it('should return <key><VersionIdSeparator> for DelimiterMaster when ' +
