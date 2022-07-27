@@ -46,7 +46,7 @@ function getListingKey(key, vFormat) {
     return assert.fail(`bad vFormat ${vFormat}`);
 }
 
-['v1'].forEach(vFormat => {
+['v0'].forEach(vFormat => {
     describe(`Delimiter All masters listing algorithm vFormat=${vFormat}`, () => {
         it('should return SKIP_NONE for DelimiterMaster when both NextMarker ' +
         'and NextContinuationToken are undefined', () => {
@@ -63,26 +63,29 @@ function getListingKey(key, vFormat) {
             // See S3C-4682 for details.
             // Delimiter will call .filter multiple times with different keys.
             // It should list them all except those with delete markers despite large size.
-            const delimiter = new DelimiterMaster({delimiter: '/'}, fakeLogger, vFormat);
+            const delimiter = new DelimiterMaster({ }, fakeLogger, vFormat);
             const masterKey = '_EFICAAS-ConnectExpress-ProxyIN';
             const delimiterChar = '/';
             const commonPrefix = `${masterKey}${delimiterChar}`;
             const key = `${commonPrefix}`;
 
-            // This should be an unversioned master.
-            // TODO: verify this is really unversioned
+            // this shows correct behavior in cloudserver:
+            // list params in v2 {
+            //     listParams: {
+            //       listingType: 'DelimiterMaster',
+            //       maxKeys: 1000,
+            //       delimiter: '/',
+            //       prefix: '_EFICAAS-ConnectExpress-ProxyIN/',
+            //       v2: true,
+            //       startAfter: undefined,
+            //       continuationToken: undefined,
+            //       fetchOwner: false
+            //     }
+            //   }
 
-            // const version = new Version({ isDeleteMarker: true });
-            //     const key = 'key';
-            //     const obj = {
-            //         key: `${key}${VID_SEP}version`,
-            //         value: version.toString(),
-            //     };
-
-
-            const version = new Version({ isDeleteMarker: true });
+            const version = new Version({ isDeleteMarker: false });
             const obj = {
-                key: `${key}${VID_SEP}version`,
+                key,
                 value: version.toString(),
             };
             // do not skip master with lexicographically smallest key
@@ -150,7 +153,7 @@ function getListingKey(key, vFormat) {
                 }
             }
             console.log({ accepted, skipped });
-            assert.equal(accepted.length, 8);
+            assert.equal(accepted.length, 11);
             assert.equal(skipped.length, 0);
         });
 
