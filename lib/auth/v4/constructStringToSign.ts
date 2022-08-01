@@ -32,7 +32,7 @@ export default function constructStringToSign(params: {
 
     const canonicalReqResult = createCanonicalRequest({
         pHttpVerb: request.method,
-        pResource: path,
+        pResource: encodeURI(path),
         pQuery: query,
         pHeaders: request.headers,
         pSignedHeaders: signedHeaders,

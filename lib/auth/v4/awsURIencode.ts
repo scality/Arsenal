@@ -59,7 +59,7 @@ export default function awsURIencode(
         } else if (ch === '*') {
             encoded = encoded.concat(noEncodeStar ? '*' : '%2A');
         } else {
-            encoded = encoded.concat(_toHexUTF8(ch));
+            encoded = encoded.concat(ch);
         }
     }
     return encoded;
