@@ -6,13 +6,14 @@
  */
 export function transformTagKeyValue(key: string, value: string): [string, string | string[]] {
     const patternKeys = ['s3:ExistingObjectTag/', 's3:RequestObjectTagKey/'];
-    if (!patternKeys.some(k => key.includes(k))) {
+    if (!patternKeys.some(k => key.startsWith(k))) {
         return [key, value];
     }
     // if key is RequestObjectTag or ExistingObjectTag,
     // remove tag key from condition key and add to value
     // and transform value into query string
-    const [conditionKey, tagKey] = key.split('/');
+    const slashIndex = key.indexOf('/');
+    const [conditionKey, tagKey] = [key.slice(0, slashIndex), key.slice(slashIndex + 1)];
     const transformedValue = [tagKey, value].join('=');
     return [conditionKey, [transformedValue]];
 }

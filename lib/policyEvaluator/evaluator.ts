@@ -13,7 +13,12 @@ const operatorsWithVariables = ['StringEquals', 'StringNotEquals',
 const operatorsWithNegation = ['StringNotEquals',
     'StringNotEqualsIgnoreCase', 'StringNotLike', 'ArnNotEquals',
     'ArnNotLike', 'NumericNotEquals'];
-const tagConditions = new Set(['s3:ExistingObjectTag', 's3:RequestObjectTagKey', 's3:RequestObjectTagKeys']);
+
+const tagConditions = new Set([
+    's3:ExistingObjectTag',
+    's3:RequestObjectTagKey',
+    's3:RequestObjectTagKeys',
+]);
 
 
 /**
@@ -128,17 +133,13 @@ export const meetConditions = (
             [prefix, bareOperator] = bareOperator.split(':');
         }
         const operatorCanHaveVariables =
-            operatorsWithVariables.indexOf(bareOperator) > -1;
+              operatorsWithVariables.indexOf(bareOperator) > -1;
         const isNegationOperator =
             operatorsWithNegation.indexOf(bareOperator) > -1;
         // Loop through conditions with the same operator
         // Note: this should be the actual operator name, not the bareOperator
         const conditionsWithSameOperator = statementCondition[operator];
         const conditionKeys = Object.keys(conditionsWithSameOperator);
-        if (conditionKeys.some(key => tagConditions.has(key)) && !requestContext.getNeedTagEval()) {
-            // @ts-expect-error
-            conditionEval.tagConditions = true;
-        }
         const conditionKeysLength = conditionKeys.length;
         for (let j = 0; j < conditionKeysLength; j++) {
             const key = conditionKeys[j];
@@ -155,6 +156,12 @@ export const meetConditions = (
             // tag key is included in condition key and needs to be
             // moved to value for evaluation, otherwise key/value are unchanged
             const [transformedKey, transformedValue] = transformTagKeyValue(key, value);
+            if (tagConditions.has(transformedKey) && !requestContext.getNeedTagEval()) {
+                log.info('tagConditions true', { requestContext, operator, transformedKey });
+                // @ts-expect-error
+                conditionEval.tagConditions = true;
+                continue;
+            }
             // Pull key using requestContext
             // TODO: If applicable to S3, handle policy set operations
             // where a keyBasedOnRequestContext returns multiple values and
@@ -171,6 +178,7 @@ export const meetConditions = (
                 'negation operator', { method: 'evaluators.evaluatePolicy' });
                 continue;
             }
+            log.info('evaluator', { keyBasedOnRequestContext, transformedKey, bareOperator, transformedValue });
             // If no IfExists qualifier, the key does not exist and the
             // condition operator is not Null, the
             // condition is not met so return false.
@@ -311,7 +319,10 @@ export const evaluateAllPolicies = (
         if (singlePolicyVerdict === 'Allow') {
             verdict = 'Allow';
         }
+        if (verdict === 'Deny' && singlePolicyVerdict === 'NeedTagConditionEval') {
+            verdict = 'NeedTagConditionEval';
+        }
     }
-    log.trace('result of evaluating all pollicies', { verdict });
+    log.trace('result of evaluating all policies', { verdict });
     return verdict;
 };
