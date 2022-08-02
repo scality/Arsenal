@@ -44,8 +44,9 @@ export default function awsURIencode(
     if (typeof input !== 'string') {
         return encoded;
     }
-    for (let i = 0; i < input.length; i++) {
-        const ch = input.charAt(i);
+    let charArray = Array.from(input);
+    for (let i = 0; i < charArray.length; i++) {
+        const ch = charArray[i];
         if ((ch >= 'A' && ch <= 'Z') ||
             (ch >= 'a' && ch <= 'z') ||
             (ch >= '0' && ch <= '9') ||
@@ -59,7 +60,7 @@ export default function awsURIencode(
         } else if (ch === '*') {
             encoded = encoded.concat(noEncodeStar ? '*' : '%2A');
         } else {
-            encoded = encoded.concat(ch);
+            encoded = encoded.concat(_toHexUTF8(ch));
         }
     }
     return encoded;
