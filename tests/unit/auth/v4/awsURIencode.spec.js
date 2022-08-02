@@ -40,6 +40,13 @@ describe('should URIencode in accordance with AWS rules', () => {
         assert.strictEqual(actualOutput2, expectedOutput2);
     });
 
+    it('should encode special emojis characters', () => {
+        const input = '/s3amazonaws.com/🙂/😉';
+        const expectedOutput = '%2Fs3amazonaws.com%2F%F0%9F%99%82%2F%F0%9F%98%89';
+        const actualOutput = awsURIencode(input);
+        assert.strictEqual(actualOutput, expectedOutput);
+    });
+
     it('should encode native language characters', () => {
         const input = '/s3amazonaws.com/Pâtisserie=中文-español-English' +
         '-हिन्दी-العربية-português-বাংলা-русский-日本語-ਪੰਜਾਬੀ-한국어-தமிழ்';
