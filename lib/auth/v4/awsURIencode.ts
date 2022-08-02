@@ -46,7 +46,7 @@ export default function awsURIencode(
     }
     let charArray = Array.from(input);
     for (let i = 0; i < charArray.length; i++) {
-        const ch = charArray[i];
+        let ch = charArray[i];
         if ((ch >= 'A' && ch <= 'Z') ||
             (ch >= 'a' && ch <= 'z') ||
             (ch >= '0' && ch <= '9') ||
