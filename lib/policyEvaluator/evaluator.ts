@@ -24,11 +24,11 @@ const tagConditions = new Set(['s3:ExistingObjectTag', 's3:RequestObjectTagKey',
  * @param log - logger
  * @return true if applicable, false if not
  */
-export const isResourceApplicable = (
+export function isResourceApplicable(
     requestContext: RequestContext,
     statementResource: string | string[],
     log: Logger,
-): boolean => {
+): boolean {
     const resource = requestContext.getResource();
     if (!Array.isArray(statementResource)) {
         // eslint-disable-next-line no-param-reassign
@@ -59,7 +59,7 @@ export const isResourceApplicable = (
         { requestResource: resource });
     // If no match found, no resource is applicable
     return false;
-};
+}
 
 /**
  * Check whether action in policy statement applies to request
@@ -69,11 +69,11 @@ export const isResourceApplicable = (
  * @param log - logger
  * @return true if applicable, false if not
  */
-export const isActionApplicable = (
+export function isActionApplicable(
     requestAction: string,
     statementAction: string | string[],
     log: Logger,
-): boolean => {
+): boolean {
     if (!Array.isArray(statementAction)) {
         // eslint-disable-next-line no-param-reassign
         statementAction = [statementAction];
@@ -95,7 +95,7 @@ export const isActionApplicable = (
         { requestAction });
     // If no match found, return false
     return false;
-};
+}
 
 /**
  * Check whether request meets policy conditions
@@ -105,11 +105,11 @@ export const isActionApplicable = (
  * @return contains whether conditions are allowed and whether they
  * contain any tag condition keys
  */
-export const meetConditions = (
+export function meetConditions(
     requestContext: RequestContext,
     statementCondition: any,
     log: Logger,
-) => {
+) {
     // The Condition portion of a policy is an object with different
     // operators as keys
     const conditionEval = {};
@@ -202,7 +202,7 @@ export const meetConditions = (
     // @ts-expect-error
     conditionEval.allow = true;
     return conditionEval;
-};
+}
 
 /**
  * Evaluate whether a request is permitted under a policy.
@@ -215,11 +215,11 @@ export const meetConditions = (
  * @return Allow if permitted, Deny if not permitted or Neutral
  * if not applicable
  */
-export const evaluatePolicy = (
+export function evaluatePolicy(
     requestContext: RequestContext,
     policy: any,
     log: Logger,
-): string => {
+): string {
     // TODO: For bucket policies need to add Principal evaluation
     let verdict = 'Neutral';
 
@@ -280,7 +280,7 @@ export const evaluatePolicy = (
     }
     log.trace('result of evaluating single policy', { verdict });
     return verdict;
-};
+}
 
 /**
  * Evaluate whether a request is permitted under a policy.
@@ -293,11 +293,11 @@ export const evaluatePolicy = (
  * @return Allow if permitted, Deny if not permitted.
  * Default is to Deny. Deny overrides an Allow
  */
-export const evaluateAllPolicies = (
+export function evaluateAllPolicies(
     requestContext: RequestContext,
     allPolicies: any[],
     log: Logger,
-): string => {
+): string {
     log.trace('evaluating all policies');
     let verdict = 'Deny';
     for (let i = 0; i < allPolicies.length; i++) {
@@ -311,6 +311,6 @@ export const evaluateAllPolicies = (
             verdict = 'Allow';
         }
     }
-    log.trace('result of evaluating all pollicies', { verdict });
+    log.trace('result of evaluating all policies', { verdict });
     return verdict;
-};
+}
