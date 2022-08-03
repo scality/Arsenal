@@ -13,7 +13,11 @@ const operatorsWithVariables = ['StringEquals', 'StringNotEquals',
 const operatorsWithNegation = ['StringNotEquals',
     'StringNotEqualsIgnoreCase', 'StringNotLike', 'ArnNotEquals',
     'ArnNotLike', 'NumericNotEquals'];
-const tagConditions = new Set(['s3:ExistingObjectTag', 's3:RequestObjectTagKey', 's3:RequestObjectTagKeys']);
+const tagConditions = new Set([
+    's3:ExistingObjectTag',
+    's3:RequestObjectTagKey',
+    's3:RequestObjectTagKeys',
+]);
 
 
 /**
@@ -99,24 +103,25 @@ export function isActionApplicable(
 
 /**
  * Check whether request meets policy conditions
- * @param requestContext - info about request
- * @param statementCondition - Condition statement from policy
- * @param log - logger
- * @return contains whether conditions are allowed and whether they
- * contain any tag condition keys
+ * @param {RequestContext} requestContext - info about request
+ * @param {object} statementCondition - Condition statement from policy
+ * @param {Logger} log - logger
+ * @return {boolean|null} a condition evaluation result, one of:
+ * - true: condition is met
+ * - false: condition is not met
+ * - null: condition evaluation requires additional info to be
+ *   provided (namely, for tag conditions, request tags and/or object
+ *   tags have to be provided to evaluate the condition)
  */
 export function meetConditions(
     requestContext: RequestContext,
     statementCondition: any,
     log: Logger,
-) {
+): boolean | null {
+    let hasTagConditions = false;
     // The Condition portion of a policy is an object with different
     // operators as keys
-    const conditionEval = {};
-    const operators = Object.keys(statementCondition);
-    const length = operators.length;
-    for (let i = 0; i < length; i++) {
-        const operator = operators[i];
+    for (const operator of Object.keys(statementCondition)) {
         const hasPrefix = operator.includes(':');
         const hasIfExistsCondition = operator.endsWith('IfExists');
         // If has "IfExists" added to operator name, or operator has "ForAnyValue" or
@@ -135,10 +140,6 @@ export function meetConditions(
         // Note: this should be the actual operator name, not the bareOperator
         const conditionsWithSameOperator = statementCondition[operator];
         const conditionKeys = Object.keys(conditionsWithSameOperator);
-        if (conditionKeys.some(key => tagConditions.has(key)) && !requestContext.getNeedTagEval()) {
-            // @ts-expect-error
-            conditionEval.tagConditions = true;
-        }
         const conditionKeysLength = conditionKeys.length;
         for (let j = 0; j < conditionKeysLength; j++) {
             const key = conditionKeys[j];
@@ -155,6 +156,10 @@ export function meetConditions(
             // tag key is included in condition key and needs to be
             // moved to value for evaluation, otherwise key/value are unchanged
             const [transformedKey, transformedValue] = transformTagKeyValue(key, value);
+            if (tagConditions.has(transformedKey) && !requestContext.getNeedTagEval()) {
+                hasTagConditions = true;
+                continue;
+            }
             // Pull key using requestContext
             // TODO: If applicable to S3, handle policy set operations
             // where a keyBasedOnRequestContext returns multiple values and
@@ -180,7 +185,7 @@ export function meetConditions(
                 log.trace('condition not satisfied due to ' +
                 'missing info', { operator,
                     conditionKey: transformedKey, policyValue: transformedValue });
-                return { allow: false };
+                return false;
             }
             // If condition operator prefix is included, the key should be an array
             if (prefix && !Array.isArray(keyBasedOnRequestContext)) {
@@ -195,13 +200,15 @@ export function meetConditions(
             if (!operatorFunction(keyBasedOnRequestContext, transformedValue, prefix)) {
                 log.trace('did not satisfy condition', { operator: bareOperator,
                     keyBasedOnRequestContext, policyValue: transformedValue });
-                return { allow: false };
+                return false;
             }
         }
     }
-    // @ts-expect-error
-    conditionEval.allow = true;
-    return conditionEval;
+    // one or more conditions required tag info to be evaluated
+    if (hasTagConditions) {
+        return null;
+    }
+    return true;
 }
 
 /**
@@ -221,7 +228,9 @@ export function evaluatePolicy(
     log: Logger,
 ): string {
     // TODO: For bucket policies need to add Principal evaluation
-    let verdict = 'Neutral';
+    let allow = false;
+    let allowWithTagCondition = false;
+    let denyWithTagCondition = false;
 
     if (!Array.isArray(policy.Statement)) {
         // eslint-disable-next-line no-param-reassign
@@ -258,10 +267,18 @@ export function evaluatePolicy(
         }
         const conditionEval = currentStatement.Condition ?
             meetConditions(requestContext, currentStatement.Condition, log) :
-            null;
+            true;
         // If do not meet conditions move on to next statement
-        // @ts-expect-error
-        if (conditionEval && !conditionEval.allow) {
+        if (conditionEval === false) {
+            continue;
+        }
+        // If condition needs tag info to be evaluated, mark and move on to next statement
+        if (conditionEval === null) {
+            if (currentStatement.Effect === 'Deny') {
+                denyWithTagCondition = true;
+            } else {
+                allowWithTagCondition = true;
+            }
             continue;
         }
         if (currentStatement.Effect === 'Deny') {
@@ -270,13 +287,23 @@ export function evaluatePolicy(
             return 'Deny';
         }
         log.trace('Allow statement applies');
-        // If statement is applicable, conditions are met and Effect is
-        // to Allow, set verdict to Allow
+        // statement is applicable, conditions are met and Effect is
+        // to Allow
+        allow = true;
+    }
+    let verdict;
+    if (denyWithTagCondition) {
+        // priority is on checking tags to potentially deny
+        verdict = 'DenyWithTagCondition';
+    } else if (allow) {
+        // at least one statement is an allow
         verdict = 'Allow';
-        // @ts-expect-error
-        if (conditionEval && conditionEval.tagConditions) {
-            verdict = 'NeedTagConditionEval';
-        }
+    } else if (allowWithTagCondition) {
+        // all allow statements need tag checks
+        verdict = 'AllowWithTagCondition';
+    } else {
+        // no statement matched to allow or deny
+        verdict = 'Neutral';
     }
     log.trace('result of evaluating single policy', { verdict });
     return verdict;
@@ -299,16 +326,35 @@ export function evaluateAllPolicies(
     log: Logger,
 ): string {
     log.trace('evaluating all policies');
-    let verdict = 'Deny';
+    let allow = false;
+    let allowWithTagCondition = false;
+    let denyWithTagCondition = false;
     for (let i = 0; i < allPolicies.length; i++) {
-        const singlePolicyVerdict =
-            evaluatePolicy(requestContext, allPolicies[i], log);
+        const singlePolicyVerdict = evaluatePolicy(requestContext, allPolicies[i], log);
         // If there is any Deny, just return Deny
         if (singlePolicyVerdict === 'Deny') {
             return 'Deny';
         }
         if (singlePolicyVerdict === 'Allow') {
+            allow = true;
+        } else if (singlePolicyVerdict === 'AllowWithTagCondition') {
+            allowWithTagCondition = true;
+        } else if (singlePolicyVerdict === 'DenyWithTagCondition') {
+            denyWithTagCondition = true;
+        } // else 'Neutral'
+    }
+    let verdict;
+    if (allow) {
+        if (denyWithTagCondition) {
+            verdict = 'NeedTagConditionEval';
+        } else {
             verdict = 'Allow';
+        }
+    } else {
+        if (allowWithTagCondition) {
+            verdict = 'NeedTagConditionEval';
+        } else {
+            verdict = 'Deny';
         }
     }
     log.trace('result of evaluating all policies', { verdict });

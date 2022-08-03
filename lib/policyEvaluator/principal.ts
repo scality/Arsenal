@@ -23,15 +23,22 @@ export default class Principal {
      * @param statement - Statement policy field
      * @return True if meet conditions
      */
-    static _evaluateCondition(
+    static _evaluateStatement(
         params: Params,
         statement: Statement,
-        // TODO Fix return type
-    ): any {
-        if (statement.Condition) {
-            return meetConditions(params.rc, statement.Condition, params.log);
+    ): 'Neutral' | 'Allow' | 'Deny' {
+        const reverse = !!statement.NotPrincipal;
+        if (reverse) {
+            // In case of anonymous NotPrincipal, this will neutral everyone
+            return 'Neutral';
         }
-        return true;
+        if (statement.Condition) {
+            const conditionEval = meetConditions(params.rc, statement.Condition, params.log);
+            if (conditionEval === false || conditionEval === null) {
+                return 'Neutral';
+            }
+        }
+        return statement.Effect;
     }
 
     /**
@@ -48,19 +55,12 @@ export default class Principal {
         statement: Statement,
         valids: Valid,
     ): 'Neutral' | 'Allow' | 'Deny' {
-        const reverse = !!statement.NotPrincipal;
         const principal = (statement.Principal || statement.NotPrincipal)!;
-        if (typeof principal === 'string' && principal === '*') {
-            if (reverse) {
-                // In case of anonymous NotPrincipal, this will neutral everyone
-                return 'Neutral';
+        const reverse = !!statement.NotPrincipal;
+        if (typeof principal === 'string') {
+            if (principal === '*') {
+                return Principal._evaluateStatement(params, statement);
             }
-            const conditionEval = Principal._evaluateCondition(params, statement);
-            if (!conditionEval || conditionEval.allow === false) {
-                return 'Neutral';
-            }
-            return statement.Effect;
-        } else if (typeof principal === 'string') {
             return 'Deny';
         }
         let ref = [];
@@ -82,28 +82,8 @@ export default class Principal {
         }
         toCheck = Array.isArray(toCheck) ? toCheck : [toCheck];
         ref = Array.isArray(ref) ? ref : [ref];
-        if (toCheck.indexOf('*') !== -1) {
-            if (reverse) {
-                return 'Neutral';
-            }
-            const conditionEval = Principal._evaluateCondition(params, statement);
-            if (!conditionEval || conditionEval.allow === false) {
-                return 'Neutral';
-            }
-            return statement.Effect;
-        }
-        const len = ref.length;
-        for (let i = 0; i < len; ++i) {
-            if (toCheck.indexOf(ref[i]) !== -1) {
-                if (reverse) {
-                    return 'Neutral';
-                }
-                const conditionEval = Principal._evaluateCondition(params, statement);
-                if (!conditionEval || conditionEval.allow === false) {
-                    return 'Neutral';
-                }
-                return statement.Effect;
-            }
+        if (toCheck.includes('*') || ref.some(r => toCheck.includes(r))) {
+            return Principal._evaluateStatement(params, statement);
         }
         if (reverse) {
             return statement.Effect;
