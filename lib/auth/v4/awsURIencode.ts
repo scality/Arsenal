@@ -35,33 +35,44 @@ export default function awsURIencode(
     encodeSlash?: boolean,
     noEncodeStar?: boolean
 ) {
-    const encSlash = encodeSlash === undefined ? true : encodeSlash;
-    let encoded = '';
     /**
      * Duplicate query params are not suppported by AWS S3 APIs. These params
      * are parsed as Arrays by Node.js HTTP parser which breaks this method
-    */
-    if (typeof input !== 'string') {
-        return encoded;
+     */
+     if (typeof input !== 'string') {
+        return '';
     }
+
+    // precalc slash and star based on configs
+    const slash = encodeSlash === undefined || encodeSlash ? '%2F' : '/';
+    const star = noEncodeStar !== undefined && noEncodeStar ? '*' : '%2A';
+    const encoded: string[] = [];
+
     const charArray = Array.from(input);
-    for (let i = 0; i < charArray.length; i++) {
-        const ch = charArray[i];
-        if ((ch >= 'A' && ch <= 'Z') ||
-            (ch >= 'a' && ch <= 'z') ||
-            (ch >= '0' && ch <= '9') ||
-            ch === '_' || ch === '-' ||
-            ch === '~' || ch === '.') {
-            encoded = encoded.concat(ch);
-        } else if (ch === ' ') {
-            encoded = encoded.concat('%20');
-        } else if (ch === '/') {
-            encoded = encoded.concat(encSlash ? '%2F' : ch);
-        } else if (ch === '*') {
-            encoded = encoded.concat(noEncodeStar ? '*' : '%2A');
-        } else {
-            encoded = encoded.concat(_toHexUTF8(ch));
+    for (const ch of charArray) {
+        switch (true) {
+            case ch >= 'A' && ch <= 'Z':
+            case ch >= 'a' && ch <= 'z':
+            case ch >= '0' && ch <= '9':
+            case ch === '-':
+            case ch === '_':
+            case ch === '~':
+            case ch === '.':
+                encoded.push(ch);
+                break;
+            case ch === '/':
+                encoded.push(slash);
+                break;
+            case ch === '*':
+                encoded.push(star);
+                break;
+            case ch === ' ':
+                encoded.push('%20');
+                break;
+            default:
+                encoded.push(_toHexUTF8(ch));
+                break;
         }
     }
-    return encoded;
+    return encoded.join('');
 }
