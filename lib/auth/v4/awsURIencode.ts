@@ -35,16 +35,17 @@ export default function awsURIencode(
     encodeSlash?: boolean,
     noEncodeStar?: boolean
 ) {
-    const encSlash = encodeSlash === undefined ? true : encodeSlash;
-    let encoded = '';
     /**
      * Duplicate query params are not suppported by AWS S3 APIs. These params
      * are parsed as Arrays by Node.js HTTP parser which breaks this method
-    */
-    if (typeof input !== 'string') {
-        return encoded;
+     */
+     if (typeof input !== 'string') {
+        return '';
     }
-   for (let i = 0; i < input.length; i++) {
+    let encoded = "";
+    const slash = encodeSlash === undefined || encodeSlash ? '%2F' : '/';
+    const star = noEncodeStar !== undefined && noEncodeStar ? '*' : '%2A';
+    for (let i = 0; i < input.length; i++) {
         let ch = input.charAt(i);
         if ((ch >= 'A' && ch <= 'Z') ||
             (ch >= 'a' && ch <= 'z') ||
@@ -55,9 +56,9 @@ export default function awsURIencode(
         } else if (ch === ' ') {
             encoded = encoded.concat('%20');
         } else if (ch === '/') {
-            encoded = encoded.concat(encSlash ? '%2F' : ch);
+            encoded = encoded.concat(slash);
         } else if (ch === '*') {
-            encoded = encoded.concat(noEncodeStar ? '*' : '%2A');
+            encoded = encoded.concat(star);
         } else {
             if (ch >= '\uD800' && ch <= '\uDBFF') {
                 // If this character is a high surrogate peek the next character
