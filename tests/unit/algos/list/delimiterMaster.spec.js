@@ -121,7 +121,7 @@ function getListingKey(key, vFormat) {
                 { name: 'test.truc.truc',
                     vid: '98341720869886999997RG001  1.20793.271755' },
                 { name: 'test.trucc',
-                    vid: '98341720869827999999RG001  1.20794.271788' }
+                    vid: '98341720869827999999RG001  1.20794.271788' },
             ];
 
             const accepted = [];
