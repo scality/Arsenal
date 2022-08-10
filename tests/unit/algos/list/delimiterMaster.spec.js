@@ -122,8 +122,8 @@ function getListingKey(key, vFormat) {
                 {'name': 'TRANSTOM.HEFSLX01.URK77185.VACJ03.D050721.RECU.ENCRYPTED', 'vid': '98341720870040999997RG001  1.20789.271637'},
                 {'name': 'TRANSTOM.HEFSLX01.URK77186.VACI02.D050721.RECU.ENCRYPTED', 'vid': '98341720869889999999RG001  1.20793.271747'},
                 {'name': 'TRANSTOM.HEFSLX01.URK77186.VACI02.D060721.RECU', 'vid': '98341720869889999998RG001  1.20793.271748'},
+                {'name': 'test.truc', 'vid': '98341720869888999999RG001  1.20793.271751'},
                 {'name': 'test.truc.truc', 'vid': '98341720869886999997RG001  1.20793.271755'},
-                {'name': 'test.truc', 'vid': '98341720869888999999RG001  1.20793.271751'}, 
                 {'name': 'test.trucc', 'vid': '98341720869827999999RG001  1.20794.271788'}];
             // const name = 'a';
             // const versionedSuffixes = [
