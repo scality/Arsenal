@@ -63,7 +63,13 @@ function getListingKey(key, vFormat) {
             // See S3C-4682 for details.
             // Delimiter will call .filter multiple times with different keys.
             // It should list them all except those with delete markers despite large size.
-            const delimiter = new DelimiterMaster({ }, fakeLogger, vFormat);
+            const delimiter = new DelimiterMaster({
+                prefix: '_EFICAAS-ConnectExpress-ProxyIN/',
+                delimiter: '/',
+                startAfter: '',
+                continuationToken: '',
+                v2: true,
+                fetchOwner: false }, fakeLogger, vFormat);
             const masterKey = '_EFICAAS-ConnectExpress-ProxyIN';
             const delimiterChar = '/';
             const commonPrefix = `${masterKey}${delimiterChar}`;
@@ -108,18 +114,17 @@ function getListingKey(key, vFormat) {
 
             // Do not skip these as there's no delete markers.
             const versionedSuffixes = [
-                { name: 'test.truc', vid: '98341720869888999999RG001  1.20793.271751'},
-                { name: 'test.truc.truc', vid: '98341720869886999997RG001  1.20793.271755'},
-                { name: 'test.trucc', vid: '98341720869827999999RG001  1.20794.271788'},
-                { name: 'TRANSTOM.HEFSLX01.URK77186.VACI02.D050721.RECU.ENCRYPTED', vid: '98341720869889999999RG001  1.20793.271747'},
-                { name: 'TRANSTOM.HEFSLX01.URK77186.VACI02.D060721.RECU', vid: '98341720869889999998RG001  1.20793.271748'},
-                { name: 'TRANSTOM.HEFSLX01.URK77185.VACJ03.D050721.RECU.ENCRYPTED', vid: '98341720870040999997RG001  1.20789.271637'},
-                { name: 'TRANSTOM.HEFSLX01.URK77185.VACJ02.D050721.RECU.ENCRYPTED', vid: '98341720870063999999RG001  1.20787.271622'},
-                { name: 'TRANSTOM.HEFSLX01.URK77185.VACJ01.D050721.RECU.ENCRYPTED', vid: '98341720869970999996RG001  1.20790.271681'},
-                { name: 'TRANSTOM.HEFSLX01.KMADT01T.Q18TI10.D050721.RECU.ENCRYPTED', vid: '98341720870094999999RG001  1.20785.271606' },
-                { name: 'TRANSTOM.HEFSLX01.KMADT01T.Q18TI10.D030721.RECU.ENCRYPTED', vid: '98341720870177999996RG001  1.20780.271545'},
-                { name: 'TRANSTOM.HEFSLX01.CDNZOSHM.RDS.2107050200-01.ZIP.RECU.ENCRYPTED', vid: '98341720870177999994RG001  1.20780.271547'}
-            ];
+                {'name': 'TRANSTOM.HEFSLX01.CDNZOSHM.RDS.2107050200-01.ZIP.RECU.ENCRYPTED', 'vid': '98341720870177999994RG001  1.20780.271547'},
+                {'name': 'TRANSTOM.HEFSLX01.KMADT01T.Q18TI10.D030721.RECU.ENCRYPTED', 'vid': '98341720870177999996RG001  1.20780.271545'},
+                {'name': 'TRANSTOM.HEFSLX01.KMADT01T.Q18TI10.D050721.RECU.ENCRYPTED', 'vid': '98341720870094999999RG001  1.20785.271606'}, 
+                {'name': 'TRANSTOM.HEFSLX01.URK77185.VACJ01.D050721.RECU.ENCRYPTED', 'vid': '98341720869970999996RG001  1.20790.271681'},
+                {'name': 'TRANSTOM.HEFSLX01.URK77185.VACJ02.D050721.RECU.ENCRYPTED', 'vid': '98341720870063999999RG001  1.20787.271622'},
+                {'name': 'TRANSTOM.HEFSLX01.URK77185.VACJ03.D050721.RECU.ENCRYPTED', 'vid': '98341720870040999997RG001  1.20789.271637'},
+                {'name': 'TRANSTOM.HEFSLX01.URK77186.VACI02.D050721.RECU.ENCRYPTED', 'vid': '98341720869889999999RG001  1.20793.271747'},
+                {'name': 'TRANSTOM.HEFSLX01.URK77186.VACI02.D060721.RECU', 'vid': '98341720869889999998RG001  1.20793.271748'},
+                {'name': 'test.truc.truc', 'vid': '98341720869886999997RG001  1.20793.271755'},
+                {'name': 'test.truc', 'vid': '98341720869888999999RG001  1.20793.271751'}, 
+                {'name': 'test.trucc', 'vid': '98341720869827999999RG001  1.20794.271788'}];
             // const name = 'a';
             // const versionedSuffixes = [
             //     {name, vid: 'e  5'},
@@ -129,7 +134,7 @@ function getListingKey(key, vFormat) {
             //     {name, vid: 'a  1'}
             // ];
             // const og = Array.from(versionedSuffixes);
-            // versionedSuffixes.sort((a, b) => a.vid < b.vid);
+            // versionedSuffixes.sort((a, b) => a.name.localeCompare(b.name));
             // assert.deepEqual(og, versionedSuffixes);
             const accepted = [];
             const skipped = [];
