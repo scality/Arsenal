@@ -46,7 +46,7 @@ function getListingKey(key, vFormat) {
     return assert.fail(`bad vFormat ${vFormat}`);
 }
 
-['v0'].forEach(vFormat => {
+['v0', 'v1'].forEach(vFormat => {
     describe(`Delimiter All masters listing algorithm vFormat=${vFormat}`, () => {
         it('should return SKIP_NONE for DelimiterMaster when both NextMarker ' +
         'and NextContinuationToken are undefined', () => {
@@ -75,9 +75,9 @@ function getListingKey(key, vFormat) {
             const commonPrefix = `${masterKey}${delimiterChar}`;
             const key = `${commonPrefix}`;
 
-            const version = new Version({ isDeleteMarker: false });
+            const version = new Version({ });
             const obj = {
-                key,
+                key: getListingKey(key, vFormat),
                 value: version.toString(),
             };
             // Do not skip master with lexicographically smallest key.
@@ -92,7 +92,7 @@ function getListingKey(key, vFormat) {
                 const keyVersion = `${masterKey}${VID_SEP}${idx}`;
                 const version = new Version({ versionId: idx, isDeleteMarker: true });
                 const obj = {
-                    key: keyVersion,
+                    key: getListingKey(keyVersion, vFormat),
                     value: version.toString(),
                 };
                 assert.strictEqual(delimiter.filter(obj), FILTER_SKIP);
@@ -133,7 +133,7 @@ function getListingKey(key, vFormat) {
                 const keyVersion = `${commonPrefix}${name}${VID_SEP}${vid}`;
                 const version = new Version({ versionId: vid });
                 const obj = {
-                    key: keyVersion,
+                    key: getListingKey(keyVersion, vFormat),
                     value: version.toString(),
                 };
                 const recieved = delimiter.filter(obj);
