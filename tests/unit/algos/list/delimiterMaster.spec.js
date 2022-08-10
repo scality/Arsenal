@@ -59,18 +59,18 @@ function getListingKey(key, vFormat) {
             assert.strictEqual(delimiter.skipping(), SKIP_NONE);
         });
 
-        it('should not hide versioned keys when a common prefix master is filtered first', () => {
+        it('should not hide keys when a common prefix master is filtered first', () => {
             // See S3C-4682 for details.
             // Delimiter will call .filter multiple times with different keys.
-            // It should list them all except those with delete markers despite large size.
+            // It should list them all masters keys except those with delete markers.
             const delimiter = new DelimiterMaster({
-                prefix: '_EFICAAS-ConnectExpress-ProxyIN/',
+                prefix: '_Common-Prefix/',
                 delimiter: '/',
                 startAfter: '',
                 continuationToken: '',
                 v2: true,
                 fetchOwner: false }, fakeLogger, vFormat);
-            const masterKey = '_EFICAAS-ConnectExpress-ProxyIN';
+            const masterKey = '_Common-Prefix';
             const delimiterChar = '/';
             const commonPrefix = `${masterKey}${delimiterChar}`;
             const key = `${commonPrefix}`;
@@ -85,10 +85,8 @@ function getListingKey(key, vFormat) {
 
             // Skip these with delete markers.
             // In S3C-4682 there are 514 ids with delete markers and a common prefix.
-            // Note: This step doesn't matter currently but leaving as is to ensure correct
-            // behavior when bug is fixed.
             for (let idx = 0; idx < 514; idx++) {
-                // delete markers and versioned
+                // Keys have delete markers and are versioned
                 const keyVersion = `${masterKey}${VID_SEP}${idx}`;
                 const version = new Version({ versionId: idx, isDeleteMarker: true });
                 const obj = {
