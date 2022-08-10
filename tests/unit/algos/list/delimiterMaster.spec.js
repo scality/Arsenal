@@ -59,7 +59,7 @@ function getListingKey(key, vFormat) {
             assert.strictEqual(delimiter.skipping(), SKIP_NONE);
         });
 
-        it.only('should not hide versioned keys when a common prefix master is filtered first', () => {
+        it('should not hide versioned keys when a common prefix master is filtered first', () => {
             // See S3C-4682 for details.
             // Delimiter will call .filter multiple times with different keys.
             // It should list them all except those with delete markers despite large size.
@@ -75,67 +75,55 @@ function getListingKey(key, vFormat) {
             const commonPrefix = `${masterKey}${delimiterChar}`;
             const key = `${commonPrefix}`;
 
-            // this shows correct behavior in cloudserver:
-            // list params in v2 {
-            //     listParams: {
-            //       listingType: 'DelimiterMaster',
-            //       maxKeys: 1000,
-            //       delimiter: '/',
-            //       prefix: '_EFICAAS-ConnectExpress-ProxyIN/',
-            //       v2: true,
-            //       startAfter: undefined,
-            //       continuationToken: undefined,
-            //       fetchOwner: false
-            //     }
-            //   }
-
             const version = new Version({ isDeleteMarker: false });
             const obj = {
                 key,
                 value: version.toString(),
             };
-            // do not skip master with lexicographically smallest key
+            // Do not skip master with lexicographically smallest key.
             assert.strictEqual(delimiter.filter(obj), FILTER_ACCEPT);
 
-            // Skip these with delete markers
-            // in S3C-4682 there are 514 ids with delete markers and a common prefix.
+            // Skip these with delete markers.
+            // In S3C-4682 there are 514 ids with delete markers and a common prefix.
             // Note: This step doesn't matter currently but leaving as is to ensure correct
-            // behavior when  bug is fixed.
-            // for (let idx = 0; idx < 514; idx++) {
-            //     // delete markers and versioned
-            //     const keyVersion = `${masterKey}${VID_SEP}${idx}`;
-            //     const version = new Version({ versionId: idx, isDeleteMarker: true });
-            //     const obj = {
-            //         key: keyVersion,
-            //         value: version.toString(),
-            //     };
-            //     assert.strictEqual(delimiter.filter(obj), FILTER_SKIP);
-            // }
+            // behavior when bug is fixed.
+            for (let idx = 0; idx < 514; idx++) {
+                // delete markers and versioned
+                const keyVersion = `${masterKey}${VID_SEP}${idx}`;
+                const version = new Version({ versionId: idx, isDeleteMarker: true });
+                const obj = {
+                    key: keyVersion,
+                    value: version.toString(),
+                };
+                assert.strictEqual(delimiter.filter(obj), FILTER_SKIP);
+            }
 
             // Do not skip these as there's no delete markers.
             const versionedSuffixes = [
-                {'name': 'TRANSTOM.HEFSLX01.CDNZOSHM.RDS.2107050200-01.ZIP.RECU.ENCRYPTED', 'vid': '98341720870177999994RG001  1.20780.271547'},
-                {'name': 'TRANSTOM.HEFSLX01.KMADT01T.Q18TI10.D030721.RECU.ENCRYPTED', 'vid': '98341720870177999996RG001  1.20780.271545'},
-                {'name': 'TRANSTOM.HEFSLX01.KMADT01T.Q18TI10.D050721.RECU.ENCRYPTED', 'vid': '98341720870094999999RG001  1.20785.271606'}, 
-                {'name': 'TRANSTOM.HEFSLX01.URK77185.VACJ01.D050721.RECU.ENCRYPTED', 'vid': '98341720869970999996RG001  1.20790.271681'},
-                {'name': 'TRANSTOM.HEFSLX01.URK77185.VACJ02.D050721.RECU.ENCRYPTED', 'vid': '98341720870063999999RG001  1.20787.271622'},
-                {'name': 'TRANSTOM.HEFSLX01.URK77185.VACJ03.D050721.RECU.ENCRYPTED', 'vid': '98341720870040999997RG001  1.20789.271637'},
-                {'name': 'TRANSTOM.HEFSLX01.URK77186.VACI02.D050721.RECU.ENCRYPTED', 'vid': '98341720869889999999RG001  1.20793.271747'},
-                {'name': 'TRANSTOM.HEFSLX01.URK77186.VACI02.D060721.RECU', 'vid': '98341720869889999998RG001  1.20793.271748'},
-                {'name': 'test.truc', 'vid': '98341720869888999999RG001  1.20793.271751'},
-                {'name': 'test.truc.truc', 'vid': '98341720869886999997RG001  1.20793.271755'},
-                {'name': 'test.trucc', 'vid': '98341720869827999999RG001  1.20794.271788'}];
-            // const name = 'a';
-            // const versionedSuffixes = [
-            //     {name, vid: 'e  5'},
-            //     {name, vid: 'd  4'},
-            //     {name, vid: 'c  3'},
-            //     {name, vid: 'b  2'},
-            //     {name, vid: 'a  1'}
-            // ];
-            // const og = Array.from(versionedSuffixes);
-            // versionedSuffixes.sort((a, b) => a.name.localeCompare(b.name));
-            // assert.deepEqual(og, versionedSuffixes);
+                { name: 'TRANSTOM.HEFSLX01.CDNZOSHM.RDS.2107050200-01.ZIP.RECU.ENCRYPTED',
+                    vid: '98341720870177999994RG001  1.20780.271547' },
+                { name: 'TRANSTOM.HEFSLX01.KMADT01T.Q18TI10.D030721.RECU.ENCRYPTED',
+                    vid: '98341720870177999996RG001  1.20780.271545' },
+                { name: 'TRANSTOM.HEFSLX01.KMADT01T.Q18TI10.D050721.RECU.ENCRYPTED',
+                    vid: '98341720870094999999RG001  1.20785.271606' },
+                { name: 'TRANSTOM.HEFSLX01.URK77185.VACJ01.D050721.RECU.ENCRYPTED',
+                    vid: '98341720869970999996RG001  1.20790.271681' },
+                { name: 'TRANSTOM.HEFSLX01.URK77185.VACJ02.D050721.RECU.ENCRYPTED',
+                    vid: '98341720870063999999RG001  1.20787.271622' },
+                { name: 'TRANSTOM.HEFSLX01.URK77185.VACJ03.D050721.RECU.ENCRYPTED',
+                    vid: '98341720870040999997RG001  1.20789.271637' },
+                { name: 'TRANSTOM.HEFSLX01.URK77186.VACI02.D050721.RECU.ENCRYPTED',
+                    vid: '98341720869889999999RG001  1.20793.271747' },
+                { name: 'TRANSTOM.HEFSLX01.URK77186.VACI02.D060721.RECU',
+                    vid: '98341720869889999998RG001  1.20793.271748' },
+                { name: 'test.truc',
+                    vid: '98341720869888999999RG001  1.20793.271751' },
+                { name: 'test.truc.truc',
+                    vid: '98341720869886999997RG001  1.20793.271755' },
+                { name: 'test.trucc',
+                    vid: '98341720869827999999RG001  1.20794.271788' }
+            ];
+
             const accepted = [];
             const skipped = [];
 
@@ -148,16 +136,14 @@ function getListingKey(key, vFormat) {
                     key: keyVersion,
                     value: version.toString(),
                 };
-                // TODO: this currently returns FILTER_SKIP. The state machine logic needs to handle this case.
                 const recieved = delimiter.filter(obj);
-                // assert.strictEqual(expected, FILTER_ACCEPT);
+
                 if (recieved === FILTER_ACCEPT) {
                     accepted.push(ob);
                 } else {
                     skipped.push(ob);
                 }
             }
-            console.log({ accepted, skipped });
             assert.equal(accepted.length, 11);
             assert.equal(skipped.length, 0);
         });
