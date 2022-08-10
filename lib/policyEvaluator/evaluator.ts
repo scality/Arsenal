@@ -120,7 +120,7 @@ export const meetConditions = (
         const hasPrefix = operator.includes(':');
         const hasIfExistsCondition = operator.endsWith('IfExists');
         // If has "IfExists" added to operator name, or operator has "ForAnyValue" or
-        // "For All Values" prefix, find operator name without "IfExists" or prefix
+        // "ForAllValues" prefix, find operator name without "IfExists" or prefix
         let bareOperator = hasIfExistsCondition ? operator.slice(0, -8) :
             operator;
         let prefix: string | undefined;
@@ -184,7 +184,6 @@ export const meetConditions = (
             }
             // If condition operator prefix is included, the key should be an array
             if (prefix && !Array.isArray(keyBasedOnRequestContext)) {
-                // @ts-expect-error
                 keyBasedOnRequestContext = [keyBasedOnRequestContext];
             }
             // Transalate operator into function using bareOperator
