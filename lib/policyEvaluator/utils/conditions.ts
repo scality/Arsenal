@@ -11,31 +11,30 @@ import ipaddr from 'ipaddr.js';
  * @param requestContext - info sent with request
  * @return condition key value
  */
-export const findConditionKey = (
+export function findConditionKey(
     key: string,
     requestContext: RequestContext,
-): string => {
+): any {
     // TODO: Consider combining with findVariable function if no benefit
     // to keeping separate
     const headers = requestContext.getHeaders();
     const query = requestContext.getQuery();
     const requesterInfo = requestContext.getRequesterInfo();
 
-    const map = new Map();
     // Possible AWS Condition keys (http://docs.aws.amazon.com/IAM/latest/
     // UserGuide/reference_policies_elements.html#AvailableKeys)
-
+    switch (key) {
     // aws:CurrentTime – Used for date/time conditions
     // (see Date Condition Operators).
-    map.set('aws:CurrentTime', new Date().toISOString());
+    case 'aws:CurrentTime': return new Date().toISOString();
     // aws:EpochTime – Used for date/time conditions
     // (see Date Condition Operators).
-    map.set('aws:EpochTime', Date.now().toString());
+    case 'aws:EpochTime': return Date.now().toString();
     // aws:TokenIssueTime – Date/time that temporary security
     // credentials were issued (see Date Condition Operators).
     // Only present in requests that are signed using temporary security
     // credentials.
-    map.set('aws:TokenIssueTime', requestContext.getTokenIssueTime());
+    case 'aws:TokenIssueTime': return requestContext.getTokenIssueTime();
     // aws:MultiFactorAuthPresent – Used to check whether MFA was used
     // (see Boolean Condition Operators).
     // Note: This key is only present if MFA was used. So, the following
@@ -45,131 +44,132 @@ export const findConditionKey = (
     // Instead use:
     //     "Condition" :
     //     { "Null" : { "aws:MultiFactorAuthPresent" : true } }
-    map.set('aws:MultiFactorAuthPresent',
-        requestContext.getMultiFactorAuthPresent());
+    case 'aws:MultiFactorAuthPresent': return requestContext.getMultiFactorAuthPresent();
     // aws:MultiFactorAuthAge – Used to check how many seconds since
     // MFA credentials were issued. If MFA was not used,
     // this key is not present
-    map.set('aws:MultiFactorAuthAge', requestContext.getMultiFactorAuthAge());
+    case 'aws:MultiFactorAuthAge': return requestContext.getMultiFactorAuthAge();
     // aws:principaltype states whether the principal is an account,
     // user, federated, or assumed role
     // Note: Docs for conditions have "PrincipalType" but simulator
     // and docs for variables have lowercase
-    map.set('aws:principaltype', requesterInfo.principaltype);
+    case 'aws:principaltype': return requesterInfo.principaltype;
     // aws:Referer – Used to check who referred the client browser to
     // the address the request is being sent to. Only supported by some
     // services, such as S3. Value comes from the referer header in the
     // HTTPS request made to AWS.
-    map.set('aws:referer', headers.referer);
+    case 'aws:referer': return headers.referer;
     // aws:SecureTransport – Used to check whether the request was sent
     // using SSL (see Boolean Condition Operators).
-    map.set('aws:SecureTransport',
-        requestContext.getSslEnabled() ? 'true' : 'false');
+    case 'aws:SecureTransport': return requestContext.getSslEnabled() ? 'true' : 'false';
     // aws:SourceArn – Used check the source of the request,
     // using the ARN of the source. N/A here.
-    map.set('aws:SourceArn', undefined);
+    case 'aws:SourceArn': return undefined;
     // aws:SourceIp – Used to check the requester's IP address
     // (see IP Address Condition Operators)
-    map.set('aws:SourceIp', requestContext.getRequesterIp());
+    case 'aws:SourceIp': return requestContext.getRequesterIp();
     // aws:SourceVpc – Used to restrict access to a specific
     // AWS Virtual Private Cloud. N/A here.
-    map.set('aws:SourceVpc', undefined);
+    case 'aws:SourceVpc': return undefined;
     // aws:SourceVpce – Used to limit access to a specific VPC endpoint
     // N/A here
-    map.set('aws:SourceVpce', undefined);
+    case 'aws:SourceVpce': return undefined;
     // aws:UserAgent – Used to check the requester's client app.
     // (see String Condition Operators)
-    map.set('aws:UserAgent', headers['user-agent']);
+    case 'aws:UserAgent': return headers['user-agent'];
     // aws:userid – Used to check the requester's unique user ID.
     // (see String Condition Operators)
-    map.set('aws:userid', requesterInfo.userid);
+    case 'aws:userid': return requesterInfo.userid;
     // aws:username – Used to check the requester's friendly user name.
     // (see String Condition Operators)
-    map.set('aws:username', requesterInfo.username);
+    case 'aws:username': return requesterInfo.username;
     // Possible condition keys for S3:
     // s3:x-amz-acl is acl request for bucket or object put request
-    map.set('s3:x-amz-acl', headers['x-amz-acl']);
+    case 's3:x-amz-acl': return headers['x-amz-acl'];
     // s3:x-amz-grant-PERMISSION (where permission can be:
     // read, write, read-acp, write-acp or full-control)
     // Value is the value of that header (ex. id of grantee)
-    map.set('s3:x-amz-grant-read', headers['x-amz-grant-read']);
-    map.set('s3:x-amz-grant-write', headers['x-amz-grant-write']);
-    map.set('s3:x-amz-grant-read-acp', headers['x-amz-grant-read-acp']);
-    map.set('s3:x-amz-grant-write-acp', headers['x-amz-grant-write-acp']);
-    map.set('s3:x-amz-grant-full-control', headers['x-amz-grant-full-control']);
+    case 's3:x-amz-grant-read': return headers['x-amz-grant-read'];
+    case 's3:x-amz-grant-write': return headers['x-amz-grant-write'];
+    case 's3:x-amz-grant-read-acp': return headers['x-amz-grant-read-acp'];
+    case 's3:x-amz-grant-write-acp': return headers['x-amz-grant-write-acp'];
+    case 's3:x-amz-grant-full-control': return headers['x-amz-grant-full-control'];
     // s3:x-amz-copy-source is x-amz-copy-source header if applicable on
     // a put object
-    map.set('s3:x-amz-copy-source', headers['x-amz-copy-source']);
+    case 's3:x-amz-copy-source': return headers['x-amz-copy-source'];
     // s3:x-amz-metadata-directive is x-amz-metadata-directive header if
     // applicable on a put object copy.  Determines whether metadata will
     // be copied from original object or replaced. Values or "COPY" or
     // "REPLACE".  Default is "COPY"
-    map.set('s3:x-amz-metadata-directive', headers['metadata-directive']);
+    case 's3:x-amz-metadata-directive': return headers['metadata-directive'];
     // s3:x-amz-server-side-encryption -- Used to require that object put
     // use server side encryption.  Value is the encryption algo such as
     // "AES256"
-    map.set('s3:x-amz-server-side-encryption',
-        headers['x-amz-server-side-encryption']);
+    case 's3:x-amz-server-side-encryption': return headers['x-amz-server-side-encryption'];
     // s3:x-amz-storage-class -- x-amz-storage-class header value
     // (STANDARD, etc.)
-    map.set('s3:x-amz-storage-class', headers['x-amz-storage-class']);
+    case 's3:x-amz-storage-class': return headers['x-amz-storage-class'];
     // s3:VersionId -- version id of object
-    map.set('s3:VersionId', query.versionId);
+    case 's3:VersionId': return query.versionId;
     // s3:LocationConstraint -- Used to restrict creation of bucket
     // in certain region.  Only applicable for CreateBucket
-    map.set('s3:LocationConstraint', requestContext.getLocationConstraint());
+    case 's3:LocationConstraint': return requestContext.getLocationConstraint();
     // s3:delimiter is delimiter for listing request
-    map.set('s3:delimiter', query.delimiter);
+    case 's3:delimiter': return query.delimiter;
     // s3:max-keys is max-keys for listing request
-    map.set('s3:max-keys', query['max-keys']);
+    case 's3:max-keys': return query['max-keys'];
     // s3:prefix is prefix for listing request
-    map.set('s3:prefix', query.prefix);
+    case 's3:prefix': return query.prefix;
     // s3 auth v4 additional condition keys
     // (See http://docs.aws.amazon.com/AmazonS3/latest/API/
     // bucket-policy-s3-sigv4-conditions.html)
     // s3:signatureversion -- Either "AWS" for v2 or
     // "AWS4-HMAC-SHA256" for v4
-    map.set('s3:signatureversion', requestContext.getSignatureVersion());
+    case 's3:signatureversion': return requestContext.getSignatureVersion();
     // s3:authType -- Method of authentication: either "REST-HEADER",
     // "REST-QUERY-STRING" or "POST"
-    map.set('s3:authType', requestContext.getAuthType());
+    case 's3:authType': return requestContext.getAuthType();
     // s3:signatureAge is the length of time, in milliseconds,
     // that a signature is valid in an authenticated request.  So,
     // can use this to limit the age to less than 7 days
-    map.set('s3:signatureAge', requestContext.getSignatureAge());
+    case 's3:signatureAge': return requestContext.getSignatureAge();
     // s3:x-amz-content-sha256 - Valid value is "UNSIGNED-PAYLOAD"
     // so can use this in a deny policy to deny any requests that do not
     // have a signed payload
-    map.set('s3:x-amz-content-sha256', headers['x-amz-content-sha256']);
+    case 's3:x-amz-content-sha256': return headers['x-amz-content-sha256'];
     // s3:ObjLocationConstraint is the location constraint set for an
     // object on a PUT request using the "x-amz-meta-scal-location-constraint"
     // header
-    map.set('s3:ObjLocationConstraint',
-        headers['x-amz-meta-scal-location-constraint']);
-    map.set('sts:ExternalId', requestContext.getRequesterExternalId());
-    map.set('iam:PolicyArn', requestContext.getPolicyArn());
+    case 's3:ObjLocationConstraint': return headers['x-amz-meta-scal-location-constraint'];
+    case 'sts:ExternalId': return requestContext.getRequesterExternalId();
+    case 'iam:PolicyArn': return requestContext.getPolicyArn();
     // s3:ExistingObjectTag - Used to check that existing object tag has
     // specific tag key and value. Extraction of correct tag key is done in CloudServer.
     // On first pass of policy evaluation, CloudServer information will not be included,
     // so evaluation should be skipped
-    map.set('s3:ExistingObjectTag', requestContext.getNeedTagEval() ? requestContext.getExistingObjTag() : undefined);
+    case 's3:ExistingObjectTag':
+        return requestContext.getNeedTagEval()
+            ? requestContext.getExistingObjTag() : undefined;
     // s3:RequestObjectTag - Used to limit putting object tags to specific
     // tag key and value. N/A here.
     // Requires information from CloudServer
     // On first pass of policy evaluation, CloudServer information will not be included,
     // so evaluation should be skipped
-    map.set('s3:RequestObjectTagKey', requestContext.getNeedTagEval() ? requestContext.getRequestObjTags() : undefined);
+    case 's3:RequestObjectTagKey':
+        return requestContext.getNeedTagEval()
+            ? requestContext.getRequestObjTags() : undefined;
     // s3:RequestObjectTagKeys - Used to limit putting object tags specific tag keys.
     // Requires information from CloudServer.
     // On first pass of policy evaluation, CloudServer information will not be included,
     // so evaluation should be skipped
-    map.set('s3:RequestObjectTagKeys',
-        requestContext.getNeedTagEval() && requestContext.getRequestObjTags()
-        ? getTagKeys(requestContext.getRequestObjTags()!)
-        : undefined,
-    );
-    return map.get(key);
-};
+    case 's3:RequestObjectTagKeys':
+        return requestContext.getNeedTagEval() && requestContext.getRequestObjTags()
+            ? getTagKeys(requestContext.getRequestObjTags()!)
+            : undefined;
+    default:
+        return undefined;
+    }
+}
 
 
 // Wildcards are allowed in certain string comparison and arn comparisons
@@ -229,7 +229,7 @@ function convertToEpochTime(time: string | string[]) {
  * reference_policies_elements.html)
  * @return true if condition passes and false if not
  */
-export const convertConditionOperator = (operator: string): boolean => {
+export function convertConditionOperator(operator: string): boolean {
     // Policy Validator checks that the condition operator
     // is only one of these strings so should not have undefined
     // or security issue with object assignment
@@ -444,4 +444,4 @@ export const convertConditionOperator = (operator: string): boolean => {
         },
     };
     return operatorMap[operator];
-};
+}
