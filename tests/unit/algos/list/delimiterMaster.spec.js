@@ -59,6 +59,93 @@ function getListingKey(key, vFormat) {
             assert.strictEqual(delimiter.skipping(), SKIP_NONE);
         });
 
+        it('should not hide keys when a common prefix master is filtered first', () => {
+            // See S3C-4682 for details.
+            // Delimiter will call .filter multiple times with different keys.
+            // It should list them all masters keys except those with delete markers.
+            const delimiter = new DelimiterMaster({
+                prefix: '_Common-Prefix/',
+                delimiter: '/',
+                startAfter: '',
+                continuationToken: '',
+                v2: true,
+                fetchOwner: false }, fakeLogger, vFormat);
+            const masterKey = '_Common-Prefix';
+            const delimiterChar = '/';
+            const commonPrefix = `${masterKey}${delimiterChar}`;
+            const key = `${commonPrefix}`;
+
+            const version = new Version({ });
+            const obj = {
+                key: getListingKey(key, vFormat),
+                value: version.toString(),
+            };
+            // Do not skip master with lexicographically smallest key.
+            assert.strictEqual(delimiter.filter(obj), FILTER_ACCEPT);
+
+            // Skip these with delete markers.
+            // In S3C-4682 there are 514 ids with delete markers and a common prefix.
+            for (let idx = 0; idx < 514; idx++) {
+                // Keys have delete markers and are versioned
+                const keyVersion = `${masterKey}${VID_SEP}${idx}`;
+                const version = new Version({ versionId: idx, isDeleteMarker: true });
+                const obj = {
+                    key: getListingKey(keyVersion, vFormat),
+                    value: version.toString(),
+                };
+                assert.strictEqual(delimiter.filter(obj), FILTER_SKIP);
+            }
+
+            // Do not skip these as there's no delete markers.
+            const versionedSuffixes = [
+                { name: 'abcd.efgh.XYZ',
+                    vid: '98341720870177999994RG001  1.20780.271547' },
+                { name: 'abcd.fghi.XYZ',
+                    vid: '98341720870177999996RG001  1.20780.271545' },
+                { name: 'abcd.fghi.XYZ.ABC.ZZZ',
+                    vid: '98341720870094999999RG001  1.20785.271606' },
+                { name: 'abcd.fghi.XYZ.ABC.ZZZ.ZZZ',
+                    vid: '98341720869970999996RG001  1.20790.271681' },
+                { name: 'abcd.ghij.XYZ.ABC.ZZZ.ZZZ',
+                    vid: '98341720870063999999RG001  1.20787.271622' },
+                { name: 'abcd.hijk.XYZ.ABC.ZZZ.ZZZ',
+                    vid: '98341720870040999997RG001  1.20789.271637' },
+                { name: 'bcde.hijk.XYZ.ABC.ZZZ.ZZZ',
+                    vid: '98341720869889999999RG001  1.20793.271747' },
+                { name: 'cdef.hijk.XYZ.ABC.ZZZ.ZZZ',
+                    vid: '98341720869889999998RG001  1.20793.271748' },
+                { name: 'xyz.hijk.XYZ.ABC.ZZZ.ZZZ',
+                    vid: '98341720869888999999RG001  1.20793.271751' },
+                { name: 'xyz.ijkl.XYZ.ABC.ZZZ.ZZZ',
+                    vid: '98341720869886999997RG001  1.20793.271755' },
+                { name: 'xyz.ijkl.XYZ.ABC.ZZZ.ZZZ.AAA',
+                    vid: '98341720869827999999RG001  1.20794.271788' },
+            ];
+
+            const accepted = [];
+            const skipped = [];
+
+            for (const ob of versionedSuffixes) {
+                const { name, vid } = ob;
+                // Does not contain delete markers but contains versions to simulate turning on versioning.
+                const keyVersion = `${commonPrefix}${name}${VID_SEP}${vid}`;
+                const version = new Version({ versionId: vid });
+                const obj = {
+                    key: getListingKey(keyVersion, vFormat),
+                    value: version.toString(),
+                };
+                const recieved = delimiter.filter(obj);
+
+                if (recieved === FILTER_ACCEPT) {
+                    accepted.push(ob);
+                } else {
+                    skipped.push(ob);
+                }
+            }
+            assert.equal(accepted.length, 11);
+            assert.equal(skipped.length, 0);
+        });
+
         it('should return <key><VersionIdSeparator> for DelimiterMaster when ' +
         'NextMarker is set and there is a delimiter', () => {
             const key = 'key';
