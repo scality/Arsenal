@@ -140,9 +140,9 @@ function getListingKey(key, vFormat) {
                         key: getListingKey(keyVersion, vFormat),
                         value: version.toString(),
                     };
-                    const recieved = delimiter.filter(obj);
+                    const received = delimiter.filter(obj);
 
-                    if (recieved === FILTER_ACCEPT) {
+                    if (received === FILTER_ACCEPT) {
                         accepted.push(ob);
                     } else {
                         skipped.push(ob);
