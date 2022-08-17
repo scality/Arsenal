@@ -87,7 +87,8 @@ function getListingKey(key, vFormat) {
             // In S3C-4682 there are 514 ids with delete markers and a common prefix.
             for (let idx = 0; idx < 514; idx++) {
                 // Keys have delete markers and are versioned
-                const keyVersion = `${masterKey}${VID_SEP}${idx}`;
+                const paddedIdx = `0000${idx}`.slice(-4);
+                const keyVersion = `${commonPrefix}${VID_SEP}${paddedIdx}`;
                 const version = new Version({ versionId: idx, isDeleteMarker: true });
                 const obj = {
                     key: getListingKey(keyVersion, vFormat),
