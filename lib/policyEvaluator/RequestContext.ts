@@ -168,7 +168,6 @@ export default class RequestContext {
     _policyArn: string;
     _action?: string;
     _needQuota: boolean;
-    _postXml?: string;
     _requestObjTags: string | null;
     _existingObjTag: string | null;
     _needTagEval: boolean;
@@ -192,7 +191,9 @@ export default class RequestContext {
         securityToken: string,
         policyArn: string,
         action?: string,
-        postXml?: string,
+        requestObjTags?: string,
+        existingObjTag?: string,
+        needTagEval?: false,
     ) {
         this._headers = headers;
         this._query = query;
@@ -222,10 +223,9 @@ export default class RequestContext {
         this._policyArn = policyArn;
         this._action = action;
         this._needQuota = _actionNeedQuotaCheck[apiMethod] === true;
-        this._postXml = postXml;
-        this._requestObjTags = null;
-        this._existingObjTag = null;
-        this._needTagEval = false;
+        this._requestObjTags = requestObjTags || null;
+        this._existingObjTag = existingObjTag || null;
+        this._needTagEval = needTagEval || false;
         return this;
     }
 
@@ -238,7 +238,7 @@ export default class RequestContext {
             apiMethod: this._apiMethod,
             headers: this._headers,
             query: this._query,
-            requersterInfo: this._requesterInfo,
+            requesterInfo: this._requesterInfo,
             requesterIp: this._requesterIp,
             sslEnabled: this._sslEnabled,
             awsService: this._awsService,
@@ -254,7 +254,6 @@ export default class RequestContext {
             securityToken: this._securityToken,
             policyArn: this._policyArn,
             action: this._action,
-            postXml: this._postXml,
             requestObjTags: this._requestObjTags,
             existingObjTag: this._existingObjTag,
             needTagEval: this._needTagEval,
@@ -278,12 +277,27 @@ export default class RequestContext {
         if (resource) {
             obj.specificResource = resource;
         }
-        return new RequestContext(obj.headers, obj.query, obj.generalResource,
-            obj.specificResource, obj.requesterIp, obj.sslEnabled,
-            obj.apiMethod, obj.awsService, obj.locationConstraint,
-            obj.requesterInfo, obj.signatureVersion,
-            obj.authType, obj.signatureAge, obj.securityToken, obj.policyArn,
-            obj.action, obj.postXml);
+        return new RequestContext(
+            obj.headers,
+            obj.query,
+            obj.generalResource,
+            obj.specificResource,
+            obj.requesterIp,
+            obj.sslEnabled,
+            obj.apiMethod,
+            obj.awsService,
+            obj.locationConstraint,
+            obj.requesterInfo,
+            obj.signatureVersion,
+            obj.authType,
+            obj.signatureAge,
+            obj.securityToken,
+            obj.policyArn,
+            obj.action,
+            obj.requestObjTags,
+            obj.existingObjTag,
+            obj.needTagEval,
+        );
     }
 
     /**
@@ -625,26 +639,6 @@ export default class RequestContext {
      */
     isQuotaCheckNeeded() {
         return this._needQuota;
-    }
-
-    /**
-     * Set request post
-     *
-     * @param postXml - request post
-     * @return itself
-     */
-    setPostXml(postXml: string) {
-        this._postXml = postXml;
-        return this;
-    }
-
-    /**
-     * Get request post
-     *
-     * @return request post
-     */
-    getPostXml() {
-        return this._postXml;
     }
 
     /**
