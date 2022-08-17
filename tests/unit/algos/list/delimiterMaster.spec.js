@@ -76,9 +76,9 @@ function getListingKey(key, vFormat) {
                         continuationToken: '',
                         v2: true,
                         fetchOwner: false }, fakeLogger, vFormat);
-                    const masterKey = prefix;
-                    const delimiterChar = '/';
-                    const commonPrefix = `${masterKey}${delimiterChar}`;
+                    const commonPrefix = prefix;
+                    // const delimiterChar = '/';
+                    // const commonPrefix = `${masterKey}${delimiterChar}`;
                     const key = `${commonPrefix}`;
 
                     const version = new Version({ });
