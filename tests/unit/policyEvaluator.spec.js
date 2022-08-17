@@ -1162,30 +1162,6 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, policy, 'Neutral');
             });
 
-            it('should allow with StringEquals operator and ExistingObjectTag ' +
-            'key if meet condition', () => {
-                policy.Statement.Condition = {
-                    StringEquals: { 's3:ExistingObjectTag/tagKey': 'tagValue' },
-                };
-                const rcModifiers = {
-                    _existingObjTag: 'tagKey=tagValue',
-                    _needTagEval: true,
-                };
-                check(requestContext, rcModifiers, policy, 'Allow');
-            });
-
-            it('should allow StringEquals operator and RequestObjectTag ' +
-            'key if meet condition', () => {
-                policy.Statement.Condition = {
-                    StringEquals: { 's3:RequestObjectTagKey/tagKey': 'tagValue' },
-                };
-                const rcModifiers = {
-                    _requestObjTags: 'tagKey=tagValue',
-                    _needTagEval: true,
-                };
-                check(requestContext, rcModifiers, policy, 'Allow');
-            });
-
             it('should allow with ForAnyValue prefix if meet condition', () => {
                 policy.Statement.Condition = {
                     'ForAnyValue:StringLike': { 's3:RequestObjectTagKeys': ['tagOne', 'tagTwo'] },
@@ -1208,7 +1184,7 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, policy, 'Allow');
             });
 
-            it('should not allow with ForAnyValue prefix if do not meet condition', () => {
+            it('should be neutral with ForAnyValue prefix if do not meet condition', () => {
                 policy.Statement.Condition = {
                     'ForAnyValue:StringLike': { 's3:RequestObjectTagKeys': ['tagOne', 'tagTwo'] },
                 };
@@ -1219,12 +1195,12 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, policy, 'Neutral');
             });
 
-            it('should not allow with ForAllValues prefix if do not meet condition', () => {
+            it('should be neutral with ForAllValues prefix if do not meet condition', () => {
                 policy.Statement.Condition = {
                     'ForAllValues:StringLike': { 's3:RequestObjectTagKeys': ['tagOne', 'tagTwo'] },
                 };
                 const rcModifiers = {
-                    _requestObjTags: 'tagThree=keyThree&tagFour=keyFour',
+                    _requestObjTags: 'tagOne=keyOne&tagThree=keyThree',
                     _needTagEval: true,
                 };
                 check(requestContext, rcModifiers, policy, 'Neutral');
@@ -1239,6 +1215,203 @@ describe('policyEvaluator', () => {
                     _needTagEval: true,
                 };
                 check(requestContext, rcModifiers, policy, 'Neutral');
+            });
+        });
+
+        describe('with multiple statements', () => {
+            beforeEach(() => {
+                requestContext = new RequestContext({}, {}, 'bucket',
+                    undefined, undefined, undefined, 'objectPut', 's3');
+                requestContext.setRequesterInfo({});
+            });
+
+            const TestMatrix = [
+                {
+                    statementsToEvaluate: [],
+                    expectedPolicyEvaluation: 'Neutral',
+                },
+                {
+                    statementsToEvaluate: [
+                        { effect: 'Allow', meetConditions: true },
+                    ],
+                    expectedPolicyEvaluation: 'Allow',
+                },
+                {
+                    statementsToEvaluate: [
+                        { effect: 'Allow', meetConditions: false },
+                    ],
+                    expectedPolicyEvaluation: 'Neutral',
+                },
+                {
+                    statementsToEvaluate: [
+                        { effect: 'Deny', meetConditions: true },
+                    ],
+                    expectedPolicyEvaluation: 'Deny',
+                },
+                {
+                    statementsToEvaluate: [
+                        { effect: 'Deny', meetConditions: false },
+                    ],
+                    expectedPolicyEvaluation: 'Neutral',
+                },
+                {
+                    statementsToEvaluate: [
+                        { effect: 'Allow', meetConditions: false },
+                        { effect: 'Allow', meetConditions: true },
+                    ],
+                    expectedPolicyEvaluation: 'Allow',
+                },
+                {
+                    statementsToEvaluate: [
+                        { effect: 'Allow', meetConditions: false },
+                        { effect: 'Allow', meetConditions: false },
+                    ],
+                    expectedPolicyEvaluation: 'Neutral',
+                },
+                {
+                    statementsToEvaluate: [
+                        { effect: 'Allow', meetConditions: false },
+                        { effect: 'Deny', meetConditions: false },
+                    ],
+                    expectedPolicyEvaluation: 'Neutral',
+                },
+                {
+                    statementsToEvaluate: [
+                        { effect: 'Allow', meetConditions: true },
+                        { effect: 'Deny', meetConditions: true },
+                    ],
+                    expectedPolicyEvaluation: 'Deny',
+                },
+                {
+                    statementsToEvaluate: [
+                        { effect: 'Deny', meetConditions: true },
+                        { effect: 'Allow', meetConditions: true },
+                    ],
+                    expectedPolicyEvaluation: 'Deny',
+                },
+                {
+                    statementsToEvaluate: [
+                        { effect: 'Allow', meetConditions: true },
+                        { effect: 'Deny', meetConditions: false },
+                    ],
+                    expectedPolicyEvaluation: 'Allow',
+                },
+                {
+                    statementsToEvaluate: [
+                        { effect: 'Allow', meetConditions: null },
+                    ],
+                    expectedPolicyEvaluation: 'AllowWithTagCondition',
+                },
+                {
+                    statementsToEvaluate: [
+                        { effect: 'Allow', meetConditions: null },
+                        { effect: 'Allow', meetConditions: null },
+                    ],
+                    expectedPolicyEvaluation: 'AllowWithTagCondition',
+                },
+                {
+                    statementsToEvaluate: [
+                        { effect: 'Deny', meetConditions: null },
+                    ],
+                    expectedPolicyEvaluation: 'DenyWithTagCondition',
+                },
+                {
+                    statementsToEvaluate: [
+                        { effect: 'Deny', meetConditions: null },
+                        { effect: 'Deny', meetConditions: null },
+                    ],
+                    expectedPolicyEvaluation: 'DenyWithTagCondition',
+                },
+                {
+                    statementsToEvaluate: [
+                        { effect: 'Allow', meetConditions: true },
+                        { effect: 'Allow', meetConditions: null },
+                    ],
+                    expectedPolicyEvaluation: 'Allow',
+                },
+                {
+                    statementsToEvaluate: [
+                        { effect: 'Allow', meetConditions: false },
+                        { effect: 'Allow', meetConditions: null },
+                    ],
+                    expectedPolicyEvaluation: 'AllowWithTagCondition',
+                },
+                {
+                    statementsToEvaluate: [
+                        { effect: 'Deny', meetConditions: true },
+                        { effect: 'Deny', meetConditions: null },
+                    ],
+                    expectedPolicyEvaluation: 'Deny',
+                },
+                {
+                    statementsToEvaluate: [
+                        { effect: 'Deny', meetConditions: true },
+                        { effect: 'Allow', meetConditions: null },
+                    ],
+                    expectedPolicyEvaluation: 'Deny',
+                },
+                {
+                    statementsToEvaluate: [
+                        { effect: 'Deny', meetConditions: false },
+                        { effect: 'Deny', meetConditions: null },
+                    ],
+                    expectedPolicyEvaluation: 'DenyWithTagCondition',
+                },
+                {
+                    statementsToEvaluate: [
+                        { effect: 'Allow', meetConditions: true },
+                        { effect: 'Deny', meetConditions: null },
+                    ],
+                    expectedPolicyEvaluation: 'DenyWithTagCondition',
+                },
+                {
+                    statementsToEvaluate: [
+                        { effect: 'Allow', meetConditions: null },
+                        { effect: 'Deny', meetConditions: null },
+                    ],
+                    expectedPolicyEvaluation: 'DenyWithTagCondition',
+                },
+            ];
+
+            TestMatrix.forEach(testCase => {
+                const policyDesc = testCase.statementsToEvaluate
+                    .map(statement => `${statement.effect}(met:${statement.meetConditions})`)
+                    .join(', ');
+                it(`policy with statements evaluating individually to [${policyDesc}] ` +
+                `should return ${testCase.expectedPolicyEvaluation}`, () => {
+                    const policy = {
+                        Version: '2012-10-17',
+                        Statement: testCase.statementsToEvaluate.map(statement => {
+                            let condition;
+                            if (statement.meetConditions === true) {
+                                condition = {
+                                    StringEquals: { 'aws:UserAgent': 'CyberSquaw' },
+                                };
+                            } else if (statement.meetConditions === false) {
+                                condition = {
+                                    StringEquals: { 'aws:UserAgent': 'OtherAgent' },
+                                };
+                            } else if (statement.meetConditions === null) {
+                                condition = {
+                                    StringEquals: { 's3:ExistingObjectTag/tagKey': 'tagValue' },
+                                };
+                            }
+                            return {
+                                Effect: statement.effect,
+                                Action: 's3:PutObject',
+                                Resource: 'arn:aws:s3:::bucket',
+                                Condition: condition,
+                            };
+                        }),
+                    };
+                    requestContext.setHeaders({
+                        'user-agent': 'CyberSquaw',
+                    });
+                    requestContext.setNeedTagEval(false);
+
+                    const result = evaluatePolicy(requestContext, policy, log);
+                    assert.strictEqual(result, testCase.expectedPolicyEvaluation);
+                });
             });
         });
     });
@@ -1266,17 +1439,152 @@ describe('policyEvaluator', () => {
             assert.strictEqual(result, 'Deny');
         });
 
-        it('should deny access if request resource is not in any policy',
-            () => {
+        it('should deny access if request resource is not in any policy', () => {
+            requestContext = new RequestContext({}, {},
+                'notbucket', undefined,
+                undefined, undefined, 'objectGet', 's3');
+            requestContext.setRequesterInfo({});
+            const result = evaluateAllPolicies(requestContext, [
+                samples['Multi-Statement Policy'],
+                samples['Variable Bucket Policy'],
+            ], log);
+            assert.strictEqual(result, 'Deny');
+        });
+
+        const TestMatrixPolicies = {
+            Allow: {
+                Version: '2012-10-17',
+                Statement: {
+                    Effect: 'Allow',
+                    Action: 's3:*',
+                    Resource: '*',
+                },
+            },
+            Neutral: {
+                Version: '2012-10-17',
+                Statement: {
+                    Effect: 'Allow',
+                    Action: 's3:*',
+                    Resource: 'arn:aws:s3:::other-bucket',
+                },
+            },
+            Deny: {
+                Version: '2012-10-17',
+                Statement: {
+                    Effect: 'Deny',
+                    Action: 's3:*',
+                    Resource: '*',
+                },
+            },
+            AllowWithTagCondition: {
+                Version: '2012-10-17',
+                Statement: {
+                    Effect: 'Allow',
+                    Action: 's3:*',
+                    Resource: '*',
+                    Condition: {
+                        StringEquals: {
+                            's3:ExistingObjectTag/tagKey': 'tagValue',
+                        },
+                    },
+                },
+            },
+            DenyWithTagCondition: {
+                Version: '2012-10-17',
+                Statement: {
+                    Effect: 'Deny',
+                    Action: 's3:*',
+                    Resource: '*',
+                    Condition: {
+                        StringEquals: {
+                            's3:ExistingObjectTag/tagKey': 'tagValue',
+                        },
+                    },
+                },
+            },
+        };
+
+        const TestMatrix = [
+            {
+                policiesToEvaluate: [],
+                expectedPolicyEvaluation: 'Deny',
+            },
+            {
+                policiesToEvaluate: ['Allow'],
+                expectedPolicyEvaluation: 'Allow',
+            },
+            {
+                policiesToEvaluate: ['Neutral'],
+                expectedPolicyEvaluation: 'Deny',
+            },
+            {
+                policiesToEvaluate: ['Deny'],
+                expectedPolicyEvaluation: 'Deny',
+            },
+            {
+                policiesToEvaluate: ['Allow', 'Allow'],
+                expectedPolicyEvaluation: 'Allow',
+            },
+            {
+                policiesToEvaluate: ['Allow', 'Neutral'],
+                expectedPolicyEvaluation: 'Allow',
+            },
+            {
+                policiesToEvaluate: ['Neutral', 'Allow'],
+                expectedPolicyEvaluation: 'Allow',
+            },
+            {
+                policiesToEvaluate: ['Neutral', 'Neutral'],
+                expectedPolicyEvaluation: 'Deny',
+            },
+            {
+                policiesToEvaluate: ['Allow', 'Deny'],
+                expectedPolicyEvaluation: 'Deny',
+            },
+            {
+                policiesToEvaluate: ['AllowWithTagCondition'],
+                expectedPolicyEvaluation: 'NeedTagConditionEval',
+            },
+            {
+                policiesToEvaluate: ['Allow', 'AllowWithTagCondition'],
+                expectedPolicyEvaluation: 'Allow',
+            },
+            {
+                policiesToEvaluate: ['DenyWithTagCondition'],
+                expectedPolicyEvaluation: 'Deny',
+            },
+            {
+                policiesToEvaluate: ['Allow', 'DenyWithTagCondition'],
+                expectedPolicyEvaluation: 'NeedTagConditionEval',
+            },
+            {
+                policiesToEvaluate: ['AllowWithTagCondition', 'DenyWithTagCondition'],
+                expectedPolicyEvaluation: 'NeedTagConditionEval',
+            },
+            {
+                policiesToEvaluate: ['AllowWithTagCondition', 'DenyWithTagCondition', 'Deny'],
+                expectedPolicyEvaluation: 'Deny',
+            },
+            {
+                policiesToEvaluate: ['DenyWithTagCondition', 'AllowWithTagCondition', 'Allow'],
+                expectedPolicyEvaluation: 'NeedTagConditionEval',
+            },
+        ];
+
+        TestMatrix.forEach(testCase => {
+            it(`policies evaluating individually to [${testCase.policiesToEvaluate.join(', ')}] `
+            + `should return ${testCase.expectedPolicyEvaluation}`, () => {
                 requestContext = new RequestContext({}, {},
-                    'notbucket', undefined,
+                    'my_favorite_bucket', undefined,
                     undefined, undefined, 'objectGet', 's3');
                 requestContext.setRequesterInfo({});
-                const result = evaluateAllPolicies(requestContext,
-                    [samples['Multi-Statement Policy'],
-                        samples['Variable Bucket Policy']], log);
-                assert.strictEqual(result, 'Deny');
+                const result = evaluateAllPolicies(
+                    requestContext,
+                    testCase.policiesToEvaluate.map(policyName => TestMatrixPolicies[policyName]),
+                    log);
+                assert.strictEqual(result, testCase.expectedPolicyEvaluation);
             });
+        });
     });
 });
 
