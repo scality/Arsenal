@@ -7,6 +7,7 @@ import DataWrapper from '../storage/data/DataWrapper';
 import * as http from 'http';
 import StatsClient from '../metrics/StatsClient';
 import { objectKeyByteLimit } from '../constants';
+const jsutil = require('../jsutil');
 
 export type CallApiMethod = (
     methodName: string,
@@ -409,6 +410,7 @@ function retrieveData(
     return eachSeries(locations,
         (current, next) => data.get(current, response, log,
             (err: any, readable: http.IncomingMessage) => {
+                const cbOnce = jsutil.once(next);
                 // NB: readable is of IncomingMessage type
                 if (err) {
                     log.error('failed to get object', {
@@ -416,7 +418,7 @@ function retrieveData(
                         method: 'retrieveData',
                     });
                     _destroyResponse();
-                    return next(err);
+                    return cbOnce(err);
                 }
                 // response.isclosed is set by the S3 server. Might happen if
                 // the S3-client closes the connection before the first request
@@ -430,19 +432,19 @@ function retrieveData(
                     // @ts-ignore
                     responseErr.code = 'ResponseError';
                     responseErr.message = 'response closed by client request before all data sent';
-                    return next(responseErr);
+                    return cbOnce(responseErr);
                 }
                 // readable stream successfully consumed
                 readable.on('end', () => {
                     currentStream = null;
                     log.debug('readable stream end reached');
-                    return next();
+                    return cbOnce();
                 });
                 // errors on server side with readable stream
                 readable.on('error', err => {
                     log.error('error piping data from source');
                     _destroyResponse();
-                    return next(err);
+                    return cbOnce(err);
                 });
                 currentStream = readable;
                 return readable.pipe(response, { end: false });
