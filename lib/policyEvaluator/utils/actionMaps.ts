@@ -199,6 +199,14 @@ const actionMapIAM = {
     listUserTags: 'iam:ListUserTags',
 };
 
+const actionMapScality = {
+    updateAccountAttributes: 'scality:UpdateAccountAttributes',
+    UpdateAccountQuota: 'scality:UpdateAccountQuota',
+    DeleteAccountQuota: 'scality:DeleteAccountQuota',
+    DeleteAccount: 'scality:DeleteAccount',
+    GenerateAccountAccessKey: 'scality:GenerateAccountAccessKey',
+};
+
 const actionMapSSO = {
     SsoAuthorize: 'sso:Authorize',
 };
@@ -221,4 +229,5 @@ export {
     actionMapSSO,
     actionMapSTS,
     actionMapMetadata,
+    actionMapScality,
 };

@@ -11,6 +11,7 @@ import {
     actionMapIAM,
     actionMapSSO,
     actionMapSTS,
+    actionMapScality,
     actionMapMetadata,
 } from './utils/actionMaps';
 
@@ -36,6 +37,8 @@ function _findAction(service: string, method: string) {
             return actionMapSTS[method];
         case 'metadata':
             return actionMapMetadata[method];
+        case 'scality':
+            return actionMapScality[method];
         default:
             return undefined;
     }
