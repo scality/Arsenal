@@ -63,7 +63,8 @@ function getListingKey(key, vFormat) {
             // See S3C-4682 for details.
             // Delimiter will call .filter multiple times with different keys.
             // It should list them all masters keys except those with delete markers.
-            ['_Common-Prefix/',
+            [
+                '_Common-Prefix/',
                 '_Common-Prefix/nested',
                 '_Common-Prefix/nested/doubly-nested',
                 '_Common-Prefix/nested/',
@@ -77,8 +78,6 @@ function getListingKey(key, vFormat) {
                         v2: true,
                         fetchOwner: false }, fakeLogger, vFormat);
                     const commonPrefix = prefix;
-                    // const delimiterChar = '/';
-                    // const commonPrefix = `${masterKey}${delimiterChar}`;
                     const key = `${commonPrefix}`;
 
                     const version = new Version({ });
@@ -88,20 +87,6 @@ function getListingKey(key, vFormat) {
                     };
                     // Do not skip master with lexicographically smallest key.
                     assert.strictEqual(delimiter.filter(obj), FILTER_ACCEPT);
-
-                    // Skip these with delete markers.
-                    // In S3C-4682 there are 514 ids with delete markers and a common prefix.
-                    for (let idx = 0; idx < 514; idx++) {
-                        // Keys have delete markers and are versioned
-                        const paddedIdx = `0000${idx}`.slice(-4);
-                        const keyVersion = `${commonPrefix}${VID_SEP}${paddedIdx}`;
-                        const version = new Version({ versionId: idx, isDeleteMarker: true });
-                        const obj = {
-                            key: getListingKey(keyVersion, vFormat),
-                            value: version.toString(),
-                        };
-                        assert.strictEqual(delimiter.filter(obj), FILTER_SKIP);
-                    }
 
                     // Do not skip these as there's no delete markers.
                     const versionedSuffixes = [
