@@ -52,10 +52,11 @@ const params = {};
 let streakLength = 0;
 let gteparams = null;
 
-function handleStreak(filteringResult, skippingRange) {
+function handleStreak(filteringResult, skippingRange, delimiter, idx) {
     if (filteringResult < 0) {
         // rs.emit('end');
         // rs.destroy();
+        console.log('reached end', Object.entries(delimiter));
     } else if (filteringResult === 0 && skippingRange) {
         // check if MAX_STREAK_LENGTH consecutive keys have been
         // skipped
@@ -72,6 +73,7 @@ function handleStreak(filteringResult, skippingRange) {
             } else {
                 // eslint-disable-next-line no-param-reassign
                 params.gte = inc(skippingRange);
+                console.log('max streak reached: ', Object.entries(delimiter), {skippingRange, params, idx});
             }
             if (gteparams && gteparams === params.gte) {
                 streakLength = 1;
@@ -98,7 +100,7 @@ function handleStreak(filteringResult, skippingRange) {
     return undefined;
 }
 
-['v0'].forEach(vFormat => {
+['v0', 'v1'].forEach(vFormat => {
     describe(`Delimiter All masters listing algorithm vFormat=${vFormat}`, () => {
         it('should return SKIP_NONE for DelimiterMaster when both NextMarker ' +
         'and NextContinuationToken are undefined', () => {
@@ -111,7 +113,7 @@ function handleStreak(filteringResult, skippingRange) {
             assert.strictEqual(delimiter.skipping(), SKIP_NONE);
         });
 
-        it.only('testing the test', () => {
+        it.skip('testing the test', () => {
             const delimiter = new DelimiterMaster({
                 prefix: '_EFICAAS-ConnectExpress-ProxyIN/',
                 delimiter: '/',
@@ -125,6 +127,9 @@ function handleStreak(filteringResult, skippingRange) {
             const markers = deleteMarkerContents.split(/\r?\n/);
 
             fileContents.split(/\r?\n/).forEach((line, idx) => {
+                if (idx > 99) {
+                    return;
+                }
                 line = line.replace('\\u', VID_SEP);
                 const key = line.substring(1, line.length - 1);
 
@@ -135,7 +140,7 @@ function handleStreak(filteringResult, skippingRange) {
                 }
 
                 const isDeleteMarker = markers[idx] === 'true';
-                if (line.indexOf(VID_SEP) === -1) {
+                if (line.indexOf(VID_SEP) === -1) { // master key
                     const version = new Version({ isDeleteMarker });
                     const obj = {
                         key: getListingKey(key, vFormat),
@@ -143,9 +148,25 @@ function handleStreak(filteringResult, skippingRange) {
                     };
                     const res = delimiter.filter(obj);
                     const skippingRange = delimiter.skipping();
-                    handleStreak(res, skippingRange);
+                    // handleStreak(res, skippingRange, delimiter, idx);
+
+                    // if (skippingRange.slice(0, -1) !== delimiter.NextContinuationToken) {
+                    //     console.log({
+                    //         skippingRange: skippingRange.slice(0, -1),
+                    //         skippingRangeRaw: skippingRange,
+                    //         NextContinuationToken: delimiter.NextContinuationToken,
+                    //     });
+                    // }
+                    // if (!isDeleteMarker && res === FILTER_ACCEPT) {
+                    //     console.log({key,
+                    //         skippingRange,
+                    //         NextContinuationToken: delimiter.NextContinuationToken,
+                    //         prvKey: delimiter.prvKey });
+                    // }
+
+
                     assert.equal(res, isDeleteMarker ? FILTER_SKIP : FILTER_ACCEPT);
-                } else {
+                } else { // versioned
                     const vid = line.split(VID_SEP).slice(-1)[0];
                     const version = new Version({ versionId: vid, isDeleteMarker });
                     const obj2 = {
@@ -154,7 +175,7 @@ function handleStreak(filteringResult, skippingRange) {
                     };
                     const res = delimiter.filter(obj2);
                     const skippingRange = delimiter.skipping();
-                    handleStreak(res, skippingRange);
+                    // handleStreak(res, skippingRange, delimiter, idx);
                     assert.equal(res, FILTER_SKIP);
                 }
             });
