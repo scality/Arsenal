@@ -47,6 +47,57 @@ function getListingKey(key, vFormat) {
     return assert.fail(`bad vFormat ${vFormat}`);
 }
 
+const MAX_STREAK_LENGTH = 100;
+const params = {};
+let streakLength = 0;
+let gteparams = null;
+
+function handleStreak(filteringResult, skippingRange) {
+    if (filteringResult < 0) {
+        // rs.emit('end');
+        // rs.destroy();
+    } else if (filteringResult === 0 && skippingRange) {
+        // check if MAX_STREAK_LENGTH consecutive keys have been
+        // skipped
+        if (++streakLength === MAX_STREAK_LENGTH) {
+            if (Array.isArray(skippingRange)) {
+                // With synchronized listing, the listing
+                // algo backend skipping() function must
+                // return as many skip keys as listing
+                // param sets.
+                for (let i = 0; i < skippingRange.length; ++i) {
+                    // eslint-disable-next-line no-param-reassign
+                    params[i].gte = inc(skippingRange[i]);
+                }
+            } else {
+                // eslint-disable-next-line no-param-reassign
+                params.gte = inc(skippingRange);
+            }
+            if (gteparams && gteparams === params.gte) {
+                streakLength = 1;
+            } else {
+                // stop listing this key range
+                // rs.destroy();
+                // // prevent from calling the client callback,
+                // // in case the 'end' event is emitted
+                // onDone = () => {};
+                // update the new listing parameters here
+                // eslint-disable-next-line no-param-reassign
+                // delete params.start; // 'start' is deprecated
+                // eslint-disable-next-line no-param-reassign
+                // delete params.gt;
+                // then continue listing the next key range
+                // this._listObject(request, client, logger, params,
+                //                  extension, params.gte);
+                gteparams = params.gte;
+            }
+        }
+    } else {
+        streakLength = 1;
+    }
+    return undefined;
+}
+
 ['v0'].forEach(vFormat => {
     describe(`Delimiter All masters listing algorithm vFormat=${vFormat}`, () => {
         it('should return SKIP_NONE for DelimiterMaster when both NextMarker ' +
@@ -60,7 +111,7 @@ function getListingKey(key, vFormat) {
             assert.strictEqual(delimiter.skipping(), SKIP_NONE);
         });
 
-        it.skip('testing the test', () => {
+        it.only('testing the test', () => {
             const delimiter = new DelimiterMaster({
                 prefix: '_EFICAAS-ConnectExpress-ProxyIN/',
                 delimiter: '/',
@@ -72,30 +123,39 @@ function getListingKey(key, vFormat) {
             const fileContents = fs.readFileSync(require.resolve('./keys.txt'), { encoding: 'utf8', flag: 'r' });
             const deleteMarkerContents = fs.readFileSync(require.resolve('./is_delete_markers.txt'), { encoding: 'utf8', flag: 'r' }); // eslint-disable-line
             const markers = deleteMarkerContents.split(/\r?\n/);
+
             fileContents.split(/\r?\n/).forEach((line, idx) => {
                 line = line.replace('\\u', VID_SEP);
+                const key = line.substring(1, line.length - 1);
+
+                // simulate not doing a raw listing when key < params.gte
+                // this represents a key not reaching the read stream from leveldb
+                if (params.gte && key < params.gte) {
+                    return;
+                }
+
                 const isDeleteMarker = markers[idx] === 'true';
                 if (line.indexOf(VID_SEP) === -1) {
                     const version = new Version({ isDeleteMarker });
-                    const key = line.substring(1, line.length - 1);
                     const obj = {
                         key: getListingKey(key, vFormat),
                         value: version.toString(),
                     };
                     const res = delimiter.filter(obj);
-                    if (isDeleteMarker) {
-                        console.log({isDeleteMarker, key});
-                    }
+                    const skippingRange = delimiter.skipping();
+                    handleStreak(res, skippingRange);
                     assert.equal(res, isDeleteMarker ? FILTER_SKIP : FILTER_ACCEPT);
                 } else {
-                    const keyVersion = line.substring(1, line.length - 1);
                     const vid = line.split(VID_SEP).slice(-1)[0];
                     const version = new Version({ versionId: vid, isDeleteMarker });
                     const obj2 = {
-                        key: getListingKey(keyVersion, vFormat),
+                        key: getListingKey(key, vFormat),
                         value: version.toString(),
                     };
-                    assert.equal(delimiter.filter(obj2), FILTER_SKIP);
+                    const res = delimiter.filter(obj2);
+                    const skippingRange = delimiter.skipping();
+                    handleStreak(res, skippingRange);
+                    assert.equal(res, FILTER_SKIP);
                 }
             });
             console.log(delimiter.result());
