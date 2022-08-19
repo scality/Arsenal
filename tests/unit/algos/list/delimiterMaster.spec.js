@@ -1,6 +1,7 @@
 'use strict'; // eslint-disable-line strict
 
 const assert = require('assert');
+const fs = require('fs');
 
 const DelimiterMaster =
     require('../../../../lib/algos/list/delimiterMaster').DelimiterMaster;
@@ -46,7 +47,7 @@ function getListingKey(key, vFormat) {
     return assert.fail(`bad vFormat ${vFormat}`);
 }
 
-['v0', 'v1'].forEach(vFormat => {
+['v0'].forEach(vFormat => {
     describe(`Delimiter All masters listing algorithm vFormat=${vFormat}`, () => {
         it('should return SKIP_NONE for DelimiterMaster when both NextMarker ' +
         'and NextContinuationToken are undefined', () => {
@@ -59,14 +60,55 @@ function getListingKey(key, vFormat) {
             assert.strictEqual(delimiter.skipping(), SKIP_NONE);
         });
 
-        describe('should not hide keys when a common prefix master is filtered first', () => {
+        it.skip('testing the test', () => {
+            const delimiter = new DelimiterMaster({
+                prefix: '_EFICAAS-ConnectExpress-ProxyIN/',
+                delimiter: '/',
+                startAfter: '',
+                continuationToken: '',
+                v2: true,
+                fetchOwner: false }, fakeLogger, vFormat);
+
+            const fileContents = fs.readFileSync(require.resolve('./keys.txt'), { encoding: 'utf8', flag: 'r' });
+            const deleteMarkerContents = fs.readFileSync(require.resolve('./is_delete_markers.txt'), { encoding: 'utf8', flag: 'r' }); // eslint-disable-line
+            const markers = deleteMarkerContents.split(/\r?\n/);
+            fileContents.split(/\r?\n/).forEach((line, idx) => {
+                line = line.replace('\\u', VID_SEP);
+                const isDeleteMarker = markers[idx] === 'true';
+                if (line.indexOf(VID_SEP) === -1) {
+                    const version = new Version({ isDeleteMarker });
+                    const key = line.substring(1, line.length - 1);
+                    const obj = {
+                        key: getListingKey(key, vFormat),
+                        value: version.toString(),
+                    };
+                    const res = delimiter.filter(obj);
+                    if (isDeleteMarker) {
+                        console.log({isDeleteMarker, key});
+                    }
+                    assert.equal(res, isDeleteMarker ? FILTER_SKIP : FILTER_ACCEPT);
+                } else {
+                    const keyVersion = line.substring(1, line.length - 1);
+                    const vid = line.split(VID_SEP).slice(-1)[0];
+                    const version = new Version({ versionId: vid, isDeleteMarker });
+                    const obj2 = {
+                        key: getListingKey(keyVersion, vFormat),
+                        value: version.toString(),
+                    };
+                    assert.equal(delimiter.filter(obj2), FILTER_SKIP);
+                }
+            });
+            console.log(delimiter.result());
+        });
+
+        describe.skip('should not hide keys when a common prefix master is filtered first', () => {
             // See S3C-4682 for details.
             // Delimiter will call .filter multiple times with different keys.
             // It should list them all masters keys except those with delete markers.
             [
                 '_Common-Prefix/',
-                '_Common-Prefix/nested',
-                '_Common-Prefix/nested/doubly-nested',
+                '_Common-Prefix/nested/',
+                '_Common-Prefix/nested/doubly-nested/',
                 '_Common-Prefix/nested/',
             ].forEach(prefix => {
                 it(`with prefix ${prefix}`, () => {
@@ -87,6 +129,32 @@ function getListingKey(key, vFormat) {
                     };
                     // Do not skip master with lexicographically smallest key.
                     assert.strictEqual(delimiter.filter(obj), FILTER_ACCEPT);
+
+                    // Skip these with delete markers.
+                    // In S3C-4682 there are 514 ids with delete markers and a common prefix.
+                    for (let idx = 0; idx < 514; idx++) {
+                        const paddedIdx = `0000${idx}`.slice(-4);
+                        const keyUnversioned = `${commonPrefix}${paddedIdx}`;
+                        const noVersion = new Version({ isDeleteMarker: true });
+
+                        const obj1 = {
+                            key: getListingKey(keyUnversioned, vFormat),
+                            value: noVersion.toString(),
+                        };
+
+                        assert.strictEqual(delimiter.filter(obj1), FILTER_SKIP);
+
+                        // Keys have delete markers and are versioned
+
+                        const keyVersion = `${commonPrefix}${paddedIdx}${VID_SEP}${paddedIdx}`;
+                        const version = new Version({ versionId: idx, isDeleteMarker: true });
+                        const obj = {
+                            key: getListingKey(keyVersion, vFormat),
+                            value: version.toString(),
+                        };
+
+                        assert.strictEqual(delimiter.filter(obj), FILTER_SKIP);
+                    }
 
                     // Do not skip these as there's no delete markers.
                     const versionedSuffixes = [
@@ -114,28 +182,27 @@ function getListingKey(key, vFormat) {
                             vid: '98341720869827999999RG001  1.20794.271788' },
                     ];
 
-                    const accepted = [];
-                    const skipped = [];
-
                     for (const ob of versionedSuffixes) {
                         const { name, vid } = ob;
-                        // Does not contain delete markers but contains versions to simulate turning on versioning.
+                        // master key
+                        const keyUnversioned = `${commonPrefix}${name}`;
+                        const noVersion = new Version({ });
+                        const obj1 = {
+                            key: getListingKey(keyUnversioned, vFormat),
+                            value: noVersion.toString(),
+                        };
+                        assert.equal(delimiter.filter(obj1), FILTER_ACCEPT);
+
+                        // versioned key
                         const keyVersion = `${commonPrefix}${name}${VID_SEP}${vid}`;
                         const version = new Version({ versionId: vid });
-                        const obj = {
+                        const obj2 = {
                             key: getListingKey(keyVersion, vFormat),
                             value: version.toString(),
                         };
-                        const received = delimiter.filter(obj);
 
-                        if (received === FILTER_ACCEPT) {
-                            accepted.push(ob);
-                        } else {
-                            skipped.push(ob);
-                        }
+                        assert.equal(delimiter.filter(obj2), FILTER_SKIP);
                     }
-                    assert.equal(accepted.length, 11);
-                    assert.equal(skipped.length, 0);
                 });
             });
         });
