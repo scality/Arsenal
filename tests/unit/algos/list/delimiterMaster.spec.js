@@ -1,4 +1,5 @@
 'use strict'; // eslint-disable-line strict
+/* eslint-disable */ 
 
 const assert = require('assert');
 const fs = require('fs');
@@ -56,7 +57,6 @@ function handleStreak(filteringResult, skippingRange, delimiter, idx) {
     if (filteringResult < 0) {
         // rs.emit('end');
         // rs.destroy();
-        console.log('reached end', Object.entries(delimiter));
     } else if (filteringResult === 0 && skippingRange) {
         // check if MAX_STREAK_LENGTH consecutive keys have been
         // skipped
