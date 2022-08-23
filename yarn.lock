@@ -2062,10 +2062,10 @@ progress@^1.1.8:
   resolved "https://registry.yarnpkg.com/progress/-/progress-1.1.8.tgz#e260c78f6161cdd9b0e56cc3e0a85de17c7a57be"
   integrity sha1-4mDHj2Fhzdmw5WzD4Khd4Xx6V74=
 
-prom-client@10.2.3:
-  version "10.2.3"
-  resolved "https://registry.yarnpkg.com/prom-client/-/prom-client-10.2.3.tgz#a51bf21c239c954a6c5be4b1361fdd380218bb41"
-  integrity sha512-Xboq5+TdUwuQtSSDRZRNnb5NprINlgQN999VqUjZxnLKydUNLeIPx6Eiahg6oJua3XBg2TGnh5Cth1s4I6+r7g==
+prom-client@14.1.0:
+  version "14.1.0"
+  resolved "https://registry.yarnpkg.com/prom-client/-/prom-client-14.1.0.tgz#049609859483d900844924df740722c76ed1fdbb"
+  integrity sha512-iFWCchQmi4170omLpFXbzz62SQTmPhtBL35v0qGEVRHKcqIeiexaoYeP0vfZTujxEq3tA87iqOdRbC9svS1B9A==
   dependencies:
     tdigest "^0.1.1"
 
