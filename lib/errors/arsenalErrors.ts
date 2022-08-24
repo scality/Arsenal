@@ -42,7 +42,7 @@ export const BucketAlreadyOwnedByYou: ErrorFormat = {
     code: 409,
 
     description:
-        'Your previous request to create the named bucket succeeded and you already own it. You get this error in all AWS regions except US Standard, us-east-1. In us-east-1 region, you will get 200 OK, but it is no-op (if bucket exists S3 will not do anything).',
+        'A bucket with this name exists and is already owned by you',
 };
 
 export const BucketNotEmpty: ErrorFormat = {
