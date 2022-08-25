@@ -52,6 +52,7 @@ function _buildArn(
 ) {
     // arn:partition:service:region:account-id:resourcetype/resource
     switch (service) {
+        case 'scality':
         case 's3': {
             // arn:aws:s3:::bucket/object
             // General resource is bucketName

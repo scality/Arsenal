@@ -44,8 +44,8 @@ export function validateCredentials(
         return errors.RequestTimeTooSkewed;
     }
     if (service !== 's3' && service !== 'iam' && service !== 'ring' &&
-        service !== 'sts') {
-        log.warn('service in credentials is not one of s3/iam/ring/sts', {
+        service !== 'sts' && service !== 'scality') {
+        log.warn('service in credentials is not one of s3/iam/ring/sts/scality', {
             service,
         });
         return errors.InvalidArgument;
