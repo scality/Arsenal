@@ -52,7 +52,16 @@ function _buildArn(
 ) {
     // arn:partition:service:region:account-id:resourcetype/resource
     switch (service) {
-        case 'scality':
+        case 'scality': {
+            // arn:aws:s3:::bucket/object
+            // General resource is bucketName
+            if (generalResource && specificResource) {
+                return `arn:aws:iam:::${generalResource}/${specificResource}`;
+            } else if (generalResource) {
+                return `arn:aws:iam:::${generalResource}`;
+            }
+            return 'arn:aws:iam:::';
+        }
         case 's3': {
             // arn:aws:s3:::bucket/object
             // General resource is bucketName
