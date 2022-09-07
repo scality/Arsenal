@@ -190,6 +190,7 @@ const actionMapIAM = {
     removeUserFromGroup: 'iam:RemoveUserFromGroup',
     updateAccessKey: 'iam:UpdateAccessKey',
     updateGroup: 'iam:UpdateGroup',
+    updateRole: 'iam:UpdateRole',
     updateUser: 'iam:UpdateUser',
     getAccessKeyLastUsed: 'iam:GetAccessKeyLastUsed',
     generateCredentialReport: 'iam:GenerateCredentialReport',
