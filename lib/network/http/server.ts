@@ -366,6 +366,7 @@ export default class Server {
      * @param sock - Socket
      */
     _onClientError(err: Error, sock: net.Socket | tls.TLSSocket) {
+        console.log(err)
         this._logger.error('client error', {
             method: 'arsenal.network.Server._onClientError',
             error: err.stack || err,
