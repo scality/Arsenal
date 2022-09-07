@@ -4,7 +4,7 @@
     "node": ">=16"
   },
   "version": "7.10.34",
-  "description": "Common utilities for the S3 project components",
+  "description": "Common utilities for the S3 project components.",
   "main": "build/index.js",
   "repository": {
     "type": "git",
