@@ -82,6 +82,11 @@ export type ObjectMDData = {
     // In case of a deletion the flag is first updated before
     // deleting the object
     deleted: boolean;
+    // PHD flag indicates whether the object is a temporary placeholder.
+    // This is the case when the latest version of an object gets deleted
+    // the master is set as a placeholder and gets updated with the new latest
+    // version data after a certain amount of time.
+    isPHD: boolean;
 };
 
 /**
@@ -223,6 +228,7 @@ export default class ObjectMD {
             dataStoreName: '',
             originOp: '',
             deleted: false,
+            isPHD: false,
         };
     }
 
@@ -1392,6 +1398,7 @@ export default class ObjectMD {
         this._data.deleted = value;
         return this;
     }
+
     /**
     * Get deleted flag
     * @return {Boolean}
@@ -1400,4 +1407,21 @@ export default class ObjectMD {
         return this._data.deleted;
     }
 
+    /**
+    * Set isPHD flag
+    * @param {Boolean} value isPHD value
+    * @return {ObjectMD}
+    */
+    setIsPHD(value) {
+        this._data.isPHD = value;
+        return this;
+    }
+
+    /**
+    * Get isPHD flag
+    * @return {Boolean}
+    */
+    getIsPHD() {
+        return this._data.isPHD;
+    }
 }
