@@ -33,7 +33,18 @@ const variations = [
 
 describe('MongoClientInterface::metadata.listObject', () => {
     let metadata;
+    let collection;
 
+    /**
+     * Puts multpile versions of an object
+     * @param {String} bucketName bucket name
+     * @param {String} objName object key
+     * @param {Object} objVal object metadata
+     * @param {Object} params versioning parameters
+     * @param {number} versionNb number of versions to put
+     * @param {Function} cb callback
+     * @returns {undefined}
+     */
     function putBulkObjectVersions(bucketName, objName, objVal, params, versionNb, cb) {
         let count = 0;
         async.whilst(
@@ -43,14 +54,20 @@ describe('MongoClientInterface::metadata.listObject', () => {
                 // eslint-disable-next-line
                 return metadata.putObjectMD(bucketName, objName, objVal, params,
                     logger, cbIterator);
-            },
-            err => {
-                if (err) {
-                    return cb(err);
-                }
-                return cb(null);
-            },
-        );
+            }, cb);
+    }
+
+    /**
+     * Sets the "deleted" property to true
+     * @param {string} key object name
+     * @param {Function} cb callback
+     * @return {undefined}
+     */
+    function flagObjectForDeletion(key, cb) {
+        collection.updateMany(
+            { 'value.key': key },
+            { $set: { 'value.deleted': true } },
+            { upsert: false }, cb);
     }
 
     beforeAll(done => {
@@ -121,6 +138,7 @@ describe('MongoClientInterface::metadata.listObject', () => {
                     if (err) {
                         return next(err);
                     }
+                    collection = metadata.client.getCollection(BUCKET_NAME);
                     return next();
                 }),
                 next => {
@@ -293,7 +311,7 @@ describe('MongoClientInterface::metadata.listObject', () => {
             });
         });
 
-        it(`should check entire list with pagination (version) ${variation.it}`, done => {
+        it(`Should check entire list with pagination (version) ${variation.it}`, done => {
             const versionsPerKey = {};
             const bucketName = BUCKET_NAME;
             const get = (maxKeys, keyMarker, versionIdMarker, cb) => metadata.listObject(bucketName, {
@@ -323,7 +341,7 @@ describe('MongoClientInterface::metadata.listObject', () => {
             });
         });
 
-        it(`should not list phd master key when listing masters ${variation.it}`, done => {
+        it(`Should not list phd master key when listing masters ${variation.it}`, done => {
             const objVal = {
                 key: 'pfx1-test-object',
                 versionId: 'null',
@@ -366,7 +384,7 @@ describe('MongoClientInterface::metadata.listObject', () => {
             ], done);
         });
 
-        it(`should not list phd master key when listing versions ${variation.it}`, done => {
+        it(`Should not list phd master key when listing versions ${variation.it}`, done => {
             const objVal = {
                 key: 'pfx1-test-object',
                 versionId: 'null',
@@ -404,6 +422,54 @@ describe('MongoClientInterface::metadata.listObject', () => {
                     const newVersionIds = data.Versions.map(version => version.VersionId);
                     assert.strictEqual(data.Versions.length, 5);
                     assert(versionIds.every(version => newVersionIds.includes(version)));
+                    return next();
+                }),
+            ], done);
+        });
+
+        it('Should not list objects tagged for deletion (master keys)', done => {
+            const objVal = {
+                key: 'pfx4-test-object',
+            };
+            const versionParams = {
+                versioning: true,
+            };
+            const params = {
+                listingType: 'DelimiterMaster',
+            };
+            async.series([
+                next => metadata.putObjectMD(BUCKET_NAME, objVal.key, objVal, versionParams,
+                    logger, next),
+                next => flagObjectForDeletion(objVal.key, next),
+                next => metadata.listObject(BUCKET_NAME, params, logger, (err, data) => {
+                    assert.ifError(err);
+                    assert.strictEqual(data.Contents.length, 3);
+                    const listedObjectNames = data.Contents.map(x => x.key);
+                    assert(!listedObjectNames.includes(objVal.key));
+                    return next();
+                }),
+            ], done);
+        });
+
+        it('Should not list objects tagged for deletion (version keys)', done => {
+            const objVal = {
+                key: 'pfx4-test-object',
+            };
+            const versionParams = {
+                versioning: true,
+            };
+            const params = {
+                listingType: 'DelimiterVersions',
+            };
+            async.series([
+                next => metadata.putObjectMD(BUCKET_NAME, objVal.key, objVal, versionParams,
+                    logger, next),
+                next => flagObjectForDeletion(objVal.key, next),
+                next => metadata.listObject(BUCKET_NAME, params, logger, (err, data) => {
+                    assert.ifError(err);
+                    assert.strictEqual(data.Versions.length, 15);
+                    const listedObjectNames = data.Versions.map(x => x.key);
+                    assert(!listedObjectNames.includes(objVal.key));
                     return next();
                 }),
             ], done);
