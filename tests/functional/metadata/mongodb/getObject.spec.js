@@ -83,6 +83,19 @@ describe('MongoClientInterface::metadata.getObjectMD', () => {
             });
     }
 
+    /**
+     * Sets the "deleted" property to true
+     * @param {string} key object name
+     * @param {Function} cb callback
+     * @return {undefined}
+     */
+    function flagObjectForDeletion(key, cb) {
+        collection.updateMany(
+            { 'value.key': key },
+            { $set: { 'value.deleted': true } },
+            { upsert: false }, cb);
+    }
+
     beforeAll(done => {
         mongoserver.waitUntilRunning().then(() => {
             const opts = {
@@ -250,6 +263,17 @@ describe('MongoClientInterface::metadata.getObjectMD', () => {
                         assert.strictEqual(object.key, params.objName);
                         assert.strictEqual(object.versionId, versionId2);
                         delete params.isPHD;
+                        return next();
+                    }),
+                ], done);
+            });
+
+            it('Should fail to get an object tagged for deletion', done => {
+                async.series([
+                    next => flagObjectForDeletion(params.objName, next),
+                    next => metadata.getObjectMD(BUCKET_NAME, params.objName, null, logger, (err, object) => {
+                        assert.deepStrictEqual(object, undefined);
+                        assert.deepStrictEqual(err, errors.NoSuchKey);
                         return next();
                     }),
                 ], done);
