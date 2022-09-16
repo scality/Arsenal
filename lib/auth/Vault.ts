@@ -298,7 +298,7 @@ export default class Vault {
         callback: (err: Error | null, data?: { [key: string]: string }) => void
     ) {
         log.trace('getting accountIds from Vault based on canonicalIDs',
-        { canonicalIDs });
+            { canonicalIDs });
         this.client.getAccountIds(canonicalIDs,
             // @ts-expect-error
             { reqUid: log.getSerializedUids() },
@@ -313,14 +313,14 @@ export default class Vault {
                 const result = {};
                 /* If the accountId was not found in Vault, do not
             send the canonicalID back to the API */
-            Object.keys(infoFromVault).forEach(key => {
-                if (infoFromVault[key] !== 'NotFound' &&
+                Object.keys(infoFromVault).forEach(key => {
+                    if (infoFromVault[key] !== 'NotFound' &&
                 infoFromVault[key] !== 'WrongFormat') {
-                    result[key] = infoFromVault[key];
-                }
+                        result[key] = infoFromVault[key];
+                    }
+                });
+                return callback(null, result);
             });
-            return callback(null, result);
-        });
     }
 
     /** checkPolicies -- call Vault to evaluate policies

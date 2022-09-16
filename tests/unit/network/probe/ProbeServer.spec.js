@@ -52,7 +52,7 @@ describe('network.probe.ProbeServer', () => {
         });
     });
 
-    it('does nothing if probe successful', done => {
+    it('allows probe to handle requests', done => {
         server.addHandler('/check', res => {
             res.writeHead(200);
             res.end();
@@ -85,22 +85,6 @@ describe('network.probe.ProbeServer', () => {
             if (calls === 2) {
                 done();
             }
-        });
-    });
-
-    it('500 response on bad probe', done => {
-        server.addHandler('/check', () => 'check failed');
-        makeRequest('GET', '/check', (err, res) => {
-            assert.ifError(err);
-            assert.strictEqual(res.statusCode, 500);
-            res.setEncoding('utf8');
-            res.on('data', body => {
-                assert.strictEqual(
-                    body,
-                    '{"errorType":"InternalError","errorMessage":"check failed"}',
-                );
-                done();
-            });
         });
     });
 });

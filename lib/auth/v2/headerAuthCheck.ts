@@ -21,9 +21,9 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
     timestamp = Date.parse(timestamp);
     if (!timestamp) {
         log.debug('missing or invalid date header',
-        { method: 'auth/v2/headerAuthCheck.check' });
+            { method: 'auth/v2/headerAuthCheck.check' });
         return { err: errors.AccessDenied.
-          customizeDescription('Authentication requires a valid Date or ' +
+            customizeDescription('Authentication requires a valid Date or ' +
           'x-amz-date header') };
     }
 

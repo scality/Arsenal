@@ -371,6 +371,8 @@ export default class Server {
             error: err.stack || err,
             address: sock.address(),
         });
+        // socket is not systematically destroyed
+        sock.destroy();
     }
 
     /**

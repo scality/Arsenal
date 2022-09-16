@@ -1,9 +1,12 @@
+import * as crypto from 'crypto';
 import * as constants from '../constants';
 import * as VersionIDUtils from '../versioning/VersionID';
 import ObjectMDLocation, {
     ObjectMDLocationData,
     Location,
 } from './ObjectMDLocation';
+import ObjectMDAmzRestore from './ObjectMDAmzRestore';
+import ObjectMDArchive from './ObjectMDArchive';
 
 export type ACL = {
     Canned: string;
@@ -28,6 +31,7 @@ export type ReplicationInfo = {
     role: string;
     storageType: string;
     dataStoreVersionId: string;
+    isNFS: boolean | null;
 };
 
 export type ObjectMDData = {
@@ -35,24 +39,25 @@ export type ObjectMDData = {
     'owner-id': string;
     'cache-control': string;
     'content-disposition': string;
+    'content-language': string;
     'content-encoding': string;
+    'creation-time'?: string;
     'last-modified'?: string;
     expires: string;
     'content-length': number;
     'content-type': string;
     'content-md5': string;
-    // simple/no version. will expand once object versioning is
-    // introduced
     'x-amz-version-id': 'null' | string;
     'x-amz-server-version-id': string;
-    // TODO: Handle this as a utility function for all object puts
-    // similar to normalizing request but after checkAuth so
-    // string to sign is not impacted.  This is GH Issue#89.
+    'x-amz-restore'?: ObjectMDAmzRestore;
+    archive?: ObjectMDArchive;
     'x-amz-storage-class': string;
     'x-amz-server-side-encryption': string;
     'x-amz-server-side-encryption-aws-kms-key-id': string;
     'x-amz-server-side-encryption-customer-algorithm': string;
     'x-amz-website-redirect-location': string;
+    'x-amz-scal-transition-in-progress'?: boolean;
+    azureInfo?: any;
     acl: ACL;
     key: string;
     location: null | Location[];
@@ -71,6 +76,7 @@ export type ObjectMDData = {
     replicationInfo: ReplicationInfo;
     dataStoreName: string;
     originOp: string;
+    microVersionId?: string;
 };
 
 /**
@@ -99,9 +105,17 @@ export default class ObjectMD {
             } else {
                 this._updateFromParsedJSON(objMd);
             }
+            if (!this._data['creation-time']) {
+                const lastModified = this.getLastModified();
+                if (lastModified) {
+                    this.setCreationTime(lastModified);
+                }
+            }
         } else {
             // set newly-created object md modified time to current time
-            this._data['last-modified'] = new Date().toJSON();
+            const dt = new Date().toJSON();
+            this.setLastModified(dt);
+            this.setCreationTime(dt);
         }
         // set latest md model version now that we ensured
         // backward-compat conversion
@@ -156,6 +170,8 @@ export default class ObjectMD {
             'content-length': 0,
             'content-type': '',
             'content-md5': '',
+            'content-language': '',
+            'creation-time': undefined,
             // simple/no version. will expand once object versioning is
             // introduced
             'x-amz-version-id': 'null',
@@ -168,6 +184,7 @@ export default class ObjectMD {
             'x-amz-server-side-encryption-aws-kms-key-id': '',
             'x-amz-server-side-encryption-customer-algorithm': '',
             'x-amz-website-redirect-location': '',
+            'x-amz-scal-transition-in-progress': false,
             acl: {
                 Canned: 'private',
                 FULL_CONTROL: [],
@@ -177,6 +194,7 @@ export default class ObjectMD {
             },
             key: '',
             location: null,
+            azureInfo: undefined,
             // versionId, isNull, nullVersionId and isDeleteMarker
             // should be undefined when not set explicitly
             isNull: undefined,
@@ -195,6 +213,7 @@ export default class ObjectMD {
                 role: '',
                 storageType: '',
                 dataStoreVersionId: '',
+                isNFS: null,
             },
             dataStoreName: '',
             originOp: '',
@@ -428,6 +447,50 @@ export default class ObjectMD {
     }
 
     /**
+     * Set content-language
+     *
+     * @param contentLanguage - content-language
+     * @return itself
+     */
+    setContentLanguage(contentLanguage: string) {
+        this._data['content-language'] = contentLanguage;
+        return this;
+    }
+
+    /**
+     * Returns content-language
+     *
+     * @return content-language
+     */
+    getContentLanguage() {
+        return this._data['content-language'];
+    }
+
+    /**
+     * Set Creation Date
+     *
+     * @param creationTime - Creation Date
+     * @return itself
+     */
+    setCreationTime(creationTime: string) {
+        this._data['creation-time'] = creationTime;
+        return this;
+    }
+
+    /**
+     * Returns Creation Date
+     *
+     * @return Creation Date
+     */
+    getCreationTime() {
+        // If creation-time is not set fallback to LastModified
+        if (!this._data['creation-time']) {
+            return this.getLastModified();
+        }
+        return this._data['creation-time'];
+    }
+
+    /**
      * Set version id
      *
      * @param versionId - Version id
@@ -568,6 +631,26 @@ export default class ObjectMD {
     }
 
     /**
+     * Set metadata transition in progress value
+     *
+     * @param inProgress - True if transition is in progress, false otherwise
+     * @return itself
+     */
+    setTransitionInProgress(inProgress: boolean) {
+        this._data['x-amz-scal-transition-in-progress'] = inProgress;
+        return this;
+    }
+
+    /**
+     * Get metadata transition in progress value
+     *
+     * @return True if transition is in progress, false otherwise
+     */
+    getTransitionInProgress() {
+        return this._data['x-amz-scal-transition-in-progress'];
+    }
+
+    /**
      * Set access control list
      *
      * @param acl - Access control list
@@ -673,6 +756,29 @@ export default class ObjectMD {
     }
 
     /**
+     * Set the Azure specific information
+     * @param azureInfo - a plain JS structure representing the
+     *   Azure specific information for a Blob or a Container (see constructor
+     *   of {@link ObjectMDAzureInfo} for a description of the fields of this
+     *   structure
+     * @return itself
+     */
+    setAzureInfo(azureInfo: any) {
+        this._data.azureInfo = azureInfo;
+        return this;
+    }
+
+    /**
+     * Get the Azure specific information
+     * @return a plain JS structure representing the Azure specific
+     *   information for a Blob or a Container an suitable for the constructor
+     *   of {@link ObjectMDAzureInfo}.
+     */
+    getAzureInfo() {
+        return this._data.azureInfo;
+    }
+
+    /**
      * Set metadata isNull value
      *
      * @param isNull - Whether new version is null or not
@@ -754,6 +860,19 @@ export default class ObjectMD {
     }
 
     /**
+     * Get if the object is a multipart upload (MPU)
+     *
+     * The function checks the "content-md5" field: if it contains a
+     * dash ('-') it is a MPU, as the content-md5 string ends with
+     * "-[nbparts]" for MPUs.
+     *
+     * @return Whether object is a multipart upload
+     */
+    isMultipartUpload() {
+        return this.getContentMd5().includes('-');
+    }
+
+    /**
      * Set metadata versionId value
      *
      * @param versionId - The object versionId
@@ -826,6 +945,20 @@ export default class ObjectMD {
         return this._data.tags;
     }
 
+    getUserMetadata() {
+        const metaHeaders = {};
+        const data = this.getValue();
+        Object.keys(data).forEach(key => {
+            if (key.startsWith('x-amz-meta-')) {
+                metaHeaders[key] = data[key];
+            }
+        });
+        if (Object.keys(metaHeaders).length > 0) {
+            return JSON.stringify(metaHeaders);
+        }
+        return undefined;
+    }
+
     /**
      * Set replication information
      *
@@ -841,6 +974,7 @@ export default class ObjectMD {
         role: string;
         storageType?: string;
         dataStoreVersionId?: string;
+        isNFS?: boolean;
     }) {
         const {
             status,
@@ -851,6 +985,7 @@ export default class ObjectMD {
             role,
             storageType,
             dataStoreVersionId,
+            isNFS,
         } = replicationInfo;
         this._data.replicationInfo = {
             status,
@@ -861,6 +996,7 @@ export default class ObjectMD {
             role,
             storageType: storageType || '',
             dataStoreVersionId: dataStoreVersionId || '',
+            isNFS: isNFS || null,
         };
         return this;
     }
@@ -877,6 +1013,24 @@ export default class ObjectMD {
     setReplicationStatus(status: string) {
         this._data.replicationInfo.status = status;
         return this;
+    }
+
+    /**
+     * Set whether the replication is occurring from an NFS bucket.
+     * @param isNFS - Whether replication from an NFS bucket
+     * @return itself
+     */
+    setReplicationIsNFS(isNFS: boolean) {
+        this._data.replicationInfo.isNFS = isNFS;
+        return this;
+    }
+
+    /**
+     * Get whether the replication is occurring from an NFS bucket.
+     * @return Whether replication from an NFS bucket
+     */
+    getReplicationIsNFS() {
+        return this._data.replicationInfo.isNFS;
     }
 
     setReplicationSiteStatus(site: string, status: string) {
@@ -926,6 +1080,11 @@ export default class ObjectMD {
 
     setReplicationBackends(backends: Backend[]) {
         this._data.replicationInfo.backends = backends;
+        return this;
+    }
+
+    setReplicationStorageType(storageType: string) {
+        this._data.replicationInfo.storageType = storageType;
         return this;
     }
 
@@ -1010,12 +1169,29 @@ export default class ObjectMD {
         Object.keys(metaHeaders).forEach((key) => {
             if (key.startsWith('x-amz-meta-')) {
                 this._data[key] = metaHeaders[key];
+            } else if (key.startsWith('x-ms-meta-')) {
+                const _key = key.replace('x-ms-meta-', 'x-amz-meta-');
+                this._data[_key] = metaHeaders[key];
             }
         });
         // If a multipart object and the acl is already parsed, we update it
         if (metaHeaders.acl) {
             this.setAcl(metaHeaders.acl);
         }
+        return this;
+    }
+
+    /**
+     * Clear all existing meta headers (used for Azure)
+     *
+     * @return itself
+     */
+    clearMetadataValues() {
+        Object.keys(this._data).forEach(key => {
+            if (key.startsWith('x-amz-meta')) {
+                delete this._data[key];
+            }
+        });
         return this;
     }
 
@@ -1028,6 +1204,38 @@ export default class ObjectMD {
     overrideMetadataValues(headers: any) {
         Object.assign(this._data, headers);
         return this;
+    }
+
+    /**
+     * Create or update the microVersionId field
+     *
+     * This field can be used to force an update in MongoDB. This can
+     * be needed in the following cases:
+     *
+     * - in case no other metadata field changes
+     *
+     * - to detect a change when fields change but object version does
+     *   not change e.g. when ingesting a putObjectTagging coming from
+     *   S3C to Zenko
+     *
+     * - to manage conflicts during concurrent updates, using
+     *   conditions on the microVersionId field.
+     *
+     * It's a field of 16 hexadecimal characters randomly generated
+     *
+     * @return itself
+     */
+    updateMicroVersionId() {
+        this._data.microVersionId = crypto.randomBytes(8).toString('hex');
+    }
+
+    /**
+     * Get the microVersionId field, or null if not set
+     *
+     * @return the microVersionId field if exists, or {null} if it does not exist
+     */
+    getMicroVersionId() {
+        return this._data.microVersionId || null;
     }
 
     /**
@@ -1109,5 +1317,63 @@ export default class ObjectMD {
      */
     getValue() {
         return this._data;
+    }
+
+    /**
+     * Get x-amz-restore
+     *
+     * @returns x-amz-restore
+     */
+    getAmzRestore() {
+        return this._data['x-amz-restore'];
+    }
+
+    /**
+     * Set x-amz-restore
+     *
+     * @param value x-amz-restore object
+     * @returns itself
+     * @throws case of invalid parameter
+     */
+    setAmzRestore(value?: ObjectMDAmzRestore) {
+        if (value) {
+            // Accept object instance of ObjectMDAmzRestore and Object
+            if (!(value instanceof ObjectMDAmzRestore) && !ObjectMDAmzRestore.isValid(value)) {
+                throw new Error('x-amz-restore must be type of ObjectMDAmzRestore.');
+            }
+            this._data['x-amz-restore'] = value;
+        } else {
+            delete this._data['x-amz-restore'];
+        }
+        return this;
+    }
+
+    /**
+     * Get archive
+     *
+     * @returns archive
+     */
+    getArchive() {
+        return this._data.archive;
+    }
+
+    /**
+     * Set archive
+     *
+     * @param value archive object
+     * @returns itself
+     * @throws case of invalid parameter
+     */
+    setArchive(value: ObjectMDArchive) {
+        if (value) {
+            // Accept object instance of ObjectMDArchive and Object
+            if (!(value instanceof ObjectMDArchive) && !ObjectMDArchive.isValid(value)) {
+                throw new Error('archive is must be type of ObjectMDArchive.');
+            }
+            this._data.archive = value;
+        } else {
+            delete this._data.archive;
+        }
+        return this;
     }
 }

@@ -56,6 +56,14 @@ export default function routePOST(
                     corsHeaders));
     }
 
+    // POST Object restore
+    if (query.restore !== undefined) {
+        return api.callApiMethod('objectRestore', request, response,
+            log, (err, statusCode, resHeaders) =>
+                routesUtils.responseNoBody(err, resHeaders, response,
+                    statusCode, log));
+    }
+
     return routesUtils.responseNoBody(errors.NotImplemented, null, response,
         200, log);
 }

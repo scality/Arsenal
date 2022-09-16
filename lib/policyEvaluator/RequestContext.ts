@@ -119,7 +119,9 @@ export type RequesterInfo = {
     principalType: string;
     principaltype: string;
     userid: string;
-    username: string,
+    username: string;
+    keycloakGroup: string;
+    keycloakRole: string;
 }
 
 /**

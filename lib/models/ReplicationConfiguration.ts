@@ -62,7 +62,8 @@ export default class ReplicationConfiguration {
     _destination: string | null;
     _rules: Rule[] | null;
     _prevStorageClass: null;
-    _hasScalityDestination: boolean;
+    _hasScalityDestination: boolean | null;
+    _preferredReadLocation: string | null;
 
     /**
      * Create a ReplicationConfiguration instance
@@ -84,7 +85,8 @@ export default class ReplicationConfiguration {
         this._destination = null;
         this._rules = null;
         this._prevStorageClass = null;
-        this._hasScalityDestination = false;
+        this._hasScalityDestination = null;
+        this._preferredReadLocation = null;
     }
 
     /**
@@ -112,6 +114,18 @@ export default class ReplicationConfiguration {
     }
 
     /**
+     * The preferred read location
+     * @return {string|null} - The preferred read location if defined,
+     * otherwise null
+     *
+     * FIXME ideally we should be able to specify one preferred read
+     * location for each rule
+     */
+    getPreferredReadLocation() {
+        return this._preferredReadLocation;
+    }
+
+    /**
      * Get the replication configuration
      * @return - The replication configuration
      */
@@ -120,6 +134,7 @@ export default class ReplicationConfiguration {
             role: this.getRole(),
             destination: this.getDestination(),
             rules: this.getRules(),
+            preferredReadLocation: this.getPreferredReadLocation(),
         };
     }
 
@@ -326,7 +341,15 @@ export default class ReplicationConfiguration {
             return undefined;
         }
         const storageClasses = destination.StorageClass[0].split(',');
-        const isValidStorageClass = storageClasses.every((storageClass) => {
+        const prefReadIndex = storageClasses.findIndex(storageClass =>
+            storageClass.endsWith(':preferred_read'));
+        if (prefReadIndex !== -1) {
+            const prefRead = storageClasses[prefReadIndex].split(':')[0];
+            // remove :preferred_read tag from storage class name
+            storageClasses[prefReadIndex] = prefRead;
+            this._preferredReadLocation = prefRead;
+        }
+        const isValidStorageClass = storageClasses.every(storageClass => {
             if (validStorageClasses.includes(storageClass)) {
                 this._hasScalityDestination =
                     defaultEndpoint.type === undefined;
@@ -336,6 +359,11 @@ export default class ReplicationConfiguration {
                 (endpoint: any) => endpoint.site === storageClass
             );
             if (endpoint) {
+                // We do not support replication to cold location. 
+                // Only transition to cold location is supported.
+                if (endpoint.site && this._config.locationConstraints[endpoint.site]?.isCold) {
+                    return false;
+                }
                 // If this._hasScalityDestination was not set to true in any
                 // previous iteration or by a prior rule's storage class, then
                 // check if the current endpoint is a Scality destination.

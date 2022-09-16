@@ -9,7 +9,7 @@ export default function routerWebsite(
     api: { callApiMethod: routesUtils.CallApiMethod },
     log: RequestLogger,
     statsClient?: StatsClient,
-    dataRetrievalFn?: any,
+    dataRetrievalParams?: any,
 ) {
     const { bucketName, query } = request as any
     log.debug('routing request', { method: 'routerWebsite' });
@@ -38,7 +38,7 @@ export default function routerWebsite(
                 // user has their own error page
                 if (err && dataGetInfo) {
                     return routesUtils.streamUserErrorPage(err, dataGetInfo,
-                        dataRetrievalFn, response, resMetaHeaders, log);
+                        dataRetrievalParams, response, resMetaHeaders, log);
                 }
                 // send default error html response
                 if (err) {
@@ -48,7 +48,7 @@ export default function routerWebsite(
                 }
                 // no error, stream data
                 return routesUtils.responseStreamData(null, query,
-                    resMetaHeaders, dataGetInfo, dataRetrievalFn, response,
+                    resMetaHeaders, dataGetInfo, dataRetrievalParams, response,
                     undefined, log);
             });
     }

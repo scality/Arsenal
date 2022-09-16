@@ -78,6 +78,34 @@ export function _checkUnmodifiedSince(
 }
 
 /**
+ * checks 'if-modified-since' and 'if-unmodified-since' headers if included in
+ * request against last-modified date of object
+ * @param headers - headers from request object
+ * @param lastModified - last modified date of object
+ * @return contains modifiedSince and unmodifiedSince res objects
+ */
+export function checkDateModifiedHeaders(
+    headers: http.IncomingHttpHeaders,
+    lastModified: string,
+) {
+    const lastModifiedDate = new Date(lastModified);
+    lastModifiedDate.setMilliseconds(0);
+    const millis = lastModifiedDate.getTime();
+
+    const ifModifiedSinceHeader = headers['if-modified-since'] ||
+        headers['x-amz-copy-source-if-modified-since'];
+    const ifUnmodifiedSinceHeader = headers['if-unmodified-since'] ||
+        headers['x-amz-copy-source-if-unmodified-since'];
+
+    const modifiedSinceRes = _checkModifiedSince(ifModifiedSinceHeader?.toString(),
+        millis);
+    const unmodifiedSinceRes = _checkUnmodifiedSince(ifUnmodifiedSinceHeader?.toString(),
+        millis);
+
+    return { modifiedSinceRes, unmodifiedSinceRes };
+}
+
+/**
  * validateConditionalHeaders - validates 'if-modified-since',
  * 'if-unmodified-since', 'if-match' or 'if-none-match' headers if included in
  * request against last-modified date of object and/or ETag.
@@ -92,21 +120,14 @@ export function validateConditionalHeaders(
     lastModified: string,
     contentMD5: string,
 ): {} | { present: boolean; error: ArsenalError } {
-    const lastModifiedDate = new Date(lastModified);
-    lastModifiedDate.setMilliseconds(0);
-    const millis = lastModifiedDate.getTime();
     const ifMatchHeader = headers['if-match'] ||
         headers['x-amz-copy-source-if-match'];
     const ifNoneMatchHeader = headers['if-none-match'] ||
         headers['x-amz-copy-source-if-none-match'];
-    const ifModifiedSinceHeader = headers['if-modified-since'] ||
-        headers['x-amz-copy-source-if-modified-since'];
-    const ifUnmodifiedSinceHeader = headers['if-unmodified-since'] ||
-        headers['x-amz-copy-source-if-unmodified-since'];
     const etagMatchRes = _checkEtagMatch(ifMatchHeader?.toString(), contentMD5);
     const etagNoneMatchRes = _checkEtagNoneMatch(ifNoneMatchHeader?.toString(), contentMD5);
-    const modifiedSinceRes = _checkModifiedSince(ifModifiedSinceHeader?.toString(), millis);
-    const unmodifiedSinceRes = _checkUnmodifiedSince(ifUnmodifiedSinceHeader?.toString(), millis);
+    const { modifiedSinceRes, unmodifiedSinceRes } =
+        checkDateModifiedHeaders(headers, lastModified);
     // If-Unmodified-Since condition evaluates to false and If-Match
     // is not present, then return the error. Otherwise, If-Unmodified-Since is
     // silent when If-Match match, and when If-Match does not match, it's the

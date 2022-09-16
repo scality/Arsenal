@@ -142,6 +142,8 @@ export function findConditionKey(
     // header
     case 's3:ObjLocationConstraint': return headers['x-amz-meta-scal-location-constraint'];
     case 'sts:ExternalId': return requestContext.getRequesterExternalId();
+    case 'keycloak:groups': return requesterInfo.keycloakGroup;
+    case 'keycloak:roles': return requesterInfo.keycloakRole;
     case 'iam:PolicyArn': return requestContext.getPolicyArn();
     // s3:ExistingObjectTag - Used to check that existing object tag has
     // specific tag key and value. Extraction of correct tag key is done in CloudServer.

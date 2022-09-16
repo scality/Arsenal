@@ -86,6 +86,66 @@ Used to store the bucket lifecycle configuration info
 ### Properties Added
 
 ```javascript
+this._uid = uid || uuid();
+```
+
+### Usage
+
+Used to set a unique identifier on a bucket
+
+## Model version 8
+
+### Properties Added
+
+```javascript
+this._readLocationConstraint = readLocationConstraint || null;
+```
+
+### Usage
+
+Used to store default read location of the bucket
+
+## Model version 9
+
+### Properties Added
+
+```javascript
+this._isNFS = isNFS || null;
+```
+
+### Usage
+
+Used to determine whether the bucket may be accessed through NFS
+
+## Model version 10
+
+### Properties Added
+
+```javascript
+this._ingestion = ingestionConfig || null;
+```
+
+### Usage
+
+Used to store the ingestion status of a bucket
+
+## Model version 11
+
+### Properties Added
+
+```javascript
+this._azureInfo = azureInfo || null;
+```
+
+### Usage
+
+Used to store Azure storage account specific information
+
+## Model version 12
+
+### Properties Added
+
+```javascript
 this._objectLockEnabled = objectLockEnabled || false;
 this._objectLockConfiguration = objectLockConfiguration || null;
 ```
@@ -95,7 +155,7 @@ this._objectLockConfiguration = objectLockConfiguration || null;
 Used to determine whether object lock capabilities are enabled on a bucket and
 to store the object lock configuration of the bucket
 
-## Model version 8
+## Model version 13
 
 ### Properties Added
 
@@ -107,7 +167,7 @@ this._notificationConfiguration = notificationConfiguration || null;
 
 Used to store the bucket notification configuration info
 
-## Model version 9
+## Model version 14
 
 ### Properties Added
 
@@ -119,24 +179,23 @@ this._serverSideEncryption.configuredMasterKeyId = configuredMasterKeyId || unde
 
 Used to store the users configured KMS key id
 
-## Model version 10
-
-### Properties Added
-
-```javascript
-this._uid = uid || uuid();
-```
-
-### Usage
-
-Used to set a unique identifier on a bucket
-
-## Model version 11
+## Model version 15
 
 ### Properties Added
 
 ```javascript
 this._tags = tags || null;
+```
+
+The Tag Set of a bucket is an array of objects with Key and Value:
+
+```javascript
+[
+    {
+        Key: 'something',
+        Value: 'some_data'
+    }
+]
 ```
 
 ### Usage

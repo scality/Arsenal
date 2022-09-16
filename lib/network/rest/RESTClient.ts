@@ -73,6 +73,7 @@ export default class RESTClient {
     port: number;
     httpAgent: HttpAgent;
     logging: werelogs.Logger;
+    isPassthrough: boolean;
 
     /**
      * Interface to the data file server
@@ -88,12 +89,14 @@ export default class RESTClient {
         host: string;
         port: number;
         logApi: { Logger: typeof werelogs.Logger };
+        isPassthrough?: boolean;
     }) {
         assert(params.host);
         assert(params.port);
 
         this.host = params.host;
         this.port = params.port;
+        this.isPassthrough = params.isPassthrough || false;
         this.logging = new (params.logApi || werelogs).Logger('DataFileRESTClient');
         this.httpAgent = new HttpAgent({
             keepAlive: true,
@@ -121,11 +124,13 @@ export default class RESTClient {
     ) {
         const reqHeaders = headers || {};
         const urlKey = key || '';
+        const prefix = this.isPassthrough ?
+            constants.passthroughFileURL : constants.dataFileURL;
         const reqParams = {
             hostname: this.host,
             port: this.port,
             method,
-            path: `${constants.dataFileURL}/${urlKey}`,
+            path: encodeURI(`${prefix}/${urlKey}`),
             headers: reqHeaders,
             agent: this.httpAgent,
         };

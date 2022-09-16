@@ -6,6 +6,8 @@ import { eachSeries } from 'async';
 import DataWrapper from '../storage/data/DataWrapper';
 import * as http from 'http';
 import StatsClient from '../metrics/StatsClient';
+import { objectKeyByteLimit } from '../constants';
+const jsutil = require('../jsutil');
 
 export type CallApiMethod = (
     methodName: string,
@@ -144,6 +146,15 @@ const XMLResponseBackend = {
             '<Error>',
                 `<Code>${errCode.message}</Code>`,
                 `<Message>${errCode.description}</Message>`,
+        );
+        const invalidArguments = errCode.metadata.get('invalidArguments') || [];
+        invalidArguments.forEach((invalidArgument, index) => {
+            const counter = index + 1;
+            const { ArgumentName, ArgumentValue } = invalidArgument as any;
+            xml.push(`<ArgumentName${counter}>${ArgumentName}</ArgumentName${counter}>`);
+            xml.push(`<ArgumentValue${counter}>${ArgumentValue}</ArgumentValue${counter}>`);
+        });
+        xml.push(
                 '<Resource></Resource>',
                 `<RequestId>${log.getSerializedUids()}</RequestId>`,
             '</Error>',
@@ -213,9 +224,18 @@ const JSONResponseBackend = {
             "requestId": "4442587FB7D0A2F9"
         }
         */
+        const invalidArguments = errCode.metadata.get('invalidArguments') || [];
+        const invalids = invalidArguments.reduce((acc, invalidArgument, index) => {
+            const counter = index + 1;
+            const { ArgumentName, ArgumentValue } = invalidArgument as any;
+            const name = `ArgumentName${counter}`;
+            const value = `ArgumentValue${counter}`;
+            return { ...acc, [name]: ArgumentName, [value]: ArgumentValue };
+        }, {});
         const data = JSON.stringify({
             code: errCode.message,
             message: errCode.description,
+            ...invalids,
             resource: null,
             requestId: log.getSerializedUids(),
         });
@@ -362,12 +382,18 @@ function retrieveData(
         response.destroy();
         responseDestroyed = true;
     };
+
+    const _destroyReadable = (readable: http.IncomingMessage | null) => {
+        // s3-data sends Readable stream only which does not implement destroy
+        if (readable && readable.destroy) {
+            readable.destroy();
+        }
+    };
+
     // the S3-client might close the connection while we are processing it
     response.once('close', () => {
         responseDestroyed = true;
-        if (currentStream) {
-            currentStream.destroy();
-        }
+        _destroyReadable(currentStream);
     });
 
     const {
@@ -384,6 +410,7 @@ function retrieveData(
     return eachSeries(locations,
         (current, next) => data.get(current, response, log,
             (err: any, readable: http.IncomingMessage) => {
+                const cbOnce = jsutil.once(next);
                 // NB: readable is of IncomingMessage type
                 if (err) {
                     log.error('failed to get object', {
@@ -391,7 +418,7 @@ function retrieveData(
                         method: 'retrieveData',
                     });
                     _destroyResponse();
-                    return next(err);
+                    return cbOnce(err);
                 }
                 // response.isclosed is set by the S3 server. Might happen if
                 // the S3-client closes the connection before the first request
@@ -400,24 +427,24 @@ function retrieveData(
                 if (responseDestroyed || response.isclosed) {
                     log.debug(
                         'response destroyed before readable could stream');
-                    readable.destroy();
+                    _destroyReadable(readable);
                     const responseErr = new Error();
                     // @ts-ignore
                     responseErr.code = 'ResponseError';
                     responseErr.message = 'response closed by client request before all data sent';
-                    return next(responseErr);
+                    return cbOnce(responseErr);
                 }
                 // readable stream successfully consumed
                 readable.on('end', () => {
                     currentStream = null;
                     log.debug('readable stream end reached');
-                    return next();
+                    return cbOnce();
                 });
                 // errors on server side with readable stream
                 readable.on('error', err => {
                     log.error('error piping data from source');
                     _destroyResponse();
-                    return next(err);
+                    return cbOnce(err);
                 });
                 currentStream = readable;
                 return readable.pipe(response, { end: false });
@@ -1076,6 +1103,9 @@ export function isValidObjectKey(objectKey: string, prefixBlacklist: string[]) {
         objectKey.startsWith(prefix));
     if (invalidPrefix) {
         return { isValid: false, invalidPrefix };
+    }
+    if (Buffer.byteLength(objectKey, 'utf8') > objectKeyByteLimit) {
+        return { isValid: false };
     }
     return { isValid: true };
 }

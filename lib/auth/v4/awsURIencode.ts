@@ -42,37 +42,40 @@ export default function awsURIencode(
      if (typeof input !== 'string') {
         return '';
     }
-
-    // precalc slash and star based on configs
+    let encoded = "";
     const slash = encodeSlash === undefined || encodeSlash ? '%2F' : '/';
     const star = noEncodeStar !== undefined && noEncodeStar ? '*' : '%2A';
-    const encoded: string[] = [];
-
-    const charArray = Array.from(input);
-    for (const ch of charArray) {
-        switch (true) {
-            case ch >= 'A' && ch <= 'Z':
-            case ch >= 'a' && ch <= 'z':
-            case ch >= '0' && ch <= '9':
-            case ch === '-':
-            case ch === '_':
-            case ch === '~':
-            case ch === '.':
-                encoded.push(ch);
-                break;
-            case ch === '/':
-                encoded.push(slash);
-                break;
-            case ch === '*':
-                encoded.push(star);
-                break;
-            case ch === ' ':
-                encoded.push('%20');
-                break;
-            default:
-                encoded.push(_toHexUTF8(ch));
-                break;
+    for (let i = 0; i < input.length; i++) {
+        let ch = input.charAt(i);
+        if ((ch >= 'A' && ch <= 'Z') ||
+            (ch >= 'a' && ch <= 'z') ||
+            (ch >= '0' && ch <= '9') ||
+            ch === '_' || ch === '-' ||
+            ch === '~' || ch === '.') {
+            encoded = encoded.concat(ch);
+        } else if (ch === ' ') {
+            encoded = encoded.concat('%20');
+        } else if (ch === '/') {
+            encoded = encoded.concat(slash);
+        } else if (ch === '*') {
+            encoded = encoded.concat(star);
+        } else {
+            if (ch >= '\uD800' && ch <= '\uDBFF') {
+                // If this character is a high surrogate peek the next character
+                // and join it with this one if the next character is a low
+                // surrogate.
+                // Otherwise the encoded URI will contain the two surrogates as
+                // two distinct UTF-8 sequences which is not valid UTF-8.
+                if (i + 1 < input.length) {
+                    const ch2 = input.charAt(i + 1);
+                    if (ch2 >= '\uDC00' && ch2 <= '\uDFFF') {
+                        i++;
+                        ch += ch2;
+                    }
+                }
+            }
+            encoded = encoded.concat(_toHexUTF8(ch));
         }
     }
-    return encoded.join('');
+    return encoded;
 }

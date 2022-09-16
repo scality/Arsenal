@@ -56,6 +56,8 @@ export default function routerGET(
             call('bucketGetNotification');
         } else if (query.encryption !== undefined) {
             call('bucketGetEncryption');
+        } else if (query.search !== undefined) {
+            call('metadataSearch')
         } else {
             // GET bucket
             call('bucketGet');

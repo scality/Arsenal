@@ -4,7 +4,7 @@ import joi from 'joi';
 import werelogs from 'werelogs';
 import * as types from './types';
 import { Account, Accounts } from './types';
-import ARN from '../../models/ARN';
+import ARN from '../../../models/ARN';
 
 /** Load authentication information from files or pre-loaded account objects */
 export default class AuthLoader {

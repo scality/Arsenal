@@ -56,4 +56,21 @@ export default class LifecycleDateTime {
             return lastModifiedTime + (transition.Days * oneDay) + timeTravel;
         }
     }
+
+    /**
+     * Find the Unix time at which the non-current version transition should occur.
+     * @param transition - A non-current version transition from the lifecycle non-current version transitions
+     * @param lastModified - The object's last modified date
+     * @return - The normalized transition timestamp
+     */
+    getNCVTransitionTimestamp(
+        transition: { NoncurrentDays?: number },
+        lastModified: string,
+    ) {
+        if (transition.NoncurrentDays !== undefined) {
+            const lastModifiedTime = this.getTimestamp(lastModified);
+            const timeTravel = this._transitionOneDayEarlier ? -oneDay : 0;
+            return lastModifiedTime + (transition.NoncurrentDays * oneDay) + timeTravel;
+        }
+    }
 }

@@ -39,7 +39,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
     }
 
     const validationResult = validateCredentials(credential, timestamp,
-      log);
+        log);
     if (validationResult instanceof Error) {
         log.debug('credentials in improper format', { credential,
             timestamp, validationResult });
@@ -54,6 +54,17 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
     const isTimeSkewed = checkTimeSkew(timestamp, expiry, log);
     if (isTimeSkewed) {
         return { err: errors.RequestTimeTooSkewed };
+    }
+
+    let proxyPath: string | undefined;
+    if (request.headers.proxy_path) {
+        try {
+            proxyPath = decodeURIComponent(request.headers.proxy_path);
+        } catch (err) {
+            log.debug('invalid proxy_path header', { proxyPath });
+            return { err: errors.InvalidArgument.customizeDescription(
+                'invalid proxy_path header') };
+        }
     }
 
     // In query v4 auth, the canonical request needs
@@ -81,6 +92,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
         credentialScope:
             `${scopeDate}/${region}/${service}/${requestType}`,
         awsService: service,
+        proxyPath,
     });
     if (stringToSign instanceof Error) {
         return { err: stringToSign };

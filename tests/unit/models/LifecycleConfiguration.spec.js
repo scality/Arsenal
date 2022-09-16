@@ -10,6 +10,18 @@ const days = {
     Expiration: 'Days',
 };
 
+const mockConfig = {
+    replicationEndpoints: [
+        {
+            site: 'a',
+        },
+        {
+            site: 'b',
+        },
+    ],
+};
+
+const MAX_DAYS = 2147483647; // Max 32-bit signed binary integer.
 const date = new Date();
 date.setUTCHours(0, 0, 0, 0);
 
@@ -57,12 +69,6 @@ const requiredTags = [
         errMessage: 'Rule xml does not include valid Filter or Prefix' },
     { tag: 'Action', error: 'InvalidRequest',
         errMessage: 'Rule does not include valid action' }];
-
-const notImplementedActions = [
-    { tag: 'Transition',
-        errMessage: 'Transition lifecycle action not yet implemented' },
-    { tag: 'NoncurrentVersionTransition',
-        errMessage: 'Transition lifecycle action not yet implemented' }];
 
 const invalidActions = [
     { tag: 'AbortIncompleteMultipartUpload', label: 'no-time',
@@ -274,8 +280,8 @@ function generateParsedXml(errorTag, tagObj, cb) {
 }
 
 function checkError(parsedXml, error, errMessage, cb) {
-    const lcConfig = new LifecycleConfiguration(parsedXml).
-        getLifecycleConfiguration();
+    const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig)
+        .getLifecycleConfiguration();
     assert.strictEqual(lcConfig.error.is[error], true);
     assert.strictEqual(lcConfig.error.description, errMessage);
     cb();
@@ -297,16 +303,6 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
             done => {
                 generateParsedXml(t.tag, null, parsedXml => {
                     checkError(parsedXml, t.error, t.errMessage, done);
-                });
-            });
-    });
-
-    notImplementedActions.forEach(action => {
-        const expError = 'NotImplemented';
-        it(`should return ${expError} error for ${action.tag} action`,
-            done => {
-                generateParsedXml('Action', action, parsedXml => {
-                    checkError(parsedXml, expError, action.errMessage, done);
                 });
             });
     });
@@ -361,14 +357,14 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
         });
     });
 
-    it('should use last listed Prefix if multiple Prefixes included', done => {
-        tagObj.label = 'mult-prefixes';
-        tagObj.lastPrefix = 'coco';
+    it('should apply all unique Key tags if multiple tags included', done => {
+        tagObj.label = 'mult-tags';
         generateParsedXml('Filter', tagObj, parsedXml => {
-            const lcConfig = new LifecycleConfiguration(parsedXml).
-                getLifecycleConfiguration();
-            assert.strictEqual(tagObj.lastPrefix,
-                lcConfig.rules[0].filter.rulePrefix);
+            const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig)
+                .getLifecycleConfiguration();
+            const expected = [{ key: 'color', val: 'blue' },
+                { key: 'shape', val: 'circle' }];
+            assert.deepStrictEqual(expected, lcConfig.rules[0].filter.tags);
             done();
         });
     });
@@ -385,11 +381,477 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
         tagObj.label = 'empty-prefix';
         const expectedPrefix = '';
         generateParsedXml('Filter', tagObj, parsedXml => {
-            const lcConfig = new LifecycleConfiguration(parsedXml).
+            const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig).
                 getLifecycleConfiguration();
             assert.strictEqual(expectedPrefix,
                 lcConfig.rules[0].filter.rulePrefix);
             done();
+        });
+    });
+});
+
+describe('LifecycleConfiguration', () => {
+    const lifecycleConfiguration = new LifecycleConfiguration({}, mockConfig);
+    function getParsedXML() {
+        return {
+            LifecycleConfiguration: {
+                Rule: [{
+                    ID: ['test-id'],
+                    Prefix: [''],
+                    Status: ['Enabled'],
+                    Expiration: [{
+                        Days: 1,
+                    }],
+                }],
+            },
+        };
+    }
+
+    describe('::_getRuleFilterDesc', () => {
+        it('should get Prefix', () => {
+            const rule = getParsedXML().LifecycleConfiguration.Rule[0];
+            const ruleFilter = lifecycleConfiguration._getRuleFilterDesc(rule);
+            assert.strictEqual(ruleFilter, "prefix ''");
+        });
+
+        it('should get Filter.Prefix', () => {
+            const rule = getParsedXML().LifecycleConfiguration.Rule[0];
+            delete rule.Prefix;
+            rule.Filter = [{ Prefix: [''] }];
+            const ruleFilter = lifecycleConfiguration._getRuleFilterDesc(rule);
+            assert.strictEqual(ruleFilter, "filter '(prefix=)'");
+        });
+
+        it('should get Filter.Tag', () => {
+            const rule = getParsedXML().LifecycleConfiguration.Rule[0];
+            delete rule.Prefix;
+            rule.Filter = [{ Tag: [{ Key: ['a'], Value: [''] }] }];
+            const ruleFilter = lifecycleConfiguration._getRuleFilterDesc(rule);
+            assert.strictEqual(ruleFilter, "filter '(tag: key=a, value=)'");
+        });
+
+        it('should get Filter.And', () => {
+            const rule = getParsedXML().LifecycleConfiguration.Rule[0];
+            delete rule.Prefix;
+            rule.Filter = [{
+                And: [{
+                    Prefix: [''],
+                    Tag: [{
+                        Key: ['a'],
+                        Value: ['b'],
+                    },
+                    {
+                        Key: ['c'],
+                        Value: ['d'],
+                    }],
+                }],
+            }];
+            const ruleFilter = lifecycleConfiguration._getRuleFilterDesc(rule);
+            assert.strictEqual(ruleFilter, 'filter ' +
+                "'(prefix= and tag: key=a, value=b and tag: key=c, value=d)'");
+        });
+
+        it('should get Filter.And without Prefix', () => {
+            const rule = getParsedXML().LifecycleConfiguration.Rule[0];
+            delete rule.Prefix;
+            rule.Filter = [{
+                And: [{
+                    Tag: [{
+                        Key: ['a'],
+                        Value: ['b'],
+                    },
+                    {
+                        Key: ['c'],
+                        Value: ['d'],
+                    }],
+                }],
+            }];
+            const ruleFilter = lifecycleConfiguration._getRuleFilterDesc(rule);
+            assert.strictEqual(ruleFilter,
+                "filter '(tag: key=a, value=b and tag: key=c, value=d)'");
+        });
+
+        it('should get Filter with empty object', () => {
+            const rule = {
+                ID: ['test-id'],
+                Status: ['Enabled'],
+                Expiration: [{
+                    Days: 1,
+                }],
+            };
+            rule.Filter = [{}];
+            const ruleFilter = lifecycleConfiguration._getRuleFilterDesc(rule);
+            assert.strictEqual(ruleFilter, 'filter (all)');
+        });
+
+        it('should get empty Filter', () => {
+            const rule = {
+                ID: ['test-id'],
+                Status: ['Enabled'],
+                Expiration: [{
+                    Days: 1,
+                }],
+            };
+            rule.Filter = [];
+            const ruleFilter = lifecycleConfiguration._getRuleFilterDesc(rule);
+            assert.strictEqual(ruleFilter, 'filter (all)');
+        });
+    });
+
+    describe('::_checkDays', () => {
+        it(`should return no error when days value is 0 - ${MAX_DAYS}`, () => {
+            const error = lifecycleConfiguration._checkDays({
+                days: 0,
+            });
+            assert.strictEqual(error, null);
+        });
+
+        it('should return error when exceeding max value', () => {
+            const error = lifecycleConfiguration._checkDays({
+                days: MAX_DAYS + 1,
+                field: 'a',
+                ancestor: 'b',
+            });
+            const msg = "'a' in b action must not exceed 2147483647";
+            expect(error.is.MalformedXML).toBeTruthy();
+            expect(error.description).toEqual(msg);
+        });
+
+        it('should return error when negative value', () => {
+            const error = lifecycleConfiguration._checkDays({
+                days: -1,
+                field: 'a',
+                ancestor: 'b',
+            });
+            const msg = "'a' in b action must be nonnegative";
+            expect(error.is.InvalidArgument).toBeTruthy();
+            expect(error.description).toEqual(msg);
+        });
+    });
+
+    describe('::_checkStorageClasses', () => {
+        it('should return no error when StorageClass is first one used', () => {
+            const error = lifecycleConfiguration._checkStorageClasses({
+                usedStorageClasses: [],
+                storageClass: 'a',
+            });
+            assert.strictEqual(error, null);
+        });
+
+        it('should return no error when StorageClass has not been used', () => {
+            const error = lifecycleConfiguration._checkStorageClasses({
+                usedStorageClasses: ['a'],
+                storageClass: 'b',
+            });
+            assert.strictEqual(error, null);
+        });
+
+        it('should return error when unknown StorageClass is given', () => {
+            const error = lifecycleConfiguration._checkStorageClasses({
+                storageClass: 'c',
+            });
+            const msg = "'StorageClass' must be one of 'a', 'b'";
+            expect(error.is.MalformedXML).toBeTruthy();
+            expect(error.description).toEqual(msg);
+        });
+
+        it('should return error when StorageClass has been used', () => {
+            const error = lifecycleConfiguration._checkStorageClasses({
+                usedStorageClasses: ['a'],
+                storageClass: 'a',
+                field: 'a',
+                ancestor: 'b',
+                rule: getParsedXML().LifecycleConfiguration.Rule[0],
+            });
+            const msg = "'StorageClass' must be different for 'b' actions " +
+                "in same 'Rule' with prefix ''";
+            expect(error.is.InvalidRequest).toBeTruthy();
+            expect(error.description).toEqual(msg);
+        });
+    });
+
+    describe('::_checkTimeType', () => {
+        it('should return no error when first time type in rule', () => {
+            const error = lifecycleConfiguration._checkTimeType({
+                usedTimeType: null,
+                currentTimeType: 'Date',
+                rule: {},
+            });
+            assert.strictEqual(error, null);
+        });
+
+        it('should return no error when time type is same as others', () => {
+            const error = lifecycleConfiguration._checkTimeType({
+                usedTimeType: 'Date',
+                currentTimeType: 'Date',
+                rule: {},
+            });
+            assert.strictEqual(error, null);
+        });
+
+        it('should return error when time type differs from others', () => {
+            const error = lifecycleConfiguration._checkTimeType({
+                usedTimeType: 'Date',
+                currentTimeType: 'Days',
+                rule: getParsedXML().LifecycleConfiguration.Rule[0],
+            });
+            const msg = "Found mixed 'Date' and 'Days' based Transition " +
+                "actions in lifecycle rule for prefix ''";
+            expect(error.is.InvalidRequest).toBeTruthy();
+            expect(error.description).toEqual(msg);
+        });
+
+        it('should return error when time type differs across expiration',
+            () => {
+                const error = lifecycleConfiguration._checkTimeType({
+                    usedTimeType: 'Date',
+                    currentTimeType: 'Date',
+                    rule: getParsedXML().LifecycleConfiguration.Rule[0],
+                });
+                const msg = "Found mixed 'Date' and 'Days' based Expiration and " +
+                "Transition actions in lifecycle rule for prefix ''";
+                expect(error.is.InvalidRequest).toBeTruthy();
+                expect(error.description).toEqual(msg);
+            });
+    });
+
+    describe('::_checkDate', () => {
+        it('should return no error valid ISO date', () => {
+            const date = '2016-01-01T00:00:00.000Z';
+            const error = lifecycleConfiguration._checkDate(date);
+            assert.strictEqual(error, null);
+        });
+
+        it('should return error when invalid ISO date', () => {
+            const date = 'Fri, 01 Jan 2016 00:00:00 GMT';
+            const error = lifecycleConfiguration._checkDate(date);
+            const msg = 'Date must be in ISO 8601 format';
+            expect(error.is.InvalidArgument).toBeTruthy();
+            expect(error.description).toEqual(msg);
+        });
+    });
+
+    describe('::_parseNoncurrentVersionTransition', () => {
+        function getRule() {
+            return {
+                NoncurrentVersionTransition: [
+                    {
+                        NoncurrentDays: ['0'],
+                        StorageClass: ['a'],
+                    },
+                    {
+                        NoncurrentDays: ['1'],
+                        StorageClass: ['b'],
+                    },
+                ],
+            };
+        }
+
+        it('should return correctly parsed result object', () => {
+            const rule = getRule();
+            const result =
+                lifecycleConfiguration._parseNoncurrentVersionTransition(rule);
+            assert.deepStrictEqual(result, {
+                nonCurrentVersionTransition: [
+                    {
+                        noncurrentDays: 0,
+                        storageClass: 'a',
+                    },
+                    {
+                        noncurrentDays: 1,
+                        storageClass: 'b',
+                    },
+                ],
+            });
+        });
+
+        it('should return parsed result object with error', () => {
+            const rule = getRule();
+            rule.NoncurrentVersionTransition[0].NoncurrentDays[0] = '-1';
+            const result =
+                lifecycleConfiguration._parseNoncurrentVersionTransition(rule);
+            const msg = "'NoncurrentDays' in NoncurrentVersionTransition " +
+                'action must be nonnegative';
+            expect(result.error.is.InvalidArgument).toBeTruthy();
+            expect(result.error.description).toEqual(msg);
+        });
+    });
+
+    describe('::_parseTransition with Days', () => {
+        function getRule() {
+            return {
+                Transition: [
+                    {
+                        Days: ['0'],
+                        StorageClass: ['a'],
+                    },
+                    {
+                        Days: ['1'],
+                        StorageClass: ['b'],
+                    },
+                ],
+            };
+        }
+
+        it('should return correctly parsed result object', () => {
+            const rule = getRule();
+            const result = lifecycleConfiguration._parseTransition(rule);
+            assert.deepStrictEqual(result, {
+                transition: [
+                    {
+                        days: 0,
+                        storageClass: 'a',
+                    },
+                    {
+                        days: 1,
+                        storageClass: 'b',
+                    },
+                ],
+            });
+        });
+
+        it('should return parsed result object with error when days is ' +
+        'negative', () => {
+            const rule = getRule();
+            rule.Transition[0].Days[0] = '-1';
+            const result = lifecycleConfiguration._parseTransition(rule);
+            const msg = "'Days' in Transition action must be nonnegative";
+            expect(result.error.is.InvalidArgument).toBeTruthy();
+            expect(result.error.description).toEqual(msg);
+        });
+
+        it('should return parsed result object with error when two ' +
+        'transition days are the same', () => {
+            const rule = getRule();
+            rule.Prefix = ['prefix'];
+            rule.Transition[1].Days[0] = '0';
+            const result = lifecycleConfiguration._parseTransition(rule);
+            const msg = "'Days' in the 'Transition' action for StorageClass " +
+                "'a' for prefix 'prefix' must be at least one day apart from " +
+                "prefix 'prefix' in the 'Transition' action for StorageClass " +
+                "'b'";
+            expect(result.error.is.InvalidArgument).toBeTruthy();
+            expect(result.error.description).toEqual(msg);
+        });
+    });
+
+    describe('::_parseTransition with Date', () => {
+        it('should return parsed result object with error when dates are not ' +
+        'more than one day apart', () => {
+            const rule = {
+                Prefix: ['prefix'],
+                Transition: [
+                    {
+                        Date: ['2019-01-01T00:00:00.000Z'],
+                        StorageClass: ['a'],
+                    },
+                    {
+                        Date: ['2019-01-01T23:59:59.999Z'],
+                        StorageClass: ['b'],
+                    },
+                ],
+            };
+            const result = lifecycleConfiguration._parseTransition(rule);
+            const msg = "'Date' in the 'Transition' action for StorageClass " +
+                "'a' for prefix 'prefix' must be at least one day apart from " +
+                "prefix 'prefix' in the 'Transition' action for StorageClass " +
+                "'b'";
+            expect(result.error.is.InvalidArgument).toBeTruthy();
+            expect(result.error.description).toEqual(msg);
+        });
+    });
+
+    describe('::_checkTimeGap', () => {
+        it('should not return error when only one transition', () => {
+            const params = {
+                rule: {
+                    Transition: [{
+                        Days: ['0'],
+                        StorageClass: ['a'],
+                    }],
+                },
+                days: 0,
+                storageClass: 'a',
+            };
+            const error = lifecycleConfiguration._checkTimeGap(params);
+            assert.strictEqual(error, null);
+        });
+
+        it('should not return error when transitions have days greater than ' +
+        '24 hours apart', () => {
+            const params = {
+                rule: {
+                    Transition: [{
+                        Days: ['0'],
+                        StorageClass: ['a'],
+                    }, {
+                        Days: ['1'],
+                        StorageClass: ['b'],
+                    }],
+                },
+                days: 0,
+                storageClass: 'a',
+            };
+            const error = lifecycleConfiguration._checkTimeGap(params);
+            assert.strictEqual(error, null);
+        });
+
+        it('should return error when transitions have same day', () => {
+            const params = {
+                rule: {
+                    Prefix: 'prefix',
+                    Transition: [{
+                        Days: ['0'],
+                        StorageClass: ['a'],
+                    }, {
+                        Days: ['0'],
+                        StorageClass: ['b'],
+                    }],
+                },
+                days: 0,
+                storageClass: 'a',
+            };
+            const error = lifecycleConfiguration._checkTimeGap(params);
+            expect(error.is.InvalidArgument).toBeTruthy();
+        });
+
+        it('should not return error when transitions have dates greater than ' +
+        '24 hours apart', () => {
+            const params = {
+                rule: {
+                    Transition: [{
+                        Date: ['2019-01-01T00:00:00.000Z'],
+                        StorageClass: ['a'],
+                    }, {
+                        Date: ['2019-01-02T00:00:00.000Z'],
+                        StorageClass: ['b'],
+                    }],
+                },
+                date: '2019-01-01T00:00:00.000Z',
+                storageClass: 'a',
+            };
+            const error = lifecycleConfiguration._checkTimeGap(params);
+            assert.strictEqual(error, null);
+        });
+
+        it('should return error when transitions have dates less than 24 ' +
+        'hours apart', () => {
+            const params = {
+                rule: {
+                    Prefix: 'prefix',
+                    Transition: [{
+                        Date: ['2019-01-01T00:00:00.000Z'],
+                        StorageClass: ['a'],
+                    }, {
+                        Date: ['2019-01-01T23:59:59.999Z'],
+                        StorageClass: ['b'],
+                    }],
+                },
+                date: '2019-01-01T00:00:00.000Z',
+                storageClass: 'a',
+            };
+            const error = lifecycleConfiguration._checkTimeGap(params);
+            expect(error.is.InvalidArgument).toBeTruthy();
         });
     });
 });

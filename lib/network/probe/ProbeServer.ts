@@ -4,19 +4,16 @@ import * as werelogs from 'werelogs';
 import errors from '../../errors';
 
 export const DEFAULT_LIVE_ROUTE = '/_/live';
-export const DEFAULT_READY_ROUTE = '/_/live';
-export const DEFAULT_METRICS_ROUTE = '/_/metrics';
+export const DEFAULT_READY_ROUTE = '/_/ready';
+export const DEFAULT_METRICS_ROUTE = '/metrics';
 
 /**
- * ProbeDelegate is used to determine if a probe is successful or
- * if any errors are present.
- * If everything is working as intended, it is a no-op.
- * Otherwise, return a string representing what is failing.
+ * ProbeDelegate is used to handle probe checks.
+ * You can sendSuccess and sendError from Utils to handle success
+ * and failure conditions.
  * @callback ProbeDelegate
  * @param res - HTTP response for writing
  * @param log - Werelogs instance for logging if you choose to
- * @return String representing issues to report. An empty
- * string or undefined is used to represent no issues.
  */
 
 export type ProbeDelegate = (res: http.ServerResponse, log: RequestLogger) => string | void
@@ -90,12 +87,6 @@ export class ProbeServer extends httpServer {
             return;
         }
 
-        const probeResponse = this._handlers.get(req.url!)!(res, log);
-        if (probeResponse !== undefined && probeResponse !== '') {
-            // Return an internal error with the response
-            errors.InternalError
-                .customizeDescription(probeResponse)
-                .writeResponse(res);
-        }
+        this._handlers.get(req.url ?? '')?.(res, log);
     }
 }

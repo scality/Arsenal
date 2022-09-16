@@ -4,7 +4,7 @@ import * as werelogs from 'werelogs';
 import * as http from 'http';
 import httpServer from '../http/server';
 import * as constants from '../../constants';
-import * as utils from './utils';
+import { parseURL } from './utils';
 import * as httpUtils from '../http/utils';
 import errors, { ArsenalError } from '../../errors';
 
@@ -36,42 +36,6 @@ function sendError(
         error: message });
     res.end(`${JSON.stringify({ errorType: error.message,
         errorMessage: message })}\n`);
-}
-
-/**
- * Parse the given url and return a pathInfo object. Sanity checks are
- * performed.
- *
- * @param urlStr - URL to parse
- * @param expectKey - whether the command expects to see a
- *   key in the URL
- * @return a pathInfo object with URL items containing the
- * following attributes:
- *   - pathInfo.service {String} - The name of REST service ("DataFile")
- *   - pathInfo.key {String} - The requested key
- */
-function parseURL(urlStr: string, expectKey: boolean) {
-    const urlObj = url.parse(urlStr);
-    const pathInfo = utils.explodePath(urlObj.path!);
-    if (pathInfo.service !== constants.dataFileURL) {
-        throw errors.InvalidAction.customizeDescription(
-            `unsupported service '${pathInfo.service}'`);
-    }
-    if (expectKey && pathInfo.key === undefined) {
-        throw errors.MissingParameter.customizeDescription(
-            'URL is missing key');
-    }
-    if (!expectKey && pathInfo.key !== undefined) {
-        // note: we may implement rewrite functionality by allowing a
-        // key in the URL, though we may still provide the new key in
-        // the Location header to keep immutability property and
-        // atomicity of the update (we would just remove the old
-        // object when the new one has been written entirely in this
-        // case, saving a request over an equivalent PUT + DELETE).
-        throw errors.InvalidURI.customizeDescription(
-            'PUT url cannot contain a key');
-    }
-    return pathInfo;
 }
 
 /**

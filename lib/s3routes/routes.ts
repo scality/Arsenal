@@ -10,7 +10,7 @@ import * as routesUtils from './routesUtils';
 import routeWebsite from './routes/routeWebsite';
 import * as http from 'http';
 import StatsClient from '../metrics/StatsClient';
-
+import { objectKeyByteLimit } from '../constants';
 import * as requestUtils from '../../lib/policyEvaluator/requestUtils';
 
 const routeMap = {
@@ -64,8 +64,14 @@ function checkBucketAndKey(
             blacklistedPrefixes.object);
         if (!result.isValid) {
             log.debug('invalid object key', { objectKey });
-            return errors.InvalidArgument.customizeDescription('Object key ' +
-            `must not start with "${result.invalidPrefix}".`);
+            if (result.invalidPrefix) {
+                return errors.InvalidArgument.customizeDescription('Invalid ' +
+                    'prefix - object key cannot start with ' +
+                    `"${result.invalidPrefix}".`);
+            }
+            return errors.KeyTooLong.customizeDescription('Object key is too ' +
+                'long. Maximum number of bytes allowed in keys is ' +
+                `${objectKeyByteLimit}.`);
         }
     }
     if ((reqQuery.partNumber || reqQuery.uploadId)
@@ -210,7 +216,8 @@ export default function routes(
         // @ts-ignore
         logger.newRequestLogger());
 
-    if (!req.url!.startsWith('/_/healthcheck')) {
+    if (!req.url!.startsWith('/_/healthcheck') &&
+        !req.url!.startsWith('/_/report')) {
         log.info('received request', clientInfo);
     }
 

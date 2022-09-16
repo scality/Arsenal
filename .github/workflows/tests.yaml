@@ -39,10 +39,14 @@ jobs:
       run: yarn --silent lint -- --max-warnings 0
     - name: lint markdown
       run: yarn --silent lint_md
-    - name: run unit tests
-      run: yarn test
+    - name: add hostname
+      run: |
+        sudo sh -c "echo '127.0.0.1 testrequestbucket.localhost' >> /etc/hosts"
+    - name: test and coverage
+      run: yarn --silent coverage
     - name: run functional tests
       run: yarn ft_test
+    - uses: codecov/codecov-action@v2
     - name: run executables tests
       run: yarn install && yarn test
       working-directory: 'lib/executables/pensieveCreds/'

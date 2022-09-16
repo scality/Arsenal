@@ -33,6 +33,7 @@ const sharedActionMap = {
     bypassGovernanceRetention: 's3:BypassGovernanceRetention',
     listMultipartUploads: 's3:ListBucketMultipartUploads',
     listParts: 's3:ListMultipartUploadParts',
+    metadataSearch: 's3:MetadataSearch',
     multipartDelete: 's3:AbortMultipartUpload',
     objectDelete: 's3:DeleteObject',
     objectDeleteTagging: 's3:DeleteObjectTagging',
@@ -46,6 +47,8 @@ const sharedActionMap = {
     objectPutLegalHold: 's3:PutObjectLegalHold',
     objectPutRetention: 's3:PutObjectRetention',
     objectPutTagging: 's3:PutObjectTagging',
+    objectRestore: 's3:RestoreObject',
+    objectPutVersion: 's3:PutObjectVersion',
 };
 
 // action map used for request context
@@ -70,7 +73,9 @@ const actionMapRQ = {
     objectPutTaggingVersion: 's3:PutObjectVersionTagging',
     serviceGet: 's3:ListAllMyBuckets',
     objectReplicate: 's3:ReplicateObject',
+    objectGetRetentionVersion: 's3:GetObjectVersionRetention',
     objectPutRetentionVersion: 's3:PutObjectVersionRetention',
+    objectGetLegalHoldVersion: 's3:GetObjectVersionLegalHold',
     objectPutLegalHoldVersion: 's3:PutObjectVersionLegalHold',
     ...sharedActionMap,
 };
@@ -129,6 +134,7 @@ const actionMonitoringMapS3 = {
     initiateMultipartUpload: 'CreateMultipartUpload',
     listMultipartUploads: 'ListMultipartUploads',
     listParts: 'ListParts',
+    metadataSearch: 'MetadataSearch',
     multiObjectDelete: 'DeleteObjects',
     multipartDelete: 'AbortMultipartUpload',
     objectCopy: 'CopyObject',
@@ -147,6 +153,7 @@ const actionMonitoringMapS3 = {
     objectPutPart: 'UploadPart',
     objectPutRetention: 'PutObjectRetention',
     objectPutTagging: 'PutObjectTagging',
+    objectRestore: 'RestoreObject',
     serviceGet: 'ListBuckets',
 };
 
@@ -172,6 +179,7 @@ const actionMapIAM = {
     getPolicyVersion: 'iam:GetPolicyVersion',
     getUser: 'iam:GetUser',
     listAccessKeys: 'iam:ListAccessKeys',
+    listEntitiesForPolicy: 'iam:ListEntitiesForPolicy',
     listGroupPolicies: 'iam:ListGroupPolicies',
     listGroups: 'iam:ListGroups',
     listGroupsForUser: 'iam:ListGroupsForUser',

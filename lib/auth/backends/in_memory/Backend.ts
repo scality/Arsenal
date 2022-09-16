@@ -1,7 +1,9 @@
-import * as crypto from 'crypto';
-import errors from '../../errors';
+import crypto from 'crypto';
+import { Logger } from 'werelogs';
+import errors from '../../../errors';
 import { calculateSigningKey, hashSignature } from './vaultUtilities';
 import Indexer from './Indexer';
+import BaseBackend from '../base';
 import { Accounts } from './types';
 
 function _formatResponse(userInfoToSend: any) {
@@ -15,26 +17,32 @@ function _formatResponse(userInfoToSend: any) {
 /**
  * Class that provides a memory backend for verifying signatures and getting
  * emails and canonical ids associated with an account.
+ *
+ * @class InMemoryBackend
  */
-class Backend {
+class InMemoryBackend extends BaseBackend {
     indexer: Indexer;
-    service: string;
+    formatResponse: any;
 
-    constructor(service: string, indexer: Indexer) {
-        this.service = service;
+    /**
+     * @constructor
+     * @param service - service identifer for construction arn
+     * @param indexer - indexer instance for retrieving account info
+     * @param formatter - function which accepts user info to send
+     * back and returns it in an object
+     */
+    constructor(service: string, indexer: Indexer, formatter: typeof _formatResponse) {
+        super(service);
         this.indexer = indexer;
+        this.formatResponse = formatter;
     }
 
-    // CODEQUALITY-TODO-SYNC Should be synchronous
     verifySignatureV2(
         stringToSign: string,
         signatureFromRequest: string,
         accessKey: string,
-        options: { algo: 'SHA256' | 'SHA1' },
-        callback: (
-            error: Error | null,
-            data?: ReturnType<typeof _formatResponse>
-        ) => void
+        options: any,
+        callback: any,
     ) {
         const entity = this.indexer.getEntityByKey(accessKey);
         if (!entity) {
@@ -50,27 +58,21 @@ class Backend {
             accountDisplayName: this.indexer.getAcctDisplayName(entity),
             canonicalID: entity.canonicalID,
             arn: entity.arn,
-            // TODO Why?
             // @ts-ignore
             IAMdisplayName: entity.IAMdisplayName,
         };
-        const vaultReturnObject = _formatResponse(userInfoToSend);
+        const vaultReturnObject = this.formatResponse(userInfoToSend);
         return callback(null, vaultReturnObject);
     }
 
-    // TODO Options not used. Why ?
-    // CODEQUALITY-TODO-SYNC Should be synchronous
     verifySignatureV4(
         stringToSign: string,
         signatureFromRequest: string,
         accessKey: string,
         region: string,
         scopeDate: string,
-        _options: { algo: 'SHA256' | 'SHA1' },
-        callback: (
-            err: Error | null,
-            data?: ReturnType<typeof _formatResponse>
-        ) => void
+        options: any,
+        callback: any,
     ) {
         const entity = this.indexer.getEntityByKey(accessKey);
         if (!entity) {
@@ -87,21 +89,14 @@ class Backend {
             accountDisplayName: this.indexer.getAcctDisplayName(entity),
             canonicalID: entity.canonicalID,
             arn: entity.arn,
-            // TODO Why?
             // @ts-ignore
             IAMdisplayName: entity.IAMdisplayName,
         };
-        const vaultReturnObject = _formatResponse(userInfoToSend);
+        const vaultReturnObject = this.formatResponse(userInfoToSend);
         return callback(null, vaultReturnObject);
     }
 
-    // TODO log not used. Why ?
-    // CODEQUALITY-TODO-SYNC Should be synchronous
-    getCanonicalIds(
-        emails: string[],
-        _log: any,
-        cb: (err: null, data: { message: { body: any } }) => void
-    ) {
+    getCanonicalIds(emails: string[], log: Logger, cb: any) {
         const results = {};
         emails.forEach(email => {
             const lowercasedEmail = email.toLowerCase();
@@ -121,13 +116,7 @@ class Backend {
         return cb(null, vaultReturnObject);
     }
 
-    // TODO options not used. Why ?
-    // CODEQUALITY-TODO-SYNC Should be synchronous
-    getEmailAddresses(
-        canonicalIDs: string[],
-        _options: any,
-        cb: (err: null, data: { message: { body: any } }) => void
-    ) {
+    getEmailAddresses(canonicalIDs: string[], options: any, cb: any) {
         const results = {};
         canonicalIDs.forEach(canonicalId => {
             const foundEntity = this.indexer.getEntityByCanId(canonicalId);
@@ -145,24 +134,17 @@ class Backend {
         return cb(null, vaultReturnObject);
     }
 
-    // TODO options not used. Why ?
-    // CODEQUALITY-TODO-SYNC Should be synchronous
     /**
      * Gets accountIds for a list of accounts based on
      * the canonical IDs associated with the account
      * @param canonicalIDs - list of canonicalIDs
-     * @param _options - to send log id to vault
+     * @param options - to send log id to vault
      * @param cb - callback to calling function
-     * @returns The next is wrong. Here to keep archives.
-     * callback with either error or
+     * @returns callback with either error or
      * an object from Vault containing account canonicalID
      * as each object key and an accountId as the value (or "NotFound")
      */
-    getAccountIds(
-        canonicalIDs: string[],
-        _options: any,
-        cb: (err: null, data: { message: { body: any } }) => void
-    ) {
+    getAccountIds(canonicalIDs: string[], options: any, cb: any) {
         const results = {};
         canonicalIDs.forEach(canonicalID => {
             const foundEntity = this.indexer.getEntityByCanId(canonicalID);
@@ -181,14 +163,28 @@ class Backend {
     }
 }
 
-class S3AuthBackend extends Backend {
-    constructor(authdata: Accounts) {
-        super('s3', new Indexer(authdata));
+
+class S3AuthBackend extends InMemoryBackend {
+    /**
+     * @constructor
+     * @param authdata - the authentication config file's data
+     * @param authdata.accounts - array of account objects
+     * @param authdata.accounts[].name - account name
+     * @param authdata.accounts[].email - account email
+     * @param authdata.accounts[].arn - IAM resource name
+     * @param authdata.accounts[].canonicalID - account canonical ID
+     * @param authdata.accounts[].shortid - short account ID
+     * @param authdata.accounts[].keys - array of key objects
+     * @param authdata.accounts[].keys[].access - access key
+     * @param authdata.accounts[].keys[].secret - secret key
+     */
+    constructor(authdata?: Accounts) {
+        super('s3', new Indexer(authdata), _formatResponse);
     }
 
-    refreshAuthData(authData: Accounts) {
+    refreshAuthData(authData?: Accounts) {
         this.indexer = new Indexer(authData);
     }
 }
 
-export { S3AuthBackend as s3 };
+export { S3AuthBackend as s3 }

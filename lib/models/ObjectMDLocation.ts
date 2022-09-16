@@ -5,6 +5,7 @@ export type Location = BaseLocation & {
     size: number;
     dataStoreETag: string;
     dataStoreVersionId: string;
+    blockId?: string;
 };
 export type ObjectMDLocationData = {
     key: string;
@@ -12,6 +13,8 @@ export type ObjectMDLocationData = {
     size: number;
     dataStoreName: string;
     dataStoreETag: string;
+    dataStoreVersionId: string;
+    blockId?: string;
     cryptoScheme?: number;
     cipheredDataKey?: string;
 };
@@ -31,10 +34,14 @@ export default class ObjectMDLocation {
      * @param locationObj.dataStoreName - type of data store
      * @param locationObj.dataStoreETag - internal ETag of
      *   data part
+     * @param [locationObj.dataStoreVersionId] - versionId,
+     *   needed for cloud backends
      * @param [location.cryptoScheme] - if location data is
      * encrypted: the encryption scheme version
      * @param [location.cipheredDataKey] - if location data
      * is encrypted: the base64-encoded ciphered data key
+     * @param [locationObj.blockId] - blockId of the part,
+     *   set by the Azure Blob Service REST API frontend
      */
     constructor(locationObj: Location | (Location & Ciphered)) {
         this._data = {
@@ -43,6 +50,8 @@ export default class ObjectMDLocation {
             size: locationObj.size,
             dataStoreName: locationObj.dataStoreName,
             dataStoreETag: locationObj.dataStoreETag,
+            dataStoreVersionId: locationObj.dataStoreVersionId,
+            blockId: locationObj.blockId,
         };
         if ('cryptoScheme' in locationObj) {
             this._data.cryptoScheme = locationObj.cryptoScheme;
@@ -64,6 +73,7 @@ export default class ObjectMDLocation {
      * @param location - single data location info
      * @param location.key - data backend key
      * @param location.dataStoreName - type of data store
+     * @param [location.dataStoreVersionId] - data backend version ID
      * @param [location.cryptoScheme] - if location data is
      * encrypted: the encryption scheme version
      * @param [location.cipheredDataKey] - if location data
@@ -71,20 +81,28 @@ export default class ObjectMDLocation {
      * @return return this
      */
     setDataLocation(location: BaseLocation | (BaseLocation & Ciphered)) {
-        ['key', 'dataStoreName', 'cryptoScheme', 'cipheredDataKey'].forEach(
-            (attrName) => {
-                if (location[attrName] !== undefined) {
-                    this._data[attrName] = location[attrName];
-                } else {
-                    delete this._data[attrName];
-                }
+        [
+            'key',
+            'dataStoreName',
+            'dataStoreVersionId',
+            'cryptoScheme',
+            'cipheredDataKey',
+        ].forEach(attrName => {
+            if (location[attrName] !== undefined) {
+                this._data[attrName] = location[attrName];
+            } else {
+                delete this._data[attrName];
             }
-        );
+        });
         return this;
     }
 
     getDataStoreETag() {
         return this._data.dataStoreETag;
+    }
+
+    getDataStoreVersionId() {
+        return this._data.dataStoreVersionId;
     }
 
     getPartNumber() {
@@ -119,6 +137,15 @@ export default class ObjectMDLocation {
 
     getCipheredDataKey() {
         return this._data.cipheredDataKey;
+    }
+
+    getBlockId() {
+        return this._data.blockId;
+    }
+
+    setBlockId(blockId: string) {
+        this._data.blockId = blockId;
+        return this;
     }
 
     getValue() {

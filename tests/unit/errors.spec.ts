@@ -22,6 +22,22 @@ describe('Errors: ', () => {
         expect(custom.is).toHaveProperty('NoSuchEntity', true);
     });
 
+    it('should allow additional metadata fields', () => {
+        const error = errors.InvalidArgument;
+        const originDescription = error.description;
+        const origincode = error.code;
+        const origintype = error.type; // InvalidArgument
+        const custom = error.addMetadataEntry('fieldName', [{ key: 'value' }]);
+        expect(custom.metadata.get('fieldName')).toEqual([{ key: 'value' }]);
+        // Other properties should not change
+        expect(custom.is[origintype]).toBeTruthy()
+        expect(custom.description).toStrictEqual(originDescription);
+        expect(custom.code).toStrictEqual(origincode);
+        expect(custom.type).toStrictEqual(origintype);
+        // The original error should not be modified
+        expect(error.metadata.get('fieldName')).toBeUndefined()
+    });
+
     it('can be used as an http response', () => {
         // @ts-expect-errors
         errors.NoSuchEntity.writeResponse({

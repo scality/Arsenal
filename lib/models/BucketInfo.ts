@@ -8,10 +8,12 @@ import ObjectLockConfiguration from './ObjectLockConfiguration';
 import BucketPolicy from './BucketPolicy';
 import NotificationConfiguration from './NotificationConfiguration';
 import { ACL as OACL } from './ObjectMD';
+import { areTagsValid, BucketTag } from '../s3middleware/tagging';
 
 // WHEN UPDATING THIS NUMBER, UPDATE BucketInfoModelVersion.md CHANGELOG
-// BucketInfoModelVersion.md can be found in the root of this repository
-const modelVersion = 10;
+// BucketInfoModelVersion.md can be found in documentation/ at the root
+// of this repository
+const modelVersion = 14;
 
 export type CORS = {
     id: string;
@@ -58,56 +60,66 @@ export default class BucketInfo {
     _objectLockEnabled?: boolean;
     _objectLockConfiguration?: any;
     _notificationConfiguration?: any;
-    _tags?: { key: string; value: string }[] | null;
+    _tags?: Array<BucketTag>;
+    _readLocationConstraint: string | null;
+    _isNFS: boolean | null;
+    _azureInfo: any | null;
+    _ingestion: { status: 'enabled' | 'disabled' } | null;
 
     /**
     * Represents all bucket information.
     * @constructor
-    * @param {string} name - bucket name
-    * @param {string} owner - bucket owner's name
-    * @param {string} ownerDisplayName - owner's display name
-    * @param {object} creationDate - creation date of bucket
-    * @param {number} mdBucketModelVersion - bucket model version
-    * @param {object} [acl] - bucket ACLs (no need to copy
+    * @param name - bucket name
+    * @param owner - bucket owner's name
+    * @param ownerDisplayName - owner's display name
+    * @param creationDate - creation date of bucket
+    * @param mdBucketModelVersion - bucket model version
+    * @param [acl] - bucket ACLs (no need to copy
     * ACL object since referenced object will not be used outside of
     * BucketInfo instance)
-    * @param {boolean} transient - flag indicating whether bucket is transient
-    * @param {boolean} deleted - flag indicating whether attempt to delete
-    * @param {object} serverSideEncryption - sse information for this bucket
-    * @param {number} serverSideEncryption.cryptoScheme -
+    * @param transient - flag indicating whether bucket is transient
+    * @param deleted - flag indicating whether attempt to delete
+    * @param serverSideEncryption - sse information for this bucket
+    * @param serverSideEncryption.cryptoScheme -
     * cryptoScheme used
-    * @param {string} serverSideEncryption.algorithm -
+    * @param serverSideEncryption.algorithm -
     * algorithm to use
-    * @param {string} serverSideEncryption.masterKeyId -
+    * @param serverSideEncryption.masterKeyId -
     * key to get master key
-    * @param {string} serverSideEncryption.configuredMasterKeyId -
+    * @param serverSideEncryption.configuredMasterKeyId -
     * custom KMS key id specified by user
-    * @param {boolean} serverSideEncryption.mandatory -
+    * @param serverSideEncryption.mandatory -
     * true for mandatory encryption
     * bucket has been made
-    * @param {object} versioningConfiguration - versioning configuration
-    * @param {string} versioningConfiguration.Status - versioning status
-    * @param {object} versioningConfiguration.MfaDelete - versioning mfa delete
-    * @param {string} locationConstraint - locationConstraint for bucket
-    * @param {WebsiteConfiguration} [websiteConfiguration] - website
+    * @param versioningConfiguration - versioning configuration
+    * @param versioningConfiguration.Status - versioning status
+    * @param versioningConfiguration.MfaDelete - versioning mfa delete
+    * @param locationConstraint - locationConstraint for bucket that
+    * also includes the ingestion flag
+    * @param [websiteConfiguration] - website
     * configuration
-    * @param {object[]} [cors] - collection of CORS rules to apply
-    * @param {string} [cors[].id] - optional ID to identify rule
-    * @param {string[]} cors[].allowedMethods - methods allowed for CORS request
-    * @param {string[]} cors[].allowedOrigins - origins allowed for CORS request
-    * @param {string[]} [cors[].allowedHeaders] - headers allowed in an OPTIONS
+    * @param [cors] - collection of CORS rules to apply
+    * @param [cors[].id] - optional ID to identify rule
+    * @param cors[].allowedMethods - methods allowed for CORS request
+    * @param cors[].allowedOrigins - origins allowed for CORS request
+    * @param [cors[].allowedHeaders] - headers allowed in an OPTIONS
     * request via the Access-Control-Request-Headers header
-    * @param {number} [cors[].maxAgeSeconds] - seconds browsers should cache
+    * @param [cors[].maxAgeSeconds] - seconds browsers should cache
     * OPTIONS response
-    * @param {string[]} [cors[].exposeHeaders] - headers expose to applications
-    * @param {object} [replicationConfiguration] - replication configuration
-    * @param {object} [lifecycleConfiguration] - lifecycle configuration
-    * @param {object} [bucketPolicy] - bucket policy
-    * @param {string} [uid] - unique identifier for the bucket, necessary
-    * @param {boolean} [objectLockEnabled] - true when object lock enabled
-    * @param {object} [objectLockConfiguration] - object lock configuration
-    * @param {object} [notificationConfiguration] - bucket notification configuration
-    * @param {object[]} [tags] - bucket tags
+    * @param [cors[].exposeHeaders] - headers expose to applications
+    * @param [replicationConfiguration] - replication configuration
+    * @param [lifecycleConfiguration] - lifecycle configuration
+    * @param [bucketPolicy] - bucket policy
+    * @param [uid] - unique identifier for the bucket, necessary
+    * @param readLocationConstraint - readLocationConstraint for bucket
+    * addition for use with lifecycle operations
+    * @param [isNFS] - whether the bucket is on NFS
+    * @param [ingestionConfig] - object for ingestion status: en/dis
+    * @param [azureInfo] - Azure storage account specific info
+    * @param [objectLockEnabled] - true when object lock enabled
+    * @param [objectLockConfiguration] - object lock configuration
+    * @param [notificationConfiguration] - bucket notification configuration
+    * @param [tags] - bucket tag set
     */
     constructor(
         name: string,
@@ -127,10 +139,14 @@ export default class BucketInfo {
         lifecycleConfiguration?: any,
         bucketPolicy?: any,
         uid?: string,
+        readLocationConstraint?: string,
+        isNFS?: boolean,
+        ingestionConfig?: { status: 'enabled' | 'disabled' },
+        azureInfo?: any,
         objectLockEnabled?: boolean,
         objectLockConfiguration?: any,
         notificationConfiguration?: any,
-        tags?: { key: string; value: string }[],
+        tags?: Array<BucketTag> | [],
     ) {
         assert.strictEqual(typeof name, 'string');
         assert.strictEqual(typeof owner, 'string');
@@ -171,6 +187,15 @@ export default class BucketInfo {
         }
         if (locationConstraint) {
             assert.strictEqual(typeof locationConstraint, 'string');
+        }
+        if (ingestionConfig) {
+            assert.strictEqual(typeof ingestionConfig, 'object');
+        }
+        if (azureInfo) {
+            assert.strictEqual(typeof azureInfo, 'object');
+        }
+        if (readLocationConstraint) {
+            assert.strictEqual(typeof readLocationConstraint, 'string');
         }
         if (websiteConfiguration) {
             assert(websiteConfiguration instanceof WebsiteConfiguration);
@@ -217,9 +242,11 @@ export default class BucketInfo {
             READ: [],
             READ_ACP: [],
         };
-        if (tags) {
-            assert(Array.isArray(tags));
+
+        if (tags === undefined) {
+            tags = [] as BucketTag[];
         }
+        assert.strictEqual(areTagsValid(tags), true);
 
         // IF UPDATING PROPERTIES, INCREMENT MODELVERSION NUMBER ABOVE
         this._acl = aclInstance;
@@ -233,16 +260,20 @@ export default class BucketInfo {
         this._serverSideEncryption = serverSideEncryption || null;
         this._versioningConfiguration = versioningConfiguration || null;
         this._locationConstraint = locationConstraint || null;
+        this._readLocationConstraint = readLocationConstraint || null;
         this._websiteConfiguration = websiteConfiguration || null;
         this._replicationConfiguration = replicationConfiguration || null;
         this._cors = cors || null;
         this._lifecycleConfiguration = lifecycleConfiguration || null;
         this._bucketPolicy = bucketPolicy || null;
         this._uid = uid || uuid();
+        this._isNFS = isNFS || null;
+        this._ingestion = ingestionConfig || null;
+        this._azureInfo = azureInfo || null;
         this._objectLockEnabled = objectLockEnabled || false;
         this._objectLockConfiguration = objectLockConfiguration || null;
         this._notificationConfiguration = notificationConfiguration || null;
-        this._tags = tags || null;
+        this._tags = tags;
         return this;
     }
 
@@ -263,12 +294,16 @@ export default class BucketInfo {
             serverSideEncryption: this._serverSideEncryption,
             versioningConfiguration: this._versioningConfiguration,
             locationConstraint: this._locationConstraint,
+            readLocationConstraint: this._readLocationConstraint,
             websiteConfiguration: undefined,
             cors: this._cors,
             replicationConfiguration: this._replicationConfiguration,
             lifecycleConfiguration: this._lifecycleConfiguration,
             bucketPolicy: this._bucketPolicy,
             uid: this._uid,
+            isNFS: this._isNFS,
+            ingestion: this._ingestion,
+            azureInfo: this._azureInfo,
             objectLockEnabled: this._objectLockEnabled,
             objectLockConfiguration: this._objectLockConfiguration,
             notificationConfiguration: this._notificationConfiguration,
@@ -296,7 +331,8 @@ export default class BucketInfo {
             obj.transient, obj.deleted, obj.serverSideEncryption,
             obj.versioningConfiguration, obj.locationConstraint, websiteConfig,
             obj.cors, obj.replicationConfiguration, obj.lifecycleConfiguration,
-            obj.bucketPolicy, obj.uid, obj.objectLockEnabled,
+            obj.bucketPolicy, obj.uid, obj.readLocationConstraint, obj.isNFS,
+            obj.ingestion, obj.azureInfo, obj.objectLockEnabled,
             obj.objectLockConfiguration, obj.notificationConfiguration, obj.tags);
     }
 
@@ -321,8 +357,10 @@ export default class BucketInfo {
             data._versioningConfiguration, data._locationConstraint,
             data._websiteConfiguration, data._cors,
             data._replicationConfiguration, data._lifecycleConfiguration,
-            data._bucketPolicy, data._uid, data._objectLockEnabled,
-            data._objectLockConfiguration, data._notificationConfiguration, data._tags);
+            data._bucketPolicy, data._uid, data._readLocationConstraint,
+            data._isNFS, data._ingestion, data._azureInfo,
+            data._objectLockEnabled, data._objectLockConfiguration,
+            data._notificationConfiguration, data._tags);
     }
 
     /**
@@ -620,6 +658,17 @@ export default class BucketInfo {
     }
 
     /**
+    * Get read location constraint.
+    * @return - bucket read location constraint
+    */
+    getReadLocationConstraint() {
+        if (this._readLocationConstraint) {
+            return this._readLocationConstraint;
+        }
+        return this._locationConstraint;
+    }
+
+    /**
      * Set Bucket model version
      *
      * @param version - Model version
@@ -708,6 +757,85 @@ export default class BucketInfo {
         return this;
     }
     /**
+     * Check if the bucket is an NFS bucket.
+     * @return - Wether the bucket is NFS or not
+     */
+    isNFS() {
+        return this._isNFS;
+    }
+    /**
+     * Set whether the bucket is an NFS bucket.
+     * @param isNFS - Wether the bucket is NFS or not
+     * @return - bucket info instance
+     */
+    setIsNFS(isNFS: boolean) {
+        this._isNFS = isNFS;
+        return this;
+    }
+    /**
+     * enable ingestion, set 'this._ingestion' to { status: 'enabled' }
+     * @return - bucket info instance
+     */
+    enableIngestion() {
+        this._ingestion = { status: 'enabled' };
+        return this;
+    }
+    /**
+     * disable ingestion, set 'this._ingestion' to { status: 'disabled' }
+     * @return - bucket info instance
+     */
+    disableIngestion() {
+        this._ingestion = { status: 'disabled' };
+        return this;
+    }
+    /**
+     * Get ingestion configuration
+     * @return - bucket ingestion configuration: Enabled or Disabled
+     */
+    getIngestion() {
+        return this._ingestion;
+    }
+
+    /**
+     ** Check if bucket is an ingestion bucket
+     * @return - 'true' if bucket is ingestion bucket, 'false' if
+     * otherwise
+     */
+    isIngestionBucket() {
+        const ingestionConfig = this.getIngestion();
+        if (ingestionConfig) {
+            return true;
+        }
+        return false;
+    }
+    /**
+     * Check if ingestion is enabled
+     * @return - 'true' if ingestion is enabled, otherwise 'false'
+     */
+    isIngestionEnabled() {
+        const ingestionConfig = this.getIngestion();
+        return ingestionConfig ? ingestionConfig.status === 'enabled' : false;
+    }
+
+    /**
+     * Return the Azure specific storage account information for this bucket
+     * @return - a structure suitable for {@link BucketAzureIno}
+     *   constructor
+     */
+    getAzureInfo() {
+        return this._azureInfo;
+    }
+    /**
+     * Set the Azure specific storage account information for this bucket
+     * @param azureInfo - a structure suitable for
+     *   {@link BucketAzureInfo} construction
+     * @return - bucket info instance
+     */
+    setAzureInfo(azureInfo: any) {
+        this._azureInfo = azureInfo;
+        return this;
+    }
+    /**
     * Check if object lock is enabled.
     * @return - depending on whether object lock is enabled
     */
@@ -726,20 +854,17 @@ export default class BucketInfo {
 
     /**
      * Get the value of bucket tags
-     * @return - Array of bucket tags as {"key" : "key", "value": "value"}
+     * @return - Array of bucket tags
      */
     getTags() {
         return this._tags;
     }
-
+    
     /**
      * Set bucket tags
-     * @param tags - collection of tags
-     * @param tags[].key - key of the tag
-     * @param tags[].value - value of the tag
      * @return - bucket info instance
      */
-    setTags(tags: { key: string; value: string }[]) {
+    setTags(tags: Array<BucketTag>) {
         this._tags = tags;
         return this;
     }

@@ -120,8 +120,8 @@ export function generateVersionId(info: string, replicationGroupId: string): str
     lastSeq = lastTimestamp === ts ? lastSeq + 1 : 0;
     lastTimestamp = ts;
 
-    // if S3_VERSION_ID_ENCODING_TYPE is "hex", info is used. By default, it is not used.
-    if (process.env.S3_VERSION_ID_ENCODING_TYPE === 'hex') {
+    // if S3_VERSION_ID_ENCODING_TYPE is "hex", info is used.
+    if (process.env.S3_VERSION_ID_ENCODING_TYPE === 'hex' || !process.env.S3_VERSION_ID_ENCODING_TYPE) {
         // info field stays as is
     } else {
         info = ''; // eslint-disable-line
