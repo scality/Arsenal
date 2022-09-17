@@ -166,7 +166,7 @@ describe('network.Server: ', () => {
                 if (err) {
                     return ws.onStop(() => {
                         clearTimeout(requestTimeout);
-                        if (err.code === 'EPROTO' || err.code === 'ECONNRESET') {
+                        if (err.code === 'EPROTO') {
                             return done();
                         }
                         return done(err);

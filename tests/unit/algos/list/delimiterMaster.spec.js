@@ -1,9 +1,7 @@
 'use strict'; // eslint-disable-line strict
 
 const assert = require('assert');
-const chance = require('chance').Chance(); // eslint-disable-line
 
-const { getCommonPrefix } = require('../../../../lib/algos/list/delimiter');
 const DelimiterMaster =
     require('../../../../lib/algos/list/delimiterMaster').DelimiterMaster;
 const {
@@ -18,6 +16,8 @@ const Version = require('../../../../lib/versioning/Version').Version;
 const { generateVersionId } = require('../../../../lib/versioning/VersionID');
 const { DbPrefixes } = VSConst;
 const zpad = require('../../helpers').zpad;
+
+
 const VID_SEP = VSConst.VersionId.Separator;
 const EmptyResult = {
     CommonPrefixes: [],
@@ -46,111 +46,6 @@ function getListingKey(key, vFormat) {
     return assert.fail(`bad vFormat ${vFormat}`);
 }
 
-const MAX_STREAK_LENGTH = 100;
-
-function createStreakState(prefix, vFormat) {
-    return {
-        vFormat,
-        prefix,
-        prefixes: new Set(),
-        params: {},
-        streakLength: 0,
-        gteparams: null,
-    };
-}
-
-/**
- * Simplified version of logic found in Metadata's RepdServer. When MAX_STREAK_LENGTH (typically 100)
- * is reached, we attempt to skip to the next listing range as a performance optimization.
- * @param {Integer} filteringResult - 0, 1, -1 indicating if we can skip to the next character range.
- * @param {String} skippingRange - lower bound that the listing can begin from.
- * @returns {undefined}
- */
-/* eslint-disable no-param-reassign */
-function handleStreak(filteringResult, skippingRange, state) {
-    if (filteringResult < 0) {
-        // readStream would be destroyed. In this mock, we just continue.
-    } else if (filteringResult === 0 && skippingRange) {
-        // check if MAX_STREAK_LENGTH consecutive keys have been
-        // skipped
-        if (++state.streakLength === MAX_STREAK_LENGTH) {
-            if (Array.isArray(skippingRange)) {
-                // With synchronized listing, the listing
-                // algo backend skipping() function must
-                // return as many skip keys as listing
-                // param sets.
-                for (let i = 0; i < skippingRange.length; ++i) {
-                    state.params[i].gte = inc(skippingRange[i]);
-                }
-            } else {
-                state.params.gte = inc(skippingRange);
-            }
-            if (state.gteparams && state.gteparams === state.params.gte) {
-                state.streakLength = 1;
-            } else {
-                // stop listing this key range
-                state.gteparams = state.params.gte;
-            }
-        }
-    } else {
-        state.streakLength = 1;
-    }
-}/* eslint-enable */
-
-/**
- * Generate a random number of versioned keys.
- * @param {String} masterKey - base key used to derive version keys
- * @param {Integer} numKeys - how many versioned keys to generate
- * @param {Object} state - test case state
- * @yields {Object} - { key, isDeleteMarker }
- * @returns {undefined}
- */
-function *generateVersionedKeys(masterKey, numKeys, state) {
-    for (let i = 0; i < numKeys; i++) {
-        yield {
-            key: `${masterKey}${VID_SEP}${zpad(i)}`,
-            isDeleteMarker: state.vFormat === 'v0' && chance.bool(),
-            canSkip: true,
-        };
-    }
-}
-
-/**
- * Generate raw listing keys in alphabetical order.
- * @param {Integer} count - how many keys to generate.
- * @param {Object} state - state for test run.
- * @yields {Object} - { key, isDeleteMarker }
- */
-
-function *generateKeys(count, state) {
-    let idx = 0;
-    let masterKey = '_Common-Prefix/';
-    yield { key: masterKey, isDeleteMarker: false, canSkip: false };
-
-    idx++;
-    while (idx < count) {
-        masterKey = `_Common-Prefix/${zpad(idx)}`;
-        const masterKeyWithSubprefix = `_Common-Prefix/${zpad(idx)}/${zpad(idx)}`;
-
-        const hasSubprefix = chance.bool();
-        const isDeleteMarker = state.vFormat === 'v0' && chance.bool();
-        const baseKey = hasSubprefix ? masterKeyWithSubprefix : masterKey;
-
-        let canSkip = isDeleteMarker;
-        if (hasSubprefix || state.prefix[state.prefix.length - 1] !== '/') {
-            canSkip = canSkip || state.handleSubprefixKey(baseKey);
-        }
-
-        yield { key: baseKey, isDeleteMarker, canSkip };
-        idx++;
-
-        const versioned = chance.integer({ min: 0, max: 200 });
-        const allowedVersionedKeys = Math.min(count - idx, versioned);
-        yield* generateVersionedKeys(baseKey, allowedVersionedKeys, state);
-        idx += allowedVersionedKeys;
-    }
-}
-
 ['v0', 'v1'].forEach(vFormat => {
     describe(`Delimiter All masters listing algorithm vFormat=${vFormat}`, () => {
         it('should return SKIP_NONE for DelimiterMaster when both NextMarker ' +
@@ -162,70 +57,6 @@ function *generateKeys(count, state) {
             // When there is no NextMarker or NextContinuationToken, it should
             // return SKIP_NONE
             assert.strictEqual(delimiter.skipping(), SKIP_NONE);
-        });
-
-        it('should list all subprefixes when handleStreak is applied as in RepdServer', () => {
-            ['_Common-Prefix', '_Common-Prefix/'].forEach(prefix => {
-                const state = createStreakState(prefix, vFormat);
-                state.handleSubprefixKey = baseKey => {
-                    const isLastDelim = state.prefix[state.prefix.length - 1] === '/';
-                    const lastIdx = isLastDelim ? baseKey.lastIndexOf('/') : state.prefix.length;
-                    const prefix = isLastDelim ? getCommonPrefix(baseKey, '/', lastIdx) : baseKey.slice(0, lastIdx);
-                    if (state.prefixes.has(prefix) || (!isLastDelim && baseKey.length > lastIdx)) {
-                        return true;
-                    }
-
-                    state.prefixes.add(prefix);
-                    return false;
-                };
-
-                const maxKeys = 1000000;
-                const delimiter = new DelimiterMaster({
-                    maxKeys,
-                    prefix,
-                    delimiter: '/',
-                    startAfter: '',
-                    continuationToken: '',
-                    v2: true,
-                    fetchOwner: false }, fakeLogger, vFormat);
-
-                [...generateKeys(maxKeys, state)].forEach(ob => {
-                    const { key, isDeleteMarker, canSkip } = ob;
-                    // simulate not doing a raw listing when key < params.gte
-                    // this represents a key not reaching the read stream from leveldb
-                    if (state.params.gte && key < state.params.gte) {
-                        return;
-                    }
-
-                    if (!key.includes(VID_SEP)) { // master key
-                        const version = new Version({ isDeleteMarker });
-                        const obj = {
-                            key: getListingKey(key, vFormat),
-                            value: version.toString(),
-                        };
-
-                        const res = delimiter.filter(obj);
-                        const skippingRange = delimiter.skipping();
-                        handleStreak(res, skippingRange, state);
-
-                        const expected = canSkip ? FILTER_SKIP : FILTER_ACCEPT;
-                        assert.strictEqual(res, expected);
-                    } else { // versioned key
-                        if (vFormat === 'v0') {
-                            const vid = key.split(VID_SEP).slice(-1)[0];
-                            const version = new Version({ versionId: vid, isDeleteMarker });
-                            const obj2 = {
-                                key: getListingKey(key, vFormat),
-                                value: version.toString(),
-                            };
-                            const res = delimiter.filter(obj2);
-                            const skippingRange = delimiter.skipping();
-                            handleStreak(res, skippingRange, state);
-                            assert.strictEqual(res, FILTER_SKIP);
-                        }
-                    }
-                });
-            });
         });
 
         it('should return <key><VersionIdSeparator> for DelimiterMaster when ' +
