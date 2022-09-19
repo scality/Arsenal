@@ -406,7 +406,7 @@ const tests = [
         }],
     }, {
         Versions: [],
-        CommonPrefixes: ['notes/summer/'],
+        CommonPrefixes: ['notes/spring/'],
         Delimiter: '/',
         IsTruncated: true,
         NextKeyMarker: 'notes/summer/',

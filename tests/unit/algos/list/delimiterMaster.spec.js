@@ -59,7 +59,7 @@ function getListingKey(key, vFormat) {
             assert.strictEqual(delimiter.skipping(), SKIP_NONE);
         });
 
-        it('should return <key><VersionIdSeparator> for DelimiterMaster when ' +
+        it('should return good skipping value for DelimiterMaster when ' +
         'NextMarker is set and there is a delimiter', () => {
             const key = 'key';
             const delimiter = new DelimiterMaster({ delimiter: '/', marker: key },
@@ -70,13 +70,16 @@ function getListingKey(key, vFormat) {
             delimiter.filter({ key: listingKey, value: '' });
             assert.strictEqual(delimiter.NextMarker, key);
 
-            /* With a delimiter skipping should return previous key + VID_SEP
-             * (except when a delimiter is set and the NextMarker ends with the
-             * delimiter) . */
-            assert.strictEqual(delimiter.skipping(), listingKey + VID_SEP);
+            if (vFormat === 'v0') {
+                // With a delimiter skipping should return previous key + VID_SEP in v0
+                assert.strictEqual(delimiter.skipping(), listingKey + VID_SEP);
+            } else {
+                // in v1 there are no versions to skip
+                assert.strictEqual(delimiter.skipping(), SKIP_NONE);
+            }
         });
 
-        it('should return <key><VersionIdSeparator> for DelimiterMaster when ' +
+        it('should return good skipping value for DelimiterMaster when ' +
         'NextContinuationToken is set and there is a delimiter', () => {
             const key = 'key';
             const delimiter = new DelimiterMaster(
@@ -88,11 +91,17 @@ function getListingKey(key, vFormat) {
             delimiter.filter({ key: listingKey, value: '' });
             assert.strictEqual(delimiter.NextContinuationToken, key);
 
-            assert.strictEqual(delimiter.skipping(), listingKey + VID_SEP);
+            if (vFormat === 'v0') {
+                // With a delimiter skipping should return previous key + VID_SEP in v0
+                assert.strictEqual(delimiter.skipping(), listingKey + VID_SEP);
+            } else {
+                // in v1 there are no versions to skip
+                assert.strictEqual(delimiter.skipping(), SKIP_NONE);
+            }
         });
 
-        it('should return NextMarker for DelimiterMaster when NextMarker is set' +
-        ', there is a delimiter and the key ends with the delimiter', () => {
+        it('should return SKIP_NONE for DelimiterMaster when NextMarker is set' +
+        ', there is a delimiter and the filtered key ends with the delimiter', () => {
             const delimiterChar = '/';
             const keyWithEndingDelimiter = `key${delimiterChar}`;
             const delimiter = new DelimiterMaster({
@@ -100,13 +109,10 @@ function getListingKey(key, vFormat) {
                 marker: keyWithEndingDelimiter,
             }, fakeLogger, vFormat);
 
-            /* When a delimiter is set and the NextMarker ends with the
-             * delimiter it should return the next marker value. */
+            /* When a NextMarker is set to the key, we should get
+             * SKIP_NONE because no key has been listed yet. */
             assert.strictEqual(delimiter.NextMarker, keyWithEndingDelimiter);
-            const skipKey = vFormat === 'v1' ?
-                `${DbPrefixes.Master}${keyWithEndingDelimiter}` :
-                keyWithEndingDelimiter;
-            assert.strictEqual(delimiter.skipping(), skipKey);
+            assert.strictEqual(delimiter.skipping(), SKIP_NONE);
         });
 
         it('should skip entries not starting with prefix', () => {
@@ -440,22 +446,6 @@ function getListingKey(key, vFormat) {
                 });
             });
 
-            it('should skip a versioned entry when there is a delimiter and the key ' +
-            'starts with the NextMarker value', () => {
-                const delimiterChar = '/';
-                const commonPrefix = `commonPrefix${delimiterChar}`;
-                const key = `${commonPrefix}key${VID_SEP}version`;
-                const value = 'value';
-
-                const delimiter = new DelimiterMaster({ delimiter: delimiterChar },
-                    fakeLogger, vFormat);
-                /* TODO: should be set to a whole key instead of just a common prefix
-                 * once ZENKO-1048 is fixed. */
-                delimiter.NextMarker = commonPrefix;
-
-                assert.strictEqual(delimiter.filter({ key, value }), FILTER_SKIP);
-            });
-
             it('should return good skipping value for DelimiterMaster on replay keys', () => {
                 const delimiter = new DelimiterMaster(
                     { delimiter: '/', v2: true },
@@ -487,6 +477,81 @@ function getListingKey(key, vFormat) {
                     FILTER_ACCEPT);
                 // ...it should return to skipping by prefix as usual
                 assert.strictEqual(delimiter.skipping(), `${inc(DbPrefixes.Replay)}foo/`);
+            });
+
+            it('should not skip over whole prefix when a key equals the prefix', () => {
+                const FILTER_MAP = {
+                    '0': 'FILTER_SKIP',
+                    '1': 'FILTER_ACCEPT',
+                    '-1': 'FILTER_END',
+                };
+                const delimiter = new DelimiterMaster({
+                    prefix: 'prefix/',
+                    delimiter: '/',
+                }, fakeLogger, vFormat);
+                for (const testEntry of [
+                    {
+                        key: 'prefix/',
+                        expectedRes: FILTER_ACCEPT,
+                        expectedSkipping: `prefix/${VID_SEP}`,
+                    },
+                    {
+                        key: `prefix/${VID_SEP}v1`,
+                        value: '{}',
+                        expectedRes: FILTER_SKIP, // versions get skipped after master
+                        expectedSkipping: `prefix/${VID_SEP}`,
+                    },
+                    {
+                        key: 'prefix/deleted',
+                        isDeleteMarker: true,
+                        expectedRes: FILTER_SKIP, // delete markers get skipped
+                        expectedSkipping: `prefix/deleted${VID_SEP}`,
+                    },
+                    {
+                        key: `prefix/deleted${VID_SEP}v1`,
+                        isDeleteMarker: true,
+                        expectedRes: FILTER_SKIP,
+                        expectedSkipping: `prefix/deleted${VID_SEP}`,
+                    },
+                    {
+                        key: `prefix/deleted${VID_SEP}v2`,
+                        expectedRes: FILTER_SKIP,
+                        expectedSkipping: `prefix/deleted${VID_SEP}`,
+                    },
+                    {
+                        key: 'prefix/subprefix1/key-1',
+                        expectedRes: FILTER_ACCEPT,
+                        expectedSkipping: 'prefix/subprefix1/',
+                    },
+                    {
+                        key: `prefix/subprefix1/key-1${VID_SEP}v1`,
+                        expectedRes: FILTER_SKIP,
+                        expectedSkipping: 'prefix/subprefix1/',
+                    },
+                    {
+                        key: 'prefix/subprefix1/key-2',
+                        expectedRes: FILTER_SKIP,
+                        expectedSkipping: 'prefix/subprefix1/',
+                    },
+                    {
+                        key: `prefix/subprefix1/key-2${VID_SEP}v1`,
+                        expectedRes: FILTER_SKIP,
+                        expectedSkipping: 'prefix/subprefix1/',
+                    },
+                ]) {
+                    const entry = {
+                        key: testEntry.key,
+                    };
+                    if (testEntry.isDeleteMarker) {
+                        entry.value = '{"isDeleteMarker":true}';
+                    } else {
+                        entry.value = '{}';
+                    }
+                    const res = delimiter.filter(entry);
+                    const skipping = delimiter.skipping();
+                    assert.strictEqual(res, testEntry.expectedRes);
+                    assert.strictEqual(skipping, testEntry.expectedSkipping);
+                }
             });
         }
     });
