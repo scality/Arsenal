@@ -2,8 +2,6 @@
 
 const assert = require('assert');
 const chance = require('chance').Chance(); // eslint-disable-line
-
-const { getCommonPrefix } = require('../../../../lib/algos/list/delimiter');
 const DelimiterMaster =
     require('../../../../lib/algos/list/delimiterMaster').DelimiterMaster;
 const {
@@ -46,111 +44,6 @@ function getListingKey(key, vFormat) {
     return assert.fail(`bad vFormat ${vFormat}`);
 }
 
-const MAX_STREAK_LENGTH = 100;
-
-function createStreakState(prefix, vFormat) {
-    return {
-        vFormat,
-        prefix,
-        prefixes: new Set(),
-        params: {},
-        streakLength: 0,
-        gteparams: null,
-    };
-}
-
-/**
- * Simplified version of logic found in Metadata's RepdServer. When MAX_STREAK_LENGTH (typically 100)
- * is reached, we attempt to skip to the next listing range as a performance optimization.
- * @param {Integer} filteringResult - 0, 1, -1 indicating if we can skip to the next character range.
- * @param {String} skippingRange - lower bound that the listing can begin from.
- * @returns {undefined}
- */
-/* eslint-disable no-param-reassign */
-function handleStreak(filteringResult, skippingRange, state) {
-    if (filteringResult < 0) {
-        // readStream would be destroyed. In this mock, we just continue.
-    } else if (filteringResult === 0 && skippingRange) {
-        // check if MAX_STREAK_LENGTH consecutive keys have been
-        // skipped
-        if (++state.streakLength === MAX_STREAK_LENGTH) {
-            if (Array.isArray(skippingRange)) {
-                // With synchronized listing, the listing
-                // algo backend skipping() function must
-                // return as many skip keys as listing
-                // param sets.
-                for (let i = 0; i < skippingRange.length; ++i) {
-                    state.params[i].gte = inc(skippingRange[i]);
-                }
-            } else {
-                state.params.gte = inc(skippingRange);
-            }
-            if (state.gteparams && state.gteparams === state.params.gte) {
-                state.streakLength = 1;
-            } else {
-                // stop listing this key range
-                state.gteparams = state.params.gte;
-            }
-        }
-    } else {
-        state.streakLength = 1;
-    }
-}/* eslint-enable */
-
-/**
- * Generate a random number of versioned keys.
- * @param {String} masterKey - base key used to derive version keys
- * @param {Integer} numKeys - how many versioned keys to generate
- * @param {Object} state - test case state
- * @yields {Object} - { key, isDeleteMarker }
- * @returns {undefined}
- */
-function *generateVersionedKeys(masterKey, numKeys, state) {
-    for (let i = 0; i < numKeys; i++) {
-        yield {
-            key: `${masterKey}${VID_SEP}${zpad(i)}`,
-            isDeleteMarker: state.vFormat === 'v0' && chance.bool(),
-            canSkip: true,
-        };
-    }
-}
-
-/**
- * Generate raw listing keys in alphabetical order.
- * @param {Integer} count - how many keys to generate.
- * @param {Object} state - state for test run.
- * @yields {Object} - { key, isDeleteMarker }
- */
-
-function *generateKeys(count, state) {
-    let idx = 0;
-    let masterKey = '_Common-Prefix/';
-    yield { key: masterKey, isDeleteMarker: false, canSkip: false };
-
-    idx++;
-    while (idx < count) {
-        masterKey = `_Common-Prefix/${zpad(idx)}`;
-        const masterKeyWithSubprefix = `_Common-Prefix/${zpad(idx)}/${zpad(idx)}`;
-
-        const hasSubprefix = chance.bool();
-        const isDeleteMarker = state.vFormat === 'v0' && chance.bool();
-        const baseKey = hasSubprefix ? masterKeyWithSubprefix : masterKey;
-
-        let canSkip = isDeleteMarker;
-        if (hasSubprefix || state.prefix[state.prefix.length - 1] !== '/') {
-            canSkip = canSkip || state.handleSubprefixKey(baseKey);
-        }
-
-        yield { key: baseKey, isDeleteMarker, canSkip };
-        idx++;
-
-        const versioned = chance.integer({ min: 0, max: 200 });
-        const allowedVersionedKeys = Math.min(count - idx, versioned);
-        yield* generateVersionedKeys(baseKey, allowedVersionedKeys, state);
-        idx += allowedVersionedKeys;
-    }
-}
-
 ['v0', 'v1'].forEach(vFormat => {
     describe(`Delimiter All masters listing algorithm vFormat=${vFormat}`, () => {
         it('should return SKIP_NONE for DelimiterMaster when both NextMarker ' +
@@ -162,70 +55,6 @@ function *generateKeys(count, state) {
             // When there is no NextMarker or NextContinuationToken, it should
             // return SKIP_NONE
             assert.strictEqual(delimiter.skipping(), SKIP_NONE);
-        });
-
-        it('should list all subprefixes when handleStreak is applied as in RepdServer', () => {
-            ['_Common-Prefix', '_Common-Prefix/'].forEach(prefix => {
-                const state = createStreakState(prefix, vFormat);
-                state.handleSubprefixKey = baseKey => {
-                    const isLastDelim = state.prefix[state.prefix.length - 1] === '/';
-                    const lastIdx = isLastDelim ? baseKey.lastIndexOf('/') : state.prefix.length;
-                    const prefix = isLastDelim ? getCommonPrefix(baseKey, '/', lastIdx) : baseKey.slice(0, lastIdx);
-                    if (state.prefixes.has(prefix) || (!isLastDelim && baseKey.length > lastIdx)) {
-                        return true;
-                    }
-
-                    state.prefixes.add(prefix);
-                    return false;
-                };
-
-                const maxKeys = 1000000;
-                const delimiter = new DelimiterMaster({
-                    maxKeys,
-                    prefix,
-                    delimiter: '/',
-                    startAfter: '',
-                    continuationToken: '',
-                    v2: true,
-                    fetchOwner: false }, fakeLogger, vFormat);
-
-                [...generateKeys(maxKeys, state)].forEach(ob => {
-                    const { key, isDeleteMarker, canSkip } = ob;
-                    // simulate not doing a raw listing when key < params.gte
-                    // this represents a key not reaching the read stream from leveldb
-                    if (state.params.gte && key < state.params.gte) {
-                        return;
-                    }
-
-                    if (!key.includes(VID_SEP)) { // master key
-                        const version = new Version({ isDeleteMarker });
-                        const obj = {
-                            key: getListingKey(key, vFormat),
-                            value: version.toString(),
-                        };
-
-                        const res = delimiter.filter(obj);
-                        const skippingRange = delimiter.skipping();
-                        handleStreak(res, skippingRange, state);
-
-                        const expected = canSkip ? FILTER_SKIP : FILTER_ACCEPT;
-                        assert.strictEqual(res, expected);
-                    } else { // versioned key
-                        if (vFormat === 'v0') {
-                            const vid = key.split(VID_SEP).slice(-1)[0];
-                            const version = new Version({ versionId: vid, isDeleteMarker });
-                            const obj2 = {
-                                key: getListingKey(key, vFormat),
-                                value: version.toString(),
-                            };
-                            const res = delimiter.filter(obj2);
-                            const skippingRange = delimiter.skipping();
-                            handleStreak(res, skippingRange, state);
-                            assert.strictEqual(res, FILTER_SKIP);
-                        }
-                    }
-                });
-            });
         });
 
         it('should return <key><VersionIdSeparator> for DelimiterMaster when ' +
@@ -656,6 +485,336 @@ function *generateKeys(count, state) {
                     FILTER_ACCEPT);
                 // ...it should return to skipping by prefix as usual
                 assert.strictEqual(delimiter.skipping(), `${inc(DbPrefixes.Replay)}foo/`);
+            });
+
+            it('should not skip over whole prefix when a key equals the prefix and ends with delimiter', () => {
+                for (const prefix of ['prefix/', 'prefix/subprefix/']) {
+                    const delimiter = new DelimiterMaster({
+                        prefix,
+                        delimiter: '/',
+                    }, fakeLogger, vFormat);
+                    for (const testEntry of [
+                        {
+                            key: prefix,
+                            expectedRes: FILTER_ACCEPT,
+                            expectedSkipping: `${prefix}${VID_SEP}`,
+                        },
+                        {
+                            key: `${prefix}${VID_SEP}v1`,
+                            value: '{}',
+                            expectedRes: FILTER_SKIP, // versions get skipped after master
+                            expectedSkipping: `${prefix}${VID_SEP}`,
+                        },
+                        {
+                            key: `${prefix}deleted`,
+                            isDeleteMarker: true,
+                            expectedRes: FILTER_SKIP, // delete markers get skipped
+                            expectedSkipping: `${prefix}${VID_SEP}`,
+                        },
+                        {
+                            key: `${prefix}deleted${VID_SEP}v1`,
+                            isDeleteMarker: true,
+                            expectedRes: FILTER_SKIP,
+                            expectedSkipping: `${prefix}${VID_SEP}`,
+                        },
+                        {
+                            key: `${prefix}deleted${VID_SEP}v2`,
+                            expectedRes: FILTER_SKIP,
+                            expectedSkipping: `${prefix}${VID_SEP}`,
+                        },
+                        {
+                            key: `${prefix}notdeleted`,
+                            expectedRes: FILTER_ACCEPT,
+                            expectedSkipping: `${prefix}notdeleted${VID_SEP}`,
+                        },
+                        {
+                            key: `${prefix}notdeleted${VID_SEP}v1`,
+                            expectedRes: FILTER_SKIP,
+                            expectedSkipping: `${prefix}notdeleted${VID_SEP}`,
+                        },
+                        {
+                            key: `${prefix}subprefix1/key-1`,
+                            expectedRes: FILTER_ACCEPT,
+                            expectedSkipping: `${prefix}subprefix1/`,
+                        },
+                        {
+                            key: `${prefix}subprefix1/key-1${VID_SEP}v1`,
+                            expectedRes: FILTER_SKIP,
+                            expectedSkipping: `${prefix}subprefix1/`,
+                        },
+                        {
+                            key: `${prefix}subprefix1/key-2`,
+                            expectedRes: FILTER_SKIP,
+                            expectedSkipping: `${prefix}subprefix1/`,
+                        },
+                        {
+                            key: `${prefix}subprefix1/key-2${VID_SEP}v1`,
+                            expectedRes: FILTER_SKIP,
+                            expectedSkipping: `${prefix}subprefix1/`,
+                        },
+                    ]) {
+                        const entry = {
+                            key: testEntry.key,
+                        };
+                        if (testEntry.isDeleteMarker) {
+                            entry.value = '{"isDeleteMarker":true}';
+                        } else {
+                            entry.value = '{}';
+                        }
+                        const res = delimiter.filter(entry);
+                        const skipping = delimiter.skipping();
+                        assert.strictEqual(res, testEntry.expectedRes);
+                        assert.strictEqual(skipping, testEntry.expectedSkipping);
+                    }
+                }
+            });
+
+            it('should skip over whole prefix when a key equals the prefix and does not end with delimiter', () => {
+                for (const prefix of ['prefix', 'prefix/subprefix']) {
+                    const delimiter = new DelimiterMaster({
+                        prefix,
+                        delimiter: '/',
+                    }, fakeLogger, vFormat);
+                    for (const testEntry of [
+                        {
+                            key: prefix,
+                            expectedRes: FILTER_ACCEPT,
+                            expectedSkipping: `${prefix}${VID_SEP}`,
+                        },
+                        {
+                            key: `${prefix}${VID_SEP}v1`,
+                            expectedRes: FILTER_SKIP,
+                            expectedSkipping: `${prefix}${VID_SEP}`,
+                        },
+                        {
+                            key: `${prefix}/`,
+                            expectedRes: FILTER_ACCEPT,
+                            expectedSkipping: `${prefix}/`,
+                        },
+                        {
+                            key: `${prefix}/${VID_SEP}v1`,
+                            value: '{}',
+                            expectedRes: FILTER_SKIP,
+                            expectedSkipping: `${prefix}/`, // common prefix already seen
+                        },
+                        {
+                            key: `${prefix}/deleted`,
+                            isDeleteMarker: true, // skipped delete marker
+                            expectedRes: FILTER_SKIP,
+                            expectedSkipping: `${prefix}/`, // already added to common prefix
+                        },
+                        {
+                            key: `${prefix}/notdeleted`,
+                            expectedRes: FILTER_SKIP,
+                            expectedSkipping: `${prefix}/`, // already added to common prefix
+                        },
+                        {
+                            key: `${prefix}ed`,
+                            isDeleteMarker: false,
+                            expectedRes: FILTER_ACCEPT, // new master key seen
+                            expectedSkipping: `${prefix}ed${VID_SEP}`,
+                        },
+                        {
+                            key: `${prefix}ed/`,
+                            expectedRes: FILTER_ACCEPT, // new master key ending with prefix
+                            expectedSkipping: `${prefix}ed/`,
+                        },
+                        {
+                            key: `${prefix}ed/subprefix1/key-1`,
+                            expectedRes: FILTER_SKIP, // already have prefixed/ common prefix
+                            expectedSkipping: `${prefix}ed/`,
+                        },
+                        {
+                            key: `${prefix}ed/subprefix1/key-1${VID_SEP}v1`,
+                            expectedRes: FILTER_SKIP,
+                            expectedSkipping: `${prefix}ed/`,
+                        },
+                        {
+                            key: `${prefix}ed/subprefix1/key-2`,
+                            expectedRes: FILTER_SKIP,
+                            expectedSkipping: `${prefix}ed/`,
+                        },
+                        {
+                            key: `${prefix}ed/subprefix1/key-2${VID_SEP}v1`,
+                            expectedRes: FILTER_SKIP,
+                            expectedSkipping: `${prefix}ed/`,
+                        },
+                    ]) {
+                        const entry = {
+                            key: testEntry.key,
+                        };
+                        if (testEntry.isDeleteMarker) {
+                            entry.value = '{"isDeleteMarker":true}';
+                        } else {
+                            entry.value = '{}';
+                        }
+                        const res = delimiter.filter(entry);
+                        const skipping = delimiter.skipping();
+                        assert.strictEqual(res, testEntry.expectedRes);
+                        assert.strictEqual(skipping, testEntry.expectedSkipping);
+                    }
+                }
+            });
+
+            it('should not skip over whole prefix when key equals the prefix and prefix key has delete marker ' +
+            'and prefix ends with delimiter', () => {
+                for (const prefix of ['prefix/', 'prefix/subprefix/']) {
+                    const delimiter = new DelimiterMaster({
+                        prefix,
+                        delimiter: '/',
+                    }, fakeLogger, vFormat);
+                    for (const testEntry of [
+                        {
+                            key: prefix,
+                            isDeleteMarker: true,
+                            expectedRes: FILTER_SKIP,
+                            expectedSkipping: `${prefix}${VID_SEP}`,
+                        },
+                        {
+                            key: `${prefix}${VID_SEP}v1`,
+                            expectedRes: FILTER_SKIP,
+                            expectedSkipping: `${prefix}${VID_SEP}`,
+                        },
+                        {
+                            key: `${prefix}subprefix-1`,
+                            expectedRes: FILTER_ACCEPT,
+                            expectedSkipping: `${prefix}subprefix-1${VID_SEP}`,
+                        },
+                        {
+                            key: `${prefix}subprefix-1/foo`,
+                            expectedRes: FILTER_ACCEPT,
+                            expectedSkipping: `${prefix}subprefix-1/`,
+                        },
+                        {
+                            key: `${prefix}subprefix-1/bar`,
+                            expectedRes: FILTER_SKIP,
+                            expectedSkipping: `${prefix}subprefix-1/`, // already added to common prefix
+                        },
+                    ]) {
+                        const entry = {
+                            key: testEntry.key,
+                        };
+                        if (testEntry.isDeleteMarker) {
+                            entry.value = '{"isDeleteMarker":true}';
+                        } else {
+                            entry.value = '{}';
+                        }
+                        const res = delimiter.filter(entry);
+                        const skipping = delimiter.skipping();
+                        assert.strictEqual(res, testEntry.expectedRes);
+                        assert.strictEqual(skipping, testEntry.expectedSkipping);
+                    }
+                }
+            });
+
+            it('should skip over whole prefix when key equals the prefix, prefix key has delete marker ' +
+            'and prefix does not end with delimiter', () => {
+                for (const prefix of ['prefix', 'prefix/subprefix']) {
+                    const delimiter = new DelimiterMaster({
+                        prefix,
+                        delimiter: '/',
+                    }, fakeLogger, vFormat);
+                    for (const testEntry of [
+                        {
+                            key: prefix,
+                            expectedRes: FILTER_ACCEPT,
+                            expectedSkipping: `${prefix}${VID_SEP}`,
+                        },
+                        {
+                            key: `${prefix}${VID_SEP}v1`,
+                            expectedRes: FILTER_SKIP,
+                            expectedSkipping: `${prefix}${VID_SEP}`,
+                        },
+                        {
+                            key: `${prefix}/`,
+                            isDeleteMarker: true,
+                            expectedRes: FILTER_SKIP,
+                            expectedSkipping: `${prefix}${VID_SEP}`,
+                        },
+                        {
+                            key: `${prefix}/subprefix-1`,
+                            expectedRes: FILTER_ACCEPT,
+                            expectedSkipping: `${prefix}/`,
+                        },
+                        {
+                            key: `${prefix}/subprefix-1/foo`,
+                            expectedRes: FILTER_SKIP,
+                            expectedSkipping: `${prefix}/`,
+                        },
+                        {
+                            key: `${prefix}aa`,
+                            expectedRes: FILTER_ACCEPT,
+                            expectedSkipping: `${prefix}aa${VID_SEP}`, // already added to common prefix
+                        },
+                    ]) {
+                        const entry = {
+                            key: testEntry.key,
+                        };
+                        if (testEntry.isDeleteMarker) {
+                            entry.value = '{"isDeleteMarker":true}';
+                        } else {
+                            entry.value = '{}';
+                        }
+                        const res = delimiter.filter(entry);
+                        const skipping = delimiter.skipping();
+                        assert.strictEqual(res, testEntry.expectedRes);
+                        assert.strictEqual(skipping, testEntry.expectedSkipping);
+                    }
+                }
+            });
+
+            it('should be able to skip subprefixes within deleteMarker keys when a prefix key ' +
+            'ending with delimiter is seen', () => {
+                for (const prefix of ['prefix/', 'prefix/subprefix/']) {
+                    const delimiter = new DelimiterMaster({
+                        prefix,
+                        delimiter: '/',
+                    }, fakeLogger, vFormat);
+                    for (const testEntry of [
+                        {
+                            key: prefix,
+                            expectedRes: FILTER_ACCEPT,
+                            expectedSkipping: `${prefix}${VID_SEP}`,
+                        },
+                        {
+                            key: `${prefix}${VID_SEP}v1`,
+                            // isDeleteMarker: true,
+                            expectedRes: FILTER_SKIP, // versions get skipped after master
+                            expectedSkipping: `${prefix}${VID_SEP}`,
+                        },
+                        {
+                            key: `${prefix}foo/`,
+                            isDeleteMarker: true,
+                            expectedRes: FILTER_SKIP,
+                            expectedSkipping: `${prefix}foo/`,
+                        },
+                        {
+                            key: `${prefix}foo/1`,
+                            isDeleteMarker: true,
+                            expectedRes: FILTER_SKIP,
+                            expectedSkipping: `${prefix}foo/`,
+                        },
+                        {
+                            key: `${prefix}foo/2`,
+                            isDeleteMarker: true,
+                            expectedRes: FILTER_SKIP,
+                            expectedSkipping: `${prefix}foo/`,
+                        },
+                    ]) {
+                        const entry = {
+                            key: testEntry.key,
+                        };
+                        if (testEntry.isDeleteMarker) {
+                            entry.value = '{"isDeleteMarker":true}';
+                        } else {
+                            entry.value = '{}';
+                        }
+                        const res = delimiter.filter(entry);
+                        const skipping = delimiter.skipping();
+                        assert.strictEqual(res, testEntry.expectedRes);
+                        assert.strictEqual(skipping, testEntry.expectedSkipping);
+                    }
+                }
             });
         }
     });
