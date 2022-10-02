@@ -284,6 +284,27 @@ describe('Auth Backend: Chain Backend', () => {
                     { isAllowed: false, arn: 'arn:aws:s3:::policybucket/false2' },
                 ],
             );
+            const policyRespsNested = [
+                { message: { body: [
+                    [
+                        { isAllowed: false, arn: 'arn:aws:s3:::policybucket/true1' },
+                        { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true2' },
+                    ],
+                ] } },
+                { message: { body: [
+                    [
+                        { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true1' },
+                        { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true2' },
+                    ],
+                ] } },
+            ];
+            assert.deepStrictEqual(
+                ChainBackend._mergePolicies(policyRespsNested),
+                [
+                    { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true1' },
+                    { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true2' },
+                ],
+            );
         });
     });
 

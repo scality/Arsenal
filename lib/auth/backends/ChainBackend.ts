@@ -133,17 +133,25 @@ export default class ChainBackend extends BaseBackend {
                 return;
             }
 
-            resp.message.body.forEach(policy => {
+            const check = (policy) => {
                 const key = (policy.arn || '') + (policy.versionId || '');
                 if (!policyMap[key] || !policyMap[key].isAllowed) {
                     policyMap[key] = policy;
                 }
                 // else is duplicate policy
+            };
+
+            resp.message.body.forEach(policy => {
+                if (Array.isArray(policy)) {
+                    policy.forEach(authResult => check(authResult));
+                } else {
+                    check(policy);
+                }
             });
         });
 
         return Object.keys(policyMap).map(key => {
-            const policyRes: any = { isAllowed: policyMap[key].isAllowed };
+            const policyRes: any = { isAllowed: policyMap[key].isAllowed };
             if (policyMap[key].arn !== '') {
                 policyRes.arn = policyMap[key].arn;
             }
