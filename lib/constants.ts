@@ -35,9 +35,12 @@ export const emptyFileMd5 = 'd41d8cd98f00b204e9800998ecf8427e';
 // Version 4 add the Creation-Time and Content-Language attributes,
 //     and add support for x-ms-meta-* headers in UserMetadata
 // Version 5 adds the azureInfo structure
-// Version 6 adds a deletion flag that is updated to true before
-// the object gets deleted. This is done print object metadata in the
-// oplog. Oplog deletion events don't contain any metadata about the object.
+// Version 6 adds a "deleted" flag that is updated to true before
+// the object gets deleted. This is done to keep object metadata in the
+// oplog when deleting the object, as oplog deletion events don't contain
+// any metadata of the object.
+// version 6 also adds the "isPHD" flag that is used to indicate that the master
+// object is a placeholder and is not up to date.
 export const mdModelVersion = 6;
 /*
  * Splitter is used to build the object name for the overview of a
