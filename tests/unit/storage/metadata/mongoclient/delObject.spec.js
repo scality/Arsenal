@@ -157,8 +157,7 @@ describe('MongoClientInterface:delObject', () => {
         });
     });
 
-    // incompatible with 7.x ObjectMD
-    it.skip('deleteObjectVerMaster:: should fail when error occurs while updating master object', done => {
+    it('deleteObjectVerMaster:: should fail when error occurs while updating master object', done => {
         const collection = {
             find: (filter, params, cb) => cb(null, objMD),
             updateOne: (filter, update, params, cb) => cb(errors.InternalError),
@@ -169,8 +168,7 @@ describe('MongoClientInterface:delObject', () => {
         });
     });
 
-    // incompatible with 7.x ObjectMD
-    it.skip('deleteObjectVerMaster:: should fail when deleteOrRepairPHD fails', done => {
+    it('deleteObjectVerMaster:: should fail when deleteOrRepairPHD fails', done => {
         const collection = {
             find: (filter, params, cb) => cb(null, objMD),
             updateOne: (filter, update, params, cb) => cb(),
@@ -183,8 +181,7 @@ describe('MongoClientInterface:delObject', () => {
         });
     });
 
-    // incompatible with 7.x ObjectMD
-    it.skip('deleteObjectVerMaster:: should not fail', done => {
+    it('deleteObjectVerMaster:: should not fail', done => {
         const collection = {
             find: (filter, params, cb) => cb(null, objMD),
             updateOne: (filter, update, params, cb) => cb(),
@@ -239,8 +236,7 @@ describe('MongoClientInterface:delObject', () => {
         });
     });
 
-    // incompatible with 7.x ObjectMD
-    it.skip('internalDeleteObject:: should set deletion flag and originOp', done => {
+    it('internalDeleteObject:: should set deletion flag and originOp', done => {
         const bulkWrite = sinon.stub().callsArg(2);
         const collection = {
             findOne: (filter, params, cb) => cb(null, objMD),
@@ -255,8 +251,7 @@ describe('MongoClientInterface:delObject', () => {
         });
     });
 
-    // incompatible with 7.x ObjectMD
-    it.skip('internalDeleteObject:: should get PHD object with versionId', done => {
+    it('internalDeleteObject:: should get PHD object with versionId', done => {
         const findOne = sinon.stub().callsArgWith(2, null, objMD);
         const collection = {
             findOne,

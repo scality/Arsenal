@@ -719,8 +719,7 @@ describe('MongoClientInterface, tests', () => {
         ], done);
     }));
 
-    // skip in 7.x
-    it.skip('shall encode/decode tags properly', done => {
+    it('shall encode/decode tags properly', done => {
         const bucketName = 'foo';
         const objectName = 'bar';
         const tags = {
