@@ -35,7 +35,10 @@ export const emptyFileMd5 = 'd41d8cd98f00b204e9800998ecf8427e';
 // Version 4 add the Creation-Time and Content-Language attributes,
 //     and add support for x-ms-meta-* headers in UserMetadata
 // Version 5 adds the azureInfo structure
-export const mdModelVersion = 5;
+// Version 6 adds a deletion flag that is updated to true before
+// the object gets deleted. This is done print object metadata in the
+// oplog. Oplog deletion events don't contain any metadata about the object.
+export const mdModelVersion = 6;
 /*
  * Splitter is used to build the object name for the overview of a
  * multipart upload and to build the object names for each part of a
