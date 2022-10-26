@@ -77,6 +77,11 @@ export type ObjectMDData = {
     dataStoreName: string;
     originOp: string;
     microVersionId?: string;
+    // Deletion flag
+    // Used for keeping object metadata in the oplog event
+    // In case of a deletion the flag is first updated before
+    // deleting the object
+    deleted: boolean;
 };
 
 /**
@@ -217,6 +222,7 @@ export default class ObjectMD {
             },
             dataStoreName: '',
             originOp: '',
+            deleted: false,
         };
     }
 
@@ -1375,5 +1381,22 @@ export default class ObjectMD {
             delete this._data.archive;
         }
         return this;
+    }
+
+    /**
+    * Set deleted flag
+    * @param {Boolean} value deleted object
+    * @return {ObjectMD}
+    */
+     setDeleted(value) {
+        this._data.deleted = value;
+        return this;
+    }
+    /**
+    * Get deleted flag
+    * @return {Boolean}
+    */
+    getDeleted() {
+        return this._data.deleted;
     }
 }
