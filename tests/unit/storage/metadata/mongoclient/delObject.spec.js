@@ -212,8 +212,8 @@ describe('MongoClientInterface:delObject', () => {
             return done();
         });
     });
-    // incompatible with 7.x ObjectMD
-    it.skip('internalDeleteObject:: should get PHD object with versionId', done => {
+
+    it('internalDeleteObject:: should get PHD object with versionId', done => {
         const findOneAndUpdate = sinon.stub().callsArgWith(3, null, { value: { value: objMD } });
         const collection = {
             findOneAndUpdate,
