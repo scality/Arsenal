@@ -81,11 +81,6 @@ const actionMapBP = { ...sharedActionMap };
 
 // action map for all relevant s3 actions
 const actionMapS3 = {
-    // TODO
-    // @ts-ignore
-    bucketGetNotification: 's3:GetBucketNotification',
-    // @ts-ignore
-    bucketPutNotification: 's3:PutBucketNotification',
     ...sharedActionMap,
     ...actionMapRQ,
     ...actionMapBP,
