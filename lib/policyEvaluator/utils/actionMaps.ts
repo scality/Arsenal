@@ -42,6 +42,7 @@ const sharedActionMap = {
     objectGetLegalHold: 's3:GetObjectLegalHold',
     objectGetRetention: 's3:GetObjectRetention',
     objectGetTagging: 's3:GetObjectTagging',
+    objectHead: 's3:GetObject',
     objectPut: 's3:PutObject',
     objectPutACL: 's3:PutObjectAcl',
     objectPutLegalHold: 's3:PutObjectLegalHold',
@@ -67,7 +68,6 @@ const actionMapRQ = {
     objectGetVersion: 's3:GetObjectVersion',
     objectGetACLVersion: 's3:GetObjectVersionAcl',
     objectGetTaggingVersion: 's3:GetObjectVersionTagging',
-    objectHead: 's3:GetObject',
     objectPutACLVersion: 's3:PutObjectVersionAcl',
     objectPutPart: 's3:PutObject',
     objectPutTaggingVersion: 's3:PutObjectVersionTagging',
@@ -86,11 +86,6 @@ const actionMapBP = { ...sharedActionMap };
 
 // action map for all relevant s3 actions
 const actionMapS3 = {
-    // TODO
-    // @ts-ignore
-    bucketGetNotification: 's3:GetBucketNotification',
-    // @ts-ignore
-    bucketPutNotification: 's3:PutBucketNotification',
     ...sharedActionMap,
     ...actionMapRQ,
     ...actionMapBP,
