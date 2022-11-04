@@ -412,6 +412,7 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
                     next => {
                         objVal.isDeleteMarker = false;
                         objVal.updated = true;
+                        objVal.versionId = null;
                         return metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next);
                     },
                     // master must be created
@@ -420,6 +421,42 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
                         assert.strictEqual(object.key, OBJECT_NAME);
                         assert.strictEqual(object.updated, true);
                         assert.strictEqual(object.isDeleteMarker, false);
+                        assert.notEqual(object.versionId, VERSION_ID);
+                        return next();
+                    }),
+                ], done);
+            });
+
+            itOnlyInV1(`Should not create master when previous version is updated ${variation.it}`, done => {
+                const objVal = {
+                    key: OBJECT_NAME,
+                    versionId: VERSION_ID,
+                    updated: false,
+                    isDeleteMarker: false,
+                };
+                const params = {
+                    versioning: true,
+                    repairMaster: null,
+                    versionId: VERSION_ID,
+                };
+                async.series([
+                    // We first create a new version and master
+                    next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
+                    // putting a delete marker as last version
+                    next => {
+                        objVal.isDeleteMarker = true;
+                        params.versionId = null;
+                        return metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next);
+                    },
+                    // update previous version
+                    next => {
+                        objVal.isDeleteMarker = false;
+                        objVal.updated = true;
+                        params.versionId = VERSION_ID;
+                        return metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next);
+                    },
+                    next => getObject('\x7fMtest-object', err => {
+                        assert.deepStrictEqual(err, errors.NoSuchKey);
                         return next();
                     }),
                 ], done);
