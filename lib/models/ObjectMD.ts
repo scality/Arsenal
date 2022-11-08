@@ -1,6 +1,7 @@
 import * as crypto from 'crypto';
 import * as constants from '../constants';
 import * as VersionIDUtils from '../versioning/VersionID';
+import { VersioningConstants } from '../versioning/constants';
 import ObjectMDLocation, {
     ObjectMDLocationData,
     Location,
@@ -901,6 +902,9 @@ export default class ObjectMD {
      * @return The object versionId
      */
     getVersionId() {
+        if (this.getIsNull()) {
+            return VersioningConstants.ExternalNullVersionId;
+        }
         return this._data.versionId;
     }
 
@@ -908,13 +912,16 @@ export default class ObjectMD {
      * Get metadata versionId value in encoded form (the one visible
      * to the S3 API user)
      *
-     * @return The encoded object versionId
+     * @return {undefined|string} The encoded object versionId
      */
     getEncodedVersionId() {
         const versionId = this.getVersionId();
-        if (versionId) {
+        if (versionId === VersioningConstants.ExternalNullVersionId) {
+            return versionId;
+        } else if (versionId) {
             return VersionIDUtils.encode(versionId);
         }
+        return undefined;
     }
 
     /**

@@ -1,6 +1,8 @@
 const assert = require('assert');
 const ObjectMD = require('../../../lib/models/ObjectMD').default;
 const constants = require('../../../lib/constants');
+const ExternalNullVersionId = require('../../../lib/versioning/constants')
+    .VersioningConstants.ExternalNullVersionId;
 
 const retainDate = new Date();
 retainDate.setDate(retainDate.getDate() + 1);
@@ -770,5 +772,46 @@ describe('ObjectMD::getReducedLocations', () => {
                 blockId: 'someBlockId4',
             },
         ]);
+    });
+});
+
+describe('ObjectMD::getVersionId', () => {
+    let objMd = null;
+    const versionId = '98451712418844999999RG001  22019.0';
+    beforeEach(() => {
+        objMd = new ObjectMD();
+    });
+    it('should return undefined when object is non versioned', () => {
+        assert.strictEqual(objMd.getVersionId(), undefined);
+    });
+    it('should return versionId when object versioned', () => {
+        objMd.setVersionId(versionId);
+        assert.strictEqual(objMd.getVersionId(), versionId);
+    });
+    it('should return "null" when object is in versioning suspended mode', () => {
+        objMd.setVersionId(versionId);
+        objMd.setIsNull(true);
+        assert.strictEqual(objMd.getVersionId(), ExternalNullVersionId);
+    });
+});
+
+describe('ObjectMD::getEncodedVersionId', () => {
+    let objMd = null;
+    const versionId = '98451712418844999999RG001  22019.0';
+    const encodedVersionId = '39383435313731323431383834343939393939395247303031202032323031392e30';
+    beforeEach(() => {
+        objMd = new ObjectMD();
+    });
+    it('should return undefined when object is non versioned', () => {
+        assert.strictEqual(objMd.getEncodedVersionId(), undefined);
+    });
+    it('should return versionId when object versioned', () => {
+        objMd.setVersionId(versionId);
+        assert.strictEqual(objMd.getEncodedVersionId(), encodedVersionId);
+    });
+    it('should return "null" when object is in versioning suspended mode', () => {
+        objMd.setVersionId(versionId);
+        objMd.setIsNull(true);
+        assert.strictEqual(objMd.getEncodedVersionId(), ExternalNullVersionId);
     });
 });

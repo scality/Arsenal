@@ -15,4 +15,5 @@ export const VersioningConstants = {
         v1mig: 'v1mig',
         v1: 'v1',
     },
+    ExternalNullVersionId: 'null',
 };
