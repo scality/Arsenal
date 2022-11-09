@@ -143,13 +143,13 @@ on top of the delete marker or if the delete marker is deleted.
 ##### Format of master keys
 
 ```
-\x7fM{{key}
+\x7fM{{key}}
 ```
 
 ##### Format of version keys
 
 ```
-\x7fV{{key}\x00{versionId}
+\x7fV{{key}}\x00{{versionId}}
 ```
 
 ##### Sizing considerations
@@ -291,3 +291,42 @@ the object’s versions and returning the latest one’s data.
 
 To avoid race conditions we always (try to) generate a new UUID and we
 condition the insertion to the non-existence of the document.
+
+#### Oplog Events
+
+The oplog (operations log) is a special capped collection that keeps a
+rolling record of all operations that modify the data stored in the database.
+
+The oplog is read and used by multiple backbeat extensions such as replication
+and bucket notification to react to database changes.
+
+oplog events have different types such as insertion, update and deletion.
+Within an oplog event we find the changes that occured at object level or
+collection level.
+
+At object level if an object was inserted for example we'll find all of the object's
+data in the event. Update events contain the change that occured to an object, and
+delete events don't contain anything (only the object's _id).
+
+To keep the latest object's metadata before it got deleted in the oplog, we update
+the full object setting a deletion flag before deleting the object. This adds an
+update event containing all of the object's metadata.
+
+Note: updating the object with itself without change creates a no-op event that gets
+ignored.
+
+**Special Cases:**
+When deleting the last version of an object in a versioned bucket, the master object
+goes into a PHD state (temporary non updated state) that gets resolved later. There
+is one case where a master can be non existent, it's where the last version is a
+delete marker. In this case the created PHD master is empty only containing the
+isPHD flag and the versionId.
+
+When versioning is enabled in a bucket, only version events should be processed as
+they already contain all of the information needed.
+
+In non versioned buckets, master object events are the ones to be processed.
+
+In versioning suspended buckets, both master and version events should be processed,
+as the master object itself is considered a null version. No special case is present
+here as the master object is always present.
