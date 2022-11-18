@@ -45,6 +45,22 @@ const mongoProcessedLogEntries = {
             _id: 'replicated-key\u000098467518084696999999RG001  19.3',
         },
     },
+    updateBeforeDeleteObject: {
+        h: -42,
+        ts: new Timestamp(1, 1651144629),
+        op: 'u',
+        ns: 'metadata.replicated-bucket',
+        o2: {
+            _id: 'replicated-key\u000098467518084696999999RG001  19.3',
+        },
+        o: {
+            $set: {
+                value: {
+                    deleted: true,
+                },
+            },
+        },
+    },
     putBucketAttributes: {
         h: -42,
         ts: new Timestamp(1, 1651144629),
@@ -126,6 +142,17 @@ const expectedStreamEntries = {
             {
                 key: 'replicated-key\u000098467518084696999999RG001  19.3',
                 type: 'delete',
+            },
+        ],
+        timestamp: new Date(1651144629 * 1000),
+    },
+    updateBeforeDeleteObject: {
+        db: 'replicated-bucket',
+        entries: [
+            {
+                key: 'replicated-key\u000098467518084696999999RG001  19.3',
+                type: 'delete',
+                value: '{"deleted":true}',
             },
         ],
         timestamp: new Date(1651144629 * 1000),
