@@ -48,6 +48,36 @@ class DummyGetObjectRequest {
     }
 }
 
+class AzureDummyContainerClient {
+    constructor(key) {
+        this.key = key;
+    }
+
+    async getProperties() {
+        if (this.key === 'externalBackendTestBucket/externalBackendMissingKey') {
+            const err = new Error();
+            err.code = 'NotFound';
+            throw err;
+        }
+        const retObj = {
+            contentLength: `${OBJECT_SIZE}`,
+            lastModified: new Date(),
+        };
+        return retObj;
+    }
+
+    async download(offset, length) {
+        if (this.key === 'externalBackendTestBucket/externalBackendMissingKey') {
+            const err = new Error();
+            err.code = 'NotFound';
+            throw err;
+        }
+        return {
+            readableStreamBody: new DummyObjectStream(offset, length || OBJECT_SIZE),
+        };
+    }
+}
+
 class DummyService {
     constructor(config = {}) {
         this.versioning = config.versioning;
@@ -113,31 +143,8 @@ class DummyService {
         }
         return callback(null, retObj);
     }
-    getBlobProperties(containerName, key, streamingOptions, callback) {
-        if (key === 'externalBackendTestBucket/externalBackendMissingKey') {
-            const err = new Error();
-            err.code = 'NotFound';
-            return callback(err);
-        }
-        const retObj = {
-            ContentLength: `${OBJECT_SIZE}`,
-        };
-        return callback(null, retObj);
-    }
-    getBlobToStream(containerName, key, writeStream, options, callback) {
-        if (key === 'externalBackendTestBucket/externalBackendMissingKey') {
-            const err = new Error();
-            err.code = 'NotFound';
-            return callback(err);
-        }
-        const { rangeStart, rangeEnd } = options || {};
-        const firstByte = rangeStart !== undefined ?
-            Number.parseInt(rangeStart, 10) : 0;
-        const lastByte = rangeEnd !== undefined ?
-            Math.min(Number.parseInt(rangeEnd, 10), OBJECT_SIZE - 1) : OBJECT_SIZE - 1;
-        const objStream = new DummyObjectStream(firstByte, lastByte - firstByte + 1);
-        objStream.pipe(writeStream);
-        return callback();
+    getBlockBlobClient(key) {
+        return new AzureDummyContainerClient(key);
     }
     putObjectTagging(tagParams, callback) {
         if (tagParams.Key === 'externalBackendTestBucket/externalBackendMissingKey') {

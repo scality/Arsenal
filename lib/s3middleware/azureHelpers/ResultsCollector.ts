@@ -30,7 +30,7 @@ export default class ResultsCollector extends EventEmitter {
      * @emits ResultCollector#done
      * @emits ResultCollector#error
      */
-    pushResult(err: Error | undefined, subPartIndex: number) {
+    pushResult(err: Error | null | undefined, subPartIndex: number) {
         this._results.push({
             error: err,
             subPartIndex,

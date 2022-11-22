@@ -37,7 +37,7 @@ const backendClients = [
         Class: AzureClient,
         name: 'AzureClient',
         config: {
-            azureStorageEndpoint: '',
+            azureStorageEndpoint: 'http://localhost:37425/',
             azureStorageCredentials: {
                 storageAccountName: 'scality',
                 storageAccessKey: 'Zm9vCg==',
