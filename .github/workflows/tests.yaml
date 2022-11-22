@@ -36,7 +36,7 @@ jobs:
     - name: lint yaml
       run: yarn --silent lint_yml
     - name: lint javascript
-      run: yarn --silent lint -- --max-warnings 0
+      run: yarn --silent lint --max-warnings 0
     - name: lint markdown
       run: yarn --silent lint_md
     - name: add hostname
