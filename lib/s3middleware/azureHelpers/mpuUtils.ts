@@ -105,7 +105,6 @@ type ErrorWrapperFn = (
     s3Method: string,
     azureMethod: string,
     command: (client: azure.ContainerClient) => Promise<any>,
-    resultCb: (err: azure.RestError | null | undefined, result?: any) => void,
     log: RequestLogger,
     cb: (err: ArsenalError | null | undefined) => void,
 ) => void
@@ -133,30 +132,30 @@ export const putSinglePart = (
         ? { transactionalContentMD5: objectUtils.getMD5Buffer(contentMD5) }
         : {};
     request.pipe(passThrough);
-    return errorWrapperFn('uploadPart', 'createBlockFromStream',
-        client => client.getBlockBlobClient(objectKey)
-            .stageBlock(blockId, () => passThrough, size, options),
-        (err: azure.RestError | null | undefined, result: azure.BlockBlobStageBlockResponse) => {
-            if (err) {
-                log.error('Error from Azure data backend uploadPart',
-                    { error: err.message, dataStoreName });
-                if (err.code === 'ContainerNotFound') {
-                    return cb(errors.NoSuchBucket);
-                }
-                if (err.code === 'InvalidMd5') {
-                    return cb(errors.InvalidDigest);
-                }
-                if (err.code === 'Md5Mismatch') {
-                    return cb(errors.BadDigest);
-                }
-                return cb(errors.InternalError.customizeDescription(
-                    `Error returned from Azure: ${err.message}`),
-                );
-            }
+    return errorWrapperFn('uploadPart', 'createBlockFromStream', async client => {
+        try {
+            const result = await client.getBlockBlobClient(objectKey)
+                .stageBlock(blockId, () => passThrough, size, options);
             const md5 = result.contentMD5 || '';
             const eTag = objectUtils.getHexMD5(md5);
-            return cb(null, eTag, size);
-        }, log, cb);
+            return eTag
+        } catch (err: any) {
+            log.error('Error from Azure data backend uploadPart',
+                { error: err.message, dataStoreName });
+            if (err.code === 'ContainerNotFound') {
+                throw errors.NoSuchBucket;
+            }
+            if (err.code === 'InvalidMd5') {
+                throw errors.InvalidDigest;
+            }
+            if (err.code === 'Md5Mismatch') {
+                throw errors.BadDigest;
+            }
+            throw errors.InternalError.customizeDescription(
+                `Error returned from Azure: ${err.message}`
+            );
+        }    
+    }, log, cb);
 };
 
 const putNextSubPart = (
@@ -172,7 +171,6 @@ const putNextSubPart = (
     subPartIndex: number,
     resultsCollector: ResultsCollector,
     log: RequestLogger,
-    cb: (err: ArsenalError | null | undefined) => void,
 ) => {
     const { uploadId, partNumber, bucketName, objectKey } = partParams;
     const subPartSize = getSubPartSize(
@@ -180,11 +178,15 @@ const putNextSubPart = (
     const subPartId = getBlockId(uploadId, partNumber,
         subPartIndex);
     resultsCollector.pushOp();
-    errorWrapperFn('uploadPart', 'createBlockFromStream',
-        client => client.getBlockBlobClient(objectKey)
-            .stageBlock(subPartId, () => subPartStream, subPartSize, {}),
-        (err: azure.RestError | null | undefined) => resultsCollector.pushResult(err, subPartIndex),
-        log, cb);
+    errorWrapperFn('uploadPart', 'createBlockFromStream', async client => {
+        try {
+            const result = await client.getBlockBlobClient(objectKey)
+                .stageBlock(subPartId, () => subPartStream, subPartSize, {});
+            resultsCollector.pushResult(null, subPartIndex);
+        } catch (err: any) {
+            resultsCollector.pushResult(err, subPartIndex);
+        }
+    }, log, () => {});
 };
 
 export const putSubParts = (
@@ -199,7 +201,7 @@ export const putSubParts = (
     },
     dataStoreName: string,
     log: RequestLogger,
-    cb: (err: ArsenalError | null | undefined, dataStoreETag?: string, size?: number) => void,
+    cb: (err: ArsenalError | null | undefined, dataStoreETag?: string) => void,
 ) => {
     const subPartInfo = getSubPartInfo(params.size);
     const resultsCollector = new ResultsCollector();
@@ -238,14 +240,13 @@ export const putSubParts = (
         const totalLength = streamInterface.getTotalBytesStreamed();
         log.trace('successfully put subparts to Azure',
             { numberSubParts, totalLength });
-        hashedStream.on('hashed', () => cb(null, hashedStream.completedHash,
-            totalLength));
+        hashedStream.on('hashed', () => cb(null, hashedStream.completedHash));
 
         // in case the hashed event was already emitted before the
         // event handler was registered:
         if (hashedStream.completedHash) {
             hashedStream.removeAllListeners('hashed');
-            return cb(null, hashedStream.completedHash, totalLength);
+            return cb(null, hashedStream.completedHash);
         }
         return undefined;
     });
@@ -253,7 +254,7 @@ export const putSubParts = (
     const currentStream = streamInterface.getCurrentStream();
     // start first put to Azure before we start streaming the data
     putNextSubPart(errorWrapperFn, params, subPartInfo,
-        currentStream, 0, resultsCollector, log, cb);
+        currentStream, 0, resultsCollector, log);
 
     request.pipe(hashedStream);
     hashedStream.on('end', () => {
@@ -273,8 +274,8 @@ export const putSubParts = (
             }
             const { nextStream, subPartIndex } =
                 streamInterface.transitionToNextStream();
-            putNextSubPart(errorWrapperFn, params, subPartInfo,
-                nextStream, subPartIndex, resultsCollector, log, cb);
+            putNextSubPart(errorWrapperFn, params, subPartInfo, nextStream,
+                subPartIndex, resultsCollector, log);
             streamInterface.write(firstChunk);
         } else {
             streamInterface.write(data);
