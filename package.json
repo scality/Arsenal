@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/scality/Arsenal#readme",
   "dependencies": {
+    "@azure/identity": "^3.1.1",
     "@azure/storage-blob": "^12.12.0",
     "@types/async": "^3.2.12",
     "@types/utf8": "^3.0.1",
