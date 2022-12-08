@@ -1,5 +1,6 @@
 import ioClient from 'socket.io-client';
 import * as http from 'http';
+import { http as HttpAgent } from 'httpagent';
 import io from 'socket.io';
 import * as sioStream from './sio-stream';
 import async from 'async';

@@ -1,5 +1,6 @@
 import * as http from 'http';
 import * as https from 'https';
+import { https as HttpsAgent } from 'httpagent';
 import * as tls from 'tls';
 import * as net from 'net';
 import assert from 'assert';
@@ -409,7 +410,7 @@ export default class Server {
                     method: 'arsenal.network.Server.start',
                     port: this._port,
                 });
-                this._https.agent = new https.Agent(this._https);
+                this._https.agent = new HttpsAgent.Agent(this._https);
                 this._server = https.createServer(this._https,
                     (req, res) => this._onRequest(req, res));
             } else {
