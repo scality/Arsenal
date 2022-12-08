@@ -735,15 +735,6 @@ function getTestListing(test, data, vFormat) {
                 `${vFormat === 'v1' ? DbPrefixes.Master : ''}foo/`);
         });
 
-        it('Should set Delimiter alphabeticalOrder field to the expected value', () => {
-            alphabeticalOrderTests.forEach(test => {
-                const delimiter = new Delimiter(test.params);
-                assert.strictEqual(delimiter.alphabeticalOrder,
-                    test.expectedValue,
-                    `${JSON.stringify(test.params)}`);
-            });
-        });
-
         tests.forEach(test => {
             it(`Should return metadata listing params to list ${test.name}`, () => {
                 const listing = new Delimiter(test.input, logger, vFormat);
@@ -769,42 +760,5 @@ function getTestListing(test, data, vFormat) {
                 });
             });
         }
-
-        it('Should filter values according to alphabeticalOrder parameter', () => {
-            let test = new Test('alphabeticalOrder parameter set', {
-                delimiter: '/',
-                alphabeticalOrder: true,
-            }, {
-            }, {
-                Contents: [
-                    receivedNonAlphaData[0],
-                ],
-                Delimiter: '/',
-                CommonPrefixes: [],
-                IsTruncated: false,
-                NextMarker: undefined,
-            });
-            let d = getTestListing(test, nonAlphabeticalData, vFormat);
-            let res = performListing(d, Delimiter, test.input, logger, vFormat);
-            assert.deepStrictEqual(res, test.output);
-
-            test = new Test('alphabeticalOrder parameter set', {
-                delimiter: '/',
-                alphabeticalOrder: false,
-            }, {
-            }, {
-                Contents: [
-                    receivedNonAlphaData[0],
-                    receivedNonAlphaData[1],
-                ],
-                Delimiter: '/',
-                CommonPrefixes: [],
-                IsTruncated: false,
-                NextMarker: undefined,
-            });
-            d = getTestListing(test, nonAlphabeticalData, vFormat);
-            res = performListing(d, Delimiter, test.input, logger, vFormat);
-            assert.deepStrictEqual(res, test.output);
-        });
     });
 });
