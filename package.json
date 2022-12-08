@@ -33,6 +33,7 @@
     "diskusage": "^1.1.1",
     "fcntl": "github:scality/node-fcntl#0.2.0",
     "hdclient": "scality/hdclient#1.1.0",
+    "httpagent": "git+https://github.com/scality/httpagent#1.0.2",
     "https-proxy-agent": "^2.2.0",
     "ioredis": "^4.28.5",
     "ipaddr.js": "1.9.1",
@@ -48,7 +49,7 @@
     "sproxydclient": "github:scality/sproxydclient#8.0.4",
     "utf8": "3.0.0",
     "uuid": "^3.0.1",
-    "werelogs": "scality/werelogs#8.1.0",
+    "werelogs": "scality/werelogs#8.1.2",
     "xml2js": "~0.4.23"
   },
   "optionalDependencies": {
