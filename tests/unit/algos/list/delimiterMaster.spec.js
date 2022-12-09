@@ -1,7 +1,7 @@
 'use strict'; // eslint-disable-line strict
 
 const assert = require('assert');
-const chance = require('chance').Chance(); // eslint-disable-line
+
 const DelimiterMaster =
     require('../../../../lib/algos/list/delimiterMaster').DelimiterMaster;
 const {
