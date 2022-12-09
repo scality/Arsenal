@@ -8,7 +8,7 @@ import {
 const Version = require('../../versioning/Version').Version;
 const VSConst = require('../../versioning/constants').VersioningConstants;
 const { BucketVersioningKeyFormat } = VSConst;
-const { FILTER_ACCEPT, FILTER_SKIP, FILTER_END, SKIP_NONE } = require('./tools');
+const { FILTER_ACCEPT, FILTER_SKIP } = require('./tools');
 
 const VID_SEP = VSConst.VersionId.Separator;
 const { DbPrefixes } = VSConst;

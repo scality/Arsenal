@@ -95,6 +95,7 @@ export class Delimiter extends Extension {
         this.CommonPrefixes = [];
         this.Contents = [];
         this.IsTruncated = false;
+        this.keyHandlers = {};
 
         Object.assign(this, {
             [BucketVersioningKeyFormat.v0]: {
@@ -108,8 +109,6 @@ export class Delimiter extends Extension {
                 skipping: this.skippingV1,
             },
         }[this.vFormat]);
-
-        this.keyHandlers = {};
 
         // if there is a delimiter, we may skip ranges by prefix,
         // hence using the NotSkippingPrefix flavor that checks the
@@ -206,6 +205,7 @@ export class Delimiter extends Extension {
     /**
      * Add a Common Prefix in the list
      * @param {String} commonPrefix   - common prefix to add
+     * @param {String} key            - full key starting with commonPrefix
      * @return {Boolean}     - indicates if iteration should continue
      */
     addCommonPrefix(commonPrefix: string, key: string): number {
@@ -234,11 +234,11 @@ export class Delimiter extends Extension {
         return this.addContents(key, value);
     }
 
-    getObjectKeyV0(obj) {
+    getObjectKeyV0(obj: { key: string }): string {
         return obj.key;
     }
 
-    getObjectKeyV1(obj) {
+    getObjectKeyV1(obj: { key: string }): string {
         return obj.key.slice(DbPrefixes.Master.length);
     }
 
@@ -260,7 +260,7 @@ export class Delimiter extends Extension {
         return this.handleKey(key, value);
     }
 
-    setState(state: FilterState) {
+    setState(state: FilterState): void {
         this.state = state;
     }
 
@@ -279,6 +279,7 @@ export class Delimiter extends Extension {
     keyHandler_NotSkippingPrefix(key, value) {
         return this.addCommonPrefixOrContents(key, value);
     }
+
     keyHandler_SkippingPrefix(key, value) {
         const { prefix } = <DelimiterFilterState_SkippingPrefix> this.state;
         if (key.startsWith(prefix)) {
