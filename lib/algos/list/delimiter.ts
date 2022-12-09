@@ -290,7 +290,7 @@ export class Delimiter extends Extension {
         return this.handleKey(key, value);
     }
 
-    skippingBase(): string | typeof SKIP_NONE {
+    skippingBase(): string | undefined {
         switch (this.state.id) {
         case DelimiterFilterStateId.SkippingPrefix:
             const { prefix } = <DelimiterFilterState_SkippingPrefix> this.state;

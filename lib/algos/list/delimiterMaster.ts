@@ -76,13 +76,7 @@ export class DelimiterMaster extends Delimiter {
                 DelimiterMasterFilterStateId.WaitVersionAfterPHDV0,
                 this.keyHandler_WaitVersionAfterPHDV0.bind(this));
 
-            const commonPrefix = this.getCommonPrefix(this.marker || '');
-            if (commonPrefix) {
-                this.state = <DelimiterFilterState_SkippingPrefix> {
-                    id: DelimiterFilterStateId.SkippingPrefix,
-                    prefix: commonPrefix,
-                };
-            } else if (this.marker) {
+            if (this.marker) {
                 // distinct initial state to include some special logic
                 // before the first master key is found that does not have
                 // to be checked afterwards
@@ -164,7 +158,7 @@ export class DelimiterMaster extends Delimiter {
         return this.filter_onNewMasterKeyV0(key, value);
     }
 
-    skippingBase(): string | typeof SKIP_NONE {
+    skippingBase(): string | undefined {
         switch (this.state.id) {
         case DelimiterMasterFilterStateId.SkippingVersionsV0:
             const { masterKey } = <DelimiterMasterFilterState_SkippingVersionsV0> this.state;
