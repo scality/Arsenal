@@ -2,21 +2,41 @@
 
 const Extension = require('./Extension').default;
 const { inc, listingParamsMasterKeysV0ToV1,
-    FILTER_END, FILTER_ACCEPT, FILTER_SKIP } = require('./tools');
+    FILTER_END, FILTER_ACCEPT, FILTER_SKIP, SKIP_NONE } = require('./tools');
 const VSConst = require('../../versioning/constants').VersioningConstants;
 const { DbPrefixes, BucketVersioningKeyFormat } = VSConst;
 
-/**
- * Find the common prefix in the path
- *
- * @param {String} key            - path of the object
- * @param {String} delimiter      - separator
- * @param {Number} delimiterIndex - 'folder' index in the path
- * @return {String}               - CommonPrefix
- */
-function getCommonPrefix(key, delimiter, delimiterIndex) {
-    return key.substring(0, delimiterIndex + delimiter.length);
-}
+export interface FilterState {
+    id: number,
+};
+
+export const enum DelimiterFilterStateId {
+    NotSkipping = 1,
+    SkippingPrefix = 2,
+};
+
+export interface DelimiterFilterState_NotSkipping extends FilterState {
+    id: DelimiterFilterStateId.NotSkipping,
+};
+
+export interface DelimiterFilterState_SkippingPrefix extends FilterState {
+    id: DelimiterFilterStateId.SkippingPrefix,
+    prefix: string;
+};
+
+type KeyHandler = (key: string, value: string) => number;
+
+type ResultObject = {
+    CommonPrefixes: string[];
+    Contents: {
+        key: string;
+        value: string;
+    }[];
+    IsTruncated: boolean;
+    Delimiter ?: string;
+    NextMarker ?: string;
+    NextContinuationToken ?: string;
+};
 
 /**
  * Handle object listing with parameters
@@ -30,7 +50,11 @@ function getCommonPrefix(key, delimiter, delimiterIndex) {
  * @prop {String|undefined} prefix     - prefix per amazon format
  * @prop {Number} maxKeys              - number of keys to list
  */
-class Delimiter extends Extension {
+export class Delimiter extends Extension {
+
+    state: FilterState;
+    keyHandlers: { [id: number]: KeyHandler };
+
     /**
      * Create a new Delimiter instance
      * @constructor
@@ -57,35 +81,20 @@ class Delimiter extends Extension {
         // original listing parameters
         this.delimiter = parameters.delimiter;
         this.prefix = parameters.prefix;
-        this.marker = parameters.marker;
         this.maxKeys = parameters.maxKeys || 1000;
-        this.startAfter = parameters.startAfter;
-        this.continuationToken = parameters.continuationToken;
+
+        if (parameters.v2) {
+            this.marker = parameters.continuationToken || parameters.startAfter;
+        } else {
+            this.marker = parameters.marker;
+        }
+        this.nextMarker = this.marker;
 
         this.vFormat = vFormat || BucketVersioningKeyFormat.v0;
         // results
         this.CommonPrefixes = [];
         this.Contents = [];
         this.IsTruncated = false;
-        this.NextMarker = parameters.marker;
-        this.NextContinuationToken =
-            parameters.continuationToken || parameters.startAfter;
-
-        this.startMarker = parameters.v2 ? 'startAfter' : 'marker';
-        this.continueMarker = parameters.v2 ? 'continuationToken' : 'marker';
-        this.nextContinueMarker = parameters.v2 ?
-            'NextContinuationToken' : 'NextMarker';
-
-        if (this.delimiter !== undefined &&
-            this[this.nextContinueMarker] !== undefined &&
-            this[this.nextContinueMarker].startsWith(this.prefix || '')) {
-            const nextDelimiterIndex =
-                this[this.nextContinueMarker].indexOf(this.delimiter,
-                    this.prefix ? this.prefix.length : 0);
-            this[this.nextContinueMarker] =
-                this[this.nextContinueMarker].slice(0, nextDelimiterIndex +
-                                        this.delimiter.length);
-        }
 
         Object.assign(this, {
             [BucketVersioningKeyFormat.v0]: {
@@ -99,21 +108,51 @@ class Delimiter extends Extension {
                 skipping: this.skippingV1,
             },
         }[this.vFormat]);
+
+        this.keyHandlers = {};
+
+        // if there is a delimiter, we may skip ranges by prefix,
+        // hence using the NotSkippingPrefix flavor that checks the
+        // subprefix up to the delimiter for the NotSkipping state
+        if (this.delimiter) {
+            this.setKeyHandler(
+                DelimiterFilterStateId.NotSkipping,
+                this.keyHandler_NotSkippingPrefix.bind(this));
+
+            this.setKeyHandler(
+                DelimiterFilterStateId.SkippingPrefix,
+                this.keyHandler_SkippingPrefix.bind(this));
+        } else {
+            // listing without a delimiter never has to skip over any
+            // prefix -> use NeverSkipping flavor for the NotSkipping
+            // state
+            this.setKeyHandler(
+                DelimiterFilterStateId.NotSkipping,
+                this.keyHandler_NeverSkipping.bind(this));
+        }
+        this.state = <DelimiterFilterState_NotSkipping> {
+            id: DelimiterFilterStateId.NotSkipping,
+        };
     }
 
     genMDParamsV0() {
-        const params = {};
+        const params: { gt ?: string, gte ?: string, lt ?: string } = {};
         if (this.prefix) {
             params.gte = this.prefix;
             params.lt = inc(this.prefix);
         }
-        const startVal = this[this.continueMarker] || this[this.startMarker];
-        if (startVal) {
-            if (params.gte && params.gte > startVal) {
-                return params;
+        if (this.marker && this.delimiter) {
+            const commonPrefix = this.getCommonPrefix(this.marker);
+            if (commonPrefix) {
+                const afterPrefix = inc(commonPrefix);
+                if (!params.gte || afterPrefix > params.gte) {
+                    params.gte = afterPrefix;
+                }
             }
+        }
+        if (this.marker && (!params.gte || this.marker >= params.gte)) {
             delete params.gte;
-            params.gt = startVal;
+            params.gt = this.marker;
         }
         return params;
     }
@@ -145,14 +184,54 @@ class Delimiter extends Extension {
      *  @param {String} value - The value of the key
      *  @return {number}      - indicates if iteration should continue
      */
-    addContents(key, value) {
+    addContents(key: string, value: string): number {
         if (this._reachedMaxKeys()) {
             return FILTER_END;
         }
         this.Contents.push({ key, value: this.trimMetadata(value) });
-        this[this.nextContinueMarker] = key;
         ++this.keys;
+        this.nextMarker = key;
         return FILTER_ACCEPT;
+    }
+
+    getCommonPrefix(key: string): string | undefined {
+        const baseIndex = this.prefix ? this.prefix.length : 0;
+        const delimiterIndex = key.indexOf(this.delimiter, baseIndex);
+        if (delimiterIndex === -1) {
+            return undefined;
+        }
+        return key.substring(0, delimiterIndex + this.delimiter.length);
+    }
+
+    /**
+     * Add a Common Prefix in the list
+     * @param {String} commonPrefix   - common prefix to add
+     * @return {Boolean}     - indicates if iteration should continue
+     */
+    addCommonPrefix(commonPrefix: string, key: string): number {
+        if (this._reachedMaxKeys()) {
+            return FILTER_END;
+        }
+        // add the new prefix to the list
+        this.CommonPrefixes.push(commonPrefix);
+        ++this.keys;
+        this.nextMarker = key;
+        // transition into SkippingPrefix state to skip all following keys
+        // while they start with the same prefix
+        this.setState(<DelimiterFilterState_SkippingPrefix> {
+            id: DelimiterFilterStateId.SkippingPrefix,
+            prefix: commonPrefix,
+        });
+        return FILTER_ACCEPT;
+    }
+
+    addCommonPrefixOrContents(key: string, value: string): number {
+        // add the subprefix to the common prefixes if the key has the delimiter
+        const commonPrefix = this.getCommonPrefix(key);
+        if (commonPrefix) {
+            return this.addCommonPrefix(commonPrefix, key);
+        }
+        return this.addContents(key, value);
     }
 
     getObjectKeyV0(obj) {
@@ -174,61 +253,64 @@ class Delimiter extends Extension {
      *  @param {String} obj.value - The value of the element
      *  @return {number}          - indicates if iteration should continue
      */
-    filter(obj) {
+    filter(obj: { key: string, value: string }): number {
         const key = this.getObjectKey(obj);
         const value = obj.value;
-        if (this.delimiter) {
-            const baseIndex = this.prefix ? this.prefix.length : 0;
-            const delimiterIndex = key.indexOf(this.delimiter, baseIndex);
-            if (delimiterIndex === -1) {
-                return this.addContents(key, value);
-            }
-            return this.addCommonPrefix(key, delimiterIndex);
-        }
+
+        return this.handleKey(key, value);
+    }
+
+    setState(state: FilterState) {
+        this.state = state;
+    }
+
+    setKeyHandler(stateId: number, keyHandler: KeyHandler): void {
+        this.keyHandlers[stateId] = keyHandler;
+    }
+
+    handleKey(key: string, value: string): number {
+        return this.keyHandlers[this.state.id](key, value);
+    }
+
+    keyHandler_NeverSkipping(key, value) {
         return this.addContents(key, value);
     }
 
-    /**
-     * Add a Common Prefix in the list
-     * @param {String} key   - object name
-     * @param {Number} index - after prefix starting point
-     * @return {Boolean}     - indicates if iteration should continue
-     */
-    addCommonPrefix(key, index) {
-        const commonPrefix = getCommonPrefix(key, this.delimiter, index);
-        if (this.CommonPrefixes.indexOf(commonPrefix) === -1
-                && this[this.nextContinueMarker] !== commonPrefix) {
-            if (this._reachedMaxKeys()) {
-                return FILTER_END;
-            }
-            this.CommonPrefixes.push(commonPrefix);
-            this[this.nextContinueMarker] = commonPrefix;
-            ++this.keys;
-            return FILTER_ACCEPT;
+    keyHandler_NotSkippingPrefix(key, value) {
+        return this.addCommonPrefixOrContents(key, value);
+    }
+    keyHandler_SkippingPrefix(key, value) {
+        const { prefix } = <DelimiterFilterState_SkippingPrefix> this.state;
+        if (key.startsWith(prefix)) {
+            return FILTER_SKIP;
         }
-        return FILTER_SKIP;
+        this.setState(<DelimiterFilterState_NotSkipping> {
+            id: DelimiterFilterStateId.NotSkipping,
+        });
+        return this.handleKey(key, value);
     }
 
-    /**
-     * If repd happens to want to skip listing on a bucket in v0
-     * versioning key format, here is an idea.
-     *
-     * @return {string} - the present range (NextMarker) if repd believes
-     *                    that it's enough and should move on
-     */
+    skippingBase(): string | typeof SKIP_NONE {
+        switch (this.state.id) {
+        case DelimiterFilterStateId.SkippingPrefix:
+            const { prefix } = <DelimiterFilterState_SkippingPrefix> this.state;
+            return prefix;
+
+        default:
+            return SKIP_NONE;
+        }
+    }
+
     skippingV0() {
-        return this[this.nextContinueMarker];
+        return this.skippingBase();
     }
 
-    /**
-     * If repd happens to want to skip listing on a bucket in v1
-     * versioning key format, here is an idea.
-     *
-     * @return {string} - the present range (NextMarker) if repd believes
-     *                    that it's enough and should move on
-     */
     skippingV1() {
-        return DbPrefixes.Master + this[this.nextContinueMarker];
+        const skipTo = this.skippingBase();
+        if (skipTo === SKIP_NONE) {
+            return SKIP_NONE;
+        }
+        return DbPrefixes.Master + skipTo;
     }
 
     /**
@@ -237,12 +319,12 @@ class Delimiter extends Extension {
      *  isn't truncated
      *  @return {Object} - following amazon format
      */
-    result() {
+    result(): ResultObject {
         /* NextMarker is only provided when delimiter is used.
          * specified in v1 listing documentation
          * http://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketGET.html
          */
-        const result = {
+        const result: ResultObject = {
             CommonPrefixes: this.CommonPrefixes,
             Contents: this.Contents,
             IsTruncated: this.IsTruncated,
@@ -250,13 +332,11 @@ class Delimiter extends Extension {
         };
         if (this.parameters.v2) {
             result.NextContinuationToken = this.IsTruncated
-                ? this.NextContinuationToken : undefined;
+                ? this.nextMarker : undefined;
         } else {
             result.NextMarker = (this.IsTruncated && this.delimiter)
-                ? this.NextMarker : undefined;
+                ? this.nextMarker : undefined;
         }
         return result;
     }
 }
-
-module.exports = { Delimiter };

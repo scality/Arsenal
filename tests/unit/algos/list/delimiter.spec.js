@@ -7,23 +7,17 @@ const DelimiterMaster =
     require('../../../../lib/algos/list/delimiterMaster').DelimiterMaster;
 const Werelogs = require('werelogs').Logger;
 const logger = new Werelogs('listTest');
-const performListing = require('../../../utils/performListing');
 const zpad = require('../../helpers').zpad;
 const { inc } = require('../../../../lib/algos/list/tools');
 const VSConst = require('../../../../lib/versioning/constants').VersioningConstants;
 const { DbPrefixes } = VSConst;
 
 class Test {
-    constructor(name, input, genMDParams, output, filter) {
+    constructor(name, input, genMDParams, output) {
         this.name = name;
         this.input = input;
         this.genMDParams = genMDParams;
         this.output = output;
-        this.filter = filter || this._defaultFilter;
-    }
-
-    _defaultFilter() {
-        return true;
     }
 }
 
@@ -33,7 +27,7 @@ const valueDeleteMarker = '{"hello":"world","isDeleteMarker":"true"}';
 const data = [
     { key: 'Pâtisserie=中文-español-English', value },
     { key: 'notes/spring/1.txt', value },
-    { key: 'notes/spring/2.txt', value },
+    { key: 'notes/spring/4.txt', value },
     { key: 'notes/spring/march/1.txt', value },
     { key: 'notes/summer/1.txt', value },
     { key: 'notes/summer/2.txt', value },
@@ -56,6 +50,9 @@ const dataVersioned = [
     { key: 'notes/spring/2.txt\0foo', value },
     { key: 'notes/spring/3.txt', value: valueDeleteMarker },
     { key: 'notes/spring/3.txt\0foo', value },
+    { key: 'notes/spring/4.txt', value: valuePHD },
+    { key: 'notes/spring/4.txt\0bar', value },
+    { key: 'notes/spring/4.txt\0foo', value },
     { key: 'notes/spring/march/1.txt', value },
     { key: 'notes/spring/march/1.txt\0bar', value },
     { key: 'notes/spring/march/1.txt\0foo', value },
@@ -78,15 +75,8 @@ const dataVersioned = [
     { key: 'notes/yore.rs', value },
     { key: 'notes/zaphod/Beeblebrox.txt', value },
 ];
-const nonAlphabeticalData = [
-    { key: 'zzz', value },
-    { key: 'aaa', value },
-];
 
 const receivedData = data.map(item => ({ key: item.key, value: item.value }));
-const receivedNonAlphaData = nonAlphabeticalData.map(
-    item => ({ key: item.key, value: item.value }),
-);
 
 const tests = [
     new Test('all elements', {}, {
@@ -124,7 +114,7 @@ const tests = [
         Delimiter: undefined,
         IsTruncated: false,
         NextMarker: undefined,
-    }, (e, input) => e.key > input.marker),
+    }),
     new Test('with bad marker', {
         marker: 'zzzz',
         delimiter: '/',
@@ -142,7 +132,7 @@ const tests = [
         Delimiter: '/',
         IsTruncated: false,
         NextMarker: undefined,
-    }, (e, input) => e.key > input.marker),
+    }),
     new Test('with makKeys', {
         maxKeys: 3,
     }, {
@@ -219,12 +209,12 @@ const tests = [
         marker: 'notes/summer0',
     }, {
         v0: {
-            gt: `notes/summer${inc('/')}`,
-            lt: `notes/summer${inc('/')}`,
+            gt: 'notes/summer0',
+            lt: 'notes/summer0',
         },
         v1: {
-            gt: `${DbPrefixes.Master}notes/summer${inc('/')}`,
-            lt: `${DbPrefixes.Master}notes/summer${inc('/')}`,
+            gt: `${DbPrefixes.Master}notes/summer0`,
+            lt: `${DbPrefixes.Master}notes/summer0`,
         },
     }, {
         Contents: [],
@@ -232,18 +222,18 @@ const tests = [
         Delimiter: '/',
         IsTruncated: false,
         NextMarker: undefined,
-    }, (e, input) => e.key > input.marker),
+    }),
     new Test('delimiter and prefix (related to #147)', {
         delimiter: '/',
         prefix: 'notes/',
     }, {
         v0: {
             gte: 'notes/',
-            lt: `notes${inc('/')}`,
+            lt: 'notes0',
         },
         v1: {
             gte: `${DbPrefixes.Master}notes/`,
-            lt: `${DbPrefixes.Master}notes${inc('/')}`,
+            lt: `${DbPrefixes.Master}notes0`,
         },
     }, {
         Contents: [
@@ -266,11 +256,11 @@ const tests = [
     }, {
         v0: {
             gt: 'notes/year.txt',
-            lt: `notes${inc('/')}`,
+            lt: 'notes0',
         },
         v1: {
             gt: `${DbPrefixes.Master}notes/year.txt`,
-            lt: `${DbPrefixes.Master}notes${inc('/')}`,
+            lt: `${DbPrefixes.Master}notes0`,
         },
     }, {
         Contents: [
@@ -282,8 +272,8 @@ const tests = [
         Delimiter: '/',
         IsTruncated: false,
         NextMarker: undefined,
-    }, (e, input) => e.key > input.marker),
-    new Test('all parameters 1/3', {
+    }),
+    new Test('all parameters 1/5', {
         delimiter: '/',
         prefix: 'notes/',
         marker: 'notes/',
@@ -291,55 +281,55 @@ const tests = [
     }, {
         v0: {
             gt: 'notes/',
-            lt: `notes${inc('/')}`,
+            lt: 'notes0',
         },
         v1: {
             gt: `${DbPrefixes.Master}notes/`,
-            lt: `${DbPrefixes.Master}notes${inc('/')}`,
+            lt: `${DbPrefixes.Master}notes0`,
         },
     }, {
         Contents: [],
         CommonPrefixes: ['notes/spring/'],
         Delimiter: '/',
         IsTruncated: true,
-        NextMarker: 'notes/spring/',
-    }, (e, input) => e.key > input.marker),
+        NextMarker: 'notes/spring/1.txt',
+    }),
 
-    new Test('all parameters 2/3', {
+    new Test('all parameters 2/5', {
         delimiter: '/',
-        prefix: 'notes/', // prefix
-        marker: 'notes/spring/',
+        prefix: 'notes/',
+        marker: 'notes/spring/1.txt',
         maxKeys: 1,
     }, {
         v0: {
-            gt: 'notes/spring/',
-            lt: `notes${inc('/')}`,
+            gte: 'notes/spring0',
+            lt: 'notes0',
         },
         v1: {
-            gt: `${DbPrefixes.Master}notes/spring/`,
-            lt: `${DbPrefixes.Master}notes${inc('/')}`,
+            gte: `${DbPrefixes.Master}notes/spring0`,
+            lt: `${DbPrefixes.Master}notes0`,
         },
     }, {
         Contents: [],
         CommonPrefixes: ['notes/summer/'],
         Delimiter: '/',
         IsTruncated: true,
-        NextMarker: 'notes/summer/',
-    }, (e, input) => e.key > input.marker),
+        NextMarker: 'notes/summer/1.txt',
+    }),
 
-    new Test('all parameters 3/3', {
+    new Test('all parameters 3/5', {
         delimiter: '/',
-        prefix: 'notes/', // prefix
-        marker: 'notes/summer/',
+        prefix: 'notes/',
+        marker: 'notes/summer/1.txt',
         maxKeys: 1,
     }, {
         v0: {
-            gt: 'notes/summer/',
-            lt: `notes${inc('/')}`,
+            gte: 'notes/summer0',
+            lt: 'notes0',
         },
         v1: {
-            gt: `${DbPrefixes.Master}notes/summer/`,
-            lt: `${DbPrefixes.Master}notes${inc('/')}`,
+            gte: `${DbPrefixes.Master}notes/summer0`,
+            lt: `${DbPrefixes.Master}notes0`,
         },
     }, {
         Contents: [
@@ -349,21 +339,21 @@ const tests = [
         Delimiter: '/',
         IsTruncated: true,
         NextMarker: 'notes/year.txt',
-    }, (e, input) => e.key > input.marker),
+    }),
 
-    new Test('all parameters 4/3', {
+    new Test('all parameters 4/5', {
         delimiter: '/',
-        prefix: 'notes/', // prefix
+        prefix: 'notes/',
         marker: 'notes/year.txt',
         maxKeys: 1,
     }, {
         v0: {
             gt: 'notes/year.txt',
-            lt: `notes${inc('/')}`,
+            lt: 'notes0',
         },
         v1: {
             gt: `${DbPrefixes.Master}notes/year.txt`,
-            lt: `${DbPrefixes.Master}notes${inc('/')}`,
+            lt: `${DbPrefixes.Master}notes0`,
         },
     }, {
         Contents: [
@@ -373,9 +363,9 @@ const tests = [
         Delimiter: '/',
         IsTruncated: true,
         NextMarker: 'notes/yore.rs',
-    }, (e, input) => e.key > input.marker),
+    }),
 
-    new Test('all parameters 5/3', {
+    new Test('all parameters 5/5', {
         delimiter: '/',
         prefix: 'notes/',
         marker: 'notes/yore.rs',
@@ -383,11 +373,11 @@ const tests = [
     }, {
         v0: {
             gt: 'notes/yore.rs',
-            lt: `notes${inc('/')}`,
+            lt: 'notes0',
         },
         v1: {
             gt: `${DbPrefixes.Master}notes/yore.rs`,
-            lt: `${DbPrefixes.Master}notes${inc('/')}`,
+            lt: `${DbPrefixes.Master}notes0`,
         },
     }, {
         Contents: [],
@@ -395,7 +385,7 @@ const tests = [
         Delimiter: '/',
         IsTruncated: false,
         NextMarker: undefined,
-    }, (e, input) => e.key > input.marker),
+    }),
 
     new Test('all elements v2', {
         v2: true,
@@ -435,7 +425,7 @@ const tests = [
         Delimiter: undefined,
         IsTruncated: false,
         NextContinuationToken: undefined,
-    }, (e, input) => e.key > input.startAfter),
+    }),
     new Test('with bad startAfter', {
         startAfter: 'zzzz',
         delimiter: '/',
@@ -454,7 +444,7 @@ const tests = [
         Delimiter: '/',
         IsTruncated: false,
         NextContinuationToken: undefined,
-    }, (e, input) => e.key > input.startAfter),
+    }),
     new Test('with valid continuationToken', {
         continuationToken: receivedData[4].key,
         v2: true,
@@ -478,7 +468,7 @@ const tests = [
         Delimiter: undefined,
         IsTruncated: false,
         NextContinuationToken: undefined,
-    }, (e, input) => e.key > input.continuationToken),
+    }),
     new Test('with bad continuationToken', {
         continuationToken: 'zzzz',
         delimiter: '/',
@@ -497,47 +487,49 @@ const tests = [
         Delimiter: '/',
         IsTruncated: false,
         NextContinuationToken: undefined,
-    }, (e, input) => e.key > input.continuationToken),
+    }),
     new Test('bad startAfter and good prefix', {
         delimiter: '/',
         prefix: 'notes/summer/',
         startAfter: 'notes/summer0',
+        v2: true,
     }, {
         v0: {
-            gte: 'notes/summer/',
-            lt: `notes/summer${inc('/')}`,
+            gt: 'notes/summer0',
+            lt: 'notes/summer0',
         },
         v1: {
-            gte: `${DbPrefixes.Master}notes/summer/`,
-            lt: `${DbPrefixes.Master}notes/summer${inc('/')}`,
+            gt: `${DbPrefixes.Master}notes/summer0`,
+            lt: `${DbPrefixes.Master}notes/summer0`,
         },
     }, {
         Contents: [],
         CommonPrefixes: [],
         Delimiter: '/',
         IsTruncated: false,
-        NextMarker: undefined,
-    }, (e, input) => e.key > input.startAfter),
+        NextContinuationToken: undefined,
+    }),
     new Test('bad continuation token and good prefix', {
         delimiter: '/',
         prefix: 'notes/summer/',
         continuationToken: 'notes/summer0',
+        v2: true,
     }, {
         v0: {
-            gte: 'notes/summer/',
-            lt: `notes/summer${inc('/')}`,
+            gt: 'notes/summer0',
+            lt: 'notes/summer0',
         },
         v1: {
-            gte: `${DbPrefixes.Master}notes/summer/`,
-            lt: `${DbPrefixes.Master}notes/summer${inc('/')}`,
+            gt: `${DbPrefixes.Master}notes/summer0`,
+            lt: `${DbPrefixes.Master}notes/summer0`,
         },
     }, {
         Contents: [],
         CommonPrefixes: [],
         Delimiter: '/',
         IsTruncated: false,
-        NextMarker: undefined,
-    }, (e, input) => e.key > input.continuationToken),
+        NextContinuationToken: undefined,
+    }),
 
     new Test('no delimiter v2', {
         startAfter: 'notes/year.txt',
@@ -559,9 +551,9 @@ const tests = [
         Delimiter: undefined,
         IsTruncated: true,
         NextContinuationToken: 'notes/yore.rs',
-    }, (e, input) => e.key > input.startAfter),
+    }),
 
-    new Test('all parameters v2 1/6', {
+    new Test('all parameters v2 1/5', {
         delimiter: '/',
         prefix: 'notes/',
         startAfter: 'notes/',
@@ -570,57 +562,57 @@ const tests = [
     }, {
         v0: {
             gt: 'notes/',
-            lt: `notes${inc('/')}`,
+            lt: 'notes0',
         },
         v1: {
             gt: `${DbPrefixes.Master}notes/`,
-            lt: `${DbPrefixes.Master}notes${inc('/')}`,
+            lt: `${DbPrefixes.Master}notes0`,
         },
     }, {
         Contents: [],
         CommonPrefixes: ['notes/spring/'],
         Delimiter: '/',
         IsTruncated: true,
-        NextContinuationToken: 'notes/spring/',
-    }, (e, input) => e.key > input.startAfter),
+        NextContinuationToken: 'notes/spring/1.txt',
+    }),
 
-    new Test('all parameters v2 2/6', {
+    new Test('all parameters v2 2/5', {
         delimiter: '/',
         prefix: 'notes/',
-        continuationToken: 'notes/spring/',
+        continuationToken: 'notes/spring/1.txt',
         maxKeys: 1,
         v2: true,
     }, {
         v0: {
-            gt: 'notes/spring/',
-            lt: `notes${inc('/')}`,
+            gte: 'notes/spring0',
+            lt: 'notes0',
         },
         v1: {
-            gt: `${DbPrefixes.Master}notes/spring/`,
-            lt: `${DbPrefixes.Master}notes${inc('/')}`,
+            gte: `${DbPrefixes.Master}notes/spring0`,
+            lt: `${DbPrefixes.Master}notes0`,
         },
     }, {
         Contents: [],
         CommonPrefixes: ['notes/summer/'],
         Delimiter: '/',
         IsTruncated: true,
-        NextContinuationToken: 'notes/summer/',
-    }, (e, input) => e.key > input.continuationToken),
+        NextContinuationToken: 'notes/summer/1.txt',
+    }),
 
     new Test('all parameters v2 3/5', {
         delimiter: '/',
         prefix: 'notes/',
-        continuationToken: 'notes/summer/',
+        continuationToken: 'notes/summer/1.txt',
         maxKeys: 1,
         v2: true,
     }, {
         v0: {
-            gt: 'notes/summer/',
-            lt: `notes${inc('/')}`,
+            gte: 'notes/summer0',
+            lt: 'notes0',
         },
         v1: {
-            gt: `${DbPrefixes.Master}notes/summer/`,
-            lt: `${DbPrefixes.Master}notes${inc('/')}`,
+            gte: `${DbPrefixes.Master}notes/summer0`,
+            lt: `${DbPrefixes.Master}notes0`,
         },
     }, {
         Contents: [
@@ -630,7 +622,7 @@ const tests = [
         Delimiter: '/',
         IsTruncated: true,
         NextContinuationToken: 'notes/year.txt',
-    }, (e, input) => e.key > input.continuationToken),
+    }),
 
     new Test('all parameters v2 4/5', {
         delimiter: '/',
@@ -641,11 +633,11 @@ const tests = [
     }, {
         v0: {
             gt: 'notes/year.txt',
-            lt: `notes${inc('/')}`,
+            lt: 'notes0',
         },
         v1: {
             gt: `${DbPrefixes.Master}notes/year.txt`,
-            lt: `${DbPrefixes.Master}notes${inc('/')}`,
+            lt: `${DbPrefixes.Master}notes0`,
         },
     }, {
         Contents: [
@@ -655,7 +647,7 @@ const tests = [
         Delimiter: '/',
         IsTruncated: true,
         NextContinuationToken: 'notes/yore.rs',
-    }, (e, input) => e.key > input.startAfter),
+    }),
 
     new Test('all parameters v2 5/5', {
         delimiter: '/',
@@ -666,11 +658,11 @@ const tests = [
     }, {
         v0: {
             gt: 'notes/yore.rs',
-            lt: `notes${inc('/')}`,
+            lt: 'notes0',
         },
         v1: {
             gt: `${DbPrefixes.Master}notes/yore.rs`,
-            lt: `${DbPrefixes.Master}notes${inc('/')}`,
+            lt: `${DbPrefixes.Master}notes0`,
         },
     }, {
         Contents: [],
@@ -678,35 +670,11 @@ const tests = [
         Delimiter: '/',
         IsTruncated: false,
         NextContinuationToken: undefined,
-    }, (e, input) => e.key > input.startAfter),
-
+    }),
 ];
 
-const alphabeticalOrderTests = [
-    {
-        params: {},
-        expectedValue: true,
-    }, {
-        params: {
-            alphabeticalOrder: undefined,
-        },
-        expectedValue: true,
-    }, {
-        params: {
-            alphabeticalOrder: true,
-        },
-        expectedValue: true,
-    }, {
-        params: {
-            alphabeticalOrder: false,
-        },
-        expectedValue: false,
-    },
-];
-
-function getTestListing(test, data, vFormat) {
+function getTestListing(mdParams, data, vFormat) {
     return data
-        .filter(e => test.filter(e, test.input))
         .map(obj => {
             if (vFormat === 'v0') {
                 return obj;
@@ -718,7 +686,12 @@ function getTestListing(test, data, vFormat) {
                 };
             }
             return assert.fail(`bad format ${vFormat}`);
-        });
+        })
+        .filter(e =>
+            (!mdParams.gt || e.key > mdParams.gt) &&
+            (!mdParams.gte || e.key >= mdParams.gte) &&
+            (!mdParams.lt || e.key < mdParams.lt),
+        );
 }
 
 ['v0', 'v1'].forEach(vFormat => {
@@ -742,9 +715,13 @@ function getTestListing(test, data, vFormat) {
                 assert.deepStrictEqual(params, test.genMDParams[vFormat]);
             });
             it(`Should list ${test.name}`, () => {
-                // Simulate skip scan done by LevelDB
-                const d = getTestListing(test, data, vFormat);
-                const res = performListing(d, Delimiter, test.input, logger, vFormat);
+                const listing = new Delimiter(test.input, logger, vFormat);
+                const mdParams = listing.genMDParams();
+                const rawEntries = getTestListing(mdParams, data, vFormat);
+                for (const entry of rawEntries) {
+                    listing.filter(entry);
+                }
+                const res = listing.result();
                 assert.deepStrictEqual(res, test.output);
             });
         });
@@ -753,9 +730,13 @@ function getTestListing(test, data, vFormat) {
         if (vFormat === 'v0') {
             tests.forEach(test => {
                 it(`Should list master versions ${test.name}`, () => {
-                    // Simulate skip scan done by LevelDB
-                    const d = dataVersioned.filter(e => test.filter(e, test.input));
-                    const res = performListing(d, DelimiterMaster, test.input, logger, vFormat);
+                    const listing = new DelimiterMaster(test.input, logger, vFormat);
+                    const mdParams = listing.genMDParams();
+                    const rawEntries = getTestListing(mdParams, dataVersioned, vFormat);
+                    for (const entry of rawEntries) {
+                        listing.filter(entry);
+                    }
+                    const res = listing.result();
                     assert.deepStrictEqual(res, test.output);
                 });
             });
