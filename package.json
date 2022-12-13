@@ -98,6 +98,11 @@
       "index.js"
     ],
     "preset": "ts-jest",
+    "testEnvironment": "node",
+    "transform": {
+      "^.\\.ts?$": "ts-jest"
+    },
+    "transformIgnorePatterns": [],
     "globals": {
       "test-jest": {
         "diagnostics": {
