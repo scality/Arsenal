@@ -68,7 +68,6 @@ export default class RESTServer extends httpServer {
     }) {
         assert(params.port);
 
-        // @ts-expect-error
         werelogs.configure({
             level: params.log.logLevel,
             dump: params.log.dumpLevel,

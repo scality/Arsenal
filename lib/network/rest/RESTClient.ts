@@ -4,7 +4,7 @@ import * as werelogs from 'werelogs';
 import * as constants from '../../constants';
 import * as utils from './utils';
 import errors, { ArsenalError } from '../../errors';
-import HttpAgent from 'agentkeepalive';
+import { http as HttpAgent } from 'httpagent';
 import * as stream from 'stream';
 
 function setRequestUids(reqHeaders: http.IncomingHttpHeaders, reqUids: string) {
@@ -71,7 +71,7 @@ function makeErrorFromHTTPResponse(response: http.IncomingMessage) {
 export default class RESTClient {
     host: string;
     port: number;
-    httpAgent: HttpAgent;
+    httpAgent: http.Agent;
     logging: werelogs.Logger;
     isPassthrough: boolean;
 
@@ -98,7 +98,7 @@ export default class RESTClient {
         this.port = params.port;
         this.isPassthrough = params.isPassthrough || false;
         this.logging = new (params.logApi || werelogs).Logger('DataFileRESTClient');
-        this.httpAgent = new HttpAgent({
+        this.httpAgent = new HttpAgent.Agent({
             keepAlive: true,
             freeSocketTimeout: constants.httpClientFreeSocketTimeout,
         });
