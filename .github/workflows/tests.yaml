@@ -31,7 +31,7 @@ jobs:
         node-version: '16'
         cache: 'yarn'
     - name: install dependencies
-      run: yarn install --frozen-lockfile --prefer-offline
+      run: yarn install --frozen-lockfile --prefer-offline --network-concurrency 1
       continue-on-error: true # TODO ARSN-97 Remove it when no errors in TS
     - name: lint yaml
       run: yarn --silent lint_yml
