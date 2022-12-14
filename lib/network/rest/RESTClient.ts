@@ -101,7 +101,7 @@ export default class RESTClient {
         this.httpAgent = new HttpAgent.Agent({
             keepAlive: true,
             freeSocketTimeout: constants.httpClientFreeSocketTimeout,
-        });
+        }) as http.Agent;
     }
 
     /** Destroy the HTTP agent, forcing a close of the remaining open connections */

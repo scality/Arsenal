@@ -1543,11 +1543,6 @@
   resolved "https://registry.yarnpkg.com/@types/node/-/node-17.0.21.tgz#864b987c0c68d07b4345845c3e63b75edd143644"
   integrity sha512-DBZCJbhII3r90XbQxI8Y9IjjiiOGlZ0Hr32omXIZvwwZ7p4DMMXGrKXVyPfuoBOri9XNtL0UK69jYIBIsRX3QQ==
 
-"@types/node@^18.11.9":
-  version "18.11.11"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.11.11.tgz#1d455ac0211549a8409d3cdb371cd55cc971e8dc"
-  integrity sha512-KJ021B1nlQUBLopzZmPBVuGU9un7WJd/W4ya7Ih02B4Uwky5Nja0yGYav2EfYIk0RR2Q9oVhf60S2XR1BCWJ2g==
-
 "@types/prettier@^2.1.5":
   version "2.4.4"
   resolved "https://registry.yarnpkg.com/@types/prettier/-/prettier-2.4.4.tgz#5d9b63132df54d8909fce1c3f8ca260fdd693e17"
@@ -3420,11 +3415,11 @@ hasha@^5.0.0:
     is-stream "^2.0.0"
     type-fest "^0.8.0"
 
-hdclient@scality/hdclient#1.1.2:
-  version "1.1.2"
-  resolved "https://codeload.github.com/scality/hdclient/tar.gz/a37cdc9b04b9cd4e7ca18c005bbfa026945adb15"
+hdclient@scality/hdclient#1.1.4:
+  version "1.1.4"
+  resolved "https://codeload.github.com/scality/hdclient/tar.gz/2ff1cdd213370b0a24aff5cd08da4fb5d25df5ec"
   dependencies:
-    httpagent "github:scality/httpagent#1.0.2"
+    httpagent "github:scality/httpagent#1.0.5"
     werelogs "github:scality/werelogs#8.1.2"
 
 html-encoding-sniffer@^2.0.1:
@@ -3462,23 +3457,16 @@ http-signature@~1.2.0:
     jsprim "^1.2.2"
     sshpk "^1.7.0"
 
-"httpagent@git+https://github.com/scality/httpagent#1.0.2":
-  version "1.0.2"
-  resolved "git+https://github.com/scality/httpagent#676a70e10265a022d9bd061484117a4816d7953b"
+"httpagent@github:scality/httpagent#1.0.5":
+  version "1.0.5"
+  resolved "https://codeload.github.com/scality/httpagent/tar.gz/ec4e28f05001eaa6528daa174dbeab9e1df40ff6"
   dependencies:
-    "@types/node" "^18.11.9"
+    agentkeepalive "^4.2.1"
 
-"httpagent@github:scality/httpagent#1.0.2":
-  version "1.0.2"
-  resolved "https://codeload.github.com/scality/httpagent/tar.gz/676a70e10265a022d9bd061484117a4816d7953b"
+httpagent@scality/httpagent#1.0.6:
+  version "1.0.6"
+  resolved "https://codeload.github.com/scality/httpagent/tar.gz/66e97ab93532d79dbddcf6c4ea4df849b84c33c9"
   dependencies:
-    "@types/node" "^18.11.9"
-
-httpagent@scality/httpagent#1.0.4:
-  version "1.0.4"
-  resolved "https://codeload.github.com/scality/httpagent/tar.gz/e14a16f9882c15900ef1e3a6ada341d5cbe3eb48"
-  dependencies:
-    "@types/node" "^18.11.9"
     agentkeepalive "^4.2.1"
 
 https-proxy-agent@^2.2.0:
@@ -5925,12 +5913,12 @@ sprintf-js@~1.0.2:
   resolved "https://registry.yarnpkg.com/sprintf-js/-/sprintf-js-1.0.3.tgz#04e6926f662895354f3dd015203633b857297e2c"
   integrity sha1-BOaSb2YolTVPPdAVIDYzuFcpfiw=
 
-sproxydclient@scality/sproxydclient#8.0.5:
-  version "8.0.5"
-  resolved "https://codeload.github.com/scality/sproxydclient/tar.gz/293f5a9ac65cf574912c7693b20082b874a74cd9"
+sproxydclient@scality/sproxydclient#8.0.6:
+  version "8.0.6"
+  resolved "https://codeload.github.com/scality/sproxydclient/tar.gz/83bb5c58849fc8803c252b9f3776e491c915d67e"
   dependencies:
     async "^3.2.0"
-    httpagent "git+https://github.com/scality/httpagent#1.0.2"
+    httpagent "github:scality/httpagent#1.0.5"
     werelogs scality/werelogs#8.1.2
 
 sshpk@^1.7.0:
