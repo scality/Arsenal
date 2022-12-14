@@ -3464,23 +3464,22 @@ http-signature@~1.2.0:
 
 "httpagent@git+https://github.com/scality/httpagent#1.0.2":
   version "1.0.2"
-  uid "676a70e10265a022d9bd061484117a4816d7953b"
   resolved "git+https://github.com/scality/httpagent#676a70e10265a022d9bd061484117a4816d7953b"
   dependencies:
     "@types/node" "^18.11.9"
-
-"httpagent@git+https://github.com/scality/httpagent#1.0.4":
-  version "1.0.4"
-  resolved "git+https://github.com/scality/httpagent#e14a16f9882c15900ef1e3a6ada341d5cbe3eb48"
-  dependencies:
-    "@types/node" "^18.11.9"
-    agentkeepalive "^4.2.1"
 
 "httpagent@github:scality/httpagent#1.0.2":
   version "1.0.2"
   resolved "https://codeload.github.com/scality/httpagent/tar.gz/676a70e10265a022d9bd061484117a4816d7953b"
   dependencies:
     "@types/node" "^18.11.9"
+
+httpagent@scality/httpagent#1.0.4:
+  version "1.0.4"
+  resolved "https://codeload.github.com/scality/httpagent/tar.gz/e14a16f9882c15900ef1e3a6ada341d5cbe3eb48"
+  dependencies:
+    "@types/node" "^18.11.9"
+    agentkeepalive "^4.2.1"
 
 https-proxy-agent@^2.2.0:
   version "2.2.4"
@@ -5926,7 +5925,7 @@ sprintf-js@~1.0.2:
   resolved "https://registry.yarnpkg.com/sprintf-js/-/sprintf-js-1.0.3.tgz#04e6926f662895354f3dd015203633b857297e2c"
   integrity sha1-BOaSb2YolTVPPdAVIDYzuFcpfiw=
 
-"sproxydclient@github:scality/sproxydclient#8.0.5":
+sproxydclient@scality/sproxydclient#8.0.5:
   version "8.0.5"
   resolved "https://codeload.github.com/scality/sproxydclient/tar.gz/293f5a9ac65cf574912c7693b20082b874a74cd9"
   dependencies:
