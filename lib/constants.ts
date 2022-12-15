@@ -167,3 +167,5 @@ export const maxCachedBuckets = process.env.METADATA_MAX_CACHED_BUCKETS ?
     Number(process.env.METADATA_MAX_CACHED_BUCKETS) : 1000;
 
 export const validRestoreObjectTiers = new Set(['Expedited', 'Standard', 'Bulk']);
+
+export const validStorageMetricLevels = new Set(['bucket', 'location', 'account']);

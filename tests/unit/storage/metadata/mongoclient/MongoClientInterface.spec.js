@@ -32,37 +32,127 @@ const DummyConfigObject = require('./utils/DummyConfigObject');
 const mongoTestClient = new MongoClientInterface({});
 
 describe('MongoClientInterface::_handleResults', () => {
-    it('should return zero-result', () => {
-        const testInput = {
-            masterCount: 0, masterData: {},
-            nullCount: 0, nullData: {},
-            versionCount: 0, versionData: {},
+    const testInput = {
+        bucket: {
+            bucket1: {
+                masterCount: 2,
+                masterData: 20,
+                nullCount: 2,
+                nullData: 20,
+                versionCount: 4,
+                versionData: 40,
+                deleteMarkerCount: 2,
+            },
+        },
+        location: {
+            location1: {
+                masterCount: 1,
+                masterData: 10,
+                nullCount: 1,
+                nullData: 10,
+                versionCount: 2,
+                versionData: 20,
+                deleteMarkerCount: 1,
+            },
+            location2: {
+                masterCount: 1,
+                masterData: 10,
+                nullCount: 1,
+                nullData: 10,
+                versionCount: 2,
+                versionData: 20,
+                deleteMarkerCount: 1,
+            },
+        },
+        account: {
+            account1: {
+                masterCount: 2,
+                masterData: 20,
+                nullCount: 2,
+                nullData: 20,
+                versionCount: 4,
+                versionData: 40,
+                deleteMarkerCount: 2,
+            },
+        },
+    };
+    it('should return zero-result when input is empty', () => {
+        const testInputEmpty = {
+            bucket: {},
+            location: {},
+            account: {},
         };
-        const testResults = mongoTestClient._handleResults(testInput, true);
+        const testResults = mongoTestClient._handleResults(testInputEmpty, true);
         const expectedRes = {
             versions: 0, objects: 0,
             dataManaged: {
                 total: { curr: 0, prev: 0 },
                 locations: {},
             },
+            dataMetrics: {
+                bucket: {},
+                location: {},
+                account: {},
+            },
+        };
+        assert.deepStrictEqual(testResults, expectedRes);
+    });
+
+    it('should return zero-result when input metric keys are not valid', () => {
+        const testInputWithInvalidMetricKeys = {
+            InvalidMetric0: testInput.bucket,
+            InvalidMetric1: testInput.location,
+            InvalidMetric2: testInput.account,
+        };
+        const testResults = mongoTestClient._handleResults(testInputWithInvalidMetricKeys, true);
+        const expectedRes = {
+            versions: 0, objects: 0,
+            dataManaged: {
+                total: { curr: 0, prev: 0 },
+                locations: {},
+            },
+            dataMetrics: {
+                bucket: {},
+                location: {},
+                account: {},
+            },
         };
         assert.deepStrictEqual(testResults, expectedRes);
     });
 
     it('should return correct value if isVer is false', () => {
-        const testInput = {
-            masterCount: 2, masterData: { test1: 10, test2: 10 },
-            nullCount: 2, nullData: { test1: 10, test2: 10 },
-            versionCount: 2, versionData: { test1: 20, test2: 20 },
-        };
         const testResults = mongoTestClient._handleResults(testInput, false);
         const expectedRes = {
             versions: 0, objects: 4,
             dataManaged: {
                 total: { curr: 40, prev: 0 },
                 locations: {
-                    test1: { curr: 20, prev: 0 },
-                    test2: { curr: 20, prev: 0 },
+                    location1: { curr: 20, prev: 0 },
+                    location2: { curr: 20, prev: 0 },
+                },
+            },
+            dataMetrics: {
+                bucket: {
+                    bucket1: {
+                        objectCount: { current: 4, deleteMarker: 0, nonCurrent: 0 },
+                        usedCapacity: { current: 40, nonCurrent: 0 },
+                    },
+                },
+                location: {
+                    location1: {
+                        objectCount: { current: 2, deleteMarker: 0, nonCurrent: 0 },
+                        usedCapacity: { current: 20, nonCurrent: 0 },
+                    },
+                    location2: {
+                        objectCount: { current: 2, deleteMarker: 0, nonCurrent: 0 },
+                        usedCapacity: { current: 20, nonCurrent: 0 },
+                    },
+                },
+                account: {
+                    account1: {
+                        objectCount: { current: 4, deleteMarker: 0, nonCurrent: 0 },
+                        usedCapacity: { current: 40, nonCurrent: 0 },
+                    },
                 },
             },
         };
@@ -70,23 +160,75 @@ describe('MongoClientInterface::_handleResults', () => {
     });
 
     it('should return correct value if isVer is true', () => {
-        const testInput = {
-            masterCount: 2, masterData: { test1: 10, test2: 10 },
-            nullCount: 2, nullData: { test1: 10, test2: 10 },
-            versionCount: 4, versionData: { test1: 20, test2: 20 },
-        };
         const testResults = mongoTestClient._handleResults(testInput, true);
         const expectedRes = {
-            versions: 2, objects: 4,
+            versions: 0, objects: 4,
             dataManaged: {
                 total: { curr: 40, prev: 20 },
                 locations: {
-                    test1: { curr: 20, prev: 10 },
-                    test2: { curr: 20, prev: 10 },
+                    location1: { curr: 20, prev: 10 },
+                    location2: { curr: 20, prev: 10 },
+                },
+            },
+            dataMetrics: {
+                bucket: {
+                    bucket1: {
+                        objectCount: { current: 4, deleteMarker: 2, nonCurrent: 0 },
+                        usedCapacity: { current: 40, nonCurrent: 20 },
+                    },
+                },
+                location: {
+                    location1: {
+                        objectCount: { current: 2, deleteMarker: 1, nonCurrent: 0 },
+                        usedCapacity: { current: 20, nonCurrent: 10 },
+                    },
+                    location2: {
+                        objectCount: { current: 2, deleteMarker: 1, nonCurrent: 0 },
+                        usedCapacity: { current: 20, nonCurrent: 10 },
+                    },
+                },
+                account: {
+                    account1: {
+                        objectCount: { current: 4, deleteMarker: 2, nonCurrent: 0 },
+                        usedCapacity: { current: 40, nonCurrent: 20 },
+                    },
                 },
             },
         };
         assert.deepStrictEqual(testResults, expectedRes);
+    });
+
+    it('should calculate dataManaged based on input location metrics', () => {
+        const testInputOnlyContainsLocation = {
+            bucket: {},
+            location: testInput.location,
+            account: {},
+        };
+        const testResults = mongoTestClient._handleResults(testInputOnlyContainsLocation, true);
+        const expectedRes = {
+            dataManaged: {
+                total: { curr: 40, prev: 20 },
+                locations: {
+                    location1: { curr: 20, prev: 10 },
+                    location2: { curr: 20, prev: 10 },
+                },
+            },
+        };
+        assert.deepStrictEqual(testResults.dataManaged, expectedRes.dataManaged);
+    });
+
+    it('should calculate total current and nonCurrent counts based on input bucket metrics', () => {
+        const testInputOnlyContainsLocation = {
+            bucket: testInput.bucket,
+            location: {},
+            account: {},
+        };
+        const testResults = mongoTestClient._handleResults(testInputOnlyContainsLocation, true);
+        const expectedRes = {
+            versions: 0, objects: 4,
+        };
+        assert.deepStrictEqual(testResults.versions, expectedRes.versions);
+        assert.deepStrictEqual(testResults.objects, expectedRes.objects);
     });
 });
 
@@ -105,140 +247,150 @@ describe('MongoClientInterface, misc', () => {
 });
 
 describe('MongoClientInterface::_processEntryData', () => {
+    const testBucketName = 'testBucket';
+    const objectMdTemp = {
+        'last-modified': new Date(),
+        'replicationInfo': {
+            status: 'PENDING',
+            backends: [],
+            content: [],
+            destination: '',
+            storageClass: '',
+            role: '',
+            storageType: '',
+            dataStoreVersionId: '',
+            isNFS: null,
+        },
+        'transient': false,
+        'dataStoreName': 'us-east-1',
+        'content-length': 42,
+        'versionId': '0123456789abcdefg',
+        'owner-display-name': 'account1',
+    };
     const tests = [
         [
-            'should add content-length to total if replication status != ' +
-            'COMPLETED and transient == true',
+            'should add content-length to current dataStore but not replication destination ' +
+            'if replication status != COMPLETED and transient == true',
+            testBucketName,
             true,
             {
-                _id: 'testkey',
+                _id: 'testkey0',
                 value: {
-                    'last-modified': new Date(),
-                    'replicationInfo': {
+                    ...objectMdTemp,
+                    replicationInfo: {
+                        ...objectMdTemp.replicationInfo,
+                        backends: [{
+                            site: 'not-completed',
+                            status: 'PENDING',
+                        }],
                         status: 'PENDING',
-                        backends: [],
-                        content: [],
-                        destination: '',
-                        storageClass: '',
-                        role: '',
-                        storageType: '',
-                        dataStoreVersionId: '',
-                        isNFS: null,
                     },
-                    'dataStoreName': 'us-east-1',
-                    'content-length': 42,
-                    'versionId': '0123456789abcdefg',
                 },
             },
             {
                 data: {
-                    'us-east-1': 42,
+                    account: { account1: 42 },
+                    bucket: { [testBucketName]: 42 },
+                    location: { 'us-east-1': 42 },
                 },
                 error: null,
             },
         ],
         [
-            'should not add content-length to total if replication ' +
-            'status == COMPLETED and transient == true',
+            'should not add content-length to replication destination but not in current dataStore ' +
+            'if replication status == COMPLETED and transient == true',
+            testBucketName,
             true,
             {
-                _id: 'testkey',
+                _id: 'testkey1',
                 value: {
-                    'last-modified': new Date(),
-                    'replicationInfo': {
+                    ...objectMdTemp,
+                    replicationInfo: {
+                        ...objectMdTemp.replicationInfo,
+                        backends: [{
+                            site: 'completed',
+                            status: 'COMPLETED',
+                        }],
                         status: 'COMPLETED',
-                        backends: [],
-                        content: [],
-                        destination: '',
-                        storageClass: '',
-                        role: '',
-                        storageType: '',
-                        dataStoreVersionId: '',
-                        isNFS: null,
                     },
-                    'dataStoreName': 'us-east-1',
-                    'content-length': 42,
-                    'versionId': '0123456789abcdefg',
                 },
             },
             {
                 data: {
-                    'us-east-1': 0,
+                    account: { account1: 42 },
+                    bucket: { [testBucketName]: 42 },
+                    location: { completed: 42 },
                 },
                 error: null,
             },
         ],
         [
-            'should add content-length to total if replication status != ' +
-            'COMPLETED and transient == false',
+            'should add content-length to current dataStore but not replication destination ' +
+            'if replication status != COMPLETED and transient == false',
+            testBucketName,
             false,
             {
-                _id: 'testkey',
+                _id: 'testkey2',
                 value: {
-                    'last-modified': new Date(),
-                    'replicationInfo': {
+                    ...objectMdTemp,
+                    replicationInfo: {
+                        ...objectMdTemp.replicationInfo,
+                        backends: [{
+                            site: 'not-completed',
+                            status: 'PENDING',
+                        }],
                         status: 'PENDING',
-                        backends: [],
-                        content: [],
-                        destination: '',
-                        storageClass: '',
-                        role: '',
-                        storageType: '',
-                        dataStoreVersionId: '',
-                        isNFS: null,
                     },
-                    'dataStoreName': 'us-east-1',
-                    'content-length': 42,
-                    'versionId': '0123456789abcdefg',
                 },
             },
             {
                 data: {
-                    'us-east-1': 42,
+                    account: { account1: 42 },
+                    bucket: { [testBucketName]: 42 },
+                    location: { 'us-east-1': 42 },
                 },
                 error: null,
             },
         ],
         [
-            'should add content-length to total if replication ' +
-            'status == COMPLETED and transient == false',
+            'should add content-length to current dataStore and replication destination ' +
+            'if replication status == COMPLETED and transient == false',
+            testBucketName,
             false,
             {
-                _id: 'testkey',
+                _id: 'testkey3',
                 value: {
-                    'last-modified': new Date(),
-                    'replicationInfo': {
+                    ...objectMdTemp,
+                    replicationInfo: {
+                        ...objectMdTemp.replicationInfo,
+                        backends: [{
+                            site: 'completed',
+                            status: 'COMPLETED',
+                        }],
                         status: 'COMPLETED',
-                        backends: [],
-                        content: [],
-                        destination: '',
-                        storageClass: '',
-                        role: '',
-                        storageType: '',
-                        dataStoreVersionId: '',
-                        isNFS: null,
                     },
-                    'dataStoreName': 'us-east-1',
-                    'content-length': 42,
-                    'versionId': '0123456789abcdefg',
                 },
             },
             {
                 data: {
-                    'us-east-1': 42,
+                    account: { account1: 42 },
+                    bucket: { [testBucketName]: 42 },
+                    location: { 'us-east-1': 42, 'completed': 42 },
                 },
                 error: null,
             },
         ],
         [
-            'should add content-length to total for each COMPLETED backends ' +
-            '(replication status: COMPLETED)',
+            'should add content-length to each COMPLETED replication destination but not current dataStore ' +
+            '(object replication status: COMPLETED)',
+            testBucketName,
             true,
             {
-                _id: 'testkey',
+                _id: 'testkey4',
                 value: {
-                    'last-modified': new Date(),
-                    'replicationInfo': {
+                    ...objectMdTemp,
+                    replicationInfo: {
+                        ...objectMdTemp.replicationInfo,
                         status: 'COMPLETED',
                         backends: [
                             {
@@ -254,38 +406,33 @@ describe('MongoClientInterface::_processEntryData', () => {
                                 site: 'completed-3',
                             },
                         ],
-                        content: [],
-                        destination: '',
-                        storageClass: '',
-                        role: '',
-                        storageType: '',
-                        dataStoreVersionId: '',
-                        isNFS: null,
                     },
-                    'dataStoreName': 'us-east-1',
-                    'content-length': 42,
-                    'versionId': '0123456789abcdefg',
                 },
             },
             {
                 data: {
-                    'us-east-1': 0,
-                    'completed-1': 42,
-                    'completed-2': 42,
-                    'completed-3': 42,
+                    account: { account1: 42 },
+                    bucket: { [testBucketName]: 42 },
+                    location: {
+                        'completed-1': 42,
+                        'completed-2': 42,
+                        'completed-3': 42,
+                    },
                 },
                 error: null,
             },
         ],
         [
-            'should add content-length to total for each COMPLETED backends ' +
-            '(replication status: PENDING)',
+            'should add content-length to each COMPLETED replications destination and current dataStore ' +
+            '(object replication status: PENDING)',
+            testBucketName,
             true,
             {
-                _id: 'testkey',
+                _id: 'testkey5',
                 value: {
-                    'last-modified': new Date(),
-                    'replicationInfo': {
+                    ...objectMdTemp,
+                    replicationInfo: {
+                        ...objectMdTemp.replicationInfo,
                         status: 'PENDING',
                         backends: [
                             {
@@ -301,62 +448,32 @@ describe('MongoClientInterface::_processEntryData', () => {
                                 site: 'completed-2',
                             },
                         ],
-                        content: [],
-                        destination: '',
-                        storageClass: '',
-                        role: '',
-                        storageType: '',
-                        dataStoreVersionId: '',
-                        isNFS: null,
                     },
-                    'dataStoreName': 'us-east-1',
-                    'content-length': 42,
-                    'versionId': '0123456789abcdefg',
+                    transient: true,
                 },
             },
             {
                 data: {
-                    'us-east-1': 42,
-                    'completed-1': 42,
-                    'completed-2': 42,
+                    account: { account1: 42 },
+                    bucket: { [testBucketName]: 42 },
+                    location: {
+                        'us-east-1': 42,
+                        'completed-1': 42,
+                        'completed-2': 42,
+                    },
                 },
                 error: null,
             },
         ],
         [
-            'should error if content-length is invalid',
+            'should return error if content-length is invalid',
+            testBucketName,
             true,
             {
-                _id: 'testkey',
+                _id: 'testkey6',
                 value: {
-                    'last-modified': new Date(),
-                    'replicationInfo': {
-                        status: 'PENDING',
-                        backends: [
-                            {
-                                status: 'PENDING',
-                                site: 'not-completed',
-                            },
-                            {
-                                status: 'COMPLETED',
-                                site: 'completed-1',
-                            },
-                            {
-                                status: 'COMPLETED',
-                                site: 'completed-2',
-                            },
-                        ],
-                        content: [],
-                        destination: '',
-                        storageClass: '',
-                        role: '',
-                        storageType: '',
-                        dataStoreVersionId: '',
-                        isNFS: null,
-                    },
-                    'dataStoreName': 'us-east-1',
+                    ...objectMdTemp,
                     'content-length': 'not-a-number',
-                    'versionId': '0123456789abcdefg',
                 },
             },
             {
@@ -366,38 +483,41 @@ describe('MongoClientInterface::_processEntryData', () => {
         ],
         [
             'should correctly process entry with string typed content-length',
+            testBucketName,
             true,
             {
-                _id: 'testkey',
+                _id: 'testkey7',
                 value: {
-                    'last-modified': new Date(),
-                    'replicationInfo': {
-                        status: 'PENDING',
-                        backends: [],
-                        content: [],
-                        destination: '',
-                        storageClass: '',
-                        role: '',
-                        storageType: '',
-                        dataStoreVersionId: '',
-                        isNFS: null,
-                    },
-                    'dataStoreName': 'us-east-1',
+                    ...objectMdTemp,
                     'content-length': '42',
-                    'versionId': '0123456789abcdefg',
                 },
             },
             {
                 data: {
-                    'us-east-1': 42,
+                    account: { account1: 42 },
+                    bucket: { [testBucketName]: 42 },
+                    location: { 'us-east-1': 42 },
                 },
                 error: null,
             },
         ],
+        [
+            'should return error if bucketName is empty',
+            undefined,
+            true,
+            {
+                _id: 'testkey8',
+                value: objectMdTemp,
+            },
+            {
+                data: {},
+                error: new Error('no bucket name provided'),
+            },
+        ],
     ];
-    tests.forEach(([msg, isTransient, params, expected]) => it(msg, () => {
+    tests.forEach(([msg, bucketName, isTransient, params, expected]) => it(msg, () => {
         assert.deepStrictEqual(
-            mongoTestClient._processEntryData(params, isTransient),
+            mongoTestClient._processEntryData(bucketName, params, isTransient),
             expected,
         );
     }));
@@ -545,7 +665,10 @@ function uploadObjects(client, bucketName, objectList, callback) {
             .setKey(obj.name)
             .setDataStoreName('us-east-1')
             .setContentLength(100)
-            .setLastModified(obj.lastModified);
+            .setLastModified(obj.lastModified)
+            .setOwnerDisplayName(obj.ownerDisplayName)
+            .setIsNull(obj.isNull)
+            .setIsDeleteMarker(obj.isDeleteMarker);
         if (obj.repInfo) {
             objMD.setReplicationInfo(obj.repInfo);
         }
@@ -585,7 +708,60 @@ describe('MongoClientInterface, tests', () => {
         ], done);
     });
 
+    const nonVersionedObjectMdTemp = {
+        name: 'testkey',
+        versioning: false,
+        versionId: null,
+        lastModified: new Date(Date.now()),
+        ownerDisplayName: 'testAccount',
+    };
+    const objectMdTemp = {
+        name: 'testkey',
+        versioning: true,
+        versionId: null,
+        lastModified: new Date(Date.now()),
+        ownerDisplayName: 'testAccount',
+        repInfo: {
+            status: 'COMPLETED',
+            backends: [
+                {
+                    status: 'COMPLETED',
+                    site: 'rep-loc-1',
+                },
+            ],
+            content: [],
+            destination: '',
+            storageClass: '',
+            role: '',
+            storageType: '',
+            dataStoreVersionId: '',
+            isNFS: null,
+        },
+    };
+
     const tests = [
+        [
+            'getObjectMDStats() should return zero-result when no objects in the bucket',
+            {
+                bucketName: 'test-bucket',
+                isVersioned: false,
+                objectList: [],
+            },
+            {
+                dataManaged: {
+                    locations: {},
+                    total: { curr: 0, prev: 0 },
+                },
+                objects: 0,
+                stalled: 0,
+                versions: 0,
+                dataMetrics: {
+                    bucket: {},
+                    location: {},
+                    account: {},
+                },
+            },
+        ],
         [
             'getObjectMDStats() should return correct results',
             {
@@ -594,57 +770,21 @@ describe('MongoClientInterface, tests', () => {
                 objectList: [
                     // versioned object 1,
                     {
-                        name: 'testkey',
+                        ...objectMdTemp,
                         versioning: true,
-                        versionId: null,
-                        lastModified: new Date(Date.now()),
-                        repInfo: {
-                            status: 'COMPLETED',
-                            backends: [
-                                {
-                                    status: 'COMPLETED',
-                                    site: 'rep-loc-1',
-                                },
-                            ],
-                            content: [],
-                            destination: '',
-                            storageClass: '',
-                            role: '',
-                            storageType: '',
-                            dataStoreVersionId: '',
-                            isNFS: null,
-                        },
                     },
                     // versioned object 2,
                     {
-                        name: 'testkey',
+                        ...objectMdTemp,
                         versioning: true,
-                        versionId: null,
-                        lastModified: new Date(Date.now()),
-                        repInfo: {
-                            status: 'COMPLETED',
-                            backends: [
-                                {
-                                    status: 'COMPLETED',
-                                    site: 'rep-loc-1',
-                                },
-                            ],
-                            content: [],
-                            destination: '',
-                            storageClass: '',
-                            role: '',
-                            storageType: '',
-                            dataStoreVersionId: '',
-                            isNFS: null,
-                        },
                     },
                     // stalled object 1
                     {
-                        name: 'testkey',
+                        ...objectMdTemp,
                         versioning: true,
-                        versionId: null,
                         lastModified: new Date(Date.now() - hr),
                         repInfo: {
+                            ...objectMdTemp.repInfo,
                             status: 'PENDING',
                             backends: [
                                 {
@@ -652,18 +792,13 @@ describe('MongoClientInterface, tests', () => {
                                     site: 'rep-loc-1',
                                 },
                             ],
-                            content: [],
-                            destination: '',
-                            storageClass: '',
-                            role: '',
-                            storageType: '',
-                            dataStoreVersionId: '',
-                            isNFS: null,
                         },
                     },
                     // null versioned object
                     {
                         name: 'nullkey',
+                        isNull: true,
+                        ownerDisplayName: 'testAccount',
                         lastModified: new Date(Date.now() - hr),
                     },
                 ],
@@ -688,6 +823,176 @@ describe('MongoClientInterface, tests', () => {
                 objects: 2,
                 stalled: 1,
                 versions: 2,
+                dataMetrics: {
+                    account: {
+                        testAccount: {
+                            objectCount: { current: 2, deleteMarker: 0, nonCurrent: 2 },
+                            usedCapacity: { current: 200, nonCurrent: 200 },
+                        },
+                    },
+                    bucket: {
+                        'test-bucket': {
+                            objectCount: { current: 2, deleteMarker: 0, nonCurrent: 2 },
+                            usedCapacity: { current: 200, nonCurrent: 200 },
+                        },
+                    },
+                    location: {
+                        'rep-loc-1': {
+                            objectCount: { current: 0, deleteMarker: 0, nonCurrent: 2 },
+                            usedCapacity: { current: 0, nonCurrent: 200 },
+                        },
+                        'us-east-1': {
+                            objectCount: { current: 2, deleteMarker: 0, nonCurrent: 2 },
+                            usedCapacity: { current: 200, nonCurrent: 200 },
+                        },
+                    },
+                },
+            },
+        ],
+        [
+            'getObjectMDStats() should return correct results for non versioned bucket',
+            {
+                bucketName: 'test-bucket',
+                isVersioned: false,
+                objectList: [
+                    // non versioned object 1,
+                    {
+                        ...nonVersionedObjectMdTemp,
+                        name: 'testkey1',
+                    },
+                    // non versioned object 1,
+                    {
+                        ...nonVersionedObjectMdTemp,
+                        name: 'testkey1',
+                    },
+                    // non versioned object 2
+                    {
+                        ...nonVersionedObjectMdTemp,
+                        name: 'testkey2',
+                    },
+                ],
+            },
+            {
+                dataManaged: {
+                    locations: {
+                        'us-east-1': {
+                            curr: 200,
+                            prev: 0,
+                        },
+                    },
+                    total: {
+                        curr: 200,
+                        prev: 0,
+                    },
+                },
+                objects: 2,
+                stalled: 0,
+                versions: 0,
+                dataMetrics: {
+                    account: {
+                        testAccount: {
+                            objectCount: { current: 2, deleteMarker: 0, nonCurrent: 0 },
+                            usedCapacity: { current: 200, nonCurrent: 0 },
+                        },
+                    },
+                    bucket: {
+                        'test-bucket': {
+                            objectCount: { current: 2, deleteMarker: 0, nonCurrent: 0 },
+                            usedCapacity: { current: 200, nonCurrent: 0 },
+                        },
+                    },
+                    location: {
+                        'us-east-1': {
+                            objectCount: { current: 2, deleteMarker: 0, nonCurrent: 0 },
+                            usedCapacity: { current: 200, nonCurrent: 0 },
+                        },
+                    },
+                },
+            },
+        ],
+        [
+            'getObjectMDStats() should return correct results for versioned bucket',
+            {
+                bucketName: 'test-bucket',
+                isVersioned: true,
+                objectList: [
+                    // a version of object 1,
+                    {
+                        ...objectMdTemp,
+                        versioning: true,
+                    },
+                    // a version of object 1,
+                    {
+                        ...objectMdTemp,
+                        versioning: true,
+                    },
+                    // deleteMarker of object 1
+                    {
+                        ...objectMdTemp,
+                        versioning: true,
+                        isDeleteMarker: true,
+                    },
+                    // a version of object 1,
+                    {
+                        ...objectMdTemp,
+                        versioning: true,
+                        repInfo: {
+                            ...objectMdTemp.repInfo,
+                            status: 'PENDING',
+                            backends: [
+                                {
+                                    status: 'PENDING',
+                                    site: 'rep-loc-1',
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+            {
+                dataManaged: {
+                    locations: {
+                        'rep-loc-1': {
+                            curr: 0,
+                            prev: 300,
+                        },
+                        'us-east-1': {
+                            curr: 100,
+                            prev: 300,
+                        },
+                    },
+                    total: {
+                        curr: 100,
+                        prev: 600,
+                    },
+                },
+                objects: 1,
+                stalled: 0,
+                versions: 2,
+                dataMetrics: {
+                    account: {
+                        testAccount: {
+                            objectCount: { current: 1, deleteMarker: 1, nonCurrent: 2 },
+                            usedCapacity: { current: 100, nonCurrent: 300 },
+                        },
+                    },
+                    bucket: {
+                        'test-bucket': {
+                            objectCount: { current: 1, deleteMarker: 1, nonCurrent: 2 },
+                            usedCapacity: { current: 100, nonCurrent: 300 },
+                        },
+                    },
+                    location: {
+                        'rep-loc-1': {
+                            objectCount: { current: 0, deleteMarker: 1, nonCurrent: 2 },
+                            usedCapacity: { current: 0, nonCurrent: 300 },
+                        },
+                        'us-east-1': {
+                            objectCount: { current: 1, deleteMarker: 1, nonCurrent: 2 },
+                            usedCapacity: { current: 100, nonCurrent: 300 },
+                        },
+                    },
+                },
             },
         ],
     ];
