@@ -1545,6 +1545,13 @@
   resolved "https://registry.yarnpkg.com/@opentelemetry/api/-/api-1.3.0.tgz#27c6f776ac3c1c616651e506a89f438a0ed6a055"
   integrity sha512-YveTnGNsFFixTKJz09Oi4zYkiLT5af3WpZDu4aIUM7xX+2bHAkOJayFTVQd6zB8kkWPpbua4Ha6Ql00grdLlJQ==
 
+"@scality/hdclient@scality/hdclient#dc5dc59d11c85f7f007f21e4e1f69130876f8ae4":
+  version "1.1.5"
+  resolved "https://codeload.github.com/scality/hdclient/tar.gz/dc5dc59d11c85f7f007f21e4e1f69130876f8ae4"
+  dependencies:
+    httpagent "github:scality/httpagent#1.0.6"
+    werelogs "github:scality/werelogs#8.1.2"
+
 "@scality/hdclient@scality/hdclient#ef7fb7cb7c63075d43c57231bdefafc0bccd3b30":
   version "1.1.4"
   resolved "https://codeload.github.com/scality/hdclient/tar.gz/ef7fb7cb7c63075d43c57231bdefafc0bccd3b30"
@@ -3557,7 +3564,7 @@ http-proxy-agent@^5.0.0:
   dependencies:
     agentkeepalive "^4.2.1"
 
-httpagent@scality/httpagent#1.0.6:
+"httpagent@github:scality/httpagent#1.0.6", httpagent@scality/httpagent#1.0.6:
   version "1.0.6"
   resolved "https://codeload.github.com/scality/httpagent/tar.gz/66e97ab93532d79dbddcf6c4ea4df849b84c33c9"
   dependencies:
@@ -6016,9 +6023,9 @@ sprintf-js@~1.0.2:
   resolved "https://registry.yarnpkg.com/sprintf-js/-/sprintf-js-1.0.3.tgz#04e6926f662895354f3dd015203633b857297e2c"
   integrity sha1-BOaSb2YolTVPPdAVIDYzuFcpfiw=
 
-sproxydclient@scality/sproxydclient#24abc3ab2629275768b7e10eed56d460e40b6566:
-  version "8.0.6"
-  resolved "https://codeload.github.com/scality/sproxydclient/tar.gz/24abc3ab2629275768b7e10eed56d460e40b6566"
+sproxydclient@scality/sproxydclient#558e4a72a5bbba46aeb6c657f0c303c35ce1309a:
+  version "8.0.7"
+  resolved "https://codeload.github.com/scality/sproxydclient/tar.gz/558e4a72a5bbba46aeb6c657f0c303c35ce1309a"
   dependencies:
     async "^3.2.0"
     httpagent "github:scality/httpagent#1.0.5"
