@@ -37,6 +37,15 @@ export type VersioningConfiguration = {
     MfaDelete: any;
 };
 
+export type DataReport = {
+    enabled: boolean,
+    CapacityInfo: {
+        Capacity: number,
+        Available: number,
+        Used: number,
+    },
+};
+
 export type ACL = OACL & { WRITE: string[] }
 
 export default class BucketInfo {
@@ -65,6 +74,7 @@ export default class BucketInfo {
     _isNFS: boolean | null;
     _azureInfo: any | null;
     _ingestion: { status: 'enabled' | 'disabled' } | null;
+    _dataReport: DataReport | null;
 
     /**
     * Represents all bucket information.
@@ -120,6 +130,7 @@ export default class BucketInfo {
     * @param [objectLockConfiguration] - object lock configuration
     * @param [notificationConfiguration] - bucket notification configuration
     * @param [tags] - bucket tag set
+    * @param [dataReport] - dataReport for the bucket
     */
     constructor(
         name: string,
@@ -147,6 +158,7 @@ export default class BucketInfo {
         objectLockConfiguration?: any,
         notificationConfiguration?: any,
         tags?: Array<BucketTag> | [],
+        dataReport?: DataReport,
     ) {
         assert.strictEqual(typeof name, 'string');
         assert.strictEqual(typeof owner, 'string');
@@ -274,6 +286,7 @@ export default class BucketInfo {
         this._objectLockConfiguration = objectLockConfiguration || null;
         this._notificationConfiguration = notificationConfiguration || null;
         this._tags = tags;
+        this._dataReport = dataReport || null;
         return this;
     }
 
@@ -308,6 +321,7 @@ export default class BucketInfo {
             objectLockConfiguration: this._objectLockConfiguration,
             notificationConfiguration: this._notificationConfiguration,
             tags: this._tags,
+            dataReport: this._dataReport,
         };
         const final = this._websiteConfiguration
             ? {
@@ -333,7 +347,8 @@ export default class BucketInfo {
             obj.cors, obj.replicationConfiguration, obj.lifecycleConfiguration,
             obj.bucketPolicy, obj.uid, obj.readLocationConstraint, obj.isNFS,
             obj.ingestion, obj.azureInfo, obj.objectLockEnabled,
-            obj.objectLockConfiguration, obj.notificationConfiguration, obj.tags);
+            obj.objectLockConfiguration, obj.notificationConfiguration, obj.tags,
+            obj.dataReport);
     }
 
     /**
@@ -360,7 +375,7 @@ export default class BucketInfo {
             data._bucketPolicy, data._uid, data._readLocationConstraint,
             data._isNFS, data._ingestion, data._azureInfo,
             data._objectLockEnabled, data._objectLockConfiguration,
-            data._notificationConfiguration, data._tags);
+            data._notificationConfiguration, data._tags, data._dataReport);
     }
 
     /**
@@ -866,6 +881,23 @@ export default class BucketInfo {
      */
     setTags(tags: Array<BucketTag>) {
         this._tags = tags;
+        return this;
+    }
+
+    /**
+     * Get the value of bucket dataReport
+     * @return - Array of bucket tags
+     */
+    getDataReport() {
+        return this._dataReport;
+    }
+    
+    /**
+     * Set bucket dataReport
+     * @return - bucket info instance
+     */
+    setDataReport(daraReport: DataReport) {
+        this._dataReport = daraReport;
         return this;
     }
 }

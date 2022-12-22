@@ -132,6 +132,7 @@ const testAzureInfo = {
     managementPolicies: [],
     httpsOnly: false,
     tags: { foo: 'bar' },
+    daraReport: null,
     networkACL: [],
     cname: 'www.example.com',
     azureFilesAADIntegration: false,
@@ -199,6 +200,15 @@ const testBucketTagging = [
     },
 ];
 
+const testBucketDataReport = {
+    enabled: true,
+    CapacityInfo: {
+        Capacity: 1,
+        Available: 1,
+        Used: 0,
+    },
+};
+
 // create a dummy bucket to test getters and setters
 Object.keys(acl).forEach(
     aclObj => describe(`different acl configurations : ${aclObj}`, () => {
@@ -222,6 +232,7 @@ Object.keys(acl).forEach(
             testObjectLockConfiguration,
             testNotificationConfiguration,
             testBucketTagging,
+            testBucketDataReport,
         );
 
         describe('serialize/deSerialize on BucketInfo class', () => {
@@ -259,6 +270,7 @@ Object.keys(acl).forEach(
                         dummyBucket._objectLockConfiguration,
                     notificationConfiguration: dummyBucket._notificationConfiguration,
                     tags: dummyBucket._tags,
+                    dataReport: dummyBucket._dataReport,
                 };
                 assert.strictEqual(serialized, JSON.stringify(bucketInfos));
                 done();
@@ -307,6 +319,7 @@ Object.keys(acl).forEach(
                     _notificationConfiguration:
                         dummyBucket._notificationConfiguration,
                     _tags: dummyBucket._tags,
+                    _dataReport: dummyBucket._dataReport,
                 };
                 const fromObj = BucketInfo.fromObj(dataObj);
                 assert(fromObj instanceof BucketInfo);
