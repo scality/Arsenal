@@ -13,7 +13,7 @@ import { areTagsValid, BucketTag } from '../s3middleware/tagging';
 // WHEN UPDATING THIS NUMBER, UPDATE BucketInfoModelVersion.md CHANGELOG
 // BucketInfoModelVersion.md can be found in documentation/ at the root
 // of this repository
-const modelVersion = 14;
+const modelVersion = 16;
 
 export type CORS = {
     id: string;
