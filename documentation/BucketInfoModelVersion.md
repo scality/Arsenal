@@ -198,6 +198,51 @@ The Tag Set of a bucket is an array of objects with Key and Value:
 ]
 ```
 
+## Model version 16
+
+### Properties Added
+
+```javascript
+this._capabilities = capabilities || undefined;
+```
+
+For capacity-enabled buckets, contains the following data:
+
+```javascript
+{
+    _capabilities: {
+        VeeamSOSApi?: {
+            SystemInfo?: {
+                ProtocolVersion: String,
+                ModelName: String,
+                ProtocolCapabilities: {
+                    CapacityInfo: Boolean,
+                    UploadSessions: Boolean,
+                    IAMSTS: Boolean,
+                },
+                APIEndpoints: {
+                    IAMEndpoint: String,
+                    STSEndpoint: String,
+                },
+                SystemRecommendations?: {
+                    S3ConcurrentTaskLimit: Number,
+                    S3MultiObjectDelete: Number,
+                    StorageCurrentTasksLimit: Number,
+                    KbBlockSize: Number,
+                }
+                LastModified?: String,
+            },
+            CapacityInfo?: {
+                Capacity: Number,
+                Available: Number,
+                Used: Number,
+                LastModified?: String,
+            },
+        }
+    },
+}
+```
+
 ### Usage
 
 Used to store bucket tagging
