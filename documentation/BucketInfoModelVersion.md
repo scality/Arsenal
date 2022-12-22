@@ -198,6 +198,27 @@ The Tag Set of a bucket is an array of objects with Key and Value:
 ]
 ```
 
+## Model version 16
+
+### Properties Added
+
+```javascript
+this._dataReport = dataReport || null;
+```
+
+For capacity-enabled buckets, contains the following data:
+
+```javascript
+{
+    "enabled": boolean,
+    "CapacityInfo": {
+        "Capacity": Number,
+        "Available": Number,
+        "Used": Number,
+    }
+}
+```
+
 ### Usage
 
 Used to store bucket tagging
