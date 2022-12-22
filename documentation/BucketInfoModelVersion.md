@@ -210,7 +210,25 @@ For capacity-enabled buckets, contains the following data:
 
 ```javascript
 {
-    enabled: boolean,
+    SystemInfo?: {
+        ProtocolVersion: String,
+        ModelName: String,
+        ProtocolCapabilities: {
+            CapacityInfo: Boolean,
+            UploadSessions: Boolean,
+            IAMSTS: Boolean,
+        },
+        APIEndpoints: {
+            IAMEndpoint: String,
+            STSEndpoint: String,
+        },
+        SystemRecommendations?: {
+            S3ConcurrentTaskLimit: Number,
+            S3MultiObjectDelete: Number,
+            StorageCurrentTasksLimit: Number,
+            KbBlockSize: Number,
+        }
+    },
     CapacityInfo?: {
         Capacity: Number,
         Available: Number,

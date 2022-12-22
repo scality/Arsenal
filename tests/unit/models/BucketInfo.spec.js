@@ -201,7 +201,25 @@ const testBucketTagging = [
 ];
 
 const testBucketDataReport = {
-    enabled: true,
+    SystemInfo: {
+        ProtocolVersion: '"1.0"',
+        ModelName: 'ARTESCA',
+        ProtocolCapabilities: {
+            CapacityInfo: true,
+            UploadSessions: false,
+            IAMSTS: false,
+        },
+        APIEndpoints: {
+            IAMEndpoint: '',
+            STSEndpoint: '',
+        },
+        SystemRecommendations: {
+            S3ConcurrentTaskLimit: 64,
+            S3MultiObjectDelete: 1000,
+            StorageCurrentTasksLimit: 0,
+            KbBlockSize: 1024,
+        },
+    },
     CapacityInfo: {
         Capacity: 1,
         Available: 1,

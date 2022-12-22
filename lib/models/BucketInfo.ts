@@ -38,7 +38,25 @@ export type VersioningConfiguration = {
 };
 
 export type DataReport = {
-    enabled: boolean,
+    SystemInfo?: {
+        ProtocolVersion: string,
+        ModelName: string,
+        ProtocolCapabilities: {
+            CapacityInfo: boolean,
+            UploadSessions: boolean,
+            IAMSTS: boolean,
+        },
+        APIEndpoints: {
+            IAMEndpoint: string,
+            STSEndpoint: string,
+        },
+        SystemRecommendations?: {
+            S3ConcurrentTaskLimit: number,
+            S3MultiObjectDelete: number,
+            StorageCurrentTasksLimit: number,
+            KbBlockSize: number,
+        }
+    },
     CapacityInfo?: {
         Capacity: number,
         Available: number,
