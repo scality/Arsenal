@@ -39,7 +39,7 @@ export type VersioningConfiguration = {
 
 export type DataReport = {
     enabled: boolean,
-    CapacityInfo: {
+    CapacityInfo?: {
         Capacity: number,
         Available: number,
         Used: number,

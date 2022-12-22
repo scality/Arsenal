@@ -210,12 +210,12 @@ For capacity-enabled buckets, contains the following data:
 
 ```javascript
 {
-    "enabled": boolean,
-    "CapacityInfo": {
-        "Capacity": Number,
-        "Available": Number,
-        "Used": Number,
-    }
+    enabled: boolean,
+    CapacityInfo?: {
+        Capacity: Number,
+        Available: Number,
+        Used: Number,
+    },
 }
 ```
 
