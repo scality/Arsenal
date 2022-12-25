@@ -156,7 +156,7 @@ export default class BucketInfo {
     * @param [objectLockConfiguration] - object lock configuration
     * @param [notificationConfiguration] - bucket notification configuration
     * @param [tags] - bucket tag set
-    * @param [capacities] - capacities for the bucket
+    * @param [capabilities] - capabilities for the bucket
     */
     constructor(
         name: string,
@@ -347,7 +347,7 @@ export default class BucketInfo {
             objectLockConfiguration: this._objectLockConfiguration,
             notificationConfiguration: this._notificationConfiguration,
             tags: this._tags,
-            capacities: this._capabilities,
+            capabilities: this._capabilities,
         };
         const final = this._websiteConfiguration
             ? {
@@ -374,7 +374,7 @@ export default class BucketInfo {
             obj.bucketPolicy, obj.uid, obj.readLocationConstraint, obj.isNFS,
             obj.ingestion, obj.azureInfo, obj.objectLockEnabled,
             obj.objectLockConfiguration, obj.notificationConfiguration, obj.tags,
-            obj.capacities);
+            obj.capabilities);
     }
 
     /**
@@ -911,9 +911,9 @@ export default class BucketInfo {
     }
 
     /**
-     * Get the value of bucket capacities
+     * Get the value of bucket capabilities
      * @param capacity? - if provided, will return a specific capacity
-     * @return - capacities of the bucket, or null
+     * @return - capabilities of the bucket, or null
      */
     getCapabilities(capacity?: string) {
         if (capacity && this._capabilities && this._capabilities[capacity]) {
@@ -923,11 +923,11 @@ export default class BucketInfo {
     }
     
     /**
-     * Set bucket capacities
+     * Set bucket capabilities
      * @return - bucket info instance
      */
-    setCapabilities(capacities: Capacity) {
-        this._capabilities = capacities;
+    setCapabilities(capabilities: Capacity) {
+        this._capabilities = capabilities;
         return this;
     }
 }
