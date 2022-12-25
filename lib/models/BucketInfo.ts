@@ -37,16 +37,16 @@ export type VersioningConfiguration = {
     MfaDelete: any;
 };
 
-export type DataReport = {
+export type VeeamCapacity = {
     SystemInfo?: {
         ProtocolVersion: string,
         ModelName: string,
         ProtocolCapabilities: {
             CapacityInfo: boolean,
             UploadSessions: boolean,
-            IAMSTS: boolean,
+            IAMSTS?: boolean,
         },
-        APIEndpoints: {
+        APIEndpoints?: {
             IAMEndpoint: string,
             STSEndpoint: string,
         },
@@ -56,12 +56,20 @@ export type DataReport = {
             StorageCurrentTasksLimit: number,
             KbBlockSize: number,
         }
+        LastModified?: string,
     },
     CapacityInfo?: {
         Capacity: number,
         Available: number,
         Used: number,
+        LastModified?: string,
     },
+};
+
+// Capacity contains all specifics from external products supported by
+// our S3 implementation, at bucket level
+export type Capacity = {
+    VeeamSOSApi?: VeeamCapacity,
 };
 
 export type ACL = OACL & { WRITE: string[] }
@@ -92,7 +100,7 @@ export default class BucketInfo {
     _isNFS: boolean | null;
     _azureInfo: any | null;
     _ingestion: { status: 'enabled' | 'disabled' } | null;
-    _dataReport: DataReport | null;
+    _capabilities: Capacity | null;
 
     /**
     * Represents all bucket information.
@@ -148,7 +156,7 @@ export default class BucketInfo {
     * @param [objectLockConfiguration] - object lock configuration
     * @param [notificationConfiguration] - bucket notification configuration
     * @param [tags] - bucket tag set
-    * @param [dataReport] - dataReport for the bucket
+    * @param [capacities] - capacities for the bucket
     */
     constructor(
         name: string,
@@ -176,7 +184,7 @@ export default class BucketInfo {
         objectLockConfiguration?: any,
         notificationConfiguration?: any,
         tags?: Array<BucketTag> | [],
-        dataReport?: DataReport,
+        capabilities?: Capacity,
     ) {
         assert.strictEqual(typeof name, 'string');
         assert.strictEqual(typeof owner, 'string');
@@ -304,7 +312,7 @@ export default class BucketInfo {
         this._objectLockConfiguration = objectLockConfiguration || null;
         this._notificationConfiguration = notificationConfiguration || null;
         this._tags = tags;
-        this._dataReport = dataReport || null;
+        this._capabilities = capabilities || null;
         return this;
     }
 
@@ -339,7 +347,7 @@ export default class BucketInfo {
             objectLockConfiguration: this._objectLockConfiguration,
             notificationConfiguration: this._notificationConfiguration,
             tags: this._tags,
-            dataReport: this._dataReport,
+            capacities: this._capabilities,
         };
         const final = this._websiteConfiguration
             ? {
@@ -366,7 +374,7 @@ export default class BucketInfo {
             obj.bucketPolicy, obj.uid, obj.readLocationConstraint, obj.isNFS,
             obj.ingestion, obj.azureInfo, obj.objectLockEnabled,
             obj.objectLockConfiguration, obj.notificationConfiguration, obj.tags,
-            obj.dataReport);
+            obj.capacities);
     }
 
     /**
@@ -393,7 +401,7 @@ export default class BucketInfo {
             data._bucketPolicy, data._uid, data._readLocationConstraint,
             data._isNFS, data._ingestion, data._azureInfo,
             data._objectLockEnabled, data._objectLockConfiguration,
-            data._notificationConfiguration, data._tags, data._dataReport);
+            data._notificationConfiguration, data._tags, data._capabilities);
     }
 
     /**
@@ -903,19 +911,23 @@ export default class BucketInfo {
     }
 
     /**
-     * Get the value of bucket dataReport
-     * @return - Array of bucket tags
+     * Get the value of bucket capacities
+     * @param capacity? - if provided, will return a specific capacity
+     * @return - capacities of the bucket, or null
      */
-    getDataReport() {
-        return this._dataReport;
+    getCapabilities(capacity?: string) {
+        if (capacity && this._capabilities && this._capabilities[capacity]) {
+            return this._capabilities[capacity];
+        }
+        return this._capabilities;
     }
     
     /**
-     * Set bucket dataReport
+     * Set bucket capacities
      * @return - bucket info instance
      */
-    setDataReport(daraReport: DataReport) {
-        this._dataReport = daraReport;
+    setCapabilities(capacities: Capacity) {
+        this._capabilities = capacities;
         return this;
     }
 }

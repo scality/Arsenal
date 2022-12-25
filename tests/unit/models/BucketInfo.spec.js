@@ -200,30 +200,32 @@ const testBucketTagging = [
     },
 ];
 
-const testBucketDataReport = {
-    SystemInfo: {
-        ProtocolVersion: '"1.0"',
-        ModelName: 'ARTESCA',
-        ProtocolCapabilities: {
-            CapacityInfo: true,
-            UploadSessions: false,
-            IAMSTS: false,
+const testBucketCapacity = {
+    VeeamSOSApi: {
+        SystemInfo: {
+            ProtocolVersion: '"1.0"',
+            ModelName: 'ARTESCA',
+            ProtocolCapabilities: {
+                CapacityInfo: true,
+                UploadSessions: false,
+                IAMSTS: false,
+            },
+            APIEndpoints: {
+                IAMEndpoint: '',
+                STSEndpoint: '',
+            },
+            SystemRecommendations: {
+                S3ConcurrentTaskLimit: 64,
+                S3MultiObjectDelete: 1000,
+                StorageCurrentTasksLimit: 0,
+                KbBlockSize: 1024,
+            },
         },
-        APIEndpoints: {
-            IAMEndpoint: '',
-            STSEndpoint: '',
+        CapacityInfo: {
+            Capacity: 1,
+            Available: 1,
+            Used: 0,
         },
-        SystemRecommendations: {
-            S3ConcurrentTaskLimit: 64,
-            S3MultiObjectDelete: 1000,
-            StorageCurrentTasksLimit: 0,
-            KbBlockSize: 1024,
-        },
-    },
-    CapacityInfo: {
-        Capacity: 1,
-        Available: 1,
-        Used: 0,
     },
 };
 
@@ -250,7 +252,7 @@ Object.keys(acl).forEach(
             testObjectLockConfiguration,
             testNotificationConfiguration,
             testBucketTagging,
-            testBucketDataReport,
+            testBucketCapacity,
         );
 
         describe('serialize/deSerialize on BucketInfo class', () => {
@@ -288,7 +290,7 @@ Object.keys(acl).forEach(
                         dummyBucket._objectLockConfiguration,
                     notificationConfiguration: dummyBucket._notificationConfiguration,
                     tags: dummyBucket._tags,
-                    dataReport: dummyBucket._dataReport,
+                    capabilities: dummyBucket._capabilities,
                 };
                 assert.strictEqual(serialized, JSON.stringify(bucketInfos));
                 done();
@@ -337,7 +339,7 @@ Object.keys(acl).forEach(
                     _notificationConfiguration:
                         dummyBucket._notificationConfiguration,
                     _tags: dummyBucket._tags,
-                    _dataReport: dummyBucket._dataReport,
+                    _capabilities: dummyBucket._capabilities,
                 };
                 const fromObj = BucketInfo.fromObj(dataObj);
                 assert(fromObj instanceof BucketInfo);

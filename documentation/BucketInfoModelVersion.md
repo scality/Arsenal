@@ -210,30 +210,34 @@ For capacity-enabled buckets, contains the following data:
 
 ```javascript
 {
-    SystemInfo?: {
-        ProtocolVersion: String,
-        ModelName: String,
-        ProtocolCapabilities: {
-            CapacityInfo: Boolean,
-            UploadSessions: Boolean,
-            IAMSTS: Boolean,
+    _capabilitie: {
+        SystemInfo?: {
+            ProtocolVersion: String,
+            ModelName: String,
+            ProtocolCapabilities: {
+                CapacityInfo: Boolean,
+                UploadSessions: Boolean,
+                IAMSTS: Boolean,
+            },
+            APIEndpoints: {
+                IAMEndpoint: String,
+                STSEndpoint: String,
+            },
+            SystemRecommendations?: {
+                S3ConcurrentTaskLimit: Number,
+                S3MultiObjectDelete: Number,
+                StorageCurrentTasksLimit: Number,
+                KbBlockSize: Number,
+            }
+            LastModified?: String,
         },
-        APIEndpoints: {
-            IAMEndpoint: String,
-            STSEndpoint: String,
+        CapacityInfo?: {
+            Capacity: Number,
+            Available: Number,
+            Used: Number,
+            LastModified?: String,
         },
-        SystemRecommendations?: {
-            S3ConcurrentTaskLimit: Number,
-            S3MultiObjectDelete: Number,
-            StorageCurrentTasksLimit: Number,
-            KbBlockSize: Number,
-        }
-    },
-    CapacityInfo?: {
-        Capacity: Number,
-        Available: Number,
-        Used: Number,
-    },
+    }
 }
 ```
 
