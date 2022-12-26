@@ -13,7 +13,7 @@ import { areTagsValid, BucketTag } from '../s3middleware/tagging';
 // WHEN UPDATING THIS NUMBER, UPDATE BucketInfoModelVersion.md CHANGELOG
 // BucketInfoModelVersion.md can be found in documentation/ at the root
 // of this repository
-const modelVersion = 14;
+const modelVersion = 16;
 
 export type CORS = {
     id: string;
@@ -35,6 +35,41 @@ export type SSE = {
 export type VersioningConfiguration = {
     Status: string;
     MfaDelete: any;
+};
+
+export type VeeamSOSApi = {
+    SystemInfo?: {
+        ProtocolVersion: string,
+        ModelName: string,
+        ProtocolCapabilities: {
+            CapacityInfo: boolean,
+            UploadSessions: boolean,
+            IAMSTS?: boolean,
+        },
+        APIEndpoints?: {
+            IAMEndpoint: string,
+            STSEndpoint: string,
+        },
+        SystemRecommendations?: {
+            S3ConcurrentTaskLimit: number,
+            S3MultiObjectDelete: number,
+            StorageCurrentTasksLimit: number,
+            KbBlockSize: number,
+        }
+        LastModified?: string,
+    },
+    CapacityInfo?: {
+        Capacity: number,
+        Available: number,
+        Used: number,
+        LastModified?: string,
+    },
+};
+
+// Capabilities contains all specifics from external products supported by
+// our S3 implementation, at bucket level
+export type Capabilities = {
+    VeeamSOSApi?: VeeamSOSApi,
 };
 
 export type ACL = OACL & { WRITE: string[] }
@@ -65,6 +100,7 @@ export default class BucketInfo {
     _isNFS: boolean | null;
     _azureInfo: any | null;
     _ingestion: { status: 'enabled' | 'disabled' } | null;
+    _capabilities?: Capabilities;
 
     /**
     * Represents all bucket information.
@@ -120,6 +156,7 @@ export default class BucketInfo {
     * @param [objectLockConfiguration] - object lock configuration
     * @param [notificationConfiguration] - bucket notification configuration
     * @param [tags] - bucket tag set
+    * @param [capabilities] - capabilities for the bucket
     */
     constructor(
         name: string,
@@ -147,6 +184,7 @@ export default class BucketInfo {
         objectLockConfiguration?: any,
         notificationConfiguration?: any,
         tags?: Array<BucketTag> | [],
+        capabilities?: Capabilities,
     ) {
         assert.strictEqual(typeof name, 'string');
         assert.strictEqual(typeof owner, 'string');
@@ -274,6 +312,7 @@ export default class BucketInfo {
         this._objectLockConfiguration = objectLockConfiguration || null;
         this._notificationConfiguration = notificationConfiguration || null;
         this._tags = tags;
+        this._capabilities = capabilities || undefined;
         return this;
     }
 
@@ -308,6 +347,7 @@ export default class BucketInfo {
             objectLockConfiguration: this._objectLockConfiguration,
             notificationConfiguration: this._notificationConfiguration,
             tags: this._tags,
+            capabilities: this._capabilities,
         };
         const final = this._websiteConfiguration
             ? {
@@ -333,7 +373,8 @@ export default class BucketInfo {
             obj.cors, obj.replicationConfiguration, obj.lifecycleConfiguration,
             obj.bucketPolicy, obj.uid, obj.readLocationConstraint, obj.isNFS,
             obj.ingestion, obj.azureInfo, obj.objectLockEnabled,
-            obj.objectLockConfiguration, obj.notificationConfiguration, obj.tags);
+            obj.objectLockConfiguration, obj.notificationConfiguration, obj.tags,
+            obj.capabilities);
     }
 
     /**
@@ -360,7 +401,7 @@ export default class BucketInfo {
             data._bucketPolicy, data._uid, data._readLocationConstraint,
             data._isNFS, data._ingestion, data._azureInfo,
             data._objectLockEnabled, data._objectLockConfiguration,
-            data._notificationConfiguration, data._tags);
+            data._notificationConfiguration, data._tags, data._capabilities);
     }
 
     /**
@@ -866,6 +907,27 @@ export default class BucketInfo {
      */
     setTags(tags: Array<BucketTag>) {
         this._tags = tags;
+        return this;
+    }
+
+    /**
+     * Get the value of bucket capabilities
+     * @param capability? - if provided, will return a specific capacity
+     * @return - capabilities of the bucket, or null
+     */
+    getCapabilities(capability?: string) {
+        if (capability && this._capabilities && this._capabilities[capability]) {
+            return this._capabilities[capability];
+        }
+        return this._capabilities;
+    }
+    
+    /**
+     * Set bucket capabilities
+     * @return - bucket info instance
+     */
+    setCapabilities(capabilities: Capabilities) {
+        this._capabilities = capabilities;
         return this;
     }
 }

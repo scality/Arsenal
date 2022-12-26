@@ -199,6 +199,35 @@ const testBucketTagging = [
     },
 ];
 
+const testBucketCapabilities = {
+    VeeamSOSApi: {
+        SystemInfo: {
+            ProtocolVersion: '"1.0"',
+            ModelName: 'ARTESCA',
+            ProtocolCapabilities: {
+                CapacityInfo: true,
+                UploadSessions: false,
+                IAMSTS: false,
+            },
+            APIEndpoints: {
+                IAMEndpoint: '',
+                STSEndpoint: '',
+            },
+            SystemRecommendations: {
+                S3ConcurrentTaskLimit: 64,
+                S3MultiObjectDelete: 1000,
+                StorageCurrentTasksLimit: 0,
+                KbBlockSize: 1024,
+            },
+        },
+        CapacityInfo: {
+            Capacity: 1,
+            Available: 1,
+            Used: 0,
+        },
+    },
+};
+
 // create a dummy bucket to test getters and setters
 Object.keys(acl).forEach(
     aclObj => describe(`different acl configurations : ${aclObj}`, () => {
@@ -222,6 +251,7 @@ Object.keys(acl).forEach(
             testObjectLockConfiguration,
             testNotificationConfiguration,
             testBucketTagging,
+            testBucketCapabilities,
         );
 
         describe('serialize/deSerialize on BucketInfo class', () => {
@@ -259,6 +289,7 @@ Object.keys(acl).forEach(
                         dummyBucket._objectLockConfiguration,
                     notificationConfiguration: dummyBucket._notificationConfiguration,
                     tags: dummyBucket._tags,
+                    capabilities: dummyBucket._capabilities,
                 };
                 assert.strictEqual(serialized, JSON.stringify(bucketInfos));
                 done();
@@ -307,6 +338,7 @@ Object.keys(acl).forEach(
                     _notificationConfiguration:
                         dummyBucket._notificationConfiguration,
                     _tags: dummyBucket._tags,
+                    _capabilities: dummyBucket._capabilities,
                 };
                 const fromObj = BucketInfo.fromObj(dataObj);
                 assert(fromObj instanceof BucketInfo);
@@ -451,6 +483,13 @@ Object.keys(acl).forEach(
             it('getNotificationConfiguration should return configuration', () => {
                 assert.deepStrictEqual(dummyBucket.getNotificationConfiguration(),
                     testNotificationConfiguration);
+            });
+            it('getCapabilities should return capabilities', () => {
+                assert.deepStrictEqual(dummyBucket.getCapabilities(), testBucketCapabilities);
+            });
+            it('getCapabilities should return capabilities with specific path', () => {
+                assert.deepStrictEqual(dummyBucket.getCapabilities('VeeamSOSApi'),
+                    testBucketCapabilities.VeeamSOSApi);
             });
         });
 
@@ -648,6 +687,12 @@ Object.keys(acl).forEach(
                 dummyBucket.setUid(testUid);
                 assert.deepStrictEqual(
                     dummyBucket.getUid(), testUid);
+            });
+            it('setCapabilities should set bucket capabilities', () => {
+                const testCapabilities = testBucketCapabilities;
+                dummyBucket.setCapabilities(testCapabilities);
+                assert.deepStrictEqual(
+                    dummyBucket.getCapabilities(), testCapabilities);
             });
         });
     }),
