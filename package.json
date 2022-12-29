@@ -82,7 +82,8 @@
     "test": "jest tests/unit",
     "build": "tsc",
     "prepare": "yarn build",
-    "ft_test": "jest tests/functional --testTimeout=120000 --forceExit"
+    "ft_test": "jest tests/functional --testTimeout=120000 --forceExit",
+    "build_doc": "cd documentation/listingAlgos/pics; dot -Tsvg delimiterStateChart.dot > delimiterStateChart.svg; dot -Tsvg delimiterMasterV0StateChart.dot > delimiterMasterV0StateChart.svg"
   },
   "private": true,
   "jest": {

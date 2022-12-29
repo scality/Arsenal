@@ -1,0 +1,35 @@
+digraph {
+  node [shape="box",style="filled,rounded",fontsize=16,fixedsize=true,width=3];
+  edge [fontsize=14];
+  rankdir=TB;
+
+  START [shape="circle",width=0.2,label="",style="filled",fillcolor="black"]
+  END [shape="circle",width=0.2,label="",style="filled",fillcolor="black",peripheries=2]
+
+  node [fillcolor="lightgrey"];
+  "NotSkipping.Idle" [label="NotSkipping",group="NotSkipping"];
+  "NeverSkipping.Idle" [label="NeverSkipping",group="NeverSkipping"];
+  "NotSkippingPrefix.Idle" [label="NotSkippingPrefix",group="NotSkippingPrefix"];
+  "SkippingPrefix.Idle" [label="SkippingPrefix",group="SkippingPrefix"];
+
+  node [fillcolor="lightblue"];
+  "NeverSkipping.Processing" [label="NeverSkipping",group="NeverSkipping"];
+  "NotSkippingPrefix.Processing" [label="NotSkippingPrefix",group="NotSkippingPrefix"];
+  "SkippingPrefix.Processing" [label="SkippingPrefix",group="SkippingPrefix"];
+
+  START -> "NotSkipping.Idle"
+  "NotSkipping.Idle" -> "NeverSkipping.Idle" [label="[delimiter == undefined]"]
+  "NotSkipping.Idle" -> "NotSkippingPrefix.Idle" [label="[delimiter == '/']"]
+
+  "NeverSkipping.Idle" -> "NeverSkipping.Processing" [label="filter(key, value)"]
+  "NotSkippingPrefix.Idle" -> "NotSkippingPrefix.Processing" [label="filter(key, value)"]
+  "SkippingPrefix.Idle" -> "SkippingPrefix.Processing" [label="filter(key, value)"]
+
+  "NeverSkipping.Processing" -> END [label="[nKeys == maxKeys]\n-> FILTER_END"]
+  "NeverSkipping.Processing" -> "NeverSkipping.Idle" [label="[nKeys < maxKeys]\n/ Contents.append(key, value)\n -> FILTER_ACCEPT"]
+  "NotSkippingPrefix.Processing" -> END [label="[nKeys == maxKeys]\n -> FILTER_END"]
+  "NotSkippingPrefix.Processing" -> "SkippingPrefix.Idle" [label="[nKeys < maxKeys and hasDelimiter(key)]\n/ prefix <- prefixOf(key)\n/ CommonPrefixes.append(prefixOf(key))\n-> FILTER_ACCEPT"]
+  "NotSkippingPrefix.Processing" -> "NotSkippingPrefix.Idle" [label="[nKeys < maxKeys and not hasDelimiter(key)]\n/ Contents.append(key, value)\n -> FILTER_ACCEPT"]
+  "SkippingPrefix.Processing" -> "SkippingPrefix.Idle" [label="[key.startsWith(prefix)]\n-> FILTER_SKIP"]
+  "SkippingPrefix.Processing" -> "NotSkippingPrefix.Processing" [label="[not key.startsWith(prefix)]"]
+}
