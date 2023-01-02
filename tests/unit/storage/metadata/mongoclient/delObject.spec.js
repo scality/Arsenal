@@ -7,13 +7,6 @@ const MongoClientInterface =
     require('../../../../../lib/storage/metadata/mongoclient/MongoClientInterface');
 const utils = require('../../../../../lib/storage/metadata/mongoclient/utils');
 
-const objMD = {
-    _id: 'example-object',
-    value: {
-        key: 'example-object',
-    },
-};
-
 describe('MongoClientInterface:delObject', () => {
     let client;
 
@@ -203,30 +196,50 @@ describe('MongoClientInterface:delObject', () => {
         });
     });
 
-    it('internalDeleteObject:: should fail when no object is found', done => {
+    it('internalDeleteObject:: should delete object with specified filter', done => {
+        const bulkWrite = sinon.stub().yields();
         const collection = {
-            findOneAndUpdate: sinon.stub().callsArgWith(3, null, {}),
-        };
-        client.internalDeleteObject(collection, 'example-bucket', 'example-object', null, logger, err => {
-            assert(err.is.NoSuchKey);
-            return done();
-        });
-    });
-
-    it('internalDeleteObject:: should get PHD object with versionId', done => {
-        const findOneAndUpdate = sinon.stub().callsArgWith(3, null, { value: { value: objMD } });
-        const collection = {
-            findOneAndUpdate,
-            bulkWrite: (ops, params, cb) => cb(null),
+            bulkWrite,
         };
         const filter = {
             'value.isPHD': true,
             'value.versionId': '1234',
         };
+        const expectedBulkParams = [
+            {
+                updateOne: {
+                    filter: {
+                        '_id': 'example-bucket',
+                        '$or': [
+                            { 'value.deleted': { $exists: false } },
+                            { 'value.deleted': { $eq: false } },
+                        ],
+                        'value.isPHD': true,
+                        'value.versionId': '1234',
+                    },
+                    update: {
+                        $set: {
+                            '_id': 'example-bucket',
+                            'value.deleted': true,
+                            'value.originOp': 's3:ObjectRemoved:Delete',
+                        },
+                    },
+                    upsert: false,
+                },
+            }, {
+                deleteOne: {
+                    filter: {
+                        '_id': 'example-bucket',
+                        'value.deleted': true,
+                        'value.isPHD': true,
+                        'value.versionId': '1234',
+                    },
+                },
+            },
+        ];
         client.internalDeleteObject(collection, 'example-bucket', 'example-object', filter, logger, err => {
             assert.deepEqual(err, undefined);
-            assert(findOneAndUpdate.args[0][0]['value.isPHD']);
-            assert.strictEqual(findOneAndUpdate.args[0][0]['value.versionId'], '1234');
+            assert(bulkWrite.args[0][0], expectedBulkParams);
             return done();
         });
     });
