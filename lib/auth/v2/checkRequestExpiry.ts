@@ -18,17 +18,17 @@ export default function checkRequestExpiry(timestamp: number, log: Logger) {
     log.trace('current timestamp', { currentTimestamp: currentTime });
 
     const fifteenMinutes = (15 * 60 * 1000);
-    if (currentTime - timestamp > fifteenMinutes) {
-        log.trace('request timestamp is not within 15 minutes of current time');
-        log.debug('request time too skewed', { timestamp });
-        return errors.RequestTimeTooSkewed;
-    }
+    // if (currentTime - timestamp > fifteenMinutes) {
+    //     log.trace('request timestamp is not within 15 minutes of current time');
+    //     log.debug('request time too skewed', { timestamp });
+    //     return errors.RequestTimeTooSkewed;
+    // }
 
-    if (currentTime + fifteenMinutes < timestamp) {
-        log.trace('request timestamp is more than 15 minutes into future');
-        log.debug('request time too skewed', { timestamp });
-        return errors.RequestTimeTooSkewed;
-    }
+    // if (currentTime + fifteenMinutes < timestamp) {
+    //     log.trace('request timestamp is more than 15 minutes into future');
+    //     log.debug('request time too skewed', { timestamp });
+    //     return errors.RequestTimeTooSkewed;
+    // }
 
     return undefined;
 }

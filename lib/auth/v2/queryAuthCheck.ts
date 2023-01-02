@@ -44,11 +44,11 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
             { expires: request.query.Expires });
         return { err: errors.AccessDenied };
     }
-    if (currentTime > expirationTime) {
-        log.debug('current time exceeds expires time',
-            { expires: request.query.Expires });
-        return { err: errors.RequestTimeTooSkewed };
-    }
+    // if (currentTime > expirationTime) {
+    //     log.debug('current time exceeds expires time',
+    //         { expires: request.query.Expires });
+    //     return { err: errors.RequestTimeTooSkewed };
+    // }
     const accessKey = data.AWSAccessKeyId;
     // @ts-ignore
     log.addDefaultFields({ accessKey });

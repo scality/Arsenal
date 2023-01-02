@@ -51,10 +51,10 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
     const service = credential[3];
     const requestType = credential[4];
 
-    const isTimeSkewed = checkTimeSkew(timestamp, expiry, log);
-    if (isTimeSkewed) {
-        return { err: errors.RequestTimeTooSkewed };
-    }
+    // const isTimeSkewed = checkTimeSkew(timestamp, expiry, log);
+    // if (isTimeSkewed) {
+    //     return { err: errors.RequestTimeTooSkewed };
+    // }
 
     let proxyPath: string | undefined;
     if (request.headers.proxy_path) {

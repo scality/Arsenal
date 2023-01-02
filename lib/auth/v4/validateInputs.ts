@@ -38,11 +38,11 @@ export function validateCredentials(
 
     // convert timestamp to format of scopeDate YYYYMMDD
     const timestampDate = timestamp.split('T')[0];
-    if (scopeDate.length !== 8 || scopeDate !== timestampDate) {
-        log.warn('scope date must be the same date as the timestamp date',
-            { scopeDate, timestampDate });
-        return errors.RequestTimeTooSkewed;
-    }
+    // if (scopeDate.length !== 8 || scopeDate !== timestampDate) {
+    //     log.warn('scope date must be the same date as the timestamp date',
+    //         { scopeDate, timestampDate });
+    //     return errors.RequestTimeTooSkewed;
+    // }
     if (service !== 's3' && service !== 'iam' && service !== 'ring' &&
         service !== 'sts') {
         log.warn('service in credentials is not one of s3/iam/ring/sts', {

@@ -128,9 +128,9 @@ export function check(
     // 15 minutes in seconds
     const expiry = (15 * 60);
     const isTimeSkewed = checkTimeSkew(timestamp, expiry, log);
-    if (isTimeSkewed) {
-        return { err: errors.RequestTimeTooSkewed };
-    }
+    // if (isTimeSkewed) {
+    //     return { err: errors.RequestTimeTooSkewed };
+    // }
 
     let proxyPath: string | undefined;
     if (request.headers.proxy_path) {
