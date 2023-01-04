@@ -487,8 +487,8 @@ Object.keys(acl).forEach(
             it('getCapabilities should return capabilities', () => {
                 assert.deepStrictEqual(dummyBucket.getCapabilities(), testBucketCapabilities);
             });
-            it('getCapabilities should return capabilities with specific path', () => {
-                assert.deepStrictEqual(dummyBucket.getCapabilities('VeeamSOSApi'),
+            it('getCapability should return a specific capability', () => {
+                assert.deepStrictEqual(dummyBucket.getCapability('VeeamSOSApi'),
                     testBucketCapabilities.VeeamSOSApi);
             });
         });

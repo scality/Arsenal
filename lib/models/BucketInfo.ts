@@ -912,14 +912,23 @@ export default class BucketInfo {
 
     /**
      * Get the value of bucket capabilities
-     * @param capability? - if provided, will return a specific capacity
-     * @return - capabilities of the bucket, or null
+     * @return - capabilities of the bucket
      */
-    getCapabilities(capability?: string) {
+    getCapabilities() {
+        return this._capabilities;
+    }
+
+    /**
+     * Get a specific bucket capability
+     * 
+     * @param capability? - if provided, will return a specific capacity
+     * @return - capability of the bucket
+     */
+    getCapability(capability: string) : VeeamSOSApi | undefined {
         if (capability && this._capabilities && this._capabilities[capability]) {
             return this._capabilities[capability];
         }
-        return this._capabilities;
+        return undefined;
     }
     
     /**
