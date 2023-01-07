@@ -83,16 +83,14 @@ function _listObjects(prefix, objects, cb) {
     const markers = keys.slice(0);
     markers.unshift(undefined);
     const lastKey = keys[keys.length - 1];
-    const listing = keys.map((key, index) => ({
+    const listing = keys.map(key => ({
         key,
-        marker: markers[index],
-        NextMarker: markers[index + 1],
         IsTruncated: key !== lastKey,
         isPrefix: key.endsWith('/'),
     }));
-    async.mapLimit(listing, 5, (obj, next) => {
-        const currentMarker = obj.marker === undefined ? '' : obj.marker;
-        dispatcher.get(_listingURL(prefix, prefix + currentMarker),
+    let nextMarker = '';
+    async.mapSeries(listing, (obj, next) => {
+        dispatcher.get(_listingURL(prefix, nextMarker),
             (err, response, body) => {
                 if (err) {
                     return next(err);
@@ -113,8 +111,7 @@ function _listObjects(prefix, objects, cb) {
                 assert.strictEqual(body.IsTruncated,
                     obj.IsTruncated);
                 if (body.IsTruncated) {
-                    assert.strictEqual(body.NextMarker,
-                        prefix + obj.NextMarker);
+                    nextMarker = body.NextMarker;
                 }
                 return next();
             });
