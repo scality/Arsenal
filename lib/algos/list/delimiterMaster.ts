@@ -60,7 +60,7 @@ export class DelimiterMaster extends Delimiter {
             },
         }[this.vFormat]);
 
-        if (vFormat === BucketVersioningKeyFormat.v0) {
+        if (this.vFormat === BucketVersioningKeyFormat.v0) {
             // override Delimiter's implementation of NotSkipping for
             // DelimiterMaster logic (skipping versions and special
             // handling of delete markers and PHDs)
