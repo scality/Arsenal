@@ -354,6 +354,36 @@ function getListingKey(key, vFormat) {
                 });
             });
 
+            it('should assume vFormat=v0 when not passed explicitly', () => {
+                // this test is identical to the above one "should
+                // accept the master version and skip the other ones",
+                // which checks that the listing algo effectively
+                // behaves as if it is a v0 format
+                const delimiter = new DelimiterMaster({}, fakeLogger);
+                const masterKey = 'key';
+                const masterValue = 'value';
+                const versionKey = `${masterKey}${VID_SEP}version`;
+                const versionValue = 'versionvalue';
+
+                /* Filter the master version. */
+                delimiter.filter({ key: masterKey, value: masterValue });
+
+                /* Version is skipped, not added to the result. The delimiter
+                 * NextMarker is unmodified and set to the masterKey. */
+                assert.strictEqual(delimiter.filter({
+                    key: versionKey,
+                    value: versionValue,
+                }), FILTER_SKIP);
+                assert.strictEqual(delimiter.nextMarker, masterKey);
+                assert.deepStrictEqual(delimiter.result(), {
+                    CommonPrefixes: [],
+                    Contents: [{ key: masterKey, value: masterValue }],
+                    IsTruncated: false,
+                    NextMarker: undefined,
+                    Delimiter: undefined,
+                });
+            });
+
             it('should return good listing result for version', () => {
                 const delimiter = new DelimiterMaster({}, fakeLogger, vFormat);
                 const masterKey = 'key';
