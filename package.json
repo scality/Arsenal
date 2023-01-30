@@ -3,7 +3,7 @@
   "engines": {
     "node": ">=16"
   },
-  "version": "8.1.82",
+  "version": "8.1.83",
   "description": "Common utilities for the S3 project components",
   "main": "build/index.js",
   "repository": {
@@ -85,8 +85,7 @@
     "build": "tsc",
     "prepare": "yarn build",
     "ft_test": "jest tests/functional --testTimeout=120000 --forceExit",
-    "coverage": "nyc --clean jest tests --coverage --testTimeout=120000 --forceExit",
-    "build_doc": "cd documentation/listingAlgos/pics; dot -Tsvg delimiterStateChart.dot > delimiterStateChart.svg; dot -Tsvg delimiterMasterV0StateChart.dot > delimiterMasterV0StateChart.svg"
+    "coverage": "nyc --clean jest tests --coverage --testTimeout=120000 --forceExit"
   },
   "private": true,
   "jest": {
