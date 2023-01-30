@@ -214,7 +214,7 @@ export class Delimiter extends Extension {
         // add the new prefix to the list
         this.CommonPrefixes.push(commonPrefix);
         ++this.keys;
-        this.nextMarker = commonPrefix;
+        this.nextMarker = key;
     }
 
     addCommonPrefixOrContents(key: string, value: string): string | undefined {

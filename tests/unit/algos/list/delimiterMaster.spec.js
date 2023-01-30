@@ -162,7 +162,7 @@ function getListingKey(key, vFormat) {
                 Contents: [],
                 Delimiter: '/',
                 IsTruncated: true,
-                NextMarker: 'prefix2/',
+                NextMarker: 'prefix2/key1',
             });
         });
 

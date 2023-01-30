@@ -292,13 +292,13 @@ const tests = [
         CommonPrefixes: ['notes/spring/'],
         Delimiter: '/',
         IsTruncated: true,
-        NextMarker: 'notes/spring/',
+        NextMarker: 'notes/spring/1.txt',
     }),
 
     new Test('all parameters 2/5', {
         delimiter: '/',
         prefix: 'notes/',
-        marker: 'notes/spring/',
+        marker: 'notes/spring/1.txt',
         maxKeys: 1,
     }, {
         v0: {
@@ -314,13 +314,13 @@ const tests = [
         CommonPrefixes: ['notes/summer/'],
         Delimiter: '/',
         IsTruncated: true,
-        NextMarker: 'notes/summer/',
+        NextMarker: 'notes/summer/1.txt',
     }),
 
     new Test('all parameters 3/5', {
         delimiter: '/',
         prefix: 'notes/',
-        marker: 'notes/summer/',
+        marker: 'notes/summer/1.txt',
         maxKeys: 1,
     }, {
         v0: {
@@ -385,28 +385,6 @@ const tests = [
         Delimiter: '/',
         IsTruncated: false,
         NextMarker: undefined,
-    }),
-
-    new Test('marker inside common prefix', {
-        delimiter: '/',
-        prefix: 'notes/',
-        marker: 'notes/spring/1.txt',
-        maxKeys: 1,
-    }, {
-        v0: {
-            gte: 'notes/spring0',
-            lt: 'notes0',
-        },
-        v1: {
-            gte: `${DbPrefixes.Master}notes/spring0`,
-            lt: `${DbPrefixes.Master}notes0`,
-        },
-    }, {
-        Contents: [],
-        CommonPrefixes: ['notes/summer/'],
-        Delimiter: '/',
-        IsTruncated: true,
-        NextMarker: 'notes/summer/',
     }),
 
     new Test('all elements v2', {
@@ -595,13 +573,13 @@ const tests = [
         CommonPrefixes: ['notes/spring/'],
         Delimiter: '/',
         IsTruncated: true,
-        NextContinuationToken: 'notes/spring/',
+        NextContinuationToken: 'notes/spring/1.txt',
     }),
 
     new Test('all parameters v2 2/5', {
         delimiter: '/',
         prefix: 'notes/',
-        continuationToken: 'notes/spring/',
+        continuationToken: 'notes/spring/1.txt',
         maxKeys: 1,
         v2: true,
     }, {
@@ -618,13 +596,13 @@ const tests = [
         CommonPrefixes: ['notes/summer/'],
         Delimiter: '/',
         IsTruncated: true,
-        NextContinuationToken: 'notes/summer/',
+        NextContinuationToken: 'notes/summer/1.txt',
     }),
 
     new Test('all parameters v2 3/5', {
         delimiter: '/',
         prefix: 'notes/',
-        continuationToken: 'notes/summer/',
+        continuationToken: 'notes/summer/1.txt',
         maxKeys: 1,
         v2: true,
     }, {
