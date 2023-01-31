@@ -5,6 +5,7 @@ export { default as BucketInfo } from './BucketInfo';
 export { default as BucketPolicy } from './BucketPolicy';
 export { default as LifecycleConfiguration } from './LifecycleConfiguration';
 export { default as LifecycleRule } from './LifecycleRule';
+export { default as LocationStatus  } from './LocationStatus';
 export { default as NotificationConfiguration } from './NotificationConfiguration';
 export { default as ObjectLockConfiguration } from './ObjectLockConfiguration';
 export { default as ObjectMD } from './ObjectMD';
