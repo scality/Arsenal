@@ -54,6 +54,7 @@ export const algorithms = {
         MergeStream: require('./lib/algos/stream/MergeStream'),
     },
     SortedSet: require('./lib/algos/set/SortedSet'),
+    Heap: require('./lib/algos/heap/Heap'),
 };
 
 export const policies = {
