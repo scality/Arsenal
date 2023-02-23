@@ -679,7 +679,42 @@ describe('LifecycleConfiguration::getConfigJson', () => {
                         ID: 'test-id',
                         Status: 'Enabled',
                         Prefix: '',
-                        NoncurrentVersionExpiration: { NoncurrentDays: 10 },
+                        NoncurrentVersionExpiration: {
+                            NoncurrentDays: 10,
+                            NewerNoncurrentVersions: null,
+                        },
+                    },
+                ],
+            },
+        ],
+        [
+            'single action NoncurrentVersionExpiration with NewerNoncurrentVersions',
+            {
+                rules: [
+                    {
+                        ruleID: 'test-id',
+                        ruleStatus: 'Enabled',
+                        actions: [
+                            {
+                                actionName: 'NoncurrentVersionExpiration',
+                                days: 10,
+                                newerNoncurrentVersions: 10,
+                            },
+                        ],
+                        prefix: '',
+                    },
+                ],
+            },
+            {
+                Rules: [
+                    {
+                        ID: 'test-id',
+                        Status: 'Enabled',
+                        Prefix: '',
+                        NoncurrentVersionExpiration: {
+                            NoncurrentDays: 10,
+                            NewerNoncurrentVersions: 10,
+                        },
                     },
                 ],
             },
@@ -732,7 +767,7 @@ describe('LifecycleConfiguration::getConfigJson', () => {
                         Status: 'Enabled',
                         Prefix: '',
                         AbortIncompleteMultipartUpload: { DaysAfterInitiation: 10 },
-                        NoncurrentVersionExpiration: { NoncurrentDays: 1 },
+                        NoncurrentVersionExpiration: { NoncurrentDays: 1, NewerNoncurrentVersions: null },
                         Expiration: { ExpiredObjectDeleteMarker: true },
                     },
                 ],

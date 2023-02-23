@@ -72,8 +72,8 @@ describe('LifecycleUtils::getApplicableRules', () => {
             new LifecycleRule().addID('task-2').addAbortMPU(18).build(),
             new LifecycleRule().addID('task-3').addExpiration('Date', PAST)
                 .build(),
-            new LifecycleRule().addID('task-4').addNCVExpiration(3).build(),
-            new LifecycleRule().addID('task-5').addNCVExpiration(12).build(),
+            new LifecycleRule().addID('task-4').addNCVExpiration('NoncurrentDays', 3).build(),
+            new LifecycleRule().addID('task-5').addNCVExpiration('NoncurrentDays', 12).build(),
             new LifecycleRule().addID('task-6').addExpiration('Date', CURRENT)
                 .build(),
             new LifecycleRule().addID('task-7').addNCVExpiration(7).build(),

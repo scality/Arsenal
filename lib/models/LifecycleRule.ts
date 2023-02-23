@@ -10,6 +10,10 @@ export type Expiration = {
     Date?: number | boolean;
     Days?: number | boolean;
 };
+export type NoncurrentExpiration = {
+    NoncurrentDays: number | null;
+    NewerNoncurrentVersions: number | null;
+};
 
 /**
  * @class LifecycleRule
@@ -21,7 +25,7 @@ export default class LifecycleRule {
     status: Status;
     tags: Tags;
     expiration?: Expiration;
-    ncvExpiration?: { NoncurrentDays: number };
+    ncvExpiration?: NoncurrentExpiration;
     abortMPU?: { DaysAfterInitiation: number };
     transitions?: any[];
     prefix?: string;
@@ -38,7 +42,7 @@ export default class LifecycleRule {
             ID: string;
             Status: Status;
             Expiration?: Expiration;
-            NoncurrentVersionExpiration?: { NoncurrentDays: number };
+            NoncurrentVersionExpiration?: NoncurrentExpiration;
             AbortIncompleteMultipartUpload?: { DaysAfterInitiation: number };
             Transitions?: any[];
             Filter?: Filter;
@@ -49,7 +53,8 @@ export default class LifecycleRule {
             rule.Expiration = this.expiration;
         }
         if (this.ncvExpiration) {
-            rule.NoncurrentVersionExpiration = this.ncvExpiration;
+            console.log(this.ncvExpiration);
+            rule.NoncurrentVersionExpiration = this.ncvExpiration
         }
         if (this.abortMPU) {
             rule.AbortIncompleteMultipartUpload = this.abortMPU;
@@ -136,15 +141,24 @@ export default class LifecycleRule {
 
     /**
      * NoncurrentVersionExpiration
-     * @param days - NoncurrentDays
+     * @param prop - Property must be defined in `validProps`
+     * @param value - integer for `NoncurrentDays` and `NewerNoncurrentVersions` 
      */
-    addNCVExpiration(days: number) {
-        this.ncvExpiration = { NoncurrentDays: days };
+    addNCVExpiration(prop: 'NoncurrentDays' | 'NewerNoncurrentVersions', value: number): this;
+    addNCVExpiration(prop: string, value: number) {
+        const validProps = ['NoncurrentDays', 'NewerNoncurrentVersions'];
+        if (validProps.includes(prop)) {
+            this.ncvExpiration = this.ncvExpiration || {
+                NoncurrentDays: null,
+                NewerNoncurrentVersions: null,
+            };
+            this.ncvExpiration[prop] = value;
+        }
         return this;
     }
 
     /**
-     * AbortIncompleteMultipartUpload
+     * abortincompletemultipartupload
      * @param days - DaysAfterInitiation
      */
     addAbortMPU(days: number) {
