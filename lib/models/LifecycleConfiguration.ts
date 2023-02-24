@@ -844,6 +844,7 @@ export default class LifecycleConfiguration {
      *              days: <value>,
      *              date: <value>,
      *              deleteMarker: <value>
+     *              newerNoncurrentVersions: <value>,
      *          },
      *      ],
      * }
@@ -856,7 +857,8 @@ export default class LifecycleConfiguration {
                 actionName: string;
                 days?: number;
                 date?: number;
-                deleteMarker?: boolean
+                deleteMarker?: boolean;
+                newerNoncurrentVersions?: number
             }[];
         } = {
             propName: 'actions',
@@ -885,8 +887,14 @@ export default class LifecycleConfiguration {
             if (action.error) {
                 actionsObj.error = action.error;
             } else {
-                const actionTimes = ['days', 'date', 'deleteMarker',
-                    'transition', 'nonCurrentVersionTransition'];
+                const actionTimes = [
+                    'days',
+                    'date',
+                    'deleteMarker',
+                    'transition',
+                    'nonCurrentVersionTransition',
+                    'newerNoncurrentVersions'
+                ];
                 actionTimes.forEach(t => {
                     if (action[t]) {
                         // eslint-disable-next-line no-param-reassign
@@ -1032,6 +1040,7 @@ export default class LifecycleConfiguration {
      * nvExpObj = {
      *      error: <error>,
      *      days: <value>,
+     *      newerNoncurrentVersions: <value>,
      * }
      */
     _parseNoncurrentVersionExpiration(rule: any) {
@@ -1042,14 +1051,41 @@ export default class LifecycleConfiguration {
                 'NoncurrentDays');
             return { error };
         }
+
+        const actionParams: {
+            error?: ArsenalError;
+            days: number;
+            newerNoncurrentVersions: number;
+        } = {
+            days: 0,
+            newerNoncurrentVersions: 0,
+        };
+
         const daysInt = parseInt(subNVExp.NoncurrentDays[0], 10);
         if (daysInt < 1) {
             const msg = 'NoncurrentDays is not a positive integer';
             const error = errors.InvalidArgument.customizeDescription(msg);
             return { error };
         } else {
-            return { days: daysInt };
+            actionParams.days = daysInt;
         }
+
+        if (subNVExp.NewerNoncurrentVersions) {
+            const newerVersionsInt = parseInt(subNVExp.NewerNoncurrentVersions[0], 10);
+
+            if (Number.isNaN(newerVersionsInt) || newerVersionsInt < 1) {
+                const msg = 'NewerNoncurrentVersions is not a positive integer';
+                const error = errors.InvalidArgument.customizeDescription(msg);
+                return { error };
+            }
+
+            actionParams.newerNoncurrentVersions = newerVersionsInt;
+
+        } else {
+            actionParams.newerNoncurrentVersions = 0;
+        }
+
+        return actionParams;
     }
 
     /**
@@ -1112,6 +1148,10 @@ export default class LifecycleConfiguration {
                         assert.strictEqual(typeof t.storageClass, 'string');
                     });
                 }
+
+                if (a.newerNoncurrentVersions) {
+                    assert.strictEqual(typeof a.newerNoncurrentVersions, 'number');
+                }
             });
         });
     }
@@ -1161,15 +1201,24 @@ export default class LifecycleConfiguration {
             }
 
             const Actions = actions.map(action => {
-                const { actionName, days, date, deleteMarker,
-                    nonCurrentVersionTransition, transition } = action;
+                const {
+                    actionName,
+                    days,
+                    date,
+                    deleteMarker,
+                    nonCurrentVersionTransition,
+                    transition,
+                    newerNoncurrentVersions,
+                } = action;
                 let Action: any;
                 if (actionName === 'AbortIncompleteMultipartUpload') {
                     Action = `<${actionName}><DaysAfterInitiation>${days}` +
                         `</DaysAfterInitiation></${actionName}>`;
                 } else if (actionName === 'NoncurrentVersionExpiration') {
-                    Action = `<${actionName}><NoncurrentDays>${days}` +
-                        `</NoncurrentDays></${actionName}>`;
+                    const Days = `<NoncurrentDays>${days}</NoncurrentDays>`;
+                    const NewerVersions = newerNoncurrentVersions ? 
+                        `<NewerNoncurrentVersions>${newerNoncurrentVersions}</NewerNoncurrentVersions>` : '';
+                    Action = `<${actionName}>${Days}${NewerVersions}</${actionName}>`;
                 } else if (actionName === 'Expiration') {
                     const Days = days ? `<Days>${days}</Days>` : '';
                     const Date = date ? `<Date>${date}</Date>` : '';
@@ -1246,13 +1295,18 @@ export default class LifecycleConfiguration {
             }
 
             actions.forEach(action => {
-                const { actionName, days, date, deleteMarker } = action;
+                const { actionName, days, date, deleteMarker, newerNoncurrentVersions } = action;
                 if (actionName === 'AbortIncompleteMultipartUpload') {
                     entry.addAbortMPU(days!);
                     return;
                 }
                 if (actionName === 'NoncurrentVersionExpiration') {
-                    entry.addNCVExpiration(days!);
+                    entry.addNCVExpiration('NoncurrentDays', days!);
+
+                    if (newerNoncurrentVersions) {
+                        entry.addNCVExpiration('NewerNoncurrentVersions', newerNoncurrentVersions!);
+                    }
+
                     return;
                 }
                 if (actionName === 'Expiration') {
@@ -1289,6 +1343,7 @@ export type Rule = {
         days?: number;
         date?: number;
         deleteMarker?: boolean;
+        newerNoncurrentVersions?: number;
         nonCurrentVersionTransition?: {
             noncurrentDays: number;
             storageClass: string;
