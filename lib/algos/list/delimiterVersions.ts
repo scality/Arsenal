@@ -25,6 +25,8 @@ export interface FilterReturnValue {
 export const enum DelimiterVersionsFilterStateId {
     NotSkipping = 1,
     SkippingPrefix = 2,
+    WaitForNullKey = 3,
+    SkippingVersions = 4,
 };
 
 export interface DelimiterVersionsFilterState_NotSkipping extends FilterState {
@@ -34,6 +36,15 @@ export interface DelimiterVersionsFilterState_NotSkipping extends FilterState {
 export interface DelimiterVersionsFilterState_SkippingPrefix extends FilterState {
     id: DelimiterVersionsFilterStateId.SkippingPrefix,
     prefix: string;
+};
+
+export interface DelimiterVersionsFilterState_WaitForNullKey extends FilterState {
+    id: DelimiterVersionsFilterStateId.WaitForNullKey,
+};
+
+export interface DelimiterVersionsFilterState_SkippingVersions extends FilterState {
+    id: DelimiterVersionsFilterStateId.SkippingVersions,
+    gt: string;
 };
 
 type KeyHandler = (key: string, value: string) => FilterReturnValue;
@@ -82,6 +93,7 @@ export class DelimiterVersions extends Delimiter {
         // internal state
         this.masterKey = undefined;
         this.masterVersionId = undefined;
+        this.nullKey = null;
         // listing results
         this.nextKeyMarker = parameters.keyMarker;
         this.nextVersionIdMarker = undefined;
@@ -114,9 +126,23 @@ export class DelimiterVersions extends Delimiter {
             DelimiterVersionsFilterStateId.SkippingPrefix,
             this.keyHandler_SkippingPrefix.bind(this));
 
-        this.state = <DelimiterVersionsFilterState_NotSkipping> {
-            id: DelimiterVersionsFilterStateId.NotSkipping,
-        };
+        this.setKeyHandler(
+            DelimiterVersionsFilterStateId.WaitForNullKey,
+            this.keyHandler_WaitForNullKey.bind(this));
+
+        this.setKeyHandler(
+            DelimiterVersionsFilterStateId.SkippingVersions,
+            this.keyHandler_SkippingVersions.bind(this));
+
+        if (this.versionIdMarker) {
+            this.state = <DelimiterVersionsFilterState_WaitForNullKey> {
+                id: DelimiterVersionsFilterStateId.WaitForNullKey,
+            };
+        } else {
+            this.state = <DelimiterVersionsFilterState_NotSkipping> {
+                id: DelimiterVersionsFilterStateId.NotSkipping,
+            };
+        }
     }
 
     genMDParamsV0() {
@@ -137,9 +163,11 @@ export class DelimiterVersions extends Delimiter {
         if (this.keyMarker && (!params.gte || this.keyMarker >= params.gte)) {
             delete params.gte;
             if (this.versionIdMarker) {
-                // versionIdMarker should always come with keyMarker
-                // but may not be the other way around
-                params.gt = `${this.keyMarker}${VID_SEP}${this.versionIdMarker}`;
+                // start from the beginning of versions so we can
+                // check if there's a null key and fetch it
+                // (afterwards, we can skip the rest of versions until
+                // we reach versionIdMarker)
+                params.gte = `${this.keyMarker}${VID_SEP}`;
             } else {
                 params.gt = `${this.keyMarker}${inc(VID_SEP)}`;
             }
@@ -249,6 +277,34 @@ export class DelimiterVersions extends Delimiter {
         this.nextKeyMarker = commonPrefix;
     }
 
+    /**
+     * Cache the current null key, to save it for outputting it later at
+     * the correct position
+     *
+     * @param {String} key        - nonversioned key of the null key
+     * @param {String} versionId  - real version ID of the null key
+     * @param {String} value      - value of the null key
+     * @return {undefined}
+     */
+    cacheNullKey(key: string, versionId: string, value: string): void {
+        this.nullKey = { key, versionId, value };
+    }
+
+    /**
+     * Add the cached null key to the results. This is called when
+     * reaching the correct position for the null key in the output.
+     *
+     * @return {undefined}
+     */
+    addCurrentNullKey(): void {
+        this.addContents(
+            this.nullKey.key,
+            this.nullKey.versionId,
+            this.nullKey.value,
+        );
+        this.nullKey = null;
+    }
+
     getObjectKeyV0(obj: { key: string }): string {
         return obj.key;
     }
@@ -311,12 +367,28 @@ export class DelimiterVersions extends Delimiter {
             return FILTER_END;
         }
         const { key: nonversionedKey, versionId: keyVersionId } = this.parseKey(key);
+        if (this.nullKey &&
+            (this.nullKey.key !== nonversionedKey
+             || this.nullKey.versionId < <string> keyVersionId)) {
+            this.addCurrentNullKey();
+            if (this._reachedMaxKeys()) {
+                // IsTruncated: true is set, which is wanted because
+                // there is at least one more key to output: the one
+                // being processed here
+                return FILTER_END;
+            }
+        }
         let versionId: string;
         if (keyVersionId === undefined) {
             this.masterKey = key;
             this.masterVersionId = Version.from(value).getVersionId() || 'null';
             versionId = this.masterVersionId;
         } else {
+            if (keyVersionId === '') {
+                // null key
+                this.cacheNullKey(nonversionedKey, Version.from(value).getVersionId(), value);
+                return FILTER_ACCEPT;
+            }
             if (this.masterKey === nonversionedKey && this.masterVersionId === keyVersionId) {
                 // do not add a version key if it is the master version
                 return FILTER_ACCEPT;
@@ -350,11 +422,63 @@ export class DelimiterVersions extends Delimiter {
         return this.handleKey(key, value);
     }
 
+    keyHandler_WaitForNullKey(key: string, value: string): FilterReturnValue {
+        const { key: nonversionedKey, versionId } = this.parseKey(key);
+        if (nonversionedKey !== this.keyMarker) {
+            this.setState(<DelimiterVersionsFilterState_NotSkipping> {
+                id: DelimiterVersionsFilterStateId.NotSkipping,
+            });
+            return this.handleKey(key, value);
+        }
+        // we may now skip versions until VersionIdMarker
+        this.setState(<DelimiterVersionsFilterState_SkippingVersions> {
+            id: DelimiterVersionsFilterStateId.SkippingVersions,
+            gt: `${this.keyMarker}${VID_SEP}${this.versionIdMarker}`,
+        });
+
+        if (versionId === '') {
+            // only cache the null key if its version is older than
+            // the current version ID marker, otherwise it has already
+            // been output in a previous listing output
+            const nullVersionId = Version.from(value).getVersionId();
+            if (nullVersionId > this.versionIdMarker) {
+                this.cacheNullKey(nonversionedKey, nullVersionId, value);
+            }
+            return FILTER_SKIP;
+        }
+        return this.handleKey(key, value);
+    }
+
+    keyHandler_SkippingVersions(key: string, value: string): FilterReturnValue {
+        const { key: nonversionedKey, versionId } = this.parseKey(key);
+        if (nonversionedKey === this.keyMarker) {
+            // since the nonversioned key equals the marker, there is
+            // necessarily a versionId in this key
+            const _versionId = <string> versionId;
+            if (_versionId < this.versionIdMarker) {
+                // skip all versions until marker
+                return FILTER_SKIP;
+            }
+            if (_versionId === this.versionIdMarker) {
+                // nothing left to skip, so return ACCEPT, but don't add this version
+                return FILTER_ACCEPT;
+            }
+        }
+        this.setState(<DelimiterVersionsFilterState_NotSkipping> {
+            id: DelimiterVersionsFilterStateId.NotSkipping,
+        });
+        return this.handleKey(key, value);
+    }
+
     skippingBase() {
         switch (this.state.id) {
         case DelimiterVersionsFilterStateId.SkippingPrefix:
             const { prefix } = <DelimiterVersionsFilterState_SkippingPrefix> this.state;
             return prefix;
+
+        case DelimiterVersionsFilterStateId.SkippingVersions:
+            const { gt } = <DelimiterVersionsFilterState_SkippingVersions> this.state;
+            return gt;
 
         default:
             return SKIP_NONE;
@@ -384,10 +508,26 @@ export class DelimiterVersions extends Delimiter {
      *  @return {Object} - following amazon format
      */
     result() {
-        /* NextMarker is only provided when delimiter is used.
-         * specified in v1 listing documentation
-         * http://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketGET.html
-         */
+        // Add the last null key if still in cache (when it is the
+        // last version of the last key)
+        //
+        // NOTE: _reachedMaxKeys sets IsTruncated to true when it
+        // returns true. Here we want this because either:
+        //
+        // - we did not reach the max keys yet so the result is not
+        // - truncated, and there is still room for the null key in
+        // - the results
+        //
+        // - OR we reached it already while having to process a new
+        //   key (so the result is truncated even without the null key)
+        //
+        // - OR we are *just* below the limit but the null key to add
+        //   does not fit, so we know the result is now truncated
+        //   because there remains the null key to be output.
+        //
+        if (this.nullKey && !this._reachedMaxKeys()) {
+            this.addCurrentNullKey();
+        }
         const result: ResultObject = {
             CommonPrefixes: this.CommonPrefixes,
             Versions: this.Contents,
