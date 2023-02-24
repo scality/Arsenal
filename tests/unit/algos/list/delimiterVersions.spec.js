@@ -11,7 +11,6 @@ const {
 } = require('../../../../lib/algos/list/tools');
 const Werelogs = require('werelogs').Logger;
 const logger = new Werelogs('listTest');
-const performListing = require('../../../utils/performListing');
 const zpad = require('../../helpers').zpad;
 const VSConst = require('../../../../lib/versioning/constants').VersioningConstants;
 const Version = require('../../../../lib/versioning/Version').Version;
@@ -22,9 +21,6 @@ const EmptyResult = {
     Versions: [],
     CommonPrefixes: [],
     IsTruncated: false,
-    NextKeyMarker: undefined,
-    NextVersionIdMarker: undefined,
-    Delimiter: undefined,
 };
 
 class Test {
@@ -151,16 +147,13 @@ const tests = [
     }, {
         Versions: receivedData,
         CommonPrefixes: [],
-        Delimiter: undefined,
         IsTruncated: false,
-        NextKeyMarker: undefined,
-        NextVersionIdMarker: undefined,
     }),
     new Test('with valid key marker', {
         keyMarker: receivedData[3].key,
     }, {
         v0: {
-            gt: `${receivedData[3].key}\u0001`,
+            gt: `${receivedData[3].key}${inc(VID_SEP)}`,
         },
         v1: [{
             gt: `${DbPrefixes.Master}${receivedData[3].key}${inc(VID_SEP)}`,
@@ -172,11 +165,8 @@ const tests = [
     }, {
         Versions: receivedData.slice(5),
         CommonPrefixes: [],
-        Delimiter: undefined,
         IsTruncated: false,
-        NextKeyMarker: undefined,
-        NextVersionIdMarker: undefined,
-    }, (e, input) => e.key > (input.keyMarker + String.fromCharCode(1))),
+    }),
     new Test('with bad key marker', {
         keyMarker: 'zzzz',
         delimiter: '/',
@@ -196,9 +186,7 @@ const tests = [
         CommonPrefixes: [],
         Delimiter: '/',
         IsTruncated: false,
-        NextKeyMarker: undefined,
-        NextVersionIdMarker: undefined,
-    }, (e, input) => e.key > input.keyMarker),
+    }),
     new Test('with maxKeys', {
         maxKeys: 3,
     }, {
@@ -213,7 +201,6 @@ const tests = [
     }, {
         Versions: receivedData.slice(0, 3),
         CommonPrefixes: [],
-        Delimiter: undefined,
         IsTruncated: true,
         NextKeyMarker: 'notes/spring/1.txt',
         NextVersionIdMarker: 'bar',
@@ -232,10 +219,7 @@ const tests = [
     }, {
         Versions: receivedData,
         CommonPrefixes: [],
-        Delimiter: undefined,
         IsTruncated: false,
-        NextKeyMarker: undefined,
-        NextVersionIdMarker: undefined,
     }),
     new Test('with delimiter', {
         delimiter: '/',
@@ -256,8 +240,6 @@ const tests = [
         CommonPrefixes: ['notes/'],
         Delimiter: '/',
         IsTruncated: false,
-        NextKeyMarker: undefined,
-        NextVersionIdMarker: undefined,
     }),
     new Test('with long delimiter', {
         delimiter: 'notes/summer',
@@ -276,8 +258,6 @@ const tests = [
         CommonPrefixes: ['notes/summer'],
         Delimiter: 'notes/summer',
         IsTruncated: false,
-        NextKeyMarker: undefined,
-        NextVersionIdMarker: undefined,
     }),
     new Test('with bad key marker and good prefix', {
         delimiter: '/',
@@ -300,9 +280,7 @@ const tests = [
         CommonPrefixes: [],
         Delimiter: '/',
         IsTruncated: false,
-        NextKeyMarker: undefined,
-        NextVersionIdMarker: undefined,
-    }, (e, input) => e.key > input.keyMarker),
+    }),
     new Test('with delimiter and prefix (related to #147)', {
         delimiter: '/',
         prefix: 'notes/',
@@ -330,8 +308,6 @@ const tests = [
         ],
         Delimiter: '/',
         IsTruncated: false,
-        NextKeyMarker: undefined,
-        NextVersionIdMarker: undefined,
     }),
     new Test('with delimiter, prefix and marker (related to #147)', {
         delimiter: '/',
@@ -358,10 +334,8 @@ const tests = [
         ],
         Delimiter: '/',
         IsTruncated: false,
-        NextKeyMarker: undefined,
-        NextVersionIdMarker: undefined,
-    }, (e, input) => e.key > input.keyMarker),
-    new Test('with all parameters 1/3', {
+    }),
+    new Test('with all parameters 1/5', {
         delimiter: '/',
         prefix: 'notes/',
         keyMarker: 'notes/',
@@ -384,24 +358,23 @@ const tests = [
         Delimiter: '/',
         IsTruncated: true,
         NextKeyMarker: 'notes/spring/',
-        NextVersionIdMarker: undefined,
-    }, (e, input) => e.key > input.keyMarker),
+    }),
 
-    new Test('with all parameters 2/3', {
+    new Test('with all parameters 2/5', {
         delimiter: '/',
-        prefix: 'notes/', // prefix
+        prefix: 'notes/',
         keyMarker: 'notes/spring/',
         maxKeys: 1,
     }, {
         v0: {
-            gt: `notes/spring/${inc(VID_SEP)}`,
+            gte: `notes/spring${inc('/')}`,
             lt: `notes${inc('/')}`,
         },
         v1: [{
-            gt: `${DbPrefixes.Master}notes/spring/${inc(VID_SEP)}`,
+            gte: `${DbPrefixes.Master}notes/spring${inc('/')}`,
             lt: `${DbPrefixes.Master}notes${inc('/')}`,
         }, {
-            gt: `${DbPrefixes.Version}notes/spring/${inc(VID_SEP)}`,
+            gte: `${DbPrefixes.Version}notes/spring${inc('/')}`,
             lt: `${DbPrefixes.Version}notes${inc('/')}`,
         }],
     }, {
@@ -410,24 +383,23 @@ const tests = [
         Delimiter: '/',
         IsTruncated: true,
         NextKeyMarker: 'notes/summer/',
-        NextVersionIdMarker: undefined,
-    }, (e, input) => e.key > input.keyMarker),
+    }),
 
-    new Test('with all parameters 3/3', {
+    new Test('with all parameters 3/5', {
         delimiter: '/',
-        prefix: 'notes/', // prefix
+        prefix: 'notes/',
         keyMarker: 'notes/summer/',
         maxKeys: 1,
     }, {
         v0: {
-            gt: `notes/summer/${inc(VID_SEP)}`,
+            gte: `notes/summer${inc('/')}`,
             lt: `notes${inc('/')}`,
         },
         v1: [{
-            gt: `${DbPrefixes.Master}notes/summer/${inc(VID_SEP)}`,
+            gte: `${DbPrefixes.Master}notes/summer${inc('/')}`,
             lt: `${DbPrefixes.Master}notes${inc('/')}`,
         }, {
-            gt: `${DbPrefixes.Version}notes/summer/${inc(VID_SEP)}`,
+            gte: `${DbPrefixes.Version}notes/summer${inc('/')}`,
             lt: `${DbPrefixes.Version}notes${inc('/')}`,
         }],
     }, {
@@ -439,11 +411,11 @@ const tests = [
         IsTruncated: true,
         NextKeyMarker: 'notes/year.txt',
         NextVersionIdMarker: receivedData[19].versionId,
-    }, (e, input) => e.key > input.keyMarker),
+    }),
 
-    new Test('with all parameters 4/3', {
+    new Test('with all parameters 4/5', {
         delimiter: '/',
-        prefix: 'notes/', // prefix
+        prefix: 'notes/',
         keyMarker: 'notes/year.txt',
         maxKeys: 1,
     }, {
@@ -467,9 +439,9 @@ const tests = [
         IsTruncated: true,
         NextKeyMarker: 'notes/yore.rs',
         NextVersionIdMarker: receivedData[20].versionId,
-    }, (e, input) => e.key > input.keyMarker),
+    }),
 
-    new Test('with all parameters 5/3', {
+    new Test('with all parameters 5/5', {
         delimiter: '/',
         prefix: 'notes/',
         keyMarker: 'notes/yore.rs',
@@ -491,9 +463,7 @@ const tests = [
         CommonPrefixes: ['notes/zaphod/'],
         Delimiter: '/',
         IsTruncated: false,
-        NextKeyMarker: undefined,
-        NextVersionIdMarker: undefined,
-    }, (e, input) => e.key > input.keyMarker),
+    }),
 ];
 
 function getListingKey(key, vFormat) {
@@ -508,13 +478,20 @@ function getListingKey(key, vFormat) {
     return assert.fail(`bad format ${vFormat}`);
 }
 
-function getTestListing(test, data, vFormat) {
+function getTestListing(mdParams, data, vFormat) {
     return data
-        .filter(e => test.filter(e, test.input))
         .map(e => ({
             key: getListingKey(e.key, vFormat),
             value: e.value,
-        }));
+        }))
+        .filter(e => {
+            const _mdParams = Array.isArray(mdParams) ? mdParams : [mdParams];
+            return _mdParams.some(mdParamsItem =>
+                (!mdParamsItem.gt || e.key > mdParamsItem.gt) &&
+                (!mdParamsItem.gte || e.key >= mdParamsItem.gte) &&
+                (!mdParamsItem.lt || e.key < mdParamsItem.lt),
+            );
+        });
 }
 
 ['v0', 'v1'].forEach(vFormat => {
@@ -576,9 +553,14 @@ function getTestListing(test, data, vFormat) {
                 assert.deepStrictEqual(params, test.genMDParams[vFormat]);
             });
             it(`Should list ${test.name}`, () => {
-                // Simulate skip scan done by LevelDB
-                const d = getTestListing(test, dataVersioned[vFormat], vFormat);
-                const res = performListing(d, DelimiterVersions, test.input, logger, vFormat);
+                const listing = new DelimiterVersions(test.input, logger, vFormat);
+                const mdParams = listing.genMDParams();
+                assert.strictEqual(typeof mdParams, 'object');
+                const rawEntries = getTestListing(mdParams, dataVersioned[vFormat], vFormat);
+                for (const entry of rawEntries) {
+                    listing.filter(entry);
+                }
+                const res = listing.result();
                 assert.deepStrictEqual(res, test.output);
             });
         });
@@ -586,7 +568,7 @@ function getTestListing(test, data, vFormat) {
         it('skipping() should return SKIP_NONE when NextMarker is undefined', () => {
             const delimiter = new DelimiterVersions({ delimiter: '/' }, logger, vFormat);
 
-            assert.strictEqual(delimiter.NextMarker, undefined);
+            assert.strictEqual(delimiter.nextKeyMarker, undefined);
             assert.strictEqual(delimiter.skipping(), SKIP_NONE);
         });
 
@@ -599,7 +581,7 @@ function getTestListing(test, data, vFormat) {
             /* Filter a master version to set NextMarker. */
             const listingKey = getListingKey(key, vFormat);
             delimiter.filter({ key: listingKey, value: '' });
-            assert.strictEqual(delimiter.NextMarker, 'foo');
+            assert.strictEqual(delimiter.nextKeyMarker, 'foo');
             assert.strictEqual(delimiter.skipping(), SKIP_NONE);
         });
 
@@ -612,7 +594,7 @@ function getTestListing(test, data, vFormat) {
             /* Filter a master version to set NextMarker. */
             const listingKey = getListingKey(key, vFormat);
             delimiter.filter({ key: listingKey, value: '' });
-            assert.strictEqual(delimiter.NextMarker, 'foo/');
+            assert.strictEqual(delimiter.nextKeyMarker, 'foo/');
 
             if (vFormat === 'v0') {
                 assert.strictEqual(delimiter.skipping(), 'foo/');
@@ -633,7 +615,7 @@ function getTestListing(test, data, vFormat) {
             /* Filter a master version to set NextMarker. */
             const listingKey = getListingKey(key, vFormat);
             delimiter.filter({ key: listingKey, value: '' });
-            assert.strictEqual(delimiter.NextMarker, 'foo/');
+            assert.strictEqual(delimiter.nextKeyMarker, 'foo/');
 
             if (vFormat === 'v0') {
                 assert.strictEqual(delimiter.skipping(), 'foo/');
@@ -645,16 +627,6 @@ function getTestListing(test, data, vFormat) {
             }
         });
 
-        it('should skip entries not starting with prefix', () => {
-            const delimiter = new DelimiterVersions({ prefix: 'prefix' }, logger, vFormat);
-
-            const listingKey = getListingKey('wrong', vFormat);
-            assert.strictEqual(delimiter.filter({ key: listingKey, value: '' }), FILTER_SKIP);
-            assert.strictEqual(delimiter.NextMarker, undefined);
-            assert.strictEqual(delimiter.prvKey, undefined);
-            assert.deepStrictEqual(delimiter.result(), EmptyResult);
-        });
-
         it('should accept a master version', () => {
             const delimiter = new DelimiterVersions({}, logger, vFormat);
             const key = 'key';
@@ -662,7 +634,7 @@ function getTestListing(test, data, vFormat) {
 
             const listingKey = getListingKey(key, vFormat);
             assert.strictEqual(delimiter.filter({ key: listingKey, value }), FILTER_ACCEPT);
-            assert.strictEqual(delimiter.NextMarker, key);
+            assert.strictEqual(delimiter.nextKeyMarker, key);
             assert.deepStrictEqual(delimiter.result(), {
                 CommonPrefixes: [],
                 Versions: [{
@@ -670,10 +642,7 @@ function getTestListing(test, data, vFormat) {
                     value: '',
                     versionId: 'null',
                 }],
-                Delimiter: undefined,
                 IsTruncated: false,
-                NextKeyMarker: undefined,
-                NextVersionIdMarker: undefined,
             });
         });
 
@@ -693,8 +662,6 @@ function getTestListing(test, data, vFormat) {
                 Versions: [],
                 Delimiter: '/',
                 IsTruncated: false,
-                NextKeyMarker: undefined,
-                NextVersionIdMarker: undefined,
             });
 
             /* Filter the second entry with the same common prefix than the
@@ -709,8 +676,6 @@ function getTestListing(test, data, vFormat) {
                 Versions: [],
                 Delimiter: '/',
                 IsTruncated: false,
-                NextKeyMarker: undefined,
-                NextVersionIdMarker: undefined,
             });
 
             /* Filter an entry with a new common prefix. It should be accepted
@@ -725,8 +690,6 @@ function getTestListing(test, data, vFormat) {
                 Versions: [],
                 Delimiter: '/',
                 IsTruncated: false,
-                NextKeyMarker: undefined,
-                NextVersionIdMarker: undefined,
             });
         });
 
@@ -742,7 +705,7 @@ function getTestListing(test, data, vFormat) {
             /* When filtered, it should return FILTER_ACCEPT and
              * should be added to the result content. */
             assert.strictEqual(delimiter.filter(obj), FILTER_ACCEPT);
-            assert.strictEqual(delimiter.NextMarker, key);
+            assert.strictEqual(delimiter.nextKeyMarker, key);
             assert.deepStrictEqual(delimiter.result(), {
                 CommonPrefixes: [],
                 Versions: [{
@@ -750,10 +713,7 @@ function getTestListing(test, data, vFormat) {
                     value: version.toString(),
                     versionId: 'version',
                 }],
-                Delimiter: undefined,
                 IsTruncated: false,
-                NextKeyMarker: undefined,
-                NextVersionIdMarker: undefined,
             });
         });
 
@@ -768,7 +728,7 @@ function getTestListing(test, data, vFormat) {
                 key: getListingKey(versionKey, vFormat),
                 value: 'value',
             }), FILTER_ACCEPT);
-            assert.strictEqual(delimiter.NextMarker, key);
+            assert.strictEqual(delimiter.nextKeyMarker, key);
             assert.deepStrictEqual(delimiter.result(), {
                 CommonPrefixes: [],
                 Versions: [{
@@ -780,10 +740,7 @@ function getTestListing(test, data, vFormat) {
                     value: 'value',
                     versionId: 'version',
                 }],
-                Delimiter: undefined,
                 IsTruncated: false,
-                NextKeyMarker: undefined,
-                NextVersionIdMarker: undefined,
             });
         });
 
@@ -802,13 +759,10 @@ function getTestListing(test, data, vFormat) {
                 key: getListingKey(key2, vFormat),
                 value: value2,
             }), FILTER_ACCEPT);
-            assert.strictEqual(delimiter.NextMarker, key2);
+            assert.strictEqual(delimiter.nextKeyMarker, key2);
             assert.deepStrictEqual(delimiter.result(), {
                 CommonPrefixes: [],
-                Delimiter: undefined,
                 IsTruncated: false,
-                NextKeyMarker: undefined,
-                NextVersionIdMarker: undefined,
                 Versions: [{
                     key: 'key1',
                     value: '{"isDeleteMarker":true}',
@@ -850,12 +804,10 @@ function getTestListing(test, data, vFormat) {
                 Versions: [],
                 Delimiter: '/',
                 IsTruncated: false,
-                NextKeyMarker: undefined,
-                NextVersionIdMarker: undefined,
             });
         });
 
-        it('should skip first version key if equal to master', () => {
+        it('should not add first version key if equal to master', () => {
             const delimiter = new DelimiterVersions({}, logger, vFormat);
             const masterKey = 'key';
             const versionKey1 = `${masterKey}${VID_SEP}version1`;
@@ -872,7 +824,7 @@ function getTestListing(test, data, vFormat) {
             assert.strictEqual(delimiter.filter({
                 key: getListingKey(versionKey1, vFormat),
                 value: '{"versionId":"version1"}',
-            }), FILTER_SKIP);
+            }), FILTER_ACCEPT);
 
             /* Filter the version key for version2 */
             assert.strictEqual(delimiter.filter({
@@ -891,10 +843,7 @@ function getTestListing(test, data, vFormat) {
                     value: 'value2',
                     versionId: 'version2',
                 }],
-                Delimiter: undefined,
                 IsTruncated: false,
-                NextKeyMarker: undefined,
-                NextVersionIdMarker: undefined,
             });
         });
 
@@ -928,97 +877,89 @@ function getTestListing(test, data, vFormat) {
                 Versions: [],
                 Delimiter: '/',
                 IsTruncated: false,
-                NextKeyMarker: undefined,
-                NextVersionIdMarker: undefined,
             });
         });
 
-        it('should accept a PHD version as first input', () => {
-            const delimiter = new DelimiterVersions({}, logger, vFormat);
-            const keyPHD = 'keyPHD';
-            const objPHD = {
-                key: getListingKey(keyPHD, vFormat),
-                value: Version.generatePHDVersion(generateVersionId('', '')),
-            };
+        if (vFormat === 'v0') {
+            it('should accept a PHD version as first input', () => {
+                const delimiter = new DelimiterVersions({}, logger, vFormat);
+                const keyPHD = 'keyPHD';
+                const objPHD = {
+                    key: getListingKey(keyPHD, vFormat),
+                    value: Version.generatePHDVersion(generateVersionId('', '')),
+                };
 
-            /* When filtered, it should return FILTER_ACCEPT and set the prvKey
-                * to undefined. It should not be added to the result content or common
-                * prefixes. */
-            assert.strictEqual(delimiter.filter(objPHD), FILTER_ACCEPT);
-            assert.strictEqual(delimiter.prvKey, undefined);
-            assert.strictEqual(delimiter.NextMarker, undefined);
-            assert.deepStrictEqual(delimiter.result(), EmptyResult);
-        });
-
-        it('should accept a PHD version', () => {
-            const delimiter = new DelimiterVersions({}, logger, vFormat);
-            const key = 'keyA';
-            const value = '';
-            const keyPHD = 'keyBPHD';
-            const objPHD = {
-                key: getListingKey(keyPHD, vFormat),
-                value: Version.generatePHDVersion(generateVersionId('', '')),
-            };
-
-            /* Filter a master version to set the NextMarker and add
-                * and element in result content. */
-            delimiter.filter({
-                key: getListingKey(key, vFormat),
-                value,
+                /* When filtered, it should return FILTER_ACCEPT and set the prvKey
+                 * to undefined. It should not be added to the result content or common
+                 * prefixes. */
+                assert.strictEqual(delimiter.filter(objPHD), FILTER_ACCEPT);
+                assert.strictEqual(delimiter.nextKeyMarker, undefined);
+                assert.deepStrictEqual(delimiter.result(), EmptyResult);
             });
 
-            /* When filtered, it should return FILTER_ACCEPT. It
-                * should not be added to the result content or common
-                * prefixes. */
-            assert.strictEqual(delimiter.filter(objPHD), FILTER_ACCEPT);
-            assert.strictEqual(delimiter.prvKey, undefined);
-            assert.strictEqual(delimiter.NextMarker, key);
-            assert.deepStrictEqual(delimiter.result(), {
-                CommonPrefixes: [],
-                Versions: [{
-                    key: 'keyA',
-                    value: '',
-                    versionId: 'null',
-                }],
-                Delimiter: undefined,
-                IsTruncated: false,
-                NextKeyMarker: undefined,
-                NextVersionIdMarker: undefined,
+            it('should accept a PHD version', () => {
+                const delimiter = new DelimiterVersions({}, logger, vFormat);
+                const key = 'keyA';
+                const value = '';
+                const keyPHD = 'keyBPHD';
+                const objPHD = {
+                    key: getListingKey(keyPHD, vFormat),
+                    value: Version.generatePHDVersion(generateVersionId('', '')),
+                };
+
+                /* Filter a master version to set the NextMarker and add
+                 * and element in result content. */
+                delimiter.filter({
+                    key: getListingKey(key, vFormat),
+                    value,
+                });
+
+                /* When filtered, it should return FILTER_ACCEPT. It
+                 * should not be added to the result content or common
+                 * prefixes. */
+                assert.strictEqual(delimiter.filter(objPHD), FILTER_ACCEPT);
+                assert.strictEqual(delimiter.nextKeyMarker, key);
+                assert.deepStrictEqual(delimiter.result(), {
+                    CommonPrefixes: [],
+                    Versions: [{
+                        key: 'keyA',
+                        value: '',
+                        versionId: 'null',
+                    }],
+                    IsTruncated: false,
+                });
             });
-        });
 
-        it('should accept a version after a PHD', () => {
-            const delimiter = new DelimiterVersions({}, logger, vFormat);
-            const masterKey = 'key';
-            const keyVersion = `${masterKey}${VID_SEP}version`;
-            const value = '';
-            const objPHD = {
-                key: getListingKey(masterKey, vFormat),
-                value: Version.generatePHDVersion(generateVersionId('', '')),
-            };
+            it('should accept a version after a PHD', () => {
+                const delimiter = new DelimiterVersions({}, logger, vFormat);
+                const masterKey = 'key';
+                const keyVersion = `${masterKey}${VID_SEP}version`;
+                const value = '';
+                const objPHD = {
+                    key: getListingKey(masterKey, vFormat),
+                    value: Version.generatePHDVersion(generateVersionId('', '')),
+                };
 
-            /* Filter the PHD object. */
-            delimiter.filter(objPHD);
+                /* Filter the PHD object. */
+                delimiter.filter(objPHD);
 
-            /* The filtering of the PHD object has no impact, the version is
-                * accepted and added to the result. */
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(keyVersion, vFormat),
-                value,
-            }), FILTER_ACCEPT);
-            assert.strictEqual(delimiter.NextMarker, masterKey);
-            assert.deepStrictEqual(delimiter.result(), {
-                CommonPrefixes: [],
-                Versions: [{
-                    key: 'key',
-                    value: '',
-                    versionId: 'version',
-                }],
-                Delimiter: undefined,
-                IsTruncated: false,
-                NextKeyMarker: undefined,
-                NextVersionIdMarker: undefined,
+                /* The filtering of the PHD object has no impact, the version is
+                 * accepted and added to the result. */
+                assert.strictEqual(delimiter.filter({
+                    key: getListingKey(keyVersion, vFormat),
+                    value,
+                }), FILTER_ACCEPT);
+                assert.strictEqual(delimiter.nextKeyMarker, masterKey);
+                assert.deepStrictEqual(delimiter.result(), {
+                    CommonPrefixes: [],
+                    Versions: [{
+                        key: 'key',
+                        value: '',
+                        versionId: 'version',
+                    }],
+                    IsTruncated: false,
+                });
             });
-        });
+        }
     });
 });
