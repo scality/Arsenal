@@ -90,6 +90,37 @@ describe('LifecycleUtils::getApplicableRules', () => {
             res.NoncurrentVersionExpiration.NoncurrentDays, 3);
     });
 
+    it('should return earliest applicable rules', () => {
+        const filteredRules = [
+            new LifecycleRule().addID('task-1').addExpiration('Date', FUTURE)
+                .build(),
+            new LifecycleRule().addID('task-2').addAbortMPU(18).build(),
+            new LifecycleRule().addID('task-3').addExpiration('Date', PAST)
+                .build(),
+            new LifecycleRule().addID('task-4')
+                .addNCVExpiration('NoncurrentDays', 3)
+                .addNCVExpiration('NewerNoncurrentVersions', 5).build(),
+            new LifecycleRule().addID('task-5')
+                .addNCVExpiration('NoncurrentDays', 12)
+                .addNCVExpiration('NewerNoncurrentVersions', 10).build(),
+            new LifecycleRule().addID('task-6').addExpiration('Date', CURRENT)
+                .build(),
+            new LifecycleRule().addID('task-7').addNCVExpiration(7).build(),
+            new LifecycleRule().addID('task-8').addAbortMPU(4).build(),
+            new LifecycleRule().addID('task-9').addAbortMPU(22).build(),
+        ];
+
+        const res = lutils.getApplicableRules(filteredRules);
+        assert.deepStrictEqual(Object.keys(res.Expiration), ['ID', 'Date']);
+        assert.deepStrictEqual(res.Expiration, { ID: 'task-3', Date: PAST });
+        assert.strictEqual(
+            res.AbortIncompleteMultipartUpload.DaysAfterInitiation, 4);
+        assert.strictEqual(
+            res.NoncurrentVersionExpiration.NoncurrentDays, 3);
+        assert.strictEqual(
+            res.NoncurrentVersionExpiration.NewerNoncurrentVersions, 5);
+    });
+
     it('should return Transition with Days', () => {
         const applicableRules = [
             new LifecycleRule()

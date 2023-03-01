@@ -207,6 +207,7 @@ export default class LifecycleUtils {
                 // Names are long, so obscuring a bit
                 const ncve = 'NoncurrentVersionExpiration';
                 const ncd = 'NoncurrentDays';
+                const nncv = 'NewerNoncurrentVersions';
 
                 if (!store[ncve]) {
                     store[ncve] = {};
@@ -214,6 +215,7 @@ export default class LifecycleUtils {
                 if (!store[ncve][ncd] || rule[ncve][ncd] < store[ncve][ncd]) {
                     store[ncve].ID = rule.ID;
                     store[ncve][ncd] = rule[ncve][ncd];
+                    store[ncve][nncv] = rule[ncve][nncv];
                 }
             }
             if (rule.AbortIncompleteMultipartUpload
