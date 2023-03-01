@@ -55,7 +55,6 @@ export default class LifecycleRule {
             rule.Expiration = this.expiration;
         }
         if (this.ncvExpiration) {
-            console.log(this.ncvExpiration);
             rule.NoncurrentVersionExpiration = this.ncvExpiration
         }
         if (this.abortMPU) {
