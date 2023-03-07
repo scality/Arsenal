@@ -231,7 +231,7 @@ describe('MongoClientInterface::metadata.listLifecycleObject::current', () => {
             assert.strictEqual(data.Contents[0].key, 'pfx1-test-object');
             assert.strictEqual(data.NextKeyMarker, 'pfx1-test-object');
 
-            params.keyMarker = 'pfx1-test-object';
+            params.marker = 'pfx1-test-object';
 
             return metadata.listLifecycleObject(BUCKET_NAME, params, logger, (err, data) => {
                 assert.deepStrictEqual(err, null);
@@ -263,7 +263,7 @@ describe('MongoClientInterface::metadata.listLifecycleObject::current', () => {
     it('Should list the following current versions of objects', done => {
         const params = {
             listingType: 'DelimiterCurrent',
-            keyMarker: 'pfx2-test-object',
+            marker: 'pfx2-test-object',
         };
         return metadata.listLifecycleObject(BUCKET_NAME, params, logger, (err, data) => {
             assert.deepStrictEqual(err, null);
