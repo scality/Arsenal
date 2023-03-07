@@ -75,4 +75,16 @@ describe('MongoClientInterface::metadata.listLifecycleObject::global', () => {
             return done();
         });
     });
+
+    it('Should return error listing non-current versions if v0 key format', done => {
+        const params = {
+            listingType: 'DelimiterNonCurrent',
+        };
+        return metadata.listLifecycleObject(BUCKET_NAME, params, logger, (err, data) => {
+            assert(err.NotImplemented);
+            assert(!data);
+
+            return done();
+        });
+    });
 });
