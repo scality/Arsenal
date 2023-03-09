@@ -1,0 +1,50 @@
+digraph {
+  node [shape="box",style="filled,rounded",fontsize=16,fixedsize=true,width=3];
+  edge [fontsize=14];
+  rankdir=TB;
+
+  START [shape="circle",width=0.2,label="",style="filled",fillcolor="black"]
+  END [shape="circle",width=0.2,label="",style="filled",fillcolor="black",peripheries=2]
+
+  node [fillcolor="lightgrey"];
+  "NotSkipping.Idle" [label="NotSkipping",group="NotSkipping",width=4];
+  "SkippingPrefix.Idle" [label="SkippingPrefix",group="SkippingPrefix"];
+  "WaitForNullKey.Idle" [label="WaitForNullKey",group="WaitForNullKey"];
+  "SkippingVersions.Idle" [label="SkippingVersions",group="SkippingVersions"];
+
+  node [fillcolor="lightblue"];
+  "NotSkipping.Processing" [label="NotSkipping",group="NotSkipping",width=4];
+  "NotSkippingV0.Processing" [label="NotSkippingV0",group="NotSkipping",width=4];
+  "NotSkippingV1.Processing" [label="NotSkippingV1",group="NotSkipping",width=4];
+  "NotSkippingCommon.Processing" [label="NotSkippingCommon",group="NotSkipping",width=4];
+  "SkippingPrefix.Processing" [label="SkippingPrefix",group="SkippingPrefix"];
+  "WaitForNullKey.Processing" [label="WaitForNullKey",group="WaitForNullKey"];
+  "SkippingVersions.Processing" [label="SkippingVersions",group="SkippingVersions"];
+
+  START -> "WaitForNullKey.Idle" [label="[versionIdMarker != undefined]"]
+  START -> "NotSkipping.Idle" [label="[versionIdMarker == undefined]"]
+
+  "NotSkipping.Idle" -> "NotSkipping.Processing" [label="filter(key, value)"]
+  "SkippingPrefix.Idle" -> "SkippingPrefix.Processing" [label="filter(key, value)"]
+  "WaitForNullKey.Idle" -> "WaitForNullKey.Processing" [label="filter(key, value)"]
+  "SkippingVersions.Idle" -> "SkippingVersions.Processing" [label="filter(key, value)"]
+
+  "NotSkipping.Processing" -> "NotSkippingV0.Processing" [label="vFormat='v0'"]
+  "NotSkipping.Processing" -> "NotSkippingV1.Processing" [label="vFormat='v1'"]
+
+  "WaitForNullKey.Processing" -> "NotSkipping.Processing" [label="master(key) != keyMarker"]
+  "WaitForNullKey.Processing" -> "SkippingVersions.Processing" [label="master(key) == keyMarker"]
+  "NotSkippingV0.Processing" -> "SkippingPrefix.Idle" [label="[key.startsWith(<ReplayPrefix>)]\n/ prefix <- <ReplayPrefix>\n-> FILTER_SKIP"]
+  "NotSkippingV0.Processing" -> "NotSkipping.Idle" [label="[Version.isPHD(value)]\n-> FILTER_ACCEPT"]
+  "NotSkippingV0.Processing" -> "NotSkippingCommon.Processing" [label="[not key.startsWith(<ReplayPrefix>)\nand not Version.isPHD(value)]"]
+  "NotSkippingV1.Processing" -> "NotSkippingCommon.Processing" [label="[always]"]
+  "NotSkippingCommon.Processing" -> END [label="[isListableKey(key, value) and\nKeys == maxKeys]\n-> FILTER_END"]
+  "NotSkippingCommon.Processing" -> "SkippingPrefix.Idle" [label="[isListableKey(key, value) and\nnKeys < maxKeys and\nhasDelimiter(key)]\n/ prefix <- prefixOf(key)\n/ CommonPrefixes.append(prefixOf(key))\n-> FILTER_ACCEPT"]
+  "NotSkippingCommon.Processing" -> "NotSkipping.Idle" [label="[isListableKey(key, value) and\nnKeys < maxKeys and\nnot hasDelimiter(key)]\n/ Contents.append(key, versionId, value)\n-> FILTER_ACCEPT"]
+
+  "SkippingPrefix.Processing" -> "SkippingPrefix.Idle" [label="[key.startsWith(prefix)]\n-> FILTER_SKIP"]
+  "SkippingPrefix.Processing" -> "NotSkipping.Processing" [label="[not key.startsWith(prefix)]"]
+  "SkippingVersions.Processing" -> "NotSkipping.Processing" [label="master(key) !== keyMarker or \nversionId > versionIdMarker"]
+  "SkippingVersions.Processing" -> "SkippingVersions.Idle" [label="master(key) === keyMarker and \nversionId < versionIdMarker\n-> FILTER_SKIP"]
+  "SkippingVersions.Processing" -> "SkippingVersions.Idle" [label="master(key) === keyMarker and \nversionId == versionIdMarker\n-> FILTER_ACCEPT"]
+}
