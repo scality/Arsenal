@@ -5,19 +5,19 @@ import promClient from 'prom-client';
 promClient.collectDefaultMetrics();
 
 export default class ZenkoMetrics {
-    static createCounter(params: any) {
+    static createCounter(params: promClient.CounterConfiguration<string>) {
         return new promClient.Counter(params);
     }
 
-    static createGauge(params: any) {
+    static createGauge(params: promClient.GaugeConfiguration<string>) {
         return new promClient.Gauge(params);
     }
 
-    static createHistogram(params: any) {
+    static createHistogram(params: promClient.HistogramConfiguration<string>) {
         return new promClient.Histogram(params);
     }
 
-    static createSummary(params: any) {
+    static createSummary(params: promClient.SummaryConfiguration<string>) {
         return new promClient.Summary(params);
     }
 
@@ -25,7 +25,7 @@ export default class ZenkoMetrics {
         return promClient.register.getSingleMetric(name);
     }
 
-    static asPrometheus() {
+    static async asPrometheus() {
         return promClient.register.metrics();
     }
 
