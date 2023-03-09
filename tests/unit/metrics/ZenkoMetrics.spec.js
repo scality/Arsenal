@@ -65,7 +65,7 @@ describe('ZenkoMetrics', () => {
         assert.strictEqual(ZenkoMetrics.getMetric('does_not_exist'), undefined);
     });
 
-    it('should export metrics in prometheus format', () => {
+    it('should export metrics in prometheus format', async () => {
         const expectedLines = [
             '# HELP gizmo_counter Count gizmos',
             '# TYPE gizmo_counter counter',
@@ -94,8 +94,9 @@ describe('ZenkoMetrics', () => {
             'pet_counter{type="puppy"} 2',
         ];
         const lines = {};
-        ZenkoMetrics.asPrometheus().split('\n').forEach(line => {
-            lines[line.trimRight()] = true;
+        const metrics = await ZenkoMetrics.asPrometheus();
+        metrics.split('\n').forEach(line => {
+            lines[line.trimEnd()] = true;
         });
         expectedLines.forEach(expectedLine => {
             assert.notStrictEqual(
