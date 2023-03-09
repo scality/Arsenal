@@ -5447,10 +5447,10 @@ process@^0.11.10:
   resolved "https://registry.yarnpkg.com/process/-/process-0.11.10.tgz#7332300e840161bda3e69a1d1d91a7d4bc16f182"
   integrity sha512-cdGef/drWFoydD1JsMzuFf8100nZl+GT+yacc2bEced5f9Rjk4z+WtFUTBu9PhOi9j/jfmBPu0mMEY4wIdAF8A==
 
-prom-client@10.2.3:
-  version "10.2.3"
-  resolved "https://registry.yarnpkg.com/prom-client/-/prom-client-10.2.3.tgz#a51bf21c239c954a6c5be4b1361fdd380218bb41"
-  integrity sha512-Xboq5+TdUwuQtSSDRZRNnb5NprINlgQN999VqUjZxnLKydUNLeIPx6Eiahg6oJua3XBg2TGnh5Cth1s4I6+r7g==
+prom-client@14.2.0:
+  version "14.2.0"
+  resolved "https://registry.yarnpkg.com/prom-client/-/prom-client-14.2.0.tgz#ca94504e64156f6506574c25fb1c34df7812cf11"
+  integrity sha512-sF308EhTenb/pDRPakm+WgiN+VdM/T1RaHj1x+MvAuT8UiQP8JmOEbxVqtkbfR4LrvOg5n7ic01kRBDGXjYikA==
   dependencies:
     tdigest "^0.1.1"
 
