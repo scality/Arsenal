@@ -1371,7 +1371,10 @@ function getTestListing(mdParams, data, vFormat) {
             });
         });
 
-        if (vFormat === 'v0') {
+        // NOTE changed this test for Artesca (8.1) to also run PHD
+        // tests in v1 format, kept the check as is to minimize
+        // changes with 7.x branches
+        if (['v0', 'v1'].includes(vFormat)) {
             it('should accept a PHD version as first input', () => {
                 const delimiter = new DelimiterVersions({}, logger, vFormat);
                 const keyPHD = 'keyPHD';

@@ -359,6 +359,11 @@ export class DelimiterVersions extends Delimiter {
     }
 
     keyHandler_NotSkippingV1(key: string, value: string): FilterReturnValue {
+        // NOTE: this check on PHD is only useful for Artesca, S3C
+        // does not use PHDs in V1 format
+        if (Version.isPHD(value)) {
+            return FILTER_ACCEPT;
+        }
         return this.filter_onNewKey(key, value);
     }
 
