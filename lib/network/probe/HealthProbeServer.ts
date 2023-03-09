@@ -84,10 +84,11 @@ export default class HealthProbeServer extends httpServer {
     }
 
     // expose metrics to Prometheus
-    _onMetrics(_req: http.IncomingMessage, res: http.ServerResponse) {
+    async _onMetrics(_req: http.IncomingMessage, res: http.ServerResponse) {
+        const metrics = await ZenkoMetrics.asPrometheus();
         res.writeHead(200, {
             'Content-Type': ZenkoMetrics.asPrometheusContentType(),
         });
-        res.end(ZenkoMetrics.asPrometheus());
+        res.end(metrics);
     }
 }
