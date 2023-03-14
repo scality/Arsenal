@@ -22,11 +22,11 @@ function getPrefixUpperBoundary(prefix: string): string {
     return prefix;
 }
 
-function formatVersionKey(key: string, versionId: string) {
+function formatVersionKey(key: string, versionId: string): string {
     return `${key}${VID_SEP}${versionId}`;
 }
 
-function formatCacheKey(db: string, key: string) {
+function formatCacheKey(db: string, key: string): string {
     // using double VID_SEP to make sure the cache key is unique
     return `${db}${VID_SEP}${VID_SEP}${key}`;
 }
@@ -89,6 +89,7 @@ export default class VersioningRequestProcessor {
         callback: (error: ArsenalError | null, data?: any) => void,
     ) {
         const { db, key, options } = request;
+        logger.addDefaultFields({ bucket: db, key, options });
         if (options && options.versionId) {
             const versionKey = formatVersionKey(key, options.versionId);
             return this.wgm.get({ db, key: versionKey }, logger, callback);
@@ -101,8 +102,7 @@ export default class VersioningRequestProcessor {
             if (!Version.isPHD(data)) {
                 return callback(null, data);
             }
-            logger.debug('master version is a PHD, getting the latest version',
-                { db, key });
+            logger.debug('master version is a PHD, getting the latest version');
             // otherwise, need to search for the latest version
             return this.getByListing(request, logger, callback);
         });
@@ -202,7 +202,7 @@ export default class VersioningRequestProcessor {
         if (!this.enqueueGet(request, logger, callback)) {
             return null;
         }
-        logger.info('start listing latest versions', { request });
+        logger.info('start listing latest versions');
         // otherwise, search for the latest version
         const cacheKey = formatCacheKey(request.db, request.key);
         clearTimeout(this.repairing[cacheKey]);
@@ -222,14 +222,14 @@ export default class VersioningRequestProcessor {
                 return this.dequeueGet(request, null, list[0].value);
             }
             if (list.length === 1) {
-                logger.info('no other versions', { request });
+                logger.info('no other versions');
                 this.dequeueGet(request, errors.ObjNotFound);
                 return this.repairMaster(request, logger,
                     { type: 'del',
                         value: list[0].value });
             }
             // need repair
-            logger.info('update master by the latest version', { request });
+            logger.info('update master by the latest version');
             const nextValue = list[1].value;
             this.dequeueGet(request, null, nextValue);
             return this.repairMaster(request, logger,
@@ -310,14 +310,18 @@ export default class VersioningRequestProcessor {
         nextValue?: string;
     }) {
         const { db, key } = request;
-        logger.info('start repair process', { request });
+        logger.info('start repair process');
         this.writeCache.get({ db, key }, logger, (err, value) => {
             // error or the new version is not a place holder for deletion
             if (err) {
-                return logger.info('error repairing', { request, error: err });
+                if (err.is.ObjNotFound) {
+                    return logger.debug('did not repair master: PHD was deleted');
+                } else {
+                    return logger.error('error repairing', { error: err });
+                }
             }
             if (!Version.isPHD(value)) {
-                return logger.debug('master is updated already', { request });
+                return logger.debug('master is updated already');
             }
             // the latest version is the same place holder for deletion
             if (hints.value === value) {
@@ -333,6 +337,7 @@ export default class VersioningRequestProcessor {
             // The latest version is an updated place holder for deletion,
             // repeat the repair process from listing for latest versions.
             // The queue will ensure single repair process at any moment.
+            logger.info('latest version is an updated PHD');
             return this.getByListing(request, logger, () => {});
         });
     }
@@ -354,6 +359,7 @@ export default class VersioningRequestProcessor {
         callback: (error: ArsenalError | null, data?: any) => void,
     ) {
         const { db, key, value, options } = request;
+        logger.addDefaultFields({ bucket: db, key, options });
         // valid combinations of versioning options:
         // - !versioning && !versionId: normal non-versioning put
         // - versioning && !versionId: create a new version
@@ -407,6 +413,7 @@ export default class VersioningRequestProcessor {
             versionId: string,
         ) => void,
     ) {
+        logger.info('process new version put');
         // making a new versionId and a new version key
         const versionId = this.generateVersionId();
         const versionKey = formatVersionKey(request.key, versionId);
@@ -435,6 +442,7 @@ export default class VersioningRequestProcessor {
         logger: RequestLogger,
         callback: (err: ArsenalError | null, data?: any, versionId?: string) => void,
     ) {
+        logger.info('process version specific put');
         const { db, key } = request;
         // versionId is empty: update the master version
         if (request.options.versionId === '') {
@@ -469,8 +477,10 @@ export default class VersioningRequestProcessor {
         callback: (err: ArsenalError | null, data?: any) => void,
     ) {
         const { db, key, options } = request;
+        logger.addDefaultFields({ bucket: db, key, options });
         // no versioning or versioning configuration off
         if (!(options && options.versionId)) {
+            logger.info('process non-versioned delete');
             return this.writeCache.batch({ db,
                 array: [{ key, type: 'del' }] },
             logger, callback);
@@ -508,6 +518,7 @@ export default class VersioningRequestProcessor {
             versionId?: string,
         ) => void,
     ) {
+        logger.info('process version specific delete');
         const { db, key, options } = request;
         // deleting a specific version
         this.writeCache.get({ db, key }, logger, (err, data) => {
