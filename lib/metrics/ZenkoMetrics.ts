@@ -1,9 +1,5 @@
 import promClient from 'prom-client';
 
-// 'timeout' property is not needed/supported
-// https://github.com/siimon/prom-client/blob/199b7d19f8c8c34ee8653264e8dc0e57b420074f/CHANGELOG.md#1200---2020-02-20
-promClient.collectDefaultMetrics();
-
 export default class ZenkoMetrics {
     static createCounter(params: promClient.CounterConfiguration<string>) {
         return new promClient.Counter(params);
@@ -31,5 +27,9 @@ export default class ZenkoMetrics {
 
     static asPrometheusContentType() {
         return promClient.register.contentType;
+    }
+
+    static collectDefaultMetrics() {
+        return promClient.collectDefaultMetrics();
     }
 }
