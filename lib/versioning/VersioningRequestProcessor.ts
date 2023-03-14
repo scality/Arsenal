@@ -91,7 +91,8 @@ export default class VersioningRequestProcessor {
         const { db, key, options } = request;
         logger.addDefaultFields({ bucket: db, key, options });
         if (options && options.versionId) {
-            const versionKey = formatVersionKey(key, options.versionId);
+            const keyVersionId = options.versionId === 'null' ? '' : options.versionId;
+            const versionKey = formatVersionKey(key, keyVersionId);
             return this.wgm.get({ db, key: versionKey }, logger, callback);
         }
         return this.wgm.get(request, logger, (err, data) => {
@@ -207,34 +208,34 @@ export default class VersioningRequestProcessor {
         const cacheKey = formatCacheKey(request.db, request.key);
         clearTimeout(this.repairing[cacheKey]);
         delete this.repairing[cacheKey];
-        const req = { db: request.db, params: {
-            gte: request.key, lt: `${request.key}${VID_SEPPLUS}`, limit: 2 } };
-        return this.wgm.list(req, logger, (err, list) => {
-            logger.info('listing latest versions done', { err, list });
+        return this.listVersionKeys(request.db, request.key, {
+            limit: 1,
+        }, logger, (err, master, versions) => {
+            logger.info('listing latest versions done', { err, master, versions });
             if (err) {
                 return this.dequeueGet(request, err);
             }
-            // the complete list of versions is always: mst, v1, v2, ...
-            if (list.length === 0) {
+            if (!master) {
                 return this.dequeueGet(request, errors.ObjNotFound);
             }
-            if (!Version.isPHD(list[0].value)) {
-                return this.dequeueGet(request, null, list[0].value);
+            if (!Version.isPHD(master.value)) {
+                return this.dequeueGet(request, null, master.value);
             }
-            if (list.length === 1) {
+            if (versions.length === 0) {
                 logger.info('no other versions');
                 this.dequeueGet(request, errors.ObjNotFound);
                 return this.repairMaster(request, logger,
-                    { type: 'del',
-                        value: list[0].value });
+                    { type: 'del', value: master.value });
             }
             // need repair
             logger.info('update master by the latest version');
-            const nextValue = list[1].value;
-            this.dequeueGet(request, null, nextValue);
+            const next = {
+                value: versions[0].value,
+                isNullKey: versions[0].isNullKey,
+            };
+            this.dequeueGet(request, null, next.value);
             return this.repairMaster(request, logger,
-                { type: 'put', value: list[0].value,
-                    nextValue });
+                { type: 'put', value: master.value, next });
         });
     }
 
@@ -297,17 +298,21 @@ export default class VersioningRequestProcessor {
      *                           RepdConnection format { db, key
      *                           [, value][, type], method, options }
      * @param logger - logger
-     * @param hints - storing reparing hints
-     * @param hints.type - type of repair operation ('put' or 'del')
-     * @param hints.value - existing value of the master version (PHD)
-     * @param hints.nextValue - the suggested latest version
-         (for 'put')
+     * @param {object} data - storing reparing hints
+     * @param {string} data.value - existing value of the master version (PHD)
+     * @param {object} data.next - the suggested latest version
+     * @param {string} data.next.value - the suggested latest version value
+     * @param {boolean} data.next.isNullKey - whether the suggested
+     * latest version is a null key
      * @return - to finish the call
      */
-    repairMaster(request: any, logger: RequestLogger, hints: {
+    repairMaster(request: any, logger: RequestLogger, data: {
         type: 'put' | 'del';
         value: string;
-        nextValue?: string;
+        next?: {
+            value: string;
+            isNullKey: boolean;
+        };
     }) {
         const { db, key } = request;
         logger.info('start repair process');
@@ -324,13 +329,22 @@ export default class VersioningRequestProcessor {
                 return logger.debug('master is updated already');
             }
             // the latest version is the same place holder for deletion
-            if (hints.value === value) {
+            if (data.value === value) {
                 // update the latest version with the next version
+                const ops: any = [];
+                if (data.next) {
+                    ops.push({ key, value: data.next.value });
+                    // cleanup the null key if it is the new master
+                    if (data.next.isNullKey) {
+                        ops.push({ key: formatVersionKey(key, ''), type: 'del' });
+                    }
+                } else {
+                    ops.push({ key, type: 'del' });
+                }
                 const repairRequest = {
                     db,
-                    array: [
-                        { type: hints.type, key, value: hints.nextValue },
-                    ] };
+                    array: ops,
+                };
                 logger.info('replicate repair request', { repairRequest });
                 return this.writeCache.batch(repairRequest, logger, () => {});
             }
@@ -448,7 +462,16 @@ export default class VersioningRequestProcessor {
         if (request.options.versionId === '') {
             const versionId = this.generateVersionId();
             const value = Version.appendVersionId(request.value, versionId);
-            return callback(null, [{ key, value }], versionId);
+            const ops: any = [{ key, value }];
+            if (request.options.deleteNullKey) {
+                const nullKey = formatVersionKey(key, '');
+                ops.push({ key: nullKey, type: 'del' });
+            }
+            return callback(null, ops, versionId);
+        }
+        if (request.options.versionId === 'null') {
+            const nullKey = formatVersionKey(key, '');
+            return callback(null, [{ key: nullKey, value: request.value }], 'null');
         }
         // need to get the master version to check if this is the master version
         this.writeCache.get({ db, key }, logger, (err, data) => {
@@ -456,14 +479,21 @@ export default class VersioningRequestProcessor {
                 return callback(err);
             }
             const versionId = request.options.versionId;
-            const versionKey = formatVersionKey(request.key, versionId);
-            const ops = [{ key: versionKey, value: request.value }];
+            const versionKey = formatVersionKey(key, versionId);
+            const ops: any = [];
+            if (!request.options.isNull) {
+                ops.push({ key: versionKey, value: request.value });
+            }
             if (data === undefined ||
                 (Version.from(data).getVersionId() ?? '') >= versionId) {
                 // master does not exist or is not newer than put
                 // version and needs to be updated as well.
                 // Note that older versions have a greater version ID.
                 ops.push({ key: request.key, value: request.value });
+            } else if (request.options.isNull) {
+                logger.debug('create or update null key');
+                const nullKey = formatVersionKey(key, '');
+                ops.push({ key: nullKey, value: request.value });
             }
             return callback(null, ops, versionId);
         });
@@ -520,6 +550,10 @@ export default class VersioningRequestProcessor {
     ) {
         logger.info('process version specific delete');
         const { db, key, options } = request;
+        if (options.versionId === 'null') {
+            const nullKey = formatVersionKey(key, '');
+            return callback(null, [{ key: nullKey, type: 'del' }], 'null');
+        }
         // deleting a specific version
         this.writeCache.get({ db, key }, logger, (err, data) => {
             if (err && !err.is.ObjNotFound) {
@@ -527,7 +561,8 @@ export default class VersioningRequestProcessor {
             }
             // delete the specific version
             const versionId = options.versionId;
-            const versionKey = formatVersionKey(key, versionId);
+            const keyVersionId = options.isNull ? '' : versionId;
+            const versionKey = formatVersionKey(key, keyVersionId);
             const ops: any = [{ key: versionKey, type: 'del' }];
             // update the master version as PHD if it is the deleting version
             if (Version.isPHD(data) ||

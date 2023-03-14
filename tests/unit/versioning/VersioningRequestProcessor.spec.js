@@ -8,6 +8,7 @@ const WGM = require('../../../lib/versioning/WriteGatheringManager').default;
 const WriteCache = require('../../../lib/versioning/WriteCache').default;
 const VRP = require('../../../lib/versioning/VersioningRequestProcessor').default;
 const { VersioningConstants } = require('../../../lib/versioning/constants');
+const VID = require('../../../lib/versioning/VersionID');
 
 const DELAY_MIN = 1;
 const DELAY_MAX = 5;
@@ -108,6 +109,21 @@ function batch(callback) {
         setTimeout(() => vrp.put(request, logger, next), i);
     }, callback);
 }
+
+function randkey(length = 15) {
+    let key = '';
+    for (let i = 0; i < length; i++) {
+        key += String.fromCharCode(Math.floor(Math.random() * 94 + 32));
+    }
+    return key;
+}
+
+function getVersionKey(key, versionId) {
+    return `${key}\0${versionId}`;
+}
+
+const fixedVersionId = '98512315901154999993SCALI 0.2eae83fb';
+
 
 describe('test VRP', () => {
     afterEach(() => _cleanupKeyValueStore());
@@ -240,6 +256,7 @@ describe('test VRP', () => {
     });
 });
 
+
 class TestReplicator {
     constructor(expectedCalls, onLastExpectedCallCb) {
         this.expectedCalls = expectedCalls || [];
@@ -314,6 +331,287 @@ describe('test versioning request processor', () => {
         if (replicator) {
             replicator.onTestEnd();
         }
+    });
+
+    it('process versioning put request: creating new version', done => {
+        const key = randkey();
+        replicator = new TestReplicator();
+        const pro = new VRP(
+            replicator.getWriteCacheProxy(),
+            replicator.getWGMProxy(),
+            vcfg);
+        const value = '{}';
+        const options = { versioning: true };
+        const req = { db: 'dbv0', key, value, options };
+        pro.processNewVersionPut(req, logger, (err, ops, versionId) => {
+            assert.ifError(err);
+            const versionKey = getVersionKey(key, versionId);
+            const versionValue = `{"versionId":"${versionId}"}`;
+            assert.deepStrictEqual(ops, [
+                { key, value: versionValue },
+                { key: versionKey, value: versionValue },
+            ]);
+            done();
+        });
+    });
+
+    it('process version specific put request: non-deleted versionId === ""', done => {
+        const key = randkey();
+        const value = '{"foo":"bar"}';
+        const options = { versionId: '' };
+        const req = { db: 'dbv0', key, value, options };
+        replicator = new TestReplicator();
+        const pro = new VRP(
+            replicator.getWriteCacheProxy(),
+            replicator.getWGMProxy(),
+            vcfg);
+        pro.processVersionSpecificPut(req, logger, (err, ops, versionId) => {
+            assert.ifError(err);
+            const versionValue = `{"foo":"bar","versionId":"${versionId}"}`;
+            assert.deepStrictEqual(ops, [
+                { key, value: versionValue },
+            ]);
+            done();
+        });
+    });
+
+    it('process version specific put request: non-deleted versionId === "" ' +
+    'with deleteNullKey=true', done => {
+        const key = randkey();
+        const value = '{"foo":"bar"}';
+        const options = { versionId: '', deleteNullKey: true };
+        const req = { db: 'dbv0', key, value, options };
+        replicator = new TestReplicator();
+        const pro = new VRP(
+            replicator.getWriteCacheProxy(),
+            replicator.getWGMProxy(),
+            vcfg);
+        pro.processVersionSpecificPut(req, logger, (err, ops, versionId) => {
+            assert.ifError(err);
+            const versionValue = `{"foo":"bar","versionId":"${versionId}"}`;
+            assert.deepStrictEqual(ops, [
+                { key, value: versionValue },
+                { key: `${key}${VID_SEP}`, type: 'del' },
+            ]);
+            done();
+        });
+    });
+
+    it('process versioning put request: versionId="null"', done => {
+        const key = randkey();
+        const value = '{"foo":"bar"}';
+        const options = { versionId: 'null' };
+        const req = { db: 'dbv0', key, value, options };
+        replicator = new TestReplicator();
+        const pro = new VRP(
+            replicator.getWriteCacheProxy(),
+            replicator.getWGMProxy(),
+            vcfg);
+        pro.processVersionSpecificPut(req, logger, (err, ops) => {
+            assert.ifError(err);
+            assert.deepStrictEqual(ops, [
+                { key: `${key}${VID_SEP}`, value },
+            ]);
+            done();
+        });
+    });
+
+    [
+        {},
+        { isNull: false },
+        { isNull: true },
+    ].forEach(extraParams => {
+        let extraDesc = '';
+        if (extraParams.isNull !== undefined) {
+            extraDesc = ` with isNull=${extraParams.isNull.toString()}`;
+        }
+        it(`process version specific put request: latest version${extraDesc}`, done => {
+            const key = randkey();
+            const value = '{}';
+            const versionId = fixedVersionId;
+            const versionKey = getVersionKey(key, versionId);
+            const options = Object.assign({ versionId }, extraParams);
+            const req = { db: 'dbv0', key, value, options };
+            replicator = new TestReplicator([{
+                method: 'WriteCache::get',
+                request: {
+                    db: 'dbv0',
+                    key,
+                },
+                returnedValue: `{"versionId":"${versionId}"}`,
+            }]);
+            const pro = new VRP(
+                replicator.getWriteCacheProxy(),
+                replicator.getWGMProxy(),
+                vcfg);
+            pro.processVersionSpecificPut(req, logger, (err, ops, versionId) => {
+                assert.strictEqual(versionId, fixedVersionId);
+                if (extraParams.isNull) {
+                    assert.deepStrictEqual(ops, [
+                        { key, value },
+                    ]);
+                } else {
+                    assert.deepStrictEqual(ops, [
+                        { key: versionKey, value },
+                        { key, value },
+                    ]);
+                }
+                done();
+            });
+        });
+    });
+
+    it('process vFormat=v0 version specific delete request: versionId="null"', done => {
+        const key = randkey();
+        const options = { versionId: 'null' };
+        const req = { db: 'dbv0', key, type: 'del', options };
+        replicator = new TestReplicator();
+        const pro = new VRP(
+            replicator.getWriteCacheProxy(),
+            replicator.getWGMProxy(),
+            vcfg);
+        pro.processVersionSpecificDelete(req, logger, (err, ops) => {
+            assert.ifError(err);
+            assert.deepStrictEqual(ops, [
+                { key: `${key}${VID_SEP}`, type: 'del' },
+            ]);
+            done();
+        });
+    });
+
+    [
+        {},
+        { isNull: false },
+        { isNull: true },
+    ].forEach(extraParams => {
+        let extraDesc = '';
+        if (extraParams.isNull !== undefined) {
+            extraDesc = ` with isNull=${extraParams.isNull.toString()}`;
+        }
+        it(`process version specific delete request: latest version${extraDesc}`, done => {
+            const key = randkey();
+            const versionId = fixedVersionId;
+            const versionKey = getVersionKey(key, versionId);
+            const options = Object.assign({ versionId }, extraParams);
+            const req = { db: 'dbv0', key, type: 'del', options };
+            replicator = new TestReplicator([{
+                method: 'WriteCache::get',
+                request: {
+                    db: 'dbv0',
+                    key,
+                },
+                params: { getTemporaryValue: true },
+                returnedValue: `{"versionId":"${fixedVersionId}"}`,
+            }]);
+            const pro = new VRP(
+                replicator.getWriteCacheProxy(),
+                replicator.getWGMProxy(),
+                vcfg);
+            pro.processVersionSpecificDelete(req, logger, (err, ops, versionId) => {
+                assert.ifError(err);
+                // expected operation array:
+                // [{ versionKey, type: 'del' },
+                //  { key, PHDVersion }]
+                assert.strictEqual(versionId, fixedVersionId);
+                assert.strictEqual(ops.length, 2);
+                if (extraParams.isNull) {
+                    const nullKey = getVersionKey(key, '');
+                    assert.deepStrictEqual(ops[0], { key: nullKey, type: 'del' });
+                } else {
+                    assert.deepStrictEqual(ops[0], { key: versionKey, type: 'del' });
+                }
+                assert.strictEqual(ops[1].key, key);
+                assert(Version.isPHD(ops[1].value));
+                done();
+            });
+        });
+
+        it(`process version specific delete request: non-latest version${extraDesc}`, done => {
+            const key = randkey();
+            const versionId = VID.generateVersionId(
+                Math.random().toString(16), vcfg.replicationGroupId);
+            const versionKey = getVersionKey(key, versionId);
+            const latestVersionId = VID.generateVersionId(
+                Math.random().toString(16), vcfg.replicationGroupId);
+            const options = Object.assign({ versionId }, extraParams);
+            const req = { db: 'dbv0', key, type: 'del', options };
+            replicator = new TestReplicator([{
+                method: 'WriteCache::get',
+                request: {
+                    db: 'dbv0',
+                    key,
+                },
+                params: { getTemporaryValue: true },
+                returnedValue: `{"versionId":"${latestVersionId}"}`,
+            }]);
+            const pro = new VRP(
+                replicator.getWriteCacheProxy(),
+                replicator.getWGMProxy(),
+                vcfg);
+            pro.processVersionSpecificDelete(req, logger, (err, ops, _versionId) => {
+                assert.ifError(err);
+                assert.strictEqual(_versionId, versionId);
+                if (extraParams.isNull) {
+                    const nullKey = getVersionKey(key, '');
+                    assert.deepStrictEqual(ops, [
+                        { key: nullKey, type: 'del' },
+                    ]);
+                } else {
+                    assert.deepStrictEqual(ops, [
+                        { key: versionKey, type: 'del' },
+                    ]);
+                }
+                done();
+            });
+        });
+    });
+
+    it('get: with versionId', done => {
+        const key = randkey();
+        replicator = new TestReplicator([{
+            method: 'WGM::get',
+            request: {
+                db: 'dbv0',
+                key: `${key}${VID_SEP}${fixedVersionId}`,
+            },
+            params: null,
+            returnedValue: `{"versionId":"${fixedVersionId}"}`,
+        }]);
+        const pro = new VRP(
+            replicator.getWriteCacheProxy(),
+            replicator.getWGMProxy(),
+            vcfg);
+        const options = { versionId: fixedVersionId };
+        const req = { db: 'dbv0', key, options };
+        pro.get(req, logger, (err, data) => {
+            assert.ifError(err);
+            assert.strictEqual(data.indexOf(fixedVersionId) !== -1, true);
+            done();
+        });
+    });
+
+    it('get: with versionId="null"', done => {
+        const key = randkey();
+        replicator = new TestReplicator([{
+            method: 'WGM::get',
+            request: {
+                db: 'dbv0',
+                key: `${key}${VID_SEP}`,
+            },
+            params: null,
+            returnedValue: `{"versionId":"${fixedVersionId}"}`,
+        }]);
+        const pro = new VRP(
+            replicator.getWriteCacheProxy(),
+            replicator.getWGMProxy(),
+            vcfg);
+        const options = { versionId: 'null' };
+        const req = { db: 'dbv0', key, options };
+        pro.get(req, logger, (err, data) => {
+            assert.ifError(err);
+            assert.strictEqual(data.indexOf(fixedVersionId) !== -1, true);
+            done();
+        });
     });
 
     describe('listVersionKeys helper', () => {
