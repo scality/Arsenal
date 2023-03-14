@@ -109,6 +109,76 @@ export default class VersioningRequestProcessor {
     }
 
     /**
+     * Helper that lists version keys for a certain object key,
+     * sorted by version ID. If a null key exists for this object, it is
+     * sorted at the appropriate position by its internal version ID and
+     * its key will be appended its internal version ID.
+     *
+     * @param {string} db - bucket name
+     * @param {string} key - object key
+     * @param {object} [options] - options object
+     * @param {number} [options.limit] - max version keys returned
+     * (returns all object version keys if not specified)
+     * @param {object} logger - logger of the request
+     * @param {function} callback - callback(err, {object|null} master, {array} versions)
+     *                              master: { key, value }
+     *                              versions: [{ key, value }, ...]
+     * @return {undefined}
+     */
+    listVersionKeys(db, key, options, logger, callback) {
+        const { limit } = options || {};
+        const listingParams: any = {};
+        let nullKeyLength;
+        // include master key in v0 listing
+        listingParams.gte = key;
+        listingParams.lt = `${key}${VID_SEPPLUS}`;
+        if (limit !== undefined) {
+            // may have to skip master + null key, so 2 extra to list in the worst case
+            listingParams.limit = limit + 2;
+        }
+        nullKeyLength = key.length + 1;
+        return this.wgm.list({
+            db,
+            params: listingParams,
+        }, logger, (err, rawVersions) => {
+            if (err) {
+                return callback(err);
+            }
+            if (rawVersions.length === 0) {
+                // object does not have any version key
+                return callback(null, null, []);
+            }
+            let versions = rawVersions;
+            let master;
+            // in v0 there is always a master key before versions
+            master = versions.shift();
+            if (versions.length === 0) {
+                return callback(null, master, []);
+            }
+            const firstItem = versions[0];
+            if (firstItem.key.length === nullKeyLength) {
+                // first version is the null key
+                const nullVersion = Version.from(firstItem.value);
+                const nullVersionKey = formatVersionKey(key, <string> nullVersion.getVersionId());
+                // find null key's natural versioning order in the list
+                let nullPos = versions.findIndex(item => item.key > nullVersionKey);
+                if (nullPos === -1) {
+                    nullPos = versions.length;
+                }
+                // move null key at the correct position and append its real version ID to the key
+                versions = versions.slice(1, nullPos)
+                    .concat([{ key: nullVersionKey, value: firstItem.value, isNullKey: true }])
+                    .concat(versions.slice(nullPos));
+            }
+            if (limit !== undefined) {
+                // truncate versions to 'limit' entries
+                versions.splice(limit);
+            }
+            return callback(null, master, versions);
+        });
+    }
+
+    /**
      * Get the latest version of an object when the master version is a place
      * holder for deletion. For any given pair of db and key, only a
      * single process is performed at any moment. Subsequent get-by-listing
