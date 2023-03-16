@@ -776,6 +776,47 @@ describe('MongoClientInterface, tests', () => {
             next => client.deleteBucket(bucketName, logger, next),
         ], done);
     });
+
+    const bucketName = 'test-bucket';
+    const capabilityName = 'testCapability';
+    const capabilityField = 'testField';
+    const capabilityValue = { key: 'value' };
+
+    it('should add a capability to a bucket', done => {
+        async.waterfall([
+            next => createBucket(client, bucketName, false, err => next(err)),
+            next => client.putBucketAttributesCapabilities(
+                bucketName, capabilityName, capabilityField, capabilityValue, logger, err => next(err)),
+            next => client.getBucketAttributes(bucketName, logger, (err, bucketInfo) => {
+                if (err) {
+                    return next(err);
+                }
+                const capabilities = bucketInfo._capabilities || {};
+                assert.deepStrictEqual(capabilities[capabilityName][capabilityField], capabilityValue);
+                return next();
+            }),
+            next => client.deleteBucket(bucketName, logger, err => next(err)),
+        ], done);
+    });
+
+    it('should delete a capability from a bucket', done => {
+        async.waterfall([
+            next => createBucket(client, bucketName, false, err => next(err)),
+            next => client.putBucketAttributesCapabilities(
+                bucketName, capabilityName, capabilityField, capabilityValue, logger, err => next(err)),
+            next => client.deleteBucketAttributesCapability(
+                bucketName, capabilityName, capabilityField, logger, err => next(err)),
+            next => client.getBucketAttributes(bucketName, logger, (err, bucketInfo) => {
+                if (err) {
+                    return next(err);
+                }
+                const capabilities = bucketInfo._capabilities || {};
+                assert(!capabilities[capabilityName][capabilityField]);
+                return next();
+            }),
+            next => client.deleteBucket(bucketName, logger, err => next(err)),
+        ], done);
+    });
 });
 
 describe('MongoClientInterface, updateDeleteMaster', () => {
