@@ -56,9 +56,10 @@ export type ObjectMDData = {
     acl: ACL;
     key: string;
     location: null | Location[];
-    // versionId, isNull, nullVersionId and isDeleteMarker
+    // versionId, isNull, isNull2, nullVersionId and isDeleteMarker
     // should be undefined when not set explicitly
     isNull?: boolean;
+    isNull2?: boolean;
     nullVersionId?: string;
     nullUploadId?: string;
     isDeleteMarker?: boolean;
@@ -180,6 +181,7 @@ export default class ObjectMD {
             // versionId, isNull, nullVersionId and isDeleteMarker
             // should be undefined when not set explicitly
             isNull: undefined,
+            isNull2: undefined,
             nullVersionId: undefined,
             nullUploadId: undefined,
             isDeleteMarker: undefined,
@@ -690,6 +692,31 @@ export default class ObjectMD {
      */
     getIsNull() {
         return this._data.isNull || false;
+    }
+
+    /**
+     * Set metadata isNull2 value
+     *
+     * @param isNull2 - Whether new version is null or not AND has
+     * been put with a Cloudserver handling null keys (i.e. supporting
+     * S3C-7352)
+
+     * @return itself
+     */
+    setIsNull2(isNull2: boolean) {
+        this._data.isNull2 = isNull2;
+        return this;
+    }
+
+    /**
+     * Get metadata isNull2 value
+     *
+     * @return isNull2 - Whether new version is null or not AND has
+     * been put with a Cloudserver handling null keys (i.e. supporting
+     * S3C-7352)
+     */
+    getIsNull2() {
+        return this._data.isNull2 || false;
     }
 
     /**
