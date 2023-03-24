@@ -141,6 +141,7 @@ export const supportedNotificationEvents = new Set([
     's3:ObjectRestore:Post',
     's3:ObjectRestore:Completed',
     's3:ObjectRestore:Delete',
+    's3:LifecycleTransition'
 ]);
 export const notificationArnPrefix = 'arn:scality:bucketnotif';
 // HTTP server keep-alive timeout is set to a higher value than
