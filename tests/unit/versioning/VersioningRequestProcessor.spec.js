@@ -6,7 +6,8 @@ const Version = require('../../../lib/versioning/Version').Version;
 const errors = require('../../../lib/errors').default;
 const WGM = require('../../../lib/versioning/WriteGatheringManager').default;
 const WriteCache = require('../../../lib/versioning/WriteCache').default;
-const VSP = require('../../../lib/versioning/VersioningRequestProcessor').default;
+const VRP = require('../../../lib/versioning/VersioningRequestProcessor').default;
+const { VersioningConstants } = require('../../../lib/versioning/constants');
 
 const DELAY_MIN = 1;
 const DELAY_MAX = 5;
@@ -17,12 +18,30 @@ function batchDelayGen() {
     return Math.floor(Math.random() * (DELAY_MAX - DELAY_MIN) + DELAY_MIN);
 }
 
+/**
+ * Increment the charCode of the last character of a valid string.
+ *
+ * @param {string} str - the input string
+ * @return {string} - the incremented string
+ *                    or the input if it is not valid
+ */
+function inc(str) {
+    return str ? (str.slice(0, str.length - 1) +
+            String.fromCharCode(str.charCodeAt(str.length - 1) + 1)) : str;
+}
+
+const VID_SEP = VersioningConstants.VersionId.Separator;
+const VID_SEPPLUS = inc(VID_SEP);
+
 const logger = {
     info: () => {},
     debug: () => {},
     error: () => {},
+    addDefaultFields: () => {},
     getSerializedUids: () => 'foo',
 };
+
+const vcfg = { replicationGroupId: 'PARIS' };
 
 let keyValueStore = {};
 
@@ -76,7 +95,7 @@ const dbapi = {
 };
 const wgm = new WGM(dbapi);
 const writeCache = new WriteCache(wgm);
-const vsp = new VSP(writeCache, wgm, { replicationGroupId: 'PARIS' });
+const vrp = new VRP(writeCache, wgm, vcfg);
 
 function batch(callback) {
     async.times(OP_COUNT, (i, next) => {
@@ -86,11 +105,11 @@ function batch(callback) {
             value: '{"qux":"quz"}',
             options: { versioning: true },
         };
-        setTimeout(() => vsp.put(request, logger, next), i);
+        setTimeout(() => vrp.put(request, logger, next), i);
     }, callback);
 }
 
-describe('test VSP', () => {
+describe('test VRP', () => {
     afterEach(() => _cleanupKeyValueStore());
 
     it('should run a batch of operations correctly', done => {
@@ -108,7 +127,7 @@ describe('test VSP', () => {
         const getRequest = { db: 'foo', key: 'bar' };
         async.waterfall([
             callback => async.times(OP_COUNT, (i, next) =>
-                vsp.put(putRequest, logger, next), (err, res) => {
+                vrp.put(putRequest, logger, next), (err, res) => {
                 assert.strictEqual(err, null);
                 const vidCount = res.sort().reverse().length;
                 assert.strictEqual(vidCount, OP_COUNT);
@@ -119,7 +138,7 @@ describe('test VSP', () => {
             (latestVID, nextVID, callback) => {
                 const deleteRequest = { db: 'foo', key: 'bar',
                     options: { versionId: latestVID }, type: 'del' };
-                vsp.del(deleteRequest, logger, err => {
+                vrp.del(deleteRequest, logger, err => {
                     assert.strictEqual(err, null);
                     callback(null, nextVID);
                 });
@@ -134,7 +153,7 @@ describe('test VSP', () => {
                 // we do not need to wait the scheduled repair
                 callback(null, nextVID);
             }),
-            (nextVID, callback) => vsp.get(getRequest, logger, (err, res) => {
+            (nextVID, callback) => vrp.get(getRequest, logger, (err, res) => {
                 assert.strictEqual(err, null);
                 assert.strictEqual(Version.from(res).getVersionId(), nextVID);
                 // repairing using a get still takes time so we
@@ -161,7 +180,7 @@ describe('test VSP', () => {
                 value: '{"qux":"quz"}',
                 options: { versioning: true },
             };
-            vsp.put(request, logger, next);
+            vrp.put(request, logger, next);
         },
         (res, next) => {
             v1 = Version.from(res).getVersionId();
@@ -171,7 +190,7 @@ describe('test VSP', () => {
                 value: '{"qux":"quz2"}',
                 options: { versioning: true },
             };
-            vsp.put(request, logger, next);
+            vrp.put(request, logger, next);
         },
         (res, next) => {
             v2 = Version.from(res).getVersionId();
@@ -184,14 +203,14 @@ describe('test VSP', () => {
                 options: { versioning: true,
                     versionId: v1 },
             };
-            vsp.put(request, logger, next);
+            vrp.put(request, logger, next);
         },
         (res, next) => {
             const request = {
                 db: 'foo',
                 key: 'bar',
             };
-            vsp.get(request, logger, next);
+            vrp.get(request, logger, next);
         },
         (res, next) => {
             assert.strictEqual(JSON.parse(res).qux, 'quz2');
@@ -204,19 +223,376 @@ describe('test VSP', () => {
                 options: { versioning: true,
                     versionId: v2 },
             };
-            vsp.put(request, logger, next);
+            vrp.put(request, logger, next);
         },
         (res, next) => {
             const request = {
                 db: 'foo',
                 key: 'bar',
             };
-            vsp.get(request, logger, next);
+            vrp.get(request, logger, next);
         },
         (res, next) => {
             assert.strictEqual(JSON.parse(res).qux, 'quz2.1');
             next();
         }],
         done);
+    });
+});
+
+class TestReplicator {
+    constructor(expectedCalls, onLastExpectedCallCb) {
+        this.expectedCalls = expectedCalls || [];
+        this.testEnded = false;
+        this.onLastExpectedCallCb = onLastExpectedCallCb;
+    }
+
+    getWriteCacheProxy() {
+        return {
+            get: this.writeCacheGet.bind(this),
+            batch: this.writeCacheBatch.bind(this),
+        };
+    }
+
+    getWGMProxy() {
+        return {
+            get: this.wgmGet.bind(this),
+            list: this.wgmList.bind(this),
+        };
+    }
+
+    _onCalled(method, request, callback) {
+        if (this.testEnded) {
+            return undefined;
+        }
+        const paramsDesc = JSON.stringify(request);
+        const callDesc = `replicator::${method}(${paramsDesc})`;
+        const expectedCall = this.expectedCalls.shift();
+        assert.notStrictEqual(expectedCall, undefined, `unexpected call: ${callDesc}`);
+        assert.strictEqual(method, expectedCall.method);
+        assert.deepStrictEqual(request, expectedCall.request);
+
+        if (this.onLastExpectedCallCb && this.expectedCalls.length === 0) {
+            this.onLastExpectedCallCb();
+        }
+        ++this.pendingCalls;
+        return setTimeout(
+            () => callback(expectedCall.returnedError || null, expectedCall.returnedValue),
+            expectedCall.returnDelay || 0);
+    }
+
+    writeCacheGet(request, logger, callback) {
+        this._onCalled('WriteCache::get', request, callback);
+    }
+
+    writeCacheBatch(request, logger, callback) {
+        this._onCalled('WriteCache::batch', request, callback);
+    }
+
+    wgmGet(request, logger, callback) {
+        this._onCalled('WGM::get', request, callback);
+    }
+
+    wgmList(request, logger, callback) {
+        this._onCalled('WGM::list', request, callback);
+    }
+
+    reset() {
+    }
+
+    onTestEnd() {
+        assert.deepStrictEqual(this.expectedCalls, [],
+            `missing calls: ${JSON.stringify(this.expectedCalls)}`);
+        this.testEnded = true;
+    }
+}
+
+describe('test versioning request processor', () => {
+    let replicator;
+
+    afterEach(() => {
+        if (replicator) {
+            replicator.onTestEnd();
+        }
+    });
+
+    describe('listVersionKeys helper', () => {
+        [
+            {
+                desc: 'key does not exist',
+                options: undefined,
+                expectedListParams: {
+                    gte: 'key',
+                    lt: `key${VID_SEPPLUS}`,
+                },
+                listValues: [],
+                expectedMaster: null,
+                expectedVersions: [],
+            },
+            {
+                desc: 'key does not exist',
+                options: undefined,
+                expectedListParams: {
+                    gte: 'key',
+                    lt: `key${VID_SEPPLUS}`,
+                },
+                listValues: [],
+                expectedMaster: null,
+                expectedVersions: [],
+            },
+            {
+                desc: 'master key only',
+                options: undefined,
+                expectedListParams: {
+                    gte: 'key',
+                    lt: `key${VID_SEPPLUS}`,
+                },
+                listValues: [{
+                    key: 'key',
+                    value: '{}',
+                }],
+                expectedMaster: {
+                    key: 'key',
+                    value: '{}',
+                },
+                expectedVersions: [],
+            },
+            {
+                desc: 'master key and one version key',
+                options: undefined,
+                expectedListParams: {
+                    gte: 'key',
+                    lt: `key${VID_SEPPLUS}`,
+                },
+                listValues: [{
+                    key: 'key',
+                    value: '{"versionId":"v1"}',
+                }, {
+                    key: `key${VID_SEP}v1`,
+                    value: '{"versionId":"v1"}',
+                }],
+                expectedMaster: {
+                    key: 'key',
+                    value: '{"versionId":"v1"}',
+                },
+                expectedVersions: [{
+                    key: `key${VID_SEP}v1`,
+                    value: '{"versionId":"v1"}',
+                }],
+            },
+            {
+                desc: 'master key and one version key',
+                options: {
+                    limit: 0,
+                },
+                expectedListParams: {
+                    gte: 'key',
+                    lt: `key${VID_SEPPLUS}`,
+                    limit: 2,
+                },
+                listValues: [{
+                    key: 'key',
+                    value: '{"versionId":"v1"}',
+                }, {
+                    key: `key${VID_SEP}v1`,
+                    value: '{"versionId":"v1"}',
+                }],
+                expectedMaster: {
+                    key: 'key',
+                    value: '{"versionId":"v1"}',
+                },
+                expectedVersions: [],
+            },
+            {
+                desc: 'master key and version keys',
+                options: {
+                    limit: 2,
+                },
+                expectedListParams: {
+                    gte: 'key',
+                    lt: `key${VID_SEPPLUS}`,
+                    limit: 4,
+                },
+                listValues: [{
+                    key: 'key',
+                    value: '{"versionId":"v1"}',
+                }, {
+                    key: `key${VID_SEP}v1`,
+                    value: '{"versionId":"v1"}',
+                }, {
+                    key: `key${VID_SEP}v2`,
+                    value: '{"versionId":"v2"}',
+                }, {
+                    key: `key${VID_SEP}v3`,
+                    value: '{"versionId":"v3"}',
+                }],
+                expectedMaster: {
+                    key: 'key',
+                    value: '{"versionId":"v1"}',
+                },
+                expectedVersions: [{
+                    key: `key${VID_SEP}v1`,
+                    value: '{"versionId":"v1"}',
+                }, {
+                    key: `key${VID_SEP}v2`,
+                    value: '{"versionId":"v2"}',
+                }],
+            },
+            {
+                desc: 'PHD master key and null key',
+                options: undefined,
+                expectedListParams: {
+                    gte: 'key',
+                    lt: `key${VID_SEPPLUS}`,
+                },
+                listValues: [{
+                    key: 'key',
+                    value: '{"isPHD":true}',
+                }, {
+                    key: `key${VID_SEP}`,
+                    value: '{"versionId":"v2","isNull":true}',
+                }],
+                expectedMaster: {
+                    key: 'key',
+                    value: '{"isPHD":true}',
+                },
+                expectedVersions: [{
+                    key: `key${VID_SEP}v2`,
+                    value: '{"versionId":"v2","isNull":true}',
+                    isNullKey: true,
+                }],
+            },
+            {
+                desc: 'PHD master key, versions and newest null key',
+                options: {
+                    limit: 2,
+                },
+                expectedListParams: {
+                    gte: 'key',
+                    lt: `key${VID_SEPPLUS}`,
+                    limit: 4,
+                },
+                listValues: [{
+                    key: 'key',
+                    value: '{"isPHD":true}',
+                }, {
+                    key: `key${VID_SEP}`,
+                    value: '{"versionId":"v1","isNull":true}',
+                }, {
+                    key: `key${VID_SEP}v2`,
+                    value: '{"versionId":"v2"}',
+                }, {
+                    key: `key${VID_SEP}v3`,
+                    value: '{"versionId":"v3"}',
+                }],
+                expectedMaster: {
+                    key: 'key',
+                    value: '{"isPHD":true}',
+                },
+                expectedVersions: [{
+                    key: `key${VID_SEP}v1`,
+                    value: '{"versionId":"v1","isNull":true}',
+                    isNullKey: true,
+                }, {
+                    key: `key${VID_SEP}v2`,
+                    value: '{"versionId":"v2"}',
+                }],
+            },
+            {
+                desc: 'PHD master key, versions and oldest null key',
+                options: {
+                    limit: 2,
+                },
+                expectedListParams: {
+                    gte: 'key',
+                    lt: `key${VID_SEPPLUS}`,
+                    limit: 4,
+                },
+                listValues: [{
+                    key: 'key',
+                    value: '{"isPHD":true}',
+                }, {
+                    key: `key${VID_SEP}`,
+                    value: '{"versionId":"v3","isNull":true}',
+                }, {
+                    key: `key${VID_SEP}v1`,
+                    value: '{"versionId":"v1"}',
+                }, {
+                    key: `key${VID_SEP}v2`,
+                    value: '{"versionId":"v2"}',
+                }],
+                expectedMaster: {
+                    key: 'key',
+                    value: '{"isPHD":true}',
+                },
+                expectedVersions: [{
+                    key: `key${VID_SEP}v1`,
+                    value: '{"versionId":"v1"}',
+                }, {
+                    key: `key${VID_SEP}v2`,
+                    value: '{"versionId":"v2"}',
+                }],
+            },
+            {
+                desc: 'PHD master key, versions and null key in between versions',
+                options: {
+                    limit: 2,
+                },
+                expectedListParams: {
+                    gte: 'key',
+                    lt: `key${VID_SEPPLUS}`,
+                    limit: 4,
+                },
+                listValues: [{
+                    key: 'key',
+                    value: '{"isPHD":true}',
+                }, {
+                    key: `key${VID_SEP}`,
+                    value: '{"versionId":"v2","isNull":true}',
+                }, {
+                    key: `key${VID_SEP}v1`,
+                    value: '{"versionId":"v1"}',
+                }, {
+                    key: `key${VID_SEP}v3`,
+                    value: '{"versionId":"v3"}',
+                }],
+                expectedMaster: {
+                    key: 'key',
+                    value: '{"isPHD":true}',
+                },
+                expectedVersions: [{
+                    key: `key${VID_SEP}v1`,
+                    value: '{"versionId":"v1"}',
+                }, {
+                    key: `key${VID_SEP}v2`,
+                    value: '{"versionId":"v2","isNull":true}',
+                    isNullKey: true,
+                }],
+            },
+        ].forEach(testCase => {
+            it(`${testCase.desc}, options=${JSON.stringify(testCase.options)}`,
+                done => {
+                    const db = 'dbv0';
+                    replicator = new TestReplicator([{
+                        method: 'WGM::list',
+                        request: {
+                            db,
+                            params: testCase.expectedListParams,
+                        },
+                        returnedValue: testCase.listValues,
+                    }]);
+                    const pro = new VRP(
+                        replicator.getWriteCacheProxy(),
+                        replicator.getWGMProxy(),
+                        vcfg);
+                    const { options } = testCase;
+                    pro.listVersionKeys(db, 'key', options, logger, (err, master, versions) => {
+                        assert.ifError(err);
+                        assert.deepStrictEqual(master, testCase.expectedMaster);
+                        assert.deepStrictEqual(versions, testCase.expectedVersions);
+                        done();
+                    });
+                });
+        });
     });
 });
