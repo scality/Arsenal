@@ -5,7 +5,7 @@ const { MongoMemoryReplSet } = require('mongodb-memory-server');
 const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
 const BucketInfo = require('../../../../lib/models/BucketInfo').default;
 const MetadataWrapper =
-require('../../../../lib/storage/metadata/MetadataWrapper');
+    require('../../../../lib/storage/metadata/MetadataWrapper');
 const { versioning } = require('../../../../index');
 const { BucketVersioningKeyFormat } = versioning.VersioningConstants;
 
@@ -67,22 +67,24 @@ describe('MongoClientInterface::metadata.listObject', () => {
         collection.updateMany(
             { 'value.key': key },
             { $set: { 'value.deleted': true } },
-            { upsert: false }, cb);
+            { upsert: false }).then(() => cb()).catch(err => cb(err));
     }
 
     beforeAll(done => {
-        mongoserver.waitUntilRunning().then(() => {
-            const opts = {
-                mongodb: {
-                    replicaSetHosts: 'localhost:27020',
-                    writeConcern: 'majority',
-                    replicaSet: 'rs0',
-                    readPreference: 'primary',
-                    database: DB_NAME,
-                },
-            };
-            metadata = new MetadataWrapper(IMPL_NAME, opts, null, logger);
-            metadata.setup(done);
+        mongoserver.start().then(() => {
+            mongoserver.waitUntilRunning().then(() => {
+                const opts = {
+                    mongodb: {
+                        replicaSetHosts: 'localhost:27020',
+                        writeConcern: 'majority',
+                        replicaSet: 'rs0',
+                        readPreference: 'primary',
+                        database: DB_NAME,
+                    },
+                };
+                metadata = new MetadataWrapper(IMPL_NAME, opts, null, logger);
+                metadata.setup(done);
+            });
         });
     });
 

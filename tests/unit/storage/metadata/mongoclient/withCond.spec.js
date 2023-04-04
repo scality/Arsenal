@@ -46,7 +46,7 @@ describe('MongoClientInterface:putObjectWithCond', () => {
 
     it('should fail when findOneAndUpdate fails', done => {
         const collection = {
-            findOneAndUpdate: (filter, query, params, cb) => cb(errors.InternalError),
+            findOneAndUpdate: () => Promise.reject(errors.InternalError),
         };
         sinon.stub(client, 'getCollection').callsFake(() => collection);
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null));

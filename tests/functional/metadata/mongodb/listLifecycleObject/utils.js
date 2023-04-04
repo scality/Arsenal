@@ -89,7 +89,9 @@ function flagObjectForDeletion(collection, key, cb) {
     collection.updateMany(
         { 'value.key': key },
         { $set: { 'value.deleted': true } },
-        { upsert: false }, cb);
+        { upsert: false })
+        .then(() => cb())
+        .catch(err => cb(err));
 }
 
 module.exports = {
