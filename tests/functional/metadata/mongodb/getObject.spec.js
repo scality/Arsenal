@@ -74,13 +74,7 @@ describe('MongoClientInterface::metadata.getObjectMD', () => {
             {
                 $set: { _id: mKey, value: objVal },
             },
-            { upsert: true },
-            err => {
-                if (err) {
-                    return cb(err);
-                }
-                return cb(null);
-            });
+            { upsert: true }).then(() => cb(null)).catch(err => cb(err));
     }
 
     /**
@@ -93,22 +87,24 @@ describe('MongoClientInterface::metadata.getObjectMD', () => {
         collection.updateMany(
             { 'value.key': key },
             { $set: { 'value.deleted': true } },
-            { upsert: false }, cb);
+            { upsert: false }).then(() => cb()).catch(err => cb(err));
     }
 
     beforeAll(done => {
-        mongoserver.waitUntilRunning().then(() => {
-            const opts = {
-                mongodb: {
-                    replicaSetHosts: 'localhost:27019',
-                    writeConcern: 'majority',
-                    replicaSet: 'rs0',
-                    readPreference: 'primary',
-                    database: DB_NAME,
-                },
-            };
-            metadata = new MetadataWrapper(IMPL_NAME, opts, null, logger);
-            metadata.setup(done);
+        mongoserver.start().then(() => {
+            mongoserver.waitUntilRunning().then(() => {
+                const opts = {
+                    mongodb: {
+                        replicaSetHosts: 'localhost:27019',
+                        writeConcern: 'majority',
+                        replicaSet: 'rs0',
+                        readPreference: 'primary',
+                        database: DB_NAME,
+                    },
+                };
+                metadata = new MetadataWrapper(IMPL_NAME, opts, null, logger);
+                metadata.setup(done);
+            });
         });
     });
 

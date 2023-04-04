@@ -210,7 +210,7 @@ describe('MongoClientInterface:putObjectVerCase1', () => {
 
     it('should fail when error code not 11000', done => {
         const collection = {
-            bulkWrite: (ops, params, cb) => cb(errors.InternalError),
+            bulkWrite: () => Promise.reject(errors.InternalError),
         };
         client.putObjectVerCase1(collection, 'example-bucket', 'example-object', {}, {}, logger, err => {
             assert.deepStrictEqual(err, errors.InternalError);
@@ -226,7 +226,7 @@ describe('MongoClientInterface:putObjectVerCase1', () => {
             },
         };
         const collection = {
-            bulkWrite: (ops, params, cb) => cb(error),
+            bulkWrite: () => Promise.reject(error),
         };
         client.putObjectVerCase1(collection, 'example-bucket', 'example-object', {}, {}, logger, err => {
             assert.deepStrictEqual(err, null);
@@ -242,7 +242,7 @@ describe('MongoClientInterface:putObjectVerCase1', () => {
             },
         };
         const collection = {
-            bulkWrite: (ops, params, cb) => cb(error),
+            bulkWrite: () => Promise.reject(error),
         };
         client.putObjectVerCase1(collection, 'example-bucket', 'example-object', {}, {}, logger, err => {
             assert.deepStrictEqual(err, errors.InternalError);
@@ -252,7 +252,7 @@ describe('MongoClientInterface:putObjectVerCase1', () => {
 
     it('should return version id when no error', done => {
         const collection = {
-            bulkWrite: (ops, params, cb) => cb(null),
+            bulkWrite: () => Promise.resolve(),
         };
         client.putObjectVerCase1(collection, 'example-bucket', 'example-object', {}, {}, logger, (err, res) => {
             assert.deepStrictEqual(err, null);
@@ -282,7 +282,7 @@ describe('MongoClientInterface:putObjectVerCase2', () => {
 
     it('should return new object versionId', done => {
         const collection = {
-            update: (filter, update, params, cb) => cb(null),
+            updateOne: () => Promise.resolve(),
         };
         client.putObjectVerCase2(collection, 'example-bucket', 'example-object', {}, {}, logger, (err, res) => {
             assert.deepStrictEqual(err, null);
@@ -293,7 +293,7 @@ describe('MongoClientInterface:putObjectVerCase2', () => {
 
     it('should fail when update fails', done => {
         const collection = {
-            update: (filter, update, params, cb) => cb(errors.InternalError),
+            updateOne: () => Promise.reject(errors.InternalError),
         };
         client.putObjectVerCase2(collection, 'example-bucket', 'example-object', {}, {}, logger, err => {
             assert.deepStrictEqual(err, errors.InternalError);
@@ -323,7 +323,7 @@ describe('MongoClientInterface:putObjectVerCase3', () => {
 
     it('should throw InternalError when findOne fails', done => {
         const collection = {
-            findOne: (filter, cb) => cb(errors.InternalError),
+            findOne: () => Promise.reject(errors.InternalError),
         };
         client.putObjectVerCase3(collection, 'example-bucket', 'example-object', {}, {}, logger, err => {
             assert.deepStrictEqual(err, errors.InternalError);
@@ -333,8 +333,8 @@ describe('MongoClientInterface:putObjectVerCase3', () => {
 
     it('should throw NoSuchVersion when bulkWrite fails', done => {
         const collection = {
-            findOne: (filter, cb) => cb(null, {}),
-            bulkWrite: (ops, params, cb) => cb(errors.InternalError),
+            findOne: () => Promise.resolve({}),
+            bulkWrite: () => Promise.reject(errors.InternalError),
         };
         client.putObjectVerCase3(collection, 'example-bucket', 'example-object', {}, {}, logger, err => {
             assert.deepStrictEqual(err, errors.NoSuchVersion);
@@ -347,8 +347,8 @@ describe('MongoClientInterface:putObjectVerCase3', () => {
             code: 11000,
         };
         const collection = {
-            findOne: (filter, cb) => cb(null, {}),
-            bulkWrite: (ops, params, cb) => cb(error),
+            findOne: () => Promise.resolve({}),
+            bulkWrite: () => Promise.reject(error),
         };
         client.putObjectVerCase3(collection, 'example-bucket', 'example-object', {}, {}, logger, err => {
             assert.deepStrictEqual(err, errors.InternalError);
@@ -358,8 +358,8 @@ describe('MongoClientInterface:putObjectVerCase3', () => {
 
     it('should return versionId', done => {
         const collection = {
-            findOne: (filter, cb) => cb(null, {}),
-            bulkWrite: (ops, params, cb) => cb(null),
+            findOne: () => Promise.resolve({}),
+            bulkWrite: () => Promise.resolve(),
         };
         client.putObjectVerCase3(collection, 'example-bucket', 'example-object', {}, {}, logger, (err, res) => {
             assert.deepStrictEqual(err, null);
@@ -391,8 +391,8 @@ describe('MongoClientInterface:putObjectVerCase4', () => {
     it('should return versionId', done => {
         sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[4](null, {}));
         const collection = {
-            update: (filter, update, params, cb) => cb(null),
-            bulkWrite: (ops, params, cb) => cb(null, {}),
+            updateOne: () => Promise.resolve(),
+            bulkWrite: () => Promise.resolve({}),
         };
         client.putObjectVerCase4(collection, 'example-bucket', 'example-object', {}, {}, logger, (err, res) => {
             assert.deepStrictEqual(err, null);
@@ -404,8 +404,8 @@ describe('MongoClientInterface:putObjectVerCase4', () => {
     it('should fail when update fails', done => {
         sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[4](null, {}));
         const collection = {
-            update: (filter, update, params, cb) => cb(errors.InternalError),
-            bulkWrite: (ops, params, cb) => cb(errors.InternalError),
+            updateOne: () => Promise.reject(errors.InternalError),
+            bulkWrite: () => Promise.reject(errors.InternalError),
         };
         client.putObjectVerCase4(collection, 'example-bucket', 'example-object', {}, {}, logger, err => {
             assert.deepStrictEqual(err, errors.InternalError);
@@ -416,8 +416,8 @@ describe('MongoClientInterface:putObjectVerCase4', () => {
     it('should fail when getLatestVersion fails', done => {
         sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[4](errors.InternalError));
         const collection = {
-            update: (filter, update, params, cb) => cb(null),
-            bulkWrite: (ops, params, cb) => cb(null),
+            updateOne: () => Promise.resolve(),
+            bulkWrite: () => Promise.resolve(),
         };
         client.putObjectVerCase4(collection, 'example-bucket', 'example-object', {}, {}, logger, err => {
             assert.deepStrictEqual(err, errors.InternalError);
@@ -446,7 +446,7 @@ describe('MongoClientInterface:putObjectNoVer', () => {
 
     it('should not fail', done => {
         const collection = {
-            update: (filter, update, params, cb) => cb(null, {}),
+            updateOne: () => Promise.resolve({}),
         };
         client.putObjectNoVer(collection, 'example-bucket', 'example-object', {}, {}, logger, err => {
             assert.deepStrictEqual(err, undefined);
@@ -456,7 +456,7 @@ describe('MongoClientInterface:putObjectNoVer', () => {
 
     it('should fail when update fails', done => {
         const collection = {
-            update: (filter, update, params, cb) => cb(errors.InternalError),
+            updateOne: () => Promise.reject(errors.InternalError),
         };
         client.putObjectNoVer(collection, 'example-bucket', 'example-object', {}, {}, logger, err => {
             assert.deepStrictEqual(err, errors.InternalError);

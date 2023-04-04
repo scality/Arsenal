@@ -35,18 +35,20 @@ describe('MongoClientInterface:withCond', () => {
     ];
 
     beforeAll(done => {
-        mongoserver.waitUntilRunning().then(() => {
-            const opts = {
-                mongodb: {
-                    replicaSetHosts: 'localhost:27022',
-                    writeConcern: 'majority',
-                    replicaSet: 'rs0',
-                    readPreference: 'primary',
-                    database: DB_NAME,
-                },
-            };
-            metadata = new MetadataWrapper(IMP_NAME, opts, null, logger);
-            metadata.setup(done);
+        mongoserver.start().then(() => {
+            mongoserver.waitUntilRunning().then(() => {
+                const opts = {
+                    mongodb: {
+                        replicaSetHosts: 'localhost:27022',
+                        writeConcern: 'majority',
+                        replicaSet: 'rs0',
+                        readPreference: 'primary',
+                        database: DB_NAME,
+                    },
+                };
+                metadata = new MetadataWrapper(IMP_NAME, opts, null, logger);
+                metadata.setup(done);
+            });
         });
     });
 
@@ -218,6 +220,10 @@ describe('MongoClientInterface:withCond', () => {
         });
 
         describe('::deleteObjectWithCond', () => {
+            afterEach(done => {
+                metadata.deleteBucket(BUCKET_NAME, logger, done);
+            });
+
             const tests = [
                 [
                     `should return no such key if the object does not exist ${variation.it}`,

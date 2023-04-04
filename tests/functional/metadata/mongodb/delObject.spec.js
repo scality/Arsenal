@@ -44,41 +44,37 @@ describe('MongoClientInterface::metadata.deleteObjectMD', () => {
     let collection;
 
     function getObjectCount(cb) {
-        collection.countDocuments((err, count) => {
-            if (err) {
-                cb(err);
-            }
-            cb(null, count);
-        });
+        collection.countDocuments()
+            .then(count => cb(null, count))
+            .catch(err => cb(err));
     }
 
     function getObject(key, cb) {
         collection.findOne({
             _id: key,
-        }, {}, (err, doc) => {
-            if (err) {
-                return cb(err);
-            }
+        }, {}).then(doc => {
             if (!doc) {
                 return cb(errors.NoSuchKey);
             }
             return cb(null, doc.value);
-        });
+        }).catch(err => cb(err));
     }
 
     beforeAll(done => {
-        mongoserver.waitUntilRunning().then(() => {
-            const opts = {
-                mongodb: {
-                    replicaSetHosts: 'localhost:27018',
-                    writeConcern: 'majority',
-                    replicaSet: 'rs0',
-                    readPreference: 'primary',
-                    database: DB_NAME,
-                },
-            };
-            metadata = new MetadataWrapper(IMPL_NAME, opts, null, logger);
-            metadata.setup(done);
+        mongoserver.start().then(() => {
+            mongoserver.waitUntilRunning().then(() => {
+                const opts = {
+                    mongodb: {
+                        replicaSetHosts: 'localhost:27018',
+                        writeConcern: 'majority',
+                        replicaSet: 'rs0',
+                        readPreference: 'primary',
+                        database: DB_NAME,
+                    },
+                };
+                metadata = new MetadataWrapper(IMPL_NAME, opts, null, logger);
+                metadata.setup(done);
+            });
         });
     });
 

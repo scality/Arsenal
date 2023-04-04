@@ -4,7 +4,7 @@ const werelogs = require('werelogs');
 const { MongoMemoryReplSet } = require('mongodb-memory-server');
 const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
 const MetadataWrapper =
-require('../../../../../lib/storage/metadata/MetadataWrapper');
+    require('../../../../../lib/storage/metadata/MetadataWrapper');
 const { versioning } = require('../../../../../index');
 const { BucketVersioningKeyFormat } = versioning.VersioningConstants;
 const { assertContents, makeBucketMD, putBulkObjectVersions, flagObjectForDeletion } = require('./utils');
@@ -35,19 +35,21 @@ describe('MongoClientInterface::metadata.listLifecycleObject::noncurrent', () =>
     const key3 = 'pfx3-test-object';
 
     beforeAll(done => {
-        mongoserver.waitUntilRunning().then(() => {
-            const opts = {
-                mongodb: {
-                    replicaSetHosts: 'localhost:27020',
-                    writeConcern: 'majority',
-                    replicaSet: 'rs0',
-                    readPreference: 'primary',
-                    database: DB_NAME,
-                },
-            };
-            metadata = new MetadataWrapper(IMPL_NAME, opts, null, logger);
-            metadata.client.defaultBucketKeyFormat = BucketVersioningKeyFormat.v1;
-            metadata.setup(done);
+        mongoserver.start().then(() => {
+            mongoserver.waitUntilRunning().then(() => {
+                const opts = {
+                    mongodb: {
+                        replicaSetHosts: 'localhost:27020',
+                        writeConcern: 'majority',
+                        replicaSet: 'rs0',
+                        readPreference: 'primary',
+                        database: DB_NAME,
+                    },
+                };
+                metadata = new MetadataWrapper(IMPL_NAME, opts, null, logger);
+                metadata.client.defaultBucketKeyFormat = BucketVersioningKeyFormat.v1;
+                metadata.setup(done);
+            });
         });
     });
 
@@ -818,6 +820,7 @@ describe('MongoClientInterface::metadata.listLifecycleObject::noncurrent', () =>
             next => flagObjectForDeletion(collection, 'pfx4-test-object', next),
             next => metadata.listLifecycleObject(BUCKET_NAME, params, logger, (err, data) => {
                 assert.ifError(err);
+
                 assert.strictEqual(data.IsTruncated, false);
                 assert.strictEqual(data.Contents.length, 0);
                 return next();

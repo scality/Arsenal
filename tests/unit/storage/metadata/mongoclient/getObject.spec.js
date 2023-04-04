@@ -40,7 +40,7 @@ describe('MongoClientInterface:getObjectNoVer', () => {
 
     it('should fail when findOne fails', done => {
         const collection = {
-            findOne: (filter, params, cb) => cb(errors.InternalError),
+            findOne: () => Promise.reject(errors.InternalError),
         };
         sinon.stub(client, 'getCollection').callsFake(() => collection);
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null, 'v0'));
@@ -52,7 +52,7 @@ describe('MongoClientInterface:getObjectNoVer', () => {
 
     it('should throw noSuchKey when no documents found', done => {
         const collection = {
-            findOne: (filter, params, cb) => cb(null, null),
+            findOne: () => Promise.resolve(null),
         };
         sinon.stub(client, 'getCollection').callsFake(() => collection);
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null, 'v0'));
@@ -70,7 +70,7 @@ describe('MongoClientInterface:getObjectNoVer', () => {
             },
         };
         const collection = {
-            findOne: (filter, params, cb) => cb(null, doc),
+            findOne: () => Promise.resolve(doc),
         };
         sinon.stub(client, 'getCollection').callsFake(() => collection);
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null, 'v0'));
@@ -89,7 +89,7 @@ describe('MongoClientInterface:getObjectNoVer', () => {
             },
         };
         const collection = {
-            findOne: (filter, params, cb) => cb(null, doc),
+            findOne: () => Promise.resolve(doc),
         };
         sinon.stub(client, 'getCollection').callsFake(() => collection);
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null, 'v0'));
@@ -110,7 +110,7 @@ describe('MongoClientInterface:getObjectNoVer', () => {
             },
         };
         const collection = {
-            findOne: (filter, params, cb) => cb(null, doc),
+            findOne: () => Promise.resolve(doc),
         };
         sinon.stub(client, 'getCollection').callsFake(() => collection);
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null, 'v0'));

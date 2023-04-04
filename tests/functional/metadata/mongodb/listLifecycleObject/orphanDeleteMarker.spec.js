@@ -4,7 +4,7 @@ const werelogs = require('werelogs');
 const { MongoMemoryReplSet } = require('mongodb-memory-server');
 const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
 const MetadataWrapper =
-require('../../../../../lib/storage/metadata/MetadataWrapper');
+    require('../../../../../lib/storage/metadata/MetadataWrapper');
 const { versioning } = require('../../../../../index');
 const { BucketVersioningKeyFormat } = versioning.VersioningConstants;
 const { makeBucketMD, putBulkObjectVersions } = require('./utils');
@@ -30,19 +30,21 @@ describe('MongoClientInterface::metadata.listLifecycleObject::orphan', () => {
     let metadata;
 
     beforeAll(done => {
-        mongoserver.waitUntilRunning().then(() => {
-            const opts = {
-                mongodb: {
-                    replicaSetHosts: 'localhost:27020',
-                    writeConcern: 'majority',
-                    replicaSet: 'rs0',
-                    readPreference: 'primary',
-                    database: DB_NAME,
-                },
-            };
-            metadata = new MetadataWrapper(IMPL_NAME, opts, null, logger);
-            metadata.client.defaultBucketKeyFormat = BucketVersioningKeyFormat.v1;
-            metadata.setup(done);
+        mongoserver.start().then(() => {
+            mongoserver.waitUntilRunning().then(() => {
+                const opts = {
+                    mongodb: {
+                        replicaSetHosts: 'localhost:27020',
+                        writeConcern: 'majority',
+                        replicaSet: 'rs0',
+                        readPreference: 'primary',
+                        database: DB_NAME,
+                    },
+                };
+                metadata = new MetadataWrapper(IMPL_NAME, opts, null, logger);
+                metadata.client.defaultBucketKeyFormat = BucketVersioningKeyFormat.v1;
+                metadata.setup(done);
+            });
         });
     });
 
