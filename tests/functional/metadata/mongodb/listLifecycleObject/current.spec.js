@@ -7,7 +7,7 @@ const MetadataWrapper =
 require('../../../../../lib/storage/metadata/MetadataWrapper');
 const { versioning } = require('../../../../../index');
 const { BucketVersioningKeyFormat } = versioning.VersioningConstants;
-const { flagObjectForDeletion, makeBucketMD, putBulkObjectVersions } = require('./utils');
+const { assertContents, flagObjectForDeletion, makeBucketMD, putBulkObjectVersions } = require('./utils');
 
 const IMPL_NAME = 'mongodb';
 const DB_NAME = 'metadata';
@@ -29,6 +29,9 @@ const mongoserver = new MongoMemoryReplSet({
 describe('MongoClientInterface::metadata.listLifecycleObject::current', () => {
     let metadata;
     let collection;
+    const expectedVersionIds = {};
+    const location1 = 'loc1';
+    const location2 = 'loc2';
 
     beforeAll(done => {
         mongoserver.waitUntilRunning().then(() => {
@@ -73,17 +76,20 @@ describe('MongoClientInterface::metadata.listLifecycleObject::current', () => {
                 return next();
             }),
             next => {
-                const params = {
-                    objName: 'pfx1-test-object',
-                    objVal: {
-                        key: 'pfx1-test-object',
-                        versionId: 'null',
-                    },
-                    nbVersions: 5,
+                const objName = 'pfx1-test-object';
+                const objVal = {
+                    key: 'pfx1-test-object',
+                    versionId: 'null',
+                    dataStoreName: location1,
                 };
+                const nbVersions = 5;
+
                 const timestamp = 0;
-                putBulkObjectVersions(metadata, BUCKET_NAME, params.objName, params.objVal, versionParams,
-                    params.nbVersions, timestamp, logger, next);
+                putBulkObjectVersions(metadata, BUCKET_NAME, objName, objVal, versionParams,
+                    nbVersions, timestamp, logger, (err, data) => {
+                        expectedVersionIds[objName] = data.lastVersionId;
+                        return next(err);
+                    });
                 /* eslint-disable max-len */
                 // The following versions are created:
                 // { "_id" : "Mpfx1-test-object", "value" : { "key" : "pfx1-test-object", "versionId" : "vid4", "last-modified" : "1970-01-01T00:00:00.005Z" } }
@@ -95,17 +101,19 @@ describe('MongoClientInterface::metadata.listLifecycleObject::current', () => {
                 /* eslint-enable max-len */
             },
             next => {
-                const params = {
-                    objName: 'pfx2-test-object',
-                    objVal: {
-                        key: 'pfx2-test-object',
-                        versionId: 'null',
-                    },
-                    nbVersions: 5,
+                const objName = 'pfx2-test-object';
+                const objVal = {
+                    key: 'pfx2-test-object',
+                    versionId: 'null',
+                    dataStoreName: location2,
                 };
+                const nbVersions = 5;
                 const timestamp = 2000;
-                putBulkObjectVersions(metadata, BUCKET_NAME, params.objName, params.objVal, versionParams,
-                    params.nbVersions, timestamp, logger, next);
+                putBulkObjectVersions(metadata, BUCKET_NAME, objName, objVal, versionParams,
+                    nbVersions, timestamp, logger, (err, data) => {
+                        expectedVersionIds[objName] = data.lastVersionId;
+                        return next(err);
+                    });
                 /* eslint-disable max-len */
                 // The following versions are created:
                 // { "_id" : "Mpfx2-test-object", "value" : { "key" : "pfx2-test-object", "versionId" : "vid4", "last-modified" : "1970-01-01T00:00:02.005Z" } }
@@ -117,17 +125,19 @@ describe('MongoClientInterface::metadata.listLifecycleObject::current', () => {
                 /* eslint-enable max-len */
             },
             next => {
-                const params = {
-                    objName: 'pfx3-test-object',
-                    objVal: {
-                        key: 'pfx3-test-object',
-                        versionId: 'null',
-                    },
-                    nbVersions: 5,
+                const objName = 'pfx3-test-object';
+                const objVal = {
+                    key: 'pfx3-test-object',
+                    versionId: 'null',
+                    dataStoreName: location1,
                 };
+                const nbVersions = 5;
                 const timestamp = 1000;
-                putBulkObjectVersions(metadata, BUCKET_NAME, params.objName, params.objVal, versionParams,
-                    params.nbVersions, timestamp, logger, next);
+                putBulkObjectVersions(metadata, BUCKET_NAME, objName, objVal, versionParams,
+                    nbVersions, timestamp, logger, (err, data) => {
+                        expectedVersionIds[objName] = data.lastVersionId;
+                        return next(err);
+                    });
                 /* eslint-disable max-len */
                 // The following versions are created:
                 // { "_id" : "Mpfx3-test-object", "value" : { "key" : "pfx3-test-object", "versionId" : "vid4", "last-modified" : "1970-01-01T00:00:01.005Z" } }
@@ -153,11 +163,147 @@ describe('MongoClientInterface::metadata.listLifecycleObject::current', () => {
             assert.ifError(err);
             assert.strictEqual(data.IsTruncated, false);
             assert.strictEqual(data.Contents.length, 3);
-            assert.strictEqual(data.Contents[0].key, 'pfx1-test-object');
-            assert.strictEqual(data.Contents[1].key, 'pfx2-test-object');
-            assert.strictEqual(data.Contents[2].key, 'pfx3-test-object');
+            const expected = [
+                {
+                    key: 'pfx1-test-object',
+                    LastModified: '1970-01-01T00:00:00.005Z',
+                    dataStoreName: location1,
+                    VersionId: expectedVersionIds['pfx1-test-object'],
+                },
+                {
+                    key: 'pfx2-test-object',
+                    LastModified: '1970-01-01T00:00:02.005Z',
+                    dataStoreName: location2,
+                    VersionId: expectedVersionIds['pfx2-test-object'],
+                },
+                {
+                    key: 'pfx3-test-object',
+                    LastModified: '1970-01-01T00:00:01.005Z',
+                    dataStoreName: location1,
+                    VersionId: expectedVersionIds['pfx3-test-object'],
+                },
+            ];
+            assertContents(data.Contents, expected);
 
             return done();
+        });
+    });
+
+    it('Should list current versions of objects excluding keys stored in location2', done => {
+        const params = {
+            listingType: 'DelimiterCurrent',
+            excludedDataStoreName: location2,
+        };
+        return metadata.listLifecycleObject(BUCKET_NAME, params, logger, (err, data) => {
+            assert.ifError(err);
+            assert.strictEqual(data.IsTruncated, false);
+            assert.strictEqual(data.Contents.length, 2);
+            const expected = [
+                {
+                    key: 'pfx1-test-object',
+                    LastModified: '1970-01-01T00:00:00.005Z',
+                    dataStoreName: location1,
+                    VersionId: expectedVersionIds['pfx1-test-object'],
+                },
+                {
+                    key: 'pfx3-test-object',
+                    LastModified: '1970-01-01T00:00:01.005Z',
+                    dataStoreName: location1,
+                    VersionId: expectedVersionIds['pfx3-test-object'],
+                },
+            ];
+            assertContents(data.Contents, expected);
+
+            return done();
+        });
+    });
+
+    it('Should list current versions of objects excluding keys stored in location1', done => {
+        const params = {
+            listingType: 'DelimiterCurrent',
+            excludedDataStoreName: location1,
+        };
+        return metadata.listLifecycleObject(BUCKET_NAME, params, logger, (err, data) => {
+            assert.ifError(err);
+            assert.strictEqual(data.IsTruncated, false);
+            assert.strictEqual(data.Contents.length, 1);
+            const expected = [
+                {
+                    key: 'pfx2-test-object',
+                    LastModified: '1970-01-01T00:00:02.005Z',
+                    dataStoreName: location2,
+                    VersionId: expectedVersionIds['pfx2-test-object'],
+                },
+            ];
+            assertContents(data.Contents, expected);
+
+            return done();
+        });
+    });
+
+    it('Should list current versions of objects with prefix and excluding keys stored in location2', done => {
+        const params = {
+            listingType: 'DelimiterCurrent',
+            excludedDataStoreName: location2,
+            prefix: 'pfx3',
+        };
+        return metadata.listLifecycleObject(BUCKET_NAME, params, logger, (err, data) => {
+            assert.ifError(err);
+            assert.strictEqual(data.IsTruncated, false);
+            assert.strictEqual(data.Contents.length, 1);
+            const expected = [
+                {
+                    key: 'pfx3-test-object',
+                    LastModified: '1970-01-01T00:00:01.005Z',
+                    dataStoreName: location1,
+                    VersionId: expectedVersionIds['pfx3-test-object'],
+                },
+            ];
+            assertContents(data.Contents, expected);
+
+            return done();
+        });
+    });
+
+    it('Should return trucated list of current versions excluding keys stored in location2', done => {
+        const params = {
+            listingType: 'DelimiterCurrent',
+            excludedDataStoreName: location2,
+            maxKeys: 1,
+        };
+        return metadata.listLifecycleObject(BUCKET_NAME, params, logger, (err, data) => {
+            assert.ifError(err);
+            assert.strictEqual(data.IsTruncated, true);
+            assert.strictEqual(data.Contents.length, 1);
+            assert.strictEqual(data.NextMarker, 'pfx1-test-object');
+            const expected = [
+                {
+                    key: 'pfx1-test-object',
+                    LastModified: '1970-01-01T00:00:00.005Z',
+                    dataStoreName: location1,
+                    VersionId: expectedVersionIds['pfx1-test-object'],
+                },
+            ];
+            assertContents(data.Contents, expected);
+
+            params.marker = 'pfx1-test-object';
+
+            return metadata.listLifecycleObject(BUCKET_NAME, params, logger, (err, data) => {
+                assert.ifError(err);
+                assert.strictEqual(data.IsTruncated, false);
+                assert.strictEqual(data.Contents.length, 1);
+                const expected = [
+                    {
+                        key: 'pfx3-test-object',
+                        LastModified: '1970-01-01T00:00:01.005Z',
+                        dataStoreName: location1,
+                        VersionId: expectedVersionIds['pfx3-test-object'],
+                    },
+                ];
+                assertContents(data.Contents, expected);
+
+                return done();
+            });
         });
     });
 
@@ -184,7 +330,15 @@ describe('MongoClientInterface::metadata.listLifecycleObject::current', () => {
             assert.ifError(err);
             assert.strictEqual(data.IsTruncated, false);
             assert.strictEqual(data.Contents.length, 1);
-            assert.strictEqual(data.Contents[0].key, 'pfx1-test-object');
+            const expected = [
+                {
+                    key: 'pfx1-test-object',
+                    LastModified: '1970-01-01T00:00:00.005Z',
+                    dataStoreName: location1,
+                    VersionId: expectedVersionIds['pfx1-test-object'],
+                },
+            ];
+            assertContents(data.Contents, expected);
 
             return done();
         });
@@ -199,8 +353,21 @@ describe('MongoClientInterface::metadata.listLifecycleObject::current', () => {
             assert.ifError(err);
             assert.strictEqual(data.IsTruncated, false);
             assert.strictEqual(data.Contents.length, 2);
-            assert.strictEqual(data.Contents[0].key, 'pfx1-test-object');
-            assert.strictEqual(data.Contents[1].key, 'pfx3-test-object');
+            const expected = [
+                {
+                    key: 'pfx1-test-object',
+                    LastModified: '1970-01-01T00:00:00.005Z',
+                    dataStoreName: location1,
+                    VersionId: expectedVersionIds['pfx1-test-object'],
+                },
+                {
+                    key: 'pfx3-test-object',
+                    LastModified: '1970-01-01T00:00:01.005Z',
+                    dataStoreName: location1,
+                    VersionId: expectedVersionIds['pfx3-test-object'],
+                },
+            ];
+            assertContents(data.Contents, expected);
 
             return done();
         });
@@ -215,9 +382,27 @@ describe('MongoClientInterface::metadata.listLifecycleObject::current', () => {
             assert.ifError(err);
             assert.strictEqual(data.IsTruncated, false);
             assert.strictEqual(data.Contents.length, 3);
-            assert.strictEqual(data.Contents[0].key, 'pfx1-test-object');
-            assert.strictEqual(data.Contents[1].key, 'pfx2-test-object');
-            assert.strictEqual(data.Contents[2].key, 'pfx3-test-object');
+            const expected = [
+                {
+                    key: 'pfx1-test-object',
+                    LastModified: '1970-01-01T00:00:00.005Z',
+                    dataStoreName: location1,
+                    VersionId: expectedVersionIds['pfx1-test-object'],
+                },
+                {
+                    key: 'pfx2-test-object',
+                    LastModified: '1970-01-01T00:00:02.005Z',
+                    dataStoreName: location2,
+                    VersionId: expectedVersionIds['pfx2-test-object'],
+                },
+                {
+                    key: 'pfx3-test-object',
+                    LastModified: '1970-01-01T00:00:01.005Z',
+                    dataStoreName: location1,
+                    VersionId: expectedVersionIds['pfx3-test-object'],
+                },
+            ];
+            assertContents(data.Contents, expected);
 
             return done();
         });
@@ -233,8 +418,16 @@ describe('MongoClientInterface::metadata.listLifecycleObject::current', () => {
             assert.ifError(err);
             assert.strictEqual(data.IsTruncated, true);
             assert.strictEqual(data.Contents.length, 1);
-            assert.strictEqual(data.Contents[0].key, 'pfx1-test-object');
             assert.strictEqual(data.NextMarker, 'pfx1-test-object');
+            const expected = [
+                {
+                    key: 'pfx1-test-object',
+                    LastModified: '1970-01-01T00:00:00.005Z',
+                    dataStoreName: location1,
+                    VersionId: expectedVersionIds['pfx1-test-object'],
+                },
+            ];
+            assertContents(data.Contents, expected);
 
             params.marker = 'pfx1-test-object';
 
@@ -242,7 +435,15 @@ describe('MongoClientInterface::metadata.listLifecycleObject::current', () => {
                 assert.ifError(err);
                 assert.strictEqual(data.IsTruncated, false);
                 assert.strictEqual(data.Contents.length, 1);
-                assert.strictEqual(data.Contents[0].key, 'pfx3-test-object');
+                const expected = [
+                    {
+                        key: 'pfx3-test-object',
+                        LastModified: '1970-01-01T00:00:01.005Z',
+                        dataStoreName: location1,
+                        VersionId: expectedVersionIds['pfx3-test-object'],
+                    },
+                ];
+                assertContents(data.Contents, expected);
 
                 return done();
             });
@@ -259,8 +460,21 @@ describe('MongoClientInterface::metadata.listLifecycleObject::current', () => {
             assert.strictEqual(data.IsTruncated, true);
             assert.strictEqual(data.NextMarker, 'pfx2-test-object');
             assert.strictEqual(data.Contents.length, 2);
-            assert.strictEqual(data.Contents[0].key, 'pfx1-test-object');
-            assert.strictEqual(data.Contents[1].key, 'pfx2-test-object');
+            const expected = [
+                {
+                    key: 'pfx1-test-object',
+                    LastModified: '1970-01-01T00:00:00.005Z',
+                    dataStoreName: location1,
+                    VersionId: expectedVersionIds['pfx1-test-object'],
+                },
+                {
+                    key: 'pfx2-test-object',
+                    LastModified: '1970-01-01T00:00:02.005Z',
+                    dataStoreName: location2,
+                    VersionId: expectedVersionIds['pfx2-test-object'],
+                },
+            ];
+            assertContents(data.Contents, expected);
 
             return done();
         });
@@ -275,7 +489,15 @@ describe('MongoClientInterface::metadata.listLifecycleObject::current', () => {
             assert.ifError(err);
             assert.strictEqual(data.IsTruncated, false);
             assert.strictEqual(data.Contents.length, 1);
-            assert.strictEqual(data.Contents[0].key, 'pfx3-test-object');
+            const expected = [
+                {
+                    key: 'pfx3-test-object',
+                    LastModified: '1970-01-01T00:00:01.005Z',
+                    dataStoreName: location1,
+                    VersionId: expectedVersionIds['pfx3-test-object'],
+                },
+            ];
+            assertContents(data.Contents, expected);
 
             return done();
         });
@@ -290,7 +512,15 @@ describe('MongoClientInterface::metadata.listLifecycleObject::current', () => {
             assert.ifError(err);
             assert.strictEqual(data.IsTruncated, false);
             assert.strictEqual(data.Contents.length, 1);
-            assert.strictEqual(data.Contents[0].key, 'pfx2-test-object');
+            const expected = [
+                {
+                    key: 'pfx2-test-object',
+                    LastModified: '1970-01-01T00:00:02.005Z',
+                    dataStoreName: location2,
+                    VersionId: expectedVersionIds['pfx2-test-object'],
+                },
+            ];
+            assertContents(data.Contents, expected);
 
             return done();
         });
@@ -307,7 +537,15 @@ describe('MongoClientInterface::metadata.listLifecycleObject::current', () => {
             assert.ifError(err);
             assert.strictEqual(data.IsTruncated, false);
             assert.strictEqual(data.Contents.length, 1);
-            assert.strictEqual(data.Contents[0].key, 'pfx1-test-object');
+            const expected = [
+                {
+                    key: 'pfx1-test-object',
+                    LastModified: '1970-01-01T00:00:00.005Z',
+                    dataStoreName: location1,
+                    VersionId: expectedVersionIds['pfx1-test-object'],
+                },
+            ];
+            assertContents(data.Contents, expected);
 
             return done();
         });
@@ -328,12 +566,30 @@ describe('MongoClientInterface::metadata.listLifecycleObject::current', () => {
             next => metadata.putObjectMD(BUCKET_NAME, objVal.key, objVal, versionParams,
                 logger, next),
             next => metadata.deleteObjectMD(BUCKET_NAME, objVal.key, null, logger, next),
-            next => metadata.listObject(BUCKET_NAME, params, logger, (err, data) => {
+            next => metadata.listLifecycleObject(BUCKET_NAME, params, logger, (err, data) => {
                 assert.ifError(err);
                 assert.strictEqual(data.Contents.length, 3);
-                assert.strictEqual(data.Contents[0].key, 'pfx1-test-object');
-                assert.strictEqual(data.Contents[1].key, 'pfx2-test-object');
-                assert.strictEqual(data.Contents[2].key, 'pfx3-test-object');
+                const expected = [
+                    {
+                        key: 'pfx1-test-object',
+                        LastModified: '1970-01-01T00:00:00.005Z',
+                        dataStoreName: location1,
+                        VersionId: expectedVersionIds['pfx1-test-object'],
+                    },
+                    {
+                        key: 'pfx2-test-object',
+                        LastModified: '1970-01-01T00:00:02.005Z',
+                        dataStoreName: location2,
+                        VersionId: expectedVersionIds['pfx2-test-object'],
+                    },
+                    {
+                        key: 'pfx3-test-object',
+                        LastModified: '1970-01-01T00:00:01.005Z',
+                        dataStoreName: location1,
+                        VersionId: expectedVersionIds['pfx3-test-object'],
+                    },
+                ];
+                assertContents(data.Contents, expected);
                 return next();
             }),
         ], done);
@@ -396,12 +652,30 @@ describe('MongoClientInterface::metadata.listLifecycleObject::current', () => {
             next => metadata.putObjectMD(BUCKET_NAME, objVal.key, objVal, versionParams,
                 logger, next),
             next => flagObjectForDeletion(collection, objVal.key, next),
-            next => metadata.listObject(BUCKET_NAME, params, logger, (err, data) => {
+            next => metadata.listLifecycleObject(BUCKET_NAME, params, logger, (err, data) => {
                 assert.ifError(err);
                 assert.strictEqual(data.Contents.length, 3);
-                assert.strictEqual(data.Contents[0].key, 'pfx1-test-object');
-                assert.strictEqual(data.Contents[1].key, 'pfx2-test-object');
-                assert.strictEqual(data.Contents[2].key, 'pfx3-test-object');
+                const expected = [
+                    {
+                        key: 'pfx1-test-object',
+                        LastModified: '1970-01-01T00:00:00.005Z',
+                        dataStoreName: location1,
+                        VersionId: expectedVersionIds['pfx1-test-object'],
+                    },
+                    {
+                        key: 'pfx2-test-object',
+                        LastModified: '1970-01-01T00:00:02.005Z',
+                        dataStoreName: location2,
+                        VersionId: expectedVersionIds['pfx2-test-object'],
+                    },
+                    {
+                        key: 'pfx3-test-object',
+                        LastModified: '1970-01-01T00:00:01.005Z',
+                        dataStoreName: location1,
+                        VersionId: expectedVersionIds['pfx3-test-object'],
+                    },
+                ];
+                assertContents(data.Contents, expected);
                 return next();
             }),
         ], done);
