@@ -1371,6 +1371,23 @@ function getTestListing(mdParams, data, vFormat) {
             });
         });
 
+        it('should not crash if key contains "undefined" with no delimiter', () => {
+            const delimiter = new DelimiterVersions({}, logger, vFormat);
+            const value = '';
+
+            const listingKey = getListingKey('undefinedfoo', vFormat);
+            assert.strictEqual(delimiter.filter({ key: listingKey, value }), FILTER_ACCEPT);
+            assert.deepStrictEqual(delimiter.result(), {
+                CommonPrefixes: [],
+                Versions: [{
+                    key: 'undefinedfoo',
+                    value: '',
+                    versionId: 'null',
+                }],
+                IsTruncated: false,
+            });
+        });
+
         // NOTE changed this test for Artesca (8.1) to also run PHD
         // tests in v1 format, kept the check as is to minimize
         // changes with 7.x branches
