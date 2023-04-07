@@ -216,11 +216,12 @@ describe('MongoClientInterface:delObject', () => {
     it('internalDeleteObject:: should set correct originOp when', done => {
         const collection = {
             bulkWrite: sinon.stub().callsArgWith(2, undefined, { ok: 1 }),
-            findOneAndUpdate: sinon.stub().callsArgWith(3, undefined, { value: { value: objMD } })  
+            findOneAndUpdate: sinon.stub().callsArgWith(3, undefined, { value: { value: objMD } }),
         };
         const originOp = 's3:TestOriginOp:Created';
         client.internalDeleteObject(collection, 'example-bucket', 'example-object', {}, logger, () => {
-            assert.deepEqual(collection.bulkWrite.args[0][0][0]['updateOne']['update']['$set']['value']['originOp'], originOp);
+            assert.deepEqual(collection.bulkWrite.args[0][0][0].updateOne.update.$set.value.originOp,
+                originOp);
             return done();
         }, originOp);
     });
