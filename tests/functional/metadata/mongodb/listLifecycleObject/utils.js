@@ -30,10 +30,10 @@ function putBulkObjectVersions(metadata, bucketName, objName, objVal, params, ve
             });
         }, (err, expectedVersionIds) => {
             // The last version is removed since it represents the current version.
-            expectedVersionIds.pop();
+            const lastVersionId = expectedVersionIds.pop();
             // array is reversed to be alligned with the version order (latest to oldest).
             expectedVersionIds.reverse();
-            return cb(err, expectedVersionIds);
+            return cb(err, { lastVersionId, expectedVersionIds });
         });
 }
 
@@ -68,10 +68,12 @@ function makeBucketMD(bucketName) {
 }
 
 function assertContents(contents, expected) {
+    assert.strictEqual(contents.length, expected.length);
     contents.forEach((c, i) => {
         assert.strictEqual(c.key, expected[i].key);
         assert.strictEqual(c.value.LastModified, expected[i].LastModified);
         assert.strictEqual(c.value.staleDate, expected[i].staleDate);
+        assert.strictEqual(c.value.dataStoreName, expected[i].dataStoreName);
         if (expected[i].VersionId) {
             assert.strictEqual(c.value.VersionId, expected[i].VersionId);
         }

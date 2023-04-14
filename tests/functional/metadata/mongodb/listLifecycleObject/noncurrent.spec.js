@@ -33,6 +33,8 @@ describe('MongoClientInterface::metadata.listLifecycleObject::noncurrent', () =>
     const key1 = 'pfx1-test-object';
     const key2 = 'pfx2-test-object';
     const key3 = 'pfx3-test-object';
+    const location1 = 'loc1';
+    const location2 = 'loc2';
 
     beforeAll(done => {
         mongoserver.start().then(() => {
@@ -79,18 +81,16 @@ describe('MongoClientInterface::metadata.listLifecycleObject::noncurrent', () =>
                 return next();
             }),
             next => {
-                const params = {
-                    objName: key1,
-                    objVal: {
-                        key: key1,
-                        versionId: 'null',
-                    },
-                    nbVersions: 5,
+                const objVal = {
+                    key: key1,
+                    versionId: 'null',
+                    dataStoreName: location1,
                 };
+                const nbVersions = 5;
                 const timestamp = 0;
-                putBulkObjectVersions(metadata, BUCKET_NAME, params.objName, params.objVal, versionParams,
-                    params.nbVersions, timestamp, logger, (err, data) => {
-                        expectedVersionIds[key1] = data;
+                putBulkObjectVersions(metadata, BUCKET_NAME, key1, objVal, versionParams,
+                    nbVersions, timestamp, logger, (err, data) => {
+                        expectedVersionIds[key1] = data.expectedVersionIds;
                         return next(err);
                     });
                 /* eslint-disable max-len */
@@ -103,18 +103,16 @@ describe('MongoClientInterface::metadata.listLifecycleObject::noncurrent', () =>
                 /* eslint-enable max-len */
             },
             next => {
-                const params = {
-                    objName: key2,
-                    objVal: {
-                        key: key2,
-                        versionId: 'null',
-                    },
-                    nbVersions: 5,
+                const objVal = {
+                    key: key2,
+                    versionId: 'null',
+                    dataStoreName: location2,
                 };
+                const nbVersions = 5;
                 const timestamp = 0;
-                putBulkObjectVersions(metadata, BUCKET_NAME, params.objName, params.objVal, versionParams,
-                    params.nbVersions, timestamp, logger, (err, data) => {
-                        expectedVersionIds[key2] = data;
+                putBulkObjectVersions(metadata, BUCKET_NAME, key2, objVal, versionParams,
+                    nbVersions, timestamp, logger, (err, data) => {
+                        expectedVersionIds[key2] = data.expectedVersionIds;
                         return next(err);
                     });
                 /* eslint-disable max-len */
@@ -127,18 +125,16 @@ describe('MongoClientInterface::metadata.listLifecycleObject::noncurrent', () =>
                 /* eslint-enable max-len */
             },
             next => {
-                const params = {
-                    objName: key3,
-                    objVal: {
-                        key: key3,
-                        versionId: 'null',
-                    },
-                    nbVersions: 5,
+                const objVal = {
+                    key: key3,
+                    versionId: 'null',
+                    dataStoreName: location1,
                 };
+                const nbVersions = 5;
                 const timestamp = 0;
-                putBulkObjectVersions(metadata, BUCKET_NAME, params.objName, params.objVal, versionParams,
-                    params.nbVersions, timestamp, logger, (err, data) => {
-                        expectedVersionIds[key3] = data;
+                putBulkObjectVersions(metadata, BUCKET_NAME, key3, objVal, versionParams,
+                    nbVersions, timestamp, logger, (err, data) => {
+                        expectedVersionIds[key3] = data.expectedVersionIds;
                         return next(err);
                     });
                 /* eslint-disable max-len */
@@ -168,61 +164,73 @@ describe('MongoClientInterface::metadata.listLifecycleObject::noncurrent', () =>
                     key: key1,
                     LastModified: '1970-01-01T00:00:00.004Z',
                     staleDate: '1970-01-01T00:00:00.005Z',
+                    dataStoreName: location1,
                 },
                 {
                     key: key1,
                     LastModified: '1970-01-01T00:00:00.003Z',
                     staleDate: '1970-01-01T00:00:00.004Z',
+                    dataStoreName: location1,
                 },
                 {
                     key: key1,
                     LastModified: '1970-01-01T00:00:00.002Z',
                     staleDate: '1970-01-01T00:00:00.003Z',
+                    dataStoreName: location1,
                 },
                 {
                     key: key1,
                     LastModified: '1970-01-01T00:00:00.001Z',
                     staleDate: '1970-01-01T00:00:00.002Z',
+                    dataStoreName: location1,
                 },
                 {
                     key: key2,
                     LastModified: '1970-01-01T00:00:00.004Z',
                     staleDate: '1970-01-01T00:00:00.005Z',
+                    dataStoreName: location2,
                 },
                 {
                     key: key2,
                     LastModified: '1970-01-01T00:00:00.003Z',
                     staleDate: '1970-01-01T00:00:00.004Z',
+                    dataStoreName: location2,
                 },
                 {
                     key: key2,
                     LastModified: '1970-01-01T00:00:00.002Z',
                     staleDate: '1970-01-01T00:00:00.003Z',
+                    dataStoreName: location2,
                 },
                 {
                     key: key2,
                     LastModified: '1970-01-01T00:00:00.001Z',
                     staleDate: '1970-01-01T00:00:00.002Z',
+                    dataStoreName: location2,
                 },
                 {
                     key: key3,
                     LastModified: '1970-01-01T00:00:00.004Z',
                     staleDate: '1970-01-01T00:00:00.005Z',
+                    dataStoreName: location1,
                 },
                 {
                     key: key3,
                     LastModified: '1970-01-01T00:00:00.003Z',
                     staleDate: '1970-01-01T00:00:00.004Z',
+                    dataStoreName: location1,
                 },
                 {
                     key: key3,
                     LastModified: '1970-01-01T00:00:00.002Z',
                     staleDate: '1970-01-01T00:00:00.003Z',
+                    dataStoreName: location1,
                 },
                 {
                     key: key3,
                     LastModified: '1970-01-01T00:00:00.001Z',
                     staleDate: '1970-01-01T00:00:00.002Z',
+                    dataStoreName: location1,
                 },
             ];
             assertContents(data.Contents, expected);
@@ -254,6 +262,156 @@ describe('MongoClientInterface::metadata.listLifecycleObject::noncurrent', () =>
         });
     });
 
+    it('Should list non-current versions excluding keys stored in location1', done => {
+        const params = {
+            listingType: 'DelimiterNonCurrent',
+            excludedDataStoreName: location1,
+        };
+        return metadata.listLifecycleObject(BUCKET_NAME, params, logger, (err, data) => {
+            assert.deepStrictEqual(err, null);
+            assert.strictEqual(data.IsTruncated, false);
+            assert.strictEqual(data.Contents.length, 4);
+            const expected = [
+                {
+                    key: key2,
+                    LastModified: '1970-01-01T00:00:00.004Z',
+                    staleDate: '1970-01-01T00:00:00.005Z',
+                    VersionId: expectedVersionIds[key2][0],
+                    dataStoreName: location2,
+                },
+                {
+                    key: key2,
+                    LastModified: '1970-01-01T00:00:00.003Z',
+                    staleDate: '1970-01-01T00:00:00.004Z',
+                    VersionId: expectedVersionIds[key2][1],
+                    dataStoreName: location2,
+                },
+                {
+                    key: key2,
+                    LastModified: '1970-01-01T00:00:00.002Z',
+                    staleDate: '1970-01-01T00:00:00.003Z',
+                    VersionId: expectedVersionIds[key2][2],
+                    dataStoreName: location2,
+                },
+                {
+                    key: key2,
+                    LastModified: '1970-01-01T00:00:00.001Z',
+                    staleDate: '1970-01-01T00:00:00.002Z',
+                    VersionId: expectedVersionIds[key2][3],
+                    dataStoreName: location2,
+                },
+            ];
+            assertContents(data.Contents, expected);
+
+            const key2VersionIds = data.Contents.filter(k => k.key === key2).map(k => k.value.VersionId);
+            assert.deepStrictEqual(key2VersionIds, expectedVersionIds[key2]);
+
+            return done();
+        });
+    });
+
+    it('Should list non-current versions older than a specific date and excluding keys stored in location1', done => {
+        const params = {
+            listingType: 'DelimiterNonCurrent',
+            excludedDataStoreName: location1,
+            beforeDate: '1970-01-01T00:00:00.004Z',
+        };
+        return metadata.listLifecycleObject(BUCKET_NAME, params, logger, (err, data) => {
+            assert.deepStrictEqual(err, null);
+            assert.strictEqual(data.IsTruncated, false);
+            assert.strictEqual(data.Contents.length, 2);
+            const expected = [
+                {
+                    key: key2,
+                    LastModified: '1970-01-01T00:00:00.002Z',
+                    staleDate: '1970-01-01T00:00:00.003Z',
+                    VersionId: expectedVersionIds[key2][2],
+                    dataStoreName: location2,
+                },
+                {
+                    key: key2,
+                    LastModified: '1970-01-01T00:00:00.001Z',
+                    staleDate: '1970-01-01T00:00:00.002Z',
+                    VersionId: expectedVersionIds[key2][3],
+                    dataStoreName: location2,
+                },
+            ];
+            assertContents(data.Contents, expected);
+
+            return done();
+        });
+    });
+
+    it('Should return trucated list of non-current versions excluding keys stored in location1', done => {
+        const params = {
+            listingType: 'DelimiterNonCurrent',
+            excludedDataStoreName: location1,
+            maxKeys: 2,
+        };
+        return metadata.listLifecycleObject(BUCKET_NAME, params, logger, (err, data) => {
+            assert.deepStrictEqual(err, null);
+            assert.strictEqual(data.IsTruncated, true);
+            assert.strictEqual(data.NextKeyMarker, key2);
+            assert.strictEqual(data.NextVersionIdMarker, data.Contents[1].value.VersionId);
+            assert.strictEqual(data.Contents.length, 2);
+            const expected = [
+                {
+                    key: key2,
+                    LastModified: '1970-01-01T00:00:00.004Z',
+                    staleDate: '1970-01-01T00:00:00.005Z',
+                    VersionId: expectedVersionIds[key2][0],
+                    dataStoreName: location2,
+                },
+                {
+                    key: key2,
+                    LastModified: '1970-01-01T00:00:00.003Z',
+                    staleDate: '1970-01-01T00:00:00.004Z',
+                    VersionId: expectedVersionIds[key2][1],
+                    dataStoreName: location2,
+                },
+            ];
+            assertContents(data.Contents, expected);
+
+            params.keyMarker = data.NextKeyMarker;
+            params.versionIdMarker = data.NextVersionIdMarker;
+
+            return metadata.listLifecycleObject(BUCKET_NAME, params, logger, (err, data) => {
+                assert.deepStrictEqual(err, null);
+                assert.strictEqual(data.IsTruncated, true);
+                assert.strictEqual(data.NextKeyMarker, key2);
+                assert.strictEqual(data.NextVersionIdMarker, data.Contents[1].value.VersionId);
+                assert.strictEqual(data.Contents.length, 2);
+                const expected = [
+                    {
+                        key: key2,
+                        LastModified: '1970-01-01T00:00:00.002Z',
+                        staleDate: '1970-01-01T00:00:00.003Z',
+                        VersionId: expectedVersionIds[key2][2],
+                        dataStoreName: location2,
+                    },
+                    {
+                        key: key2,
+                        LastModified: '1970-01-01T00:00:00.001Z',
+                        staleDate: '1970-01-01T00:00:00.002Z',
+                        VersionId: expectedVersionIds[key2][3],
+                        dataStoreName: location2,
+                    },
+                ];
+                assertContents(data.Contents, expected);
+
+                params.keyMarker = data.NextKeyMarker;
+                params.versionIdMarker = data.NextVersionIdMarker;
+
+                return metadata.listLifecycleObject(BUCKET_NAME, params, logger, (err, data) => {
+                    assert.deepStrictEqual(err, null);
+                    assert.strictEqual(data.IsTruncated, false);
+                    assert.strictEqual(data.Contents.length, 0);
+                    return done();
+                });
+            });
+        });
+    });
+
     it('Should return the non-current versions with stale date older than 1970-01-01T00:00:00.003Z', done => {
         const params = {
             listingType: 'DelimiterNonCurrent',
@@ -269,18 +427,21 @@ describe('MongoClientInterface::metadata.listLifecycleObject::noncurrent', () =>
                     LastModified: '1970-01-01T00:00:00.001Z',
                     staleDate: '1970-01-01T00:00:00.002Z',
                     VersionId: expectedVersionIds[key1][3],
+                    dataStoreName: location1,
                 },
                 {
                     key: key2,
                     LastModified: '1970-01-01T00:00:00.001Z',
                     staleDate: '1970-01-01T00:00:00.002Z',
                     VersionId: expectedVersionIds[key2][3],
+                    dataStoreName: location2,
                 },
                 {
                     key: key3,
                     LastModified: '1970-01-01T00:00:00.001Z',
                     staleDate: '1970-01-01T00:00:00.002Z',
                     VersionId: expectedVersionIds[key3][3],
+                    dataStoreName: location1,
                 },
             ];
             assertContents(data.Contents, expected);
@@ -308,18 +469,21 @@ describe('MongoClientInterface::metadata.listLifecycleObject::noncurrent', () =>
                         LastModified: '1970-01-01T00:00:00.004Z',
                         staleDate: '1970-01-01T00:00:00.005Z',
                         VersionId: expectedVersionIds[key1][0],
+                        dataStoreName: location1,
                     },
                     {
                         key: key1,
                         LastModified: '1970-01-01T00:00:00.003Z',
                         staleDate: '1970-01-01T00:00:00.004Z',
                         VersionId: expectedVersionIds[key1][1],
+                        dataStoreName: location1,
                     },
                     {
                         key: key1,
                         LastModified: '1970-01-01T00:00:00.002Z',
                         staleDate: '1970-01-01T00:00:00.003Z',
                         VersionId: expectedVersionIds[key1][2],
+                        dataStoreName: location1,
                     },
                 ];
                 assertContents(data.Contents, expected);
@@ -341,18 +505,21 @@ describe('MongoClientInterface::metadata.listLifecycleObject::noncurrent', () =>
                         LastModified: '1970-01-01T00:00:00.001Z',
                         staleDate: '1970-01-01T00:00:00.002Z',
                         VersionId: expectedVersionIds[key1][3],
+                        dataStoreName: location1,
                     },
                     {
                         key: key2,
                         LastModified: '1970-01-01T00:00:00.004Z',
                         staleDate: '1970-01-01T00:00:00.005Z',
                         VersionId: expectedVersionIds[key2][0],
+                        dataStoreName: location2,
                     },
                     {
                         key: key2,
                         LastModified: '1970-01-01T00:00:00.003Z',
                         staleDate: '1970-01-01T00:00:00.004Z',
                         VersionId: expectedVersionIds[key2][1],
+                        dataStoreName: location2,
                     },
                 ];
                 assertContents(data.Contents, expected);
@@ -374,18 +541,21 @@ describe('MongoClientInterface::metadata.listLifecycleObject::noncurrent', () =>
                         LastModified: '1970-01-01T00:00:00.002Z',
                         staleDate: '1970-01-01T00:00:00.003Z',
                         VersionId: expectedVersionIds[key2][2],
+                        dataStoreName: location2,
                     },
                     {
                         key: key2,
                         LastModified: '1970-01-01T00:00:00.001Z',
                         staleDate: '1970-01-01T00:00:00.002Z',
                         VersionId: expectedVersionIds[key2][3],
+                        dataStoreName: location2,
                     },
                     {
                         key: key3,
                         LastModified: '1970-01-01T00:00:00.004Z',
                         staleDate: '1970-01-01T00:00:00.005Z',
                         VersionId: expectedVersionIds[key3][0],
+                        dataStoreName: location1,
                     },
                 ];
                 assertContents(data.Contents, expected);
@@ -405,18 +575,21 @@ describe('MongoClientInterface::metadata.listLifecycleObject::noncurrent', () =>
                         LastModified: '1970-01-01T00:00:00.003Z',
                         staleDate: '1970-01-01T00:00:00.004Z',
                         VersionId: expectedVersionIds[key3][1],
+                        dataStoreName: location1,
                     },
                     {
                         key: key3,
                         LastModified: '1970-01-01T00:00:00.002Z',
                         staleDate: '1970-01-01T00:00:00.003Z',
                         VersionId: expectedVersionIds[key3][2],
+                        dataStoreName: location1,
                     },
                     {
                         key: key3,
                         LastModified: '1970-01-01T00:00:00.001Z',
                         staleDate: '1970-01-01T00:00:00.002Z',
                         VersionId: expectedVersionIds[key3][3],
+                        dataStoreName: location1,
                     },
                 ];
                 assertContents(data.Contents, expected);
@@ -446,21 +619,25 @@ describe('MongoClientInterface::metadata.listLifecycleObject::noncurrent', () =>
                         key: key1,
                         LastModified: '1970-01-01T00:00:00.004Z',
                         staleDate: '1970-01-01T00:00:00.005Z',
+                        dataStoreName: location1,
                     },
                     {
                         key: key1,
                         LastModified: '1970-01-01T00:00:00.003Z',
                         staleDate: '1970-01-01T00:00:00.004Z',
+                        dataStoreName: location1,
                     },
                     {
                         key: key1,
                         LastModified: '1970-01-01T00:00:00.002Z',
                         staleDate: '1970-01-01T00:00:00.003Z',
+                        dataStoreName: location1,
                     },
                     {
                         key: key1,
                         LastModified: '1970-01-01T00:00:00.001Z',
                         staleDate: '1970-01-01T00:00:00.002Z',
+                        dataStoreName: location1,
                     },
                 ];
 
@@ -485,21 +662,25 @@ describe('MongoClientInterface::metadata.listLifecycleObject::noncurrent', () =>
                         key: key2,
                         LastModified: '1970-01-01T00:00:00.004Z',
                         staleDate: '1970-01-01T00:00:00.005Z',
+                        dataStoreName: location2,
                     },
                     {
                         key: key2,
                         LastModified: '1970-01-01T00:00:00.003Z',
                         staleDate: '1970-01-01T00:00:00.004Z',
+                        dataStoreName: location2,
                     },
                     {
                         key: key2,
                         LastModified: '1970-01-01T00:00:00.002Z',
                         staleDate: '1970-01-01T00:00:00.003Z',
+                        dataStoreName: location2,
                     },
                     {
                         key: key2,
                         LastModified: '1970-01-01T00:00:00.001Z',
                         staleDate: '1970-01-01T00:00:00.002Z',
+                        dataStoreName: location2,
                     },
                 ];
                 assertContents(data.Contents, expected);
@@ -521,21 +702,25 @@ describe('MongoClientInterface::metadata.listLifecycleObject::noncurrent', () =>
                         key: key3,
                         LastModified: '1970-01-01T00:00:00.004Z',
                         staleDate: '1970-01-01T00:00:00.005Z',
+                        dataStoreName: location1,
                     },
                     {
                         key: key3,
                         LastModified: '1970-01-01T00:00:00.003Z',
                         staleDate: '1970-01-01T00:00:00.004Z',
+                        dataStoreName: location1,
                     },
                     {
                         key: key3,
                         LastModified: '1970-01-01T00:00:00.002Z',
                         staleDate: '1970-01-01T00:00:00.003Z',
+                        dataStoreName: location1,
                     },
                     {
                         key: key3,
                         LastModified: '1970-01-01T00:00:00.001Z',
                         staleDate: '1970-01-01T00:00:00.002Z',
+                        dataStoreName: location1,
                     },
                 ];
                 assertContents(data.Contents, expected);
@@ -570,12 +755,14 @@ describe('MongoClientInterface::metadata.listLifecycleObject::noncurrent', () =>
                         LastModified: '1970-01-01T00:00:00.004Z',
                         staleDate: '1970-01-01T00:00:00.005Z',
                         VersionId: expectedVersionIds[key2][0],
+                        dataStoreName: location2,
                     },
                     {
                         key: key2,
                         LastModified: '1970-01-01T00:00:00.003Z',
                         staleDate: '1970-01-01T00:00:00.004Z',
                         VersionId: expectedVersionIds[key2][1],
+                        dataStoreName: location2,
                     },
                 ];
 
@@ -596,12 +783,14 @@ describe('MongoClientInterface::metadata.listLifecycleObject::noncurrent', () =>
                         LastModified: '1970-01-01T00:00:00.002Z',
                         staleDate: '1970-01-01T00:00:00.003Z',
                         VersionId: expectedVersionIds[key2][2],
+                        dataStoreName: location2,
                     },
                     {
                         key: key2,
                         LastModified: '1970-01-01T00:00:00.001Z',
                         staleDate: '1970-01-01T00:00:00.002Z',
                         VersionId: expectedVersionIds[key2][3],
+                        dataStoreName: location2,
                     },
                 ];
                 assertContents(data.Contents, expected);
@@ -632,21 +821,25 @@ describe('MongoClientInterface::metadata.listLifecycleObject::noncurrent', () =>
                     key: key2,
                     LastModified: '1970-01-01T00:00:00.004Z',
                     staleDate: '1970-01-01T00:00:00.005Z',
+                    dataStoreName: location2,
                 },
                 {
                     key: key2,
                     LastModified: '1970-01-01T00:00:00.003Z',
                     staleDate: '1970-01-01T00:00:00.004Z',
+                    dataStoreName: location2,
                 },
                 {
                     key: key2,
                     LastModified: '1970-01-01T00:00:00.002Z',
                     staleDate: '1970-01-01T00:00:00.003Z',
+                    dataStoreName: location2,
                 },
                 {
                     key: key2,
                     LastModified: '1970-01-01T00:00:00.001Z',
                     staleDate: '1970-01-01T00:00:00.002Z',
+                    dataStoreName: location2,
                 },
             ];
             assertContents(data.Contents, expected);
@@ -671,21 +864,25 @@ describe('MongoClientInterface::metadata.listLifecycleObject::noncurrent', () =>
                 key: key2,
                 LastModified: '1970-01-01T00:00:00.004Z',
                 staleDate: '1970-01-01T00:00:00.005Z',
+                dataStoreName: location2,
             },
             {
                 key: key2,
                 LastModified: '1970-01-01T00:00:00.003Z',
                 staleDate: '1970-01-01T00:00:00.004Z',
+                dataStoreName: location2,
             },
             {
                 key: key2,
                 LastModified: '1970-01-01T00:00:00.002Z',
                 staleDate: '1970-01-01T00:00:00.003Z',
+                dataStoreName: location2,
             },
             {
                 key: key2,
                 LastModified: '1970-01-01T00:00:00.001Z',
                 staleDate: '1970-01-01T00:00:00.002Z',
+                dataStoreName: location2,
             }];
             assertContents(data.Contents, expected);
 
@@ -712,6 +909,7 @@ describe('MongoClientInterface::metadata.listLifecycleObject::noncurrent', () =>
                 LastModified: '1970-01-01T00:00:00.001Z',
                 staleDate: '1970-01-01T00:00:00.002Z',
                 VersionId: expectedVersionIds[key2][3],
+                dataStoreName: location2,
             }];
             assertContents(data.Contents, expected);
 
@@ -737,12 +935,14 @@ describe('MongoClientInterface::metadata.listLifecycleObject::noncurrent', () =>
                     LastModified: '1970-01-01T00:00:00.003Z',
                     staleDate: '1970-01-01T00:00:00.004Z',
                     VersionId: expectedVersionIds[key2][1],
+                    dataStoreName: location2,
                 },
                 {
                     key: key2,
                     LastModified: '1970-01-01T00:00:00.002Z',
                     staleDate: '1970-01-01T00:00:00.003Z',
                     VersionId: expectedVersionIds[key2][2],
+                    dataStoreName: location2,
                 },
             ];
             assert.strictEqual(data.Contents.length, 2);
@@ -823,6 +1023,56 @@ describe('MongoClientInterface::metadata.listLifecycleObject::noncurrent', () =>
 
                 assert.strictEqual(data.IsTruncated, false);
                 assert.strictEqual(data.Contents.length, 0);
+                return next();
+            }),
+        ], done);
+    });
+
+    it('Should exclude keys stored in location1', done => {
+        let expectedId;
+        const objLoc1 = {
+            'key': 'pfx4-test-object',
+            'versionId': 'null',
+            'dataStoreName': location1,
+            'last-modified': new Date(0).toISOString(),
+        };
+
+        const objLoc2 = {
+            'key': 'pfx4-test-object',
+            'versionId': 'null',
+            'dataStoreName': location2,
+            'last-modified': new Date(0).toISOString(),
+        };
+        const versionParams = {
+            versioning: true,
+        };
+        const params = {
+            listingType: 'DelimiterNonCurrent',
+            prefix: 'pfx4',
+            excludedDataStoreName: location1,
+        };
+
+        async.series([
+            next => metadata.putObjectMD(BUCKET_NAME, 'pfx4-test-object', objLoc1, versionParams,
+                logger, next),
+            next => metadata.putObjectMD(BUCKET_NAME, 'pfx4-test-object', objLoc2, versionParams,
+                logger, (err, data) => {
+                    expectedId = JSON.parse(data).versionId;
+                    return next(err);
+                }),
+            next => metadata.putObjectMD(BUCKET_NAME, 'pfx4-test-object', objLoc1, versionParams,
+                logger, next),
+            next => metadata.putObjectMD(BUCKET_NAME, 'pfx4-test-object', objLoc2, versionParams,
+                logger, next),
+            next => metadata.listLifecycleObject(BUCKET_NAME, params, logger, (err, data) => {
+                assert.ifError(err);
+                assert.strictEqual(data.IsTruncated, false);
+                assert.strictEqual(data.Contents.length, 1);
+
+                const firstKey = data.Contents[0];
+                assert.strictEqual(firstKey.key, 'pfx4-test-object');
+                assert.strictEqual(firstKey.value.VersionId, expectedId);
+                assert.strictEqual(firstKey.value.dataStoreName, location2);
                 return next();
             }),
         ], done);
