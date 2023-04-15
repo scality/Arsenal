@@ -7,6 +7,8 @@ const {
     translateConditions,
     formatMasterKey,
     formatVersionKey,
+    indexFormatObjectToMongoArray,
+    indexFormatMongoArrayToObject,
 } = require('../../../../../lib/storage/metadata/mongoclient/utils');
 
 describe('auth credentials', () => {
@@ -280,5 +282,93 @@ describe('object key formating', () => {
             assert.strictEqual(fn(...Object.values(args)), expected);
             return done();
         });
+    });
+});
+
+
+describe('Index object transforms', () => {
+    const indexObjIn = [
+        {
+            keys: [
+                { key: 'value.last-modified', order: 1 },
+                { key: '_id', order: 1 },
+            ],
+            name: 'index1',
+            background: true,
+        },
+        {
+            keys: [
+                { key: 'value.dataStoreName', order: 1 },
+                { key: 'value.last-modified', order: 1 },
+                { key: '_id', order: 1 },
+            ],
+            name: 'index2',
+        },
+    ];
+
+    const mongoIndexObjOut = [
+        {
+            name: 'index1',
+            key: new Map([
+                ['value.last-modified', 1],
+                ['_id', 1],
+            ]),
+            background: true,
+        },
+        {
+            name: 'index2',
+            key: new Map([
+                ['value.dataStoreName', 1],
+                ['value.last-modified', 1],
+                ['_id', 1],
+            ]),
+        },
+    ];
+
+    const mongoIndexObjIn = [
+        {
+            name: 'index1',
+            key: {
+                'value.last-modified': 1,
+                '_id': 1,
+            },
+        },
+        {
+            name: 'index2',
+            key: {
+                'value.dataStoreName': 1,
+                'value.last-modified': 1,
+                '_id': 1,
+            },
+        },
+    ];
+
+    const indexObjOut = [
+        {
+            keys: [
+                { key: 'value.last-modified', order: 1 },
+                { key: '_id', order: 1 },
+            ],
+            name: 'index1',
+        },
+        {
+            keys: [
+                { key: 'value.dataStoreName', order: 1 },
+                { key: 'value.last-modified', order: 1 },
+                { key: '_id', order: 1 },
+            ],
+            name: 'index2',
+        },
+    ];
+
+
+    it('should convert index object to mongo index object', done => {
+        assert.deepStrictEqual(indexFormatObjectToMongoArray(indexObjIn), mongoIndexObjOut);
+        return done();
+    });
+
+    it('should convert mongo index object to index object', done => {
+        assert.deepStrictEqual(indexFormatMongoArrayToObject(mongoIndexObjIn), indexObjOut);
+        return done();
     });
 });
