@@ -312,6 +312,7 @@ export default class KMIP {
                     return cb(err);
                 }
                 const response = this._decodeMessage(logger, rawResponse);
+                logger.error(response);
                 const performedOperation =
                       response.lookup('Response Message/' +
                                       'Batch Item/Operation')[0];
