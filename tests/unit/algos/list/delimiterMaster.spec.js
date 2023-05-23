@@ -207,6 +207,25 @@ function getListingKey(key, vFormat) {
             });
         });
 
+        it('should skip a delete marker version', () => {
+            const delimiter = new DelimiterMaster({}, fakeLogger, vFormat);
+            const version = new Version({ isDeleteMarker: true });
+            const key = 'key';
+            const obj = {
+                key: `${key}${VID_SEP}version`,
+                value: version.toString(),
+            };
+
+            /* When filtered, it should return FILTER_SKIP and set the prvKey if vFormat is v0. It
+             * should not be added to the result content or common prefixes. */
+            assert.strictEqual(delimiter.filter(obj), FILTER_SKIP);
+            assert.strictEqual(delimiter.NextMarker, undefined);
+            if (vFormat === 'v0') {
+                assert.strictEqual(delimiter.prvKey, key);
+            }
+            assert.deepStrictEqual(delimiter.result(), EmptyResult);
+        });
+
         if (vFormat === 'v0') {
             it('should accept a PHD version as first input', () => {
                 const delimiter = new DelimiterMaster({}, fakeLogger, vFormat);
@@ -282,23 +301,6 @@ function getListingKey(key, vFormat) {
                     NextMarker: undefined,
                     Delimiter: undefined,
                 });
-            });
-
-            it('should skip a delete marker version', () => {
-                const delimiter = new DelimiterMaster({}, fakeLogger, vFormat);
-                const version = new Version({ isDeleteMarker: true });
-                const key = 'key';
-                const obj = {
-                    key: `${key}${VID_SEP}version`,
-                    value: version.toString(),
-                };
-
-                /* When filtered, it should return FILTER_SKIP and set the prvKey. It
-                 * should not be added to the result content or common prefixes. */
-                assert.strictEqual(delimiter.filter(obj), FILTER_SKIP);
-                assert.strictEqual(delimiter.NextMarker, undefined);
-                assert.strictEqual(delimiter.prvKey, key);
-                assert.deepStrictEqual(delimiter.result(), EmptyResult);
             });
 
             it('should skip version after a delete marker master', () => {
