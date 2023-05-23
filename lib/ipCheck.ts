@@ -28,20 +28,32 @@ export function checkIPinRangeOrMatch(
     }
 }
 
+let ipCache = {};
+
 /**
  * Parse IP address into object representation
  * @param ip - IPV4/IPV6/IPV4-mapped IPV6 address
  * @return parsedIp - Object representation of parsed IP
  */
 export function parseIp(ip: string): ipaddr.IPv4 | ipaddr.IPv6 | {} {
+    // Check if the result is cached.
+    if (ip in ipCache) {
+        return ipCache[ip];
+    }
+    
+    let result = {};
+    
     if (ipaddr.IPv4.isValid(ip)) {
-        return ipaddr.parse(ip);
+        result = ipaddr.parse(ip);
     }
-    if (ipaddr.IPv6.isValid(ip)) {
-        // also parses IPv6 mapped IPv4 addresses into IPv4 representation
-        return ipaddr.process(ip);
+    else if (ipaddr.IPv6.isValid(ip)) {
+        // Also parses IPv6 mapped IPv4 addresses into IPv4 representation
+        result = ipaddr.process(ip);
     }
-    return {};
+
+    // Cache the result.
+    ipCache[ip] = result;
+    return result;
 }
 
 /**
