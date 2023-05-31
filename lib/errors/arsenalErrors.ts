@@ -1024,6 +1024,13 @@ export const TooManyRequests: ErrorFormat = {
     code: 429,
 };
 
+export const UpdateConflict: ErrorFormat = {
+    code: 500,
+
+    description:
+        'The request was rejected because there was a conflict attempting to update a resource.'
+};
+
 // --------------------- cdmiclient ---------------------
 
 export const ReadOnly: ErrorFormat = {

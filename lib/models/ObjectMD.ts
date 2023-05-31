@@ -89,6 +89,10 @@ export type ObjectMDData = {
     // the master is set as a placeholder and gets updated with the new latest
     // version data after a certain amount of time.
     isPHD: boolean;
+    // Count the number of 'updates' to the object, incremented every time the
+    // metadata "document" is updated. This is used by backend to detect
+    // conflicting updates to the same object.
+    revisionCount?: number
 };
 
 /**
