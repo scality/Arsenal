@@ -1,19 +1,25 @@
-const oneDay = 24 * 60 * 60 * 1000; // Milliseconds in a day.
+import { scaleMsPerDay } from '../objectUtils';
+const msInOneDay = 24 * 60 * 60 * 1000; // Milliseconds in a day.
 
 export default class LifecycleDateTime {
     _transitionOneDayEarlier?: boolean;
     _expireOneDayEarlier?: boolean;
+    _timeProgressionFactor?: number;
+    _scaledMsPerDay: number;
 
     constructor(params?: {
         transitionOneDayEarlier: boolean;
         expireOneDayEarlier: boolean;
+        timeProgressionFactor: number;
     }) {
         this._transitionOneDayEarlier = params?.transitionOneDayEarlier;
         this._expireOneDayEarlier = params?.expireOneDayEarlier;
+        this._timeProgressionFactor = params?.timeProgressionFactor || 1;
+        this._scaledMsPerDay = scaleMsPerDay(this._timeProgressionFactor);
     }
 
     getCurrentDate() {
-        const timeTravel = this._expireOneDayEarlier ? oneDay : 0;
+        const timeTravel = this._expireOneDayEarlier ? msInOneDay : 0;
         return Date.now() + timeTravel;
     }
 
@@ -25,7 +31,7 @@ export default class LifecycleDateTime {
     findDaysSince(date: Date) {
         const now = this.getCurrentDate();
         const diff = now - date.getTime();
-        return Math.floor(diff / (1000 * 60 * 60 * 24));
+        return Math.floor(diff / this._scaledMsPerDay);
     }
 
     /**
@@ -52,8 +58,8 @@ export default class LifecycleDateTime {
         }
         if (transition.Days !== undefined) {
             const lastModifiedTime = this.getTimestamp(lastModified);
-            const timeTravel = this._transitionOneDayEarlier ? -oneDay : 0;
-            return lastModifiedTime + (transition.Days * oneDay) + timeTravel;
+            const timeTravel = this._transitionOneDayEarlier ? -msInOneDay : 0;
+            return lastModifiedTime + (transition.Days * this._scaledMsPerDay) + timeTravel;
         }
     }
 
@@ -69,8 +75,8 @@ export default class LifecycleDateTime {
     ) {
         if (transition.NoncurrentDays !== undefined) {
             const lastModifiedTime = this.getTimestamp(lastModified);
-            const timeTravel = this._transitionOneDayEarlier ? -oneDay : 0;
-            return lastModifiedTime + (transition.NoncurrentDays * oneDay) + timeTravel;
+            const timeTravel = this._transitionOneDayEarlier ? -msInOneDay : 0;
+            return lastModifiedTime + (transition.NoncurrentDays * this._scaledMsPerDay) + timeTravel;
         }
     }
 }
