@@ -1,6 +1,6 @@
 import ioClient from 'socket.io-client';
 import * as http from 'http';
-import { Server as IOServer } from 'socket.io';
+import io from 'socket.io';
 import * as sioStream from './sio-stream';
 import async from 'async';
 import assert from 'assert';
@@ -497,7 +497,7 @@ export function RPCServer(params: {
     assert(params.logger);
 
     const httpServer = http.createServer();
-    const server = new IOServer(httpServer);
+    const server = io(httpServer);
     const log = params.logger;
 
     /**
@@ -508,7 +508,7 @@ export function RPCServer(params: {
      *
      * @param {BaseService} serviceList - list of services to register
      */
-    (server as any).registerServices = function registerServices(...serviceList: any[]) {
+    server.registerServices = function registerServices(...serviceList: any[]) {
         serviceList.forEach(service => {
             const sock = this.of(service.namespace);
             sock.on('connection', conn => {
@@ -536,7 +536,7 @@ export function RPCServer(params: {
         });
     };
 
-    (server as any).listen = function listen(port, bindAddress = undefined) {
+    server.listen = function listen(port, bindAddress = undefined) {
         httpServer.listen(port, bindAddress);
     };
 
