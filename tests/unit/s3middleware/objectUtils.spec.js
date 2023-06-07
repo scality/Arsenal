@@ -47,3 +47,41 @@ describe('s3middleware object utilities', () => {
         done();
     });
 });
+
+describe('s3middleware:: scaleMsPerDay()', () => {
+    it('should calculate scaled ms per day with scaling factor of undefined', () => {
+        const scaleFactor = undefined;
+        const scaledMsPerDay = objectUtils.scaleMsPerDay(scaleFactor);
+        assert.strictEqual(scaledMsPerDay, 86400000); // 1 day in milliseconds
+    });
+
+    it('should calculate scaled ms per day with scaling factor of 0', () => {
+        const scaleFactor = 0;
+        const scaledMsPerDay = objectUtils.scaleMsPerDay(scaleFactor);
+        assert.strictEqual(scaledMsPerDay, 86400000); // 1 day in milliseconds
+    });
+
+    it('should calculate scaled ms per day with scaling factor of 1', () => {
+        const scaleFactor = 1;
+        const scaledMsPerDay = objectUtils.scaleMsPerDay(scaleFactor);
+        assert.strictEqual(scaledMsPerDay, 86400000); // 1 day in milliseconds
+    });
+
+    it('should calculate scaled ms per day with scaling factor of 2', () => {
+        const scaleFactor = 2;
+        const scaledMsPerDay = objectUtils.scaleMsPerDay(scaleFactor);
+        assert.strictEqual(scaledMsPerDay, 43200000); // 12 hours in milliseconds
+    });
+
+    it('should calculate scaled ms per day with scaling factor of 0.5', () => {
+        const scaleFactor = 0.5;
+        const scaledMsPerDay = objectUtils.scaleMsPerDay(scaleFactor);
+        assert.strictEqual(scaledMsPerDay, 172800000); // 2 days in milliseconds
+    });
+
+    it('should calculate scaled ms per day with scaling factor higher than the number of milliseconds in a day', () => {
+        const scaleFactor = 24 * 60 * 60 * 1000 * 10; // 10 days in milliseconds
+        const scaledMsPerDay = objectUtils.scaleMsPerDay(scaleFactor);
+        assert.strictEqual(scaledMsPerDay, 1); // 1 ms
+    });
+});
