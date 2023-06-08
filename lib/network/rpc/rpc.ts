@@ -497,7 +497,7 @@ export function RPCServer(params: {
     assert(params.logger);
 
     const httpServer = http.createServer();
-    const server = new IOServer(httpServer);
+    const server = new IOServer(httpServer, { maxHttpBufferSize: 1e8 });
     const log = params.logger;
 
     /**
