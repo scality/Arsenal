@@ -212,6 +212,36 @@ describe('MongoClientInterface:delObject', () => {
             return done();
         });
     });
+
+    it('internalDeleteObject:: should directly delete object if params.shouldOnlyDelete is true', done => {
+        const collection = {
+            deleteOne: sinon.stub().returns(Promise.resolve()),
+        };
+        const params = {
+            shouldOnlyDelete: true,
+        };
+        client.internalDeleteObject(collection, 'example-bucket', 'example-object', null, logger, err => {
+            assert.deepEqual(err, null);
+            assert(collection.deleteOne.calledOnce);
+            return done();
+        }, params);
+    });
+
+    it('internalDeleteObject:: should go through the normal flow if params is null', done => {
+        const findOneAndUpdate = sinon.stub().callsArgWith(3, null, { value: { value: objMD } });
+        const bulkWrite = sinon.stub().callsArgWith(2, null);
+        const collection = {
+            findOneAndUpdate,
+            bulkWrite,
+        };
+        client.internalDeleteObject(collection, 'example-bucket', 'example-object', null, logger, err => {
+            assert.deepEqual(err, null);
+            assert(findOneAndUpdate.calledOnce);
+            assert(bulkWrite.calledOnce);
+            return done();
+        });
+    });
+
     // incompatible with 7.x ObjectMD
     it.skip('internalDeleteObject:: should get PHD object with versionId', done => {
         const findOneAndUpdate = sinon.stub().callsArgWith(3, null, { value: { value: objMD } });
