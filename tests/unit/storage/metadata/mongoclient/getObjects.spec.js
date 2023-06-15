@@ -128,7 +128,7 @@ describe('MongoClientInterface:getObjects', () => {
             assert.deepStrictEqual(res[0], {
                 doc: doc.value,
                 key: objects[0].key,
-                versionId: null,
+                versionId: undefined,
             });
             return done();
         });
@@ -157,7 +157,7 @@ describe('MongoClientInterface:getObjects', () => {
             assert.deepStrictEqual(res, [{
                 doc: doc.value,
                 key: objects[0].key,
-                versionId: null,
+                versionId: undefined,
             }]);
             return done();
         });
@@ -186,7 +186,7 @@ describe('MongoClientInterface:getObjects', () => {
             assert.deepStrictEqual(res[0], {
                 doc: doc.value,
                 key: objects[0].key,
-                versionId: null,
+                versionId: undefined,
             });
             return done();
         });
