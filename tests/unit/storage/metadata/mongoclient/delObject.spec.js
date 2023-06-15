@@ -235,6 +235,20 @@ describe('MongoClientInterface:delObject', () => {
         }, originOp);
     });
 
+    it('internalDeleteObject:: should directly delete object if params.shouldOnlyDelete is true', done => {
+        const collection = {
+            deleteOne: sinon.stub().returns(Promise.resolve()),
+        };
+        const params = {
+            shouldOnlyDelete: true,
+        };
+        client.internalDeleteObject(collection, 'example-bucket', 'example-object', null, logger, err => {
+            assert.deepEqual(err, null);
+            assert(collection.deleteOne.calledOnce);
+            return done();
+        }, 's3:ObjectRemoved:Delete', params);
+    });
+
     it('internalDeleteObject:: should get PHD object with versionId', done => {
         const findOneAndUpdate = sinon.stub().resolves({ value: { value: objMD } });
         const collection = {
