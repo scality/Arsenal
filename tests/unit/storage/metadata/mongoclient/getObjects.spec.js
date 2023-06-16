@@ -305,14 +305,14 @@ describe('MongoClientInterface:getObjects', () => {
 
         const collection = {
             find: () => ({
-                toArray: (cb) => {
+                toArray: () => {
                     const docs = [];
                     for (let i = 1; i < N; i++) {
                         const newDoc = JSON.parse(JSON.stringify(docTemplate));
                         newDoc._id = `example-object-${i}`;
                         docs.push(newDoc);
                     }
-                    cb(null, docs);
+                    return Promise.resolve(docs);
                 },
             }),
         };
