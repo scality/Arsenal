@@ -100,6 +100,7 @@ describe('MongoClientInterface:getObjects', () => {
                 doc: null,
                 key: utils.formatVersionKey(objects[0].key, objects[0].params.versionId, bucketVFormat),
                 versionId: objects[0].params.versionId,
+                err: errors.NoSuchKey,
             });
             return done();
         });
@@ -129,6 +130,7 @@ describe('MongoClientInterface:getObjects', () => {
                 doc: doc.value,
                 key: objects[0].key,
                 versionId: undefined,
+                err: null,
             });
             return done();
         });
@@ -158,6 +160,7 @@ describe('MongoClientInterface:getObjects', () => {
                 doc: doc.value,
                 key: objects[0].key,
                 versionId: undefined,
+                err: null,
             }]);
             return done();
         });
@@ -187,6 +190,7 @@ describe('MongoClientInterface:getObjects', () => {
                 doc: doc.value,
                 key: objects[0].key,
                 versionId: undefined,
+                err: null,
             });
             return done();
         });
@@ -230,6 +234,7 @@ describe('MongoClientInterface:getObjects', () => {
                     doc: docTemplate.value,
                     key: utils.formatVersionKey(objects[i].key, objects[i].params.versionId),
                     versionId: `${i + 1}`,
+                    err: null,
                 });
             }
             assert.deepStrictEqual(res, expectedResults);
@@ -275,6 +280,59 @@ describe('MongoClientInterface:getObjects', () => {
                     doc: i === N - 1 ? null : docTemplate.value,
                     key: utils.formatVersionKey(objects[i].key, objects[i].params.versionId),
                     versionId: `${i + 1}`,
+                    err: i === N - 1 ? errors.NoSuchKey : null,
+                });
+            }
+            assert.deepStrictEqual(res, expectedResults);
+            return done();
+        });
+    });
+
+    it('should return multiple objects and errors if one object latest version retrieval fails', done => {
+        const N = 5;
+        const objects = [];
+        const bucketVFormat = 'v0';
+        for (let i = 1; i <= N; i++) {
+            objects.push({ key: `example-object-${i}`, params: { } });
+        }
+
+        const docTemplate = {
+            _id: 'example-key',
+            value: {
+                isPHD: false,
+            },
+        };
+
+        const collection = {
+            find: () => ({
+                toArray: (cb) => {
+                    const docs = [];
+                    for (let i = 1; i < N; i++) {
+                        const newDoc = JSON.parse(JSON.stringify(docTemplate));
+                        newDoc._id = `example-object-${i}`;
+                        docs.push(newDoc);
+                    }
+                    cb(null, docs);
+                },
+            }),
+        };
+        sinon.stub(client, 'getCollection').callsFake(() => collection);
+        sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null, bucketVFormat));
+        sinon.stub(client, 'getLatestVersion').callsFake((c, objName, vFormat, log, cb) => {
+            if (objName === objects[N - 1].key) {
+                return cb(errors.InternalError);
+            }
+            return cb(null, docTemplate.value);
+        });
+        client.getObjects('example-bucket', objects, logger, (err, res) => {
+            assert.deepStrictEqual(err, null);
+            const expectedResults = [];
+            for (let i = 0; i < N; i++) {
+                expectedResults.push({
+                    doc: i === N - 1 ? null : docTemplate.value,
+                    key: objects[i].key,
+                    versionId: undefined,
+                    err: i === N - 1 ? errors.InternalError : null,
                 });
             }
             assert.deepStrictEqual(res, expectedResults);
