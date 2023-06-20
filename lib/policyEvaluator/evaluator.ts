@@ -324,7 +324,10 @@ export function evaluateAllPolicies(
     requestContext: RequestContext,
     allPolicies: any[],
     log: Logger,
-): string {
+): {
+    verdict: string;
+    isImplicit: boolean;
+} {
     log.trace('evaluating all policies');
     let allow = false;
     let allowWithTagCondition = false;
@@ -333,7 +336,10 @@ export function evaluateAllPolicies(
         const singlePolicyVerdict = evaluatePolicy(requestContext, allPolicies[i], log);
         // If there is any Deny, just return Deny
         if (singlePolicyVerdict === 'Deny') {
-            return 'Deny';
+            return {
+                verdict: 'Deny',
+                isImplicit: false,
+            };
         }
         if (singlePolicyVerdict === 'Allow') {
             allow = true;
@@ -344,6 +350,7 @@ export function evaluateAllPolicies(
         } // else 'Neutral'
     }
     let verdict;
+    let isImplicit = false;
     if (allow) {
         if (denyWithTagCondition) {
             verdict = 'NeedTagConditionEval';
@@ -355,8 +362,9 @@ export function evaluateAllPolicies(
             verdict = 'NeedTagConditionEval';
         } else {
             verdict = 'Deny';
+            isImplicit = true;
         }
     }
-    log.trace('result of evaluating all policies', { verdict });
-    return verdict;
+    log.trace('result of evaluating all policies', { verdict, isImplicit });
+    return { verdict, isImplicit };
 }
