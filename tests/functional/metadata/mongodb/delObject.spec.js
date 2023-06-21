@@ -455,7 +455,7 @@ describe('MongoClientInterface::metadata.deleteObjectMD', () => {
                 ], done);
             });
 
-            it('should delete the object directly if params.shouldOnlyDelete is true', done => {
+            it('should delete the object directly if params.doesNotNeedOpogUpdate is true', done => {
                 const objName = 'object-to-delete';
                 const objVal = {
                     key: 'object-to-delete',
@@ -471,7 +471,7 @@ describe('MongoClientInterface::metadata.deleteObjectMD', () => {
                         metadata.putObjectMD(BUCKET_NAME, objName, objVal, versionParams, logger, next);
                     },
                     next => {
-                        metadata.deleteObjectMD(BUCKET_NAME, objName, { shouldOnlyDelete: true }, logger, next);
+                        metadata.deleteObjectMD(BUCKET_NAME, objName, { doesNotNeedOpogUpdate: true }, logger, next);
                     },
                     next => {
                         metadata.getObjectMD(BUCKET_NAME, objName, null, logger, err => {
@@ -489,9 +489,9 @@ describe('MongoClientInterface::metadata.deleteObjectMD', () => {
                 ], done);
             });
 
-            it('should throw an error if params.shouldOnlyDelete is true and object does not exist', done => {
+            it('should throw an error if params.doesNotNeedOpogUpdate is true and object does not exist', done => {
                 const objName = 'non-existent-object';
-                metadata.deleteObjectMD(BUCKET_NAME, objName, { shouldOnlyDelete: true }, logger, err => {
+                metadata.deleteObjectMD(BUCKET_NAME, objName, { doesNotNeedOpogUpdate: true }, logger, err => {
                     assert.deepStrictEqual(err, errors.InternalError);
                     return done();
                 });
