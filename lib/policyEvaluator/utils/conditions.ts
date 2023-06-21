@@ -166,6 +166,9 @@ export function findConditionKey(
         return requestContext.getNeedTagEval() && requestContext.getRequestObjTags()
             ? getTagKeys(requestContext.getRequestObjTags()!)
             : undefined;
+    // The maximum retention period is 100 years.
+    case 's3:object-lock-remaining-retention-days':
+        return requestContext.getObjectLockRetentionDays() || undefined;
     default:
         return undefined;
     }
