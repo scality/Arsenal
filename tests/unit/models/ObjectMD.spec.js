@@ -818,3 +818,35 @@ describe('ObjectMD::getEncodedVersionId', () => {
         assert.strictEqual(objMd.getEncodedVersionId(), ExternalNullVersionId);
     });
 });
+
+
+describe('ObjectMD::removeObjectLock', () => {
+    let objMd = null;
+    beforeEach(() => {
+        objMd = new ObjectMD();
+    });
+    it('should set retention date, retention mode and legal hold like null and fall', () => {
+        objMd.setLegalHold(true);
+        objMd.setRetentionDate("DateMock");
+        objMd.setRetentionMode("ModeMock");
+
+        objMd.removeObjectLock();
+
+        assert.strictEqual(objMd.getLegalHold(), false);
+        assert.strictEqual(objMd.getRetentionDate(), "");
+        assert.strictEqual(objMd.getRetentionMode(), "");
+    });
+
+    it('should call the methods setLegalHold setRetentionDate and setRetentionMode', () => {
+        objMd.setLegalHold = jest.fn();
+        objMd.setRetentionDate = jest.fn();
+        objMd.setRetentionMode = jest.fn();
+
+        objMd.removeObjectLock();
+
+        expect(objMd.setLegalHold).toBeCalled()
+        expect(objMd.setRetentionDate).toBeCalled()
+        expect(objMd.setRetentionMode).toBeCalled()
+
+    });
+});

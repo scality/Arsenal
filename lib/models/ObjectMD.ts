@@ -1458,4 +1458,17 @@ export default class ObjectMD {
     getIsPHD() {
         return this._data.isPHD;
     }
+
+
+    /**
+     * Remove Object Lock
+     * @return {Boolean}
+     */
+    removeObjectLock() {
+      this.setLegalHold(false);
+      this.setRetentionDate("");
+      this.setRetentionMode("");
+      return this;
+    }
+
 }
