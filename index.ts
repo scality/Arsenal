@@ -44,6 +44,8 @@ export const algorithms = {
         DelimiterMaster: require('./lib/algos/list/delimiterMaster').DelimiterMaster,
         MPU: require('./lib/algos/list/MPU').MultipartUploads,
         DelimiterCurrent: require('./lib/algos/list/delimiterCurrent').DelimiterCurrent,
+        DelimiterNonCurrent: require('./lib/algos/list/delimiterNonCurrent').DelimiterNonCurrent,
+        DelimiterOrphanDeleteMarker: require('./lib/algos/list/delimiterOrphanDeleteMarker').DelimiterOrphanDeleteMarker,
     },
     listTools: {
         DelimiterTools: require('./lib/algos/list/tools'),
