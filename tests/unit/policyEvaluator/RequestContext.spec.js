@@ -111,6 +111,7 @@ describe('RequestContext', () => {
         specificResource: 'specific-resource',
         sslEnabled: true,
         tokenIssueTime: null,
+        objectLockRetentionDays: null,
     };
     it('serialize()', () => {
         assert.deepStrictEqual(JSON.parse(rc.serialize()), SerializedFields);
