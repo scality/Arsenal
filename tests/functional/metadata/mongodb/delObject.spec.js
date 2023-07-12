@@ -454,6 +454,48 @@ describe('MongoClientInterface::metadata.deleteObjectMD', () => {
                     },
                 ], done);
             });
+
+            it('should delete the object directly if params.doesNotNeedOpogUpdate is true', done => {
+                const objName = 'object-to-delete';
+                const objVal = {
+                    key: 'object-to-delete',
+                    versionId: 'null',
+                };
+                const versionParams = {
+                    versioning: false,
+                    versionId: null,
+                    repairMaster: null,
+                };
+                async.series([
+                    next => {
+                        metadata.putObjectMD(BUCKET_NAME, objName, objVal, versionParams, logger, next);
+                    },
+                    next => {
+                        metadata.deleteObjectMD(BUCKET_NAME, objName, { doesNotNeedOpogUpdate: true }, logger, next);
+                    },
+                    next => {
+                        metadata.getObjectMD(BUCKET_NAME, objName, null, logger, err => {
+                            assert.deepStrictEqual(err, errors.NoSuchKey);
+                            return next();
+                        });
+                    },
+                    next => {
+                        getObjectCount((err, count) => {
+                            assert.deepStrictEqual(err, null);
+                            assert.strictEqual(count, 0);
+                            return next();
+                        });
+                    },
+                ], done);
+            });
+
+            it('should throw an error if params.doesNotNeedOpogUpdate is true and object does not exist', done => {
+                const objName = 'non-existent-object';
+                metadata.deleteObjectMD(BUCKET_NAME, objName, { doesNotNeedOpogUpdate: true }, logger, err => {
+                    assert.deepStrictEqual(err, errors.InternalError);
+                    return done();
+                });
+            });
         });
     });
 });
