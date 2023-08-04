@@ -51,6 +51,8 @@ class DelimiterCurrent extends DelimiterMaster {
             }
         }
 
+        // The genMDParamsV1() function calls genMDParamsV0() in the Delimiter class,
+        // making sure that this.start is set for both v0 and v1 bucket formats
         this.start = Date.now();
 
         return params;
