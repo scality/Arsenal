@@ -271,6 +271,43 @@ function getListingKey(key, vFormat) {
             assert.deepStrictEqual(delimiter.result(), expectedResult);
         });
 
+        it('should stop fetching entries if the max keys are reached and return the accurate next marker', () => {
+            const beforeDate = '1970-01-01T00:00:00.005Z';
+            const excludedDataStoreName = 'location-excluded';
+            const delimiter = new DelimiterCurrent({ beforeDate, excludedDataStoreName, maxKeys: 1 }, fakeLogger, v);
+
+            const masterKey1 = 'key1';
+            const date1 = '1970-01-01T00:00:00.004Z';
+            const value1 = `{"last-modified": "${date1}", "dataStoreName": "valid"}`;
+
+            assert.strictEqual(delimiter.filter({
+                key: getListingKey(masterKey1, v),
+                value: value1,
+            }), FILTER_ACCEPT);
+
+            const masterKey2 = 'key2';
+            const date2 = '1970-01-01T00:00:00.000Z';
+            const value2 = `{"last-modified": "${date2}", "dataStoreName": "${excludedDataStoreName}"}`;
+
+            assert.strictEqual(delimiter.filter({
+                key: getListingKey(masterKey2, v),
+                value: value2,
+            }), FILTER_END);
+
+            const expectedResult = {
+                Contents: [
+                    {
+                        key: masterKey1,
+                        value: value1,
+                    },
+                ],
+                IsTruncated: true,
+                NextMarker: masterKey1,
+            };
+
+            assert.deepStrictEqual(delimiter.result(), expectedResult);
+        });
+
         it('should return the object created before beforeDate and with dataStore name that does not match', () => {
             const beforeDate = '1970-01-01T00:00:00.003Z';
             const excludedDataStoreName = 'location-excluded';

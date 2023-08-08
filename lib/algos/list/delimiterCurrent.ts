@@ -76,6 +76,10 @@ class DelimiterCurrent extends DelimiterMaster {
     }
 
     addContents(key, value) {
+        if (this._reachedMaxKeys()) {
+            return FILTER_END;
+        }
+
         if (this.start && Date.now() - this.start > DELIMITER_TIMEOUT_MS) {
             this.IsTruncated = true;
             this.logger.info('listing stopped after expected internal timeout',
