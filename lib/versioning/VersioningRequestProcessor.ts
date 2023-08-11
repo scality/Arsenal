@@ -1,6 +1,6 @@
 import errors, { ArsenalError } from '../errors';
 import { Version } from './Version';
-import { generateVersionId as genVID } from './VersionID';
+import { generateVersionId as genVID, getInfVid } from './VersionID';
 import WriteCache from './WriteCache';
 import WriteGatheringManager from './WriteGatheringManager';
 
@@ -485,10 +485,13 @@ export default class VersioningRequestProcessor {
                 ops.push({ key: versionKey, value: request.value });
             }
             if (data === undefined ||
-                (Version.from(data).getVersionId() ?? '') >= versionId) {
+                (Version.from(data).getVersionId() ?? '') >= versionId ||
+                (versionId === getInfVid(this.replicationGroupId) && !Version.from(data).getVersionId())) {
                 // master does not exist or is not newer than put
                 // version and needs to be updated as well.
                 // Note that older versions have a greater version ID.
+                // If an infinite version ID is used and the master does not have a versionId,
+                // then the master is updated.
                 ops.push({ key: request.key, value: request.value });
             } else if (request.options.isNull) {
                 logger.debug('create or update null key');
