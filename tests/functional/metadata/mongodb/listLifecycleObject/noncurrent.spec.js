@@ -345,8 +345,7 @@ describe('MongoClientInterface::metadata.listLifecycleObject::noncurrent', () =>
                     });
                 });
 
-            
-                it('Should return trucated list of non-current versions excluding keys stored in location1', done => {
+            it('Should return trucated list of non-current versions excluding keys stored in location1', done => {
                 const params = {
                     listingType: 'DelimiterNonCurrent',
                     excludedDataStoreName: location1,

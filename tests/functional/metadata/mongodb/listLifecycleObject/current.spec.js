@@ -577,7 +577,8 @@ describe('MongoClientInterface::metadata.listLifecycleObject::current', () => {
                             deletedVersionId = JSON.parse(res).versionId;
                             return next(null);
                         }),
-                    next => metadata.deleteObjectMD(BUCKET_NAME, objVal.key, { versionId: deletedVersionId }, logger, next),
+                    next => metadata.deleteObjectMD(BUCKET_NAME, objVal.key,
+                        { versionId: deletedVersionId }, logger, next),
                     next => metadata.listLifecycleObject(BUCKET_NAME, params, logger, (err, data) => {
                         assert.ifError(err);
                         assert.strictEqual(data.Contents.length, 3);
