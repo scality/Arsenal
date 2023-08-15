@@ -1,5 +1,6 @@
 const assert = require('assert');
 const async = require('async');
+const { getInfVid } = require('../../../lib/versioning/VersionID');
 
 const Version = require('../../../lib/versioning/Version').Version;
 
@@ -215,6 +216,58 @@ describe('test VSP', () => {
         },
         (res, next) => {
             assert.strictEqual(JSON.parse(res).qux, 'quz2.1');
+            next();
+        }],
+        done);
+    });
+
+    it('should update master if a infinite versionId is passed and the master does not have a versionId', done => {
+        let v1;
+        let v2;
+
+        async.waterfall([next => {
+            const request = {
+                db: 'foo',
+                key: 'bar',
+                value: '{"qux":"quz"}',
+                options: { versioning: false },
+            };
+            vsp.put(request, logger, next);
+        },
+        (res, next) => {
+            // should overwrite the master
+            const request = {
+                db: 'foo',
+                key: 'bar',
+                value: '{"qux":"quz2"}',
+                options: { versioning: true, versionId: getInfVid('PARIS') },
+            };
+            vsp.put(request, logger, next);
+        },
+        (_, next) => {
+            // fetch master
+            const request = {
+                db: 'foo',
+                key: 'bar',
+            };
+            vsp.get(request, logger, next);
+        },
+        (res, next) => {
+            // check that master has been updated
+            assert.strictEqual(JSON.parse(res).qux, 'quz2');
+            next();
+        },
+        (next) => {
+            // check that the version is accessible
+            const request = {
+                db: 'foo',
+                key: 'bar',
+                versionId: getInfVid('PARIS'),
+            };
+            vsp.get(request, logger, next);
+        },
+        (res, next) => {
+            assert.strictEqual(JSON.parse(res).qux, 'quz2');
             next();
         }],
         done);
