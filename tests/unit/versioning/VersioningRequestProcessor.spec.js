@@ -222,9 +222,6 @@ describe('test VSP', () => {
     });
 
     it('should update master if a infinite versionId is passed and the master does not have a versionId', done => {
-        let v1;
-        let v2;
-
         async.waterfall([next => {
             const request = {
                 db: 'foo',
