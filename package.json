@@ -47,7 +47,7 @@
     "simple-glob": "^0.2.0",
     "socket.io": "~4.6.1",
     "socket.io-client": "~4.6.1",
-    "sproxydclient": "git+https://github.com/scality/sproxydclient#bugfix/SPRXCLT-12-put-stuck-on-conn-reuse",
+    "sproxydclient": "git+https://github.com/scality/sproxydclient#improvement/SPRXCLT-14-bump-8.0.10",
     "utf8": "3.0.0",
     "uuid": "^3.0.1",
     "werelogs": "scality/werelogs#8.1.2",
