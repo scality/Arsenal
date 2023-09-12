@@ -16,7 +16,7 @@ const sampleUserPolicy = {
 };
 const sampleResourcePolicy = {
     Version: '2012-10-17',
-    Id: 'PolicyId12312345',
+    Id: 'cd3ad3d9-2776-4ef1-a904-4c229d1642ee',
     Statement: [
         {
             Sid: 'ResourcePolicy1',
