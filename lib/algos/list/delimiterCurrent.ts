@@ -10,8 +10,6 @@ type ResultObject = {
     NextMarker ?: string;
 };
 
-const DELIMITER_TIMEOUT_MS = 10 * 1000; // 10s
-
 /**
  * Handle object listing with parameters. This extends the base class DelimiterMaster
  * to return the master/current versions.
@@ -22,6 +20,7 @@ class DelimiterCurrent extends DelimiterMaster {
      * @param {Object}  parameters            - listing parameters
      * @param {String}  parameters.beforeDate - limit the response to keys older than beforeDate
      * @param {String}  parameters.excludedDataStoreName - excluded datatore name
+     * @param {Number} parameters.maxScannedLifecycleListingEntries - max number of entries to be scanned
      * @param {RequestLogger} logger          - The logger of the request
      * @param {String} [vFormat]              - versioning key format
      */
@@ -30,8 +29,7 @@ class DelimiterCurrent extends DelimiterMaster {
 
         this.beforeDate = parameters.beforeDate;
         this.excludedDataStoreName = parameters.excludedDataStoreName;
-        // used for monitoring
-        this.start = null;
+        this.maxScannedLifecycleListingEntries = parameters.maxScannedLifecycleListingEntries;
         this.scannedKeys = 0;
     }
 
@@ -50,10 +48,6 @@ class DelimiterCurrent extends DelimiterMaster {
                 ne: this.excludedDataStoreName,
             }
         }
-
-        // The genMDParamsV1() function calls genMDParamsV0() in the Delimiter class,
-        // making sure that this.start is set for both v0 and v1 bucket formats
-        this.start = Date.now();
 
         return params;
     }
@@ -80,11 +74,11 @@ class DelimiterCurrent extends DelimiterMaster {
             return FILTER_END;
         }
 
-        if (this.start && Date.now() - this.start > DELIMITER_TIMEOUT_MS) {
+        if (this.maxScannedLifecycleListingEntries && this.scannedKeys >= this.maxScannedLifecycleListingEntries) {
             this.IsTruncated = true;
-            this.logger.info('listing stopped after expected internal timeout',
+            this.logger.info('listing stopped due to reaching the maximum scanned entries limit',
                 {
-                    timeoutMs: DELIMITER_TIMEOUT_MS,
+                    maxScannedLifecycleListingEntries: this.maxScannedLifecycleListingEntries,
                     scannedKeys: this.scannedKeys,
                 });
             return FILTER_END;
