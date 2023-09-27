@@ -13,10 +13,6 @@ const VSConst =
     require('../../../../lib/versioning/constants').VersioningConstants;
 const { DbPrefixes } = VSConst;
 
-// TODO: find an acceptable timeout value.
-const DELIMITER_TIMEOUT_MS = 10 * 1000; // 10s
-
-
 const VID_SEP = VSConst.VersionId.Separator;
 const EmptyResult = {
     Contents: [],
@@ -49,9 +45,11 @@ function getListingKey(key, vFormat) {
         it('should return expected metadata parameters', () => {
             const prefix = 'pre';
             const marker = 'premark';
+            const maxScannedLifecycleListingEntries = 2;
             const delimiter = new DelimiterOrphanDeleteMarker({
                 prefix,
                 marker,
+                maxScannedLifecycleListingEntries,
             }, fakeLogger, v);
 
             let expectedParams;
@@ -70,7 +68,7 @@ function getListingKey(key, vFormat) {
                 ];
             }
             assert.deepStrictEqual(delimiter.genMDParams(), expectedParams);
-            assert(delimiter.start);
+            assert.strictEqual(delimiter.maxScannedLifecycleListingEntries, 2);
         });
         it('should accept entry starting with prefix', () => {
             const delimiter = new DelimiterOrphanDeleteMarker({ prefix: 'prefix' }, fakeLogger, v);
@@ -305,8 +303,9 @@ function getListingKey(key, vFormat) {
             assert.deepStrictEqual(delimiter.result(), expectedResult);
         });
 
-        it('should end filtering if delimiter timeout', () => {
-            const delimiter = new DelimiterOrphanDeleteMarker({ }, fakeLogger, v);
+        it('should end filtering if max scanned entries value is reached', () => {
+            const maxScannedLifecycleListingEntries = 2;
+            const delimiter = new DelimiterOrphanDeleteMarker({ maxScannedLifecycleListingEntries }, fakeLogger, v);
 
             // filter the first orphan delete marker
             const masterKey1 = 'key1';
@@ -320,9 +319,6 @@ function getListingKey(key, vFormat) {
                 value: value1,
             }), FILTER_ACCEPT);
 
-            // force delimiter to timeout.
-            delimiter.start = Date.now() - (DELIMITER_TIMEOUT_MS + 1);
-
             // filter the second orphan delete marker
             const masterKey2 = 'key2';
             const versionId2 = 'version2';
@@ -333,6 +329,18 @@ function getListingKey(key, vFormat) {
             assert.strictEqual(delimiter.filter({
                 key: getListingKey(versionKey2, v),
                 value: value2,
+            }), FILTER_ACCEPT);
+
+            // filter the third orphan delete marker
+            const masterKey3 = 'key3';
+            const versionId3 = 'version3';
+            const versionKey3 = `${masterKey3}${VID_SEP}${versionId3}`;
+            const date3 = '1970-01-01T00:00:00.001Z';
+            const value3 = `{"versionId":"${versionId3}","last-modified":"${date3}","isDeleteMarker":true}`;
+
+            assert.strictEqual(delimiter.filter({
+                key: getListingKey(versionKey3, v),
+                value: value3,
             }), FILTER_END);
 
             const expectedResult = {
@@ -342,6 +350,41 @@ function getListingKey(key, vFormat) {
                         value: value1,
                     },
                 ],
+                NextMarker: masterKey2,
+                IsTruncated: true,
+            };
+
+            assert.deepStrictEqual(delimiter.result(), expectedResult);
+        });
+
+        it('should not consider the last delete marker scanned as an orphan if listing interrupted', () => {
+            const maxScannedLifecycleListingEntries = 1;
+            const delimiter = new DelimiterOrphanDeleteMarker({ maxScannedLifecycleListingEntries }, fakeLogger, v);
+
+            // filter the delete marker (not orphan)
+            const masterKey1 = 'key1';
+            const versionId1 = 'version1';
+            const versionKey1 = `${masterKey1}${VID_SEP}${versionId1}`;
+            const date1 = '1970-01-01T00:00:00.001Z';
+            const value1 = `{"versionId":"${versionId1}","last-modified":"${date1}","isDeleteMarker":true}`;
+
+            assert.strictEqual(delimiter.filter({
+                key: getListingKey(versionKey1, v),
+                value: value1,
+            }), FILTER_ACCEPT);
+
+            const versionId2 = 'version2';
+            const versionKey2 = `${masterKey1}${VID_SEP}${versionId2}`;
+            const date2 = '1970-01-01T00:00:00.002Z';
+            const value2 = `{"versionId":"${versionId2}","last-modified":"${date2}","isDeleteMarker":true}`;
+
+            assert.strictEqual(delimiter.filter({
+                key: getListingKey(versionKey2, v),
+                value: value2,
+            }), FILTER_END);
+
+            const expectedResult = {
+                Contents: [],
                 NextMarker: masterKey1,
                 IsTruncated: true,
             };
@@ -349,9 +392,11 @@ function getListingKey(key, vFormat) {
             assert.deepStrictEqual(delimiter.result(), expectedResult);
         });
 
-        it('should end filtering if delimiter timeout with empty content', () => {
-            const delimiter = new DelimiterOrphanDeleteMarker({ }, fakeLogger, v);
+        it('should end filtering with empty content if max scanned entries value is reached', () => {
+            const maxScannedLifecycleListingEntries = 2;
+            const delimiter = new DelimiterOrphanDeleteMarker({ maxScannedLifecycleListingEntries }, fakeLogger, v);
 
+            // not a delete marker
             const masterKey1 = 'key1';
             const versionId1 = 'version1';
             const versionKey1 = `${masterKey1}${VID_SEP}${versionId1}`;
@@ -363,6 +408,7 @@ function getListingKey(key, vFormat) {
                 value: value1,
             }), FILTER_ACCEPT);
 
+            // not a delete marker
             const masterKey2 = 'key2';
             const versionId2 = 'version2';
             const versionKey2 = `${masterKey2}${VID_SEP}${versionId2}`;
@@ -374,10 +420,7 @@ function getListingKey(key, vFormat) {
                 value: value2,
             }), FILTER_ACCEPT);
 
-            // force delimiter to timeout.
-            delimiter.start = Date.now() - (DELIMITER_TIMEOUT_MS + 1);
-
-            // filter the third orphan delete marker
+            // orphan delete marker
             const masterKey3 = 'key3';
             const versionId3 = 'version3';
             const versionKey3 = `${masterKey3}${VID_SEP}${versionId3}`;

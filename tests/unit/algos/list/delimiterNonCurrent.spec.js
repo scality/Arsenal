@@ -12,9 +12,6 @@ const VSConst =
     require('../../../../lib/versioning/constants').VersioningConstants;
 const { DbPrefixes } = VSConst;
 
-// TODO: find an acceptable timeout value.
-const DELIMITER_TIMEOUT_MS = 10 * 1000; // 10s
-
 const VID_SEP = VSConst.VersionId.Separator;
 const EmptyResult = {
     Contents: [],
@@ -48,10 +45,12 @@ function getListingKey(key, vFormat) {
             const prefix = 'pre';
             const keyMarker = 'premark';
             const versionIdMarker = 'vid1';
+            const maxScannedLifecycleListingEntries = 2;
             const delimiter = new DelimiterNonCurrent({
                 prefix,
                 keyMarker,
                 versionIdMarker,
+                maxScannedLifecycleListingEntries,
             }, fakeLogger, v);
 
             let expectedParams;
@@ -70,7 +69,7 @@ function getListingKey(key, vFormat) {
                 ];
             }
             assert.deepStrictEqual(delimiter.genMDParams(), expectedParams);
-            assert(delimiter.start);
+            assert.strictEqual(delimiter.maxScannedLifecycleListingEntries, 2);
         });
         it('should accept entry starting with prefix', () => {
             const delimiter = new DelimiterNonCurrent({ prefix: 'prefix' }, fakeLogger, v);
@@ -286,8 +285,9 @@ function getListingKey(key, vFormat) {
             assert.deepStrictEqual(delimiter.result(), expectedResult);
         });
 
-        it('should end filtering if delimiter timeout', () => {
-            const delimiter = new DelimiterNonCurrent({ }, fakeLogger, v);
+        it('should return the non-current versions pushed before max scanned entries value is reached', () => {
+            const maxScannedLifecycleListingEntries = 2;
+            const delimiter = new DelimiterNonCurrent({ maxScannedLifecycleListingEntries }, fakeLogger, v);
 
             const masterKey = 'key';
 
@@ -312,9 +312,6 @@ function getListingKey(key, vFormat) {
                 key: getListingKey(versionKey2, v),
                 value: value2,
             }), FILTER_ACCEPT);
-
-            // force delimiter to timeout.
-            delimiter.start = Date.now() - (DELIMITER_TIMEOUT_MS + 1);
 
             // filter third version
             const versionId3 = 'version3';
@@ -343,8 +340,9 @@ function getListingKey(key, vFormat) {
             assert.deepStrictEqual(delimiter.result(), expectedResult);
         });
 
-        it('should end filtering if delimiter timeout with empty content', () => {
-            const delimiter = new DelimiterNonCurrent({ }, fakeLogger, v);
+        it('should return empty content after max scanned entries value is reached', () => {
+            const maxScannedLifecycleListingEntries = 2;
+            const delimiter = new DelimiterNonCurrent({ maxScannedLifecycleListingEntries }, fakeLogger, v);
 
             // filter current version
             const masterKey1 = 'key1';
@@ -369,9 +367,6 @@ function getListingKey(key, vFormat) {
                 key: getListingKey(versionKey2, v),
                 value: value2,
             }), FILTER_ACCEPT);
-
-            // force delimiter to timeout.
-            delimiter.start = Date.now() - (DELIMITER_TIMEOUT_MS + 1);
 
             // filter current version
             const masterKey3 = 'key3';

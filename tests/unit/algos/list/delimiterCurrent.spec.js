@@ -13,8 +13,6 @@ const VSConst =
     require('../../../../lib/versioning/constants').VersioningConstants;
 const { DbPrefixes } = VSConst;
 
-const DELIMITER_TIMEOUT_MS = 10 * 1000; // 10s
-
 const EmptyResult = {
     Contents: [],
     IsTruncated: false,
@@ -46,11 +44,13 @@ function getListingKey(key, vFormat) {
             const marker = 'premark';
             const beforeDate = '1970-01-01T00:00:00.005Z';
             const excludedDataStoreName = 'location1';
+            const maxScannedLifecycleListingEntries = 2;
             const delimiter = new DelimiterCurrent({
                 prefix,
                 marker,
                 beforeDate,
                 excludedDataStoreName,
+                maxScannedLifecycleListingEntries,
             }, fakeLogger, v);
 
             const expectedParams = {
@@ -64,7 +64,7 @@ function getListingKey(key, vFormat) {
                 lt: getListingKey('prf', v),
             };
             assert.deepStrictEqual(delimiter.genMDParams(), expectedParams);
-            assert(delimiter.start);
+            assert.strictEqual(delimiter.maxScannedLifecycleListingEntries, 2);
         });
 
         it('should accept entry starting with prefix', () => {
@@ -353,9 +353,10 @@ function getListingKey(key, vFormat) {
             assert.deepStrictEqual(delimiter.result(), expectedResult);
         });
 
-        it('should return the objects pushed before timeout', () => {
+        it('should return the objects pushed before max scanned entries value is reached', () => {
             const beforeDate = '1970-01-01T00:00:00.003Z';
-            const delimiter = new DelimiterCurrent({ beforeDate }, fakeLogger, v);
+            const maxScannedLifecycleListingEntries = 2;
+            const delimiter = new DelimiterCurrent({ beforeDate, maxScannedLifecycleListingEntries }, fakeLogger, v);
 
             const masterKey1 = 'key1';
             const date1 = '1970-01-01T00:00:00.000Z';
@@ -374,8 +375,6 @@ function getListingKey(key, vFormat) {
                 key: getListingKey(masterKey2, v),
                 value: value2,
             }), FILTER_ACCEPT);
-
-            delimiter.start = Date.now() - (DELIMITER_TIMEOUT_MS + 1);
 
             const masterKey3 = 'key3';
             const date3 = '1970-01-01T00:00:00.002Z';
@@ -404,9 +403,10 @@ function getListingKey(key, vFormat) {
             assert.deepStrictEqual(delimiter.result(), expectedResult);
         });
 
-        it('should return empty content after timeout', () => {
+        it('should return empty content after max scanned entries value is reached', () => {
             const beforeDate = '1970-01-01T00:00:00.003Z';
-            const delimiter = new DelimiterCurrent({ beforeDate }, fakeLogger, v);
+            const maxScannedLifecycleListingEntries = 2;
+            const delimiter = new DelimiterCurrent({ beforeDate, maxScannedLifecycleListingEntries }, fakeLogger, v);
 
             const masterKey1 = 'key1';
             const date1 = '1970-01-01T00:00:00.004Z';
@@ -425,8 +425,6 @@ function getListingKey(key, vFormat) {
                 key: getListingKey(masterKey2, v),
                 value: value2,
             }), FILTER_ACCEPT);
-
-            delimiter.start = Date.now() - (DELIMITER_TIMEOUT_MS + 1);
 
             const masterKey3 = 'key3';
             const date3 = '1970-01-01T00:00:00.006Z';
