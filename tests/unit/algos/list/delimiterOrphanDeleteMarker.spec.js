@@ -350,7 +350,7 @@ function getListingKey(key, vFormat) {
                         value: value1,
                     },
                 ],
-                NextMarker: masterKey2,
+                NextMarker: masterKey1,
                 IsTruncated: true,
             };
 
@@ -385,7 +385,7 @@ function getListingKey(key, vFormat) {
 
             const expectedResult = {
                 Contents: [],
-                NextMarker: masterKey1,
+                NextMarker: null,
                 IsTruncated: true,
             };
 
@@ -434,7 +434,56 @@ function getListingKey(key, vFormat) {
 
             const expectedResult = {
                 Contents: [],
-                NextMarker: masterKey2,
+                NextMarker: masterKey1,
+                IsTruncated: true,
+            };
+
+            assert.deepStrictEqual(delimiter.result(), expectedResult);
+        });
+
+        it('should return NextMarker when the max scanned entries is reached while processing a non-orphan key', () => {
+        // This approach prevents us from starting the next listing from the non-orphan key and, as a result,
+        // avoids the need to revisit all its versions unnecessarily.
+            const maxScannedLifecycleListingEntries = 2;
+            const delimiter = new DelimiterOrphanDeleteMarker({ maxScannedLifecycleListingEntries }, fakeLogger, v);
+
+            // key 1 is not an orphan
+            const masterKey1 = 'key1';
+            const versionId1 = 'version1';
+            const versionKey1 = `${masterKey1}${VID_SEP}${versionId1}`;
+            const date1 = '1970-01-01T00:00:00.002Z';
+            const value1 = `{"versionId":"${versionId1}","last-modified":"${date1}","isDeleteMarker":true}`;
+
+            assert.strictEqual(delimiter.filter({
+                key: getListingKey(versionKey1, v),
+                value: value1,
+            }), FILTER_ACCEPT);
+
+            const versionId2 = 'version2';
+            const versionKey2 = `${masterKey1}${VID_SEP}${versionId2}`;
+            const date2 = '1970-01-01T00:00:00.001Z';
+            const value2 = `{"versionId":"${versionId2}","last-modified":"${date2}"}`;
+
+            assert.strictEqual(delimiter.filter({
+                key: getListingKey(versionKey2, v),
+                value: value2,
+            }), FILTER_ACCEPT);
+
+            // orphan delete marker
+            const masterKey3 = 'key3';
+            const versionId3 = 'version3';
+            const versionKey3 = `${masterKey3}${VID_SEP}${versionId3}`;
+            const date3 = '1970-01-01T00:00:00.000Z';
+            const value3 = `{"versionId":"${versionId3}","last-modified":"${date3}","isDeleteMarker":true}`;
+
+            assert.strictEqual(delimiter.filter({
+                key: getListingKey(versionKey3, v),
+                value: value3,
+            }), FILTER_END);
+
+            const expectedResult = {
+                Contents: [],
+                NextMarker: masterKey1,
                 IsTruncated: true,
             };
 
