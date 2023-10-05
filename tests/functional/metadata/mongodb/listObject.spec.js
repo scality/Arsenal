@@ -8,6 +8,8 @@ const MetadataWrapper =
     require('../../../../lib/storage/metadata/MetadataWrapper');
 const { versioning } = require('../../../../index');
 const { BucketVersioningKeyFormat } = versioning.VersioningConstants;
+const sinon = require('sinon');
+const MongoReadStream = require('../../../../lib/storage/metadata/mongoclient/readStream');
 
 const IMPL_NAME = 'mongodb';
 const DB_NAME = 'metadata';
@@ -476,6 +478,25 @@ describe('MongoClientInterface::metadata.listObject', () => {
                         return next();
                     }),
                 ], done);
+            });
+
+            it('Should properly destroy the MongoDBReadStream', done => {
+                // eslint-disable-next-line func-names
+                const destroyStub = sinon.stub(MongoReadStream.prototype, 'destroy').callsFake(function (...args) {
+                    // You can add extra logic here if needed
+                    MongoReadStream.prototype.destroy.wrappedMethod.apply(this, ...args);
+                });
+                const params = {
+                    listingType: 'DelimiterMaster',
+                    maxKeys: 100,
+                };
+                return metadata.listObject(BUCKET_NAME, params, logger, err => {
+                    assert.ifError(err);
+                    assert(destroyStub.called, 'Destroy should have been called on MongoReadStream');
+                    // Restore original destroy method
+                    destroyStub.restore();
+                    return done();
+                });
             });
         });
     });
