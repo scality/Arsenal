@@ -498,6 +498,31 @@ describe('MongoClientInterface::metadata.listObject', () => {
                     return done();
                 });
             });
+
+
+            it('Should properly destroy the MongoDBReadStream on error', done => {
+                // eslint-disable-next-line func-names
+                const destroyStub = sinon.stub(MongoReadStream.prototype, 'destroy').callsFake(function (...args) {
+                    // You can add extra logic here if needed
+                    MongoReadStream.prototype.destroy.wrappedMethod.apply(this, ...args);
+                });
+                // stub the cursor creation to emit an error
+                // eslint-disable-next-line func-names
+                const readStub = sinon.stub(MongoReadStream.prototype, '_read').callsFake(function () {
+                    this.emit('error', new Error('error'));
+                });
+                const params = {
+                    listingType: 'DelimiterMaster',
+                    maxKeys: 100,
+                };
+                return metadata.listObject(BUCKET_NAME, params, logger, err => {
+                    assert(err, 'Expected an error');
+                    assert(destroyStub.called, 'Destroy should have been called on MongoReadStream');
+                    destroyStub.restore();
+                    readStub.restore();
+                    return done();
+                });
+            });
         });
     });
 });
