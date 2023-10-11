@@ -1,4 +1,5 @@
 export { default as ARN } from './ARN';
+export { default as BackendInfo } from './BackendInfo';
 export { default as BucketInfo } from './BucketInfo';
 export { default as ObjectMD } from './ObjectMD';
 export { default as ObjectMDLocation } from './ObjectMDLocation';
