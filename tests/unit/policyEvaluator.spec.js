@@ -1425,7 +1425,10 @@ describe('policyEvaluator', () => {
             const result = evaluateAllPolicies(requestContext,
                 [samples['arn:aws:iam::aws:policy/AmazonS3FullAccess'],
                     samples['Deny Bucket Policy']], log);
-            assert.strictEqual(result, 'Deny');
+            assert.deepStrictEqual(result, {
+                verdict: 'Deny',
+                isImplicit: false,
+            });
         });
 
         it('should deny access if request action is not in any policy', () => {
@@ -1436,7 +1439,10 @@ describe('policyEvaluator', () => {
             const result = evaluateAllPolicies(requestContext,
                 [samples['Multi-Statement Policy'],
                     samples['Variable Bucket Policy']], log);
-            assert.strictEqual(result, 'Deny');
+            assert.deepStrictEqual(result, {
+                verdict: 'Deny',
+                isImplicit: true,
+            });
         });
 
         it('should deny access if request resource is not in any policy', () => {
@@ -1448,7 +1454,10 @@ describe('policyEvaluator', () => {
                 samples['Multi-Statement Policy'],
                 samples['Variable Bucket Policy'],
             ], log);
-            assert.strictEqual(result, 'Deny');
+            assert.deepStrictEqual(result, {
+                verdict: 'Deny',
+                isImplicit: true,
+            });
         });
 
         const TestMatrixPolicies = {
@@ -1507,67 +1516,115 @@ describe('policyEvaluator', () => {
         const TestMatrix = [
             {
                 policiesToEvaluate: [],
-                expectedPolicyEvaluation: 'Deny',
+                expectedPolicyEvaluation: {
+                    verdict: 'Deny',
+                    isImplicit: true,
+                },
             },
             {
                 policiesToEvaluate: ['Allow'],
-                expectedPolicyEvaluation: 'Allow',
+                expectedPolicyEvaluation: {
+                    verdict: 'Allow',
+                    isImplicit: false,
+                },
             },
             {
                 policiesToEvaluate: ['Neutral'],
-                expectedPolicyEvaluation: 'Deny',
+                expectedPolicyEvaluation: {
+                    verdict: 'Deny',
+                    isImplicit: true,
+                },
             },
             {
                 policiesToEvaluate: ['Deny'],
-                expectedPolicyEvaluation: 'Deny',
+                expectedPolicyEvaluation: {
+                    verdict: 'Deny',
+                    isImplicit: false,
+                },
             },
             {
                 policiesToEvaluate: ['Allow', 'Allow'],
-                expectedPolicyEvaluation: 'Allow',
+                expectedPolicyEvaluation: {
+                    verdict: 'Allow',
+                    isImplicit: false,
+                },
             },
             {
                 policiesToEvaluate: ['Allow', 'Neutral'],
-                expectedPolicyEvaluation: 'Allow',
+                expectedPolicyEvaluation: {
+                    verdict: 'Allow',
+                    isImplicit: false,
+                },
             },
             {
                 policiesToEvaluate: ['Neutral', 'Allow'],
-                expectedPolicyEvaluation: 'Allow',
+                expectedPolicyEvaluation: {
+                    verdict: 'Allow',
+                    isImplicit: false,
+                },
             },
             {
                 policiesToEvaluate: ['Neutral', 'Neutral'],
-                expectedPolicyEvaluation: 'Deny',
+                expectedPolicyEvaluation: {
+                    verdict: 'Deny',
+                    isImplicit: true,
+                },
             },
             {
                 policiesToEvaluate: ['Allow', 'Deny'],
-                expectedPolicyEvaluation: 'Deny',
+                expectedPolicyEvaluation: {
+                    verdict: 'Deny',
+                    isImplicit: false,
+                },
             },
             {
                 policiesToEvaluate: ['AllowWithTagCondition'],
-                expectedPolicyEvaluation: 'NeedTagConditionEval',
+                expectedPolicyEvaluation: {
+                    verdict: 'NeedTagConditionEval',
+                    isImplicit: false,
+                },
             },
             {
                 policiesToEvaluate: ['Allow', 'AllowWithTagCondition'],
-                expectedPolicyEvaluation: 'Allow',
+                expectedPolicyEvaluation: {
+                    verdict: 'Allow',
+                    isImplicit: false,
+                },
             },
             {
                 policiesToEvaluate: ['DenyWithTagCondition'],
-                expectedPolicyEvaluation: 'Deny',
+                expectedPolicyEvaluation: {
+                    verdict: 'Deny',
+                    isImplicit: true,
+                },
             },
             {
                 policiesToEvaluate: ['Allow', 'DenyWithTagCondition'],
-                expectedPolicyEvaluation: 'NeedTagConditionEval',
+                expectedPolicyEvaluation: {
+                    verdict: 'NeedTagConditionEval',
+                    isImplicit: false,
+                },
             },
             {
                 policiesToEvaluate: ['AllowWithTagCondition', 'DenyWithTagCondition'],
-                expectedPolicyEvaluation: 'NeedTagConditionEval',
+                expectedPolicyEvaluation: {
+                    verdict: 'NeedTagConditionEval',
+                    isImplicit: false,
+                },
             },
             {
                 policiesToEvaluate: ['AllowWithTagCondition', 'DenyWithTagCondition', 'Deny'],
-                expectedPolicyEvaluation: 'Deny',
+                expectedPolicyEvaluation: {
+                    verdict: 'Deny',
+                    isImplicit: false,
+                },
             },
             {
                 policiesToEvaluate: ['DenyWithTagCondition', 'AllowWithTagCondition', 'Allow'],
-                expectedPolicyEvaluation: 'NeedTagConditionEval',
+                expectedPolicyEvaluation: {
+                    verdict: 'NeedTagConditionEval',
+                    isImplicit: false,
+                },
             },
         ];
 
@@ -1582,7 +1639,7 @@ describe('policyEvaluator', () => {
                     requestContext,
                     testCase.policiesToEvaluate.map(policyName => TestMatrixPolicies[policyName]),
                     log);
-                assert.strictEqual(result, testCase.expectedPolicyEvaluation);
+                assert.deepStrictEqual(result, testCase.expectedPolicyEvaluation);
             });
         });
     });
