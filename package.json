@@ -21,8 +21,6 @@
     "async": "~2.1.5",
     "debug": "~2.3.3",
     "ipaddr.js": "1.2.0",
-    "level": "~1.6.0",
-    "level-sublevel": "~6.6.1",
     "socket.io": "~1.7.3",
     "socket.io-client": "~1.7.3",
     "utf8": "2.1.2",
