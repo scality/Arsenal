@@ -310,7 +310,7 @@ export function evaluatePolicy(
 }
 
 /**
- * @deprecated Upgrade to evaluateAllPoliciesNew
+ * @deprecated Upgrade to standardEvaluateAllPolicies
  * Evaluate whether a request is permitted under a policy.
  * @param requestContext - Info necessary to
  * evaluate permission
@@ -326,9 +326,9 @@ export function evaluateAllPolicies(
     allPolicies: any[],
     log: Logger,
 ): string {
-    return evaluateAllPoliciesNew(requestContext, allPolicies, log).verdict;
+    return standardEvaluateAllPolicies(requestContext, allPolicies, log).verdict;
 }
-export function evaluateAllPoliciesNew(
+export function standardEvaluateAllPolicies(
     requestContext: RequestContext,
     allPolicies: any[],
     log: Logger,

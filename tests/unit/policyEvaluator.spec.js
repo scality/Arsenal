@@ -6,7 +6,7 @@ const fakeTimers = require('@sinonjs/fake-timers');
 const evaluator = require('../../lib/policyEvaluator/evaluator');
 const evaluatePolicy = evaluator.evaluatePolicy;
 const evaluateAllPolicies = evaluator.evaluateAllPolicies;
-const evaluateAllPoliciesNew = evaluator.evaluateAllPoliciesNew;
+const standardEvaluateAllPolicies = evaluator.standardEvaluateAllPolicies;
 const handleWildcards =
     require('../../lib/policyEvaluator/utils/wildcards').handleWildcards;
 const substituteVariables =
@@ -1457,7 +1457,7 @@ describe('policyEvaluator', () => {
                 'my_favorite_bucket', undefined,
                 undefined, undefined, 'bucketDelete', 's3');
             requestContext.setRequesterInfo({});
-            const result = evaluateAllPoliciesNew(requestContext,
+            const result = standardEvaluateAllPolicies(requestContext,
                 [samples['arn:aws:iam::aws:policy/AmazonS3FullAccess'],
                     samples['Deny Bucket Policy']], log);
             assert.deepStrictEqual(result, {
@@ -1471,7 +1471,7 @@ describe('policyEvaluator', () => {
                 'notVeryPrivate', undefined,
                 undefined, undefined, 'bucketDelete', 's3');
             requestContext.setRequesterInfo({});
-            const result = evaluateAllPoliciesNew(requestContext,
+            const result = standardEvaluateAllPolicies(requestContext,
                 [samples['Multi-Statement Policy'],
                     samples['Variable Bucket Policy']], log);
             assert.deepStrictEqual(result, {
@@ -1485,7 +1485,7 @@ describe('policyEvaluator', () => {
                 'notbucket', undefined,
                 undefined, undefined, 'objectGet', 's3');
             requestContext.setRequesterInfo({});
-            const result = evaluateAllPoliciesNew(requestContext, [
+            const result = standardEvaluateAllPolicies(requestContext, [
                 samples['Multi-Statement Policy'],
                 samples['Variable Bucket Policy'],
             ], log);
@@ -1670,7 +1670,7 @@ describe('policyEvaluator', () => {
                     'my_favorite_bucket', undefined,
                     undefined, undefined, 'objectGet', 's3');
                 requestContext.setRequesterInfo({});
-                const result = evaluateAllPoliciesNew(
+                const result = standardEvaluateAllPolicies(
                     requestContext,
                     testCase.policiesToEvaluate.map(policyName => TestMatrixPolicies[policyName]),
                     log);
