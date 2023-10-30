@@ -1423,40 +1423,6 @@ describe('policyEvaluator', () => {
                 'my_favorite_bucket', undefined,
                 undefined, undefined, 'bucketDelete', 's3');
             requestContext.setRequesterInfo({});
-            const result = evaluateAllPolicies(requestContext,
-                [samples['arn:aws:iam::aws:policy/AmazonS3FullAccess'],
-                    samples['Deny Bucket Policy']], log);
-            assert.strictEqual(result, 'Deny');
-        });
-
-        it('should deny access if request action is not in any policy', () => {
-            requestContext = new RequestContext({}, {},
-                'notVeryPrivate', undefined,
-                undefined, undefined, 'bucketDelete', 's3');
-            requestContext.setRequesterInfo({});
-            const result = evaluateAllPolicies(requestContext,
-                [samples['Multi-Statement Policy'],
-                    samples['Variable Bucket Policy']], log);
-            assert.strictEqual(result, 'Deny');
-        });
-
-        it('should deny access if request resource is not in any policy', () => {
-            requestContext = new RequestContext({}, {},
-                'notbucket', undefined,
-                undefined, undefined, 'objectGet', 's3');
-            requestContext.setRequesterInfo({});
-            const result = evaluateAllPolicies(requestContext, [
-                samples['Multi-Statement Policy'],
-                samples['Variable Bucket Policy'],
-            ], log);
-            assert.strictEqual(result, 'Deny');
-        });
-
-        it('should deny access if any policy results in a Deny', () => {
-            requestContext = new RequestContext({}, {},
-                'my_favorite_bucket', undefined,
-                undefined, undefined, 'bucketDelete', 's3');
-            requestContext.setRequesterInfo({});
             const result = standardEvaluateAllPolicies(requestContext,
                 [samples['arn:aws:iam::aws:policy/AmazonS3FullAccess'],
                     samples['Deny Bucket Policy']], log);
@@ -1548,7 +1514,7 @@ describe('policyEvaluator', () => {
             },
         };
 
-        const TestMatrixV2 = [
+        const TestMatrix = [
             {
                 policiesToEvaluate: [],
                 expectedPolicyEvaluation: {
@@ -1603,6 +1569,13 @@ describe('policyEvaluator', () => {
                 expectedPolicyEvaluation: {
                     verdict: 'Deny',
                     isImplicit: true,
+                },
+            },
+            {
+                policiesToEvaluate: ['Neutral', 'Deny'],
+                expectedPolicyEvaluation: {
+                    verdict: 'Deny',
+                    isImplicit: false,
                 },
             },
             {
@@ -1663,7 +1636,7 @@ describe('policyEvaluator', () => {
             },
         ];
 
-        TestMatrixV2.forEach(testCase => {
+        TestMatrix.forEach(testCase => {
             it(`policies evaluating individually to [${testCase.policiesToEvaluate.join(', ')}] `
             + `should return ${testCase.expectedPolicyEvaluation}`, () => {
                 requestContext = new RequestContext({}, {},
@@ -1678,72 +1651,6 @@ describe('policyEvaluator', () => {
             });
         });
 
-        const TestMatrix = [
-            {
-                policiesToEvaluate: [],
-                expectedPolicyEvaluation: 'Deny',
-            },
-            {
-                policiesToEvaluate: ['Allow'],
-                expectedPolicyEvaluation: 'Allow',
-            },
-            {
-                policiesToEvaluate: ['Neutral'],
-                expectedPolicyEvaluation: 'Deny',
-            },
-            {
-                policiesToEvaluate: ['Deny'],
-                expectedPolicyEvaluation: 'Deny',
-            },
-            {
-                policiesToEvaluate: ['Allow', 'Allow'],
-                expectedPolicyEvaluation: 'Allow',
-            },
-            {
-                policiesToEvaluate: ['Allow', 'Neutral'],
-                expectedPolicyEvaluation: 'Allow',
-            },
-            {
-                policiesToEvaluate: ['Neutral', 'Allow'],
-                expectedPolicyEvaluation: 'Allow',
-            },
-            {
-                policiesToEvaluate: ['Neutral', 'Neutral'],
-                expectedPolicyEvaluation: 'Deny',
-            },
-            {
-                policiesToEvaluate: ['Allow', 'Deny'],
-                expectedPolicyEvaluation: 'Deny',
-            },
-            {
-                policiesToEvaluate: ['AllowWithTagCondition'],
-                expectedPolicyEvaluation: 'NeedTagConditionEval',
-            },
-            {
-                policiesToEvaluate: ['Allow', 'AllowWithTagCondition'],
-                expectedPolicyEvaluation: 'Allow',
-            },
-            {
-                policiesToEvaluate: ['DenyWithTagCondition'],
-                expectedPolicyEvaluation: 'Deny',
-            },
-            {
-                policiesToEvaluate: ['Allow', 'DenyWithTagCondition'],
-                expectedPolicyEvaluation: 'NeedTagConditionEval',
-            },
-            {
-                policiesToEvaluate: ['AllowWithTagCondition', 'DenyWithTagCondition'],
-                expectedPolicyEvaluation: 'NeedTagConditionEval',
-            },
-            {
-                policiesToEvaluate: ['AllowWithTagCondition', 'DenyWithTagCondition', 'Deny'],
-                expectedPolicyEvaluation: 'Deny',
-            },
-            {
-                policiesToEvaluate: ['DenyWithTagCondition', 'AllowWithTagCondition', 'Allow'],
-                expectedPolicyEvaluation: 'NeedTagConditionEval',
-            },
-        ];
 
         TestMatrix.forEach(testCase => {
             it(`policies evaluating individually to [${testCase.policiesToEvaluate.join(', ')}] `
@@ -1756,7 +1663,7 @@ describe('policyEvaluator', () => {
                     requestContext,
                     testCase.policiesToEvaluate.map(policyName => TestMatrixPolicies[policyName]),
                     log);
-                assert.strictEqual(result, testCase.expectedPolicyEvaluation);
+                assert.strictEqual(result, testCase.expectedPolicyEvaluation.verdict);
             });
         });
     });
