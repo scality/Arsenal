@@ -81,7 +81,7 @@
     "lint": "eslint $(git ls-files '*.js')",
     "lint_md": "mdlint $(git ls-files '*.md')",
     "lint_yml": "yamllint $(git ls-files '*.yml')",
-    "test": "jest tests/unit/policyEvaluator.spec.js",
+    "test": "jest tests/unit",
     "build": "tsc",
     "prepare": "yarn build",
     "ft_test": "jest tests/functional --testTimeout=120000 --forceExit",
