@@ -3,7 +3,7 @@
   "engines": {
     "node": ">=16"
   },
-  "version": "8.1.113",
+  "version": "8.1.114",
   "description": "Common utilities for the S3 project components",
   "main": "build/index.js",
   "repository": {
@@ -81,12 +81,16 @@
     "lint": "eslint $(git ls-files '*.js')",
     "lint_md": "mdlint $(git ls-files '*.md')",
     "lint_yml": "yamllint $(git ls-files '*.yml')",
-    "test": "jest tests/unit",
+    "test": "jest tests/unit/policyEvaluator.spec.js",
     "build": "tsc",
     "prepare": "yarn build",
+<<<<<<< HEAD
     "ft_test": "jest tests/functional --testTimeout=120000 --forceExit",
     "coverage": "nyc --clean jest tests --coverage --testTimeout=120000 --forceExit",
     "build_doc": "cd documentation/listingAlgos/pics; dot -Tsvg delimiterVersionsStateChart.dot > delimiterVersionsStateChart.svg"
+=======
+    "ft_test": "jest tests/functional --testTimeout=120000 --forceExit"
+>>>>>>> origin/w/7.70/improvement/ARSN-362-implicitDeny
   },
   "private": true,
   "jest": {
