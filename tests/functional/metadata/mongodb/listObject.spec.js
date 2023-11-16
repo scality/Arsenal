@@ -72,6 +72,13 @@ describe('MongoClientInterface::metadata.listObject', () => {
             { upsert: false }).then(() => cb()).catch(err => cb(err));
     }
 
+    function customListingParser(entries) {
+        return entries.map(entry => {
+            const tmp = JSON.parse(entry.value);
+            return tmp;
+        });
+    }
+
     beforeAll(done => {
         mongoserver.start().then(() => {
             mongoserver.waitUntilRunning().then(() => {
@@ -152,6 +159,12 @@ describe('MongoClientInterface::metadata.listObject', () => {
                             objVal: {
                                 key: 'pfx1-test-object',
                                 versionId: 'null',
+                                location: [{
+                                    start: 0,
+                                    size: 150,
+                                    dataStoreETag: 'etag',
+                                    dataStoreVersionId: 'versionId',
+                                }],
                             },
                             nbVersions: 5,
                         };
@@ -521,6 +534,37 @@ describe('MongoClientInterface::metadata.listObject', () => {
                     destroyStub.restore();
                     readStub.restore();
                     return done();
+                });
+            });
+
+            it('Should not include location in listing result and use custom listing parser', done => {
+                const opts = {
+                    mongodb: {
+                        replicaSetHosts: 'localhost:27020',
+                        writeConcern: 'majority',
+                        replicaSet: 'rs0',
+                        readPreference: 'primary',
+                        database: DB_NAME,
+                    },
+                    customListingParser,
+                };
+
+                const parserSpy = sinon.spy(opts, 'customListingParser');
+
+                const md = new MetadataWrapper(IMPL_NAME, opts, null, logger);
+                md.setup(() => {
+                    const params = {
+                        listingType: 'DelimiterMaster',
+                        maxKeys: 100,
+                    };
+                    return md.listObject(BUCKET_NAME, params, logger, (err, data) => {
+                        assert.ifError(err);
+                        assert.strictEqual(data.Contents.length, 3);
+                        assert.strictEqual(data.Contents[0].key, 'pfx1-test-object');
+                        assert.strictEqual(data.Contents[0].location, undefined);
+                        assert(parserSpy.called);
+                        return done();
+                    });
                 });
             });
         });
