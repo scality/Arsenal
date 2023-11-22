@@ -58,6 +58,7 @@ export type ObjectMDData = {
     'x-amz-server-side-encryption-customer-algorithm': string;
     'x-amz-website-redirect-location': string;
     'x-amz-scal-transition-in-progress'?: boolean;
+    'x-amz-scal-transition-time'?: string;
     azureInfo?: any;
     acl: ACL;
     key: string;
@@ -649,10 +650,24 @@ export default class ObjectMD {
      * Set metadata transition in progress value
      *
      * @param inProgress - True if transition is in progress, false otherwise
+     * @param transitionTime - Date when the transition started
      * @return itself
      */
-    setTransitionInProgress(inProgress: boolean) {
+    setTransitionInProgress(inProgress: false): this
+    setTransitionInProgress(inProgress: true, transitionTime: Date|string|number): this
+    setTransitionInProgress(inProgress: boolean, transitionTime?: Date|string|number) {
         this._data['x-amz-scal-transition-in-progress'] = inProgress;
+        if (!inProgress || !transitionTime) {
+            delete this._data['x-amz-scal-transition-time'];
+        } else {
+            if (typeof transitionTime === 'number') {
+                transitionTime = new Date(transitionTime);
+            }
+            if (transitionTime instanceof Date) {
+                transitionTime = transitionTime.toISOString();
+            }
+            this._data['x-amz-scal-transition-time'] = transitionTime;
+        }
         return this;
     }
 
@@ -663,6 +678,14 @@ export default class ObjectMD {
      */
     getTransitionInProgress() {
         return this._data['x-amz-scal-transition-in-progress'];
+    }
+
+    /**
+     * Gets the transition time of the object.
+     * @returns The transition time of the object.
+     */
+    getTransitionTime() {
+        return this._data['x-amz-scal-transition-time'];
     }
 
     /**

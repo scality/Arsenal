@@ -355,6 +355,33 @@ describe('ObjectMD class setters/getters', () => {
         md.setArchive();
         assert.deepStrictEqual(md.getArchive(), undefined);
     });
+
+    it('ObjectMD::setTransitionInProgress(true) should set time from string', () => {
+        const time = new Date().toISOString();
+        md.setTransitionInProgress(true, time);
+        assert.deepStrictEqual(md.getTransitionInProgress(), true);
+        assert.deepStrictEqual(md.getTransitionTime(), time);
+    });
+
+    it('ObjectMD::setTransitionInProgress(true) should set time from Date', () => {
+        const time = new Date();
+        md.setTransitionInProgress(true, time);
+        assert.deepStrictEqual(md.getTransitionInProgress(), true);
+        assert.deepStrictEqual(md.getTransitionTime(), time.toISOString());
+    });
+
+    it('ObjectMD::setTransitionInProgress(true) should set time from timestamp', () => {
+        const time = new Date();
+        md.setTransitionInProgress(true, time.getTime());
+        assert.deepStrictEqual(md.getTransitionInProgress(), true);
+        assert.deepStrictEqual(md.getTransitionTime(), time.toISOString());
+    });
+
+    it('ObjectMD::setTransitionInProgress(false) should clear the time', () => {
+        md.setTransitionInProgress(false);
+        assert.deepStrictEqual(md.getTransitionInProgress(), false);
+        assert.deepStrictEqual(md.getTransitionTime(), undefined);
+    });
 });
 
 describe('ObjectMD import from stored blob', () => {
