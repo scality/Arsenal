@@ -90,12 +90,6 @@ export class ProbeServer extends httpServer {
             return;
         }
 
-        const probeResponse = this._handlers.get(req.url!)!(res, log);
-        if (probeResponse !== undefined && probeResponse !== '') {
-            // Return an internal error with the response
-            errors.InternalError
-                .customizeDescription(probeResponse)
-                .writeResponse(res);
-        }
+        this._handlers.get(req.url!)!(res, log);
     }
 }
