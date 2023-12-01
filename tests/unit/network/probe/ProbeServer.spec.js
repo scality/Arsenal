@@ -89,16 +89,34 @@ describe('network.probe.ProbeServer', () => {
     });
 
     it('500 response on bad probe', done => {
-        server.addHandler('/check', () => 'check failed');
+        const failedMessage = 'failed_message';
+        server.addHandler('/check', res => {
+            res.writeHead(500);
+            res.end(failedMessage);
+        });
         makeRequest('GET', '/check', (err, res) => {
             assert.ifError(err);
             assert.strictEqual(res.statusCode, 500);
             res.setEncoding('utf8');
             res.on('data', body => {
-                assert.strictEqual(
-                    body,
-                    '{"errorType":"InternalError","errorMessage":"check failed"}',
-                );
+                assert.strictEqual(body, failedMessage);
+                done();
+            });
+        });
+    });
+
+    it('500 response on bad async probe', done => {
+        const failedMessage = 'failed_message';
+        server.addHandler('/check', async res => {
+            res.writeHead(500);
+            res.end(failedMessage);
+        });
+        makeRequest('GET', '/check', (err, res) => {
+            assert.ifError(err);
+            assert.strictEqual(res.statusCode, 500);
+            res.setEncoding('utf8');
+            res.on('data', body => {
+                assert.strictEqual(body, failedMessage);
                 done();
             });
         });
