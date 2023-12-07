@@ -171,6 +171,7 @@ export default class RequestContext {
     _needTagEval: boolean;
     _foundAction?: string;
     _foundResource?: string;
+    _objectLockRetentionDays?: number | null;
 
     constructor(
         headers: { [key: string]: string | string[] },
@@ -192,6 +193,7 @@ export default class RequestContext {
         requestObjTags?: string,
         existingObjTag?: string,
         needTagEval?: false,
+        objectLockRetentionDays?: number,
     ) {
         this._headers = headers;
         this._query = query;
@@ -224,6 +226,7 @@ export default class RequestContext {
         this._requestObjTags = requestObjTags || null;
         this._existingObjTag = existingObjTag || null;
         this._needTagEval = needTagEval || false;
+        this._objectLockRetentionDays = objectLockRetentionDays || null;
         return this;
     }
 
@@ -255,6 +258,7 @@ export default class RequestContext {
             requestObjTags: this._requestObjTags,
             existingObjTag: this._existingObjTag,
             needTagEval: this._needTagEval,
+            objectLockRetentionDays: this._objectLockRetentionDays,
         };
         return JSON.stringify(requestInfo);
     }
@@ -295,6 +299,7 @@ export default class RequestContext {
             obj.requestObjTags,
             obj.existingObjTag,
             obj.needTagEval,
+            obj.objectLockRetentionDays,
         );
     }
 
@@ -697,5 +702,25 @@ export default class RequestContext {
      */
     getNeedTagEval() {
         return this._needTagEval;
+    }
+
+    /**
+     * Get object lock retention days
+     *
+     * @returns objectLockRetentionDays - object lock retention days 
+     */
+    getObjectLockRetentionDays() {
+        return this._objectLockRetentionDays;
+    }
+
+    /**
+     * Set object lock retention days
+     *
+     * @param objectLockRetentionDays - object lock retention days
+     * @returns itself
+     */
+    setObjectLockRetentionDays(objectLockRetentionDays: number) {
+        this._objectLockRetentionDays = objectLockRetentionDays;
+        return this;
     }
 }
