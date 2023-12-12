@@ -42,7 +42,9 @@ const foo = '{"versionId":"foo"}';
 const bar = '{"versionId":"bar"}';
 const qux = '{"versionId":"qux"}';
 const valuePHD = '{"isPHD":"true","versionId":"1234567890abcdefg"}';
-const valueDeleteMarker = '{"hello":"world","isDeleteMarker":"true"}';
+const fooDM = '{"hello":"world","isDeleteMarker":"true","versionId":"foo"}';
+const barDM = '{"hello":"world","isDeleteMarker":"true","versionId":"bar"}';
+const quxDM = '{"hello":"world","isDeleteMarker":"true","versionId":"qux"}';
 const dataVersioned = {
     v0: [
         { key: 'Pâtisserie=中文-español-English', value: bar },
@@ -53,7 +55,7 @@ const dataVersioned = {
         { key: `notes/spring/1.txt${VID_SEP}foo`, value: foo },
         { key: `notes/spring/1.txt${VID_SEP}qux`, value: qux },
         { key: 'notes/spring/2.txt', value: valuePHD },
-        { key: `notes/spring/2.txt${VID_SEP}bar`, value: valueDeleteMarker },
+        { key: `notes/spring/2.txt${VID_SEP}bar`, value: barDM },
         { key: `notes/spring/2.txt${VID_SEP}foo`, value: foo },
         { key: 'notes/spring/march/1.txt',
             value: '{"versionId":"null","isNull":true}' },
@@ -65,13 +67,13 @@ const dataVersioned = {
         { key: 'notes/summer/2.txt', value: bar },
         { key: `notes/summer/2.txt${VID_SEP}bar`, value: bar },
         { key: 'notes/summer/4.txt', value: valuePHD },
-        { key: `notes/summer/4.txt${VID_SEP}bar`, value: valueDeleteMarker },
-        { key: `notes/summer/4.txt${VID_SEP}foo`, value: valueDeleteMarker },
-        { key: `notes/summer/4.txt${VID_SEP}qux`, value: valueDeleteMarker },
+        { key: `notes/summer/4.txt${VID_SEP}bar`, value: barDM },
+        { key: `notes/summer/4.txt${VID_SEP}foo`, value: fooDM },
+        { key: `notes/summer/4.txt${VID_SEP}qux`, value: quxDM },
         { key: 'notes/summer/44.txt', value: valuePHD },
-        { key: 'notes/summer/444.txt', value: valueDeleteMarker },
+        { key: 'notes/summer/444.txt', value: fooDM },
         { key: 'notes/summer/4444.txt', value: valuePHD },
-        { key: 'notes/summer/44444.txt', value: valueDeleteMarker },
+        { key: 'notes/summer/44444.txt', value: fooDM },
         { key: 'notes/summer/444444.txt', value: valuePHD },
         { key: 'notes/summer/august/1.txt', value },
         { key: 'notes/year.txt', value },
@@ -102,7 +104,7 @@ const dataVersioned = {
         { key: `notes/spring/1.txt${VID_SEP}bar`, value: bar },
         { key: `notes/spring/1.txt${VID_SEP}foo`, value: foo },
         { key: `notes/spring/1.txt${VID_SEP}qux`, value: qux },
-        { key: `notes/spring/2.txt${VID_SEP}bar`, value: valueDeleteMarker },
+        { key: `notes/spring/2.txt${VID_SEP}bar`, value: barDM },
         { key: `notes/spring/2.txt${VID_SEP}foo`, value: foo },
         { key: 'notes/spring/march/1.txt',
             value: '{"versionId":"null","isNull":true}' },
@@ -113,14 +115,14 @@ const dataVersioned = {
         { key: `notes/summer/1.txt${VID_SEP}foo`, value: foo },
         { key: 'notes/summer/2.txt', value: bar },
         { key: `notes/summer/2.txt${VID_SEP}bar`, value: bar },
-        { key: `notes/summer/4.txt${VID_SEP}bar`, value: valueDeleteMarker },
-        { key: `notes/summer/4.txt${VID_SEP}foo`, value: valueDeleteMarker },
-        { key: `notes/summer/4.txt${VID_SEP}qux`, value: valueDeleteMarker },
+        { key: `notes/summer/4.txt${VID_SEP}bar`, value: barDM },
+        { key: `notes/summer/4.txt${VID_SEP}foo`, value: fooDM },
+        { key: `notes/summer/4.txt${VID_SEP}qux`, value: quxDM },
         // Compared to v0, the two following keys are version keys
-        // that we give a version ID, because delete markers do not
+        // that have a version ID, because delete markers do not
         // have a master key in v1.
-        { key: `notes/summer/444.txt${VID_SEP}null`, value: valueDeleteMarker },
-        { key: `notes/summer/44444.txt${VID_SEP}null`, value: valueDeleteMarker },
+        { key: `notes/summer/444.txt${VID_SEP}foo`, value: fooDM },
+        { key: `notes/summer/44444.txt${VID_SEP}foo`, value: fooDM },
         { key: 'notes/summer/august/1.txt', value },
         { key: 'notes/year.txt', value },
         { key: 'notes/yore.rs', value },
@@ -145,7 +147,7 @@ const receivedData = [
     { key: 'notes/spring/1.txt', value: bar, versionId: 'bar' },
     { key: 'notes/spring/1.txt', value: foo, versionId: 'foo' },
     { key: 'notes/spring/1.txt', value: qux, versionId: 'qux' },
-    { key: 'notes/spring/2.txt', value: valueDeleteMarker, versionId: 'bar' },
+    { key: 'notes/spring/2.txt', value: barDM, versionId: 'bar' },
     { key: 'notes/spring/2.txt', value: foo, versionId: 'foo' },
     { key: 'notes/spring/march/1.txt',
         value: '{"versionId":"null","isNull":true}', versionId: 'null' },
@@ -154,13 +156,11 @@ const receivedData = [
     { key: 'notes/summer/1.txt', value: bar, versionId: 'bar' },
     { key: 'notes/summer/1.txt', value: foo, versionId: 'foo' },
     { key: 'notes/summer/2.txt', value: bar, versionId: 'bar' },
-    { key: 'notes/summer/4.txt', value: valueDeleteMarker, versionId: 'bar' },
-    { key: 'notes/summer/4.txt', value: valueDeleteMarker, versionId: 'foo' },
-    { key: 'notes/summer/4.txt', value: valueDeleteMarker, versionId: 'qux' },
-    { key: 'notes/summer/444.txt',
-        value: valueDeleteMarker, versionId: 'null' },
-    { key: 'notes/summer/44444.txt',
-        value: valueDeleteMarker, versionId: 'null' },
+    { key: 'notes/summer/4.txt', value: barDM, versionId: 'bar' },
+    { key: 'notes/summer/4.txt', value: fooDM, versionId: 'foo' },
+    { key: 'notes/summer/4.txt', value: quxDM, versionId: 'qux' },
+    { key: 'notes/summer/444.txt', value: fooDM, versionId: 'foo' },
+    { key: 'notes/summer/44444.txt', value: fooDM, versionId: 'foo' },
     { key: 'notes/summer/august/1.txt', value, versionId: 'null' },
     { key: 'notes/year.txt', value, versionId: 'null' },
     { key: 'notes/yore.rs', value, versionId: 'null' },
