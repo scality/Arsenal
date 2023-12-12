@@ -45,6 +45,8 @@ const valuePHD = '{"isPHD":"true","versionId":"1234567890abcdefg"}';
 const fooDM = '{"hello":"world","isDeleteMarker":"true","versionId":"foo"}';
 const barDM = '{"hello":"world","isDeleteMarker":"true","versionId":"bar"}';
 const quxDM = '{"hello":"world","isDeleteMarker":"true","versionId":"qux"}';
+const nullVersionMD = '{"hello":"world","isNull":true,"isNull2":true,"versionId":"vnull"}';
+const nullDMMD = '{"hello":"world","isNull":true,"isNull2":true,"isDeleteMarker":"true","versionId":"bar"}';
 const dataVersioned = {
     v0: [
         { key: 'Pâtisserie=中文-español-English', value: bar },
@@ -94,6 +96,11 @@ const dataVersioned = {
         { key: `nullkey/5.txt${VID_SEP}`, value: qux },
         { key: `nullkey/5.txt${VID_SEP}bar`, value: bar },
         { key: `nullkey/5.txt${VID_SEP}foo`, value: foo },
+        { key: 'nullkey2/1.txt', value: fooDM },
+        { key: `nullkey2/1.txt${VID_SEP}`, value: nullVersionMD },
+        { key: `nullkey2/1.txt${VID_SEP}foo`, value: fooDM }, // current version
+        { key: 'nullkey3/1.txt', value: nullDMMD }, // current version
+        { key: `nullkey3/1.txt${VID_SEP}foo`, value: fooDM },
     ],
     v1: [ // we add M and V prefixes in getTestListing() due to the
         // test cases needing the original key to filter
@@ -139,6 +146,10 @@ const dataVersioned = {
         { key: `nullkey/5.txt${VID_SEP}`, value: qux },
         { key: `nullkey/5.txt${VID_SEP}bar`, value: bar },
         { key: `nullkey/5.txt${VID_SEP}foo`, value: foo },
+        { key: `nullkey2/1.txt${VID_SEP}`, value: nullVersionMD },
+        { key: `nullkey2/1.txt${VID_SEP}foo`, value: fooDM }, // current version
+        { key: `nullkey3/1.txt${VID_SEP}`, value: nullDMMD }, // current version
+        { key: `nullkey3/1.txt${VID_SEP}foo`, value: fooDM },
     ],
 };
 const receivedData = [
@@ -176,6 +187,10 @@ const receivedData = [
     { key: 'nullkey/5.txt', value: bar, versionId: 'bar' },
     { key: 'nullkey/5.txt', value: foo, versionId: 'foo' },
     { key: 'nullkey/5.txt', value: qux, versionId: 'qux' },
+    { key: 'nullkey2/1.txt', value: fooDM, versionId: 'foo' },
+    { key: 'nullkey2/1.txt', value: nullVersionMD, versionId: 'vnull' },
+    { key: 'nullkey3/1.txt', value: nullDMMD, versionId: 'bar' },
+    { key: 'nullkey3/1.txt', value: fooDM, versionId: 'foo' },
 ];
 const tests = [
     new Test('all versions', {}, {
@@ -278,6 +293,8 @@ const tests = [
         CommonPrefixes: [
             'notes/',
             'nullkey/',
+            'nullkey2/',
+            'nullkey3/',
         ],
         Delimiter: '/',
         IsTruncated: false,
