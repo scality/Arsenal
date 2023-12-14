@@ -82,7 +82,12 @@ const actionMapRQ = {
 };
 
 // action map used for bucket policies
-const actionMapBP = { ...sharedActionMap };
+const actionMapBP = {   
+    bucketDeleteCors : 's3:PutBucketCORS',
+    bucketDeleteLifecycle : 's3:PutLifecycleConfiguration',
+    bucketDeleteReplication : 's3:PutReplicationConfiguration',
+    ...sharedActionMap
+};
 
 // action map for all relevant s3 actions
 const actionMapS3 = {
