@@ -55,15 +55,15 @@ function getListingKey(key, vFormat) {
 
             let expectedParams;
             if (v === 'v0') {
-                expectedParams = { gte: `premark${VID_SEP}`, lt: 'prf' };
+                expectedParams = { gte: `${keyMarker}${VID_SEP}`, lt: 'prf' };
             } else {
                 expectedParams = [
                     {
-                        gte: `${DbPrefixes.Master}premark${VID_SEP}`,
+                        gte: `${DbPrefixes.Master}${keyMarker}${VID_SEP}`,
                         lt: `${DbPrefixes.Master}prf`,
                     },
                     {
-                        gte: `${DbPrefixes.Version}premark${VID_SEP}`,
+                        gte: `${DbPrefixes.Version}${keyMarker}${VID_SEP}`,
                         lt: `${DbPrefixes.Version}prf`,
                     },
                 ];
@@ -385,6 +385,65 @@ function getListingKey(key, vFormat) {
                 IsTruncated: true,
                 NextKeyMarker: masterKey2,
                 NextVersionIdMarker: versionId2,
+            };
+
+            assert.deepStrictEqual(delimiter.result(), expectedResult);
+        });
+
+        it('should return noncurrent versions starting from a marker', () => {
+            const delimiter = new DelimiterNonCurrent({
+                keyMarker: 'key',
+                versionIdMarker: 'version1',
+            }, fakeLogger, v);
+
+            const masterKey = 'key';
+
+            // filter first version
+            const versionId1 = 'version1';
+            const versionKey1 = `${masterKey}${VID_SEP}${versionId1}`;
+            const date1 = '1970-01-01T00:00:00.002Z';
+            const value1 = `{"versionId":"${versionId1}", "last-modified": "${date1}"}`;
+
+            assert.strictEqual(delimiter.filter({
+                key: getListingKey(versionKey1, v),
+                value: value1,
+            }), FILTER_ACCEPT);
+
+            // filter second version
+            const versionId2 = 'version2';
+            const versionKey2 = `${masterKey}${VID_SEP}${versionId2}`;
+            const date2 = '1970-01-01T00:00:00.001Z';
+            const value2 = `{"versionId":"${versionId2}", "last-modified": "${date2}"}`;
+
+            assert.strictEqual(delimiter.filter({
+                key: getListingKey(versionKey2, v),
+                value: value2,
+            }), FILTER_ACCEPT);
+
+            // filter third version
+            const versionId3 = 'version3';
+            const versionKey3 = `${masterKey}${VID_SEP}${versionId3}`;
+            const date3 = '1970-01-01T00:00:00.000Z';
+            const value3 = `{"versionId":"${versionId3}", "last-modified": "${date3}"}`;
+
+            assert.strictEqual(delimiter.filter({
+                key: getListingKey(versionKey3, v),
+                value: value3,
+            }), FILTER_ACCEPT);
+
+
+            const expectedResult = {
+                Contents: [
+                    {
+                        key: masterKey,
+                        value: `{"versionId":"${versionId2}","last-modified":"${date2}","staleDate":"${date1}"}`,
+                    },
+                    {
+                        key: masterKey,
+                        value: `{"versionId":"${versionId3}","last-modified":"${date3}","staleDate":"${date2}"}`,
+                    },
+                ],
+                IsTruncated: false,
             };
 
             assert.deepStrictEqual(delimiter.result(), expectedResult);
