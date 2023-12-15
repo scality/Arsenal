@@ -36,6 +36,7 @@ export type ParsedRetention =
 export default class ObjectLockConfiguration {
     _parsedXml: any;
     _config: Config;
+    _days: number | null;
 
     /**
      * Create an Object Lock Configuration instance
@@ -45,6 +46,7 @@ export default class ObjectLockConfiguration {
     constructor(xml: any) {
         this._parsedXml = xml;
         this._config = {};
+        this._days = null;
     }
 
     /**
@@ -118,7 +120,7 @@ export default class ObjectLockConfiguration {
             return { error };
         }
         if ((timeType === 'Days' && timeValue > 36500) ||
-        (timeType === 'Years' && timeValue > 100)) {
+            (timeType === 'Years' && timeValue > 100)) {
             const msg = 'retention period is too large';
             const error = errors.InvalidArgument.customizeDescription(msg);
             return { error };
@@ -183,6 +185,8 @@ export default class ObjectLockConfiguration {
             this._config.rule = {};
             this._config.rule.mode = validMode.mode;
             this._config.rule[validTime.timeType!] = validTime.timeValue;
+            // Store the number of days
+            this._days = validTime.timeType === 'years' ? 365 * validTime.timeValue : validTime.timeValue;
         }
         return validConfig;
     }
