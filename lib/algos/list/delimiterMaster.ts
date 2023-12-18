@@ -90,9 +90,14 @@ export class DelimiterMaster extends Delimiter {
                     id: DelimiterFilterStateId.NotSkipping,
                 };
             }
+        } else {
+            // save base implementation of the `NotSkipping` state in
+            // Delimiter before overriding it with ours, to be able to call it from there
+            this.keyHandler_NotSkipping_Delimiter = this.keyHandlers[DelimiterFilterStateId.NotSkipping];
+            this.setKeyHandler(
+                DelimiterFilterStateId.NotSkipping,
+                this.keyHandler_NotSkippingPrefixNorVersionsV1.bind(this));
         }
-        // in v1, we can directly use Delimiter's implementation,
-        // which is already set to the proper state
     }
 
     filter_onNewMasterKeyV0(key: string, value: string): FilterReturnValue {
@@ -147,6 +152,20 @@ export class DelimiterMaster extends Delimiter {
 
     keyHandler_NotSkippingPrefixNorVersionsV0(key: string, value: string): FilterReturnValue {
         return this.filter_onNewMasterKeyV0(key, value);
+    }
+
+    filter_onNewMasterKeyV1(key: string, value: string): FilterReturnValue {
+        // if this master key is a delete marker, accept it without
+        // adding the version to the contents
+        if (Version.isDeleteMarker(value)) {
+            return FILTER_ACCEPT;
+        }
+        // use base Delimiter's implementation
+        return this.keyHandler_NotSkipping_Delimiter(key, value);
+    }
+
+    keyHandler_NotSkippingPrefixNorVersionsV1(key: string, value: string): FilterReturnValue {
+        return this.filter_onNewMasterKeyV1(key, value);
     }
 
     keyHandler_SkippingVersionsV0(key: string, value: string): FilterReturnValue {

@@ -175,13 +175,11 @@ function getListingKey(key, vFormat) {
                 value: version.toString(),
             };
 
-            /* When filtered, it should return FILTER_SKIP and set the prvKey if vFormat is v0. It
-             * should not be added to the result content or common prefixes. */
-            assert.strictEqual(delimiter.filter(obj), FILTER_SKIP);
+            /* When filtered, it should return FILTER_ACCEPT. It
+             * should not be added to the result content or common
+             * prefixes. */
+            assert.strictEqual(delimiter.filter(obj), FILTER_ACCEPT);
             assert.strictEqual(delimiter.nextMarker, undefined);
-            if (vFormat === 'v0') {
-                assert.strictEqual(delimiter.prvKey, key);
-            }
             assert.deepStrictEqual(delimiter.result(), EmptyResult);
         });
 
