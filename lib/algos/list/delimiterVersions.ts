@@ -1,6 +1,7 @@
 'use strict'; // eslint-disable-line strict
 
-const Delimiter = require('./delimiter').Delimiter;
+const Extension = require('./Extension').default;
+
 const Version = require('../../versioning/Version').Version;
 const VSConst = require('../../versioning/constants').VersioningConstants;
 const { inc, FILTER_END, FILTER_ACCEPT, FILTER_SKIP, SKIP_NONE } =
@@ -75,13 +76,17 @@ type GenMDParamsItem = {
  * @prop {String|undefined} prefix     - prefix per amazon format
  * @prop {Number} maxKeys              - number of keys to list
  */
-export class DelimiterVersions extends Delimiter {
+export class DelimiterVersions extends Extension {
 
     state: FilterState;
     keyHandlers: { [id: number]: KeyHandler };
 
     constructor(parameters, logger, vFormat) {
-        super(parameters, logger, vFormat);
+        super(parameters, logger);
+        // original listing parameters
+        this.delimiter = parameters.delimiter;
+        this.prefix = parameters.prefix;
+        this.maxKeys = parameters.maxKeys || 1000;
         // specific to version listing
         this.keyMarker = parameters.keyMarker;
         this.versionIdMarker = parameters.versionIdMarker;
@@ -89,7 +94,11 @@ export class DelimiterVersions extends Delimiter {
         this.masterKey = undefined;
         this.masterVersionId = undefined;
         this.nullKey = null;
+        this.vFormat = vFormat || BucketVersioningKeyFormat.v0;
         // listing results
+        this.CommonPrefixes = [];
+        this.Versions = [];
+        this.IsTruncated = false;
         this.nextKeyMarker = parameters.keyMarker;
         this.nextVersionIdMarker = undefined;
 
@@ -194,6 +203,20 @@ export class DelimiterVersions extends Delimiter {
     }
 
     /**
+     * check if the max keys count has been reached and set the
+     * final state of the result if it is the case
+     * @return {Boolean} - indicates if the iteration has to stop
+     */
+    _reachedMaxKeys(): boolean {
+        if (this.keys >= this.maxKeys) {
+            // In cases of maxKeys <= 0 -> IsTruncated = false
+            this.IsTruncated = this.maxKeys > 0;
+            return true;
+        }
+        return false;
+    }
+
+    /**
      * Used to synchronize listing of M and V prefixes by object key
      *
      * @param {object} masterObj object listed from first range
@@ -248,7 +271,7 @@ export class DelimiterVersions extends Delimiter {
                 prefix: commonPrefix,
             });
         } else {
-            this.addContents(key, versionId, value);
+            this.addVersion(key, versionId, value);
         }
     }
 
@@ -261,8 +284,8 @@ export class DelimiterVersions extends Delimiter {
      *  @param {String} value       - The value of the key
      *  @return {undefined}
      */
-    addContents(key: string, versionId: string, value: string) {
-        this.Contents.push({
+    addVersion(key: string, versionId: string, value: string) {
+        this.Versions.push({
             key,
             versionId,
             value: this.trimMetadata(value),
@@ -294,6 +317,7 @@ export class DelimiterVersions extends Delimiter {
         this.CommonPrefixes.push(commonPrefix);
         ++this.keys;
         this.nextKeyMarker = commonPrefix;
+        this.nextVersionIdMarker = undefined;
     }
 
     /**
@@ -437,7 +461,7 @@ export class DelimiterVersions extends Delimiter {
         return this.handleKey(key, versionId, value);
     }
 
-    skippingBase() {
+    skippingBase(): string | undefined {
         switch (this.state.id) {
         case DelimiterVersionsFilterStateId.SkippingPrefix:
             const { prefix } = <DelimiterVersionsFilterState_SkippingPrefix> this.state;
@@ -497,7 +521,7 @@ export class DelimiterVersions extends Delimiter {
         }
         const result: ResultObject = {
             CommonPrefixes: this.CommonPrefixes,
-            Versions: this.Contents,
+            Versions: this.Versions,
             IsTruncated: this.IsTruncated,
         };
         if (this.delimiter) {
