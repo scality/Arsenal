@@ -186,7 +186,20 @@ export default class ObjectLockConfiguration {
             this._config.rule.mode = validMode.mode;
             this._config.rule[validTime.timeType!] = validTime.timeValue;
             // Store the number of days
-            this._days = validTime.timeType === 'years' ? 365 * validTime.timeValue : validTime.timeValue;
+            function isLeapYear(year) {
+                return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+            }
+            function getDaysForYears(years) {
+                let days = 0;
+                const currentYear = new Date().getFullYear();
+            
+                for (let i = 0; i < years; i++) {
+                    days += isLeapYear(currentYear + i) ? 366 : 365;
+                }
+            
+                return days;
+            }
+            this._days = validTime.timeType === 'years' ? getDaysForYears(validTime.timeValue) : validTime.timeValue;
         }
         return validConfig;
     }
