@@ -25,8 +25,7 @@ export interface FilterReturnValue {
 export const enum DelimiterVersionsFilterStateId {
     NotSkipping = 1,
     SkippingPrefix = 2,
-    WaitForNullKey = 3,
-    SkippingVersions = 4,
+    SkippingVersions = 3,
 };
 
 export interface DelimiterVersionsFilterState_NotSkipping extends FilterState {
@@ -38,16 +37,12 @@ export interface DelimiterVersionsFilterState_SkippingPrefix extends FilterState
     prefix: string;
 };
 
-export interface DelimiterVersionsFilterState_WaitForNullKey extends FilterState {
-    id: DelimiterVersionsFilterStateId.WaitForNullKey,
-};
-
 export interface DelimiterVersionsFilterState_SkippingVersions extends FilterState {
     id: DelimiterVersionsFilterStateId.SkippingVersions,
     gt: string;
 };
 
-type KeyHandler = (key: string, value: string) => FilterReturnValue;
+type KeyHandler = (key: string, versionId: string | undefined, value: string) => FilterReturnValue;
 
 type ResultObject = {
     CommonPrefixes: string[],
@@ -127,16 +122,13 @@ export class DelimiterVersions extends Delimiter {
             this.keyHandler_SkippingPrefix.bind(this));
 
         this.setKeyHandler(
-            DelimiterVersionsFilterStateId.WaitForNullKey,
-            this.keyHandler_WaitForNullKey.bind(this));
-
-        this.setKeyHandler(
             DelimiterVersionsFilterStateId.SkippingVersions,
             this.keyHandler_SkippingVersions.bind(this));
 
         if (this.versionIdMarker) {
-            this.state = <DelimiterVersionsFilterState_WaitForNullKey> {
-                id: DelimiterVersionsFilterStateId.WaitForNullKey,
+            this.state = <DelimiterVersionsFilterState_SkippingVersions> {
+                id: DelimiterVersionsFilterStateId.SkippingVersions,
+                gt: `${this.keyMarker}${VID_SEP}${this.versionIdMarker}`,
             };
         } else {
             this.state = <DelimiterVersionsFilterState_NotSkipping> {
@@ -237,6 +229,30 @@ export class DelimiterVersions extends Delimiter {
     }
 
     /**
+     * Include a key in the listing output, in the Versions or CommonPrefix result
+     *
+     * @param {string} key - key (without version ID)
+     * @param {string} versionId - version ID
+     * @param {string} value - metadata value
+     * @return {undefined}
+     */
+    addKey(key: string, versionId: string, value: string) {
+        // add the subprefix to the common prefixes if the key has the delimiter
+        const commonPrefix = this.getCommonPrefix(key);
+        if (commonPrefix) {
+            this.addCommonPrefix(commonPrefix);
+            // transition into SkippingPrefix state to skip all following keys
+            // while they start with the same prefix
+            this.setState(<DelimiterVersionsFilterState_SkippingPrefix> {
+                id: DelimiterVersionsFilterStateId.SkippingPrefix,
+                prefix: commonPrefix,
+            });
+        } else {
+            this.addContents(key, versionId, value);
+        }
+    }
+
+    /**
      *  Add a (key, versionId, value) tuple to the listing.
      *  Set the NextMarker to the current key
      *  Increment the keys counter
@@ -293,21 +309,6 @@ export class DelimiterVersions extends Delimiter {
         this.nullKey = { key, versionId, value };
     }
 
-    /**
-     * Add the cached null key to the results. This is called when
-     * reaching the correct position for the null key in the output.
-     *
-     * @return {undefined}
-     */
-    addCurrentNullKey(): void {
-        this.addContents(
-            this.nullKey.key,
-            this.nullKey.versionId,
-            this.nullKey.value,
-        );
-        this.nullKey = null;
-    }
-
     getObjectKeyV0(obj: { key: string }): string {
         return obj.key;
     }
@@ -331,7 +332,24 @@ export class DelimiterVersions extends Delimiter {
         const key = this.getObjectKey(obj);
         const value = obj.value;
 
-        return this.handleKey(key, value);
+        const { key: nonversionedKey, versionId: keyVersionId } = this.parseKey(key);
+        if (this.nullKey) {
+            if (this.nullKey.key !== nonversionedKey
+                || this.nullKey.versionId < <string> keyVersionId) {
+                this.handleKey(
+                    this.nullKey.key, this.nullKey.versionId, this.nullKey.value);
+                this.nullKey = null;
+            }
+        }
+        if (keyVersionId === '') {
+            // null key
+            this.cacheNullKey(nonversionedKey, Version.from(value).getVersionId(), value);
+            if (this.state.id === DelimiterVersionsFilterStateId.SkippingVersions) {
+                return FILTER_SKIP;
+            }
+            return FILTER_ACCEPT;
+        }
+        return this.handleKey(nonversionedKey, keyVersionId, value);
     }
 
     setState(state: FilterState): void {
@@ -342,11 +360,11 @@ export class DelimiterVersions extends Delimiter {
         this.keyHandlers[stateId] = keyHandler;
     }
 
-    handleKey(key: string, value: string): FilterReturnValue {
-        return this.keyHandlers[this.state.id](key, value);
+    handleKey(key: string, versionId: string | undefined, value: string): FilterReturnValue {
+        return this.keyHandlers[this.state.id](key, versionId, value);
     }
 
-    keyHandler_NotSkippingV0(key: string, value: string): FilterReturnValue {
+    keyHandler_NotSkippingV0(key: string, versionId: string | undefined, value: string): FilterReturnValue {
         if (key.startsWith(DbPrefixes.Replay)) {
             // skip internal replay prefix entirely
             this.setState(<DelimiterVersionsFilterState_SkippingPrefix> {
@@ -358,63 +376,32 @@ export class DelimiterVersions extends Delimiter {
         if (Version.isPHD(value)) {
             return FILTER_ACCEPT;
         }
-        return this.filter_onNewKey(key, value);
+        return this.filter_onNewKey(key, versionId, value);
     }
 
-    keyHandler_NotSkippingV1(key: string, value: string): FilterReturnValue {
-        return this.filter_onNewKey(key, value);
+    keyHandler_NotSkippingV1(key: string, versionId: string | undefined, value: string): FilterReturnValue {
+        return this.filter_onNewKey(key, versionId, value);
     }
 
-    filter_onNewKey(key: string, value: string): FilterReturnValue {
+    filter_onNewKey(key: string, versionId: string | undefined, value: string): FilterReturnValue {
         if (this._reachedMaxKeys()) {
             return FILTER_END;
         }
-        const { key: nonversionedKey, versionId: keyVersionId } = this.parseKey(key);
-        if (this.nullKey &&
-            (this.nullKey.key !== nonversionedKey
-             || this.nullKey.versionId < <string> keyVersionId)) {
-            this.addCurrentNullKey();
-            if (this._reachedMaxKeys()) {
-                // IsTruncated: true is set, which is wanted because
-                // there is at least one more key to output: the one
-                // being processed here
-                return FILTER_END;
-            }
-        }
-        let versionId: string;
-        if (keyVersionId === undefined) {
+        if (versionId === undefined) {
             this.masterKey = key;
             this.masterVersionId = Version.from(value).getVersionId() || 'null';
-            versionId = this.masterVersionId;
+            this.addKey(this.masterKey, this.masterVersionId, value);
         } else {
-            if (keyVersionId === '') {
-                // null key
-                this.cacheNullKey(nonversionedKey, Version.from(value).getVersionId(), value);
-                return FILTER_ACCEPT;
-            }
-            if (this.masterKey === nonversionedKey && this.masterVersionId === keyVersionId) {
+            if (this.masterKey === key && this.masterVersionId === versionId) {
                 // do not add a version key if it is the master version
                 return FILTER_ACCEPT;
             }
-            versionId = keyVersionId;
+            this.addKey(key, versionId, value);
         }
-        // add the subprefix to the common prefixes if the key has the delimiter
-        const commonPrefix = this.getCommonPrefix(nonversionedKey);
-        if (commonPrefix) {
-            this.addCommonPrefix(commonPrefix);
-            // transition into SkippingPrefix state to skip all following keys
-            // while they start with the same prefix
-            this.setState(<DelimiterVersionsFilterState_SkippingPrefix> {
-                id: DelimiterVersionsFilterStateId.SkippingPrefix,
-                prefix: commonPrefix,
-            });
-            return FILTER_ACCEPT;
-        }
-        this.addContents(nonversionedKey, versionId, value);
         return FILTER_ACCEPT;
     }
 
-    keyHandler_SkippingPrefix(key: string, value: string): FilterReturnValue {
+    keyHandler_SkippingPrefix(key: string, versionId: string | undefined, value: string): FilterReturnValue {
         const { prefix } = <DelimiterVersionsFilterState_SkippingPrefix> this.state;
         if (key.startsWith(prefix)) {
             return FILTER_SKIP;
@@ -422,39 +409,11 @@ export class DelimiterVersions extends Delimiter {
         this.setState(<DelimiterVersionsFilterState_NotSkipping> {
             id: DelimiterVersionsFilterStateId.NotSkipping,
         });
-        return this.handleKey(key, value);
+        return this.handleKey(key, versionId, value);
     }
 
-    keyHandler_WaitForNullKey(key: string, value: string): FilterReturnValue {
-        const { key: nonversionedKey, versionId } = this.parseKey(key);
-        if (nonversionedKey !== this.keyMarker) {
-            this.setState(<DelimiterVersionsFilterState_NotSkipping> {
-                id: DelimiterVersionsFilterStateId.NotSkipping,
-            });
-            return this.handleKey(key, value);
-        }
-        // we may now skip versions until VersionIdMarker
-        this.setState(<DelimiterVersionsFilterState_SkippingVersions> {
-            id: DelimiterVersionsFilterStateId.SkippingVersions,
-            gt: `${this.keyMarker}${VID_SEP}${this.versionIdMarker}`,
-        });
-
-        if (versionId === '') {
-            // only cache the null key if its version is older than
-            // the current version ID marker, otherwise it has already
-            // been output in a previous listing output
-            const nullVersionId = Version.from(value).getVersionId();
-            if (nullVersionId > this.versionIdMarker) {
-                this.cacheNullKey(nonversionedKey, nullVersionId, value);
-            }
-            return FILTER_SKIP;
-        }
-        return this.handleKey(key, value);
-    }
-
-    keyHandler_SkippingVersions(key: string, value: string): FilterReturnValue {
-        const { key: nonversionedKey, versionId } = this.parseKey(key);
-        if (nonversionedKey === this.keyMarker) {
+    keyHandler_SkippingVersions(key: string, versionId: string | undefined, value: string): FilterReturnValue {
+        if (key === this.keyMarker) {
             // since the nonversioned key equals the marker, there is
             // necessarily a versionId in this key
             const _versionId = <string> versionId;
@@ -470,7 +429,7 @@ export class DelimiterVersions extends Delimiter {
         this.setState(<DelimiterVersionsFilterState_NotSkipping> {
             id: DelimiterVersionsFilterStateId.NotSkipping,
         });
-        return this.handleKey(key, value);
+        return this.handleKey(key, versionId, value);
     }
 
     skippingBase() {
@@ -528,8 +487,8 @@ export class DelimiterVersions extends Delimiter {
         //   does not fit, so we know the result is now truncated
         //   because there remains the null key to be output.
         //
-        if (this.nullKey && !this._reachedMaxKeys()) {
-            this.addCurrentNullKey();
+        if (this.nullKey) {
+            this.handleKey(this.nullKey.key, this.nullKey.versionId, this.nullKey.value);
         }
         const result: ResultObject = {
             CommonPrefixes: this.CommonPrefixes,
