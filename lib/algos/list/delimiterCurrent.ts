@@ -69,11 +69,16 @@ class DelimiterCurrent extends DelimiterMaster {
         return p;
     }
 
-    addContents(key, value) {
-        if (this._reachedMaxKeys()) {
-            return FILTER_END;
-        }
-
+    /**
+     * check if the max keys count has been reached and set the
+     * final state of the result if it is the case
+     *
+     * specialized implementation on DelimiterCurrent to also check
+     * the number of scanned keys
+     *
+     * @return {Boolean} - indicates if the iteration has to stop
+     */
+    _reachedMaxKeys(): boolean {
         if (this.maxScannedLifecycleListingEntries && this.scannedKeys >= this.maxScannedLifecycleListingEntries) {
             this.IsTruncated = true;
             this.logger.info('listing stopped due to reaching the maximum scanned entries limit',
@@ -81,8 +86,12 @@ class DelimiterCurrent extends DelimiterMaster {
                     maxScannedLifecycleListingEntries: this.maxScannedLifecycleListingEntries,
                     scannedKeys: this.scannedKeys,
                 });
-            return FILTER_END;
+            return true;
         }
+        return super._reachedMaxKeys();
+    }
+
+    addContents(key, value) {
         ++this.scannedKeys;
         const parsedValue = this._parse(value);
         // if parsing fails, skip the key.
@@ -93,25 +102,23 @@ class DelimiterCurrent extends DelimiterMaster {
             // "excludedDataStoreName" is not specified or if specified and the data store name is different.
             if ((!this.beforeDate || (lastModified && lastModified < this.beforeDate)) &&
                 (!this.excludedDataStoreName || dataStoreName !== this.excludedDataStoreName)) {
-                return super.addContents(key, value);
+                super.addContents(key, value);
             }
             // In the event of a timeout occurring before any content is added,
             // NextMarker is updated even if the object is not eligible.
             // It minimizes the amount of data that the client needs to re-process if the request times out.
-            this.NextMarker = key;
+            this.nextMarker = key;
         }
-
-        return FILTER_ACCEPT;
     }
 
-    result(): ResultObject {
+    result(): object {
         const result: ResultObject = {
             Contents: this.Contents,
             IsTruncated: this.IsTruncated,
         };
 
         if (this.IsTruncated) {
-            result.NextMarker = this.NextMarker;
+            result.NextMarker = this.nextMarker;
         }
 
         return result;

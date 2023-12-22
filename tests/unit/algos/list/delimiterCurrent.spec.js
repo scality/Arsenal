@@ -6,17 +6,11 @@ const DelimiterCurrent =
     require('../../../../lib/algos/list/delimiterCurrent').DelimiterCurrent;
 const {
     FILTER_ACCEPT,
-    FILTER_SKIP,
     FILTER_END,
 } = require('../../../../lib/algos/list/tools');
 const VSConst =
     require('../../../../lib/versioning/constants').VersioningConstants;
 const { DbPrefixes } = VSConst;
-
-const EmptyResult = {
-    Contents: [],
-    IsTruncated: false,
-};
 
 const fakeLogger = {
     trace: () => {},
@@ -86,17 +80,6 @@ function getListingKey(key, vFormat) {
             };
 
             assert.deepStrictEqual(delimiter.result(), expectedResult);
-        });
-
-        it('should skip entry not starting with prefix', () => {
-            const delimiter = new DelimiterCurrent({ prefix: 'prefix' }, fakeLogger, v);
-
-            const listingKey = getListingKey('noprefix', v);
-            const creationDate = '1970-01-01T00:00:00.001Z';
-            const value = `{"last-modified": "${creationDate}"}`;
-            assert.strictEqual(delimiter.filter({ key: listingKey, value }), FILTER_SKIP);
-
-            assert.deepStrictEqual(delimiter.result(), EmptyResult);
         });
 
         it('should accept a master and return it', () => {

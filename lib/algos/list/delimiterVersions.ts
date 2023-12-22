@@ -2,6 +2,11 @@
 
 const Extension = require('./Extension').default;
 
+import {
+    FilterState,
+    FilterReturnValue,
+} from './delimiter';
+
 const Version = require('../../versioning/Version').Version;
 const VSConst = require('../../versioning/constants').VersioningConstants;
 const { inc, FILTER_END, FILTER_ACCEPT, FILTER_SKIP, SKIP_NONE } =
@@ -9,19 +14,6 @@ const { inc, FILTER_END, FILTER_ACCEPT, FILTER_SKIP, SKIP_NONE } =
 
 const VID_SEP = VSConst.VersionId.Separator;
 const { DbPrefixes, BucketVersioningKeyFormat } = VSConst;
-
-// TODO: when S3C-4682 code is back, cleanup fields, methods and types
-// already present in Delimiter class
-
-export interface FilterState {
-    id: number,
-};
-
-export interface FilterReturnValue {
-    FILTER_ACCEPT,
-    FILTER_SKIP,
-    FILTER_END,
-};
 
 export const enum DelimiterVersionsFilterStateId {
     NotSkipping = 1,
