@@ -21,6 +21,7 @@ import * as retention from './lib/s3middleware/objectRetention';
 import * as lifecycleHelpers from './lib/s3middleware/lifecycleHelpers';
 export { default as errors } from './lib/errors';
 export { default as Clustering } from './lib/Clustering';
+export * as ClusterRPC from './lib/clustering/ClusterRPC';
 export * as ipCheck from './lib/ipCheck';
 export * as auth from './lib/auth/auth';
 export * as constants from './lib/constants';
