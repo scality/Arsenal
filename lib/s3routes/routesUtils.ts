@@ -846,7 +846,7 @@ export function redirectRequest(
     }
     let redirectLocation = justPath ? `/${redirectKey}` :
         `${redirectProtocol}://${redirectHostName}/${redirectKey}`;
-    if (!redirectKey && redirectLocationHeader) {
+    if (!redirectKey && redirectLocationHeader && redirectLocation.length > 1) {
         // remove hanging slash
         redirectLocation = redirectLocation.slice(0, -1);
     }
