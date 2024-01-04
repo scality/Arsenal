@@ -662,6 +662,8 @@ export default class LifecycleConfiguration {
 
     /**
      * Checks the validity of the given date
+     * Date must be in format YYYY-MM-DDTHH:MM:SS(.sss)(Z)
+     * Additionally, the time must be midnight i.e. YYYY-MM-DDT00:00:00(.sss)(Z)
      * @param date - The date the check
      * @return Returns an error object or `null`
      */
@@ -671,6 +673,13 @@ export default class LifecycleConfiguration {
             ':([0-5][0-9]):([0-5][0-9])(.[0-9]+)?(Z)?$');
         if (!isoRegex.test(date)) {
             const msg = 'Date must be in ISO 8601 format';
+            return errors.InvalidArgument.customizeDescription(msg);
+        }
+        const midnightRegex = new RegExp('^(-?(?:[1-9][0-9]*)?[0-9]{4})-' +
+            '(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9])T00' +
+            ':00:00(.[0-9]+)?(Z)?$');
+        if (!midnightRegex.test(date)) {
+            const msg = 'Date must have time set to midnight';
             return errors.InvalidArgument.customizeDescription(msg);
         }
         return null;
@@ -1216,7 +1225,7 @@ export default class LifecycleConfiguration {
                         `</DaysAfterInitiation></${actionName}>`;
                 } else if (actionName === 'NoncurrentVersionExpiration') {
                     const Days = `<NoncurrentDays>${days}</NoncurrentDays>`;
-                    const NewerVersions = newerNoncurrentVersions ? 
+                    const NewerVersions = newerNoncurrentVersions ?
                         `<NewerNoncurrentVersions>${newerNoncurrentVersions}</NewerNoncurrentVersions>` : '';
                     Action = `<${actionName}>${Days}${NewerVersions}</${actionName}>`;
                 } else if (actionName === 'Expiration') {

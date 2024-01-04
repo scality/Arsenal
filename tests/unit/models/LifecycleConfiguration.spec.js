@@ -616,16 +616,24 @@ describe('LifecycleConfiguration', () => {
     });
 
     describe('::_checkDate', () => {
-        it('should return no error valid ISO date', () => {
+        it('should return no error with a valid ISO date at midnight', () => {
             const date = '2016-01-01T00:00:00.000Z';
             const error = lifecycleConfiguration._checkDate(date);
             assert.strictEqual(error, null);
         });
 
-        it('should return error when invalid ISO date', () => {
+        it('should return an error with a non-ISO date', () => {
             const date = 'Fri, 01 Jan 2016 00:00:00 GMT';
             const error = lifecycleConfiguration._checkDate(date);
             const msg = 'Date must be in ISO 8601 format';
+            expect(error.is.InvalidArgument).toBeTruthy();
+            expect(error.description).toEqual(msg);
+        });
+
+        it('should return an error with a date that is not set to midnight', () => {
+            const date = '2024-01-04T15:22:40Z';
+            const error = lifecycleConfiguration._checkDate(date);
+            const msg = 'Date must have time set to midnight';
             expect(error.is.InvalidArgument).toBeTruthy();
             expect(error.description).toEqual(msg);
         });
