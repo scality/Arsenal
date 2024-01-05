@@ -492,6 +492,29 @@ export default class LifecycleConfiguration {
         return { ...base, ruleStatus: status }
     }
 
+
+    /**
+     * Checks the validity of the given date
+     * @param date - The date the check
+     * @return Returns an error object or `null`
+     */
+    _checkDate(date: string) {
+        const isoRegex = new RegExp('^(-?(?:[1-9][0-9]*)?[0-9]{4})-' +
+            '(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9])T(2[0-3]|[01][0-9])' +
+            ':([0-5][0-9]):([0-5][0-9])(\\.[0-9]+)?(Z)?$');
+        if (!isoRegex.test(date)) {
+            const msg = 'Date must be in ISO 8601 format';
+            return errors.InvalidArgument.customizeDescription(msg);
+        }
+        const midnightRegex = new RegExp('^(-?(?:[1-9][0-9]*)?[0-9]{4})-' +
+            '(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9])T00' +
+            ':00:00(\\.0+)?(Z)?$');
+        if (!midnightRegex.test(date)) {
+            const msg = '\'Date\' must be at midnight GMT';
+            return errors.InvalidArgument.customizeDescription(msg);
+        }
+        return null;
+    }
     /**
      * Check that action component of rule is valid
      * @param rule - a rule object from Rule array from this._parsedXml
@@ -640,12 +663,9 @@ export default class LifecycleConfiguration {
             return { error };
         }
         if (subExp.Date) {
-            const isoRegex = new RegExp('^(-?(?:[1-9][0-9]*)?[0-9]{4})-' +
-                '(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9])T(2[0-3]|[01][0-9])' +
-                ':([0-5][0-9]):([0-5][0-9])(.[0-9]+)?(Z)?$');
-            if (!isoRegex.test(subExp.Date[0])) {
-                expObj.error = errors.InvalidArgument.customizeDescription(
-                    'Date must be in ISO 8601 format');
+            const error = this._checkDate(subExp.Date[0]);
+            if (error) {
+                expObj.error = error;
             } else {
                 expObj.date = subExp.Date[0];
             }
@@ -843,7 +863,7 @@ export default class LifecycleConfiguration {
                         `</DaysAfterInitiation></${actionName}>`;
                 } else if (actionName === 'NoncurrentVersionExpiration') {
                     const Days = `<NoncurrentDays>${days}</NoncurrentDays>`;
-                    const NewerVersions = newerNoncurrentVersions ? 
+                    const NewerVersions = newerNoncurrentVersions ?
                         `<NewerNoncurrentVersions>${newerNoncurrentVersions}</NewerNoncurrentVersions>` : '';
                     Action = `<${actionName}>${Days}${NewerVersions}</${actionName}>`;
                 } else if (actionName === 'Expiration') {
