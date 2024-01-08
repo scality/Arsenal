@@ -668,9 +668,16 @@ export default class LifecycleConfiguration {
     _checkDate(date: string) {
         const isoRegex = new RegExp('^(-?(?:[1-9][0-9]*)?[0-9]{4})-' +
             '(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9])T(2[0-3]|[01][0-9])' +
-            ':([0-5][0-9]):([0-5][0-9])(.[0-9]+)?(Z)?$');
+            ':([0-5][0-9]):([0-5][0-9])(\\.[0-9]+)?(Z)?$');
         if (!isoRegex.test(date)) {
             const msg = 'Date must be in ISO 8601 format';
+            return errors.InvalidArgument.customizeDescription(msg);
+        }
+        const midnightRegex = new RegExp('^(-?(?:[1-9][0-9]*)?[0-9]{4})-' +
+            '(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9])T00' +
+            ':00:00(\\.0+)?(Z)?$');
+        if (!midnightRegex.test(date)) {
+            const msg = '\'Date\' must be at midnight GMT';
             return errors.InvalidArgument.customizeDescription(msg);
         }
         return null;
@@ -1216,7 +1223,7 @@ export default class LifecycleConfiguration {
                         `</DaysAfterInitiation></${actionName}>`;
                 } else if (actionName === 'NoncurrentVersionExpiration') {
                     const Days = `<NoncurrentDays>${days}</NoncurrentDays>`;
-                    const NewerVersions = newerNoncurrentVersions ? 
+                    const NewerVersions = newerNoncurrentVersions ?
                         `<NewerNoncurrentVersions>${newerNoncurrentVersions}</NewerNoncurrentVersions>` : '';
                     Action = `<${actionName}>${Days}${NewerVersions}</${actionName}>`;
                 } else if (actionName === 'Expiration') {
