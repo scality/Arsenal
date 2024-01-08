@@ -10,6 +10,17 @@ const days = {
     Expiration: 'Days',
 };
 
+const mockConfig = {
+    replicationEndpoints: [
+        {
+            site: 'a',
+        },
+        {
+            site: 'b',
+        },
+    ],
+};
+
 const date = new Date();
 date.setUTCHours(0, 0, 0, 0);
 
@@ -390,6 +401,47 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
             assert.strictEqual(expectedPrefix,
                 lcConfig.rules[0].filter.rulePrefix);
             done();
+        });
+    });
+});
+
+describe('LifecycleConfiguration', () => {
+    const lifecycleConfiguration = new LifecycleConfiguration({}, mockConfig);
+    describe('::_checkDate', () => {
+        it('should return no error with a valid ISO date at midnight', () => {
+            const date = '2016-01-01T00:00:00';
+            const error = lifecycleConfiguration._checkDate(date);
+            assert.strictEqual(error, null);
+        });
+
+        it('should return no error with a valid ISO date at midnight', () => {
+            const date = '2016-01-01T00:00:00.000Z';
+            const error = lifecycleConfiguration._checkDate(date);
+            assert.strictEqual(error, null);
+        });
+
+        it('should return an error with a non-ISO date', () => {
+            const date = '2016-01-01T00:00:00000Z';
+            const error = lifecycleConfiguration._checkDate(date);
+            const msg = 'Date must be in ISO 8601 format';
+            expect(error.is.InvalidArgument).toBeTruthy();
+            expect(error.description).toEqual(msg);
+        });
+
+        it('should return an error with a non-ISO date', () => {
+            const date = 'Fri, 01 Jan 2016 00:00:00 GMT';
+            const error = lifecycleConfiguration._checkDate(date);
+            const msg = 'Date must be in ISO 8601 format';
+            expect(error.is.InvalidArgument).toBeTruthy();
+            expect(error.description).toEqual(msg);
+        });
+
+        it('should return an error with a date that is not set to midnight', () => {
+            const date = '2024-01-04T15:22:40Z';
+            const error = lifecycleConfiguration._checkDate(date);
+            const msg = '\'Date\' must be at midnight GMT';
+            expect(error.is.InvalidArgument).toBeTruthy();
+            expect(error.description).toEqual(msg);
         });
     });
 });
