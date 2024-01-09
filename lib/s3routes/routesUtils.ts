@@ -697,9 +697,7 @@ export function errorHtmlResponse(
     log.trace('sending generic html error page',
         { err });
     setCommonResponseHeaders(corsHeaders, response, log);
-    /** AWS uses old HTTP/1.0 statusMessage for 302 Found */
-    const statusMsg = err.code === 302 ? 'Moved Temporarily' : undefined;
-    response.writeHead(err.code, statusMsg, { 'Content-type': 'text/html' });
+    response.writeHead(err.code, { 'Content-type': 'text/html' });
     const html: string[] = [];
     // response.statusMessage will provide standard message for status
     // code so much set response status code before creating html
@@ -767,9 +765,7 @@ export function errorHeaderResponse(
     setCommonResponseHeaders(corsHeaders, response, log);
     response.setHeader('x-amz-error-code', err.message);
     response.setHeader('x-amz-error-message', err.description);
-    /** AWS uses old HTTP/1.0 statusMessage for 302 Found */
-    const statusMsg = err.code === 302 ? 'Moved Temporarily' : undefined;
-    response.writeHead(err.code, statusMsg);
+    response.writeHead(err.code);
     return response.end(() => {
         // TODO ARSN-216 Fix logger
         // @ts-expect-error

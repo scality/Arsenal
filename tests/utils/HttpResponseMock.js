@@ -20,13 +20,10 @@ class HttpResponseMock {
     }
 
     end(data, encoding, callback) {
-        let cb = callback;
-        if (!cb && typeof data === 'function') {
-            cb = data;
-            cb();
-        } else {
-            this.write(data, encoding, callback);
+        if (!callback && typeof data === 'function') {
+            return data();
         }
+        return this.write(data, encoding, callback);
     }
 
     write(chunk, encoding, callback) {
@@ -51,9 +48,7 @@ class HttpResponseMock {
 
     writeHead(statusCode, statusMessage, headers) {
         this.statusCode = statusCode;
-        /** AWS uses old HTTP/1.0 statusMessage for 302 Found */
-        this.statusMessage = statusCode === 302 ?
-            'Moved Temporarily' : http.STATUS_CODES[statusCode];
+        this.statusMessage = http.STATUS_CODES[statusCode];
         let headersObj = headers;
 
         if (!headersObj && typeof statusMessage === 'object') {

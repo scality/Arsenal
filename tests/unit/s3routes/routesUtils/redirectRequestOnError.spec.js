@@ -39,7 +39,7 @@ describe('routesUtils.redirectRequestOnError', () => {
             assertHeaders(responseMock, corsHeaders);
             assertHeaders(responseMock, errorHeaders);
             assert.strictEqual(responseMock._headers.Location, routing.location);
-            assert.match(responseMock._body, /<h1>302 Moved Temporarily<\/h1>/);
+            assert.match(responseMock._body, /<h1>302 Found<\/h1>/);
             assert.match(responseMock._body, /<li>Code: Found<\/li>/);
             assert.match(responseMock._body, /<li>Message: Resource Found<\/li>/);
         });
