@@ -895,7 +895,7 @@ export function redirectRequestOnError(
 ) {
     response.setHeader('Location', routingInfo.location);
 
-    if (!dataLocations && err.name === errors.Found.name) {
+    if (!dataLocations && err.is.Found) {
         if (method === 'HEAD') {
             return errorHeaderResponse(err, response, corsHeaders, log);
         }
