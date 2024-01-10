@@ -690,6 +690,11 @@ export const ReportNotPresent: ErrorFormat = {
         'The request was rejected because the credential report does not exist. To generate a credential report, use GenerateCredentialReport.',
 };
 
+export const Found: ErrorFormat = {
+    code: 302,
+    description: 'Resource Found'
+};
+
 // ------------- Special non-AWS S3 errors -------------
 
 export const MPUinProgress: ErrorFormat = {

@@ -1,3 +1,4 @@
+const http = require('http');
 
 /**
  * Basic response mock to catch response values.
@@ -9,6 +10,7 @@
 class HttpResponseMock {
     constructor() {
         this.statusCode = null;
+        this.statusMessage = null;
         this._headers = {};
         this._body = null;
     }
@@ -18,7 +20,10 @@ class HttpResponseMock {
     }
 
     end(data, encoding, callback) {
-        this.write(data, encoding, callback);
+        if (!callback && typeof data === 'function') {
+            return data();
+        }
+        return this.write(data, encoding, callback);
     }
 
     write(chunk, encoding, callback) {
@@ -43,6 +48,7 @@ class HttpResponseMock {
 
     writeHead(statusCode, statusMessage, headers) {
         this.statusCode = statusCode;
+        this.statusMessage = http.STATUS_CODES[statusCode];
         let headersObj = headers;
 
         if (!headersObj && typeof statusMessage === 'object') {
@@ -61,6 +67,9 @@ class HttpResponseMock {
             Object.assign(this._headers, headersObj);
         }
     }
+
+    on() {}
+    once() {}
 }
 
 module.exports = HttpResponseMock;

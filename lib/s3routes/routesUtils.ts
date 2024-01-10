@@ -664,6 +664,8 @@ export function streamUserErrorPage(
     log: RequestLogger,
 ) {
     setCommonResponseHeaders(corsHeaders, response, log);
+    response.setHeader('x-amz-error-code', err.message);
+    response.setHeader('x-amz-error-message', err.description);
     response.writeHead(err.code, { 'Content-type': 'text/html' });
     response.on('finish', () => {
         // TODO ARSN-216 Fix logger
@@ -861,6 +863,52 @@ export function redirectRequest(
     });
     response.end();
     return undefined;
+}
+
+/**
+ * redirectRequestOnError - redirect with an error body
+ * @param err - arsenal error object
+ * @param method - HTTP method
+ * @param routingInfo - info for routing
+ * @param [routingInfo.withError] - flag to differentiate from routing rules
+ * @param [routingInfo.location] - location header
+ * @param dataLocations --
+ *   - array of locations to get streams from backend
+ * @param retrieveDataParams - params to create instance of
+ * data retrieval function
+ * @param response - response object
+ * @param corsHeaders - CORS-related response headers
+ * @param log - Werelogs instance
+ */
+export function redirectRequestOnError(
+    err: ArsenalError,
+    method: 'HEAD' | 'GET',
+    routingInfo: {
+        withError: true;
+        location: string;
+    },
+    dataLocations: { size: string | number }[] | null,
+    retrieveDataParams: any,
+    response: http.ServerResponse,
+    corsHeaders: { [key: string]: string },
+    log: RequestLogger,
+) {
+    response.setHeader('Location', routingInfo.location);
+
+    if (!dataLocations && err.is.Found) {
+        if (method === 'HEAD') {
+            return errorHeaderResponse(err, response, corsHeaders, log);
+        }
+        response.setHeader('x-amz-error-code', err.message);
+        response.setHeader('x-amz-error-message', err.description);
+        return errorHtmlResponse(err, false, '', response, corsHeaders, log);
+    }
+
+    // This is reached only for website error document (GET only)
+    const overrideErrorCode = err.flatten();
+    overrideErrorCode.code = 301;
+    return streamUserErrorPage(ArsenalError.unflatten(overrideErrorCode)!,
+        dataLocations || [], retrieveDataParams, response, corsHeaders, log);
 }
 
 /**
