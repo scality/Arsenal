@@ -29,7 +29,7 @@ export default function routerWebsite(
                 if (redirectInfo) {
                     if (err && redirectInfo.withError) {
                         return routesUtils.redirectRequestOnError(err,
-                            'GET', redirectInfo, dataGetInfo, dataRetrievalFn,
+                            'GET', redirectInfo, dataGetInfo, dataRetrievalParams,
                             response, resMetaHeaders, log)
                     }
                     // note that key might have been modified in websiteGet
@@ -64,7 +64,7 @@ export default function routerWebsite(
                 if (redirectInfo) {
                     if (err && redirectInfo.withError) {
                         return routesUtils.redirectRequestOnError(err,
-                            'HEAD', redirectInfo, null, dataRetrievalFn,
+                            'HEAD', redirectInfo, null, dataRetrievalParams,
                             response, resMetaHeaders, log)
                     }
                     return routesUtils.redirectRequest(redirectInfo,
