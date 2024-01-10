@@ -27,6 +27,11 @@ export default function routerWebsite(
                 routesUtils.statsReport500(err, statsClient);
                 // request being redirected
                 if (redirectInfo) {
+                    if (err && redirectInfo.withError) {
+                        return routesUtils.redirectRequestOnError(err,
+                            'GET', redirectInfo, dataGetInfo, dataRetrievalFn,
+                            response, resMetaHeaders, log)
+                    }
                     // note that key might have been modified in websiteGet
                     // api to add index document
                     return routesUtils.redirectRequest(redirectInfo,
@@ -57,6 +62,11 @@ export default function routerWebsite(
             (err, resMetaHeaders, redirectInfo, key) => {
                 routesUtils.statsReport500(err, statsClient);
                 if (redirectInfo) {
+                    if (err && redirectInfo.withError) {
+                        return routesUtils.redirectRequestOnError(err,
+                            'HEAD', redirectInfo, null, dataRetrievalFn,
+                            response, resMetaHeaders, log)
+                    }
                     return routesUtils.redirectRequest(redirectInfo,
                         // TODO ARSN-217 encrypted does not exists in request.connection
                         // @ts-ignore
