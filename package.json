@@ -80,6 +80,7 @@
     "lint_md": "mdlint $(git ls-files '*.md')",
     "lint_yml": "yamllint $(git ls-files '*.yml')",
     "test": "jest tests/unit",
+    "test_auth": "jest tests/unit/auth",
     "build": "tsc",
     "prepare": "yarn build",
     "ft_test": "jest tests/functional --testTimeout=120000 --forceExit",

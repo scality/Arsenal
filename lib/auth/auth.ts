@@ -181,7 +181,8 @@ function generateV4Headers(
     secretKeyValue: string,
     awsService: string,
     proxyPath: string,
-    sessionToken: string
+    sessionToken: string,
+    payload: string,
 ) {
     Object.assign(request, { headers: {} });
     const amzDate = convertUTCtoISO8601(Date.now());
@@ -194,7 +195,7 @@ function generateV4Headers(
     const timestamp = amzDate;
     const algorithm = 'AWS4-HMAC-SHA256';
 
-    let payload = '';
+    payload = payload || '';
     if (request.method === 'POST') {
         payload = queryString.stringify(data, undefined, undefined, {
             encodeURIComponent,
@@ -205,6 +206,8 @@ function generateV4Headers(
     request.setHeader('host', request._headers.host);
     request.setHeader('x-amz-date', amzDate);
     request.setHeader('x-amz-content-sha256', payloadChecksum);
+    request.setHeader('Content-MD5', crypto.createHash('md5')
+        .update(payload, 'binary').digest('base64'))
 
     if (sessionToken) {
         request.setHeader('x-amz-security-token', sessionToken);
