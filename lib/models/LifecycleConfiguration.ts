@@ -501,12 +501,23 @@ export default class LifecycleConfiguration {
     _checkDate(date: string) {
         const isoRegex = new RegExp('^(-?(?:[1-9][0-9]*)?[0-9]{4})-' +
             '(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9])T(2[0-3]|[01][0-9])' +
-            ':([0-5][0-9]):([0-5][0-9])(\\.[0-9]+)?(Z|[+-]([0-5][0-9]):([0-5][0-9]))?$');
+            ':([0-5][0-9]):([0-5][0-9])(\\.[0-9]+)?(Z|[+-][0-5][0-9]:[0-5][0-9])?$');
         if (!isoRegex.test(date)) {
             const msg = 'Date must be in ISO 8601 format';
             return errors.InvalidArgument.customizeDescription(msg);
         }
+        // Extract the time portion of the date string to check if a timezone
+        // is specified. If not, add a Z to indicate UTC. We split to avoid
+        // then hyphens in the date portion.
+        const time = date.split('T')[1];
+        if (!time.includes('Z') && !time.includes('+') && !time.includes('-')) {
+            date += 'Z';
+        }
         const dateObj = new Date(date);
+        if (Number.isNaN(dateObj.getTime())) {
+            const msg = 'Date is not a valid date';
+            return errors.InvalidArgument.customizeDescription(msg);
+        }
         if (dateObj.getUTCHours() !== 0
             || dateObj.getUTCMinutes() !== 0
             || dateObj.getUTCSeconds() !== 0
