@@ -173,6 +173,7 @@ function doAuth(
  * @param [proxyPath] - path that gets proxied by reverse proxy
  * @param [sessionToken] - security token if the access/secret keys
  *                                are temporary credentials from STS
+ * @param [payload] - body of the request if any
  */
 function generateV4Headers(
     request: any,
@@ -180,8 +181,9 @@ function generateV4Headers(
     accessKey: string,
     secretKeyValue: string,
     awsService: string,
-    proxyPath: string,
-    sessionToken: string
+    proxyPath?: string,
+    sessionToken?: string,
+    payload?: string,
 ) {
     Object.assign(request, { headers: {} });
     const amzDate = convertUTCtoISO8601(Date.now());
@@ -194,7 +196,7 @@ function generateV4Headers(
     const timestamp = amzDate;
     const algorithm = 'AWS4-HMAC-SHA256';
 
-    let payload = '';
+    payload = payload || '';
     if (request.method === 'POST') {
         payload = queryString.stringify(data, undefined, undefined, {
             encodeURIComponent,
@@ -205,7 +207,13 @@ function generateV4Headers(
     request.setHeader('host', request._headers.host);
     request.setHeader('x-amz-date', amzDate);
     request.setHeader('x-amz-content-sha256', payloadChecksum);
-
+    if (request.path && request.path.includes('backbeat')) {
+        request.setHeader('content-md5', crypto.createHash('md5')
+            .update(payload, 'binary').digest('hex'));
+    } else {
+        request.setHeader('content-md5', crypto.createHash('md5')
+            .update(payload, 'binary').digest('base64'));
+    }
     if (sessionToken) {
         request.setHeader('x-amz-security-token', sessionToken);
     }
@@ -215,6 +223,7 @@ function generateV4Headers(
         .filter(headerName =>
             headerName.startsWith('x-amz-')
             || headerName.startsWith('x-scal-')
+            || headerName === 'content-md5'
             || headerName === 'host'
         ).sort().join(';');
     const params = { request, signedHeaders, payloadChecksum,
