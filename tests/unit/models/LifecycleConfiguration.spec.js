@@ -420,6 +420,12 @@ describe('LifecycleConfiguration', () => {
             assert.strictEqual(error, null);
         });
 
+        it('should return no error with a valid ISO date at midnight with timezone', () => {
+            const date = '2024-01-08T06:00:00+06:00';
+            const error = lifecycleConfiguration._checkDate(date);
+            assert.strictEqual(error, null);
+        });
+
         it('should return an error with a non-ISO date', () => {
             const date = '2016-01-01T00:00:00000Z';
             const error = lifecycleConfiguration._checkDate(date);
@@ -436,8 +442,24 @@ describe('LifecycleConfiguration', () => {
             expect(error.description).toEqual(msg);
         });
 
+        it('should return an error with a non-ISO date', () => {
+            const date = '2024-01-08T00:00:00+34:00';
+            const error = lifecycleConfiguration._checkDate(date);
+            const msg = 'Date is not a valid date';
+            expect(error.is.InvalidArgument).toBeTruthy();
+            expect(error.description).toEqual(msg);
+        });
+
         it('should return an error with a date that is not set to midnight', () => {
             const date = '2024-01-04T15:22:40Z';
+            const error = lifecycleConfiguration._checkDate(date);
+            const msg = '\'Date\' must be at midnight GMT';
+            expect(error.is.InvalidArgument).toBeTruthy();
+            expect(error.description).toEqual(msg);
+        });
+
+        it('should return an error with a date that is not set to midnight', () => {
+            const date = '2024-01-08T00:00:00.123Z';
             const error = lifecycleConfiguration._checkDate(date);
             const msg = '\'Date\' must be at midnight GMT';
             expect(error.is.InvalidArgument).toBeTruthy();
