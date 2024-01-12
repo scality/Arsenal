@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/scality/Arsenal#readme",
   "dependencies": {
+    "@aws-sdk/client-kms": "^3.485.0",
     "@js-sdsl/ordered-set": "^4.4.2",
     "@types/async": "^3.2.12",
     "@types/utf8": "^3.0.1",
