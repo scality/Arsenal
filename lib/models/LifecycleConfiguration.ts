@@ -666,17 +666,35 @@ export default class LifecycleConfiguration {
      * @return Returns an error object or `null`
      */
     _checkDate(date: string) {
-        const isoRegex = new RegExp('^(-?(?:[1-9][0-9]*)?[0-9]{4})-' +
-            '(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9])T(2[0-3]|[01][0-9])' +
-            ':([0-5][0-9]):([0-5][0-9])(\\.[0-9]+)?(Z)?$');
-        if (!isoRegex.test(date)) {
+        const isoRegex = new RegExp(
+            "^(-?(?:[1-9][0-9]*)?[0-9]{4})" + // Year
+            "-(1[0-2]|0[1-9])" + // Month
+            "-(3[01]|0[1-9]|[12][0-9])" + // Day
+            "T(2[0-3]|[01][0-9])" + // Hour
+            ":([0-5][0-9])" + // Minute
+            ":([0-5][0-9])" + // Second
+            "(\\.[0-9]+)?" + // Fractional second
+            "(Z|[+-][01][0-9]:[0-5][0-9])?$", // Timezone
+            "g"
+        );
+        const matches = [...date.matchAll(isoRegex)];
+        if (matches.length !== 1) {
             const msg = 'Date must be in ISO 8601 format';
             return errors.InvalidArgument.customizeDescription(msg);
         }
-        const midnightRegex = new RegExp('^(-?(?:[1-9][0-9]*)?[0-9]{4})-' +
-            '(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9])T00' +
-            ':00:00(\\.0+)?(Z)?$');
-        if (!midnightRegex.test(date)) {
+        // Check for a timezone in the last match group. If none, add a Z to indicate UTC.
+        if (!matches[0][matches[0].length-1]) {
+            date += 'Z';
+        }
+        const dateObj = new Date(date);
+        if (Number.isNaN(dateObj.getTime())) {
+            const msg = 'Date is not a valid date';
+            return errors.InvalidArgument.customizeDescription(msg);
+        }
+        if (dateObj.getUTCHours() !== 0
+            || dateObj.getUTCMinutes() !== 0
+            || dateObj.getUTCSeconds() !== 0
+            || dateObj.getUTCMilliseconds() !== 0) {
             const msg = '\'Date\' must be at midnight GMT';
             return errors.InvalidArgument.customizeDescription(msg);
         }
