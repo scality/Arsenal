@@ -915,7 +915,9 @@ describe('policyEvaluator', () => {
             () => {
                 policy.Statement.Condition = { Bool:
                         { 'aws:SecureTransport': 'true' } };
-                const rcModifiers = { _sslEnabled: true };
+                const rcModifiers = { _headers: {
+                    'x-forwarded-proto': 'https',
+                } };
                 check(requestContext, rcModifiers, policy, 'Allow');
             });
 
