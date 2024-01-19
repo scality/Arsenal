@@ -52,6 +52,7 @@ export const algorithms = {
         DelimiterTools: require('./lib/algos/list/tools'),
     },
     cache: {
+        GapSet: require('./lib/algos/cache/GapSet'),
         LRUCache: require('./lib/algos/cache/LRUCache'),
     },
     stream: {
