@@ -3,7 +3,7 @@
 
 import errors from '../../errors';
 import * as werelogs from 'werelogs';
-import { KMSClient, CreateKeyCommand, ScheduleKeyDeletionCommand, EncryptCommand, DecryptCommand } from "@aws-sdk/client-kms";
+import { KMSClient, CreateKeyCommand, ScheduleKeyDeletionCommand, EncryptCommand, DecryptCommand, GenerateDataKeyCommand, DataKeySpec } from "@aws-sdk/client-kms";
 import { AwsCredentialIdentity } from "@smithy/types";
 import assert from 'assert';
 
@@ -122,6 +122,41 @@ export default class Client {
                 } else {
                     cb();
                 }
+            }
+        });
+    }
+
+    /**
+     * @param cryptoScheme - crypto scheme version number
+     * @param masterKeyId - key to retrieve master key
+     * @param logger - werelog logger object
+     * @param cb - callback
+     * @callback called with (err, plainTextDataKey: Buffer, cipheredDataKey: Buffer)
+     */
+    generateDataKey(
+        cryptoScheme: number,
+        masterKeyId: string,
+        logger: werelogs.Logger,
+        cb: any,
+    ) {
+        logger.debug("AWS KMS: generateDataKey", {cryptoScheme, masterKeyId});
+
+        // Only support cryptoScheme v1
+        assert.strictEqual (cryptoScheme, 1);
+
+        const command = new GenerateDataKeyCommand({KeyId: masterKeyId, KeySpec: DataKeySpec.AES_256});
+        this.client.send(command, (err, data) => {
+            if (err) {
+                const error = _arsenalError(err);
+                logger.error("AWS_KMS::generateDataKey", {err});
+                cb (error);
+            } else if (!data) {
+                const error = _arsenalError("generateDataKey: empty response");
+                logger.error("AWS_KMS::generateDataKey empty reponse");
+                cb (error);
+            } else {
+                // Convert to a buffer. This allows the wrapper to use .toString("base64")
+                cb(null, Buffer.from(data.Plaintext!), Buffer.from(data.CiphertextBlob!));
             }
         });
     }
