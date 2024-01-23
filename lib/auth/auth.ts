@@ -164,6 +164,20 @@ function doAuth(
 }
 
 /**
+ * This function will generate a version 4 content-md5 header
+ * It looks at the request path to determine what kind of header encoding is required
+ *
+ * @param path - the request path
+ * @param payload - the request payload to hash
+ */
+function generateContentMD5Header(
+    path: string,
+    payload: string,
+) {
+    const encoding = path && path.startsWith('/_/backbeat/') ? 'hex' : 'base64';
+    return crypto.createHash('md5').update(payload, 'binary').digest(encoding);
+}
+/**
  * This function will generate a version 4 header
  *
  * @param request - Http request object
@@ -175,6 +189,7 @@ function doAuth(
  * @param [proxyPath] - path that gets proxied by reverse proxy
  * @param [sessionToken] - security token if the access/secret keys
  *                                are temporary credentials from STS
+ * @param [payload] - body of the request if any
  */
 function generateV4Headers(
     request: any,
@@ -182,8 +197,9 @@ function generateV4Headers(
     accessKey: string,
     secretKeyValue: string,
     awsService: string,
-    proxyPath: string,
-    sessionToken: string
+    proxyPath?: string,
+    sessionToken?: string,
+    payload?: string,
 ) {
     Object.assign(request, { headers: {} });
     const amzDate = convertUTCtoISO8601(Date.now());
@@ -196,7 +212,7 @@ function generateV4Headers(
     const timestamp = amzDate;
     const algorithm = 'AWS4-HMAC-SHA256';
 
-    let payload = '';
+    payload = payload || '';
     if (request.method === 'POST') {
         payload = queryString.stringify(data, undefined, undefined, {
             encodeURIComponent,
@@ -207,6 +223,7 @@ function generateV4Headers(
     request.setHeader('host', request._headers.host);
     request.setHeader('x-amz-date', amzDate);
     request.setHeader('x-amz-content-sha256', payloadChecksum);
+    request.setHeader('content-md5', generateContentMD5Header(request.path, payload));
 
     if (sessionToken) {
         request.setHeader('x-amz-security-token', sessionToken);
@@ -217,6 +234,7 @@ function generateV4Headers(
         .filter(headerName =>
             headerName.startsWith('x-amz-')
             || headerName.startsWith('x-scal-')
+            || headerName === 'content-md5'
             || headerName === 'host',
         ).sort().join(';');
     const params = { request, signedHeaders, payloadChecksum,
