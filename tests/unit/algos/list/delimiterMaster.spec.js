@@ -167,7 +167,7 @@ function getListingKey(key, vFormat) {
         });
 
         if (vFormat === 'v0') {
-            it('should return <key><VersionIdSeparator> for DelimiterMaster when ' +
+            it('skipping() should return <key>inc(<VersionIdSeparator>) for DelimiterMaster when ' +
             'NextMarker is set and there is a delimiter', () => {
                 const key = 'key';
                 const delimiter = new DelimiterMaster(
@@ -178,14 +178,10 @@ function getListingKey(key, vFormat) {
                 const listingKey = getListingKey(key, vFormat);
                 delimiter.filter({ key: listingKey, value: '' });
                 assert.strictEqual(delimiter.nextMarker, key);
-
-                /* With a delimiter skipping should return previous key + VID_SEP
-                 * (except when a delimiter is set and the NextMarker ends with the
-                 * delimiter) . */
-                assert.strictEqual(delimiter.skipping(), listingKey + VID_SEP);
+                assert.strictEqual(delimiter.skipping(), `${listingKey}${inc(VID_SEP)}`);
             });
 
-            it('should return <key><VersionIdSeparator> for DelimiterMaster when ' +
+            it('skipping() should return <key>inc(<VersionIdSeparator>) for DelimiterMaster when ' +
             'NextContinuationToken is set and there is a delimiter', () => {
                 const key = 'key';
                 const delimiter = new DelimiterMaster(
@@ -197,7 +193,7 @@ function getListingKey(key, vFormat) {
                 delimiter.filter({ key: listingKey, value: '' });
                 assert.strictEqual(delimiter.nextMarker, key);
 
-                assert.strictEqual(delimiter.skipping(), listingKey + VID_SEP);
+                assert.strictEqual(delimiter.skipping(), `${listingKey}${inc(VID_SEP)}`);
             });
 
             it('should accept a PHD version as first input', () => {
@@ -446,7 +442,7 @@ function getListingKey(key, vFormat) {
                         }),
                         FILTER_SKIP);
                     // ...it should skip the whole replay prefix
-                    assert.strictEqual(delimiter.skipping(), DbPrefixes.Replay);
+                    assert.strictEqual(delimiter.skipping(), inc(DbPrefixes.Replay));
 
                     // simulate a listing that reaches regular object keys
                     // beyond the replay prefix, ...
@@ -461,8 +457,8 @@ function getListingKey(key, vFormat) {
                     // as usual
                     assert.strictEqual(delimiter.skipping(),
                         delimiterChar ?
-                            `${inc(DbPrefixes.Replay)}foo/` :
-                            `${inc(DbPrefixes.Replay)}foo/bar${VID_SEP}`);
+                            `${inc(DbPrefixes.Replay)}foo0` :
+                            `${inc(DbPrefixes.Replay)}foo/bar${inc(VID_SEP)}`);
                 });
             });
         }
@@ -488,12 +484,12 @@ describe('DelimiterMaster listing algorithm: sequence of filter() scenarii', () 
                     key: `foo/deleted${VID_SEP}v1`,
                     isDeleteMarker: true,
                     res: FILTER_SKIP,
-                    skipping: `foo/deleted${VID_SEP}`,
+                    skipping: `foo/deleted${inc(VID_SEP)}`,
                 },
                 {
                     key: `foo/deleted${VID_SEP}v2`,
                     res: FILTER_SKIP,
-                    skipping: `foo/deleted${VID_SEP}`,
+                    skipping: `foo/deleted${inc(VID_SEP)}`,
                 },
                 {
                     key: 'foo/notdeleted',
@@ -502,7 +498,7 @@ describe('DelimiterMaster listing algorithm: sequence of filter() scenarii', () 
                 {
                     key: `foo/notdeleted${VID_SEP}v1`,
                     res: FILTER_SKIP,
-                    skipping: `foo/notdeleted${VID_SEP}`,
+                    skipping: `foo/notdeleted${inc(VID_SEP)}`,
                 },
                 {
                     key: 'foo/subprefix/key-1',
@@ -511,7 +507,7 @@ describe('DelimiterMaster listing algorithm: sequence of filter() scenarii', () 
                 {
                     key: `foo/subprefix/key-1${VID_SEP}v1`,
                     res: FILTER_SKIP,
-                    skipping: `foo/subprefix/key-1${VID_SEP}`,
+                    skipping: `foo/subprefix/key-1${inc(VID_SEP)}`,
                 },
             ],
             result: {
@@ -542,7 +538,7 @@ describe('DelimiterMaster listing algorithm: sequence of filter() scenarii', () 
                     key: `foo/01${VID_SEP}v1`,
                     isDeleteMarker: true,
                     res: FILTER_SKIP, // versions get skipped after master
-                    skipping: `foo/01${VID_SEP}`,
+                    skipping: `foo/01${inc(VID_SEP)}`,
                 },
                 {
                     key: 'foo/02',
@@ -553,7 +549,7 @@ describe('DelimiterMaster listing algorithm: sequence of filter() scenarii', () 
                     key: `foo/02${VID_SEP}v1`,
                     isDeleteMarker: true,
                     res: FILTER_SKIP,
-                    skipping: `foo/02${VID_SEP}`,
+                    skipping: `foo/02${inc(VID_SEP)}`,
                 },
                 {
                     key: 'foo/03',
@@ -562,7 +558,7 @@ describe('DelimiterMaster listing algorithm: sequence of filter() scenarii', () 
                 {
                     key: `foo/03${VID_SEP}v1`,
                     res: FILTER_SKIP,
-                    skipping: `foo/03${VID_SEP}`,
+                    skipping: `foo/03${inc(VID_SEP)}`,
                 },
             ],
             result: {
@@ -592,7 +588,7 @@ describe('DelimiterMaster listing algorithm: sequence of filter() scenarii', () 
                     key: `foo/bar/01${VID_SEP}v1`,
                     isDeleteMarker: true,
                     res: FILTER_SKIP, // versions get skipped after master
-                    skipping: `foo/bar/01${VID_SEP}`,
+                    skipping: `foo/bar/01${inc(VID_SEP)}`,
                 },
                 {
                     key: 'foo/bar/02',
@@ -603,12 +599,12 @@ describe('DelimiterMaster listing algorithm: sequence of filter() scenarii', () 
                     key: `foo/bar/02${VID_SEP}v1`,
                     isDeleteMarker: true,
                     res: FILTER_SKIP,
-                    skipping: `foo/bar/02${VID_SEP}`,
+                    skipping: `foo/bar/02${inc(VID_SEP)}`,
                 },
                 {
                     key: `foo/bar/02${VID_SEP}v2`,
                     res: FILTER_SKIP,
-                    skipping: `foo/bar/02${VID_SEP}`,
+                    skipping: `foo/bar/02${inc(VID_SEP)}`,
                 },
                 {
                     key: 'foo/bar/03',
@@ -618,19 +614,19 @@ describe('DelimiterMaster listing algorithm: sequence of filter() scenarii', () 
                     key: `foo/bar/03${VID_SEP}v1`,
                     res: FILTER_SKIP,
                     // from now on, skip the 'foo/bar/' prefix because we have already seen it
-                    skipping: 'foo/bar/',
+                    skipping: 'foo/bar0',
                 },
                 {
                     key: 'foo/bar/04',
                     isDeleteMarker: true,
                     res: FILTER_SKIP,
-                    skipping: 'foo/bar/',
+                    skipping: 'foo/bar0',
                 },
                 {
                     key: `foo/bar/04${VID_SEP}v1`,
                     isDeleteMarker: true,
                     res: FILTER_SKIP,
-                    skipping: 'foo/bar/',
+                    skipping: 'foo/bar0',
                 },
                 {
                     key: 'foo/baz/01',
@@ -640,7 +636,7 @@ describe('DelimiterMaster listing algorithm: sequence of filter() scenarii', () 
                     key: `foo/baz/01${VID_SEP}v1`,
                     res: FILTER_SKIP,
                     // skip the 'foo/baz/' prefix because we have already seen it
-                    skipping: 'foo/baz/',
+                    skipping: 'foo/baz0',
                 },
             ],
             result: {
@@ -669,7 +665,7 @@ describe('DelimiterMaster listing algorithm: sequence of filter() scenarii', () 
                 {
                     key: `foo/${VID_SEP}v1`,
                     res: FILTER_SKIP,
-                    skipping: `foo/${VID_SEP}`,
+                    skipping: `foo/${inc(VID_SEP)}`,
                 },
                 {
                     key: 'foo/deleted',
@@ -680,12 +676,12 @@ describe('DelimiterMaster listing algorithm: sequence of filter() scenarii', () 
                     key: `foo/deleted${VID_SEP}v1`,
                     isDeleteMarker: true,
                     res: FILTER_SKIP,
-                    skipping: `foo/deleted${VID_SEP}`,
+                    skipping: `foo/deleted${inc(VID_SEP)}`,
                 },
                 {
                     key: `foo/deleted${VID_SEP}v2`,
                     res: FILTER_SKIP,
-                    skipping: `foo/deleted${VID_SEP}`,
+                    skipping: `foo/deleted${inc(VID_SEP)}`,
                 },
                 {
                     key: 'foo/notdeleted',
@@ -694,7 +690,7 @@ describe('DelimiterMaster listing algorithm: sequence of filter() scenarii', () 
                 {
                     key: `foo/notdeleted${VID_SEP}v1`,
                     res: FILTER_SKIP,
-                    skipping: `foo/notdeleted${VID_SEP}`,
+                    skipping: `foo/notdeleted${inc(VID_SEP)}`,
                 },
                 {
                     key: 'foo/subprefix/key-1',
@@ -703,17 +699,17 @@ describe('DelimiterMaster listing algorithm: sequence of filter() scenarii', () 
                 {
                     key: `foo/subprefix/key-1${VID_SEP}v1`,
                     res: FILTER_SKIP,
-                    skipping: 'foo/subprefix/',
+                    skipping: 'foo/subprefix0',
                 },
                 {
                     key: 'foo/subprefix/key-2',
                     res: FILTER_SKIP,
-                    skipping: 'foo/subprefix/',
+                    skipping: 'foo/subprefix0',
                 },
                 {
                     key: `foo/subprefix/key-2${VID_SEP}v1`,
                     res: FILTER_SKIP,
-                    skipping: 'foo/subprefix/',
+                    skipping: 'foo/subprefix0',
                 },
             ],
             result: {
@@ -744,7 +740,7 @@ describe('DelimiterMaster listing algorithm: sequence of filter() scenarii', () 
                 {
                     key: `foo${VID_SEP}v1`,
                     res: FILTER_SKIP,
-                    skipping: `foo${VID_SEP}`,
+                    skipping: `foo${inc(VID_SEP)}`,
                 },
                 {
                     key: 'foo/deleted',
@@ -755,12 +751,12 @@ describe('DelimiterMaster listing algorithm: sequence of filter() scenarii', () 
                     key: `foo/deleted${VID_SEP}v1`,
                     isDeleteMarker: true,
                     res: FILTER_SKIP,
-                    skipping: `foo/deleted${VID_SEP}`,
+                    skipping: `foo/deleted${inc(VID_SEP)}`,
                 },
                 {
                     key: `foo/deleted${VID_SEP}v2`,
                     res: FILTER_SKIP,
-                    skipping: `foo/deleted${VID_SEP}`,
+                    skipping: `foo/deleted${inc(VID_SEP)}`,
                 },
                 {
                     key: 'foo/notdeleted',
@@ -769,17 +765,17 @@ describe('DelimiterMaster listing algorithm: sequence of filter() scenarii', () 
                 {
                     key: `foo/notdeleted${VID_SEP}v1`,
                     res: FILTER_SKIP,
-                    skipping: 'foo/',
+                    skipping: 'foo0',
                 },
                 {
                     key: 'foo/subprefix/key-1',
                     res: FILTER_SKIP,
-                    skipping: 'foo/',
+                    skipping: 'foo0',
                 },
                 {
                     key: `foo/subprefix/key-1${VID_SEP}v1`,
                     res: FILTER_SKIP,
-                    skipping: 'foo/',
+                    skipping: 'foo0',
                 },
             ],
             result: {
@@ -811,7 +807,7 @@ describe('DelimiterMaster listing algorithm: sequence of filter() scenarii', () 
                     key: `foo/${VID_SEP}v1`,
                     isDeleteMarker: true,
                     res: FILTER_SKIP,
-                    skipping: `foo/${VID_SEP}`,
+                    skipping: `foo/${inc(VID_SEP)}`,
                 },
                 {
                     key: 'foo/subprefix',
@@ -824,7 +820,7 @@ describe('DelimiterMaster listing algorithm: sequence of filter() scenarii', () 
                 {
                     key: 'foo/subprefix/02',
                     res: FILTER_SKIP,
-                    skipping: 'foo/subprefix/', // already added to common prefix
+                    skipping: 'foo/subprefix0', // already added to common prefix
                 },
             ],
             result: {
@@ -859,7 +855,7 @@ describe('DelimiterMaster listing algorithm: sequence of filter() scenarii', () 
                 {
                     key: `foo/01${VID_SEP}v2`,
                     res: FILTER_SKIP,
-                    skipping: `foo/01${VID_SEP}`,
+                    skipping: `foo/01${inc(VID_SEP)}`,
                 },
                 {
                     key: 'foo/02',
@@ -870,12 +866,12 @@ describe('DelimiterMaster listing algorithm: sequence of filter() scenarii', () 
                     key: `foo/02${VID_SEP}v1`,
                     isDeleteMarker: true,
                     res: FILTER_SKIP,
-                    skipping: `foo/02${VID_SEP}`,
+                    skipping: `foo/02${inc(VID_SEP)}`,
                 },
                 {
                     key: `foo/02${VID_SEP}v2`,
                     res: FILTER_SKIP,
-                    skipping: `foo/02${VID_SEP}`,
+                    skipping: `foo/02${inc(VID_SEP)}`,
                 },
             ],
             result: {
@@ -950,7 +946,7 @@ describe('DelimiterMaster listing algorithm: sequence of filter() scenarii', () 
                 {
                     key: `${DbPrefixes.Master}foo/subprefix/key-2`,
                     res: FILTER_SKIP,
-                    skipping: `${DbPrefixes.Master}foo/subprefix/`,
+                    skipping: `${DbPrefixes.Master}foo/subprefix0`,
                 },
             ],
             result: {
@@ -985,7 +981,7 @@ describe('DelimiterMaster listing algorithm: sequence of filter() scenarii', () 
                 {
                     key: `${DbPrefixes.Master}foo/subprefix/key-1`,
                     res: FILTER_SKIP,
-                    skipping: `${DbPrefixes.Master}foo/`,
+                    skipping: `${DbPrefixes.Master}foo0`,
                 },
             ],
             result: {

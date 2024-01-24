@@ -727,7 +727,7 @@ function getTestListing(mdParams, data, vFormat) {
                 });
             }
             assert.strictEqual(delimiter.skipping(),
-                `${vFormat === 'v1' ? DbPrefixes.Master : ''}foo/`);
+                `${vFormat === 'v1' ? DbPrefixes.Master : ''}foo0`);
         });
 
         tests.forEach(test => {
