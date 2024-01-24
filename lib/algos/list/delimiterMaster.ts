@@ -9,7 +9,7 @@ import {
 const Version = require('../../versioning/Version').Version;
 const VSConst = require('../../versioning/constants').VersioningConstants;
 const { BucketVersioningKeyFormat } = VSConst;
-const { FILTER_ACCEPT, FILTER_SKIP, FILTER_END } = require('./tools');
+const { FILTER_ACCEPT, FILTER_SKIP, FILTER_END, inc } = require('./tools');
 
 const VID_SEP = VSConst.VersionId.Separator;
 const { DbPrefixes } = VSConst;
@@ -181,7 +181,7 @@ export class DelimiterMaster extends Delimiter {
         switch (this.state.id) {
         case DelimiterMasterFilterStateId.SkippingVersionsV0:
             const { masterKey } = <DelimiterMasterFilterState_SkippingVersionsV0> this.state;
-            return masterKey + VID_SEP;
+            return masterKey + inc(VID_SEP);
 
         default:
             return super.skippingBase();
