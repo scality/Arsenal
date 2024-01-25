@@ -32,7 +32,7 @@ export interface DelimiterFilterState_SkippingPrefix extends FilterState {
 
 type KeyHandler = (key: string, value: string) => FilterReturnValue;
 
-type ResultObject = {
+export type ResultObject = {
     CommonPrefixes: string[];
     Contents: {
         key: string;
