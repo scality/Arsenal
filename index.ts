@@ -53,6 +53,7 @@ export const algorithms = {
     },
     cache: {
         GapSet: require('./lib/algos/cache/GapSet'),
+        GapCache: require('./lib/algos/cache/GapCache'),
         LRUCache: require('./lib/algos/cache/LRUCache'),
     },
     stream: {
