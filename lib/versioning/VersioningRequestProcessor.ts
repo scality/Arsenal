@@ -1,6 +1,6 @@
 import errors, { ArsenalError } from '../errors';
 import { Version } from './Version';
-import { generateVersionId as genVID } from './VersionID';
+import { generateVersionId as genVID, getInfVid } from './VersionID';
 import WriteCache from './WriteCache';
 import WriteGatheringManager from './WriteGatheringManager';
 
@@ -291,6 +291,7 @@ export default class VersioningRequestProcessor {
         //              also update master version in case the put
         //              version is newer or same version than master.
         //              if versionId === '' update master version
+        console.log('options!!!', options);
         const versioning = options &&
             (options.versioning || options.versioning === '');
         const versionId = options &&
@@ -380,12 +381,39 @@ export default class VersioningRequestProcessor {
             const versionId = request.options.versionId;
             const versionKey = formatVersionKey(request.key, versionId);
             const ops = [{ key: versionKey, value: request.value }];
-            if (data === undefined ||
-                (Version.from(data).getVersionId() ?? '') >= versionId) {
-                // master does not exist or is not newer than put
-                // version and needs to be updated as well.
-                // Note that older versions have a greater version ID.
-                ops.push({ key: request.key, value: request.value });
+            const masterVersion = data !== undefined &&
+                Version.from(data);
+            if (masterVersion) {
+                const versionIdFromMaster = masterVersion.getVersionId();
+                // master key exists
+                if (versionIdFromMaster === undefined ||
+                    versionIdFromMaster >= versionId) {
+                        // master key is not newer than the put version
+                    let masterVersionId;
+                    if (masterVersion.isNullVersion()) {
+                        // master key is a null version
+                        masterVersionId = versionIdFromMaster;
+                    } else if (versionIdFromMaster === undefined) {
+                        // master key does not have a versionID
+                        // => create one with the "infinite" version ID
+                        masterVersionId = getInfVid(this.replicationGroupId);
+                        masterVersion.setVersionId(masterVersionId);
+                    }
+                    if (masterVersionId) {
+                        // => create a new version key from the master version
+                        const masterVersionKey = formatVersionKey(key, masterVersionId);
+                        masterVersion.setNullVersion();
+                        ops.push({ key: masterVersionKey,
+                                   value: masterVersion.toString() });
+                    }
+                    // => update the master key, note that older
+                    //    versions have a greater version ID
+                    ops.push({ key, value: request.value });
+                }
+                // otherwise, master key is newer so do not update it
+            } else {
+                // master key does not exist: create it
+                ops.push({ key, value: request.value });
             }
             return callback(null, ops, versionId);
         });
