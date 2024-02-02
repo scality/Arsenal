@@ -103,6 +103,27 @@ export class Version {
         );
     }
 
+    static updateOrAppendNullVersionId(value: string, nullVersionId: string): string {
+        // Check if "nullVersionId" already exists in the string
+        const nullVersionIdPattern = /"nullVersionId":"[^"]*"/;
+        const nullVersionIdExists = nullVersionIdPattern.test(value);
+    
+        if (nullVersionIdExists) {
+            // Replace the existing nullVersionId with the new one
+            return value.replace(nullVersionIdPattern, `"nullVersionId":"${nullVersionId}"`);
+        } else {
+            // Append nullVersionId in the cheap way as before
+            let index = value.length - 2;
+            while (value.charAt(index--) === ' ');
+            const comma = value.charAt(index + 1) !== '{';
+            return (
+                `${value.slice(0, value.length - 1)}` + // eslint-disable-line
+                (comma ? ',' : '') +
+                `"nullVersionId":"${nullVersionId}"}`
+            );
+        }
+    }
+
     /**
      * [MetaData Internal] Check if a version is a place holder for deletion.
      *
