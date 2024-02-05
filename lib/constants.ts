@@ -127,3 +127,6 @@ export const supportedLifecycleRules = [
 export const maxCachedBuckets = process.env.METADATA_MAX_CACHED_BUCKETS ?
     Number(process.env.METADATA_MAX_CACHED_BUCKETS) : 1000;
 export const maxBatchingConcurrentOperations = 5;
+
+/** For policy resource arn check we allow empty account ID to not break compatibility */
+export const policyArnAllowedEmptyAccountId = ['utapi', 'scuba'];

@@ -206,6 +206,10 @@ const actionMapMetadata = {
     default: 'metadata:bucketd',
 };
 
+const actionMapScuba = {
+    GetMetrics: 'scuba:GetMetrics',
+};
+
 export {
     actionMapRQ,
     actionMapBP,
@@ -215,4 +219,5 @@ export {
     actionMapSSO,
     actionMapSTS,
     actionMapMetadata,
+    actionMapScuba,
 };
