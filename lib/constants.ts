@@ -126,3 +126,6 @@ export const supportedLifecycleRules = [
 // Maximum number of buckets to cache (bucket metadata)
 export const maxCachedBuckets = process.env.METADATA_MAX_CACHED_BUCKETS ?
     Number(process.env.METADATA_MAX_CACHED_BUCKETS) : 1000;
+
+/** For policy resource arn check we allow empty account ID to not break compatibility */
+export const policyArnAllowedEmptyAccountId = ['utapi', 'scuba'];

@@ -1,5 +1,5 @@
 import { handleWildcardInResource } from './wildcards';
-
+import { policyArnAllowedEmptyAccountId } from '../../constants';
 /**
  * Checks whether an ARN from a request matches an ARN in a policy
  * to compare against each portion of the ARN from the request
@@ -40,8 +40,8 @@ export default function checkArnMatch(
         const policyArnArr = policyArn.split(':');
         // We want to allow an empty account ID for utapi and scuba service ARNs to not
         // break compatibility.
-        const allowedEmptyAccountId = ['utapi', 'scuba'];
-        if (j === 4 && allowedEmptyAccountId.includes(policyArnArr[2]) && policyArnArr[4] === '') {
+        if (j === 4 && policyArnAllowedEmptyAccountId.includes(policyArnArr[2])
+            && policyArnArr[4] === '') {
             continue;
         } else if (!segmentRegEx.test(requestSegment)) {
             return false;

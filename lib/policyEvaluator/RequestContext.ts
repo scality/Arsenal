@@ -12,6 +12,7 @@ import {
     actionMapSSO,
     actionMapSTS,
     actionMapMetadata,
+    actionMapScuba,
 } from './utils/actionMaps';
 
 const _actionNeedQuotaCheck = {
@@ -37,8 +38,7 @@ function _findAction(service: string, method: string) {
         case 'metadata':
             return actionMapMetadata[method];
         case 'scuba':
-            // currently only method is GetMetrics
-            return `scuba:${method}`;
+            return actionMapScuba[method];
         default:
             return undefined;
     }
@@ -110,7 +110,7 @@ function _buildArn(
         }
         case 'scuba': {
             return `arn:scality:scuba::${requesterInfo!.accountid}:` +
-            `${generalResource}/${specificResource || ''}`
+            `${generalResource}/${specificResource || ''}`;
         }
         default:
             return undefined;
