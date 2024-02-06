@@ -219,4 +219,140 @@ describe('test VSP', () => {
         }],
         done);
     });
+
+    it('should be able to put Metadata on top of a null version', done => {
+        const versionId = '00000000000000999999PARIS  ';
+
+        async.waterfall([next => {
+            const request = {
+                db: 'foo',
+                key: 'bar',
+                value: '{"qux":"quz"}',
+                options: {},
+            };
+            vsp.put(request, logger, next);
+        },
+        (res, next) => {
+            const request = {
+                db: 'foo',
+                key: 'bar',
+                value: `{"qux":"quz2","versionId":"${versionId}"}`,
+                options: {
+                    isNull: false,
+                    versioning: true,
+                    versionId,
+                },
+            };
+            vsp.put(request, logger, next);
+        },
+        (res, next) => {
+            wgm.list({}, logger, next);
+        },
+        (res, next) => {
+            const expectedListing = [
+                // master version should have the provided version id and a reference of the null version id.
+                {
+                    key: 'bar',
+                    value: `{"qux":"quz2","versionId":"${versionId}","nullVersionId":"99999999999999999999PARIS  "}`
+                },
+                // the "internal" master version should have the provided version id.
+                {
+                    key: `bar\x00${versionId}`,
+                    value: `{"qux":"quz2","versionId":"${versionId}"}`,
+                },
+                // should create a version that represents the old null master with the infinite version id and 
+                // the isNull property set to true.
+                {
+                    key: 'bar\x0099999999999999999999PARIS  ',
+                    value: '{"qux":"quz","versionId":"99999999999999999999PARIS  ","isNull":true}'
+                },
+            ];
+            assert.deepStrictEqual(res, expectedListing);
+            const request = {
+                db: 'foo',
+                key: 'bar',
+            };
+            vsp.get(request, logger, next);
+        },
+        (res, next) => {
+            const expectedGet = {
+                qux: 'quz2',
+                versionId,
+                nullVersionId: '99999999999999999999PARIS  ',
+            };
+            assert.deepStrictEqual(JSON.parse(res), expectedGet);
+            next();
+        }],
+        done);
+    });
+
+    it('should be able to put Metadata on top of a null suspended version', done => {
+        const versionId = '00000000000000999999PARIS  ';
+        let nullVersionId;
+
+        async.waterfall([next => {
+            const request = {
+                db: 'foo',
+                key: 'bar',
+                value: '{"qux":"quz","isNull":true}',
+                options: {
+                    versionId: '',
+                },
+            };
+            vsp.put(request, logger, next);
+        },
+        (res, next) => {
+            nullVersionId = JSON.parse(res).versionId;
+            const request = {
+                db: 'foo',
+                key: 'bar',
+                value: `{"qux":"quz2","versionId":"${versionId}"}`,
+                options: {
+                    isNull: false,
+                    versioning: true,
+                    versionId,
+                },
+            };
+            vsp.put(request, logger, next);
+        },
+        (res, next) => {
+            wgm.list({}, logger, next);
+        },
+        (res, next) => {
+            const expectedListing = [
+                // master version should have the provided version id and a reference of the null version id.
+                {
+                    key: 'bar',
+                    value: `{"qux":"quz2","versionId":"${versionId}","nullVersionId":"${nullVersionId}"}`
+                },
+                // the "internal" master version should have the provided version id.
+                {
+                    key: `bar\x00${versionId}`,
+                    value: `{"qux":"quz2","versionId":"${versionId}"}`,
+                },
+                // should create a version that represents the old null master with the infinite version id and 
+                // the isNull property set to true.
+                {
+                    key: `bar\x00${nullVersionId}`,
+                    value: `{"qux":"quz","isNull":true,"versionId":"${nullVersionId}"}`,
+                },
+            ];
+            assert.deepStrictEqual(res, expectedListing);
+            const request = {
+                db: 'foo',
+                key: 'bar',
+            };
+            vsp.get(request, logger, next);
+        },
+        (res, next) => {
+            const expectedGet = {
+                qux: 'quz2',
+                versionId,
+                nullVersionId,
+            };
+            assert.deepStrictEqual(JSON.parse(res), expectedGet);
+            next();
+        }],
+        done);
+    });
 });

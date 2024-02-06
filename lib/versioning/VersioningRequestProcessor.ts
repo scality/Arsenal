@@ -386,11 +386,16 @@ export default class VersioningRequestProcessor {
             if (masterVersion) {
                 const versionIdFromMaster = masterVersion.getVersionId();
                 // master key exists
+                console.log('MASTER EXIST!!!');
+                console.log('versionIdFromMaster!!!', versionIdFromMaster);
+                console.log('versionId!!!', versionId);
                 if (versionIdFromMaster === undefined ||
                     versionIdFromMaster >= versionId) {
+                    console.log('MASTER CREATED!!!!');
                         // master key is not newer than the put version
                     let masterVersionId;
                     let value = request.value;
+                    console.log('masterVersion!!!', masterVersion);
                     if (masterVersion.isNullVersion() && versionIdFromMaster) {
                         // master key is a null version
                         masterVersionId = versionIdFromMaster;
@@ -405,6 +410,7 @@ export default class VersioningRequestProcessor {
                         const masterVersionKey = formatVersionKey(key, masterVersionId);
                         value = Version.updateOrAppendNullVersionId(request.value, masterVersionId);
                         masterVersion.setNullVersion();
+                        console.log('masterVersionId!!!', masterVersionId);
                         ops.push({ key: masterVersionKey,
                                    value: masterVersion.toString() });
                     }
