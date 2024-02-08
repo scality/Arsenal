@@ -254,6 +254,443 @@ describe('test VRP', () => {
         }],
         done);
     });
+
+    it('should be able to put Metadata on top of a standalone null version', done => {
+        const versionId = '00000000000000999999PARIS  ';
+
+        async.waterfall([next => {
+            // simulate the creation of a standalone null version.
+            const request = {
+                db: 'foo',
+                key: 'bar',
+                value: '{"qux":"quz"}',
+                options: {},
+            };
+            vrp.put(request, logger, next);
+        },
+        (res, next) => {
+            // simulate a BackbeatClient.putMetadata
+            const request = {
+                db: 'foo',
+                key: 'bar',
+                value: `{"qux":"quz2","versionId":"${versionId}"}`,
+                options: {
+                    versioning: true,
+                    versionId,
+                    // isNull === false means Cloudserver supports the new "null key" logic.
+                    isNull: false,
+                },
+            };
+            vrp.put(request, logger, next);
+        },
+        (res, next) => {
+            wgm.list({}, logger, next);
+        },
+        (res, next) => {
+            const expectedListing = [
+                // master version should have the provided version id
+                {
+                    key: 'bar',
+                    value: `{"qux":"quz2","versionId":"${versionId}"}`,
+                },
+                // The null version will get the highest version number.
+                // It should have "isNull" and "isNul2" set to true,
+                // showing it's a null version made by Cloudserver that works with null keys.
+                {
+                    key: `bar${VID_SEP}`,
+                    value: '{"qux":"quz","versionId":"99999999999999999999PARIS  ","isNull":true,"isNull2":true}',
+                },
+                // the new version
+                {
+                    key: `bar${VID_SEP}${versionId}`,
+                    value: `{"qux":"quz2","versionId":"${versionId}"}`,
+                },
+            ];
+            assert.deepStrictEqual(res, expectedListing);
+            const request = {
+                db: 'foo',
+                key: 'bar',
+            };
+            vrp.get(request, logger, next);
+        },
+        (res, next) => {
+            const expectedGet = {
+                qux: 'quz2',
+                versionId,
+            };
+            assert.deepStrictEqual(JSON.parse(res), expectedGet);
+            next();
+        }],
+        done);
+    });
+
+    it('should be able to put Metadata on top of a standalone null version in backward compatibility mode', done => {
+        const versionId = '00000000000000999999PARIS  ';
+
+        async.waterfall([next => {
+            // simulate the creation of a standalone null version.
+            const request = {
+                db: 'foo',
+                key: 'bar',
+                value: '{"qux":"quz"}',
+                options: {},
+            };
+            vrp.put(request, logger, next);
+        },
+        (res, next) => {
+            // simulate a BackbeatClient.putMetadata
+            const request = {
+                db: 'foo',
+                key: 'bar',
+                value: `{"qux":"quz2","versionId":"${versionId}"}`,
+                options: {
+                    versioning: true,
+                    versionId,
+                },
+            };
+            vrp.put(request, logger, next);
+        },
+        (res, next) => {
+            wgm.list({}, logger, next);
+        },
+        (res, next) => {
+            const expectedListing = [
+                // master version should have the provided version id and a reference of the null version id.
+                {
+                    key: 'bar',
+                    value: `{"qux":"quz2","versionId":"${versionId}","nullVersionId":"99999999999999999999PARIS  "}`,
+                },
+                // the "internal" master version should have the provided version id.
+                {
+                    key: `bar${VID_SEP}${versionId}`,
+                    value: `{"qux":"quz2","versionId":"${versionId}"}`,
+                },
+                // should create a version that represents the old null master with the infinite version id and
+                // the isNull property set to true.
+                {
+                    key: `bar${VID_SEP}99999999999999999999PARIS  `,
+                    value: '{"qux":"quz","versionId":"99999999999999999999PARIS  ","isNull":true}',
+                },
+            ];
+            assert.deepStrictEqual(res, expectedListing);
+            const request = {
+                db: 'foo',
+                key: 'bar',
+            };
+            vrp.get(request, logger, next);
+        },
+        (res, next) => {
+            const expectedGet = {
+                qux: 'quz2',
+                versionId,
+                nullVersionId: '99999999999999999999PARIS  ',
+            };
+            assert.deepStrictEqual(JSON.parse(res), expectedGet);
+            next();
+        }],
+        done);
+    });
+
+    it('should be able to put Metadata on top of a null suspended version', done => {
+        const versionId = '00000000000000999999PARIS  ';
+        let nullVersionId;
+
+        async.waterfall([next => {
+            // simulate the creation of a null suspended version.
+            const request = {
+                db: 'foo',
+                key: 'bar',
+                value: '{"qux":"quz","isNull":true}',
+                options: {
+                    versionId: '',
+                },
+            };
+            vrp.put(request, logger, next);
+        },
+        (res, next) => {
+            nullVersionId = JSON.parse(res).versionId;
+            // simulate a BackbeatClient.putMetadata
+            const request = {
+                db: 'foo',
+                key: 'bar',
+                value: `{"qux":"quz2","versionId":"${versionId}"}`,
+                options: {
+                    versioning: true,
+                    versionId,
+                    // isNull === false means Cloudserver supports the new "null key" logic.
+                    isNull: false,
+                },
+            };
+            vrp.put(request, logger, next);
+        },
+        (res, next) => {
+            wgm.list({}, logger, next);
+        },
+        (res, next) => {
+            const expectedListing = [
+                // master version should have the provided version id
+                {
+                    key: 'bar',
+                    value: `{"qux":"quz2","versionId":"${versionId}"}`,
+                },
+                // The null version will get the highest version number.
+                // It should have "isNull" and "isNul2" set to true,
+                // showing it's a null version made by Cloudserver that works with null keys.
+                {
+                    key: `bar${VID_SEP}`,
+                    value: `{"qux":"quz","isNull":true,"versionId":"${nullVersionId}","isNull2":true}`,
+                },
+                // the new version
+                {
+                    key: `bar${VID_SEP}${versionId}`,
+                    value: `{"qux":"quz2","versionId":"${versionId}"}`,
+                },
+            ];
+            assert.deepStrictEqual(res, expectedListing);
+            const request = {
+                db: 'foo',
+                key: 'bar',
+            };
+            vrp.get(request, logger, next);
+        },
+        (res, next) => {
+            const expectedGet = {
+                qux: 'quz2',
+                versionId,
+            };
+            assert.deepStrictEqual(JSON.parse(res), expectedGet);
+            next();
+        }],
+        done);
+    });
+
+    it('should be able to put Metadata on top of a null suspended version in backward compatibility mode', done => {
+        const versionId = '00000000000000999999PARIS  ';
+        let nullVersionId;
+
+        async.waterfall([next => {
+            // simulate the creation of a null suspended version.
+            const request = {
+                db: 'foo',
+                key: 'bar',
+                value: '{"qux":"quz","isNull":true}',
+                options: {
+                    versionId: '',
+                },
+            };
+            vrp.put(request, logger, next);
+        },
+        (res, next) => {
+            nullVersionId = JSON.parse(res).versionId;
+            // simulate a BackbeatClient.putMetadata
+            const request = {
+                db: 'foo',
+                key: 'bar',
+                value: `{"qux":"quz2","versionId":"${versionId}"}`,
+                options: {
+                    versioning: true,
+                    versionId,
+                },
+            };
+            vrp.put(request, logger, next);
+        },
+        (res, next) => {
+            wgm.list({}, logger, next);
+        },
+        (res, next) => {
+            const expectedListing = [
+                // master version should have the provided version id and a reference of the null version id.
+                {
+                    key: 'bar',
+                    value: `{"qux":"quz2","versionId":"${versionId}","nullVersionId":"${nullVersionId}"}`,
+                },
+                // the "internal" master version should have the provided version id.
+                {
+                    key: `bar${VID_SEP}${versionId}`,
+                    value: `{"qux":"quz2","versionId":"${versionId}"}`,
+                },
+                // should create a version that represents the old null master with the infinite version id and
+                // the isNull property set to true.
+                {
+                    key: `bar${VID_SEP}${nullVersionId}`,
+                    value: `{"qux":"quz","isNull":true,"versionId":"${nullVersionId}"}`,
+                },
+            ];
+            assert.deepStrictEqual(res, expectedListing);
+            const request = {
+                db: 'foo',
+                key: 'bar',
+            };
+            vrp.get(request, logger, next);
+        },
+        (res, next) => {
+            const expectedGet = {
+                qux: 'quz2',
+                versionId,
+                nullVersionId,
+            };
+            assert.deepStrictEqual(JSON.parse(res), expectedGet);
+            next();
+        }],
+        done);
+    });
+
+    it('should delete the deprecated null key after put Metadata on top of an old null master', done => {
+        const versionId = '00000000000000999999PARIS  ';
+        let nullVersionId;
+
+        async.waterfall([next => {
+            // simulate the creation of a null suspended version.
+            const request = {
+                db: 'foo',
+                key: 'bar',
+                value: '{"qux":"quz","isNull":true}',
+                options: {
+                    versionId: '',
+                },
+            };
+            vrp.put(request, logger, next);
+        },
+        (res, next) => {
+            nullVersionId = JSON.parse(res).versionId;
+            // update metadata of the same null version with compat mode (options.isNull not defined)
+            // to generate a deprecated null key.
+            const request = {
+                db: 'foo',
+                key: 'bar',
+                value: `{"qux":"quz2","isNull":true,"versionId":"${nullVersionId}"}`,
+                options: {
+                    versionId: nullVersionId,
+                },
+            };
+            vrp.put(request, logger, next);
+        },
+        (res, next) => {
+            // put metadata with the new keys implementation (options.isNull defined)
+            // on top of the null master with a deprecated null key.
+            const request = {
+                db: 'foo',
+                key: 'bar',
+                value: `{"qux":"quz3","versionId":"${versionId}"}`,
+                options: {
+                    versionId,
+                    isNull: false,
+                },
+            };
+            vrp.put(request, logger, next);
+        },
+        (res, next) => {
+            wgm.list({}, logger, next);
+        },
+        (res, next) => {
+            const expectedListing = [
+                // master version should have the provided version id.
+                {
+                    key: 'bar',
+                    value: `{"qux":"quz3","versionId":"${versionId}"}`,
+                },
+                // the null key
+                {
+                    key: `bar${VID_SEP}`,
+                    value: `{"qux":"quz2","isNull":true,"versionId":"${nullVersionId}",` +
+                    `"nullVersionId":"${nullVersionId}","isNull2":true}`,
+                },
+                // version key
+                {
+                    key: `bar${VID_SEP}${versionId}`,
+                    value: `{"qux":"quz3","versionId":"${versionId}"}`,
+                },
+            ];
+            assert.deepStrictEqual(res, expectedListing);
+            const request = {
+                db: 'foo',
+                key: 'bar',
+            };
+            vrp.get(request, logger, next);
+        },
+        (res, next) => {
+            const expectedGet = {
+                qux: 'quz3',
+                versionId,
+            };
+            assert.deepStrictEqual(JSON.parse(res), expectedGet);
+            next();
+        }],
+        done);
+    });
+
+    it('should delete the deprecated null key after updating metadata of an old null master', done => {
+        let nullVersionId;
+
+        async.waterfall([next => {
+            // simulate the creation of a null suspended version.
+            const request = {
+                db: 'foo',
+                key: 'bar',
+                value: '{"qux":"quz","isNull":true}',
+                options: {
+                    versionId: '',
+                },
+            };
+            vrp.put(request, logger, next);
+        },
+        (res, next) => {
+            nullVersionId = JSON.parse(res).versionId;
+            // update metadata of the same null version with compat mode (options.isNull not defined)
+            // to generate a deprecated null key.
+            const request = {
+                db: 'foo',
+                key: 'bar',
+                value: `{"qux":"quz2","isNull":true,"versionId":"${nullVersionId}"}`,
+                options: {
+                    versionId: nullVersionId,
+                },
+            };
+            vrp.put(request, logger, next);
+        },
+        (res, next) => {
+            // update the null version metadata with the new keys implementation (options.isNull defined)
+            const request = {
+                db: 'foo',
+                key: 'bar',
+                value: `{"qux":"quz3","isNull2":true,"isNull":true,"versionId":"${nullVersionId}"}`,
+                options: {
+                    versionId: nullVersionId,
+                    isNull: true,
+                },
+            };
+            vrp.put(request, logger, next);
+        },
+        (res, next) => {
+            wgm.list({}, logger, next);
+        },
+        (res, next) => {
+            const expectedListing = [
+                // the internal null version should be deleted.
+                {
+                    key: 'bar',
+                    value: `{"qux":"quz3","isNull2":true,"isNull":true,"versionId":"${nullVersionId}"}`,
+                },
+            ];
+            assert.deepStrictEqual(res, expectedListing);
+            const request = {
+                db: 'foo',
+                key: 'bar',
+            };
+            vrp.get(request, logger, next);
+        },
+        (res, next) => {
+            const expectedGet = {
+                qux: 'quz3',
+                isNull2: true,
+                isNull: true,
+                versionId: nullVersionId,
+            };
+            assert.deepStrictEqual(JSON.parse(res), expectedGet);
+            next();
+        }],
+        done);
+    });
 });
 
 
