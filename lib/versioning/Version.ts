@@ -3,7 +3,7 @@ import { VersioningConstants } from './constants';
 const VID_SEP = VersioningConstants.VersionId.Separator;
 /**
  * Class for manipulating an object version.
- * The format of a version: { isNull, isDeleteMarker, versionId, otherInfo }
+ * The format of a version: { isNull, isNull2, isDeleteMarker, versionId, otherInfo }
  *
  * @note Some of these functions are optimized based on string search
  * prior to a full JSON parse/stringify. (Vinh: 18K op/s are achieved
@@ -13,24 +13,31 @@ const VID_SEP = VersioningConstants.VersionId.Separator;
 export class Version {
     version: {
         isNull?: boolean;
+        isNull2?: boolean;
         isDeleteMarker?: boolean;
         versionId?: string;
         isPHD?: boolean;
+        nullVersionId?: string;
     };
 
     /**
      * Create a new version instantiation from its data object.
      * @param version - the data object to instantiate
      * @param version.isNull - is a null version
+     * @param version.isNull2 - Whether new version is null or not AND has
+     * been put with a Cloudserver handling null keys (i.e. supporting
+     * S3C-7352)
      * @param version.isDeleteMarker - is a delete marker
      * @param version.versionId - the version id
      * @constructor
      */
     constructor(version?: {
         isNull?: boolean;
+        isNull2?: boolean;
         isDeleteMarker?: boolean;
         versionId?: string;
         isPHD?: boolean;
+        nullVersionId?: string;
     }) {
         this.version = version || {};
     }
@@ -84,6 +91,33 @@ export class Version {
     }
 
     /**
+     * Appends a key-value pair to a JSON object represented as a string. It adds
+     * a comma if the object is not empty (i.e., not just '{}'). It assumes the input
+     * string is formatted as a JSON object.
+     *
+     * @param {string} stringifiedObject The JSON object as a string to which the key-value pair will be appended.
+     * @param {string} key The key to append to the JSON object.
+     * @param {string} value The value associated with the key to append to the JSON object.
+     * @returns {string} The updated JSON object as a string with the new key-value pair appended.
+     * @example
+     * _jsonAppend('{"existingKey":"existingValue"}', 'newKey', 'newValue');
+     * // returns '{"existingKey":"existingValue","newKey":"newValue"}'
+     */
+    static _jsonAppend(stringifiedObject: string, key: string, value: string): string {
+        // stringifiedObject value has the format of '{...}'
+        let index = stringifiedObject.length - 2;
+        while (stringifiedObject.charAt(index) === ' ') {
+            index -= 1;
+        }
+        const needComma = stringifiedObject.charAt(index) !== '{';
+        return (
+            `${stringifiedObject.slice(0, stringifiedObject.length - 1)}` +
+            (needComma ? ',' : '') +
+            `"${key}":"${value}"}`
+        );
+    }
+
+    /**
      * Put versionId into an object in the (cheap) way of string manipulation,
      * instead of the more expensive alternative parsing and stringification.
      *
@@ -93,14 +127,32 @@ export class Version {
      */
     static appendVersionId(value: string, versionId: string): string {
         // assuming value has the format of '{...}'
-        let index = value.length - 2;
-        while (value.charAt(index--) === ' ');
-        const comma = value.charAt(index + 1) !== '{';
-        return (
-            `${value.slice(0, value.length - 1)}` + // eslint-disable-line
-            (comma ? ',' : '') +
-            `"versionId":"${versionId}"}`
-        );
+        return Version._jsonAppend(value, 'versionId', versionId);
+    }
+
+    /**
+    * Updates or appends a `nullVersionId` property to a JSON-formatted string.
+    * This function first checks if the `nullVersionId` property already exists within the input string.
+    * If it exists, the function updates the `nullVersionId` with the new value provided.
+    * If it does not exist, the function appends a `nullVersionId` property with the provided value.
+    *
+    * @static
+    * @param {string} value - The JSON-formatted string that may already contain a `nullVersionId` property.
+    * @param {string} nullVersionId - The new value for the `nullVersionId` property to be updated or appended.
+    * @returns {string} The updated JSON-formatted string with the new `nullVersionId` value.
+    */
+    static updateOrAppendNullVersionId(value: string, nullVersionId: string): string {
+        // Check if "nullVersionId" already exists in the string
+        const nullVersionIdPattern = /"nullVersionId":"[^"]*"/;
+        const nullVersionIdExists = nullVersionIdPattern.test(value);
+    
+        if (nullVersionIdExists) {
+            // Replace the existing nullVersionId with the new one
+            return value.replace(nullVersionIdPattern, `"nullVersionId":"${nullVersionId}"`);
+        } else {
+            // Append nullVersionId
+            return Version._jsonAppend(value, 'nullVersionId', nullVersionId);
+        }
     }
 
     /**
@@ -119,6 +171,19 @@ export class Version {
      */
     isNullVersion(): boolean {
         return this.version.isNull ?? false;
+    }
+
+    /**
+     * Check if a version is a null version and has
+     * been put with a Cloudserver handling null keys (i.e. supporting
+     * S3C-7352).
+     *
+     * @return - stating if the value is a null version and has
+     * been put with a Cloudserver handling null keys (i.e. supporting
+     * S3C-7352).
+     */
+    isNull2Version(): boolean {
+        return this.version.isNull2 ?? false;
     }
 
     /**
@@ -186,6 +251,19 @@ export class Version {
      * @return - the updated version
      */
     setNullVersion() {
+        this.version.isNull = true;
+        return this;
+    }
+
+    /**
+     * Mark that the null version has been put with a Cloudserver handling null keys (i.e. supporting S3C-7352)
+     * 
+     * If `isNull2` is set, `isNull` is also set to maintain consistency.
+     * Explicitly setting both avoids misunderstandings and mistakes in future updates or fixes.
+     * @return - the updated version
+     */
+    setNull2Version() {
+        this.version.isNull2 = true;
         this.version.isNull = true;
         return this;
     }
