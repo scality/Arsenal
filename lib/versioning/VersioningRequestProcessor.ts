@@ -496,6 +496,7 @@ export default class VersioningRequestProcessor {
                 const versionIdFromMaster = masterVersion.getVersionId();
                 if (versionIdFromMaster === undefined ||
                     versionIdFromMaster >= versionId) {
+                    let value = request.value;
                     logger.debug('version to put is not older than master');
                     // new behavior when isNull is defined is to only
                     // update the master key if it is the latest
@@ -509,7 +510,7 @@ export default class VersioningRequestProcessor {
                         request.options.isNull === undefined) {
                         // master key is strictly older than the put version
                         let masterVersionId;
-                        if (masterVersion.isNullVersion()) {
+                        if (masterVersion.isNullVersion() && versionIdFromMaster) {
                             logger.debug('master key is a null version');
                             masterVersionId = versionIdFromMaster;
                         } else if (versionIdFromMaster === undefined) {
@@ -537,13 +538,22 @@ export default class VersioningRequestProcessor {
                                   '' : masterVersionId;
                             const masterVersionKey = formatVersionKey(key, masterKeyVersionId);
                             masterVersion.setNullVersion();
+                            // isNull === false means Cloudserver supports null keys,
+                            // so create a null key with the isNull2 flag
+                            if (request.options.isNull === false) {
+                                masterVersion.setNull2Version();
+                            // else isNull === undefined means Cloudserver does not support null keys,
+                            // hence set/update the new master nullVersionId for backward compatibility
+                            } else {
+                                value = Version.updateOrAppendNullVersionId(request.value, masterVersionId);
+                            }
                             ops.push({ key: masterVersionKey,
                                        value: masterVersion.toString() });
                         }
                     } else {
                         logger.debug('version to put is the master');
                     }
-                    ops.push({ key, value: request.value });
+                    ops.push({ key, value: value });
                 } else {
                     logger.debug('version to put is older than master');
                     if (request.options.isNull === true && !masterVersion.isNullVersion()) {
