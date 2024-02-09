@@ -158,6 +158,7 @@ export default class ChainBackend extends BaseBackend {
             if (policyMap[key].versionId) {
                 policyRes.versionId = policyMap[key].versionId;
             }
+            policyRes.isImplicit = policyMap[key].isImplicit;
             return policyRes;
         });
     }
