@@ -792,6 +792,25 @@ describe('GapSet', () => {
             const coalescedGap = await thousandGapsSet._coalesceGapChain(gap);
             expect(coalescedGap).toEqual({ firstKey: '0000', lastKey: '1000', weight: 10000 });
         });
+
+        it('should coalesce a single-key gap', async () => {
+            const singleKeyGapSet = GapSet.createFromArray([
+                { firstKey: '0000', lastKey: '0000', weight: 1 },
+            ], 100);
+            const gap = { firstKey: '0000', lastKey: '0000', weight: 1 };
+            const coalescedGap = await singleKeyGapSet._coalesceGapChain(gap);
+            expect(coalescedGap).toEqual({ firstKey: '0000', lastKey: '0000', weight: 1 });
+        });
+
+        it('should coalesce a chain of two gaps ending with a single-key gap', async () => {
+            const singleKeyGapSet = GapSet.createFromArray([
+                { firstKey: '0000', lastKey: '0003', weight: 9 },
+                { firstKey: '0003', lastKey: '0003', weight: 1 },
+            ], 100);
+            const gap = { firstKey: '0000', lastKey: '0003', weight: 9 };
+            const coalescedGap = await singleKeyGapSet._coalesceGapChain(gap);
+            expect(coalescedGap).toEqual({ firstKey: '0000', lastKey: '0003', weight: 9 });
+        });
     });
 
     describe('GapSet::lookupGap()', () => {
