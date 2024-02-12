@@ -85,7 +85,13 @@ const actionMapRQ = {
 const actionMapBP = {   
     bucketDeleteCors : 's3:PutBucketCORS',
     bucketDeleteLifecycle : 's3:PutLifecycleConfiguration',
-    bucketDeleteReplication : 's3:PutReplicationConfiguration',
+    // Bucket policies require that some APIs are dissociated
+    // from their associated permission, when checking the ACLs
+    bucketDeleteReplication: 's3:PutReplicationConfiguration',
+    completeMultipartUpload: 's3:PutObject',
+    initiateMultipartUpload: 's3:PutObject',
+    objectPutPart: 's3:PutObject',
+
     ...sharedActionMap
 };
 
