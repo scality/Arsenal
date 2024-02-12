@@ -82,23 +82,7 @@ const actionMapRQ = {
 };
 
 // action map used for bucket policies
-const actionMapBP = {   
-    bucketDeleteCors : 's3:PutBucketCORS',
-    bucketDeleteLifecycle : 's3:PutLifecycleConfiguration',
-    // Bucket policies require that some APIs are dissociated
-    // from their associated permission, when checking the ACLs
-    bucketDeleteReplication: 's3:PutReplicationConfiguration',
-    completeMultipartUpload: 's3:PutObject',
-    initiateMultipartUpload: 's3:PutObject',
-    objectPutPart: 's3:PutObject',
-    // Object retention and legal hold are relying on
-    // the versioned permission, that is needed in the bP context
-    objectGetRetentionVersion: 's3:GetObjectRetention',
-    objectPutRetentionVersion: 's3:PutObjectRetention',
-    objectGetLegalHoldVersion: 's3:GetObjectLegalHold',
-    objectPutLegalHoldVersion: 's3:PutObjectLegalHold',
-    ...sharedActionMap
-};
+const actionMapBP = actionMapRQ;
 
 // action map for all relevant s3 actions
 const actionMapS3 = {
