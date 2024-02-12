@@ -91,7 +91,12 @@ const actionMapBP = {
     completeMultipartUpload: 's3:PutObject',
     initiateMultipartUpload: 's3:PutObject',
     objectPutPart: 's3:PutObject',
-
+    // Object retention and legal hold are relying on
+    // the versioned permission, that is needed in the bP context
+    objectGetRetentionVersion: 's3:GetObjectRetention',
+    objectPutRetentionVersion: 's3:PutObjectRetention',
+    objectGetLegalHoldVersion: 's3:GetObjectLegalHold',
+    objectPutLegalHoldVersion: 's3:PutObjectLegalHold',
     ...sharedActionMap
 };
 
