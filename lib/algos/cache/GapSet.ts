@@ -270,6 +270,10 @@ export default class GapSet implements GapSetInterface, Iterable<GapSetEntry> {
                         return resolve(coalescedGap);
                     }
                     const chainedGap = chainedGapIt.pointer;
+                    if (chainedGap.firstKey === chainedGap.lastKey) {
+                        // found a single-key gap: chain is complete
+                        return resolve(coalescedGap);
+                    }
                     coalescedGap.lastKey = chainedGap.lastKey;
                     coalescedGap.weight += chainedGap.weight;
                 }
