@@ -565,9 +565,10 @@ export class DelimiterMaster extends Delimiter {
     _cutBuildingGap(): void {
         if (this._gapBuilding.state === GapBuildingState.Building) {
             let gapBuilding = <GapBuildingInfo_Building> this._gapBuilding;
-            let { gapCache, params, gapWeight } = gapBuilding;
-            // only set gaps that are significant enough in weight
-            if (gapWeight >= params.minGapWeight) {
+            let { gapCache, params, gap, gapWeight } = gapBuilding;
+            // only set gaps that are significant enough in weight and
+            // with a non-empty extension
+            if (gapWeight >= params.minGapWeight && gap.weight > 0) {
                 this._saveBuildingGap();
                 // params may have been refreshed, reload them
                 gapBuilding = <GapBuildingInfo_Building> this._gapBuilding;
