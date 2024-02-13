@@ -1518,6 +1518,33 @@ describe('DelimiterMaster listing algorithm: gap caching and lookup', () => {
         ]);
     });
 
+    it('should not extend a cached gap forward if extension weight is 0',
+    async () => {
+        const listing = new DelimiterMaster({}, fakeLogger, 'v0');
+        const gapsArray = [
+            { firstKey: 'pre/0002', lastKey: `pre/0005${VID_SEP}v101`, weight: 13 },
+        ];
+        const gapCache = GapCacheAsSet.createFromArray(JSON.parse(
+            JSON.stringify(gapsArray)
+        ), 100);
+        listing.refreshGapCache(gapCache, 2);
+
+        let resumeState = filterEntries(listing, 'Vv D', 'as a');
+        // wait until the lookup completes (should happen in the next
+        // event loop iteration so always quicker than a non-immediate timer)
+        await new Promise(resolve => setTimeout(resolve, 1));
+
+        // the lookup should have completed now and the next gap should
+        // be cached, simulate a concurrent invalidation by removing the
+        // existing gap immediately, then continue with filtering
+        resumeState = filterEntries(listing, 'dv Ddv Ddv Ddv',
+                                    'ss sss sss sss', resumeState);
+        gapCache.removeOverlappingGaps(['pre/0002']);
+        resumeState = filterEntries(listing, 'Vv', 'as', resumeState);
+        // no new gap should have been added
+        expect(gapCache.toArray()).toEqual([]);
+    });
+
     it('should ignore gap with 0 listed key in it (e.g. due to skipping a prefix)', async () => {
         const listing = new DelimiterMaster({}, fakeLogger, 'v0');
         const gapsArray = [
