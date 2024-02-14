@@ -50,6 +50,52 @@ describe('GapCache', () => {
         });
     });
 
+    describe('clear()', () => {
+        it('should clear all exposed gaps', async () => {
+            gapCache.setGap('bar', 'baz', 10);
+            gapCache.setGap('qux', 'quz', 20);
+            await new Promise(resolve => setTimeout(resolve, 300));
+
+            expect(await gapCache.lookupGap('ape', 'zoo')).toEqual(
+                { firstKey: 'bar', lastKey: 'baz', weight: 10 }
+            );
+            gapCache.clear();
+            expect(await gapCache.lookupGap('ape', 'zoo')).toBeNull();
+        });
+
+        it('should clear all staging gaps', async () => {
+            gapCache.setGap('bar', 'baz', 10);
+            gapCache.setGap('qux', 'quz', 20);
+
+            gapCache.clear();
+            await new Promise(resolve => setTimeout(resolve, 300));
+
+            expect(await gapCache.lookupGap('ape', 'zoo')).toBeNull();
+        });
+
+        it('should keep existing invalidating updates against the next new gaps', async () => {
+            // invalidate future gaps containing 'dog'
+            expect(gapCache.removeOverlappingGaps(['dog'])).toEqual(0);
+
+            // then, clear the cache
+            gapCache.clear();
+
+            // wait for 50ms (half of exposure delay of 100ms) before
+            // setting a new gap overlapping with 'dog'
+            await new Promise(resolve => setTimeout(resolve, 50));
+            gapCache.setGap('cat', 'fox', 10);
+
+            // also set a non-overlapping gap to make sure it is not invalidated
+            gapCache.setGap('goat', 'hog', 20);
+
+            // wait an extra 250ms to ensure all valid gaps have been exposed
+            await new Promise(resolve => setTimeout(resolve, 250));
+            // the next gap is indeed 'goat'... because 'cat'... should have been invalidated
+            expect(await gapCache.lookupGap('bat', 'zoo')).toEqual(
+                { firstKey: 'goat', lastKey: 'hog', weight: 20 });
+        });
+    });
+
     it('should expose gaps after at least exposureDelayMs milliseconds', async () => {
         gapCache.setGap('bar', 'baz', 10);
         expect(await gapCache.lookupGap('ape', 'cat')).toBeNull();
