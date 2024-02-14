@@ -134,7 +134,7 @@ export default class ChainBackend extends BaseBackend {
             }
 
             const check = (policy) => {
-                const key = (policy.arn || '') + (policy.versionId || '');
+                const key = (policy.arn || '') + (policy.versionId || '') + (policy.action || '');
                 if (!policyMap[key] || !policyMap[key].isAllowed) {
                     policyMap[key] = policy;
                 }
@@ -157,6 +157,12 @@ export default class ChainBackend extends BaseBackend {
             }
             if (policyMap[key].versionId) {
                 policyRes.versionId = policyMap[key].versionId;
+            }
+            if (policyMap[key].isImplicit !== undefined) {
+                policyRes.isImplicit = policyMap[key].isImplicit;
+            }
+            if (policyMap[key].action) {
+                policyRes.action = policyMap[key].action;
             }
             return policyRes;
         });

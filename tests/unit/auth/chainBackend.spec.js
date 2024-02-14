@@ -306,6 +306,31 @@ describe('Auth Backend: Chain Backend', () => {
                 ],
             );
         });
+
+        it('should correctly merge policies with implicit denies and actions', () => {
+            const policyResps = [
+                { message: { body: [
+                    { isAllowed: false, arn: 'arn:aws:s3:::policybucket/true1', action: 'action1', isImplicit: true },
+                    { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true2', action: 'action2', isImplicit: false },
+                    { isAllowed: false, arn: 'arn:aws:s3:::policybucket/false1', action: 'action3', isImplicit: false },
+                ] } },
+                { message: { body: [
+                    { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true1', action: 'action1', isImplicit: false },
+                    { isAllowed: false, arn: 'arn:aws:s3:::policybucket/true2', action: 'action1', isImplicit: true },
+                    { isAllowed: false, arn: 'arn:aws:s3:::policybucket/false2', action: 'action1', isImplicit: true },
+                ] } },
+            ];
+            assert.deepStrictEqual(
+                ChainBackend._mergePolicies(policyResps),
+                [
+                    { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true1', action: 'action1', isImplicit: false },
+                    { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true2', action: 'action2', isImplicit: false },
+                    { isAllowed: false, arn: 'arn:aws:s3:::policybucket/false1', action: 'action3', isImplicit: false },
+                    { isAllowed: false, arn: 'arn:aws:s3:::policybucket/true2', action: 'action1', isImplicit: true },
+                    { isAllowed: false, arn: 'arn:aws:s3:::policybucket/false2', action: 'action1', isImplicit: true },
+                ],
+            );
+        });
     });
 
     describe('::checkhealth', () => {
