@@ -343,4 +343,18 @@ export default class GapCache implements GapCacheInterface {
     toArray(): GapSetEntry[] {
         return this._exposedGaps.toArray();
     }
+
+    /**
+     * Clear all exposed and staging gaps from the cache.
+     *
+     * Note: retains invalidating updates from removeOverlappingGaps()
+     * for correctness of gaps inserted afterwards.
+     *
+     * @return {undefined}
+     */
+    clear(): void {
+        this._stagingUpdates.newGaps = new GapSet(this.maxGapWeight);
+        this._frozenUpdates.newGaps = new GapSet(this.maxGapWeight);
+        this._exposedGaps = new GapSet(this.maxGapWeight);
+    }
 }
