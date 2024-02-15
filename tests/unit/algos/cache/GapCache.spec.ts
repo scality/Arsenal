@@ -128,6 +128,11 @@ describe('GapCache', () => {
 
     it('removeOverlappingGaps() should invalidate gaps created later by setGap() but ' +
     'within the exposure delay', async () => {
+        // wait for 80ms (slightly less than exposure delay of 100ms)
+        // before calling removeOverlappingGaps(), so that the next
+        // exposure timer kicks in before the call to setGap()
+        await new Promise(resolve => setTimeout(resolve, 80));
+
         // there is no exposed gap yet, so expect 0 gap removed
         expect(gapCache.removeOverlappingGaps(['dog'])).toEqual(0);
 
