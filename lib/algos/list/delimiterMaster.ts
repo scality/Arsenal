@@ -73,13 +73,14 @@ type GapCachingInfo = GapCachingInfo_NoGapCache
 
 
 export const enum GapBuildingState {
-    Disabled = 0, // no gap cache or not allowed to build due to exposure delay timeout
+    Disabled = 0, // no gap cache or no gap building needed (e.g. in V1 versioning format)
     NotBuilding = 1, // not currently building a gap (i.e. not listing within a gap)
     Building = 2, // currently building a gap (i.e. listing within a gap)
+    Expired = 3, // not allowed to build due to exposure delay timeout
 };
 
-type GapBuildingInfo_Disabled = {
-    state: GapBuildingState.Disabled;
+type GapBuildingInfo_NothingToBuild = {
+    state: GapBuildingState.Disabled | GapBuildingState.Expired;
 };
 
 type GapBuildingParams = {
@@ -118,7 +119,7 @@ type GapBuildingInfo_Building = {
     gapWeight: number;
 };
 
-type GapBuildingInfo = GapBuildingInfo_Disabled
+type GapBuildingInfo = GapBuildingInfo_NothingToBuild
     | GapBuildingInfo_NotBuilding
     | GapBuildingInfo_Building;
 
@@ -214,6 +215,8 @@ export class DelimiterMaster extends Delimiter {
         switch (this._gapBuilding.state) {
         case GapBuildingState.Disabled:
             return null;
+        case GapBuildingState.Expired:
+            return 0;
         case GapBuildingState.NotBuilding:
             gapBuilding = <GapBuildingInfo_NotBuilding> this._gapBuilding;
             break;
@@ -314,6 +317,7 @@ export class DelimiterMaster extends Delimiter {
     _checkGapOnMasterDeleteMarker(key: string): FilterReturnValue {
         switch (this._gapBuilding.state) {
         case GapBuildingState.Disabled:
+        case GapBuildingState.Expired:
             break;
         case GapBuildingState.NotBuilding:
             this._createBuildingGap(key, 1);
@@ -494,16 +498,23 @@ export class DelimiterMaster extends Delimiter {
         return params;
     }
 
-    _saveBuildingGap(): void {
+    /**
+     * Save the gap being built if allowed (i.e. still within the
+     * allocated exposure time window).
+     *
+     * @return {boolean} - true if the gap was saved, false if we are
+     * outside the allocated exposure time window.
+     */
+    _saveBuildingGap(): boolean {
         const { gapCache, params, gap, gapWeight } =
               <GapBuildingInfo_Building> this._gapBuilding;
         const totalElapsed = Date.now() - params.initTimestamp;
         if (totalElapsed >= gapCache.exposureDelayMs) {
             this._gapBuilding = {
-                state: GapBuildingState.Disabled,
+                state: GapBuildingState.Expired,
             };
             this._refreshedBuildingParams = null;
-            return;
+            return false;
         }
         const { firstKey, lastKey, weight } = gap;
         gapCache.setGap(firstKey, lastKey, weight);
@@ -518,6 +529,7 @@ export class DelimiterMaster extends Delimiter {
             },
             gapWeight,
         };
+        return true;
     }
 
     /**
@@ -569,7 +581,10 @@ export class DelimiterMaster extends Delimiter {
             // only set gaps that are significant enough in weight and
             // with a non-empty extension
             if (gapWeight >= params.minGapWeight && gap.weight > 0) {
-                this._saveBuildingGap();
+                // we're done if we were not allowed to save the gap
+                if (!this._saveBuildingGap()) {
+                    return;
+                }
                 // params may have been refreshed, reload them
                 gapBuilding = <GapBuildingInfo_Building> this._gapBuilding;
                 params = gapBuilding.params;

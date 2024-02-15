@@ -1186,6 +1186,11 @@ describe('DelimiterMaster listing algorithm: gap caching and lookup', () => {
         resumeFromState = filterEntries(listing, 'Ddv Ddv Ddv Vvv', 'ass ass ass ass',
                                         resumeFromState);
         expect(gapCache.toArray()).toEqual(gapsArray);
+        // gap building should be in expired state
+        expect(listing._gapBuilding.state).toEqual(GapBuildingState.Expired);
+        // remaining validity period should still be 0 because gap building has expired
+        validityPeriod = listing.getGapBuildingValidityPeriodMs();
+        expect(validityPeriod).toEqual(0);
 
         // we should still be able to skip over the existing cached gaps
         expect(listing._gapCaching.state).toEqual(GapCachingState.GapLookupInProgress);
