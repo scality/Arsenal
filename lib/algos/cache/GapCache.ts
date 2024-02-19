@@ -121,20 +121,23 @@ export default class GapCache implements GapCacheInterface {
     }
 
     /**
-     * Internal helper to remove gaps in the frozen set overlapping
-     * with previously updated keys, right before the frozen gaps get
-     * exposed.
+     * Internal helper to remove gaps in the staging and frozen sets
+     * overlapping with previously updated keys, right before the
+     * frozen gaps get exposed.
      *
      * @return {undefined}
      */
     _removeOverlappingGapsBeforeExpose(): void {
-        // simple optimization to avoid looping over all updates if
-        // there is no gap in the frozen set
-        if (this._frozenUpdates.newGaps.size === 0) {
-            return;
-        }
-        for (const updateSet of [this._stagingUpdates, this._frozenUpdates]) {
-            this._frozenUpdates.newGaps.removeOverlappingGaps(updateSet.updatedKeys);
+        for (const { updatedKeys } of [this._stagingUpdates, this._frozenUpdates]) {
+            if (updatedKeys.size() === 0) {
+                continue;
+            }
+            for (const { newGaps } of [this._stagingUpdates, this._frozenUpdates]) {
+                if (newGaps.size === 0) {
+                    continue;
+                }
+                newGaps.removeOverlappingGaps(updatedKeys);
+            }
         }
     }
 
@@ -342,5 +345,19 @@ export default class GapCache implements GapCacheInterface {
      */
     toArray(): GapSetEntry[] {
         return this._exposedGaps.toArray();
+    }
+
+    /**
+     * Clear all exposed and staging gaps from the cache.
+     *
+     * Note: retains invalidating updates from removeOverlappingGaps()
+     * for correctness of gaps inserted afterwards.
+     *
+     * @return {undefined}
+     */
+    clear(): void {
+        this._stagingUpdates.newGaps = new GapSet(this.maxGapWeight);
+        this._frozenUpdates.newGaps = new GapSet(this.maxGapWeight);
+        this._exposedGaps = new GapSet(this.maxGapWeight);
     }
 }

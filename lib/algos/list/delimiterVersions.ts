@@ -457,11 +457,14 @@ export class DelimiterVersions extends Extension {
         switch (this.state.id) {
         case DelimiterVersionsFilterStateId.SkippingPrefix:
             const { prefix } = <DelimiterVersionsFilterState_SkippingPrefix> this.state;
-            return prefix;
+            return inc(prefix);
 
         case DelimiterVersionsFilterStateId.SkippingVersions:
             const { gt } = <DelimiterVersionsFilterState_SkippingVersions> this.state;
-            return gt;
+            // the contract of skipping() is to return the first key
+            // that can be skipped to, so adding a null byte to skip
+            // over the existing versioned key set in 'gt'
+            return `${gt}\0`;
 
         default:
             return SKIP_NONE;
