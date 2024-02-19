@@ -116,7 +116,7 @@ describe('Skip Algorithm', () => {
         // Skipping algo params
         const extension = {
             filter: () => FILTER_SKIP,
-            skipping: () => 'entry0',
+            skipping: () => 'entry1',
         };
         const gte = 'some-other-entry';
         // Setting spy functions
@@ -138,7 +138,7 @@ describe('Skip Algorithm', () => {
         // Skipping algo params
         const extension = {
             filter: () => FILTER_SKIP,
-            skipping: () => ['first-entry-0', 'second-entry-0'],
+            skipping: () => ['first-entry-1', 'second-entry-1'],
         };
         const gte = 'some-other-entry';
         // Setting spy functions
@@ -160,7 +160,7 @@ describe('Skip Algorithm', () => {
         // Skipping algo params
         const extension = {
             filter: () => FILTER_SKIP,
-            skipping: () => 'entry-0',
+            skipping: () => 'entry-1',
         };
         const gte = 'entry-1';
         // Setting spy functions

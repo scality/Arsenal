@@ -846,11 +846,11 @@ function getTestListing(mdParams, data, vFormat) {
             }
             if (vFormat === 'v1') {
                 assert.deepStrictEqual(delimiter.skipping(), [
-                    `${DbPrefixes.Master}foo/`,
-                    `${DbPrefixes.Version}foo/`,
+                    `${DbPrefixes.Master}foo0`,
+                    `${DbPrefixes.Version}foo0`,
                 ]);
             } else {
-                assert.strictEqual(delimiter.skipping(), 'foo/');
+                assert.strictEqual(delimiter.skipping(), 'foo0');
             }
         });
 
@@ -871,7 +871,7 @@ function getTestListing(mdParams, data, vFormat) {
                     }),
                     FILTER_SKIP);
                 // ...it should skip the whole replay prefix
-                assert.strictEqual(delimiter.skipping(), DbPrefixes.Replay);
+                assert.strictEqual(delimiter.skipping(), inc(DbPrefixes.Replay));
 
                 // simulate a listing that reaches regular object keys
                 // beyond the replay prefix, ...
@@ -882,7 +882,7 @@ function getTestListing(mdParams, data, vFormat) {
                     }),
                     FILTER_ACCEPT);
                 // ...it should return to skipping by prefix as usual
-                assert.strictEqual(delimiter.skipping(), `${inc(DbPrefixes.Replay)}foo/`);
+                assert.strictEqual(delimiter.skipping(), `${inc(DbPrefixes.Replay)}foo0`);
             });
         }
 
@@ -937,11 +937,11 @@ function getTestListing(mdParams, data, vFormat) {
             assert.strictEqual(delimiter.nextKeyMarker, 'foo/');
 
             if (vFormat === 'v0') {
-                assert.strictEqual(delimiter.skipping(), 'foo/');
+                assert.strictEqual(delimiter.skipping(), 'foo0');
             } else {
                 assert.deepStrictEqual(delimiter.skipping(), [
-                    `${DbPrefixes.Master}foo/`,
-                    `${DbPrefixes.Version}foo/`,
+                    `${DbPrefixes.Master}foo0`,
+                    `${DbPrefixes.Version}foo0`,
                 ]);
             }
         });
@@ -958,11 +958,11 @@ function getTestListing(mdParams, data, vFormat) {
             assert.strictEqual(delimiter.nextKeyMarker, 'foo/');
 
             if (vFormat === 'v0') {
-                assert.strictEqual(delimiter.skipping(), 'foo/');
+                assert.strictEqual(delimiter.skipping(), 'foo0');
             } else {
                 assert.deepStrictEqual(delimiter.skipping(), [
-                    `${DbPrefixes.Master}foo/`,
-                    `${DbPrefixes.Version}foo/`,
+                    `${DbPrefixes.Master}foo0`,
+                    `${DbPrefixes.Version}foo0`,
                 ]);
             }
         });
@@ -1249,11 +1249,11 @@ function getTestListing(mdParams, data, vFormat) {
             }), FILTER_SKIP);
 
             if (vFormat === 'v0') {
-                assert.deepStrictEqual(listing.skipping(), `key${VID_SEP}version3`);
+                assert.deepStrictEqual(listing.skipping(), `key${VID_SEP}version3\0`);
             } else {
                 assert.deepStrictEqual(listing.skipping(), [
-                    `${DbPrefixes.Master}key${VID_SEP}version3`,
-                    `${DbPrefixes.Version}key${VID_SEP}version3`,
+                    `${DbPrefixes.Master}key${VID_SEP}version3\0`,
+                    `${DbPrefixes.Version}key${VID_SEP}version3\0`,
                 ]);
             }
 
@@ -1335,11 +1335,11 @@ function getTestListing(mdParams, data, vFormat) {
             }), FILTER_SKIP);
 
             if (vFormat === 'v0') {
-                assert.deepStrictEqual(listing.skipping(), `key${VID_SEP}version3`);
+                assert.deepStrictEqual(listing.skipping(), `key${VID_SEP}version3\0`);
             } else {
                 assert.deepStrictEqual(listing.skipping(), [
-                    `${DbPrefixes.Master}key${VID_SEP}version3`,
-                    `${DbPrefixes.Version}key${VID_SEP}version3`,
+                    `${DbPrefixes.Master}key${VID_SEP}version3\0`,
+                    `${DbPrefixes.Version}key${VID_SEP}version3\0`,
                 ]);
             }
 

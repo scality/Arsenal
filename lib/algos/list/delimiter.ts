@@ -32,7 +32,7 @@ export interface DelimiterFilterState_SkippingPrefix extends FilterState {
 
 type KeyHandler = (key: string, value: string) => FilterReturnValue;
 
-type ResultObject = {
+export type ResultObject = {
     CommonPrefixes: string[];
     Contents: {
         key: string;
@@ -305,7 +305,7 @@ export class Delimiter extends Extension {
         switch (this.state.id) {
         case DelimiterFilterStateId.SkippingPrefix:
             const { prefix } = <DelimiterFilterState_SkippingPrefix> this.state;
-            return prefix;
+            return inc(prefix);
 
         default:
             return SKIP_NONE;
