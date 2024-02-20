@@ -84,6 +84,33 @@ export class Version {
     }
 
     /**
+     * Appends a key-value pair to a JSON object represented as a string. It adds
+     * a comma if the object is not empty (i.e., not just '{}'). It assumes the input
+     * string is formatted as a JSON object.
+     *
+     * @param {string} stringifiedObject The JSON object as a string to which the key-value pair will be appended.
+     * @param {string} key The key to append to the JSON object.
+     * @param {string} value The value associated with the key to append to the JSON object.
+     * @returns {string} The updated JSON object as a string with the new key-value pair appended.
+     * @example
+     * _jsonAppend('{"existingKey":"existingValue"}', 'newKey', 'newValue');
+     * // returns '{"existingKey":"existingValue","newKey":"newValue"}'
+     */
+    static _jsonAppend(stringifiedObject: string, key: string, value: string): string {
+        // stringifiedObject value has the format of '{...}'
+        let index = stringifiedObject.length - 2;
+        while (stringifiedObject.charAt(index) === ' ') {
+            index -= 1;
+        }
+        const needComma = stringifiedObject.charAt(index) !== '{';
+        return (
+            `${stringifiedObject.slice(0, stringifiedObject.length - 1)}` +
+            (needComma ? ',' : '') +
+            `"${key}":"${value}"}`
+        );
+    }
+
+    /**
      * Put versionId into an object in the (cheap) way of string manipulation,
      * instead of the more expensive alternative parsing and stringification.
      *
@@ -93,14 +120,32 @@ export class Version {
      */
     static appendVersionId(value: string, versionId: string): string {
         // assuming value has the format of '{...}'
-        let index = value.length - 2;
-        while (value.charAt(index--) === ' ');
-        const comma = value.charAt(index + 1) !== '{';
-        return (
-            `${value.slice(0, value.length - 1)}` + // eslint-disable-line
-            (comma ? ',' : '') +
-            `"versionId":"${versionId}"}`
-        );
+        return Version._jsonAppend(value, 'versionId', versionId);
+    }
+
+    /**
+    * Updates or appends a `nullVersionId` property to a JSON-formatted string.
+    * This function first checks if the `nullVersionId` property already exists within the input string.
+    * If it exists, the function updates the `nullVersionId` with the new value provided.
+    * If it does not exist, the function appends a `nullVersionId` property with the provided value.
+    *
+    * @static
+    * @param {string} value - The JSON-formatted string that may already contain a `nullVersionId` property.
+    * @param {string} nullVersionId - The new value for the `nullVersionId` property to be updated or appended.
+    * @returns {string} The updated JSON-formatted string with the new `nullVersionId` value.
+    */
+    static updateOrAppendNullVersionId(value: string, nullVersionId: string): string {
+        // Check if "nullVersionId" already exists in the string
+        const nullVersionIdPattern = /"nullVersionId":"[^"]*"/;
+        const nullVersionIdExists = nullVersionIdPattern.test(value);
+    
+        if (nullVersionIdExists) {
+            // Replace the existing nullVersionId with the new one
+            return value.replace(nullVersionIdPattern, `"nullVersionId":"${nullVersionId}"`);
+        } else {
+            // Append nullVersionId
+            return Version._jsonAppend(value, 'nullVersionId', nullVersionId);
+        }
     }
 
     /**
