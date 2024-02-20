@@ -1,6 +1,6 @@
 import errors, { ArsenalError } from '../errors';
 import { Version } from './Version';
-import { generateVersionId as genVID } from './VersionID';
+import { generateVersionId as genVID, getInfVid } from './VersionID';
 import WriteCache from './WriteCache';
 import WriteGatheringManager from './WriteGatheringManager';
 
@@ -481,19 +481,111 @@ export default class VersioningRequestProcessor {
             const versionId = request.options.versionId;
             const versionKey = formatVersionKey(key, versionId);
             const ops: any = [];
-            if (!request.options.isNull) {
-                ops.push({ key: versionKey, value: request.value });
+            const masterVersion = data !== undefined &&
+                  Version.from(data);
+            // push a version key if we're not updating the null
+            // version (or in legacy Cloudservers not sending the
+            // 'isNull' parameter, but this has an issue, see S3C-7526)
+            if (request.options.isNull !== true) {
+                const versionOp = { key: versionKey, value: request.value };
+                ops.push(versionOp);
             }
-            if (data === undefined ||
-                (Version.from(data).getVersionId() ?? '') >= versionId) {
-                // master does not exist or is not newer than put
-                // version and needs to be updated as well.
-                // Note that older versions have a greater version ID.
-                ops.push({ key: request.key, value: request.value });
-            } else if (request.options.isNull) {
-                logger.debug('create or update null key');
-                const nullKey = formatVersionKey(key, '');
-                ops.push({ key: nullKey, value: request.value });
+            if (masterVersion) {
+                // master key exists
+                // note that older versions have a greater version ID
+                const versionIdFromMaster = masterVersion.getVersionId();
+                if (versionIdFromMaster === undefined ||
+                    versionIdFromMaster >= versionId) {
+                    let value = request.value;
+                    logger.debug('version to put is not older than master');
+                    // Delete the deprecated, null key for backward compatibility
+                    // to avoid storing both deprecated and new null keys.
+                    // If master null version was put with an older Cloudserver (or in compat mode),
+                    // there is a possibility that it also has a null versioned key
+                    // associated, so we need to delete it as we write the null key.
+                    // Deprecated null key gets deleted when the new CloudServer:
+                    // - updates metadata of a null master (options.isNull=true)
+                    // - puts metadata on top of a master null key (options.isNull=false)
+                    if (request.options.isNull !== undefined && // new null key behavior when isNull is defined.
+                        masterVersion.isNullVersion() && // master is null
+                        !masterVersion.isNull2Version()) { // master does not support the new null key behavior yet.
+                        const masterNullVersionId = masterVersion.getNullVersionId();
+                        // The deprecated null key is referenced in the "nullVersionId" property of the master key.
+                        if (masterNullVersionId) {
+                            const oldNullVersionKey = formatVersionKey(key, masterNullVersionId);
+                            ops.push({ key: oldNullVersionKey, type: 'del' });
+                        }
+                    }
+                    // new behavior when isNull is defined is to only
+                    // update the master key if it is the latest
+                    // version, old behavior needs to copy master to
+                    // the null version because older Cloudservers
+                    // rely on version-specific PUT to copy master
+                    // contents to a new null version key (newer ones
+                    // use special versionId="null" requests for this
+                    // purpose).
+                    if (versionIdFromMaster !== versionId ||
+                        request.options.isNull === undefined) {
+                        // master key is strictly older than the put version
+                        let masterVersionId;
+                        if (masterVersion.isNullVersion() && versionIdFromMaster) {
+                            logger.debug('master key is a null version');
+                            masterVersionId = versionIdFromMaster;
+                        } else if (versionIdFromMaster === undefined) {
+                            logger.debug('master key is nonversioned');
+                            // master key does not have a versionID
+                            // => create one with the "infinite" version ID
+                            masterVersionId = getInfVid(this.replicationGroupId);
+                            masterVersion.setVersionId(masterVersionId);
+                        } else {
+                            logger.debug('master key is a regular version');
+                        }
+                        if (request.options.isNull === true) {
+                            if (!masterVersionId) {
+                                // master is a regular version: delete the null key that
+                                // may exist (older null version)
+                                logger.debug('delete null key');
+                                const nullKey = formatVersionKey(key, '');
+                                ops.push({ key: nullKey, type: 'del' });
+                            }
+                        } else if (masterVersionId) {
+                            logger.debug('create version key from master version');
+                            // isNull === false means Cloudserver supports null keys,
+                            // so create a null key in this case, and a version key otherwise
+                            const masterKeyVersionId = request.options.isNull === false ?
+                                  '' : masterVersionId;
+                            const masterVersionKey = formatVersionKey(key, masterKeyVersionId);
+                            masterVersion.setNullVersion();
+                            // isNull === false means Cloudserver supports null keys,
+                            // so create a null key with the isNull2 flag
+                            if (request.options.isNull === false) {
+                                masterVersion.setNull2Version();
+                            // else isNull === undefined means Cloudserver does not support null keys,
+                            // hence set/update the new master nullVersionId for backward compatibility
+                            } else {
+                                value = Version.updateOrAppendNullVersionId(request.value, masterVersionId);
+                            }
+                            ops.push({ key: masterVersionKey,
+                                       value: masterVersion.toString() });
+                        }
+                    } else {
+                        logger.debug('version to put is the master');
+                    }
+                    ops.push({ key, value: value });
+                } else {
+                    logger.debug('version to put is older than master');
+                    if (request.options.isNull === true && !masterVersion.isNullVersion()) {
+                        logger.debug('create or update null key');
+                        const nullKey = formatVersionKey(key, '');
+                        const nullKeyOp = { key: nullKey, value: request.value };
+                        ops.push(nullKeyOp);
+                        // for backward compatibility: remove null version key
+                        ops.push({ key: versionKey, type: 'del' });
+                    }
+                }
+            } else {
+                // master key does not exist: create it
+                ops.push({ key, value: request.value });
             }
             return callback(null, ops, versionId);
         });
