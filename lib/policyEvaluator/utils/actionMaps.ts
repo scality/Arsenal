@@ -211,6 +211,10 @@ const actionMapMetadata = {
 
 const actionMapScuba = {
     GetMetrics: 'scuba:GetMetrics',
+    AdminStartIngest: 'scuba:AdminStartIngest',
+    AdminStopIngest: 'scuba:AdminStopIngest',
+    AdminReadRaftCseq: 'scuba:AdminReadRaftCseq',
+    AdminTriggerRepair: 'scuba:AdminTriggerRepair',
 };
 
 export {
