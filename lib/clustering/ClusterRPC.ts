@@ -90,6 +90,8 @@ export type HandlerFunction = (payload: object, uids: string, callback: HandlerC
 export type HandlersMap = {
     [index: string]: HandlerFunction;
 };
+export type PrimaryHandlerFunction = (worker: Worker, payload: object, uids: string, callback: HandlerCallback) => void;
+export type PrimaryHandlersMap = Record<string, PrimaryHandlerFunction>;
 
 // private types
 
@@ -165,12 +167,17 @@ function _isRpcMessage(message) {
 /**
  * Setup cluster RPC system on the primary
  *
+ * @param {object} [handlers] - mapping of handler names to handler functions
+ *     handler function:
+ *         `handler({Worker} worker, {object} payload, {string} uids, {function} callback)`
+ *     handler callback must be called when worker is done with the command:
+ *         `callback({Error|null} error, {any} [result])`
  * @return {undefined}
  */
-export function setupRPCPrimary() {
+export function setupRPCPrimary(handlers?: PrimaryHandlersMap) {
     cluster.on('message', (worker, message) => {
         if (_isRpcMessage(message)) {
-            _handlePrimaryMessage(worker?.id, message);
+            _handlePrimaryMessage(worker, message, handlers);
         }
     });
 }
@@ -201,8 +208,9 @@ export function setupRPCWorker(handlers: HandlersMap) {
  * Send a command for workers to execute in parallel, and wait for results
  *
  * @param {string} toWorkers - which workers should execute the command
- *     Currently the only supported value is "*", meaning all workers will
- *     execute the command
+ *     Currently the supported values are:
+ *         - "*", meaning all workers will execute the command
+ *         - "PRIMARY", meaning primary process will execute the command
  * @param {string} toHandler - name of handler that will execute the
  * command in workers, as declared in setupRPCWorker() parameter object
  * @param {string} uids - unique identifier of the command, must be
@@ -288,10 +296,33 @@ function _dispatchCommandErrorToWorker(
     worker.send(message);
 }
 
+function _sendPrimaryCommandResult(
+    worker: Worker,
+    uids: string,
+    error: Error | null | undefined,
+    result?: any
+): void {
+    const message: RPCCommandResultsMessage | RPCCommandErrorMessage = error ? {
+        type: 'cluster-rpc:commandError',
+        uids,
+        payload: {
+            error: error.message
+        },
+    }: {
+        type: 'cluster-rpc:commandResults',
+        uids,
+        payload: {
+            results: [{ error: null, result }],
+        },
+    };
+    worker.send?.(message);
+}
+
 function _handlePrimaryCommandMessage(
-    fromWorkerId: number,
+    fromWorker: Worker,
     logger: any,
-    message: RPCCommandMessage
+    message: RPCCommandMessage,
+    handlers?: PrimaryHandlersMap
 ): void {
     const { toWorkers, toHandler, uids, payload } = message;
     if (toWorkers === '*') {
@@ -305,7 +336,7 @@ function _handlePrimaryCommandMessage(
         for (const workerId of Object.keys(cluster.workers || {})) {
             commandResults[workerId] = null;
         }
-        uidsToWorkerId[uids] = fromWorkerId;
+        uidsToWorkerId[uids] = fromWorker?.id;
         uidsToCommandResults[uids] = commandResults;
 
         for (const [workerId, worker] of Object.entries(cluster.workers || {})) {
@@ -316,11 +347,21 @@ function _handlePrimaryCommandMessage(
                 worker.send(message);
             }
         }
+    } else if (toWorkers === 'PRIMARY') {
+        const { toHandler, uids, payload } = message;
+        const cb: HandlerCallback = (err, result) => _sendPrimaryCommandResult(fromWorker, uids, err, result);
+
+        if (toHandler in (handlers || {})) {
+            return handlers![toHandler](fromWorker, payload, uids, cb);
+        }
+        logger.error('no such handler in "toHandler" field from worker command message', {
+            toHandler,
+        });
+        return cb(errors.NotImplemented);
     } else {
         logger.error('unsupported "toWorkers" field from worker command message', {
             toWorkers,
         });
-        const fromWorker = cluster.workers?.[fromWorkerId];
         if (fromWorker) {
             _dispatchCommandErrorToWorker(fromWorker, uids, errors.NotImplemented);
         }
@@ -378,22 +419,23 @@ function _handlePrimaryCommandResultMessage(
 }
 
 function _handlePrimaryMessage(
-    fromWorkerId: number,
-    message: RPCCommandMessage | RPCCommandResultMessage
+    fromWorker: Worker,
+    message: RPCCommandMessage | RPCCommandResultMessage,
+    handlers?: PrimaryHandlersMap
 ): void {
     const { type: messageType, uids } = message;
     const logger = rpcLogger.newRequestLoggerFromSerializedUids(uids);
     logger.debug('primary received message from worker', {
-        workerId: fromWorkerId, rpcMessage: message,
+        workerId: fromWorker?.id, rpcMessage: message,
     });
     if (messageType === 'cluster-rpc:command') {
-        return _handlePrimaryCommandMessage(fromWorkerId, logger, message);
+        return _handlePrimaryCommandMessage(fromWorker, logger, message, handlers);
     }
     if (messageType === 'cluster-rpc:commandResult') {
-        return _handlePrimaryCommandResultMessage(fromWorkerId, logger, message);
+        return _handlePrimaryCommandResultMessage(fromWorker?.id, logger, message);
     }
     logger.error('unsupported message type', {
-        workerId: fromWorkerId, messageType, uids,
+        workerId: fromWorker?.id, messageType, uids,
     });
     return undefined;
 }
