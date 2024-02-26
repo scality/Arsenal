@@ -110,7 +110,7 @@ function _buildArn(
         }
         case 'scuba': {
             return `arn:scality:scuba::${requesterInfo!.accountid}:` +
-            `${generalResource}/${specificResource || ''}`;
+            `${generalResource}${specificResource ? '/' + specificResource : ''}`;
         }
         default:
             return undefined;
