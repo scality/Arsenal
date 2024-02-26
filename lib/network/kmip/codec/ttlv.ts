@@ -20,7 +20,7 @@ function _ttlvPadVector(vec: any[]) {
     return vec;
 }
 
-function _throwError(logger: werelogs.Logger, msg: string, data?: LogDictionnary) {
+function _throwError(logger: werelogs.Logger, msg: string, data?: LogDictionary) {
     logger.error(msg, data);
     throw Error(msg);
 }
