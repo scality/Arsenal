@@ -121,6 +121,15 @@ type RPCCommandErrorMessage = RPCMessage<'cluster-rpc:commandError', {
     error: string;
 }>;
 
+interface RPCSetupOptions {
+    /**
+     * As werelogs is not a peerDependency, arsenal and a parent project
+     * might have their own separate versions duplicated in dependencies.
+     * The config are therefore not shared.
+     * Use this to propagate werelogs config to arsenal's ClusterRPC.
+     */
+    werelogsConfig?: Parameters<typeof werelogs.configure>[0];
+};
 
 /**
  * In primary: store worker IDs that are waiting to be dispatched
@@ -174,7 +183,10 @@ function _isRpcMessage(message) {
  *         `callback({Error|null} error, {any} [result])`
  * @return {undefined}
  */
-export function setupRPCPrimary(handlers?: PrimaryHandlersMap) {
+export function setupRPCPrimary(handlers?: PrimaryHandlersMap, options?: RPCSetupOptions) {
+    if (options?.werelogsConfig) {
+        werelogs.configure(options.werelogsConfig);
+    }
     cluster.on('message', (worker, message) => {
         if (_isRpcMessage(message)) {
             _handlePrimaryMessage(worker, message, handlers);
@@ -193,9 +205,12 @@ export function setupRPCPrimary(handlers?: PrimaryHandlersMap) {
  * @return {undefined}
  * }
  */
-export function setupRPCWorker(handlers: HandlersMap) {
+export function setupRPCWorker(handlers: HandlersMap, options?: RPCSetupOptions) {
     if (!process.send) {
         throw new Error('fatal: cannot setup cluster RPC: "process.send" is not available');
+    }
+    if (options?.werelogsConfig) {
+        werelogs.configure(options.werelogsConfig);
     }
     process.on('message', (message: RPCCommandMessage | RPCCommandResultsMessage) => {
         if (_isRpcMessage(message)) {
