@@ -85,7 +85,7 @@ export type CommandPromise = {
     reject: (error: Error) => void;
     timeout: NodeJS.Timer | null;
 };
-export type HandlerCallback = (error: Error | null | undefined, result?: any) => void;
+export type HandlerCallback = (error: (Error & { code?: number }) | null | undefined, result?: any) => void;
 export type HandlerFunction = (payload: object, uids: string, callback: HandlerCallback) => void;
 export type HandlersMap = {
     [index: string]: HandlerFunction;
@@ -108,6 +108,7 @@ type RPCCommandMessage = RPCMessage<'cluster-rpc:command', any> & {
 
 type MarshalledResultObject = {
     error: string | null;
+    errorCode?: number;
     result: any;
 };
 
@@ -314,20 +315,14 @@ function _dispatchCommandErrorToWorker(
 function _sendPrimaryCommandResult(
     worker: Worker,
     uids: string,
-    error: Error | null | undefined,
+    error: (Error & { code?: number }) | null | undefined,
     result?: any
 ): void {
-    const message: RPCCommandResultsMessage | RPCCommandErrorMessage = error ? {
-        type: 'cluster-rpc:commandError',
-        uids,
-        payload: {
-            error: error.message
-        },
-    }: {
+    const message: RPCCommandResultsMessage = {
         type: 'cluster-rpc:commandResults',
         uids,
         payload: {
-            results: [{ error: null, result }],
+            results: [{ error: error?.message || null, errorCode: error?.code, result }],
         },
     };
     worker.send?.(message);
@@ -511,6 +506,9 @@ function _handleWorkerCommandResultsMessage(
             } else {
                 workerError = new Error(workerResult.error);
             }
+        }
+        if (workerError && workerResult.errorCode) {
+            (workerError as Error & { code: number }).code = workerResult.errorCode;
         }
         const unmarshalledResult: ResultObject = {
             error: workerError,
