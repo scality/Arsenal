@@ -1,5 +1,5 @@
 'use strict'; // eslint-disable-line
-
+const assert = require('assert');
 const http = require('http');
 const readline = require('readline');
 const spawn = require('child_process').spawn;
@@ -46,13 +46,45 @@ function stopTestServer(done) {
     testServer.on('close', done);
 }
 
+/**
+ * Try to deserialize and recreate AssertionError with stackTrace from spawned server
+ * @param {string} responseBody maybe serialized AssertionError
+ * @throws {assert.AssertionError}
+ * @returns {undefined}
+ */
+function handleAssertionError(responseBody) {
+    let parsed;
+    try {
+        parsed = JSON.parse(responseBody);
+    } catch (_) {
+        return;
+    }
+
+    if (parsed && parsed.code === 'ERR_ASSERTION') {
+        const err = new assert.AssertionError(parsed);
+        err.stack = parsed.stack;
+        throw err;
+    }
+}
+
 function runTest(testUrl, cb) {
     const req = http.request(`http://localhost:${TEST_SERVER_PORT}/${testUrl}`, res => {
+        let responseBody = '';
         res
-            .on('data', () => {})
+            .on('data', (chunk) => {
+                responseBody += chunk;
+            })
             .on('end', () => {
-                expect(res.statusCode).toEqual(200);
-                cb();
+                try {
+                    handleAssertionError(responseBody);
+                    expect(res.statusCode).toEqual(200);
+                } catch (err) {
+                    if (!(err instanceof assert.AssertionError)) {
+                        err.message += `\n\nBody:\n${responseBody}`;
+                    }
+                    return cb(err);
+                }
+                return cb();
             })
             .on('error', err => cb(err));
     });
@@ -105,5 +137,15 @@ describe('ClusterRPC', () => {
         });
         // The test server spawns a new worker when it receives SIGUSR1
         testServer.kill('SIGUSR1');
+    });
+
+    describe('worker to primary', () => {
+        it('should succeed and return a result', done => {
+            runTest('worker-to-primary/echo', done);
+        });
+
+        it('should return an error with a code', done => {
+            runTest('worker-to-primary/error-with-http-code', done);
+        });
     });
 });

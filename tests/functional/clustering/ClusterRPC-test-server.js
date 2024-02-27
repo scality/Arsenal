@@ -1,4 +1,5 @@
 const async = require('async');
+const assert = require('assert');
 const cluster = require('cluster');
 const http = require('http');
 
@@ -63,6 +64,15 @@ const rpcHandlers = {
     SomeTestHandler: someTestHandlerFunc,
     TestHandlerWithFailure: testHandlerWithFailureFunc,
     TestHandlerWithNoResponse: () => {},
+};
+
+const primaryHandlers = {
+    echoHandler: (worker, payload, uids, callback) => {
+        callback(null, { workerId: worker.id, payload, uids });
+    },
+    errorWithHttpCodeHandler: (_worker, _payload, _uids, callback) => {
+        callback({ name: 'ErrorMock', code: 418, message: 'An error message from primary' });
+    },
 };
 
 function respondOnTestFailure(message, error, results) {
@@ -214,6 +224,27 @@ async function workerTimeoutTest() {
     }
 }
 
+async function workerToPrimaryEcho() {
+    const uids = genUIDS();
+    const payload = { testing: true };
+    const expected = { workerId: cluster.worker.id, payload, uids };
+
+    const results = await sendWorkerCommand('PRIMARY', 'echoHandler', uids, payload);
+    assert.strictEqual(results.length, 1, 'There is 1 and only 1 primary');
+    assert.ifError(results[0].error);
+    assert.deepStrictEqual(results[0].result, expected);
+}
+
+async function workerToPrimaryErrorWithHttpCode() {
+    const uids = genUIDS();
+    const payload = { testing: true };
+    const results = await sendWorkerCommand('PRIMARY', 'errorWithHttpCodeHandler', uids, payload);
+    assert.strictEqual(results.length, 1, 'There is 1 and only 1 primary');
+    assert.ok(results[0].error);
+    assert.strictEqual(results[0].error.message, 'An error message from primary');
+    assert.strictEqual(results[0].error.code, 418);
+}
+
 const TEST_URLS = {
     '/successful-command': successfulCommandTest,
     '/successful-command-with-extra-worker': successfulCommandWithExtraWorkerTest,
@@ -223,6 +254,8 @@ const TEST_URLS = {
     '/duplicate-uids': duplicateUidsTest,
     '/unsuccessful-worker': unsuccessfulWorkerTest,
     '/worker-timeout': workerTimeoutTest,
+    '/worker-to-primary/echo': workerToPrimaryEcho,
+    '/worker-to-primary/error-with-http-code': workerToPrimaryErrorWithHttpCode,
 };
 
 if (process.argv.length !== 4) {
@@ -247,7 +280,7 @@ if (cluster.isPrimary) {
         N_WORKERS,
         (i, wcb) => cluster.fork().on('online', wcb),
         () => {
-            setupRPCPrimary();
+            setupRPCPrimary(primaryHandlers);
         },
     );
 } else {
@@ -263,8 +296,22 @@ if (cluster.isPrimary) {
                 res.writeHead(200);
                 res.end();
             }).catch(err => {
-                res.writeHead(err.code);
-                res.end(err.message);
+                // serialize AssertionError to be displayed nicely in jest
+                if (err instanceof assert.AssertionError) {
+                    const serializedErr = JSON.stringify({
+                        code: err.code,
+                        message: err.message,
+                        stack: err.stack,
+                        actual: err.actual,
+                        expected: err.expected,
+                        operator: err.operator,
+                    });
+                    res.writeHead(500);
+                    res.end(serializedErr);
+                } else {
+                    res.writeHead(err.code);
+                    res.end(err.message);
+                }
             });
         }
         console.error(`Invalid test URL ${req.url}`);
