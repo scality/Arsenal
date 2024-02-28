@@ -1,3 +1,5 @@
+import { RequestLogger } from 'werelogs';
+
 import { ArsenalError } from '../errors';
 
 const WG_TIMEOUT = 5; // batching period in milliseconds

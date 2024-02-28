@@ -1,3 +1,5 @@
+import { RequestLogger } from 'werelogs';
+
 import errors, { ArsenalError } from '../errors';
 import WriteGatheringManager from './WriteGatheringManager';
 

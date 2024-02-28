@@ -1,10 +1,13 @@
 import * as url from 'url';
+import * as http from 'http';
+import { eachSeries } from 'async';
+
+import { RequestLogger } from 'werelogs';
+
 import * as ipCheck from '../ipCheck';
 import errors, { ArsenalError } from '../errors';
 import * as constants from '../constants';
-import { eachSeries } from 'async';
 import DataWrapper from '../storage/data/DataWrapper';
-import * as http from 'http';
 import StatsClient from '../metrics/StatsClient';
 
 export type CallApiMethod = (

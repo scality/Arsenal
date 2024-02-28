@@ -1,3 +1,5 @@
+import { RequestLogger } from 'werelogs';
+
 import errors, { ArsenalError } from '../errors';
 import { Version } from './Version';
 import { generateVersionId as genVID, getInfVid } from './VersionID';

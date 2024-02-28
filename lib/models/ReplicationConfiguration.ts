@@ -1,6 +1,8 @@
 import assert from 'assert';
 import UUID from 'uuid';
 
+import { RequestLogger } from 'werelogs';
+
 import escapeForXml from '../s3middleware/escapeForXml';
 import errors from '../errors';
 import { isValidBucketName } from '../s3routes/routesUtils';
