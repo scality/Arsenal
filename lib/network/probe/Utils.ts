@@ -1,4 +1,7 @@
 import * as http from 'http';
+
+import { RequestLogger } from 'werelogs';
+
 import { ArsenalError } from '../../errors';
 
 /**

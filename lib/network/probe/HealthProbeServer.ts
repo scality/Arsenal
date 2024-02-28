@@ -62,7 +62,7 @@ export default class HealthProbeServer extends httpServer {
     _onLiveness(
         _req: http.IncomingMessage,
         res: http.ServerResponse,
-        log: RequestLogger,
+        log: werelogs.RequestLogger,
     ) {
         if (this._livenessCheck(log)) {
             sendSuccess(res, log);
@@ -74,7 +74,7 @@ export default class HealthProbeServer extends httpServer {
     _onReadiness(
         _req: http.IncomingMessage,
         res: http.ServerResponse,
-        log: RequestLogger,
+        log: werelogs.RequestLogger,
     ) {
         if (this._readinessCheck(log)) {
             sendSuccess(res, log);
