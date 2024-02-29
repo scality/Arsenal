@@ -309,7 +309,7 @@ if (cluster.isPrimary) {
                     res.writeHead(500);
                     res.end(serializedErr);
                 } else {
-                    res.writeHead(err.code);
+                    res.writeHead(err.code || 500);
                     res.end(err.message);
                 }
             });
