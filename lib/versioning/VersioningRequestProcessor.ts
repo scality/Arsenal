@@ -402,7 +402,10 @@ export default class VersioningRequestProcessor {
                     if (masterVersionId) {
                         // => create a new version key from the master version
                         const masterVersionKey = formatVersionKey(key, masterVersionId);
-                        value = Version.updateOrAppendNullVersionId(request.value, masterVersionId);
+                        // => set the nullVersionId to the master version if put version on top of null version.
+                        if (versionIdFromMaster !== versionId) {
+                            value = Version.updateOrAppendNullVersionId(request.value, masterVersionId);
+                        }
                         masterVersion.setNullVersion();
                         ops.push({ key: masterVersionKey,
                                    value: masterVersion.toString() });

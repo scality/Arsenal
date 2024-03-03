@@ -323,6 +323,7 @@ describe('test VSP', () => {
         (res, next) => {
             const expectedListing = [
                 // master version should have the provided version id and a reference of the null version id.
+                // NOTE: should set nullVersionId to the master version if putting a version on top of a null version.
                 {
                     key: 'bar',
                     value: `{"qux":"quz2","versionId":"${versionId}","nullVersionId":"${nullVersionId}"}`,
@@ -351,6 +352,69 @@ describe('test VSP', () => {
                 qux: 'quz2',
                 versionId,
                 nullVersionId,
+            };
+            assert.deepStrictEqual(JSON.parse(res), expectedGet);
+            next();
+        }],
+        done);
+    });
+
+    it('should be able to update a null suspended version', done => {
+        let nullVersionId;
+
+        async.waterfall([next => {
+            // simulate the creation of a null suspended version.
+            const request = {
+                db: 'foo',
+                key: 'bar',
+                value: '{"qux":"quz","isNull":true}',
+                options: {
+                    versionId: '',
+                },
+            };
+            vsp.put(request, logger, next);
+        },
+        (res, next) => {
+            nullVersionId = JSON.parse(res).versionId;
+            // simulate update null version with BackbeatClient.putMetadata
+            const request = {
+                db: 'foo',
+                key: 'bar',
+                value: '{"qux":"quz2","isNull":true}',
+                options: {
+                    versioning: true,
+                    versionId: nullVersionId,
+                },
+            };
+            vsp.put(request, logger, next);
+        },
+        (res, next) => {
+            wgm.list({}, logger, next);
+        },
+        (res, next) => {
+            const expectedListing = [
+                // NOTE: should not set nullVersionId to the master version if updating a null version.
+                {
+                    key: 'bar',
+                    value: '{"qux":"quz2","isNull":true}',
+                },
+                {
+                    key: `bar\x00${nullVersionId}`,
+                    value: `{"qux":"quz","isNull":true,"versionId":"${nullVersionId}"}`,
+                },
+            ];
+            assert.deepStrictEqual(res, expectedListing);
+
+            const request = {
+                db: 'foo',
+                key: 'bar',
+            };
+            vsp.get(request, logger, next);
+        },
+        (res, next) => {
+            const expectedGet = {
+                qux: 'quz2',
+                isNull: true,
             };
             assert.deepStrictEqual(JSON.parse(res), expectedGet);
             next();
