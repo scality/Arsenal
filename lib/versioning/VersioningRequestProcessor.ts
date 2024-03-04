@@ -561,8 +561,10 @@ export default class VersioningRequestProcessor {
                             if (request.options.isNull === false) {
                                 masterVersion.setNull2Version();
                             // else isNull === undefined means Cloudserver does not support null keys,
+                            // and versionIdFromMaster !== versionId means that a version is PUT on top of a null version
                             // hence set/update the new master nullVersionId for backward compatibility
-                            } else {
+                            } else if (versionIdFromMaster !== versionId) {
+                                // => set the nullVersionId to the master version if put version on top of null version.
                                 value = Version.updateOrAppendNullVersionId(request.value, masterVersionId);
                             }
                             ops.push({ key: masterVersionKey,
