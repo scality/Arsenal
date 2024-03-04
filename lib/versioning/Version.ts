@@ -236,15 +236,6 @@ export class Version {
     }
 
     /**
-     * Get the nullVersionId of the version.
-     *
-     * @return - the nullVersionId
-     */
-    getNullVersionId(): string | undefined {
-        return this.version.nullVersionId;
-    }
-
-    /**
      * Mark a version as a delete marker.
      *
      * @return - the updated version
