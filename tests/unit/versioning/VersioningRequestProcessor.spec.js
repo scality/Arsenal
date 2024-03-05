@@ -556,7 +556,7 @@ describe('test VRP', () => {
             const request = {
                 db: 'foo',
                 key: 'bar',
-                value: '{"qux":"quz2","isNull":true}',
+                value: `{"qux":"quz2","isNull":true,"versionId":"${nullVersionId}"}`,
                 options: {
                     versioning: true,
                     versionId: nullVersionId,
@@ -572,7 +572,7 @@ describe('test VRP', () => {
                 // NOTE: should not set nullVersionId to the master version if updating a null version.
                 {
                     key: 'bar',
-                    value: '{"qux":"quz2","isNull":true}',
+                    value: `{"qux":"quz2","isNull":true,"versionId":"${nullVersionId}"}`,
                 },
                 {
                     key: `bar\x00${nullVersionId}`,
@@ -591,6 +591,7 @@ describe('test VRP', () => {
             const expectedGet = {
                 qux: 'quz2',
                 isNull: true,
+                versionId: nullVersionId,
             };
             assert.deepStrictEqual(JSON.parse(res), expectedGet);
             next();
