@@ -52,6 +52,12 @@ const sharedActionMap = {
     objectPutVersion: 's3:PutObjectVersion',
 };
 
+const actionMapBucketQuotas = {
+    bucketGetQuota: 'scality:GetBucketQuota',
+    bucketUpdateQuota: 'scality:UpdateBucketQuota',
+    bucketDeleteQuota: 'scality:DeleteBucketQuota',
+};
+
 // action map used for request context
 const actionMapRQ = {
     bucketPut: 's3:CreateBucket',
@@ -79,6 +85,7 @@ const actionMapRQ = {
     objectPutLegalHoldVersion: 's3:PutObjectLegalHold',
     listObjectVersions: 's3:ListBucketVersions',
     ...sharedActionMap,
+    ...actionMapBucketQuotas,
 };
 
 // action map used for bucket policies
@@ -153,6 +160,12 @@ const actionMonitoringMapS3 = {
     serviceGet: 'ListBuckets',
 };
 
+const actionMapAccountQuotas = {
+    UpdateAccountQuota : 'scality:UpdateAccountQuota',
+    DeleteAccountQuota : 'scality:DeleteAccountQuota',
+    GetAccountQuota : 'scality:GetAccountQuota',
+};
+
 const actionMapIAM = {
     attachGroupPolicy: 'iam:AttachGroupPolicy',
     attachUserPolicy: 'iam:AttachUserPolicy',
@@ -194,6 +207,7 @@ const actionMapIAM = {
     tagUser: 'iam:TagUser',
     unTagUser: 'iam:UntagUser',
     listUserTags: 'iam:ListUserTags',
+    ...actionMapAccountQuotas,
 };
 
 const actionMapSSO = {
