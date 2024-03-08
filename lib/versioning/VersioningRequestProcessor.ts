@@ -509,8 +509,8 @@ export default class VersioningRequestProcessor {
                     if (request.options.isNull !== undefined && // new null key behavior when isNull is defined.
                         masterVersion.isNullVersion() && // master is null
                         !masterVersion.isNull2Version()) { // master does not support the new null key behavior yet.
-                        const masterNullVersionId = masterVersion.getNullVersionId();
-                        // The deprecated null key is referenced in the "nullVersionId" property of the master key.
+                        const masterNullVersionId = masterVersion.getVersionId();
+                        // The deprecated null key is referenced in the "versionId" property of the master key.
                         if (masterNullVersionId) {
                             const oldNullVersionKey = formatVersionKey(key, masterNullVersionId);
                             ops.push({ key: oldNullVersionKey, type: 'del' });
@@ -561,8 +561,10 @@ export default class VersioningRequestProcessor {
                             if (request.options.isNull === false) {
                                 masterVersion.setNull2Version();
                             // else isNull === undefined means Cloudserver does not support null keys,
+                            // and versionIdFromMaster !== versionId means that a version is PUT on top of a null version
                             // hence set/update the new master nullVersionId for backward compatibility
-                            } else {
+                            } else if (versionIdFromMaster !== versionId) {
+                                // => set the nullVersionId to the master version if put version on top of null version.
                                 value = Version.updateOrAppendNullVersionId(request.value, masterVersionId);
                             }
                             ops.push({ key: masterVersionKey,
