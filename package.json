@@ -3,7 +3,7 @@
   "engines": {
     "node": ">=16"
   },
-  "version": "8.1.126",
+  "version": "8.1.127",
   "description": "Common utilities for the S3 project components",
   "main": "build/index.js",
   "repository": {
@@ -51,7 +51,7 @@
     "sproxydclient": "git+https://github.com/scality/sproxydclient#8.0.10",
     "utf8": "3.0.0",
     "uuid": "^3.0.1",
-    "werelogs": "scality/werelogs#8.1.2",
+    "werelogs": "scality/werelogs#8.1.4",
     "xml2js": "~0.4.23"
   },
   "optionalDependencies": {

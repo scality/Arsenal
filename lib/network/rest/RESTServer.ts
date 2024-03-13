@@ -25,7 +25,7 @@ function setContentRange(
 
 function sendError(
     res: http.ServerResponse,
-    log: RequestLogger,
+    log: werelogs.RequestLogger,
     error: ArsenalError,
     optMessage?: string,
 ) {
@@ -141,7 +141,7 @@ export default class RESTServer extends httpServer {
     _onPut(
         req: http.IncomingMessage,
         res: http.ServerResponse,
-        log: RequestLogger,
+        log: werelogs.RequestLogger,
     ) {
         let size: number;
         try {
@@ -183,7 +183,7 @@ export default class RESTServer extends httpServer {
     _onGet(
         req: http.IncomingMessage,
         res: http.ServerResponse,
-        log: RequestLogger,
+        log: werelogs.RequestLogger,
     ) {
         let pathInfo: ReturnType<typeof parseURL>;
         let rangeSpec: ReturnType<typeof httpUtils.parseRangeSpec> | undefined =
@@ -266,7 +266,7 @@ export default class RESTServer extends httpServer {
     _onDelete(
         req: http.IncomingMessage,
         res: http.ServerResponse,
-        log: RequestLogger,
+        log: werelogs.RequestLogger,
     ) {
         let pathInfo: ReturnType<typeof parseURL>;
         try {

@@ -119,7 +119,7 @@ export default class RESTClient {
         method: string,
         headers: http.OutgoingHttpHeaders | null,
         key: string | null,
-        log: RequestLogger,
+        log: werelogs.RequestLogger,
         responseCb: (res: http.IncomingMessage) => void,
     ) {
         const reqHeaders = headers || {};

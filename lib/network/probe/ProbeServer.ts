@@ -16,7 +16,7 @@ export const DEFAULT_METRICS_ROUTE = '/metrics';
  * @param log - Werelogs instance for logging if you choose to
  */
 
-export type ProbeDelegate = (res: http.ServerResponse, log: RequestLogger) => string | void
+export type ProbeDelegate = (res: http.ServerResponse, log: werelogs.RequestLogger) => string | void
 
 export type ProbeServerParams = {
     port: number;

@@ -1,4 +1,7 @@
 import assert from 'assert';
+
+import { RequestLogger } from 'werelogs';
+
 import errors from '../errors';
 import routeGET from './routes/routeGET';
 import routePUT from './routes/routePUT';

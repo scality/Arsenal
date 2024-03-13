@@ -7176,6 +7176,13 @@ werelogs@scality/werelogs#8.1.2:
     fast-safe-stringify "^2.1.1"
     safe-json-stringify "^1.2.0"
 
+werelogs@scality/werelogs#8.1.4:
+  version "8.1.4"
+  resolved "https://codeload.github.com/scality/werelogs/tar.gz/d6bec11df034c88a12959791eb7dd60913eb5f47"
+  dependencies:
+    fast-safe-stringify "^2.1.1"
+    safe-json-stringify "^1.2.0"
+
 whatwg-encoding@^1.0.5:
   version "1.0.5"
   resolved "https://registry.yarnpkg.com/whatwg-encoding/-/whatwg-encoding-1.0.5.tgz#5abacf777c32166a51d085d6b4f3e7d27113ddb0"

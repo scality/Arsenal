@@ -1,3 +1,5 @@
+import { RequestLogger } from 'werelogs';
+
 import * as routesUtils from '../routesUtils';
 import errors from '../../errors';
 import StatsClient from '../../metrics/StatsClient';
