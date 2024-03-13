@@ -2934,6 +2934,11 @@ fast-levenshtein@^2.0.6, fast-levenshtein@~2.0.6:
   resolved "https://registry.yarnpkg.com/fast-levenshtein/-/fast-levenshtein-2.0.6.tgz#3d8a5c66883a16a30ca8643e851f19baa7797917"
   integrity sha1-PYpcZog6FqMMqGQ+hR8Zuqd5eRc=
 
+fast-safe-stringify@^2.1.1:
+  version "2.1.1"
+  resolved "https://registry.yarnpkg.com/fast-safe-stringify/-/fast-safe-stringify-2.1.1.tgz#c406a83b6e70d9e35ce3b30a81141df30aeba884"
+  integrity sha512-W+KJc2dmILlPplD/H4K9l9LcAHAfPtP6BY84uVLXQ6Evcz9Lcg33Y2z1IVblT6xdY54PXYVHEv+0Wpq8Io6zkA==
+
 fb-watchman@^2.0.0:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/fb-watchman/-/fb-watchman-2.0.1.tgz#fc84fb39d2709cf3ff6d743706157bb5708a8a85"
@@ -6490,10 +6495,11 @@ werelogs@scality/werelogs#8.1.0:
   dependencies:
     safe-json-stringify "1.0.3"
 
-werelogs@scality/werelogs#8.1.1:
-  version "8.1.1"
-  resolved "https://codeload.github.com/scality/werelogs/tar.gz/240be22c47f1cae30df0c3c965cd701e6300bd18"
+werelogs@scality/werelogs#8.1.4:
+  version "8.1.4"
+  resolved "https://codeload.github.com/scality/werelogs/tar.gz/d6bec11df034c88a12959791eb7dd60913eb5f47"
   dependencies:
+    fast-safe-stringify "^2.1.1"
     safe-json-stringify "^1.2.0"
 
 werelogs@scality/werelogs#GA7.2.0.5:

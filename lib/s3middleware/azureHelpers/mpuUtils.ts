@@ -1,6 +1,9 @@
 import assert from 'assert';
 import * as crypto from 'crypto';
 import * as stream from 'stream';
+
+import { RequestLogger } from 'werelogs';
+
 import ResultsCollector from './ResultsCollector';
 import SubStreamInterface from './SubStreamInterface';
 import * as objectUtils from '../objectUtils';

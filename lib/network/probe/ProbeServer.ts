@@ -19,7 +19,7 @@ export const DEFAULT_METRICS_ROUTE = '/_/metrics';
  * string or undefined is used to represent no issues.
  */
 
-export type ProbeDelegate = (res: http.ServerResponse, log: RequestLogger) => string | void
+export type ProbeDelegate = (res: http.ServerResponse, log: werelogs.RequestLogger) => string | void
 
 export type ProbeServerParams = {
     port: number;
