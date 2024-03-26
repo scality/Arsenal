@@ -101,6 +101,7 @@ export default class BucketInfo {
     _azureInfo: any | null;
     _ingestion: { status: 'enabled' | 'disabled' } | null;
     _capabilities?: Capabilities;
+    _quota: number | 0;
 
     /**
     * Represents all bucket information.
@@ -157,6 +158,7 @@ export default class BucketInfo {
     * @param [notificationConfiguration] - bucket notification configuration
     * @param [tags] - bucket tag set
     * @param [capabilities] - capabilities for the bucket
+    * @param quota - bucket quota
     */
     constructor(
         name: string,
@@ -170,6 +172,7 @@ export default class BucketInfo {
         serverSideEncryption: SSE,
         versioningConfiguration: VersioningConfiguration,
         locationConstraint: string,
+        quota: number | 0,
         websiteConfiguration?: WebsiteConfiguration | null,
         cors?: CORS,
         replicationConfiguration?: any,
@@ -225,6 +228,9 @@ export default class BucketInfo {
         }
         if (locationConstraint) {
             assert.strictEqual(typeof locationConstraint, 'string');
+        }
+        if (quota) {
+            assert.strictEqual(typeof quota, 'number');
         }
         if (ingestionConfig) {
             assert.strictEqual(typeof ingestionConfig, 'object');
@@ -313,6 +319,7 @@ export default class BucketInfo {
         this._notificationConfiguration = notificationConfiguration || null;
         this._tags = tags;
         this._capabilities = capabilities || undefined;
+        this._quota = quota || 0;
         return this;
     }
 
@@ -348,6 +355,7 @@ export default class BucketInfo {
             notificationConfiguration: this._notificationConfiguration,
             tags: this._tags,
             capabilities: this._capabilities,
+            quota: this._quota,
         };
         const final = this._websiteConfiguration
             ? {
@@ -374,7 +382,7 @@ export default class BucketInfo {
             obj.bucketPolicy, obj.uid, obj.readLocationConstraint, obj.isNFS,
             obj.ingestion, obj.azureInfo, obj.objectLockEnabled,
             obj.objectLockConfiguration, obj.notificationConfiguration, obj.tags,
-            obj.capabilities);
+            obj.capabilities, obj.quota);
     }
 
     /**
@@ -401,7 +409,8 @@ export default class BucketInfo {
             data._bucketPolicy, data._uid, data._readLocationConstraint,
             data._isNFS, data._ingestion, data._azureInfo,
             data._objectLockEnabled, data._objectLockConfiguration,
-            data._notificationConfiguration, data._tags, data._capabilities);
+            data._notificationConfiguration, data._tags, data._capabilities,
+            data._quota);
     }
 
     /**
@@ -527,6 +536,22 @@ export default class BucketInfo {
      */
     setLifecycleConfiguration(lifecycleConfiguration: any) {
         this._lifecycleConfiguration = lifecycleConfiguration;
+        return this;
+    }
+    /**
+     * Get the bucket quota information
+     * @return quota
+     */
+    getQuota() {
+        return this._quota;
+    }
+    /**
+     * Set bucket quota
+     * @param quota - bucket policy
+     * @return - bucket quota info
+     */
+    setQuota(quota: number) {
+        this._quota = quota;
         return this;
     }
     /**

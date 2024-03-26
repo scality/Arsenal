@@ -418,11 +418,13 @@ export const NoSuchBucketPolicy: ErrorFormat = {
     code: 404,
     description: 'The specified bucket does not have a bucket policy.',
 };
+
 export const OperationAborted: ErrorFormat = {
     code: 409,
     description:
         'A conflicting conditional operation is currently in progress against this resource. Try again.',
 };
+
 export const PermanentRedirect: ErrorFormat = {
     code: 301,
     description:
@@ -1041,4 +1043,11 @@ export const ReadOnly: ErrorFormat = {
 export const AuthMethodNotImplemented: ErrorFormat = {
     description: 'AuthMethodNotImplemented',
     code: 501,
+};
+
+// --------------------- quotaErros ---------------------
+
+export const NoSuchBucketQuota: ErrorFormat = {
+    code: 404,
+    description: 'The specified bucket does not have a quota.',
 };

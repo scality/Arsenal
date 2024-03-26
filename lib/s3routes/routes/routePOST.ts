@@ -66,6 +66,14 @@ export default function routePOST(
                     statusCode, log));
     }
 
+    //POST Quota update
+    if (query.quota !== undefined) {
+        return api.callApiMethod('updateBucketQuota', request, response,
+            log, (err, statusCode, resHeaders) =>
+                routesUtils.responseNoBody(err, resHeaders, response,
+                    statusCode, log));
+    }
+
     return routesUtils.responseNoBody(errors.NotImplemented, null, response,
         200, log);
 }
