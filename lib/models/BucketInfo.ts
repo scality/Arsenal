@@ -172,7 +172,6 @@ export default class BucketInfo {
         serverSideEncryption: SSE,
         versioningConfiguration: VersioningConfiguration,
         locationConstraint: string,
-        quota: number | 0,
         websiteConfiguration?: WebsiteConfiguration | null,
         cors?: CORS,
         replicationConfiguration?: any,
@@ -188,6 +187,7 @@ export default class BucketInfo {
         notificationConfiguration?: any,
         tags?: Array<BucketTag> | [],
         capabilities?: Capabilities,
+        quota?: number | 0,
     ) {
         assert.strictEqual(typeof name, 'string');
         assert.strictEqual(typeof owner, 'string');
@@ -228,9 +228,6 @@ export default class BucketInfo {
         }
         if (locationConstraint) {
             assert.strictEqual(typeof locationConstraint, 'string');
-        }
-        if (quota) {
-            assert.strictEqual(typeof quota, 'number');
         }
         if (ingestionConfig) {
             assert.strictEqual(typeof ingestionConfig, 'object');
@@ -291,6 +288,9 @@ export default class BucketInfo {
             tags = [] as BucketTag[];
         }
         assert.strictEqual(areTagsValid(tags), true);
+        if (quota) {
+            assert.strictEqual(typeof quota, 'number');
+        }
 
         // IF UPDATING PROPERTIES, INCREMENT MODELVERSION NUMBER ABOVE
         this._acl = aclInstance;
@@ -536,22 +536,6 @@ export default class BucketInfo {
      */
     setLifecycleConfiguration(lifecycleConfiguration: any) {
         this._lifecycleConfiguration = lifecycleConfiguration;
-        return this;
-    }
-    /**
-     * Get the bucket quota information
-     * @return quota
-     */
-    getQuota() {
-        return this._quota;
-    }
-    /**
-     * Set bucket quota
-     * @param quota - bucket policy
-     * @return - bucket quota info
-     */
-    setQuota(quota: number) {
-        this._quota = quota;
         return this;
     }
     /**
@@ -962,6 +946,24 @@ export default class BucketInfo {
      */
     setCapabilities(capabilities: Capabilities) {
         this._capabilities = capabilities;
+        return this;
+    }
+
+    /**
+     * Get the bucket quota information
+     * @return quota
+     */
+    getQuota() {
+        return this._quota;
+    }
+    
+    /**
+     * Set bucket quota
+     * @param quota - bucket policy
+     * @return - bucket quota info
+     */
+    setQuota(quota: number) {
+        this._quota = quota;
         return this;
     }
 }

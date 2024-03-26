@@ -228,6 +228,8 @@ const testBucketCapabilities = {
     },
 };
 
+const testBucketQuota = 100000;
+
 // create a dummy bucket to test getters and setters
 Object.keys(acl).forEach(
     aclObj => describe(`different acl configurations : ${aclObj}`, () => {
@@ -252,6 +254,7 @@ Object.keys(acl).forEach(
             testNotificationConfiguration,
             testBucketTagging,
             testBucketCapabilities,
+            testBucketQuota,
         );
 
         describe('serialize/deSerialize on BucketInfo class', () => {
@@ -290,6 +293,7 @@ Object.keys(acl).forEach(
                     notificationConfiguration: dummyBucket._notificationConfiguration,
                     tags: dummyBucket._tags,
                     capabilities: dummyBucket._capabilities,
+                    quota: dummyBucket._quota,
                 };
                 assert.strictEqual(serialized, JSON.stringify(bucketInfos));
                 done();
@@ -339,6 +343,7 @@ Object.keys(acl).forEach(
                         dummyBucket._notificationConfiguration,
                     _tags: dummyBucket._tags,
                     _capabilities: dummyBucket._capabilities,
+                    _quota: dummyBucket._quota,
                 };
                 const fromObj = BucketInfo.fromObj(dataObj);
                 assert(fromObj instanceof BucketInfo);
@@ -693,6 +698,12 @@ Object.keys(acl).forEach(
                 dummyBucket.setCapabilities(testCapabilities);
                 assert.deepStrictEqual(
                     dummyBucket.getCapabilities(), testCapabilities);
+            });
+            if('setQuota should set bucket quota', () => {
+                const testQuota = testBucketQuota;
+                dummyBucket.setQuota(testQuota);
+                assert.deepStrictEqual(
+                    dummyBucket.getQuota(), testQuota);
             });
         });
     }),

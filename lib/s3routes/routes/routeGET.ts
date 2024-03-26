@@ -61,7 +61,7 @@ export default function routerGET(
         } else if (query.search !== undefined) {
             call('metadataSearch')
         } else if (query.quota !== undefined) {
-            call('getBucketQuota');
+            call('bucketGetQuota');
         } else {
             // GET bucket
             call('bucketGet');
