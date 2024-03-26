@@ -254,6 +254,7 @@ Used to store bucket tagging
 ```javascript
 this._quota = quota || 0;
 ```
+
 ### Usage
 
 Used to store bucket quota
