@@ -699,7 +699,7 @@ Object.keys(acl).forEach(
                 assert.deepStrictEqual(
                     dummyBucket.getCapabilities(), testCapabilities);
             });
-            if('setQuota should set bucket quota', () => {
+            it('setQuota should set bucket quota', () => {
                 const testQuota = testBucketQuota;
                 dummyBucket.setQuota(testQuota);
                 assert.deepStrictEqual(
