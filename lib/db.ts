@@ -148,7 +148,7 @@ export class IndexTransaction {
                 'missing condition for conditional put'
             );
         }
-        if (typeof condition.notExists !== 'string') {
+        if (typeof condition.notExists !== 'string' && typeof condition.exists !== 'string') {
             throw propError(
                 'unsupportedConditionalOperation',
                 'missing key or supported condition'
