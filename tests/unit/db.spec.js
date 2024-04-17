@@ -53,7 +53,7 @@ function checkKeyNotExistsInDB(db, key, cb) {
             return cb(err);
         }
         if (value) {
-            return cb(errors.PreconditionFailed);
+            return cb(errors.EntityAlreadyExists);
         }
         return cb();
     });
@@ -437,7 +437,7 @@ describe('IndexTransaction', () => {
                 value: value3,
             });
             return transaction.commit(err => {
-                if (!err || !err.is.PreconditionFailed) {
+                if (!err || !err.is.EntityAlreadyExists) {
                     return done(new Error('should not be able to conditional put for duplicate key'));
                 }
                 return async.parallel([
