@@ -59,6 +59,15 @@ function checkKeyNotExistsInDB(db, key, cb) {
     });
 }
 
+function checkKeyExistsInDB(db, key, callback) {
+    return db.get(key, err => {
+        if (err) {
+            return callback(err.notFound ? errors.NoSuchEntity : err);
+        }
+        return callback();
+    });
+}
+
 class ConditionalLevelDB {
     constructor() {
         this.db = createDb();
@@ -69,6 +78,9 @@ class ConditionalLevelDB {
             switch (true) {
             case ('notExists' in cond):
                 checkKeyNotExistsInDB(this.db, cond.notExists, asyncCallback);
+                break;
+            case ('exists' in cond):
+                checkKeyExistsInDB(this.db, cond.exists, asyncCallback);
                 break;
             default:
                 asyncCallback(new Error('unsupported conditional operation'));
@@ -457,11 +469,87 @@ describe('IndexTransaction', () => {
     it('should not allow batch operation with unsupported condition', done => {
         const transaction = new IndexTransaction();
         try {
-            transaction.addCondition({ exists: key1 });
+            transaction.addCondition({ like: key1 });
             done(new Error('should fail for unsupported condition, currently supported - notExists'));
         } catch (err) {
             assert.strictEqual(err.unsupportedConditionalOperation, true);
             done();
         }
+    });
+
+    it('should allow batch operation if key specified in exits condition is present in db', done => {
+        const db = new ConditionalLevelDB();
+        const { client } = db;
+        let transaction = new IndexTransaction(db);
+        transaction.put(key1, value1);
+        return async.series([
+            next => transaction.commit(next),
+            next => client.get(key1, next),
+        ], err => {
+            assert.ifError(err);
+            // create new transaction as previous transaction is already committed
+            transaction = new IndexTransaction(db);
+            transaction.addCondition({ exists: key1 });
+            transaction.push({
+                type: 'put',
+                key: key1,
+                value: value2,
+            });
+            return async.series([
+                next => transaction.commit(next),
+                next => client.get(key1, next),
+            ], (err, res) => {
+                assert.ifError(err);
+                assert.strictEqual(res[1], value2);
+                return done();
+            });
+        });
+    });
+
+    it('should not allow batch operation with key spefified in exists condition is not in db', done => {
+        const db = new ConditionalLevelDB();
+        const { client } = db;
+        const transaction = new IndexTransaction(db);
+        transaction.addCondition({ exists: key1 });
+        transaction.push({
+            type: 'put',
+            key: key1,
+            value: value1,
+        });
+        return transaction.commit(err => {
+            assert.strictEqual(err && err.NoSuchEntity, true);
+            return checkKeyNotExistsInDB(client, key1, done);
+        });
+    });
+
+    it('should handle batch operations with multiple conditions correctly', done => {
+        const db = new ConditionalLevelDB();
+        const { client } = db;
+        let transaction = new IndexTransaction(db);
+        transaction.put(key1, value1);
+        return async.series([
+            next => transaction.commit(next),
+            next => client.get(key1, next),
+        ], err => {
+            assert.ifError(err);
+            // create new transaction as previous transaction is already committed
+            transaction = new IndexTransaction(db);
+            transaction.addCondition({ exists: key1 });
+            transaction.addCondition({ notExists: key2 });
+            transaction.push({
+                type: 'put',
+                key: key1,
+                value: value2,
+            });
+
+            return async.series([
+                next => transaction.commit(next),
+                next => client.get(key1, next),
+            ], (err, res) => {
+                assert.ifError(err);
+                assert.strictEqual(res[1], value2);
+                return done();
+            });
+        });
     });
 });
