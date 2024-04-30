@@ -246,3 +246,15 @@ For capacity-enabled buckets, contains the following data:
 ### Usage
 
 Used to store bucket tagging
+
+## Model version 17
+
+### Properties Added
+
+```javascript
+this._quotaMax = quotaMax || 0;
+```
+
+### Usage
+
+Used to store bucket quota
