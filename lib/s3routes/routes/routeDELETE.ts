@@ -43,6 +43,8 @@ export default function routeDELETE(
             return call('bucketDeleteEncryption');
         } else if (query?.tagging !== undefined) {
             return call('bucketDeleteTagging');
+        } else if (query?.quota !== undefined) {
+            return call('bucketDeleteQuota');
         }
         call('bucketDelete');
     } else {

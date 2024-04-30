@@ -105,6 +105,13 @@ export default function routePUT(
                     return routesUtils.responseNoBody(err, corsHeaders,
                         response, 200, log);
                 });
+        } else if (query.quota !== undefined) {
+            api.callApiMethod('bucketUpdateQuota', request, response,
+                log, (err, resHeaders) => {
+                    routesUtils.statsReport500(err, statsClient);
+                    return routesUtils.responseNoBody(err, resHeaders, response,
+                        200, log);
+                });
         } else {
             // PUT bucket
             return api.callApiMethod('bucketPut', request, response, log,
