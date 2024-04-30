@@ -1042,3 +1042,10 @@ export const AuthMethodNotImplemented: ErrorFormat = {
     description: 'AuthMethodNotImplemented',
     code: 501,
 };
+
+// --------------------- quotaErros ---------------------
+
+export const NoSuchQuota: ErrorFormat = {
+    code: 404,
+    description: 'The specified resource does not have a quota.',
+};

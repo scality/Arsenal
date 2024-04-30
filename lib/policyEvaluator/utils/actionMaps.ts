@@ -158,6 +158,9 @@ const actionMonitoringMapS3 = {
     objectPutTagging: 'PutObjectTagging',
     objectRestore: 'RestoreObject',
     serviceGet: 'ListBuckets',
+    bucketGetQuota: 'GetBucketQuota',
+    bucketUpdateQuota: 'UpdateBucketQuota',
+    bucketDeleteQuota: 'DeleteBucketQuota', 
 };
 
 const actionMapAccountQuotas = {
