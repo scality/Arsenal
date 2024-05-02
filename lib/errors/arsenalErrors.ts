@@ -1049,3 +1049,8 @@ export const NoSuchQuota: ErrorFormat = {
     code: 404,
     description: 'The specified resource does not have a quota.',
 };
+
+export const QuotaExceeded: ErrorFormat = {
+    code: 429,
+    description: 'The quota set for the resource is exceeded.',
+};
