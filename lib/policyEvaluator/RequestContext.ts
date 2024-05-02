@@ -15,10 +15,35 @@ import {
     actionMapScuba,
 } from './utils/actionMaps';
 
-const _actionNeedQuotaCheck = {
+export const actionNeedQuotaCheck = {
     objectPut: true,
+    objectPutVersion: true,
     objectPutPart: true,
+    objectRestore: true,
 };
+
+/**
+ * This variable describes APIs that change the bytes
+ * stored, requiring quota updates
+ */
+export const actionWithDataDeletion = {
+    objectDelete: true,
+    objectDeleteVersion: true,
+    multipartDelete: true,
+    multiObjectDelete: true,
+};
+
+/**
+ * The function returns true if the current API call is a copy object
+ * and the action requires a quota evaluation logic, post retrieval
+ * of the object metadata.
+ * @param {string} action - the action being performed
+ * @param {string} currentApi - the current API being called
+ * @return {boolean} - whether the action requires a quota check
+ */
+export function actionNeedQuotaCheckCopy(action: string, currentApi: string) {
+    return action === 'objectGet' && (currentApi === 'objectCopy' || currentApi === 'objectPutCopyPart');
+}
 
 function _findAction(service: string, method: string) {
     switch (service) {
@@ -231,7 +256,8 @@ export default class RequestContext {
         this._securityToken = securityToken;
         this._policyArn = policyArn;
         this._action = action;
-        this._needQuota = _actionNeedQuotaCheck[apiMethod] === true;
+        this._needQuota = actionNeedQuotaCheck[apiMethod] === true
+            || actionWithDataDeletion[apiMethod] === true;
         this._requestObjTags = requestObjTags || null;
         this._existingObjTag = existingObjTag || null;
         this._needTagEval = needTagEval || false;
