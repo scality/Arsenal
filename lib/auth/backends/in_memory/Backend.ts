@@ -161,6 +161,10 @@ class InMemoryBackend extends BaseBackend {
         };
         return cb(null, vaultReturnObject);
     }
+
+    report(log: Logger, callback: any) {
+        return callback(null, {});
+    }
 }
 
 

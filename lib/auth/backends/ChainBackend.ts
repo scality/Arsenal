@@ -212,4 +212,22 @@ export default class ChainBackend extends BaseBackend {
             return callback(null, res);
         });
     }
+
+    report(reqUid: string, callback: any) {
+        this._forEachClient((client, done) =>
+            client.report(reqUid, done),
+            (err, res) => {
+                if (err) {
+                    return callback(err);
+                }
+                const mergedRes = res.reduce((acc, val) => {
+                    Object.keys(val).forEach(k => {
+                        acc[k] = val[k];
+                    });
+                    return acc;
+                }, {});
+
+                return callback(null, mergedRes);
+            });
+    }
 }

@@ -14,7 +14,7 @@ function vaultSignatureCb(
     err: Error | null,
     authInfo: { message: { body: any } },
     log: Logger,
-    callback: (err: Error | null, data?: any, results?: any, params?: any) => void,
+    callback: (err: Error | null, data?: any, results?: any, params?: any, infos?: any) => void,
     streamingV4Params?: any
 ) {
     // vaultclient API guarantees that it returns:
@@ -38,7 +38,9 @@ function vaultSignatureCb(
     }
     // @ts-ignore
     log.addDefaultFields(auditLog);
-    return callback(null, userInfo, authorizationResults, streamingV4Params);
+    return callback(null, userInfo, authorizationResults, streamingV4Params, {
+        accountQuota: info.accountQuota || {},
+    });
 }
 
 export type AuthV4RequestParams = {
@@ -382,6 +384,21 @@ export default class Vault {
                 body: obj,
             };
             return callback(null, respBody);
+        });
+    }
+
+    report(log: Logger, callback: (err: Error | null, data?: any) => void) {
+        // call the report function of the client
+        if (!this.client.report) {
+            return callback(null, {});
+        }
+        // @ts-ignore
+        return this.client.report(log.getSerializedUids(), (err: Error | null, obj?: any) => {
+            if (err) {
+                log.debug(`error from ${this.implName}`, { error: err });
+                return callback(err);
+            }
+            return callback(null, obj);
         });
     }
 }
