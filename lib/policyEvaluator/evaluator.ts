@@ -168,6 +168,7 @@ export function meetConditions(
             // reference_policies_multi-value-conditions.html)
             let keyBasedOnRequestContext =
                 findConditionKey(transformedKey, requestContext);
+            log.trace(`keyBasedOnRequestContext ${keyBasedOnRequestContext}`);
             // Handle IfExists and negation operators
             if ((keyBasedOnRequestContext === undefined ||
                 keyBasedOnRequestContext === null) &&
@@ -179,6 +180,7 @@ export function meetConditions(
             // If no IfExists qualifier, the key does not exist and the
             // condition operator is not Null, the
             // condition is not met so return false.
+            log.trace(`bareOperator ${bareOperator}`);
             if ((keyBasedOnRequestContext === null ||
                 keyBasedOnRequestContext === undefined) &&
                 bareOperator !== 'Null') {
