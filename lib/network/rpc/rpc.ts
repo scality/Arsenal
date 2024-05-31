@@ -135,6 +135,7 @@ export class BaseClient extends EventEmitter {
     getCallTimeout() {
         return this.callTimeoutMs;
     }
+
     setCallTimeout(newTimeoutMs: number) {
         this.callTimeoutMs = newTimeoutMs;
     }
@@ -290,7 +291,7 @@ export class BaseService {
         namespace: string;
         logger: Logger;
         apiVersion?: string;
-        server: any;
+        server?: any;
     }) {
         const { namespace, logger, apiVersion, server } = params;
         assert(namespace);
@@ -493,10 +494,11 @@ export function RPCServer(params: {
     logger: Logger;
     streamMaxPendingAck?: number;
     streamAckTimeoutMs?: number;
+    httpServer?: http.Server;
 }) {
     assert(params.logger);
 
-    const httpServer = http.createServer();
+    const httpServer = params.httpServer ? params.httpServer : http.createServer();
     const server = new IOServer(httpServer, { maxHttpBufferSize: 1e8 });
     const log = params.logger;
 
