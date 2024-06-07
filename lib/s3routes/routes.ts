@@ -270,8 +270,10 @@ export default function routes(
         });
         // @ts-ignore
         parentSpan.setAttribute('aws.s3.bucket', req.bucketName);
+        parentSpan.setAttribute('aws.s3.request_id', reqUids);
         // @ts-ignore
         span.setAttribute('aws.s3.bucket', req.bucketName);
+        span.setAttribute('aws.s3.request_id', reqUids);
         // @ts-ignore
         if(req.objectKey){
             // @ts-ignore
@@ -285,9 +287,7 @@ export default function routes(
             parentSpan.updateName(`${req.method} ${req.bucketName}`);
         }
         // span.setAttribute('aws.s3.upload_id', req.query.uploadId);
-        span.setAttribute('aws.s3.request_id', reqUids);
-        console.log(`req: `, req);
-        console.log(`res: `, res);
+        
 
         // @ts-ignore
         const { error, method } = checkUnsupportedRoutes(req.method, req.query);
@@ -315,11 +315,6 @@ export default function routes(
             return routeWebsite(req, res, api, log, statsClient, dataRetrievalParams);
         }
         span.end();
-        console.log(`span.end() req: `, req);
-        console.log(`span.end() res: `, res);
-        console.log(`span.end() api: `, api);
-        console.log(`span.end() statsClient: `, statsClient);
-        console.log(`span.end() dataRetrievalParams: `, dataRetrievalParams);
         return method(req, res, api, log, statsClient, dataRetrievalParams, tracer);
     });
 }

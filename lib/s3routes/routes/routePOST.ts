@@ -10,6 +10,7 @@ export default function routePOST(
     response: http.ServerResponse,
     api: { callApiMethod: routesUtils.CallApiMethod },
     log: RequestLogger,
+    tracer?: any,
 ) {
     log.debug('routing request', { method: 'routePOST' });
 

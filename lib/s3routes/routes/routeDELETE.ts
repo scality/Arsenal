@@ -11,6 +11,7 @@ export default function routeDELETE(
     api: { callApiMethod: routesUtils.CallApiMethod },
     log: RequestLogger,
     statsClient?: StatsClient,
+    tracer?: any,
 ) {
     const call = (name: string) => {
         return api.callApiMethod(name, request, response, log, (err, corsHeaders) => {

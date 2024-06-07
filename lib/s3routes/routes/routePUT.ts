@@ -11,6 +11,7 @@ export default function routePUT(
     api: { callApiMethod: routesUtils.CallApiMethod },
     log: RequestLogger,
     statsClient?: StatsClient,
+    tracer?: any,
 ) {
     log.debug('routing request', { method: 'routePUT' });
 

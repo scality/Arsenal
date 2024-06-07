@@ -11,6 +11,7 @@ export default function routeHEAD(
     api: { callApiMethod: routesUtils.CallApiMethod },
     log: RequestLogger,
     statsClient?: StatsClient,
+    tracer?: any,
 ) {
     log.debug('routing request', { method: 'routeHEAD' });
     const { bucketName, objectKey } = request as any
