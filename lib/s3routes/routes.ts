@@ -1,5 +1,4 @@
 import assert from 'assert';
-import oTel from '@opentelemetry/api'
 
 import { RequestLogger } from 'werelogs';
 
@@ -173,6 +172,7 @@ export type Params = {
  * data retrieval function
  * @param logger - werelogs logger instance
  * @param [s3config] - s3 configuration
+ * @param [tracer] - opentelemetry tracer
  */
 export default function routes(
     req: http.IncomingMessage,
@@ -180,8 +180,8 @@ export default function routes(
     params: Params,
     logger: RequestLogger,
     s3config?: any,
+    tracer?: any,
 ) {
-    const tracer = oTel.trace.getTracer('cloudserver');
     return tracer.startActiveSpan('arsenal routes', span => {
         checkTypes(req, res, params, logger);
         const {
