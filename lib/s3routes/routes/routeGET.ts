@@ -19,10 +19,10 @@ export default function routerGET(
     const { bucketName, objectKey, query } = request as any
 
     const call = (name: string) => {
-        api.callApiMethod(name, request, response, log, (err, xml, corsHeaders, tracer) => {
+        api.callApiMethod(name, request, response, log, (err, xml, corsHeaders) => {
             routesUtils.statsReport500(err, statsClient);
             return routesUtils.responseXMLBody(err, xml, response, log, corsHeaders);
-        }, tracer);
+        });
     }
 
     if (bucketName === undefined && objectKey !== undefined) {

@@ -184,8 +184,12 @@ export default function routes(
     parentSpan?: any,
     tracer?: any,
 ) {
-    parentSpan.addEvent('I am INSIDE ROUTES OF ARSENAL');
-    return tracer.startActiveSpan('arsenal::routes() validate request', span => {
+    parentSpan.addEvent('arsenal:: Validating and processing request');
+    return tracer.startActiveSpan('arsenal: validate request', span => {
+        span.setAttribute('code.function', 'routes');
+        span.setAttribute('code.filepath', 'arsenal/lib/s3routes/routes.ts');
+        span.setAttribute('code.lineno', 191);
+        span.addEvent('arsenal::routes() Validating and processing request');
         checkTypes(req, res, params, logger);
         const {
             api,
@@ -265,15 +269,25 @@ export default function routes(
             bodyLength: parseInt(req.headers['content-length'], 10) || 0,
         });
         // @ts-ignore
-        parentSpan.setAttribute('s3.bucket_name', req.bucketName);
+        parentSpan.setAttribute('aws.s3.bucket', req.bucketName);
         // @ts-ignore
-        parentSpan.setAttribute('s3.object_key', req.objectKey);
+        span.setAttribute('aws.s3.bucket', req.bucketName);
         // @ts-ignore
-        parentSpan.updateName(`${req.method} ${req.bucketName}/${req.objectKey}`);
-        // @ts-ignore
-        span.setAttribute("s3.bucket_name", req.bucketName);
-        // @ts-ignore
-        span.setAttribute("s3.object_key", req.objectKey);
+        if(req.objectKey){
+            // @ts-ignore
+            parentSpan.setAttribute('aws.s3.key', req.objectKey);
+            // @ts-ignore
+            parentSpan.updateName(`${req.method} ${req.bucketName}/${req.objectKey}`);
+            // @ts-ignore
+            span.setAttribute("aws.s3.key", req.objectKey);
+        } else {
+            // @ts-ignore
+            parentSpan.updateName(`${req.method} ${req.bucketName}`);
+        }
+        // span.setAttribute('aws.s3.upload_id', req.query.uploadId);
+        span.setAttribute('aws.s3.request_id', reqUids);
+        console.log(`req: `, req);
+        console.log(`res: `, res);
 
         // @ts-ignore
         const { error, method } = checkUnsupportedRoutes(req.method, req.query);
@@ -301,6 +315,11 @@ export default function routes(
             return routeWebsite(req, res, api, log, statsClient, dataRetrievalParams);
         }
         span.end();
+        console.log(`span.end() req: `, req);
+        console.log(`span.end() res: `, res);
+        console.log(`span.end() api: `, api);
+        console.log(`span.end() statsClient: `, statsClient);
+        console.log(`span.end() dataRetrievalParams: `, dataRetrievalParams);
         return method(req, res, api, log, statsClient, dataRetrievalParams, tracer);
     });
 }
