@@ -1,6 +1,7 @@
 import assert from 'assert';
 
 import { RequestLogger } from 'werelogs';
+const opentelemetry = require('@opentelemetry/api');
 
 import errors from '../errors';
 import routeGET from './routes/routeGET';
@@ -182,7 +183,9 @@ export default function routes(
     s3config?: any,
     tracer?: any,
 ) {
-    return tracer.startActiveSpan('arsenal routes', span => {
+    const parentSpan = opentelemetry.trace.getActiveSpan(opentelemetry.context.active());
+        parentSpan.addEvent('I am INSIDE ROUTES OF ARSENAL');
+    return tracer.startActiveSpan('arsenal::routes() validate request', span => {
         checkTypes(req, res, params, logger);
         const {
             api,
@@ -261,6 +264,11 @@ export default function routes(
             // @ts-ignore
             bodyLength: parseInt(req.headers['content-length'], 10) || 0,
         });
+        parentSpan.setAttribute('s3.bucket_name', req.bucketName);
+        parentSpan.setAttribute('s3.object_key', req.objectKey);
+        parentSpan.updateName(`${req.method} ${req.bucketName}/${req.objectKey}`);
+        span.setAttribute("s3.bucket_name", req.bucketName);
+        span.setAttribute("s3.object_key", req.objectKey);
 
         // @ts-ignore
         const { error, method } = checkUnsupportedRoutes(req.method, req.query);
