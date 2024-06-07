@@ -18,6 +18,7 @@
   "homepage": "https://github.com/scality/Arsenal#readme",
   "dependencies": {
     "@js-sdsl/ordered-set": "^4.4.2",
+    "@opentelemetry/api": "^1.9.0",
     "@types/async": "^3.2.12",
     "@types/utf8": "^3.0.1",
     "JSONStream": "^1.0.0",
