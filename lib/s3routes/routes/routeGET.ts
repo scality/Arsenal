@@ -12,16 +12,17 @@ export default function routerGET(
     log: RequestLogger,
     statsClient?: StatsClient,
     dataRetrievalParams?: any,
+    tracer?: any,
 ) {
     log.debug('routing request', { method: 'routerGET' });
 
     const { bucketName, objectKey, query } = request as any
 
     const call = (name: string) => {
-        api.callApiMethod(name, request, response, log, (err, xml, corsHeaders) => {
+        api.callApiMethod(name, request, response, log, (err, xml, corsHeaders, tracer) => {
             routesUtils.statsReport500(err, statsClient);
             return routesUtils.responseXMLBody(err, xml, response, log, corsHeaders);
-        });
+        }, tracer);
     }
 
     if (bucketName === undefined && objectKey !== undefined) {

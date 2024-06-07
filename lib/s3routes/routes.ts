@@ -301,6 +301,6 @@ export default function routes(
             return routeWebsite(req, res, api, log, statsClient, dataRetrievalParams);
         }
         span.end();
-        return method(req, res, api, log, statsClient, dataRetrievalParams);
+        return method(req, res, api, log, statsClient, dataRetrievalParams, tracer);
     });
 }
