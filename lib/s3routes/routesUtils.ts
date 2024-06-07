@@ -16,6 +16,7 @@ export type CallApiMethod = (
     response: http.ServerResponse,
     log: RequestLogger,
     callback: (err: ArsenalError | null, ...data: any[]) => void,
+    tracer?: any,
 ) => void;
 
 /**

@@ -22,7 +22,7 @@ export default function routerGET(
         api.callApiMethod(name, request, response, log, (err, xml, corsHeaders) => {
             routesUtils.statsReport500(err, statsClient);
             return routesUtils.responseXMLBody(err, xml, response, log, corsHeaders);
-        });
+        }, tracer);
     }
 
     if (bucketName === undefined && objectKey !== undefined) {
@@ -91,7 +91,7 @@ export default function routerGET(
                     return routesUtils.responseStreamData(err, query,
                         resMetaHeaders, dataGetInfo, dataRetrievalParams, response,
                         range, log);
-                });
+                }, tracer);
         }
     }
 }
