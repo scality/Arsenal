@@ -181,9 +181,9 @@ export default function routes(
     params: Params,
     logger: RequestLogger,
     s3config?: any,
+    parentSpan?: any,
     tracer?: any,
 ) {
-    const parentSpan = tracer.getActiveSpan(opentelemetry.context.active());
     parentSpan.addEvent('I am INSIDE ROUTES OF ARSENAL');
     return tracer.startActiveSpan('arsenal::routes() validate request', span => {
         checkTypes(req, res, params, logger);
