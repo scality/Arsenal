@@ -264,10 +264,15 @@ export default function routes(
             // @ts-ignore
             bodyLength: parseInt(req.headers['content-length'], 10) || 0,
         });
+        // @ts-ignore
         parentSpan.setAttribute('s3.bucket_name', req.bucketName);
+        // @ts-ignore
         parentSpan.setAttribute('s3.object_key', req.objectKey);
+        // @ts-ignore
         parentSpan.updateName(`${req.method} ${req.bucketName}/${req.objectKey}`);
+        // @ts-ignore
         span.setAttribute("s3.bucket_name", req.bucketName);
+        // @ts-ignore
         span.setAttribute("s3.object_key", req.objectKey);
 
         // @ts-ignore
