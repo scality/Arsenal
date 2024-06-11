@@ -173,6 +173,7 @@ export type Params = {
  * data retrieval function
  * @param logger - werelogs logger instance
  * @param [s3config] - s3 configuration
+ * @param [parentSpan] - server span from cloudserver with context
  * @param [tracer] - opentelemetry tracer
  */
 export default function routes(
@@ -184,12 +185,11 @@ export default function routes(
     parentSpan?: any,
     tracer?: any,
 ) {
-    parentSpan.addEvent('arsenal:: Validating and processing request');
-    return tracer.startActiveSpan('arsenal: validate request', span => {
-        span.setAttribute('code.function', 'routes');
-        span.setAttribute('code.filepath', 'arsenal/lib/s3routes/routes.ts');
-        span.setAttribute('code.lineno', 191);
-        span.addEvent('arsenal::routes() Validating and processing request');
+    parentSpan.addEvent('Arsenal::routes() Validating and processing request');
+    return tracer.startActiveSpan('Arsenal:: validate request', requestValidatorSpan => {
+        requestValidatorSpan.setAttribute('code.function', 'routes');
+        requestValidatorSpan.setAttribute('code.filepath', 'arsenal/lib/s3routes/routes.ts');
+        requestValidatorSpan.setAttribute('code.lineno', 192);
         checkTypes(req, res, params, logger);
         const {
             api,
@@ -270,21 +270,27 @@ export default function routes(
         });
         // @ts-ignore
         parentSpan.setAttribute('aws.s3.bucket', req.bucketName);
+        // @ts-ignore
+        parentSpan.setAttribute('aws.s3.key', req.objectKey);
         parentSpan.setAttribute('aws.s3.request_id', reqUids);
         // @ts-ignore
-        span.setAttribute('aws.s3.bucket', req.bucketName);
-        span.setAttribute('aws.s3.request_id', reqUids);
+        requestValidatorSpan.setAttribute('aws.s3.bucket', req.bucketName);
+        // @ts-ignore
+        requestValidatorSpan.setAttribute("aws.s3.key", req.objectKey);
+        requestValidatorSpan.setAttribute('aws.s3.request_id', reqUids);
+        // TODO: Use this due to high cardinality
+        // parentSpan.updateName(`${req.method}`);
         // @ts-ignore
         if(req.objectKey){
             // @ts-ignore
-            parentSpan.setAttribute('aws.s3.key', req.objectKey);
-            // @ts-ignore
             parentSpan.updateName(`${req.method} ${req.bucketName}/${req.objectKey}`);
             // @ts-ignore
-            span.setAttribute("aws.s3.key", req.objectKey);
-        } else {
+        } else if (req.bucketName){
             // @ts-ignore
             parentSpan.updateName(`${req.method} ${req.bucketName}`);
+        } else {
+            // @ts-ignore
+            parentSpan.updateName(`${req.method}`);
         }
         // span.setAttribute('aws.s3.upload_id', req.query.uploadId);
         
@@ -308,13 +314,13 @@ export default function routes(
                 { error: bucketOrKeyError });
             return routesUtils.responseXMLBody(bucketOrKeyError, null, res, log);
         }
-
+        requestValidatorSpan.addEvent('Arsenal::routes() Request Validated Successfully');
+        requestValidatorSpan.end();
         // bucket website request
         // @ts-ignore
         if (websiteEndpoints && websiteEndpoints.indexOf(req.parsedHost) > -1) {
             return routeWebsite(req, res, api, log, statsClient, dataRetrievalParams);
         }
-        span.end();
         return method(req, res, api, log, statsClient, dataRetrievalParams, tracer);
     });
 }
