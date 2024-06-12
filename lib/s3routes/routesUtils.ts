@@ -372,6 +372,7 @@ function retrieveData(
         responseDestroyed = true;
         if (apiSpan) {
             apiSpan.addEvent('response closed by client request');
+            apiSpan.end();
         }
         if (currentStream) {
             currentStream.destroy();
@@ -420,6 +421,9 @@ function retrieveData(
                 }
                 // readable stream successfully consumed
                 readable.on('end', () => {
+                    if (apiSpan) {
+                        apiSpan.addEvent('Streamed object from Sproxyd');
+                    }
                     currentStream = null;
                     log.debug('readable stream end reached');
                     return next();
@@ -427,7 +431,8 @@ function retrieveData(
                 // errors on server side with readable stream
                 readable.on('error', err => {
                     if (apiSpan) {
-                        apiSpan.addEvent('Steamed the object completely');
+                        apiSpan.addEvent('Unable to stream object from Sproxyd');
+                        apiSpan.end();
                     }
                     log.error('error piping data from source');
                     _destroyResponse();
@@ -654,7 +659,8 @@ export function responseStreamData(
     }
     response.on('finish', () => {
         // TODO ARSN-216 Fix logger
-        apiSpan.addEvent('Sending response to Client');
+        apiSpan.addEvent('Sending response to Client');\
+        apiSpan.end();
         // @ts-expect-error
         log.end().info('responded with streamed content', {
             httpCode: response.statusCode,
