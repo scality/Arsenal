@@ -95,7 +95,7 @@ export default function routerGET(
                         contentLength = resMetaHeaders['Content-Length'];
                     }
                     // TODO ARSN-216 Fix logger
-                    apiSpan.addEvent('Fetching data using sproxyd')
+                    apiSpan.addEvent('Located Data')
                     // @ts-ignore
                     log.end().addDefaultFields({ contentLength });
                     routesUtils.statsReport500(err, statsClient);

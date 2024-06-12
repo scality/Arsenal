@@ -353,6 +353,7 @@ function retrieveData(
     log: RequestLogger,
     apiSpan?: any,
     callApiMethodSpan?: any,
+    tracer?: any,
 ) {
     if (locations.length === 0) {
         return response.end();
@@ -392,69 +393,76 @@ function retrieveData(
     } = retrieveDataParams;
     const data = new DataWrapper(
         client, implName, config, kms, metadata, locStorageCheckFn, vault);
-    return eachSeries(locations,
-        (current, next) => data.get(current, response, log,
-            (err: any, readable: http.IncomingMessage) => {
-                if (apiSpan) {
-                    apiSpan.addEvent('Got the object from Sproxyd');
-                }
-                // NB: readable is of IncomingMessage type
-                if (err) {
-                    log.error('failed to get object', {
-                        error: err,
-                        method: 'retrieveData',
-                    });
-                    _destroyResponse();
-                    return next(err);
-                }
-                // response.isclosed is set by the S3 server. Might happen if
-                // the S3-client closes the connection before the first request
-                // to the backend is started.
-                // @ts-expect-error
-                if (responseDestroyed || response.isclosed) {
-                    log.debug(
-                        'response destroyed before readable could stream');
-                    readable.destroy();
-                    const responseErr = new Error();
-                    // @ts-ignore
-                    responseErr.code = 'ResponseError';
-                    responseErr.message = 'response closed by client request before all data sent';
-                    return next(responseErr);
-                }
-                // readable stream successfully consumed
-                readable.on('end', () => {
+    return tracer.startActiveSpan('Getting Data using sproxyd', dataSpan => {
+        dataSpan.setAttribute('code.function', 'retrieveData');
+        dataSpan.setAttribute('code.filepath', 'lib/s3routes/routesUtils.js');
+        dataSpan.setAttribute('code.lineno', 400);
+        return eachSeries(locations,
+            (current, next) => data.get(current, response, log,
+                (err: any, readable: http.IncomingMessage) => {
                     if (apiSpan) {
-                        apiSpan.addEvent('Streamed object from Sproxyd');
+                        apiSpan.addEvent('generated a stream');
                     }
-                    currentStream = null;
-                    log.debug('readable stream end reached');
-                    return next();
-                });
-                // errors on server side with readable stream
-                readable.on('error', err => {
-                    if (apiSpan) {
-                        apiSpan.addEvent('Unable to stream object from Sproxyd');
-                        apiSpan.end();
-                        callApiMethodSpan.end();
+                    // NB: readable is of IncomingMessage type
+                    if (err) {
+                        log.error('failed to get object', {
+                            error: err,
+                            method: 'retrieveData',
+                        });
+                        _destroyResponse();
+                        return next(err);
                     }
-                    log.error('error piping data from source');
-                    _destroyResponse();
-                    return next(err);
-                });
-                currentStream = readable;
-                return readable.pipe(response, { end: false });
-            }), err => {
-            currentStream = null;
-            if (err) {
-                log.debug('abort response due to error', {
+                    // response.isclosed is set by the S3 server. Might happen if
+                    // the S3-client closes the connection before the first request
+                    // to the backend is started.
                     // @ts-expect-error
-                    error: err.code, errMsg: err.message });
-            }
-            // call end for all cases (error/success) per node.js docs
-            // recommendation
-            response.end();
-        },
-    );
+                    if (responseDestroyed || response.isclosed) {
+                        log.debug(
+                            'response destroyed before readable could stream');
+                        readable.destroy();
+                        const responseErr = new Error();
+                        // @ts-ignore
+                        responseErr.code = 'ResponseError';
+                        responseErr.message = 'response closed by client request before all data sent';
+                        return next(responseErr);
+                    }
+                    // readable stream successfully consumed
+                    readable.on('end', () => {
+                        if (apiSpan) {
+                            apiSpan.addEvent('Readable stream successfully consumed');
+                        }
+                        dataSpan.end();
+                        currentStream = null;
+                        log.debug('readable stream end reached');
+                        return next();
+                    });
+                    // errors on server side with readable stream
+                    readable.on('error', err => {
+                        dataSpan.end();
+                        if (apiSpan) {
+                            apiSpan.addEvent('Unable to stream object from Sproxyd');
+                            apiSpan.end();
+                            callApiMethodSpan.end();
+                        }
+                        log.error('error piping data from source');
+                        _destroyResponse();
+                        return next(err);
+                    });
+                    currentStream = readable;
+                    return readable.pipe(response, { end: false });
+                }), err => {
+                currentStream = null;
+                if (err) {
+                    log.debug('abort response due to error', {
+                        // @ts-expect-error
+                        error: err.code, errMsg: err.message });
+                }
+                // call end for all cases (error/success) per node.js docs
+                // recommendation
+                response.end();
+            },
+        );
+    })
 }
 
 function _responseBody(
@@ -671,7 +679,7 @@ export function responseStreamData(
             httpCode: response.statusCode,
         });
     });
-    return retrieveData(dataLocations, retrieveDataParams, response, log, apiSpan, callApiMethodSpan);
+    return retrieveData(dataLocations, retrieveDataParams, response, log, apiSpan, callApiMethodSpan, tracer);
 }
 
 /**
