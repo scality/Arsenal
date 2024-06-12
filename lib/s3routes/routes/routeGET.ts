@@ -23,7 +23,7 @@ export default function routerGET(
     const call = (name: string) => {
         const action = actionMonitoringMapS3[name];
         // @ts-ignore
-        parentSpanFromCloudserver.updateName(`${action} in bucket: ${request.bucketName}`);
+        parentSpanFromCloudserver.updateName(`${action} API${request.bucketName ? ` with bucket: ${request.bucketName}` : ''}`);
         api.callApiMethod(name, request, response, log, (err, xml, corsHeaders) => {
             routesUtils.statsReport500(err, statsClient);
             return routesUtils.responseXMLBody(err, xml, response, log, corsHeaders);

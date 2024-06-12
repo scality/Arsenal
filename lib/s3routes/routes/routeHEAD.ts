@@ -23,7 +23,7 @@ export default function routeHEAD(
             null, response, log);
     } else if (objectKey === undefined) {
         // HEAD bucket
-        parentSpanFromCloudserver.updateName(`HeadBucket in bucket: ${bucketName}`);
+        parentSpanFromCloudserver.updateName(`HeadBucket API with bucket: ${bucketName}`);
         api.callApiMethod('bucketHead', request, response, log,
             (err, corsHeaders) => {
                 routesUtils.statsReport500(err, statsClient);
@@ -32,7 +32,7 @@ export default function routeHEAD(
             }, tracer);
     } else {
         // HEAD object
-        parentSpanFromCloudserver.updateName(`HeadObject in bucket: ${bucketName}`);
+        parentSpanFromCloudserver.updateName(`HeadObject API with bucket: ${bucketName}`);
         api.callApiMethod('objectHead', request, response, log,
             (err, resHeaders) => {
                 routesUtils.statsReport500(err, statsClient);
