@@ -26,7 +26,7 @@ export default function routeHEAD(
                 routesUtils.statsReport500(err, statsClient);
                 return routesUtils.responseNoBody(err, corsHeaders, response,
                     200, log);
-            });
+            }, tracer);
     } else {
         // HEAD object
         api.callApiMethod('objectHead', request, response, log,
@@ -34,6 +34,6 @@ export default function routeHEAD(
                 routesUtils.statsReport500(err, statsClient);
                 return routesUtils.responseContentHeaders(err, {}, resHeaders,
                     response, log);
-            });
+            }, tracer);
     }
 }
