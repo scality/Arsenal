@@ -4,6 +4,7 @@ import * as routesUtils from '../routesUtils';
 import errors from '../../errors';
 import * as http from 'http';
 import StatsClient from '../../metrics/StatsClient';
+import { actionMonitoringMapS3 } from '../../policyEvaluator/utils/actionMaps';
 
 export default function routerGET(
     request: http.IncomingMessage,
@@ -20,8 +21,9 @@ export default function routerGET(
     const { bucketName, objectKey, query } = request as any
 
     const call = (name: string) => {
+        const action = actionMonitoringMapS3[name];
         // @ts-ignore
-        parentSpanFromCloudserver.updateName(`${name} in bucket: ${request.bucketName}`);
+        parentSpanFromCloudserver.updateName(`${action} in bucket: ${request.bucketName}`);
         api.callApiMethod(name, request, response, log, (err, xml, corsHeaders) => {
             routesUtils.statsReport500(err, statsClient);
             return routesUtils.responseXMLBody(err, xml, response, log, corsHeaders);
