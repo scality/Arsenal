@@ -24,6 +24,8 @@ export default function routerGET(
         const action = actionMonitoringMapS3[name];
         // @ts-ignore
         parentSpanFromCloudserver.updateName(`${action} API${request.bucketName ? ` with bucket: ${request.bucketName}` : ''}`);
+        parentSpanFromCloudserver.setAttribute('aws.request_id', log.getUids()[0]);
+        parentSpanFromCloudserver.setAttribute('rpc.method', action);
         api.callApiMethod(name, request, response, log, (err, xml, corsHeaders) => {
             routesUtils.statsReport500(err, statsClient);
             return routesUtils.responseXMLBody(err, xml, response, log, corsHeaders);
