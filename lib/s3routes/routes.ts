@@ -304,7 +304,6 @@ export default function routes(
             // @ts-ignore
             return routesUtils.responseXMLBody(error, '', res, log);
         }
-        const actionLog = actionMonitoringMapS3[method];
 
         // @ts-ignore
         const bucketOrKeyError = checkBucketAndKey(req.bucketName, req.objectKey,
