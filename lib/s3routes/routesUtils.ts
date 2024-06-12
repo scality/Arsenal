@@ -351,6 +351,7 @@ function retrieveData(
     retrieveDataParams: any,
     response: http.ServerResponse,
     log: RequestLogger,
+    apiSpan?: any,
 ) {
     if (locations.length === 0) {
         return response.end();
@@ -369,6 +370,9 @@ function retrieveData(
     // the S3-client might close the connection while we are processing it
     response.once('close', () => {
         responseDestroyed = true;
+        if (apiSpan) {
+            apiSpan.addEvent('response closed by client request');
+        }
         if (currentStream) {
             currentStream.destroy();
         }
@@ -388,6 +392,9 @@ function retrieveData(
     return eachSeries(locations,
         (current, next) => data.get(current, response, log,
             (err: any, readable: http.IncomingMessage) => {
+                if (apiSpan) {
+                    apiSpan.addEvent('Got the object from Sproxyd');
+                }
                 // NB: readable is of IncomingMessage type
                 if (err) {
                     log.error('failed to get object', {
@@ -419,6 +426,9 @@ function retrieveData(
                 });
                 // errors on server side with readable stream
                 readable.on('error', err => {
+                    if (apiSpan) {
+                        apiSpan.addEvent('Steamed the object completely');
+                    }
                     log.error('error piping data from source');
                     _destroyResponse();
                     return next(err);
@@ -606,7 +616,10 @@ export function responseStreamData(
     response: http.ServerResponse,
     range: [number, number] | undefined,
     log: RequestLogger,
+    apiSpan?: any,
+    tracer?: any,
 ) {
+    apiSpan.addEvent('Getting Data from Sproxyd');
     if (errCode && !response.headersSent) {
         return XMLResponseBackend.errorResponse(errCode, response, log,
             resHeaders);
@@ -641,12 +654,13 @@ export function responseStreamData(
     }
     response.on('finish', () => {
         // TODO ARSN-216 Fix logger
+        apiSpan.addEvent('Sending response to Client');
         // @ts-expect-error
         log.end().info('responded with streamed content', {
             httpCode: response.statusCode,
         });
     });
-    return retrieveData(dataLocations, retrieveDataParams, response, log);
+    return retrieveData(dataLocations, retrieveDataParams, response, log, apiSpan);
 }
 
 /**

@@ -89,18 +89,19 @@ export default function routerGET(
             parentSpanFromCloudserver.setAttribute('aws.request_id', log.getUids()[0]);
             parentSpanFromCloudserver.setAttribute('rpc.method', 'GetObject');
             api.callApiMethod('objectGet', request, response, log,
-                (err, dataGetInfo, resMetaHeaders, range) => {
+                (err, dataGetInfo, resMetaHeaders, range, apiSpan) => {
                     let contentLength = 0;
                     if (resMetaHeaders && resMetaHeaders['Content-Length']) {
                         contentLength = resMetaHeaders['Content-Length'];
                     }
                     // TODO ARSN-216 Fix logger
+                    apiSpan.addEvent('Fetching data using sproxyd')
                     // @ts-ignore
                     log.end().addDefaultFields({ contentLength });
                     routesUtils.statsReport500(err, statsClient);
                     return routesUtils.responseStreamData(err, query,
                         resMetaHeaders, dataGetInfo, dataRetrievalParams, response,
-                        range, log);
+                        range, log, apiSpan, tracer);
                 }, tracer);
         }
     }
