@@ -659,7 +659,7 @@ export function responseStreamData(
     }
     response.on('finish', () => {
         // TODO ARSN-216 Fix logger
-        apiSpan.addEvent('Sending response to Client');\
+        apiSpan.addEvent('Sending response to Client');
         apiSpan.end();
         // @ts-expect-error
         log.end().info('responded with streamed content', {
