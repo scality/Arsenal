@@ -85,6 +85,9 @@ export default function routerGET(
             call('objectGetRetention');
         } else {
             // GET object
+            parentSpanFromCloudserver.updateName(`GetObject API with bucket: ${bucketName}`);
+            parentSpanFromCloudserver.setAttribute('aws.request_id', log.getUids()[0]);
+            parentSpanFromCloudserver.setAttribute('rpc.method', 'GetObject');
             api.callApiMethod('objectGet', request, response, log,
                 (err, dataGetInfo, resMetaHeaders, range) => {
                     let contentLength = 0;
