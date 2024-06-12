@@ -89,7 +89,7 @@ export default function routerGET(
             parentSpanFromCloudserver.setAttribute('aws.request_id', log.getUids()[0]);
             parentSpanFromCloudserver.setAttribute('rpc.method', 'GetObject');
             api.callApiMethod('objectGet', request, response, log,
-                (err, dataGetInfo, resMetaHeaders, range, apiSpan) => {
+                (err, dataGetInfo, resMetaHeaders, range, apiSpan, callAPIMethodSpan) => {
                     let contentLength = 0;
                     if (resMetaHeaders && resMetaHeaders['Content-Length']) {
                         contentLength = resMetaHeaders['Content-Length'];
@@ -101,7 +101,7 @@ export default function routerGET(
                     routesUtils.statsReport500(err, statsClient);
                     return routesUtils.responseStreamData(err, query,
                         resMetaHeaders, dataGetInfo, dataRetrievalParams, response,
-                        range, log, apiSpan, tracer);
+                        range, log, apiSpan, callAPIMethodSpan, tracer);
                 }, tracer);
         }
     }
