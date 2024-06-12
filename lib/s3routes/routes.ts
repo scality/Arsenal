@@ -14,8 +14,10 @@ import * as routesUtils from './routesUtils';
 import routeWebsite from './routes/routeWebsite';
 import * as http from 'http';
 import StatsClient from '../metrics/StatsClient';
+import { actionMonitoringMapS3 } from '../policyEvaluator/utils/actionMaps';
 
 import * as requestUtils from '../../lib/policyEvaluator/requestUtils';
+import { policies } from '../..';
 
 const routeMap = {
     GET: routeGET,
@@ -173,7 +175,7 @@ export type Params = {
  * data retrieval function
  * @param logger - werelogs logger instance
  * @param [s3config] - s3 configuration
- * @param [parentSpan] - server span from cloudserver with context
+ * @param [parentSpanFromCloudserver] - server span from cloudserver with context
  * @param [tracer] - opentelemetry tracer
  */
 export default function routes(
@@ -182,10 +184,10 @@ export default function routes(
     params: Params,
     logger: RequestLogger,
     s3config?: any,
-    parentSpan?: any,
+    parentSpanFromCloudserver?: any,
     tracer?: any,
 ) {
-    parentSpan.addEvent('Arsenal::routes() Validating and processing request');
+    parentSpanFromCloudserver.addEvent('Arsenal::routes() Validating and processing request');
     return tracer.startActiveSpan('Using Arsenal to validate request', requestValidatorSpan => {
         requestValidatorSpan.setAttribute('code.function', 'routes');
         requestValidatorSpan.setAttribute('code.filepath', 'arsenal/lib/s3routes/routes.ts');
@@ -269,31 +271,30 @@ export default function routes(
             bodyLength: parseInt(req.headers['content-length'], 10) || 0,
         });
         // @ts-ignore
-        parentSpan.setAttribute('aws.s3.bucket', req.bucketName);
+        parentSpanFromCloudserver.setAttribute('aws.s3.bucket', req.bucketName);
         // @ts-ignore
-        parentSpan.setAttribute('aws.s3.key', req.objectKey);
-        parentSpan.setAttribute('aws.s3.request_id', reqUids);
+        parentSpanFromCloudserver.setAttribute('aws.s3.key', req.objectKey);
+        // parentSpanFromCloudserver.setAttribute('aws.s3.request_id', reqUids);
         // @ts-ignore
         requestValidatorSpan.setAttribute('aws.s3.bucket', req.bucketName);
         // @ts-ignore
         requestValidatorSpan.setAttribute("aws.s3.key", req.objectKey);
-        requestValidatorSpan.setAttribute('aws.s3.request_id', reqUids);
+        // requestValidatorSpan.setAttribute('aws.s3.request_id', reqUids);
         // TODO: Use this due to high cardinality
-        // parentSpan.updateName(`${req.method}`);
+        // parentSpanFromCloudserver.updateName(`${req.method}`);
         // @ts-ignore
-        if(req.objectKey){
-            // @ts-ignore
-            parentSpan.updateName(`${req.method} ${req.bucketName}/${req.objectKey}`);
-            // @ts-ignore
-        } else if (req.bucketName){
-            // @ts-ignore
-            parentSpan.updateName(`${req.method} ${req.bucketName}`);
-        } else {
-            // @ts-ignore
-            parentSpan.updateName(`${req.method}`);
-        }
+        // if(req.objectKey){
+        //     // @ts-ignore
+        //     parentSpanFromCloudserver.updateName(`${req.method} ${req.bucketName}/${req.objectKey}`);
+        //     // @ts-ignore
+        // } else if (req.bucketName){
+        //     // @ts-ignore
+        //     parentSpanFromCloudserver.updateName(`${req.method} ${req.bucketName}`);
+        // } else {
+        //     // @ts-ignore
+        //     parentSpanFromCloudserver.updateName(`${req.method}`);
+        // }
         // span.setAttribute('aws.s3.upload_id', req.query.uploadId);
-        
 
         // @ts-ignore
         const { error, method } = checkUnsupportedRoutes(req.method, req.query);
@@ -303,6 +304,7 @@ export default function routes(
             // @ts-ignore
             return routesUtils.responseXMLBody(error, '', res, log);
         }
+        const actionLog = actionMonitoringMapS3[method];
 
         // @ts-ignore
         const bucketOrKeyError = checkBucketAndKey(req.bucketName, req.objectKey,
@@ -321,6 +323,6 @@ export default function routes(
         if (websiteEndpoints && websiteEndpoints.indexOf(req.parsedHost) > -1) {
             return routeWebsite(req, res, api, log, statsClient, dataRetrievalParams);
         }
-        return method(req, res, api, log, statsClient, dataRetrievalParams, tracer);
+        return method(req, res, api, log, statsClient, dataRetrievalParams, tracer, parentSpanFromCloudserver);
     });
 }
