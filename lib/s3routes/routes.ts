@@ -186,7 +186,7 @@ export default function routes(
     tracer?: any,
 ) {
     parentSpan.addEvent('Arsenal::routes() Validating and processing request');
-    return tracer.startActiveSpan('Arsenal:: validate request', requestValidatorSpan => {
+    return tracer.startActiveSpan('Using Arsenal to validate request', requestValidatorSpan => {
         requestValidatorSpan.setAttribute('code.function', 'routes');
         requestValidatorSpan.setAttribute('code.filepath', 'arsenal/lib/s3routes/routes.ts');
         requestValidatorSpan.setAttribute('code.lineno', 192);
