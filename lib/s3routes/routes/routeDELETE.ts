@@ -53,7 +53,7 @@ export default function routeDELETE(
             return call('objectDeleteTagging');
         }
         parentSpanFromCloudserver.addEvent('Detected Object Delete API request');
-        parentSpanFromCloudserver.updateName(`PutObject API with bucket: ${bucketName}`);
+        parentSpanFromCloudserver.updateName(`DeleteObject API with bucket: ${bucketName}`);
         parentSpanFromCloudserver.setAttribute('aws.request_id', log.getUids()[0]);
         parentSpanFromCloudserver.setAttribute('rpc.method', 'PutObject');
         api.callApiMethod('objectDelete', request, response, log,
