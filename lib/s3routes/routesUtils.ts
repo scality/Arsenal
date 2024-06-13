@@ -392,7 +392,7 @@ function retrieveData(
         locStorageCheckFn,
         vault,
     } = retrieveDataParams;
-    // const ctx = apiSpan.spanContext()
+    // need special context for HTTPs requests going externally from cloudserver
     const ctx = opentelemetry.trace.setSpan(
         opentelemetry.context.active(),
         apiSpan,
@@ -407,9 +407,6 @@ function retrieveData(
         return eachSeries(locations,
             (current, next) => data.get(current, response, log,
                 (err: any, readable: http.IncomingMessage) => {
-                    if (apiSpan) {
-                        apiSpan.addEvent('generated a stream');
-                    }
                     // NB: readable is of IncomingMessage type
                     if (err) {
                         log.error('failed to get object', {
