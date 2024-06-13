@@ -11,7 +11,9 @@ export default function routeDELETE(
     api: { callApiMethod: routesUtils.CallApiMethod },
     log: RequestLogger,
     statsClient?: StatsClient,
+    dataRetrievalParams?: any,
     tracer?: any,
+    parentSpanFromCloudserver?: any,
 ) {
     const call = (name: string) => {
         return api.callApiMethod(name, request, response, log, (err, corsHeaders) => {
@@ -21,7 +23,7 @@ export default function routeDELETE(
     }
     log.debug('routing request', { method: 'routeDELETE' });
 
-    const { query, objectKey } = request as any
+    const { query, objectKey, bucketName } = request as any
     if (query?.uploadId) {
         if (objectKey === undefined) {
             const message = 'A key must be specified';
@@ -50,8 +52,14 @@ export default function routeDELETE(
         if (query?.tagging !== undefined) {
             return call('objectDeleteTagging');
         }
+        parentSpanFromCloudserver.addEvent('Detected Object Delete API request');
+        parentSpanFromCloudserver.updateName(`PutObject API with bucket: ${bucketName}`);
+        parentSpanFromCloudserver.setAttribute('aws.request_id', log.getUids()[0]);
+        parentSpanFromCloudserver.setAttribute('rpc.method', 'PutObject');
         api.callApiMethod('objectDelete', request, response, log,
             (err, corsHeaders) => {
+                parentSpanFromCloudserver.addEvent('DeleteObject API request completed');
+                parentSpanFromCloudserver.end();
                 /*
               * Since AWS expects a 204 regardless of the existence of
               the object, the errors NoSuchKey and NoSuchVersion should not
@@ -64,6 +72,6 @@ export default function routeDELETE(
                 routesUtils.statsReport500(err, statsClient);
                 return routesUtils.responseNoBody(null, corsHeaders, response,
                     204, log);
-            });
+            }, tracer);
     }
 }
