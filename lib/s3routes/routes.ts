@@ -188,6 +188,11 @@ export default function routes(
     tracer?: any,
 ) {
     parentSpanFromCloudserver.addEvent('Arsenal::routes() Validating and processing request');
+    const ctx = opentelemetry.trace.setSpan(
+        opentelemetry.context.active(),
+        parentSpanFromCloudserver,
+    );
+    const spanOptions = { links: [{ context: parentSpanFromCloudserver.spanContext() }] };
     return tracer.startActiveSpan('Using Arsenal to validate request', requestValidatorSpan => {
         requestValidatorSpan.setAttribute('code.function', 'routes');
         requestValidatorSpan.setAttribute('code.filepath', 'arsenal/lib/s3routes/routes.ts');

@@ -232,6 +232,8 @@ export default function routePUT(
             api.callApiMethod('objectPut', request, response, log,
                 (err, resHeaders) => {
                     routesUtils.statsReport500(err, statsClient);
+                    parentSpanFromCloudserver.addEvent('PutObject API request completed');
+                    parentSpanFromCloudserver.end();
                     return routesUtils.responseNoBody(err, resHeaders,
                         response, 200, log);
                 }, tracer);
