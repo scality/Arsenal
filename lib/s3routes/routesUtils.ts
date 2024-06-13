@@ -395,7 +395,7 @@ function retrieveData(
     const data = new DataWrapper(
         client, implName, config, kms, metadata, locStorageCheckFn, vault);
     const spanOptions = { links: [{ context: apiSpan.spanContext() }] };
-    return tracer.startActiveSpan('Getting Data using sproxyd', spanOptions, dataSpan => {
+    return tracer.startActiveSpan('Getting Data using sproxyd', spanOptions, apiSpan.spanContext(), dataSpan => {
         dataSpan.setAttribute('code.function', 'retrieveData');
         dataSpan.setAttribute('code.filepath', 'lib/s3routes/routesUtils.js');
         dataSpan.setAttribute('code.lineno', 400);
