@@ -193,7 +193,7 @@ export default function routes(
         parentSpanFromCloudserver,
     );
     const spanOptions = { links: [{ context: parentSpanFromCloudserver.spanContext() }] };
-    return tracer.startActiveSpan('Using Arsenal to validate request', requestValidatorSpan => {
+    return tracer.startActiveSpan('Using Arsenal to validate request', spanOptions, ctx, requestValidatorSpan => {
         requestValidatorSpan.setAttribute('code.function', 'routes');
         requestValidatorSpan.setAttribute('code.filepath', 'arsenal/lib/s3routes/routes.ts');
         requestValidatorSpan.setAttribute('code.lineno', 192);
