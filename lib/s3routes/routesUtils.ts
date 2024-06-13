@@ -432,10 +432,11 @@ function retrieveData(
                     }
                     // readable stream successfully consumed
                     readable.on('end', () => {
+                        dataSpan.end();
                         if (apiSpan) {
                             apiSpan.addEvent('Readable stream successfully consumed');
+                            apiSpan.end();
                         }
-                        dataSpan.end();
                         currentStream = null;
                         log.debug('readable stream end reached');
                         return next();
@@ -677,7 +678,6 @@ export function responseStreamData(
     }
     response.on('finish', () => {
         // TODO ARSN-216 Fix logger
-        apiSpan.end();
         callApiMethodSpan.addEvent('Sending response to Client');
         callApiMethodSpan.end();
         // @ts-expect-error
