@@ -446,11 +446,13 @@ function retrieveData(
                         if (apiSpan) {
                             apiSpan.addEvent('Unable to stream object from Sproxyd');
                             apiSpan.end();
-                            callApiMethodSpan.end();
                         }
                         log.error('error piping data from source');
                         _destroyResponse();
-                        return next(err);
+                        return process.nextTick(() => {
+                            callApiMethodSpan.end();
+                            return next(err);
+                        });
                     });
                     currentStream = readable;
                     return readable.pipe(response, { end: false });
@@ -675,8 +677,8 @@ export function responseStreamData(
     }
     response.on('finish', () => {
         // TODO ARSN-216 Fix logger
-        apiSpan.addEvent('Sending response to Client');
         apiSpan.end();
+        callApiMethodSpan.addEvent('Sending response to Client');
         callApiMethodSpan.end();
         // @ts-expect-error
         log.end().info('responded with streamed content', {
