@@ -12,8 +12,10 @@ export default function routePUT(
     log: RequestLogger,
     statsClient?: StatsClient,
     tracer?: any,
+    parentSpanFromCloudserver?: any,
 ) {
     log.debug('routing request', { method: 'routePUT' });
+    parentSpanFromCloudserver.addEvent('checking which API to call');
 
     const { objectKey, query, bucketName, parsedContentLength } = request as any
 
@@ -222,12 +224,16 @@ export default function routePUT(
             // TODO ARSN-216 What's happening?
             // @ts-ignore
             log.end().addDefaultFields({ contentLength: request.parsedContentLength });
+            parentSpanFromCloudserver.addEvent('Detected Object Put API request');
+            parentSpanFromCloudserver.updateName(`'PutObject' API with bucket: ${bucketName}`);
+            parentSpanFromCloudserver.setAttribute('aws.request_id', log.getUids()[0]);
+            parentSpanFromCloudserver.setAttribute('rpc.method', 'PutObject');
             api.callApiMethod('objectPut', request, response, log,
                 (err, resHeaders) => {
                     routesUtils.statsReport500(err, statsClient);
                     return routesUtils.responseNoBody(err, resHeaders,
                         response, 200, log);
-                });
+                }, tracer);
         }
     }
     return undefined;

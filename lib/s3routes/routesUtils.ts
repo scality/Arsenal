@@ -432,12 +432,12 @@ function retrieveData(
                     }
                     // readable stream successfully consumed
                     readable.on('end', () => {
+                        currentStream = null;
                         dataSpan.end();
                         if (apiSpan) {
                             apiSpan.addEvent('Readable stream successfully consumed');
                             apiSpan.end();
                         }
-                        currentStream = null;
                         log.debug('readable stream end reached');
                         return next();
                     });
