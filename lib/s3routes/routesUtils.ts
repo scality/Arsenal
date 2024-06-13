@@ -1,6 +1,7 @@
 import * as url from 'url';
 import * as http from 'http';
 import { eachSeries } from 'async';
+const opentelemetry = require('@opentelemetry/api');
 
 import { RequestLogger } from 'werelogs';
 
@@ -391,11 +392,15 @@ function retrieveData(
         locStorageCheckFn,
         vault,
     } = retrieveDataParams;
-    const ctx = apiSpan.spanContext() 
+    // const ctx = apiSpan.spanContext()
+    const ctx = opentelemetry.trace.setSpan(
+        opentelemetry.context.active(),
+        apiSpan,
+    );
     const data = new DataWrapper(
         client, implName, config, kms, metadata, locStorageCheckFn, vault);
     const spanOptions = { links: [{ context: apiSpan.spanContext() }] };
-    return tracer.startActiveSpan('Getting Data using sproxyd', spanOptions, apiSpan.spanContext(), dataSpan => {
+    return tracer.startActiveSpan('Getting Data using sproxyd', spanOptions, ctx, dataSpan => {
         dataSpan.setAttribute('code.function', 'retrieveData');
         dataSpan.setAttribute('code.filepath', 'lib/s3routes/routesUtils.js');
         dataSpan.setAttribute('code.lineno', 400);
