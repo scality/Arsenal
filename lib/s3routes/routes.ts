@@ -150,6 +150,7 @@ export type Params = {
     };
     unsupportedQueries: any;
     api: { callApiMethod: routesUtils.CallApiMethod };
+    oTel?: any,
 }
 
 /** routes - route request to appropriate method
@@ -180,111 +181,132 @@ export default function routes(
     logger: RequestLogger,
     s3config?: any,
 ) {
-    checkTypes(req, res, params, logger);
-
     const {
-        api,
-        internalHandlers,
-        statsClient,
-        allEndpoints,
-        websiteEndpoints,
-        blacklistedPrefixes,
-        dataRetrievalParams,
+        dataRetrievalParams: {
+            oTel: {
+                tracer,
+                activeSpan,
+                activeTracerContext,
+            }
+        } 
     } = params;
+    return tracer.startActiveSpan('Arsenal:: Using arsenal to validate request', undefined, activeTracerContext, arsenalValidatorSpan => {
+        arsenalValidatorSpan.setAttributes({
+            'code.lineno': 177,
+            'code.filename': 'lib/s3routes/routes.ts',
+            'code.function': 'routes()',
+        });
+        checkTypes(req, res, params, logger);
 
-    const clientInfo = {
-        clientIP: requestUtils.getClientIp(req, s3config),
-        clientPort: req.socket.remotePort,
-        httpMethod: req.method,
-        httpURL: req.url,
-        // @ts-ignore
-        endpoint: req.endpoint,
-    };
+        const {
+            api,
+            internalHandlers,
+            statsClient,
+            allEndpoints,
+            websiteEndpoints,
+            blacklistedPrefixes,
+            dataRetrievalParams,
+        } = params;
 
-    let reqUids = req.headers['x-scal-request-uids'];
-    if (reqUids !== undefined && !isValidReqUids(reqUids)) {
-        // simply ignore invalid id (any user can provide an
-        // invalid request ID through a crafted header)
-        reqUids = undefined;
-    }
-    const log = (reqUids !== undefined ?
-        // @ts-ignore
-        logger.newRequestLoggerFromSerializedUids(reqUids) :
-        // @ts-ignore
-        logger.newRequestLogger());
+        const clientInfo = {
+            clientIP: requestUtils.getClientIp(req, s3config),
+            clientPort: req.socket.remotePort,
+            httpMethod: req.method,
+            httpURL: req.url,
+            // @ts-ignore
+            endpoint: req.endpoint,
+        };
 
-    if (!req.url!.startsWith('/_/healthcheck')) {
-        log.info('received request', clientInfo);
-    }
-
-    log.end().addDefaultFields(clientInfo);
-
-    if (req.url!.startsWith('/_/')) {
-        let internalServiceName = req.url!.slice(3);
-        const serviceDelim = internalServiceName.indexOf('/');
-        if (serviceDelim !== -1) {
-            internalServiceName = internalServiceName.slice(0, serviceDelim);
+        let reqUids = req.headers['x-scal-request-uids'];
+        if (reqUids !== undefined && !isValidReqUids(reqUids)) {
+            // simply ignore invalid id (any user can provide an
+            // invalid request ID through a crafted header)
+            reqUids = undefined;
         }
-        if (internalHandlers[internalServiceName] === undefined) {
+        const log = (reqUids !== undefined ?
+            // @ts-ignore
+            logger.newRequestLoggerFromSerializedUids(reqUids) :
+            // @ts-ignore
+            logger.newRequestLogger());
+
+        if (!req.url!.startsWith('/_/healthcheck')) {
+            log.info('received request', clientInfo);
+        }
+
+        log.end().addDefaultFields(clientInfo);
+
+        if (req.url!.startsWith('/_/')) {
+            let internalServiceName = req.url!.slice(3);
+            const serviceDelim = internalServiceName.indexOf('/');
+            if (serviceDelim !== -1) {
+                internalServiceName = internalServiceName.slice(0, serviceDelim);
+            }
+            if (internalHandlers[internalServiceName] === undefined) {
+                activeSpan.recordException(errors.InvalidURI);
+                return routesUtils.responseXMLBody(
+                    errors.InvalidURI, null, res, log);
+            }
+            return internalHandlers[internalServiceName](
+                clientInfo.clientIP, req, res, log, statsClient);
+        }
+
+        if (statsClient) {
+            // report new request for stats
+            statsClient.reportNewRequest('s3');
+        }
+
+        try {
+            const validHosts = allEndpoints.concat(websiteEndpoints);
+            routesUtils.normalizeRequest(req, validHosts);
+        } catch (err: any) {
+            activeSpan.recordException(errors.InvalidURI.customizeDescription('Could not parse the ' +
+                'specified URI. Check your restEndpoints configuration.'));
+            log.debug('could not normalize request', { error: err.stack });
             return routesUtils.responseXMLBody(
-                errors.InvalidURI, null, res, log);
+                errors.InvalidURI.customizeDescription('Could not parse the ' +
+                    'specified URI. Check your restEndpoints configuration.'),
+                null, res, log);
         }
-        return internalHandlers[internalServiceName](
-            clientInfo.clientIP, req, res, log, statsClient);
-    }
 
-    if (statsClient) {
-        // report new request for stats
-        statsClient.reportNewRequest('s3');
-    }
+        log.addDefaultFields({
+            // @ts-ignore
+            bucketName: req.bucketName,
+            // @ts-ignore
+            objectKey: req.objectKey,
+            // @ts-ignore
+            bytesReceived: req.parsedContentLength || 0,
+            // @ts-ignore
+            bodyLength: parseInt(req.headers['content-length'], 10) || 0,
+        });
 
-    try {
-        const validHosts = allEndpoints.concat(websiteEndpoints);
-        routesUtils.normalizeRequest(req, validHosts);
-    } catch (err: any) {
-        log.debug('could not normalize request', { error: err.stack });
-        return routesUtils.responseXMLBody(
-            errors.InvalidURI.customizeDescription('Could not parse the ' +
-                'specified URI. Check your restEndpoints configuration.'),
-            null, res, log);
-    }
+        // @ts-ignore
+        const { error, method } = checkUnsupportedRoutes(req.method, req.query);
 
-    log.addDefaultFields({
+        if (error) {
+            activeSpan.recordException(error);
+            log.trace('error validating route or uri params', { error });
+            // @ts-ignore
+            return routesUtils.responseXMLBody(error, '', res, log);
+        }
+
         // @ts-ignore
-        bucketName: req.bucketName,
+        const bucketOrKeyError = checkBucketAndKey(req.bucketName, req.objectKey,
+            // @ts-ignore
+            req.method, req.query, blacklistedPrefixes, log);
+
+        if (bucketOrKeyError) {
+            activeSpan.recordException(bucketOrKeyError)
+            log.trace('error with bucket or key value',
+                { error: bucketOrKeyError });
+            return routesUtils.responseXMLBody(bucketOrKeyError, null, res, log);
+        }
+
+        // bucket website request
         // @ts-ignore
-        objectKey: req.objectKey,
-        // @ts-ignore
-        bytesReceived: req.parsedContentLength || 0,
-        // @ts-ignore
-        bodyLength: parseInt(req.headers['content-length'], 10) || 0,
+        if (websiteEndpoints && websiteEndpoints.indexOf(req.parsedHost) > -1) {
+            return routeWebsite(req, res, api, log, statsClient, dataRetrievalParams);
+        }
+        arsenalValidatorSpan.end();
+        return method(req, res, api, log, statsClient, dataRetrievalParams);
     });
-
-    // @ts-ignore
-    const { error, method } = checkUnsupportedRoutes(req.method, req.query);
-
-    if (error) {
-        log.trace('error validating route or uri params', { error });
-        // @ts-ignore
-        return routesUtils.responseXMLBody(error, '', res, log);
-    }
-
-    // @ts-ignore
-    const bucketOrKeyError = checkBucketAndKey(req.bucketName, req.objectKey,
-        // @ts-ignore
-        req.method, req.query, blacklistedPrefixes, log);
-
-    if (bucketOrKeyError) {
-        log.trace('error with bucket or key value',
-            { error: bucketOrKeyError });
-        return routesUtils.responseXMLBody(bucketOrKeyError, null, res, log);
-    }
-
-    // bucket website request
-    // @ts-ignore
-    if (websiteEndpoints && websiteEndpoints.indexOf(req.parsedHost) > -1) {
-        return routeWebsite(req, res, api, log, statsClient, dataRetrievalParams);
-    }
-
-    return method(req, res, api, log, statsClient, dataRetrievalParams);
 }

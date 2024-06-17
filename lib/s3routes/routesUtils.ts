@@ -1,6 +1,7 @@
 import * as url from 'url';
 import * as http from 'http';
 import { eachSeries } from 'async';
+const opentelemetry = require('@opentelemetry/api');
 
 import { RequestLogger } from 'werelogs';
 
@@ -16,6 +17,10 @@ export type CallApiMethod = (
     response: http.ServerResponse,
     log: RequestLogger,
     callback: (err: ArsenalError | null, ...data: any[]) => void,
+    cloudserverApiSpan?: any,
+    activeSpan?: any,
+    activeTracerContext?: any,
+    tracer?: any,
 ) => void;
 
 /**
@@ -350,6 +355,10 @@ function retrieveData(
     retrieveDataParams: any,
     response: http.ServerResponse,
     log: RequestLogger,
+    sproxydSpan?: any,
+    activeSpan?: any,
+    activeTracerContext?: any,
+    tracer?: any,
 ) {
     if (locations.length === 0) {
         return response.end();
@@ -367,6 +376,8 @@ function retrieveData(
     };
     // the S3-client might close the connection while we are processing it
     response.once('close', () => {
+        activeSpan.addEvent('response closed by client request');
+        sproxydSpan?.end();
         responseDestroyed = true;
         if (currentStream) {
             currentStream.destroy();
@@ -384,58 +395,71 @@ function retrieveData(
     } = retrieveDataParams;
     const data = new DataWrapper(
         client, implName, config, kms, metadata, locStorageCheckFn, vault);
-    return eachSeries(locations,
-        (current, next) => data.get(current, response, log,
-            (err: any, readable: http.IncomingMessage) => {
-                // NB: readable is of IncomingMessage type
-                if (err) {
-                    log.error('failed to get object', {
-                        error: err,
-                        method: 'retrieveData',
-                    });
-                    _destroyResponse();
-                    return next(err);
-                }
-                // response.isclosed is set by the S3 server. Might happen if
-                // the S3-client closes the connection before the first request
-                // to the backend is started.
-                // @ts-expect-error
-                if (responseDestroyed || response.isclosed) {
-                    log.debug(
-                        'response destroyed before readable could stream');
-                    readable.destroy();
-                    const responseErr = new Error();
-                    // @ts-ignore
-                    responseErr.code = 'ResponseError';
-                    responseErr.message = 'response closed by client request before all data sent';
-                    return next(responseErr);
-                }
-                // readable stream successfully consumed
-                readable.on('end', () => {
-                    currentStream = null;
-                    log.debug('readable stream end reached');
-                    return next();
-                });
-                // errors on server side with readable stream
-                readable.on('error', err => {
-                    log.error('error piping data from source');
-                    _destroyResponse();
-                    return next(err);
-                });
-                currentStream = readable;
-                return readable.pipe(response, { end: false });
-            }), err => {
-            currentStream = null;
-            if (err) {
-                log.debug('abort response due to error', {
+    return tracer.startActiveSpan('Arsenal:: Starting the process of getting data from sproxyd', dataSpan => {
+        dataSpan.setAttributes({
+            'code.function': 'Arsenal:: retrieveData()',
+            'code.filepath': 'lib/s3routes/routesUtils.js',
+            'code.lineno': 349,
+        });
+        return eachSeries(locations,
+            (current, next) => data.get(current, response, log,
+                (err: any, readable: http.IncomingMessage) => {
+                    // NB: readable is of IncomingMessage type
+                    if (err) {
+                        log.error('failed to get object', {
+                            error: err,
+                            method: 'retrieveData',
+                        });
+                        _destroyResponse();
+                        return next(err);
+                    }
+                    // response.isclosed is set by the S3 server. Might happen if
+                    // the S3-client closes the connection before the first request
+                    // to the backend is started.
                     // @ts-expect-error
-                    error: err.code, errMsg: err.message });
-            }
-            // call end for all cases (error/success) per node.js docs
-            // recommendation
-            response.end();
-        },
-    );
+                    if (responseDestroyed || response.isclosed) {
+                        log.debug(
+                            'response destroyed before readable could stream');
+                        readable.destroy();
+                        const responseErr = new Error();
+                        // @ts-ignore
+                        responseErr.code = 'ResponseError';
+                        responseErr.message = 'response closed by client request before all data sent';
+                        return next(responseErr);
+                    }
+                    // readable stream successfully consumed
+                    readable.on('end', () => {
+                        sproxydSpan?.addEvent('Readable stream successfully consumed');
+                        dataSpan.end();
+                        sproxydSpan?.end();
+                        currentStream = null;
+                        log.debug('readable stream end reached');
+                        return next();
+                    });
+                    // errors on server side with readable stream
+                    readable.on('error', err => {
+                        activeSpan.recordException(err);
+                        dataSpan.end();
+                        sproxydSpan?.end();
+                        log.error('error piping data from source');
+                        _destroyResponse();
+                        return next(err);
+                    });
+                    currentStream = readable;
+                    return readable.pipe(response, { end: false });
+                }), err => {
+                currentStream = null;
+                if (err) {
+                    log.debug('abort response due to error', {
+                        // @ts-expect-error
+                        error: err.code, errMsg: err.message });
+                }
+                // call end for all cases (error/success) per node.js docs
+                // recommendation
+                response.end();
+            },
+        );
+    });
 }
 
 function _responseBody(
@@ -606,46 +630,62 @@ export function responseStreamData(
     range: [number, number] | undefined,
     log: RequestLogger,
 ) {
-    if (errCode && !response.headersSent) {
-        return XMLResponseBackend.errorResponse(errCode, response, log,
-            resHeaders);
-    }
-    if (dataLocations !== null && !response.headersSent) {
-        // sanity check of content length against individual data
-        // locations to fetch
-        const contentLength = resHeaders && resHeaders['Content-Length'];
-        if (contentLength !== undefined &&
-            !_contentLengthMatchesLocations(contentLength,
-                dataLocations)) {
-            log.error('logic error: total length of fetched data ' +
-                      'locations does not match returned content-length',
-            { contentLength, dataLocations });
-            return XMLResponseBackend.errorResponse(errors.InternalError,
-                response, log,
+    const{
+        oTel: {
+            tracer,
+            activeSpan,
+            activeTracerContext,
+        },
+    }   = retrieveDataParams;
+    activeSpan.addEvent('Request processes, getting Data from sproxyd');
+    return tracer.startActiveSpan('Arsenal:: Getting data from sproxyd', undefined, activeTracerContext, sproxydSpan => {
+        sproxydSpan.setAttributes({
+            'code.function': 'Arsenal:: responseStreamData()',
+            'code.filepath': 'lib/s3routes/routesUtils.js',
+            'code.lineno': 609,
+        })
+        if (errCode && !response.headersSent) {
+            return XMLResponseBackend.errorResponse(errCode, response, log,
                 resHeaders);
         }
-    }
-    if (!response.headersSent) {
-        okContentHeadersResponse(overrideParams, resHeaders, response,
-            range, log);
-    }
-    if (dataLocations === null || _computeContentLengthFromLocation(dataLocations) === 0) {
-        return response.end(() => {
+        if (dataLocations !== null && !response.headersSent) {
+            // sanity check of content length against individual data
+            // locations to fetch
+            const contentLength = resHeaders && resHeaders['Content-Length'];
+            if (contentLength !== undefined &&
+                !_contentLengthMatchesLocations(contentLength,
+                    dataLocations)) {
+                log.error('logic error: total length of fetched data ' +
+                          'locations does not match returned content-length',
+                { contentLength, dataLocations });
+                return XMLResponseBackend.errorResponse(errors.InternalError,
+                    response, log,
+                    resHeaders);
+            }
+        }
+        if (!response.headersSent) {
+            okContentHeadersResponse(overrideParams, resHeaders, response,
+                range, log);
+        }
+        if (dataLocations === null || _computeContentLengthFromLocation(dataLocations) === 0) {
+            return response.end(() => {
+                // TODO ARSN-216 Fix logger
+                // @ts-expect-error
+                log.end().info('responded with only metadata', {
+                    httpCode: response.statusCode,
+                });
+            });
+        }
+        response.on('finish', () => {
             // TODO ARSN-216 Fix logger
+            activeSpan.addEvent('Data retrieved from sproxyd and sending response to client');
             // @ts-expect-error
-            log.end().info('responded with only metadata', {
+            log.end().info('responded with streamed content', {
                 httpCode: response.statusCode,
             });
         });
-    }
-    response.on('finish', () => {
-        // TODO ARSN-216 Fix logger
-        // @ts-expect-error
-        log.end().info('responded with streamed content', {
-            httpCode: response.statusCode,
-        });
+        return retrieveData(dataLocations, retrieveDataParams, response, log, sproxydSpan, activeSpan, activeTracerContext, tracer);
     });
-    return retrieveData(dataLocations, retrieveDataParams, response, log);
 }
 
 /**
@@ -666,18 +706,26 @@ export function streamUserErrorPage(
     corsHeaders: { [key: string]: string },
     log: RequestLogger,
 ) {
+    const{
+        oTel: {
+            tracer,
+            activeSpan,
+            activeTracerContext,
+        },
+    }   = retrieveDataParams;
     setCommonResponseHeaders(corsHeaders, response, log);
     response.setHeader('x-amz-error-code', err.message);
     response.setHeader('x-amz-error-message', err.description);
     response.writeHead(err.code, { 'Content-type': 'text/html' });
     response.on('finish', () => {
         // TODO ARSN-216 Fix logger
+        activeSpan.recordException(err);
         // @ts-expect-error
         log.end().info('responded with streamed content', {
             httpCode: response.statusCode,
         });
     });
-    return retrieveData(dataLocations, retrieveDataParams, response, log);
+    return retrieveData(dataLocations, retrieveDataParams, response, log, undefined, activeSpan, activeTracerContext, tracer);
 }
 
 /**

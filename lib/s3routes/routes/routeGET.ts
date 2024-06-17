@@ -4,6 +4,7 @@ import * as routesUtils from '../routesUtils';
 import errors from '../../errors';
 import * as http from 'http';
 import StatsClient from '../../metrics/StatsClient';
+import { actionMonitoringMapS3 } from '../../policyEvaluator/utils/actionMaps';
 
 export default function routerGET(
     request: http.IncomingMessage,
@@ -13,14 +14,35 @@ export default function routerGET(
     statsClient?: StatsClient,
     dataRetrievalParams?: any,
 ) {
+    const{
+        oTel: {
+            tracer,
+            activeSpan,
+            activeTracerContext,
+        }
+     } = dataRetrievalParams;
+    activeSpan.addEvent('Request validated, routing request using routeGet()in arsenal')
     log.debug('routing request', { method: 'routerGET' });
 
     const { bucketName, objectKey, query } = request as any
 
     const call = (name: string) => {
-        api.callApiMethod(name, request, response, log, (err, xml, corsHeaders) => {
-            routesUtils.statsReport500(err, statsClient);
-            return routesUtils.responseXMLBody(err, xml, response, log, corsHeaders);
+        const action = actionMonitoringMapS3[name];
+        // @ts-ignore
+        activeSpan.updateName(`${action} API${request.bucketName ? ` with bucket: ${request.bucketName}` : ''}`);
+        activeSpan.setAttribute('aws.request_id', log.getUids()[0]);
+        return tracer.startActiveSpan('Cloudserver, Vault, Metadata and internal API operations', undefined, activeTracerContext, cloudserverApiSpan => {
+            cloudserverApiSpan.setAttributes({
+                'code.lineno': 37,
+                'code.filename': 'lib/s3routes/routes/routeGET.ts',
+                'code.funtion': 'routerGET()',
+            })
+            return api.callApiMethod(name, request, response, log, (err, xml, corsHeaders) => {
+                activeSpan.addEvent('Sending response to client')
+                cloudserverApiSpan.end();
+                routesUtils.statsReport500(err, statsClient);
+                return routesUtils.responseXMLBody(err, xml, response, log, corsHeaders);
+            }, cloudserverApiSpan, activeSpan, activeTracerContext, tracer);
         });
     }
 
@@ -77,20 +99,32 @@ export default function routerGET(
             call('objectGetRetention');
         } else {
             // GET object
-            api.callApiMethod('objectGet', request, response, log,
-                (err, dataGetInfo, resMetaHeaders, range) => {
-                    let contentLength = 0;
-                    if (resMetaHeaders && resMetaHeaders['Content-Length']) {
-                        contentLength = resMetaHeaders['Content-Length'];
-                    }
-                    // TODO ARSN-216 Fix logger
-                    // @ts-ignore
-                    log.end().addDefaultFields({ contentLength });
-                    routesUtils.statsReport500(err, statsClient);
-                    return routesUtils.responseStreamData(err, query,
-                        resMetaHeaders, dataGetInfo, dataRetrievalParams, response,
-                        range, log);
-                });
+            activeSpan.updateName(`GetObject API with bucket: ${bucketName}`);
+            activeSpan.setAttribute('aws.request_id', log.getUids()[0]);
+            activeSpan.setAttribute('rpc.method', 'GetObject');
+            return tracer.startActiveSpan('Arsenal:: Cloudserver, Vault, Metadata and internal API operations', undefined, activeTracerContext, cloudserverApiSpan => {
+                api.callApiMethod('objectGet', request, response, log,
+                    (err, dataGetInfo, resMetaHeaders, range) => {
+                        cloudserverApiSpan.setAttributes({
+                            'code.lineno': 104,
+                            'code.filename': 'lib/s3routes/routes/routeGET.ts',
+                            'code.funtion': 'Arsenal:: routerGET()',
+                        });
+                        activeSpan.addEvent('Located Data')
+                        cloudserverApiSpan.end();
+                        let contentLength = 0;
+                        if (resMetaHeaders && resMetaHeaders['Content-Length']) {
+                            contentLength = resMetaHeaders['Content-Length'];
+                        }
+                        // TODO ARSN-216 Fix logger
+                        // @ts-ignore
+                        log.end().addDefaultFields({ contentLength });
+                        routesUtils.statsReport500(err, statsClient);
+                        return routesUtils.responseStreamData(err, query,
+                            resMetaHeaders, dataGetInfo, dataRetrievalParams, response,
+                            range, log);
+                    }, cloudserverApiSpan, activeSpan, activeTracerContext, tracer);
+            });
         }
     }
 }
