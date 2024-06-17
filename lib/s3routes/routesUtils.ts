@@ -637,7 +637,7 @@ export function responseStreamData(
             activeTracerContext,
         },
     }   = retrieveDataParams;
-    activeSpan.addEvent('Request processes, getting Data from sproxyd');
+    activeSpan.addEvent('Request processed, getting Data from sproxyd');
     return tracer.startActiveSpan('Arsenal:: Getting data from sproxyd', undefined, activeTracerContext, sproxydSpan => {
         sproxydSpan.setAttributes({
             'code.function': 'Arsenal:: responseStreamData()',
