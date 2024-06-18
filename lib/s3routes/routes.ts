@@ -284,7 +284,8 @@ export default function routes(
             // @ts-ignore
             'aws.s3.key': req.objectKey,
             // @ts-ignore
-            'aws.s3.request_id': log.getUids().join(':'),
+            'aws.request_id': log.getUids().join(':'),
+            'rpc.service': 'S3',
         });
 
         // @ts-ignore
