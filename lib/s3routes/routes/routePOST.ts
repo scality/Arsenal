@@ -21,7 +21,6 @@ export default function routePOST(
             activeTracerContext,
         }
     } = dataRetrievalParams;
-    activeSpan.setAttribute('rpc.service', 'S3');
     return tracer.startActiveSpan('Arsenal:: Performing Post API related operations using Cloudserver, Vault and Metadata', undefined, activeTracerContext, cloudserverApiSpan => {
         activeSpan.addEvent('Request validated, routing request using routePOST() in arsenal');
         cloudserverApiSpan.setAttributes({
@@ -61,7 +60,6 @@ export default function routePOST(
         if (query.uploads !== undefined) {
             activeSpan.updateName(`CreateMultipartUpload API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
             activeSpan.addEvent(`Detected CreateMultipartUpload API request`);
-            activeSpan.setAttribute('aws.request_id', log.getUids()[0]);
             activeSpan.setAttribute('rpc.method', 'CreateMultipartUpload');
             return api.callApiMethod('initiateMultipartUpload', request,
                 response, log, (err, result, corsHeaders) => {
@@ -82,7 +80,6 @@ export default function routePOST(
         if (query.uploadId !== undefined) {
             activeSpan.updateName(`CompleteMultipartUpload API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
             activeSpan.addEvent(`Detected CompleteMultipartUpload API request`);
-            activeSpan.setAttribute('aws.request_id', log.getUids()[0]);
             activeSpan.setAttribute('rpc.method', 'CompleteMultipartUpload');
             return api.callApiMethod('completeMultipartUpload', request,
                 response, log, (err, result, resHeaders) => {
@@ -103,7 +100,6 @@ export default function routePOST(
         if (query.delete !== undefined) {
             activeSpan.updateName(`AbortMultipartUpload API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
             activeSpan.addEvent(`Detected AbortMultipartUpload API request`);
-            activeSpan.setAttribute('aws.request_id', log.getUids()[0]);
             activeSpan.setAttribute('rpc.method', 'AbortMultipartUpload');
             return api.callApiMethod('multiObjectDelete', request, response,
                 log, (err, xml, corsHeaders) => {

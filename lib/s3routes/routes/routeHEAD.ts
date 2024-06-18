@@ -20,7 +20,6 @@ export default function routeHEAD(
             activeTracerContext,
         }
     } = dataRetrievalParams;
-    activeSpan.setAttribute('rpc.service', 'S3');
     return tracer.startActiveSpan('Arsenal:: Performing Head API related operations using Cloudserver, Vault and Metadata', undefined, activeTracerContext, cloudserverApiSpan => {
         activeSpan.addEvent('Request validated, routing request using routeHEAD() in arsenal');
         cloudserverApiSpan.setAttributes({
@@ -40,7 +39,6 @@ export default function routeHEAD(
         } else if (objectKey === undefined) {
             activeSpan.updateName(`HeadBucket API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
             activeSpan.addEvent(`Detected HeadBucket API request`);
-            activeSpan.setAttribute('aws.request_id', log.getUids()[0]);
             activeSpan.setAttribute('rpc.method', 'HeadBucket');
             // HEAD bucket
             api.callApiMethod('bucketHead', request, response, log,
@@ -64,7 +62,6 @@ export default function routeHEAD(
             // HEAD object
             activeSpan.updateName(`HeadObject API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
             activeSpan.addEvent(`Detected HeadObject API request`);
-            activeSpan.setAttribute('aws.request_id', log.getUids()[0]);
             activeSpan.setAttribute('rpc.method', 'HeadObject');
             api.callApiMethod('objectHead', request, response, log,
                 (err, resHeaders) => {

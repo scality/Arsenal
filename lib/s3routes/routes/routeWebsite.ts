@@ -20,7 +20,6 @@ export default function routerWebsite(
             activeTracerContext,
         }
     } = dataRetrievalFn;
-    activeSpan.setAttribute('rpc.service', 'S3');
     return tracer.startActiveSpan('Arsenal:: Performing Website API related operations using Cloudserver, Vault and Metadata', undefined, activeTracerContext, cloudserverApiSpan => {
         activeSpan.addEvent('Request validated, routing request using routerWebsite() in arsenal');
         cloudserverApiSpan.setAttributes({
@@ -43,7 +42,6 @@ export default function routerWebsite(
         if (request.method === 'GET') {
             activeSpan.updateName(`GetWebsite API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
             activeSpan.addEvent(`Detected GetWebsite API request`);
-            activeSpan.setAttribute('aws.request_id', log.getUids()[0]);
             activeSpan.setAttribute('rpc.method', 'GetWebsite');
             return api.callApiMethod('websiteGet', request, response, log,
                 (err, userErrorPageFailure, dataGetInfo, resMetaHeaders,
@@ -98,7 +96,6 @@ export default function routerWebsite(
         if (request.method === 'HEAD') {
             activeSpan.updateName(`HeadWebsite API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
             activeSpan.addEvent(`Detected HeadWebsite API request`);
-            activeSpan.setAttribute('aws.request_id', log.getUids()[0]);
             activeSpan.setAttribute('rpc.method', 'HeadWebsite');
             return api.callApiMethod('websiteHead', request, response, log,
                 (err, resMetaHeaders, redirectInfo, key) => {

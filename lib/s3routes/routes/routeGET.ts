@@ -21,7 +21,6 @@ export default function routerGET(
             activeTracerContext,
         }
     } = dataRetrievalParams;
-    activeSpan.setAttribute('rpc.service', 'S3');
     return tracer.startActiveSpan('Arsenal:: Performing Get API related operations using Cloudserver, Vault and Metadata', undefined, activeTracerContext, cloudserverApiSpan => {
         activeSpan.addEvent('Request validated, routing request using routeGET() in arsenal');
         cloudserverApiSpan.setAttributes({
@@ -39,7 +38,6 @@ export default function routerGET(
             // @ts-ignore
             activeSpan.updateName(`${action} API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
             activeSpan.addEvent(`Detected ${action} API request`);
-            activeSpan.setAttribute('aws.request_id', log.getUids()[0]);
             activeSpan.setAttribute('rpc.method', action);
             return api.callApiMethod(name, request, response, log, (err, xml, corsHeaders) => {
                 cloudserverApiSpan.end();

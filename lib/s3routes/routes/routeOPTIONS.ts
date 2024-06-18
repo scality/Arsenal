@@ -20,7 +20,6 @@ export default function routeOPTIONS(
             activeTracerContext,
         }
     } = dataRetrievalParams;
-    activeSpan.setAttribute('rpc.service', 'S3');
     return tracer.startActiveSpan('Arsenal:: Performing corsPreflight API related operations using Cloudserver, Vault and Metadata', undefined, activeTracerContext, cloudserverApiSpan => {
         activeSpan.addEvent('Request validated, routing request using routeOPTIONS() in arsenal');
         cloudserverApiSpan.setAttributes({
@@ -53,7 +52,6 @@ export default function routeOPTIONS(
         // @ts-ignore
         activeSpan.updateName(`corsPreflight API${request.bucketName ? ` with bucket: ${request.bucketName}` : ''}`);
         activeSpan.addEvent(`Detected corsPreflight API request`);
-        activeSpan.setAttribute('aws.request_id', log.getUids()[0]);
         activeSpan.setAttribute('rpc.method', 'corsPreflight');
         return api.callApiMethod('corsPreflight', request, response, log,
             (err, resHeaders) => {

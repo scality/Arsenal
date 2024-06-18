@@ -20,7 +20,6 @@ export default function routePUT(
             activeTracerContext,
         },
     } = dataRetrievalParams;
-    activeSpan.setAttribute('rpc.service', 'S3');
     return tracer.startActiveSpan('Arsenal:: Performing Put API related operations using Cloudserver, Vault and Metadata', undefined, activeTracerContext, cloudserverApiSpan  => {
         activeSpan.addEvent('Request validated, routing request using routePUT() in arsenal')
         cloudserverApiSpan.setAttributes({
@@ -48,7 +47,6 @@ export default function routePUT(
             if (query.acl !== undefined) {
                 activeSpan.updateName(`PutBucketAcl API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
                 activeSpan.addEvent('Detected PutBucketAcl API request');
-                activeSpan.setAttribute('aws.request_id', log.getUids()[0]);
                 activeSpan.setAttribute('rpc.method', 'PutBucketAcl');
                 return api.callApiMethod('bucketPutACL', request, response, log,
                     (err, corsHeaders) => {
@@ -70,7 +68,6 @@ export default function routePUT(
             } else if (query.versioning !== undefined) {
                 activeSpan.updateName(`PutBucketVersioning API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
                 activeSpan.addEvent('Detected PutBucketVersioning API request');
-                activeSpan.setAttribute('aws.request_id', log.getUids()[0]);
                 activeSpan.setAttribute('rpc.method', 'PutBucketVersioning');
                 return api.callApiMethod('bucketPutVersioning', request, response, log,
                     (err, corsHeaders) => {
@@ -92,7 +89,6 @@ export default function routePUT(
             } else if (query.website !== undefined) {
                 activeSpan.updateName(`PutBucketWebsite API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
                 activeSpan.addEvent('Detected PutBucketWebsite API request');
-                activeSpan.setAttribute('aws.request_id', log.getUids()[0]);
                 activeSpan.setAttribute('rpc.method', 'PutBucketWebsite');
                 return api.callApiMethod('bucketPutWebsite', request, response, log,
                     (err, corsHeaders) => {
@@ -114,7 +110,6 @@ export default function routePUT(
             } else if (query.tagging !== undefined) {
                 activeSpan.updateName(`PutBucketTagging API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
                 activeSpan.addEvent('Detected PutBucketTagging API request');
-                activeSpan.setAttribute('aws.request_id', log.getUids()[0]);
                 activeSpan.setAttribute('rpc.method', 'PutBucketTagging');
                 return api.callApiMethod('bucketPutTagging', request, response, log,
                     (err, corsHeaders) => {
@@ -136,7 +131,6 @@ export default function routePUT(
             } else if (query.cors !== undefined) {
                 activeSpan.updateName(`PutBucketCors API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
                 activeSpan.addEvent('Detected PutBucketCors API request');
-                activeSpan.setAttribute('aws.request_id', log.getUids()[0]);
                 activeSpan.setAttribute('rpc.method', 'PutBucketCors');
                 return api.callApiMethod('bucketPutCors', request, response, log,
                     (err, corsHeaders) => {
@@ -158,7 +152,6 @@ export default function routePUT(
             } else if (query.replication !== undefined) {
                 activeSpan.updateName(`PutBucketReplication API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
                 activeSpan.addEvent('Detected PutBucketReplication API request');
-                activeSpan.setAttribute('aws.request_id', log.getUids()[0]);
                 activeSpan.setAttribute('rpc.method', 'PutBucketReplication');
                 return api.callApiMethod('bucketPutReplication', request, response, log,
                     (err, corsHeaders) => {
@@ -180,7 +173,6 @@ export default function routePUT(
             } else if (query.lifecycle !== undefined) {
                 activeSpan.updateName(`PutBucketLifecycle API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
                 activeSpan.addEvent('Detected PutBucketLifecycle API request');
-                activeSpan.setAttribute('aws.request_id', log.getUids()[0]);
                 activeSpan.setAttribute('rpc.method', 'PutBucketLifecycle');
                 return api.callApiMethod('bucketPutLifecycle', request, response, log,
                     (err, corsHeaders) => {
@@ -202,7 +194,6 @@ export default function routePUT(
             } else if (query.policy !== undefined) {
                 activeSpan.updateName(`PutBucketPolicy API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
                 activeSpan.addEvent('Detected PutBucketPolicy API request');
-                activeSpan.setAttribute('aws.request_id', log.getUids()[0]);
                 activeSpan.setAttribute('rpc.method', 'PutBucketPolicy');
                 return api.callApiMethod('bucketPutPolicy', request, response, log,
                     (err, corsHeaders) => {
@@ -224,7 +215,6 @@ export default function routePUT(
             } else if (query['object-lock'] !== undefined) {
                 activeSpan.updateName(`PutObjectLockConfiguration API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
                 activeSpan.addEvent('Detected PutObjectLockConfiguration API request');
-                activeSpan.setAttribute('aws.request_id', log.getUids()[0]);
                 activeSpan.setAttribute('rpc.method', 'PutObjectLockConfiguration');
                 return api.callApiMethod('bucketPutObjectLock', request, response, log,
                     (err, corsHeaders) => {
@@ -246,7 +236,6 @@ export default function routePUT(
             } else if (query.notification !== undefined) {
                 activeSpan.updateName(`PutBucketNotificationConfiguration API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
                 activeSpan.addEvent('Detected PutBucketNotificationConfiguration API request');
-                activeSpan.setAttribute('aws.request_id', log.getUids()[0]);
                 activeSpan.setAttribute('rpc.method', 'PutBucketNotificationConfiguration');
                 return api.callApiMethod('bucketPutNotification', request, response, log,
                     (err, corsHeaders) => {
@@ -268,7 +257,6 @@ export default function routePUT(
             } else if (query.encryption !== undefined) {
                 activeSpan.updateName(`PutBucketEncryption API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
                 activeSpan.addEvent('Detected PutBucketEncryption API request');
-                activeSpan.setAttribute('aws.request_id', log.getUids()[0]);
                 activeSpan.setAttribute('rpc.method', 'PutBucketEncryption');
                 return api.callApiMethod('bucketPutEncryption', request, response, log,
                     (err, corsHeaders) => {
@@ -291,7 +279,6 @@ export default function routePUT(
                 // PUT bucket
                 activeSpan.updateName(`PutBucket API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
                 activeSpan.addEvent('Detected PutBucket API request');
-                activeSpan.setAttribute('aws.request_id', log.getUids()[0]);
                 activeSpan.setAttribute('rpc.method', 'PutBucket');
                 return api.callApiMethod('bucketPut', request, response, log,
                     (err, corsHeaders) => {
@@ -355,7 +342,6 @@ export default function routePUT(
                 if (request.headers['x-amz-copy-source']) {
                     activeSpan.updateName(`UploadPartCopy API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
                     activeSpan.addEvent('Detected UploadPartCopy API request');
-                    activeSpan.setAttribute('aws.request_id', log.getUids()[0]);
                     activeSpan.setAttribute('rpc.method', 'UploadPartCopy');
                     return api.callApiMethod('objectPutCopyPart', request, response, log,
                         (err, xml, additionalHeaders) => {
@@ -377,7 +363,6 @@ export default function routePUT(
                 } else {
                     activeSpan.updateName(`UploadPart API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
                     activeSpan.addEvent('Detected UploadPart API request');
-                    activeSpan.setAttribute('aws.request_id', log.getUids()[0]);
                     activeSpan.setAttribute('rpc.method', 'UploadPart');
                     return api.callApiMethod('objectPutPart', request, response, log,
                         (err, calculatedHash, corsHeaders) => {
@@ -407,7 +392,6 @@ export default function routePUT(
             } else if (query.acl !== undefined) {
                 activeSpan.updateName(`PutObjectAcl API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
                 activeSpan.addEvent('Detected PutObjectAcl API request');
-                activeSpan.setAttribute('aws.request_id', log.getUids()[0]);
                 activeSpan.setAttribute('rpc.method', 'PutObjectAcl');
                 return api.callApiMethod('objectPutACL', request, response, log,
                     (err, resHeaders) => {
@@ -429,7 +413,6 @@ export default function routePUT(
             } else if (query['legal-hold'] !== undefined) {
                 activeSpan.updateName(`PutObjectLegalHold API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
                 activeSpan.addEvent('Detected PutObjectLegalHold API request');
-                activeSpan.setAttribute('aws.request_id', log.getUids()[0]);
                 activeSpan.setAttribute('rpc.method', 'PutObjectLegalHold');
                 return api.callApiMethod('objectPutLegalHold', request, response, log,
                     (err, resHeaders) => {
@@ -451,7 +434,6 @@ export default function routePUT(
             } else if (query.tagging !== undefined) {
                 activeSpan.updateName(`PutObjectTagging API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
                 activeSpan.addEvent('Detected PutObjectTagging API request');
-                activeSpan.setAttribute('aws.request_id', log.getUids()[0]);
                 activeSpan.setAttribute('rpc.method', 'PutObjectTagging');
                 return api.callApiMethod('objectPutTagging', request, response, log,
                     (err, resHeaders) => {
@@ -473,7 +455,6 @@ export default function routePUT(
             } else if (query.retention !== undefined) {
                 activeSpan.updateName(`PutObjectRetention API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
                 activeSpan.addEvent('Detected PutObjectRetention API request');
-                activeSpan.setAttribute('aws.request_id', log.getUids()[0]);
                 activeSpan.setAttribute('rpc.method', 'PutObjectRetention');
                 return api.callApiMethod('objectPutRetention', request, response, log,
                     (err, resHeaders) => {
@@ -495,7 +476,6 @@ export default function routePUT(
             } else if (request.headers['x-amz-copy-source']) {
                 activeSpan.updateName(`CopyObject API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
                 activeSpan.addEvent('Detected CopyObject API request');
-                activeSpan.setAttribute('aws.request_id', log.getUids()[0]);
                 activeSpan.setAttribute('rpc.method', 'CopyObject');
                 return api.callApiMethod('objectCopy', request, response, log,
                     (err, xml, additionalHeaders) => {
@@ -533,7 +513,6 @@ export default function routePUT(
                 log.end().addDefaultFields({ contentLength: request.parsedContentLength });
                 activeSpan.updateName(`PutObject API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
                 activeSpan.addEvent('Detected PutObject API request');
-                activeSpan.setAttribute('aws.request_id', log.getUids()[0]);
                 activeSpan.setAttribute('rpc.method', 'PutObject');
                 api.callApiMethod('objectPut', request, response, log,
                     (err, resHeaders) => {
