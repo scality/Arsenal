@@ -58,13 +58,15 @@ function extractParams(
     request: any,
     log: Logger,
     awsService: string,
-    data: { [key: string]: string }
+    data: { [key: string]: string },
+    activeSpan?: any,
 ) {
+    activeSpan?.addEvent('Arsenal:: entered Arsenal.auth.server.extractParams');
     log.trace('entered', { method: 'Arsenal.auth.server.extractParams' });
     const authHeader = request.headers.authorization;
     let version: 'v2' |'v4' | null = null;
     let method: 'query' | 'headers' | null = null;
-
+    activeSpan?.addEvent('Arsenal:: Identifying auth version from authentication header');
     // Identify auth version and method to dispatch to the right check function
     if (authHeader) {
         method = 'headers';
@@ -86,20 +88,24 @@ function extractParams(
         method = 'query';
         version = 'v4';
     }
-
+    activeSpan?.addEvent(`Arsenal::Auth versions identified: ${version}`);
     // Here, either both values are set, or none is set
     if (version !== null && method !== null) {
         if (!checkFunctions[version] || !checkFunctions[version][method]) {
+            activeSpan?.recordException(errors.NotImplemented);
             log.trace('invalid auth version or method',
                       { version, authMethod: method });
             return { err: errors.NotImplemented };
         }
+        activeSpan?.addEvent(`Arsenal:: Identified auth method version: ${version} and method: ${method}`);
+        activeSpan?.addEvent('Arsenal:: Checking if valid request headers and query are used to make request to vault');
         log.trace('identified auth method', { version, authMethod: method });
         return checkFunctions[version][method](request, log, data, awsService);
     }
 
     // no auth info identified
     log.debug('assuming public user');
+    activeSpan?.addEvent(`Arsenal:: Identified as public user`);
     return { err: null, params: publicUserInfo };
 }
 
@@ -119,15 +125,25 @@ function doAuth(
     log: Logger,
     cb: (err: Error | null, data?: any) => void,
     awsService: string,
-    requestContexts: any[] | null
+    requestContexts: any[] | null,
+    activeSpan?: any,
 ) {
+    activeSpan?.addEvent('Arsenal:: Routing request using doAuth() in arsenal');
+    activeSpan?.addEvent('Arsenal:: Extracting auth parameters and check validity of request parameters to authenticate');
+    const start = process.hrtime.bigint();
     const res = extractParams(request, log, awsService, request.query);
+    const end = process.hrtime.bigint();
+    const duration = Number(end - start) / 1e6;
+    activeSpan?.addEvent(`Arsenal:: It took ${duration.toFixed(3)} ms to extract auth parameters and to check validity of request parameters to authenticate`);
     if (res.err) {
+        activeSpan?.recordException(res.err);
         return cb(res.err);
     } else if (res.params instanceof AuthInfo) {
+        activeSpan?.addEvent('Arsenal:: Auth info already in the params, do not need to make a request to cloudserver');
         return cb(null, res.params);
     }
     if (requestContexts) {
+        activeSpan?.addEvent('Arsenal:: Setting auth info in requestContexts');
         requestContexts.forEach((requestContext) => {
             const { params } = res
             if ('data' in params) {
@@ -140,6 +156,7 @@ function doAuth(
                 }
             }
         });
+        activeSpan?.addEvent('Arsenal:: Auth info set in requestContexts');
     }
 
     // Corner cases managed, we're left with normal auth
@@ -147,10 +164,12 @@ function doAuth(
     // @ts-ignore
     res.params.log = log;
     if (res.params.version === 2) {
+        activeSpan?.addEvent('Arsenal:: Sending AuthV2 call to vault');
         // @ts-ignore
         return vault!.authenticateV2Request(res.params, requestContexts, cb);
     }
     if (res.params.version === 4) {
+        activeSpan?.addEvent('Arsenal:: Sending AuthV4 call to vault');
         // @ts-ignore
         return vault!.authenticateV4Request(res.params, requestContexts, cb);
     }
@@ -158,6 +177,7 @@ function doAuth(
     log.error('authentication method not found', {
         method: 'Arsenal.auth.doAuth',
     });
+    activeSpan?.recordException(errors.InternalError);
     return cb(errors.InternalError);
 }
 
