@@ -107,6 +107,10 @@ export default function routeDELETE(
                 activeSpan.setAttribute('rpc.method', 'DeleteBucketTagging');
                 return call('bucketDeleteTagging');
             }
+            // @ts-ignore
+            activeSpan.updateName(`DeleteBucket API${request.bucketName ? ` with bucket: ${request.bucketName}` : ''}`);
+            activeSpan.addEvent('Detected DeleteBucket API request');
+            activeSpan.setAttribute('rpc.method', 'DeleteBucket');
             call('bucketDelete');
         } else {
             if (query?.tagging !== undefined) {
