@@ -71,6 +71,7 @@ const actionMapRQ = {
     initiateMultipartUpload: 's3:PutObject',
     objectDeleteVersion: 's3:DeleteObjectVersion',
     objectDeleteTaggingVersion: 's3:DeleteObjectVersionTagging',
+    objectGetArchiveInfo: 'scality:GetObjectArchiveInfo',
     objectGetVersion: 's3:GetObjectVersion',
     objectGetACLVersion: 's3:GetObjectVersionAcl',
     objectGetTaggingVersion: 's3:GetObjectVersionTagging',
