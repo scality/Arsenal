@@ -11,6 +11,6 @@ export const probe = { ProbeServer };
 export { default as RoundRobin } from './RoundRobin';
 export { default as kmip } from './kmip';
 export { default as kmipClient } from './kmip/Client';
-export { default as awsClient } from './kms_aws/Client';
+export { default as awsClient } from './kmsAWS/Client';
 export * as rpc from './rpc/rpc';
 export * as level from './rpc/level-net';

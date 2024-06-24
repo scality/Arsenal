@@ -40,18 +40,18 @@ export default class Client {
     /**
      * Construct a high level KMIP driver suitable for cloudserver
      * @param options - Instance options
-     * @param options.kms_aws - AWS client options
-     * @param options.kms_aws.region - KMS region
-     * @param options.kms_aws.endpoint - Endpoint URL of the KMS service
-     * @param options.kms_aws.ak - Application Key
-     * @param options.kms_aws.sk - Secret Key
+     * @param options.kmsAWS - AWS client options
+     * @param options.kmsAWS.region - KMS region
+     * @param options.kmsAWS.endpoint - Endpoint URL of the KMS service
+     * @param options.kmsAWS.ak - Application Key
+     * @param options.kmsAWS.sk - Secret Key
      * 
      * This client also looks in the standard AWS configuration files (https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
      * If no option is passed to this constructor, the client will try to get it from the configuration file.
      */
     constructor(
         options: {
-            kms_aws: {
+            kmsAWS: {
                 region?: string,
                 endpoint?: string,
                 ak?: string,
@@ -60,16 +60,16 @@ export default class Client {
         },
     ) {
         let credentials: {credentials: AwsCredentialIdentity} | null = null;
-        if (options.kms_aws.ak && options.kms_aws.sk) {
+        if (options.kmsAWS.ak && options.kmsAWS.sk) {
             credentials = {credentials: {
-                accessKeyId: options.kms_aws.ak,
-                secretAccessKey: options.kms_aws.sk,
+                accessKeyId: options.kmsAWS.ak,
+                secretAccessKey: options.kmsAWS.sk,
             }};
         }
 
         this.client = new KMSClient({
-            region: options.kms_aws.region,
-            endpoint: options.kms_aws.endpoint,
+            region: options.kmsAWS.region,
+            endpoint: options.kmsAWS.endpoint,
             ...credentials
         });
     }
