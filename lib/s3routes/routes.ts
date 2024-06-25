@@ -190,11 +190,12 @@ export default function routes(
             }
         } 
     } = params;
-    return tracer.startActiveSpan('Arsenal:: Using arsenal to validate request', undefined, activeTracerContext, arsenalValidatorSpan => {
+    return tracer.startActiveSpan('Validating Request Parameters with Arsenal', undefined, activeTracerContext, arsenalValidatorSpan => {
         arsenalValidatorSpan.setAttributes({
-            'code.lineno': 177,
+            'code.lineno': 176,
             'code.filename': 'lib/s3routes/routes.ts',
             'code.function': 'routes()',
+            'code.url': 'https://github.com/scality/Arsenal/blob/development/7.70/lib/s3routes/routes.ts#L176'
         });
         checkTypes(req, res, params, logger);
 

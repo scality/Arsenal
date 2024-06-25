@@ -395,7 +395,7 @@ function retrieveData(
     } = retrieveDataParams;
     const data = new DataWrapper(
         client, implName, config, kms, metadata, locStorageCheckFn, vault);
-    return tracer.startActiveSpan('Arsenal:: Starting the process of getting data from sproxyd', dataSpan => {
+    return tracer.startActiveSpan('Streaming Data Using Sproxyd', dataSpan => {
         dataSpan.setAttributes({
             'code.function': 'Arsenal:: retrieveData()',
             'code.filepath': 'lib/s3routes/routesUtils.js',
@@ -638,7 +638,7 @@ export function responseStreamData(
         },
     }   = retrieveDataParams;
     activeSpan.addEvent('Request processed, getting Data from sproxyd');
-    return tracer.startActiveSpan('Arsenal:: Getting data from sproxyd', undefined, activeTracerContext, sproxydSpan => {
+    return tracer.startActiveSpan('Getting Data From RING', undefined, activeTracerContext, sproxydSpan => {
         sproxydSpan.setAttributes({
             'code.function': 'Arsenal:: responseStreamData()',
             'code.filepath': 'lib/s3routes/routesUtils.js',
