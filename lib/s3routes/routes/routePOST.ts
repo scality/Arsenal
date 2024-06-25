@@ -58,7 +58,7 @@ export default function routePOST(
 
         // POST initiate multipart upload
         if (query.uploads !== undefined) {
-            activeSpan.updateName(`CreateMultipartUpload API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
+            activeSpan.updateName('CreateMultipartUpload API request');
             activeSpan.addEvent(`Detected CreateMultipartUpload API request`);
             activeSpan.setAttribute('rpc.method', 'CreateMultipartUpload');
             return api.callApiMethod('initiateMultipartUpload', request,
@@ -78,7 +78,7 @@ export default function routePOST(
 
         // POST complete multipart upload
         if (query.uploadId !== undefined) {
-            activeSpan.updateName(`CompleteMultipartUpload API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
+            activeSpan.updateName('CompleteMultipartUpload API request');
             activeSpan.addEvent(`Detected CompleteMultipartUpload API request`);
             activeSpan.setAttribute('rpc.method', 'CompleteMultipartUpload');
             return api.callApiMethod('completeMultipartUpload', request,
@@ -98,7 +98,7 @@ export default function routePOST(
 
         // POST multiObjectDelete
         if (query.delete !== undefined) {
-            activeSpan.updateName(`AbortMultipartUpload API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
+            activeSpan.updateName('AbortMultipartUpload API request');
             activeSpan.addEvent(`Detected AbortMultipartUpload API request`);
             activeSpan.setAttribute('rpc.method', 'AbortMultipartUpload');
             return api.callApiMethod('multiObjectDelete', request, response,

@@ -40,7 +40,7 @@ export default function routerWebsite(
                 false, bucketName, response, null, log);
         }
         if (request.method === 'GET') {
-            activeSpan.updateName(`GetWebsite API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
+            activeSpan.updateName('GetWebsite API request');
             activeSpan.addEvent(`Detected GetWebsite API request`);
             activeSpan.setAttribute('rpc.method', 'GetWebsite');
             return api.callApiMethod('websiteGet', request, response, log,
@@ -94,7 +94,7 @@ export default function routerWebsite(
                 });
         }
         if (request.method === 'HEAD') {
-            activeSpan.updateName(`HeadWebsite API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
+            activeSpan.updateName('HeadWebsite API request');
             activeSpan.addEvent(`Detected HeadWebsite API request`);
             activeSpan.setAttribute('rpc.method', 'HeadWebsite');
             return api.callApiMethod('websiteHead', request, response, log,

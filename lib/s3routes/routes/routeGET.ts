@@ -36,7 +36,7 @@ export default function routerGET(
         const call = (name: string) => {
             const action = actionMonitoringMapS3[name];
             // @ts-ignore
-            activeSpan.updateName(`${action} API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
+            activeSpan.updateName(`${action} API request`);
             activeSpan.addEvent(`Detected ${action} API request`);
             activeSpan.setAttribute('rpc.method', action);
             return api.callApiMethod(name, request, response, log, (err, xml, corsHeaders) => {
@@ -112,7 +112,7 @@ export default function routerGET(
                 call('objectGetRetention');
             } else {
                 // GET object
-                activeSpan.updateName(`GetObject API with bucket: ${bucketName}`);
+                activeSpan.updateName('GetObject API request');
                 activeSpan.addEvent('Detected GetObject API request');
                 activeSpan.setAttribute('aws.request_id', log.getUids()[0]);
                 activeSpan.setAttribute('rpc.method', 'GetObject');

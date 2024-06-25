@@ -37,7 +37,7 @@ export default function routeHEAD(
             routesUtils.responseXMLBody(errors.MethodNotAllowed,
                 null, response, log);
         } else if (objectKey === undefined) {
-            activeSpan.updateName(`HeadBucket API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
+            activeSpan.updateName('HeadBucket API request');
             activeSpan.addEvent(`Detected HeadBucket API request`);
             activeSpan.setAttribute('rpc.method', 'HeadBucket');
             // HEAD bucket
@@ -60,7 +60,7 @@ export default function routeHEAD(
                 });
             } else {
             // HEAD object
-            activeSpan.updateName(`HeadObject API${bucketName ? ` with bucket: ${bucketName}` : ''}`);
+            activeSpan.updateName('HeadObject API request');
             activeSpan.addEvent(`Detected HeadObject API request`);
             activeSpan.setAttribute('rpc.method', 'HeadObject');
             api.callApiMethod('objectHead', request, response, log,

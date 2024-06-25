@@ -52,7 +52,7 @@ export default function routeDELETE(
         const { query, objectKey } = request as any
         if (query?.uploadId) {
             // @ts-ignore
-            activeSpan.updateName(`AbortMultipartUpload API${request.bucketName ? ` with bucket: ${request.bucketName}` : ''}`);
+            activeSpan.updateName('AbortMultipartUpload API request');
             activeSpan.addEvent('Detected AbortMultipartUpload API request');
             activeSpan.setAttribute('rpc.method', 'AbortMultipartUpload');
             if (objectKey === undefined) {
@@ -66,62 +66,62 @@ export default function routeDELETE(
         } else if (objectKey === undefined) {
             if (query?.website !== undefined) {
                 // @ts-ignore
-                activeSpan.updateName(`DeleteBucketWebsite API${request.bucketName ? ` with bucket: ${request.bucketName}` : ''}`);
+                activeSpan.updateName('DeleteBucketWebsite API request');
                 activeSpan.addEvent('Detected DeleteBucketWebsite API request');
                 activeSpan.setAttribute('rpc.method', 'DeleteBucketWebsite');
                 return call('bucketDeleteWebsite');
             } else if (query?.cors !== undefined) {
                 // @ts-ignore
-                activeSpan.updateName(`DeleteBucketCors API${request.bucketName ? ` with bucket: ${request.bucketName}` : ''}`);
+                activeSpan.updateName('DeleteBucketCors API request');
                 activeSpan.addEvent('Detected DeleteBucketCors API request');
                 activeSpan.setAttribute('rpc.method', 'DeleteBucketCors');
                 return call('bucketDeleteCors');
             } else if (query?.replication !== undefined) {
                 // @ts-ignore
-                activeSpan.updateName(`DeleteBucketReplication API${request.bucketName ? ` with bucket: ${request.bucketName}` : ''}`);
+                activeSpan.updateName('DeleteBucketReplication API request');
                 activeSpan.addEvent('Detected DeleteBucketReplication API request');
                 activeSpan.setAttribute('rpc.method', 'DeleteBucketReplication');
                 return call('bucketDeleteReplication');
             } else if (query?.lifecycle !== undefined) {
                 // @ts-ignore
-                activeSpan.updateName(`DeleteBucketLifecycle API${request.bucketName ? ` with bucket: ${request.bucketName}` : ''}`);
+                activeSpan.updateName('DeleteBucketLifecycle API request');
                 activeSpan.addEvent('Detected DeleteBucketLifecycle API request');
                 activeSpan.setAttribute('rpc.method', 'DeleteBucketLifecycle');
                 return call('bucketDeleteLifecycle');
             } else if (query?.policy !== undefined) {
                 // @ts-ignore
-                activeSpan.updateName(`DeleteBucketPolicy API${request.bucketName ? ` with bucket: ${request.bucketName}` : ''}`);
+                activeSpan.updateName('DeleteBucketPolicy API request');
                 activeSpan.addEvent('Detected DeleteBucketPolicy API request');
                 activeSpan.setAttribute('rpc.method', 'DeleteBucketPolicy');
                 return call('bucketDeletePolicy');
             } else if (query?.encryption !== undefined) {
                 // @ts-ignore
-                activeSpan.updateName(`DeleteBucketEncryption API${request.bucketName ? ` with bucket: ${request.bucketName}` : ''}`);
+                activeSpan.updateName('DeleteBucketEncryption API request');
                 activeSpan.addEvent('Detected DeleteBucketEncryption API request');
                 activeSpan.setAttribute('rpc.method', 'DeleteBucketEncryption');
                 return call('bucketDeleteEncryption');
             } else if (query?.tagging !== undefined) {
                 // @ts-ignore
-                activeSpan.updateName(`DeleteBucketTagging API${request.bucketName ? ` with bucket: ${request.bucketName}` : ''}`);
+                activeSpan.updateName('DeleteBucketTagging API request');
                 activeSpan.addEvent('Detected DeleteBucketTagging API request');
                 activeSpan.setAttribute('rpc.method', 'DeleteBucketTagging');
                 return call('bucketDeleteTagging');
             }
             // @ts-ignore
-            activeSpan.updateName(`DeleteBucket API${request.bucketName ? ` with bucket: ${request.bucketName}` : ''}`);
+            activeSpan.updateName('DeleteBucket API request');
             activeSpan.addEvent('Detected DeleteBucket API request');
             activeSpan.setAttribute('rpc.method', 'DeleteBucket');
             call('bucketDelete');
         } else {
             if (query?.tagging !== undefined) {
                 // @ts-ignore
-                activeSpan.updateName(`DeleteObjectTagging API${request.bucketName ? ` with bucket: ${request.bucketName}` : ''}`);
+                activeSpan.updateName('DeleteObjectTagging API request');
                 activeSpan.addEvent('Detected DeleteObjectTagging API request');
                 activeSpan.setAttribute('rpc.method', 'DeleteObjectTagging');
                 return call('objectDeleteTagging');
             }
             // @ts-ignore
-            activeSpan.updateName(`DeleteObject API${request.bucketName ? ` with bucket: ${request.bucketName}` : ''}`);
+            activeSpan.updateName('DeleteObject API request');
             activeSpan.addEvent('Detected DeleteObject API request');
             activeSpan.setAttribute('rpc.method', 'DeleteObject');
             return api.callApiMethod('objectDelete', request, response, log,
