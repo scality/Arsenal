@@ -112,14 +112,14 @@ export default function routerGET(
                 call('objectGetRetention');
             } else {
                 // GET object
-                activeSpan.updateName('GetObject API request');
+                activeSpan.updateName('S3 API request');
                 activeSpan.addEvent('Detected GetObject API request');
                 activeSpan.setAttribute('aws.request_id', log.getUids()[0]);
                 activeSpan.setAttribute('rpc.method', 'GetObject');
                 return api.callApiMethod('objectGet', request, response, log,
                     (err, dataGetInfo, resMetaHeaders, range) => {
                         cloudserverApiSpan.end();
-                        activeSpan.addEvent('Located Data')
+                        activeSpan.addEvent('Located Data, using arsenal to make GET request')
                         let contentLength = 0;
                         if (resMetaHeaders && resMetaHeaders['Content-Length']) {
                             contentLength = resMetaHeaders['Content-Length'];

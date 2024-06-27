@@ -52,7 +52,7 @@ export default function routeDELETE(
         const { query, objectKey } = request as any
         if (query?.uploadId) {
             // @ts-ignore
-            activeSpan.updateName('AbortMultipartUpload API request');
+            activeSpan.updateName('S3 API request');
             activeSpan.addEvent('Detected AbortMultipartUpload API request');
             activeSpan.setAttribute('rpc.method', 'AbortMultipartUpload');
             if (objectKey === undefined) {
@@ -66,62 +66,62 @@ export default function routeDELETE(
         } else if (objectKey === undefined) {
             if (query?.website !== undefined) {
                 // @ts-ignore
-                activeSpan.updateName('DeleteBucketWebsite API request');
+                activeSpan.updateName('S3 API request');
                 activeSpan.addEvent('Detected DeleteBucketWebsite API request');
                 activeSpan.setAttribute('rpc.method', 'DeleteBucketWebsite');
                 return call('bucketDeleteWebsite');
             } else if (query?.cors !== undefined) {
                 // @ts-ignore
-                activeSpan.updateName('DeleteBucketCors API request');
+                activeSpan.updateName('S3 API request');
                 activeSpan.addEvent('Detected DeleteBucketCors API request');
                 activeSpan.setAttribute('rpc.method', 'DeleteBucketCors');
                 return call('bucketDeleteCors');
             } else if (query?.replication !== undefined) {
                 // @ts-ignore
-                activeSpan.updateName('DeleteBucketReplication API request');
+                activeSpan.updateName('S3 API request');
                 activeSpan.addEvent('Detected DeleteBucketReplication API request');
                 activeSpan.setAttribute('rpc.method', 'DeleteBucketReplication');
                 return call('bucketDeleteReplication');
             } else if (query?.lifecycle !== undefined) {
                 // @ts-ignore
-                activeSpan.updateName('DeleteBucketLifecycle API request');
+                activeSpan.updateName('S3 API request');
                 activeSpan.addEvent('Detected DeleteBucketLifecycle API request');
                 activeSpan.setAttribute('rpc.method', 'DeleteBucketLifecycle');
                 return call('bucketDeleteLifecycle');
             } else if (query?.policy !== undefined) {
                 // @ts-ignore
-                activeSpan.updateName('DeleteBucketPolicy API request');
+                activeSpan.updateName('S3 API request');
                 activeSpan.addEvent('Detected DeleteBucketPolicy API request');
                 activeSpan.setAttribute('rpc.method', 'DeleteBucketPolicy');
                 return call('bucketDeletePolicy');
             } else if (query?.encryption !== undefined) {
                 // @ts-ignore
-                activeSpan.updateName('DeleteBucketEncryption API request');
+                activeSpan.updateName('S3 API request');
                 activeSpan.addEvent('Detected DeleteBucketEncryption API request');
                 activeSpan.setAttribute('rpc.method', 'DeleteBucketEncryption');
                 return call('bucketDeleteEncryption');
             } else if (query?.tagging !== undefined) {
                 // @ts-ignore
-                activeSpan.updateName('DeleteBucketTagging API request');
+                activeSpan.updateName('S3 API request');
                 activeSpan.addEvent('Detected DeleteBucketTagging API request');
                 activeSpan.setAttribute('rpc.method', 'DeleteBucketTagging');
                 return call('bucketDeleteTagging');
             }
             // @ts-ignore
-            activeSpan.updateName('DeleteBucket API request');
+            activeSpan.updateName('S3 API request');
             activeSpan.addEvent('Detected DeleteBucket API request');
             activeSpan.setAttribute('rpc.method', 'DeleteBucket');
             call('bucketDelete');
         } else {
             if (query?.tagging !== undefined) {
                 // @ts-ignore
-                activeSpan.updateName('DeleteObjectTagging API request');
+                activeSpan.updateName('S3 API request');
                 activeSpan.addEvent('Detected DeleteObjectTagging API request');
                 activeSpan.setAttribute('rpc.method', 'DeleteObjectTagging');
                 return call('objectDeleteTagging');
             }
             // @ts-ignore
-            activeSpan.updateName('DeleteObject API request');
+            activeSpan.updateName('S3 API request');
             activeSpan.addEvent('Detected DeleteObject API request');
             activeSpan.setAttribute('rpc.method', 'DeleteObject');
             return api.callApiMethod('objectDelete', request, response, log,

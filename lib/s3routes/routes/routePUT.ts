@@ -45,7 +45,7 @@ export default function routePUT(
             }
             // PUT bucket ACL
             if (query.acl !== undefined) {
-                activeSpan.updateName('PutBucketAcl API request');
+                activeSpan.updateName('S3 API request');
                 activeSpan.addEvent('Detected PutBucketAcl API request');
                 activeSpan.setAttribute('rpc.method', 'PutBucketAcl');
                 return api.callApiMethod('bucketPutACL', request, response, log,
@@ -66,7 +66,7 @@ export default function routePUT(
                         tracer,
                     });
             } else if (query.versioning !== undefined) {
-                activeSpan.updateName('PutBucketVersioning API request');
+                activeSpan.updateName('S3 API request');
                 activeSpan.addEvent('Detected PutBucketVersioning API request');
                 activeSpan.setAttribute('rpc.method', 'PutBucketVersioning');
                 return api.callApiMethod('bucketPutVersioning', request, response, log,
@@ -87,7 +87,7 @@ export default function routePUT(
                         tracer,
                     });
             } else if (query.website !== undefined) {
-                activeSpan.updateName('PutBucketWebsite API request');
+                activeSpan.updateName('S3 API request');
                 activeSpan.addEvent('Detected PutBucketWebsite API request');
                 activeSpan.setAttribute('rpc.method', 'PutBucketWebsite');
                 return api.callApiMethod('bucketPutWebsite', request, response, log,
@@ -108,7 +108,7 @@ export default function routePUT(
                         tracer,
                     });
             } else if (query.tagging !== undefined) {
-                activeSpan.updateName('PutBucketTagging API request');
+                activeSpan.updateName('S3 API request');
                 activeSpan.addEvent('Detected PutBucketTagging API request');
                 activeSpan.setAttribute('rpc.method', 'PutBucketTagging');
                 return api.callApiMethod('bucketPutTagging', request, response, log,
@@ -129,7 +129,7 @@ export default function routePUT(
                         tracer,
                     });
             } else if (query.cors !== undefined) {
-                activeSpan.updateName('PutBucketCors API request');
+                activeSpan.updateName('S3 API request');
                 activeSpan.addEvent('Detected PutBucketCors API request');
                 activeSpan.setAttribute('rpc.method', 'PutBucketCors');
                 return api.callApiMethod('bucketPutCors', request, response, log,
@@ -150,7 +150,7 @@ export default function routePUT(
                         tracer,
                     });
             } else if (query.replication !== undefined) {
-                activeSpan.updateName('PutBucketReplication API request');
+                activeSpan.updateName('S3 API request');
                 activeSpan.addEvent('Detected PutBucketReplication API request');
                 activeSpan.setAttribute('rpc.method', 'PutBucketReplication');
                 return api.callApiMethod('bucketPutReplication', request, response, log,
@@ -171,7 +171,7 @@ export default function routePUT(
                         tracer,
                     });
             } else if (query.lifecycle !== undefined) {
-                activeSpan.updateName('PutBucketLifecycle API request');
+                activeSpan.updateName('S3 API request');
                 activeSpan.addEvent('Detected PutBucketLifecycle API request');
                 activeSpan.setAttribute('rpc.method', 'PutBucketLifecycle');
                 return api.callApiMethod('bucketPutLifecycle', request, response, log,
@@ -192,7 +192,7 @@ export default function routePUT(
                         tracer,
                     });
             } else if (query.policy !== undefined) {
-                activeSpan.updateName('PutBucketPolicy API request');
+                activeSpan.updateName('S3 API request');
                 activeSpan.addEvent('Detected PutBucketPolicy API request');
                 activeSpan.setAttribute('rpc.method', 'PutBucketPolicy');
                 return api.callApiMethod('bucketPutPolicy', request, response, log,
@@ -213,7 +213,7 @@ export default function routePUT(
                         tracer,
                     });
             } else if (query['object-lock'] !== undefined) {
-                activeSpan.updateName('PutObjectLockConfiguration API request');
+                activeSpan.updateName('S3 API request');
                 activeSpan.addEvent('Detected PutObjectLockConfiguration API request');
                 activeSpan.setAttribute('rpc.method', 'PutObjectLockConfiguration');
                 return api.callApiMethod('bucketPutObjectLock', request, response, log,
@@ -234,7 +234,7 @@ export default function routePUT(
                         tracer,
                     });
             } else if (query.notification !== undefined) {
-                activeSpan.updateName('PutBucketNotificationConfiguration API request');
+                activeSpan.updateName('S3 API request');
                 activeSpan.addEvent('Detected PutBucketNotificationConfiguration API request');
                 activeSpan.setAttribute('rpc.method', 'PutBucketNotificationConfiguration');
                 return api.callApiMethod('bucketPutNotification', request, response, log,
@@ -255,7 +255,7 @@ export default function routePUT(
                         tracer,
                     });
             } else if (query.encryption !== undefined) {
-                activeSpan.updateName('PutBucketEncryption API request');
+                activeSpan.updateName('S3 API request');
                 activeSpan.addEvent('Detected PutBucketEncryption API request');
                 activeSpan.setAttribute('rpc.method', 'PutBucketEncryption');
                 return api.callApiMethod('bucketPutEncryption', request, response, log,
@@ -277,7 +277,7 @@ export default function routePUT(
                     });
             } else {
                 // PUT bucket
-                activeSpan.updateName('PutBucket API request');
+                activeSpan.updateName('S3 API request');
                 activeSpan.addEvent('Detected PutBucket API request');
                 activeSpan.setAttribute('rpc.method', 'PutBucket');
                 return api.callApiMethod('bucketPut', request, response, log,
@@ -340,7 +340,7 @@ export default function routePUT(
             }
             if (query.partNumber) {
                 if (request.headers['x-amz-copy-source']) {
-                    activeSpan.updateName('UploadPartCopy API request');
+                    activeSpan.updateName('S3 API request');
                     activeSpan.addEvent('Detected UploadPartCopy API request');
                     activeSpan.setAttribute('rpc.method', 'UploadPartCopy');
                     return api.callApiMethod('objectPutCopyPart', request, response, log,
@@ -361,7 +361,7 @@ export default function routePUT(
                             tracer,
                         });
                 } else {
-                    activeSpan.updateName('UploadPart API request');
+                    activeSpan.updateName('S3 API request');
                     activeSpan.addEvent('Detected UploadPart API request');
                     activeSpan.setAttribute('rpc.method', 'UploadPart');
                     return api.callApiMethod('objectPutPart', request, response, log,
@@ -390,7 +390,7 @@ export default function routePUT(
                         });
                 }
             } else if (query.acl !== undefined) {
-                activeSpan.updateName('PutObjectAcl API request');
+                activeSpan.updateName('S3 API request');
                 activeSpan.addEvent('Detected PutObjectAcl API request');
                 activeSpan.setAttribute('rpc.method', 'PutObjectAcl');
                 return api.callApiMethod('objectPutACL', request, response, log,
@@ -411,7 +411,7 @@ export default function routePUT(
                         tracer,
                     });
             } else if (query['legal-hold'] !== undefined) {
-                activeSpan.updateName('PutObjectLegalHold API request');
+                activeSpan.updateName('S3 API request');
                 activeSpan.addEvent('Detected PutObjectLegalHold API request');
                 activeSpan.setAttribute('rpc.method', 'PutObjectLegalHold');
                 return api.callApiMethod('objectPutLegalHold', request, response, log,
@@ -432,7 +432,7 @@ export default function routePUT(
                         tracer,
                     });
             } else if (query.tagging !== undefined) {
-                activeSpan.updateName('PutObjectTagging API request');
+                activeSpan.updateName('S3 API request');
                 activeSpan.addEvent('Detected PutObjectTagging API request');
                 activeSpan.setAttribute('rpc.method', 'PutObjectTagging');
                 return api.callApiMethod('objectPutTagging', request, response, log,
@@ -453,7 +453,7 @@ export default function routePUT(
                         tracer,
                     });
             } else if (query.retention !== undefined) {
-                activeSpan.updateName('PutObjectRetention API request');
+                activeSpan.updateName('S3 API request');
                 activeSpan.addEvent('Detected PutObjectRetention API request');
                 activeSpan.setAttribute('rpc.method', 'PutObjectRetention');
                 return api.callApiMethod('objectPutRetention', request, response, log,
@@ -474,7 +474,7 @@ export default function routePUT(
                         tracer,
                     });
             } else if (request.headers['x-amz-copy-source']) {
-                activeSpan.updateName('CopyObject API request');
+                activeSpan.updateName('S3 API request');
                 activeSpan.addEvent('Detected CopyObject API request');
                 activeSpan.setAttribute('rpc.method', 'CopyObject');
                 return api.callApiMethod('objectCopy', request, response, log,
@@ -511,7 +511,7 @@ export default function routePUT(
                 // TODO ARSN-216 What's happening?
                 // @ts-ignore
                 log.end().addDefaultFields({ contentLength: request.parsedContentLength });
-                activeSpan.updateName('PutObject API request');
+                activeSpan.updateName('S3 API request');
                 activeSpan.addEvent('Detected PutObject API request');
                 activeSpan.setAttribute('rpc.method', 'PutObject');
                 api.callApiMethod('objectPut', request, response, log,

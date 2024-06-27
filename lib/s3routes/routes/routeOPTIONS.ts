@@ -50,7 +50,7 @@ export default function routeOPTIONS(
             return routesUtils.responseXMLBody(err, null, response, log);
         }
         // @ts-ignore
-        activeSpan.updateName('corsPreflight API request');
+        activeSpan.updateName('S3 API request');
         activeSpan.addEvent(`Detected corsPreflight API request`);
         activeSpan.setAttribute('rpc.method', 'corsPreflight');
         return api.callApiMethod('corsPreflight', request, response, log,
