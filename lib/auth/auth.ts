@@ -59,54 +59,65 @@ function extractParams(
     log: Logger,
     awsService: string,
     data: { [key: string]: string },
-    activeSpan?: any,
+    oTel?: any,
 ) {
+    const {
+        activeSpan,
+        activeTracerContext,
+        tracer,
+    } = oTel;
     activeSpan?.addEvent('Arsenal:: entered Arsenal.auth.server.extractParams');
-    log.trace('entered', { method: 'Arsenal.auth.server.extractParams' });
-    const authHeader = request.headers.authorization;
-    let version: 'v2' |'v4' | null = null;
-    let method: 'query' | 'headers' | null = null;
-    activeSpan?.addEvent('Arsenal:: Identifying auth version from authentication header');
-    // Identify auth version and method to dispatch to the right check function
-    if (authHeader) {
-        method = 'headers';
-        // TODO: Check for security token header to handle temporary security
-        // credentials
-        if (authHeader.startsWith('AWS ')) {
+    return tracer.startActiveSpan('Check validity of request parameters to authenticate using Arsenal', undefined, activeTracerContext, extractParamsSpan => {
+        log.trace('entered', { method: 'Arsenal.auth.server.extractParams' });
+        const authHeader = request.headers.authorization;
+        let version: 'v2' |'v4' | null = null;
+        let method: 'query' | 'headers' | null = null;
+        activeSpan?.addEvent('Arsenal:: Identifying auth version from authentication header');
+        // Identify auth version and method to dispatch to the right check function
+        if (authHeader) {
+            method = 'headers';
+            // TODO: Check for security token header to handle temporary security
+            // credentials
+            if (authHeader.startsWith('AWS ')) {
+                version = 'v2';
+            } else if (authHeader.startsWith('AWS4')) {
+                version = 'v4';
+            } else {
+                log.trace('invalid authorization security header',
+                          { header: authHeader });
+                extractParamsSpan.end();
+                return { err: errors.AccessDenied };
+            }
+        } else if (data.Signature) {
+            method = 'query';
             version = 'v2';
-        } else if (authHeader.startsWith('AWS4')) {
+        } else if (data['X-Amz-Algorithm']) {
+            method = 'query';
             version = 'v4';
-        } else {
-            log.trace('invalid authorization security header',
-                      { header: authHeader });
-            return { err: errors.AccessDenied };
         }
-    } else if (data.Signature) {
-        method = 'query';
-        version = 'v2';
-    } else if (data['X-Amz-Algorithm']) {
-        method = 'query';
-        version = 'v4';
-    }
-    activeSpan?.addEvent(`Arsenal::Auth versions identified: ${version}`);
-    // Here, either both values are set, or none is set
-    if (version !== null && method !== null) {
-        if (!checkFunctions[version] || !checkFunctions[version][method]) {
-            activeSpan?.recordException(errors.NotImplemented);
-            log.trace('invalid auth version or method',
-                      { version, authMethod: method });
-            return { err: errors.NotImplemented };
+        activeSpan?.addEvent(`Arsenal::Auth versions identified: ${version}`);
+        // Here, either both values are set, or none is set
+        if (version !== null && method !== null) {
+            if (!checkFunctions[version] || !checkFunctions[version][method]) {
+                activeSpan?.recordException(errors.NotImplemented);
+                log.trace('invalid auth version or method',
+                          { version, authMethod: method });
+                extractParamsSpan.end();
+                return { err: errors.NotImplemented };
+            }
+            activeSpan?.addEvent(`Arsenal:: Identified auth method version: ${version} and method: ${method}`);
+            activeSpan?.addEvent('Arsenal:: Checking if valid request headers and query are used to make request to vault');
+            log.trace('identified auth method', { version, authMethod: method });
+            extractParamsSpan.end();
+            return checkFunctions[version][method](request, log, data, awsService, { activeSpan, activeTracerContext, tracer });
         }
-        activeSpan?.addEvent(`Arsenal:: Identified auth method version: ${version} and method: ${method}`);
-        activeSpan?.addEvent('Arsenal:: Checking if valid request headers and query are used to make request to vault');
-        log.trace('identified auth method', { version, authMethod: method });
-        return checkFunctions[version][method](request, log, data, awsService);
-    }
 
-    // no auth info identified
-    log.debug('assuming public user');
-    activeSpan?.addEvent(`Arsenal:: Identified as public user`);
-    return { err: null, params: publicUserInfo };
+        // no auth info identified
+        log.debug('assuming public user');
+        extractParamsSpan.end();
+        activeSpan?.addEvent(`Arsenal:: Identified as public user`);
+        return { err: null, params: publicUserInfo };
+    });
 }
 
 /**
