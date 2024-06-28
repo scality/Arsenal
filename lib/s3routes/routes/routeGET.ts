@@ -36,7 +36,7 @@ export default function routerGET(
         const call = (name: string) => {
             const action = actionMonitoringMapS3[name];
             // @ts-ignore
-            activeSpan.updateName(`${action} API request`);
+            activeSpan.updateName(`S3 API request`);
             activeSpan.addEvent(`Detected ${action} API request`);
             activeSpan.setAttribute('rpc.method', action);
             return api.callApiMethod(name, request, response, log, (err, xml, corsHeaders) => {
