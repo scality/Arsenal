@@ -131,7 +131,7 @@ function doAuth(
     activeSpan?.addEvent('Arsenal:: Routing request using doAuth() in arsenal');
     activeSpan?.addEvent('Arsenal:: Extracting auth parameters and check validity of request parameters to authenticate');
     const start = process.hrtime.bigint();
-    const res = extractParams(request, log, awsService, request.query);
+    const res = extractParams(request, log, awsService, request.query, activeSpan);
     const end = process.hrtime.bigint();
     const duration = Number(end - start) / 1e6;
     activeSpan?.addEvent(`Arsenal:: It took ${duration.toFixed(3)} ms to extract auth parameters and to check validity of request parameters to authenticate`);
