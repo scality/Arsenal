@@ -19,7 +19,13 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
         tracer,
     } = oTel;
     activeSpan?.addEvent('Arsenal:: entered Arsenal.auth.v4.queryAuthCheck');
-    return tracer.startActiveSpan('Arsenal::Arsenal.auth.v4.queryAuthCheck', undefined, activeTracerContext, authCheckSpan => {
+    return tracer.startActiveSpan('Check auth headers with Arsenal', undefined, activeTracerContext, authCheckSpan => {
+        authCheckSpan.setAttributes({
+            'code.lineno': 15,
+            'code.filename': 'lib/auth/v4/queryAuthCheck.ts',
+            'code.function': 'check',
+            'code.url': 'https://github.com/scality/arsenal/blob/6876861b5dc54de656b164bfdbc908d04555de53/lib/auth/v4/queryAuthCheck.ts'
+        });
         activeSpan?.addEvent('Arsenal:: extracting query parameters')
         const authParams = extractQueryParams(data, log);
         activeSpan?.addEvent('Arsenal:: extracting query params');
@@ -89,6 +95,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
         // building string to sign
         const payloadChecksum = 'UNSIGNED-PAYLOAD';
     
+        activeSpan?.addEvent('Constructing string to sign');
         const stringToSign = constructStringToSign({
             log,
             request,
@@ -99,7 +106,8 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
             credentialScope:
                 `${scopeDate}/${region}/${service}/${requestType}`,
             awsService: service,
-        });
+        }, oTel);
+        activeSpan?.addEvent('Constructed string to sign4');
         if (stringToSign instanceof Error) {
             activeSpan.recordException(stringToSign);
             authCheckSpan.end();

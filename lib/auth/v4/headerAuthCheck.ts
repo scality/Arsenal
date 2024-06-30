@@ -25,6 +25,12 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
     const { activeSpan, activeTracerContext, tracer } = oTel;
     activeSpan?.addEvent('Entered V4 header auth check');
     return tracer.startActiveSpan('V4 Header Auth Check', undefined, activeTracerContext, authCheckSpan => {
+        authCheckSpan.setAttributes({
+            'code.lineno': 24,
+            'code.filename': 'lib/auth/v4/headerAuthCheck.ts',
+            'code.function': 'check()',
+            'code.url': 'https://github.com/scality/arsenal/blob/6876861b5dc54de656b164bfdbc908d04555de53/lib/auth/v4/headerAuthCheck.ts'
+        });
         log.trace('running header auth check');
 
         activeSpan?.addEvent('Extracting security token');
@@ -165,7 +171,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
             timestamp,
             payloadChecksum,
             awsService: service,
-        });
+        }, oTel);
         log.trace('constructed stringToSign', { stringToSign });
         if (stringToSign instanceof Error) {
             activeSpan.recordException(stringToSign);
@@ -173,7 +179,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
             return { err: stringToSign };
         }
 
-        activeSpan.addEvent('Constructed string to sign');
+        activeSpan.addEvent('Constructed string to sign3');
 
         activeSpan.addEvent('Exiting V4 header auth check');
         authCheckSpan.end();

@@ -8,6 +8,12 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
     const { activeSpan, activeTracerContext, tracer } = oTel;
     activeSpan?.addEvent('Entered query auth check');
     return tracer.startActiveSpan('Query Auth Check', undefined, activeTracerContext, authCheckSpan => {
+        authCheckSpan.setAttributes({
+            'code.lineno': 7,
+            'code.filename': 'lib/auth/v2/queryAuthCheck.ts',
+            'code.function': 'check',
+            'code.url': 'https://github.com/scality/arsenal/blob/6876861b5dc54de656b164bfdbc908d04555de53/lib/auth/v2/queryAuthCheck.ts',
+        });
         log.trace('running query auth check');
         activeSpan?.addEvent('Running query auth check');
 
@@ -83,7 +89,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
 
         const stringToSign = constructStringToSign(request, data, log);
         log.trace('constructed string to sign', { stringToSign });
-        activeSpan?.addEvent('Constructed string to sign');
+        activeSpan?.addEvent('Constructed string to sign2');
 
         const algo = algoCheck(signatureFromRequest.length);
         log.trace('algo for calculating signature', { algo });

@@ -8,7 +8,13 @@ import algoCheck from './algoCheck';
 export function check(request: any, log: Logger, data: { [key: string]: string }, oTel: any) {
     const { activeSpan, activeTracerContext, tracer } = oTel;
     activeSpan?.addEvent('Entered V2 header auth check');
-    return tracer.startActiveSpan('V2 Header Auth Check', undefined, activeTracerContext, authCheckSpan => {
+    return tracer.startActiveSpan('Check auth headers with Arsenal', undefined, activeTracerContext, authCheckSpan => {
+        authCheckSpan.setAttributes({
+            'code.lineno': 8,
+            'code.filename': 'lib/auth/v2/headerAuthCheck.ts',
+            'code.function': 'check',
+            'code.url': 'https://github.com/scality/arsenal/blob/6876861b5dc54de656b164bfdbc908d04555de53/lib/auth/v2/headerAuthCheck.ts'
+        });
         log.trace('running header auth check');
         activeSpan?.addEvent('Running header auth check');
 
@@ -77,9 +83,10 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
         log.trace('signature from request', { signatureFromRequest });
         activeSpan?.addEvent('Extracting signature from request');
 
+        activeSpan?.addEvent('Constructing string to sign');
         const stringToSign = constructStringToSign(request, data, log);
         log.trace('constructed string to sign', { stringToSign });
-        activeSpan?.addEvent('Constructed string to sign');
+        activeSpan?.addEvent('Constructed string to sign1');
 
         const algo = algoCheck(signatureFromRequest.length);
         log.trace('algo for calculating signature', { algo });

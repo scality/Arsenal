@@ -17,7 +17,7 @@ export default function constructStringToSign(params: {
     log?: Logger;
     proxyPath?: string;
     awsService: string;
-}): string | Error {
+}, oTel?: any,): string | Error {
     const {
         request,
         signedHeaders,
@@ -29,7 +29,13 @@ export default function constructStringToSign(params: {
         proxyPath,
     } = params;
     const path = proxyPath || request.path;
-
+    const {
+        activeSpan,
+        activeTracerContext,
+        tracer,
+    } = oTel;
+    activeSpan?.addEvent('Constructing canonical request for Authv4');
+    const canonicalRequestSpan = tracer.startSpan('Builing canonical request for AuthV4')
     const canonicalReqResult = createCanonicalRequest({
         pHttpVerb: request.method,
         pResource: path,
@@ -39,7 +45,7 @@ export default function constructStringToSign(params: {
         payloadChecksum,
         service: params.awsService,
     });
-
+    canonicalRequestSpan.end();
     // TODO Why that line?
     // @ts-ignore
     if (canonicalReqResult instanceof Error) {
@@ -51,10 +57,12 @@ export default function constructStringToSign(params: {
     if (log) {
         log.debug('constructed canonicalRequest', { canonicalReqResult });
     }
+    const createSignatureSpan = tracer.startSpan('Creating signature hash for AuthV4 using crypto sha256');
     const sha256 = crypto.createHash('sha256');
     const canonicalHex = sha256.update(canonicalReqResult, 'binary')
         .digest('hex');
     const stringToSign = `AWS4-HMAC-SHA256\n${timestamp}\n` +
     `${credentialScope}\n${canonicalHex}`;
+    createSignatureSpan.end();
     return stringToSign;
 }
