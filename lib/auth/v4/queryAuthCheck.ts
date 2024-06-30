@@ -15,6 +15,7 @@ import { areSignedHeadersComplete } from './validateInputs';
 export function check(request: any, log: Logger, data: { [key: string]: string }, oTel: any) {
     const {
         activeSpan,
+        extractParamsSpan,
         activeTracerContext,
         tracer,
     } = oTel;
@@ -32,6 +33,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
         if (Object.keys(authParams).length !== 5) {
             activeSpan.recordException(errors.InvalidArgument);
             authCheckSpan.end();
+            extractParamsSpan.end();
             return { err: errors.InvalidArgument };
         }
     
@@ -42,6 +44,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
             log.debug('invalid security token', { token });
             activeSpan.recordException(errors.InvalidToken);
             authCheckSpan.end();
+            extractParamsSpan.end();
             return { err: errors.InvalidToken };
         }
     
@@ -55,6 +58,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
             log.debug('signedHeaders are incomplete', { signedHeaders });
             activeSpan.recordException(errors.AccessDenied);
             authCheckSpan.end();
+            extractParamsSpan.end();
             return { err: errors.AccessDenied };
         }
     
@@ -65,6 +69,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
                 timestamp, validationResult });
             activeSpan.recordException(validationResult);
             authCheckSpan.end();
+            extractParamsSpan.end();
             return { err: validationResult };
         }
         const accessKey = credential[0];
@@ -77,6 +82,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
         if (isTimeSkewed) {
             activeSpan.recordException(errors.RequestTimeTooSkewed);
             authCheckSpan.end();
+            extractParamsSpan.end();
             return { err: errors.RequestTimeTooSkewed };
         }
     
@@ -111,11 +117,13 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
         if (stringToSign instanceof Error) {
             activeSpan.recordException(stringToSign);
             authCheckSpan.end();
+            extractParamsSpan.end();
             return { err: stringToSign };
         }
         log.trace('constructed stringToSign', { stringToSign });
         activeSpan.addEvent('Arsenal:: exiting Arsenal.auth.v4.queryAuthCheck');
         authCheckSpan.end();
+            extractParamsSpan.end();
         return {
             err: null,
             params: {

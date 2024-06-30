@@ -6,7 +6,7 @@ import checkRequestExpiry from './checkRequestExpiry';
 import algoCheck from './algoCheck';
 
 export function check(request: any, log: Logger, data: { [key: string]: string }, oTel: any) {
-    const { activeSpan, activeTracerContext, tracer } = oTel;
+    const { activeSpan, extractParamsSpan, activeTracerContext, tracer } = oTel;
     activeSpan?.addEvent('Entered V2 header auth check');
     return tracer.startActiveSpan('Check auth headers with Arsenal', undefined, activeTracerContext, authCheckSpan => {
         authCheckSpan.setAttributes({
@@ -26,6 +26,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
             log.debug('invalid security token', { token });
             activeSpan.recordException(errors.InvalidToken);
             authCheckSpan.end();
+            extractParamsSpan.end();
             return { err: errors.InvalidToken };
         }
         activeSpan?.addEvent('Extracted security token');
@@ -38,6 +39,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
             log.debug('missing or invalid date header', { method: 'auth/v2/headerAuthCheck.check' });
             activeSpan.recordException(errors.AccessDenied.customizeDescription('Authentication requires a valid Date or x-amz-date header'));
             authCheckSpan.end();
+            extractParamsSpan.end();
             return { err: errors.AccessDenied.customizeDescription('Authentication requires a valid Date or x-amz-date header') };
         }
         activeSpan?.addEvent('Checked timestamp');
@@ -47,6 +49,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
         if (err) {
             activeSpan.recordException(err);
             authCheckSpan.end();
+            extractParamsSpan.end();
             return { err };
         }
         activeSpan?.addEvent('Checked request expiry');
@@ -60,6 +63,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
             log.debug('missing authorization security header');
             activeSpan.recordException(errors.MissingSecurityHeader);
             authCheckSpan.end();
+            extractParamsSpan.end();
             return { err: errors.MissingSecurityHeader };
         }
         const semicolonIndex = authInfo.indexOf(':');
@@ -67,6 +71,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
             log.debug('invalid authorization header', { authInfo });
             activeSpan.recordException(errors.InvalidArgument);
             authCheckSpan.end();
+            extractParamsSpan.end();
             return { err: errors.InvalidArgument };
         }
         const accessKey = semicolonIndex > 4 ? authInfo.substring(4, semicolonIndex).trim() : undefined;
@@ -74,6 +79,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
             log.trace('invalid authorization header', { authInfo });
             activeSpan.recordException(errors.MissingSecurityHeader);
             authCheckSpan.end();
+            extractParamsSpan.end();
             return { err: errors.MissingSecurityHeader };
         }
         // @ts-ignore
@@ -95,11 +101,13 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
         if (algo === undefined) {
             activeSpan.recordException(errors.InvalidArgument);
             authCheckSpan.end();
+            extractParamsSpan.end();
             return { err: errors.InvalidArgument };
         }
 
         activeSpan?.addEvent('Exiting V2 header auth check');
         authCheckSpan.end();
+            extractParamsSpan.end();
         return {
             err: null,
             params: {

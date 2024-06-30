@@ -68,6 +68,12 @@ function extractParams(
     } = oTel;
     activeSpan?.addEvent('Arsenal:: entered Arsenal.auth.server.extractParams');
     return tracer.startActiveSpan('Check validity of request parameters to authenticate using Arsenal', undefined, activeTracerContext, extractParamsSpan => {
+        extractParamsSpan.setAttributes({
+            'code.lineno': 75,
+            'code.filename': 'lib/auth/auth.ts',
+            'code.function': 'extractParams',
+            'code.url': 'https://github.com/scality/arsenal/blob/892dee6c1333fcc25c88333ee991f02830cb3c51/lib/auth/auth.ts',
+        });
         log.trace('entered', { method: 'Arsenal.auth.server.extractParams' });
         const authHeader = request.headers.authorization;
         let version: 'v2' |'v4' | null = null;
@@ -108,8 +114,7 @@ function extractParams(
             activeSpan?.addEvent(`Arsenal:: Identified auth method version: ${version} and method: ${method}`);
             activeSpan?.addEvent('Arsenal:: Checking if valid request headers and query are used to make request to vault');
             log.trace('identified auth method', { version, authMethod: method });
-            extractParamsSpan.end();
-            return checkFunctions[version][method](request, log, data, awsService, { activeSpan, activeTracerContext, tracer });
+            return checkFunctions[version][method](request, log, data, awsService, { activeSpan, extractParamsSpan, activeTracerContext, tracer });
         }
 
         // no auth info identified

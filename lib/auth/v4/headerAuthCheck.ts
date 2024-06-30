@@ -22,7 +22,7 @@ import {
  * @param awsService - Aws service ('iam' or 's3')
  */
 export function check(request: any, log: Logger, data: { [key: string]: string }, awsService: string, oTel: any) {
-    const { activeSpan, activeTracerContext, tracer } = oTel;
+    const { activeSpan, extractParamsSpan, activeTracerContext, tracer } = oTel;
     activeSpan?.addEvent('Entered V4 header auth check');
     return tracer.startActiveSpan('V4 Header Auth Check', undefined, activeTracerContext, authCheckSpan => {
         authCheckSpan.setAttributes({
@@ -39,6 +39,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
             log.debug('invalid security token', { token });
             activeSpan.recordException(errors.InvalidToken);
             authCheckSpan.end();
+            extractParamsSpan.end();
             return { err: errors.InvalidToken };
         }
         activeSpan?.addEvent('Extracted security token');
@@ -49,6 +50,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
             log.debug('missing authorization header');
             activeSpan.recordException(errors.MissingSecurityHeader);
             authCheckSpan.end();
+            extractParamsSpan.end();
             return { err: errors.MissingSecurityHeader };
         }
          activeSpan?.addEvent('Extracted authorization header');
@@ -59,6 +61,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
             log.debug('invalid authorization header', { authHeader });
             activeSpan.recordException(errors.InvalidArgument);
             authCheckSpan.end();
+            extractParamsSpan.end();
             return { err: errors.InvalidArgument };
         }
         activeSpan?.addEvent('Extracted auth header items');
@@ -68,6 +71,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
             log.debug('missing payload checksum');
             activeSpan.recordException(errors.MissingSecurityHeader);
             authCheckSpan.end();
+            extractParamsSpan.end();
             return { err: errors.MissingSecurityHeader };
         }
         if (payloadChecksum === 'STREAMING-AWS4-HMAC-SHA256-PAYLOAD') {
@@ -76,11 +80,13 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
                 log.debug('streaming v4 auth for put only', { method: 'auth/v4/headerAuthCheck.check' });
                 activeSpan.recordException(errors.InvalidArgument);
                 authCheckSpan.end();
+            extractParamsSpan.end();
                 return { err: errors.InvalidArgument };
             }
             if (!request.headers['x-amz-decoded-content-length']) {
                 activeSpan.recordException(errors.MissingSecurityHeader);
                 authCheckSpan.end();
+            extractParamsSpan.end();
                 return { err: errors.MissingSecurityHeader };
             }
         }
@@ -96,6 +102,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
             log.debug('signedHeaders are incomplete', { signedHeaders });
             activeSpan.recordException(errors.AccessDenied);
             authCheckSpan.end();
+            extractParamsSpan.end();
             return { err: errors.AccessDenied };
         }
         activeSpan.addEvent('Signed headers are complete');
@@ -118,6 +125,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
             log.debug('missing or invalid date header', { method: 'auth/v4/headerAuthCheck.check' });
             activeSpan.recordException(errors.AccessDenied.customizeDescription('Authentication requires a valid Date or x-amz-date header'));
             authCheckSpan.end();
+            extractParamsSpan.end();
             return { err: errors.AccessDenied.customizeDescription('Authentication requires a valid Date or x-amz-date header') };
         }
         activeSpan.addEvent('Request timestamp is valid');
@@ -128,6 +136,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
             log.debug('credentials in improper format', { credentialsArr, timestamp, validationResult });
             activeSpan.recordException(validationResult);
             authCheckSpan.end();
+            extractParamsSpan.end();
             return { err: validationResult };
         }
         activeSpan.addEvent('Credentials are valid');
@@ -157,6 +166,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
         if (isTimeSkewed) {
             activeSpan.recordException(errors.RequestTimeTooSkewed);
             authCheckSpan.end();
+            extractParamsSpan.end();
             return { err: errors.RequestTimeTooSkewed };
         }
         activeSpan.addEvent('signature is not expired');
@@ -176,6 +186,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
         if (stringToSign instanceof Error) {
             activeSpan.recordException(stringToSign);
             authCheckSpan.end();
+            extractParamsSpan.end();
             return { err: stringToSign };
         }
 
@@ -183,6 +194,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
 
         activeSpan.addEvent('Exiting V4 header auth check');
         authCheckSpan.end();
+            extractParamsSpan.end();
         return {
             err: null,
             params: {

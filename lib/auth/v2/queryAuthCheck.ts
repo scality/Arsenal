@@ -5,7 +5,7 @@ import algoCheck from './algoCheck';
 import constructStringToSign from './constructStringToSign';
 
 export function check(request: any, log: Logger, data: { [key: string]: string }, oTel: any) {
-    const { activeSpan, activeTracerContext, tracer } = oTel;
+    const { activeSpan, extractParamsSpan, activeTracerContext, tracer } = oTel;
     activeSpan?.addEvent('Entered query auth check');
     return tracer.startActiveSpan('Query Auth Check', undefined, activeTracerContext, authCheckSpan => {
         authCheckSpan.setAttributes({
@@ -21,6 +21,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
             log.debug('query string auth not supported for post requests');
             activeSpan.recordException(errors.NotImplemented);
             authCheckSpan.end();
+            extractParamsSpan.end();
             return { err: errors.NotImplemented };
         }
 
@@ -30,6 +31,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
             log.debug('invalid security token', { token });
             activeSpan.recordException(errors.InvalidToken);
             authCheckSpan.end();
+            extractParamsSpan.end();
             return { err: errors.InvalidToken };
         }
         activeSpan?.addEvent('Extracted security token');
@@ -48,6 +50,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
             log.debug('invalid expires parameter', { expires: data.Expires });
             activeSpan.recordException(errors.MissingSecurityHeader);
             authCheckSpan.end();
+            extractParamsSpan.end();
             return { err: errors.MissingSecurityHeader };
         }
         activeSpan?.addEvent('Checked expiration time');
@@ -63,12 +66,14 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
             log.debug('expires parameter too far in future', { expires: request.query.Expires });
             activeSpan.recordException(errors.AccessDenied);
             authCheckSpan.end();
+            extractParamsSpan.end();
             return { err: errors.AccessDenied };
         }
         if (currentTime > expirationTime) {
             log.debug('current time exceeds expires time', { expires: request.query.Expires });
             activeSpan.recordException(errors.RequestTimeTooSkewed);
             authCheckSpan.end();
+            extractParamsSpan.end();
             return { err: errors.RequestTimeTooSkewed };
         }
 
@@ -84,6 +89,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
             log.debug('invalid access key/signature parameters');
             activeSpan.recordException(errors.MissingSecurityHeader);
             authCheckSpan.end();
+            extractParamsSpan.end();
             return { err: errors.MissingSecurityHeader };
         }
 
@@ -98,11 +104,13 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
         if (algo === undefined) {
             activeSpan.recordException(errors.InvalidArgument);
             authCheckSpan.end();
+            extractParamsSpan.end();
             return { err: errors.InvalidArgument };
         }
 
         activeSpan?.addEvent('Exiting query auth check');
         authCheckSpan.end();
+            extractParamsSpan.end();
         return {
             err: null,
             params: {

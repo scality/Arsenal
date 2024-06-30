@@ -29,8 +29,6 @@ export default function createCanonicalRequest(
     } = oTel;
     activeSpan?.addEvent('Entered createCanonicalRequest');
 
-    const span = tracer.startSpan('CreateCanonicalRequest', undefined, activeTracerContext);
-
     const pHttpVerb = params.pHttpVerb;
     const pResource = params.pResource;
     const pQuery = params.pQuery;
@@ -39,7 +37,7 @@ export default function createCanonicalRequest(
     const service = params.service;
     let payloadChecksum = params.payloadChecksum;
 
-    const payloadChecksumSpan = tracer.startSpan('ComputePayloadChecksum', { parent: span });
+    const payloadChecksumSpan = tracer.startSpan('ComputePayloadChecksum');
     if (!payloadChecksum) {
         if (pHttpVerb === 'GET') {
             payloadChecksum = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b' +
@@ -59,11 +57,11 @@ export default function createCanonicalRequest(
     }
     payloadChecksumSpan.end();
 
-    const canonicalURISpan = tracer.startSpan('ComputeCanonicalURI', { parent: span });
+    const canonicalURISpan = tracer.startSpan('ComputeCanonicalURI');
     const canonicalURI = !!pResource ? awsURIencode(pResource, false) : '/';
     canonicalURISpan.end();
 
-    const canonicalQueryStrSpan = tracer.startSpan('ComputeCanonicalQueryStr', { parent: span });
+    const canonicalQueryStrSpan = tracer.startSpan('ComputeCanonicalQueryStr');
     let canonicalQueryStr = '';
     if (pQuery && !((service === 'iam' || service === 'ring' || service === 'sts') && pHttpVerb === 'POST')) {
         const sortedQueryParams = Object.keys(pQuery).sort().map(key => {
@@ -75,13 +73,13 @@ export default function createCanonicalRequest(
     }
     canonicalQueryStrSpan.end();
 
-    const signedHeadersSpan = tracer.startSpan('ComputeSignedHeaders', { parent: span });
+    const signedHeadersSpan = tracer.startSpan('ComputeSignedHeaders');
     const signedHeadersList = pSignedHeaders.split(';');
     signedHeadersList.sort((a: any, b: any) => a.localeCompare(b));
     const signedHeaders = signedHeadersList.join(';');
     signedHeadersSpan.end();
 
-    const canonicalHeadersListSpan = tracer.startSpan('ComputeCanonicalHeadersList', { parent: span });
+    const canonicalHeadersListSpan = tracer.startSpan('ComputeCanonicalHeadersList');
     const canonicalHeadersList = signedHeadersList.map((signedHeader: any) => {
         if (pHeaders[signedHeader] !== undefined) {
             const trimmedHeader = pHeaders[signedHeader]
@@ -95,16 +93,14 @@ export default function createCanonicalRequest(
     });
     canonicalHeadersListSpan.end();
 
-    const canonicalHeadersSpan = tracer.startSpan('JoinCanonicalHeaders', { parent: span });
+    const canonicalHeadersSpan = tracer.startSpan('JoinCanonicalHeaders');
     const canonicalHeaders = canonicalHeadersList.join('');
     canonicalHeadersSpan.end();
 
-    const canonicalRequestSpan = tracer.startSpan('ConstructCanonicalRequest', { parent: span });
+    const canonicalRequestSpan = tracer.startSpan('ConstructCanonicalRequest');
     const canonicalRequest = `${pHttpVerb}\n${canonicalURI}\n` +
         `${canonicalQueryStr}\n${canonicalHeaders}\n` +
         `${signedHeaders}\n${payloadChecksum}`;
     canonicalRequestSpan.end();
-
-    span.end();
     return canonicalRequest;
 }
