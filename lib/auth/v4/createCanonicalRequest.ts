@@ -74,12 +74,15 @@ export default function createCanonicalRequest(
     canonicalQueryStrSpan.end();
 
     const signedHeadersSpan = tracer.startSpan('SortSignedHeadersAlphabetically');
+    activeSpan?.addEvent('Splitting signed headers using deliminator: ;');
     const signedHeadersList = pSignedHeaders.split(';');
     activeSpan?.addEvent('Split signed headers using ; as deliminator');
+    activeSpan?.addEvent('Sorting signed headers alphabetically');
     signedHeadersList.sort((a: any, b: any) => a.localeCompare(b));
     activeSpan?.addEvent('Sorted signed headers alphabetically');
+    activeSpan?.addEvent('Joining signed headers using deliminator: ;');
     const signedHeaders = signedHeadersList.join(';');
-    activeSpan?.addEvent('Joined signed headers using deliminator');
+    activeSpan?.addEvent('Joined signed headers using ; as deliminator');
     activeSpan.setAttributes({
         'signedHeaders.request': pSignedHeaders,
         'signedHeaders.request.authv4': signedHeaders,
