@@ -74,6 +74,8 @@ export default function createCanonicalRequest(
     canonicalQueryStrSpan.end();
 
     const signedHeadersSpan = tracer.startSpan('SortSignedHeadersAlphabetically');
+    signedHeadersSpan.setAttribute('signedHeaders.size', pSignedHeaders.length);
+    signedHeadersSpan.setAttribute('signedHeaders', pSignedHeaders);
     const signedHeadersList = pSignedHeaders.split(';');
     activeSpan?.addEvent('Split signed headers using ; as deliminator');
     signedHeadersList.sort((a: any, b: any) => a.localeCompare(b));
@@ -82,7 +84,7 @@ export default function createCanonicalRequest(
     activeSpan?.addEvent('Joined signed headers using deliminator');
     signedHeadersSpan.end();
 
-    const canonicalHeadersListSpan = tracer.startSpan('FormatHeadersToMatchCanonicalHeadersList');
+    const canonicalHeadersListSpan = tracer.startSpan('FormatHeadersToMatch CanonicalHeadersList');
     const canonicalHeadersList = signedHeadersList.map((signedHeader: any) => {
         if (pHeaders[signedHeader] !== undefined) {
             const trimmedHeader = pHeaders[signedHeader]
