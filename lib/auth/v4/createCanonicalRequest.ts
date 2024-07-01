@@ -74,14 +74,24 @@ export default function createCanonicalRequest(
     canonicalQueryStrSpan.end();
 
     const signedHeadersSpan = tracer.startSpan('SortSignedHeadersAlphabetically');
-    signedHeadersSpan.setAttribute('signedHeaders.size', pSignedHeaders.length);
-    signedHeadersSpan.setAttribute('signedHeaders', pSignedHeaders);
     const signedHeadersList = pSignedHeaders.split(';');
     activeSpan?.addEvent('Split signed headers using ; as deliminator');
     signedHeadersList.sort((a: any, b: any) => a.localeCompare(b));
     activeSpan?.addEvent('Sorted signed headers alphabetically');
     const signedHeaders = signedHeadersList.join(';');
     activeSpan?.addEvent('Joined signed headers using deliminator');
+    activeSpan.setAttributes({
+        'signedHeaders.request': pSignedHeaders,
+        'signedHeaders.request.authv4': signedHeaders,
+    });
+    signedHeadersSpan.setAttributes({
+        'signedHeaders.request': pSignedHeaders,
+        'signedHeaders.request.authv4': signedHeaders,
+        'code.url': 'https://github.com/scality/arsenal/blob/c6bb489adeb7419fdbcdf01db2b46a593747530d/lib/auth/v4/createCanonicalRequest.ts#L76',
+        'code.function': 'createCanonicalRequest',
+        'code.lineno': 76,
+        'code.filename': 'lib/auth/v4/createCanonicalRequest.ts',
+    });
     signedHeadersSpan.end();
 
     const canonicalHeadersListSpan = tracer.startSpan('FormatHeadersToMatch CanonicalHeadersList');
