@@ -35,7 +35,6 @@ export default function constructStringToSign(params: {
         tracer,
     } = oTel;
     activeSpan?.addEvent('Constructing canonical request for Authv4');
-    const canonicalRequestSpan = tracer.startSpan('Building canonical request for AuthV4')
     const canonicalReqResult = createCanonicalRequest({
         pHttpVerb: request.method,
         pResource: path,
@@ -45,7 +44,6 @@ export default function constructStringToSign(params: {
         payloadChecksum,
         service: params.awsService,
     }, oTel);
-    canonicalRequestSpan.end();
     // TODO Why that line?
     // @ts-ignore
     if (canonicalReqResult instanceof Error) {
