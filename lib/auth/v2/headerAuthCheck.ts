@@ -71,7 +71,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
     activeSpan?.addEvent('Constructing string to sign');
     const stringToSign = constructStringToSign(request, data, log);
     log.trace('constructed string to sign', { stringToSign });
-    activeSpan?.addEvent('Constructed string to sign1');
+    activeSpan?.addEvent('Constructed string to sign v2 headers');
     const algo = algoCheck(signatureFromRequest.length);
     log.trace('algo for calculating signature', { algo });
     activeSpan?.addEvent('Checked algorithm for calculating signature');
@@ -81,7 +81,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
         return { err: errors.InvalidArgument };
     }
     activeSpan?.addEvent('Exiting V2 header auth check');
-        extractParamsSpan.end();
+    extractParamsSpan.end();
     return {
         err: null,
         params: {

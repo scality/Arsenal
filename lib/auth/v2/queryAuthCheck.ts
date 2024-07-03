@@ -72,7 +72,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
     }
     const stringToSign = constructStringToSign(request, data, log);
     log.trace('constructed string to sign', { stringToSign });
-    activeSpan?.addEvent('Constructed string to sign2');
+    activeSpan?.addEvent('Constructed string to sign v2 query');
     const algo = algoCheck(signatureFromRequest.length);
     log.trace('algo for calculating signature', { algo });
     activeSpan?.addEvent('Checked algorithm for calculating signature');

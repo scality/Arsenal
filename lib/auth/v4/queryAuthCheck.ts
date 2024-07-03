@@ -101,7 +101,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
             `${scopeDate}/${region}/${service}/${requestType}`,
         awsService: service,
     }, oTel);
-    activeSpan?.addEvent('Constructed string to sign4');
+    activeSpan?.addEvent('Constructed string to sign v4 query');
     if (stringToSign instanceof Error) {
         activeSpan.recordException(stringToSign);
         extractParamsSpan.end();

@@ -159,7 +159,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
         extractParamsSpan.end();
         return { err: stringToSign };
     }
-    activeSpan.addEvent('Constructed string to sign3');
+    activeSpan.addEvent('Constructed string to sign v4 headers');
     activeSpan.addEvent('Exiting V4 header auth check');
     extractParamsSpan.end();
     return {
