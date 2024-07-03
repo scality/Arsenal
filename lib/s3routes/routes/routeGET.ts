@@ -23,11 +23,6 @@ export default function routerGET(
     } = dataRetrievalParams;
     return tracer.startActiveSpan('Arsenal:: Performing Get API related operations using Cloudserver, Vault and Metadata', undefined, activeTracerContext, cloudserverApiSpan => {
         activeSpan.addEvent('Request validated, routing request using routeGET() in arsenal');
-        cloudserverApiSpan.setAttributes({
-            'code.lineno': 9,
-            'code.filename': 'lib/s3routes/routes/routeGET.ts',
-            'code.function': 'routerGET()',
-        })
         activeSpan.addEvent('Detecting which API to route to using arsenal routeGET()')
         log.debug('routing request', { method: 'routerGET' });
 

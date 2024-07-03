@@ -638,7 +638,7 @@ export function responseStreamData(
         },
     }   = retrieveDataParams;
     activeSpan.addEvent('Request processed, getting Data from sproxyd');
-    return tracer.startActiveSpan('Getting Data From RING', undefined, activeTracerContext, sproxydSpan => {
+    return tracer.startActiveSpan('Getting Object Data from RING', undefined, activeTracerContext, sproxydSpan => {
         sproxydSpan.setAttributes({
             'code.function': 'Arsenal:: responseStreamData()',
             'code.filepath': 'lib/s3routes/routesUtils.js',
