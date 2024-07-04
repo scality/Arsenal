@@ -11,9 +11,46 @@ import { validateCredentials, extractFormParams } from './validateInputs';
  * @param data - Contain authentification params (GET or POST data)
  */
 export function check(request: any, log: Logger, data: { [key: string]: string }) {
-    const authParams = extractFormParams(data, log);
+    let signatureFromRequest;
+    let timestamp;
+    let expiration;
+    let credential;
 
-    if (Object.keys(authParams).length !== 4) {
+    if (data['x-amz-algorithm'] !== 'AWS4-HMAC-SHA256') {
+        log.debug('algorithm param incorrect', { algo: data['X-Amz-Algorithm'] });
+    }
+
+    // // adding placeholder for signedHeaders to satisfy Vault
+    // // as this is not required for form auth
+    // authParams.signedHeaders = 'content-type;host;x-amz-date;x-amz-security-token';
+
+    signatureFromRequest = data['x-amz-signature'];
+    if (!signatureFromRequest || signatureFromRequest.length !== 64) {
+        log.debug('missing signature');
+    }
+
+    timestamp = data['x-amz-date'];
+    if (!timestamp || timestamp.length !== 16) {
+        log.debug('missing or invalid timestamp', { timestamp: data['x-amz-date'] });
+        return { err: errors.InvalidArgument };
+    }
+
+    const policy = data['policy'];
+    if (policy && policy.length > 0) {
+        const decryptedPolicy = Buffer.from(policy, 'base64').toString('utf8');
+        const policyObj = JSON.parse(decryptedPolicy);
+        expiration = policyObj.expiration;
+    } else {
+        log.debug('missing or invalid policy', { policy: data['policy'] });
+        return { err: errors.InvalidArgument };
+    }
+
+    credential = data['x-amz-credential'];
+    if (credential && credential.length > 28 && credential.indexOf('/') > -1) {
+        // @ts-ignore
+        credential = credential.split('/');
+    } else {
+        log.debug('invalid credential param', { credential: data['X-Amz-Credential'] });
         return { err: errors.InvalidArgument };
     }
 
@@ -22,12 +59,6 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
         log.debug('invalid security token', { token });
         return { err: errors.InvalidToken };
     }
-
-    // const signedHeaders = authParams.signedHeaders!;
-    const signatureFromRequest = authParams.signatureFromRequest!;
-    const timestamp = authParams.timestamp!;
-    const expiration = authParams.expiration!;
-    const credential = authParams.credential!;
 
     // check if the expiration date is passed the current time
     if (Date.parse(expiration) < Date.now()) {
