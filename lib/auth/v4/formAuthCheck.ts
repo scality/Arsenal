@@ -20,13 +20,10 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
         log.debug('algorithm param incorrect', { algo: data['X-Amz-Algorithm'] });
     }
 
-    // // adding placeholder for signedHeaders to satisfy Vault
-    // // as this is not required for form auth
-    // authParams.signedHeaders = 'content-type;host;x-amz-date;x-amz-security-token';
-
     signatureFromRequest = data['x-amz-signature'];
-    if (!signatureFromRequest || signatureFromRequest.length !== 64) {
+    if (!signatureFromRequest) {
         log.debug('missing signature');
+        return { err: errors.InvalidArgument };
     }
 
     timestamp = data['x-amz-date'];
@@ -49,6 +46,13 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
     if (credential && credential.length > 28 && credential.indexOf('/') > -1) {
         // @ts-ignore
         credential = credential.split('/');
+        const validationResult = validateCredentials(credential, timestamp,
+            log);
+          if (validationResult instanceof Error) {
+              log.debug('credentials in improper format', { credential,
+                  timestamp, validationResult });
+              return { err: validationResult };
+          }
     } else {
         log.debug('invalid credential param', { credential: data['X-Amz-Credential'] });
         return { err: errors.InvalidArgument };
