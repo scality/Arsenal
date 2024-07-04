@@ -1,5 +1,7 @@
 import { Logger } from 'werelogs';
 import errors from '../../../lib/errors';
+import { auth } from '../../..';
+import { String } from 'aws-sdk/clients/cloudwatchevents';
 
 /**
  * Validate Credentials
@@ -127,6 +129,73 @@ export function extractQueryParams(
         log.warn('invalid credential param', { credential });
         return authParams;
     }
+    return authParams;
+}
+
+/**
+ * Extract and validate components from formData object
+ * @param  formObj - formData object from request
+ * @param log - logging object
+ * @return object containing extracted query params for authV4
+ */
+export function extractFormParams(
+    formObj: { [key: string]: string | undefined },
+    log: Logger
+) {
+    const authParams: {
+        signedHeaders?: string;
+        signatureFromRequest?: string;
+        timestamp?: string;
+        expiration?: String;
+        credential?: [string, string, string, string, string];
+    } = {};
+
+    // Do not need the algorithm sent back
+    if (formObj['x-amz-algorithm'] !== 'AWS4-HMAC-SHA256') {
+        log.warn('algorithm param incorrect', { algo: formObj['X-Amz-Algorithm'] });
+        return authParams;
+    }
+
+    // // adding placeholder for signedHeaders to satisfy Vault
+    // // as this is not required for form auth
+    // authParams.signedHeaders = 'content-type;host;x-amz-date;x-amz-security-token';
+
+    const signature = formObj['x-amz-signature'];
+    if (signature && signature.length === 64) {
+        authParams.signatureFromRequest = signature;
+    } else {
+        log.warn('missing signature');
+        return authParams;
+    }
+
+    const timestamp = formObj['x-amz-date'];
+    if (timestamp && timestamp.length === 16) {
+        authParams.timestamp = timestamp;
+    } else {
+        log.warn('missing or invalid timestamp', { timestamp: formObj['x-amz-date'] });
+        return authParams;
+    }
+
+    const policy = formObj['policy'];
+    if (policy && policy.length > 0) {
+        const decryptedPolicy = Buffer.from(policy, 'base64').toString('utf8');
+        const policyObj = JSON.parse(decryptedPolicy);
+        const expiration = policyObj.expiration;
+        authParams.expiration = expiration;
+    } else {
+        log.warn('missing or invalid policy', { policy: formObj['policy'] });
+        return authParams;
+    }
+
+    const credential = formObj['x-amz-credential'];
+    if (credential && credential.length > 28 && credential.indexOf('/') > -1) {
+        // @ts-ignore
+        authParams.credential = credential.split('/');
+    } else {
+        log.warn('invalid credential param', { credential: formObj['X-Amz-Credential'] });
+        return authParams;
+    }
+
     return authParams;
 }
 
