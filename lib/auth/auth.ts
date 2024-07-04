@@ -25,6 +25,7 @@ const checkFunctions = {
     v4: {
         headers: v4.header.check,
         query: v4.query.check,
+        form: v4.form.check,
     },
 };
 
@@ -63,7 +64,7 @@ function extractParams(
     log.trace('entered', { method: 'Arsenal.auth.server.extractParams' });
     const authHeader = request.headers.authorization;
     let version: 'v2' |'v4' | null = null;
-    let method: 'query' | 'headers' | null = null;
+    let method: 'query' | 'headers' | 'form' | null = null;
 
     // Identify auth version and method to dispatch to the right check function
     if (authHeader) {
@@ -84,6 +85,9 @@ function extractParams(
         version = 'v2';
     } else if (data['X-Amz-Algorithm']) {
         method = 'query';
+        version = 'v4';
+    } if (data.policy) {
+        method = 'form';
         version = 'v4';
     }
 
@@ -121,7 +125,8 @@ function doAuth(
     awsService: string,
     requestContexts: any[] | null
 ) {
-    const res = extractParams(request, log, awsService, request.query);
+    const data: { [key: string]: string; } = request.formData || request.query || {};
+    const res = extractParams(request, log, awsService, data);
     if (res.err) {
         return cb(res.err);
     } else if (res.params instanceof AuthInfo) {
