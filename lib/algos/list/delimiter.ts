@@ -196,6 +196,9 @@ export class Delimiter extends Extension {
     }
 
     getCommonPrefix(key: string): string | undefined {
+        if (!this.delimiter) {
+            return undefined;
+        }
         const baseIndex = this.prefix ? this.prefix.length : 0;
         const delimiterIndex = key.indexOf(this.delimiter, baseIndex);
         if (delimiterIndex === -1) {

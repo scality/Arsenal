@@ -465,6 +465,25 @@ function getListingKey(key, vFormat) {
                             `${inc(DbPrefixes.Replay)}foo/bar${VID_SEP}`);
                 });
             });
+
+            it('should not crash if key contains "undefined" with no delimiter', () => {
+                const delimiter = new DelimiterMaster({}, fakeLogger, vFormat);
+                const listingKey = getListingKey('undefinedfoo', vFormat);
+                assert.strictEqual(
+                    delimiter.filter({
+                        key: listingKey,
+                        value: '{}',
+                    }),
+                    FILTER_ACCEPT);
+
+                assert.deepStrictEqual(delimiter.result(), {
+                    CommonPrefixes: [],
+                    Contents: [{ key: 'undefinedfoo', value: '{}' }],
+                    IsTruncated: false,
+                    NextMarker: undefined,
+                    Delimiter: undefined,
+                });
+            });
         }
     });
 });
