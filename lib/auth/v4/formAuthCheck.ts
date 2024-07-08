@@ -18,6 +18,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
 
     if (data['x-amz-algorithm'] !== 'AWS4-HMAC-SHA256') {
         log.debug('algorithm param incorrect', { algo: data['X-Amz-Algorithm'] });
+        return { err: errors.InvalidArgument };
     }
 
     signatureFromRequest = data['x-amz-signature'];
@@ -64,9 +65,9 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
         return { err: errors.InvalidToken };
     }
 
-    // check if the expiration date is passed the current time
+    // check if the expiration date is past the current time
     if (Date.parse(expiration) < Date.now()) {
-        return { err: errors.RequestExpired };
+        return { err: errors.AccessDenied.customizeDescription('Invalid according to Policy: Policy expired.') };
     }
 
     const validationResult = validateCredentials(credential, timestamp,
