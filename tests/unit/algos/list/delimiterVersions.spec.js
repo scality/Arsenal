@@ -933,6 +933,26 @@ function getTestListing(test, data, vFormat) {
             });
         });
 
+        it('should not crash if key contains "undefined" with no delimiter', () => {
+            const delimiter = new DelimiterVersions({}, logger, vFormat);
+            const value = '';
+
+            const listingKey = getListingKey('undefinedfoo', vFormat);
+            assert.strictEqual(delimiter.filter({ key: listingKey, value }), FILTER_ACCEPT);
+            assert.deepStrictEqual(delimiter.result(), {
+                CommonPrefixes: [],
+                Delimiter: undefined,
+                Versions: [{
+                    key: 'undefinedfoo',
+                    value: '',
+                    versionId: 'null',
+                }],
+                IsTruncated: false,
+                NextKeyMarker: undefined,
+                NextVersionIdMarker: undefined,
+            });
+        });
+
         it('should accept a PHD version as first input', () => {
             const delimiter = new DelimiterVersions({}, logger, vFormat);
             const keyPHD = 'keyPHD';
