@@ -58,6 +58,10 @@ export default function routePOST(
                     corsHeaders));
     }
 
+    if (objectKey === undefined && Object.keys(query).length === 0) {
+        return api.callApiMethod('objectPost', request, response, log, (err, resHeaders) => routesUtils.responseNoBody(err, resHeaders, response, 200, log));
+    }
+
     return routesUtils.responseNoBody(errors.NotImplemented, null, response,
         200, log);
 }
