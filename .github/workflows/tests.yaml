@@ -46,7 +46,9 @@ jobs:
       run: yarn --silent coverage
     - name: run functional tests
       run: yarn ft_test
-    - uses: codecov/codecov-action@v3
+    - uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
     - name: run executables tests
       run: yarn install && yarn test
       working-directory: 'lib/executables/pensieveCreds/'
