@@ -61,7 +61,7 @@ export function findConditionKey(
     case 'aws:referer': return headers.referer;
     // aws:SecureTransport – Used to check whether the request was sent
     // using SSL (see Boolean Condition Operators).
-    case 'aws:SecureTransport': return requestContext.getSslEnabled() ? 'true' : 'false';
+    case 'aws:SecureTransport': return headers?.['x-forwarded-proto'] === 'https' ? 'true' : 'false';
     // aws:SourceArn – Used check the source of the request,
     // using the ARN of the source. N/A here.
     case 'aws:SourceArn': return undefined;
