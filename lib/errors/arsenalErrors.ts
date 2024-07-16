@@ -247,7 +247,7 @@ export const InvalidURI: ErrorFormat = {
     description: "Couldn't parse the specified URI.",
 };
 
-export const KeyTooLong: ErrorFormat = {
+export const KeyTooLongError: ErrorFormat = {
     code: 400,
     description: 'Your key is too long.',
 };
@@ -281,10 +281,10 @@ export const MaxMessageLengthExceeded: ErrorFormat = {
     description: 'Your request was too big.',
 };
 
-export const MaxPostPreDataLengthExceededError: ErrorFormat = {
+export const MaxPostPreDataLengthExceeded: ErrorFormat = {
     code: 400,
     description:
-        'Your POST request fields preceding the upload file were too large.',
+        'Your POST request fields preceeding the upload file was too large.',
 };
 
 export const MetadataTooLarge: ErrorFormat = {
