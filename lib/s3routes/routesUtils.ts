@@ -10,6 +10,11 @@ import * as constants from '../constants';
 import DataWrapper from '../storage/data/DataWrapper';
 import StatsClient from '../metrics/StatsClient';
 
+export type ApiMethods = {
+        callApiMethod: CallApiMethod;
+        callPostObject?: CallPostObject;
+};
+
 export type CallApiMethod = (
     methodName: string,
     request: http.IncomingMessage,
@@ -17,6 +22,14 @@ export type CallApiMethod = (
     log: RequestLogger,
     callback: (err: ArsenalError | null, ...data: any[]) => void,
 ) => void;
+
+export type CallPostObject = (
+    request: http.IncomingMessage,
+    response: http.ServerResponse,
+    log: RequestLogger,
+    callback: (err: ArsenalError | null, ...data: any[]) => void,
+) => void;
+
 
 /**
  * setCommonResponseHeaders - Set HTTP response headers

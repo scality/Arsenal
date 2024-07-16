@@ -8,7 +8,7 @@ import * as http from 'http';
 export default function routePOST(
     request: http.IncomingMessage,
     response: http.ServerResponse,
-    api: { callApiMethod: routesUtils.CallApiMethod },
+    api: routesUtils.ApiMethods,
     log: RequestLogger,
 ) {
     log.debug('routing request', { method: 'routePOST' });
@@ -56,6 +56,10 @@ export default function routePOST(
             log, (err, xml, corsHeaders) =>
                 routesUtils.responseXMLBody(err, xml, response, log,
                     corsHeaders));
+    }
+
+    if (objectKey === undefined && Object.keys(query).length === 0) {
+        return api.callPostObject!(request, response, log, (err, resHeaders) => routesUtils.responseNoBody(err, resHeaders, response, 204, log));
     }
 
     return routesUtils.responseNoBody(errors.NotImplemented, null, response,

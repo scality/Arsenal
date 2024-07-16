@@ -8,7 +8,7 @@ import StatsClient from '../../metrics/StatsClient';
 export default function routerGET(
     request: http.IncomingMessage,
     response: http.ServerResponse,
-    api: { callApiMethod: routesUtils.CallApiMethod },
+    api: routesUtils.ApiMethods,
     log: RequestLogger,
     statsClient?: StatsClient,
     dataRetrievalParams?: any,
