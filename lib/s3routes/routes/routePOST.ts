@@ -58,7 +58,12 @@ export default function routePOST(
                     corsHeaders));
     }
 
-    if (objectKey === undefined && Object.keys(query).length === 0) {
+    if (objectKey === undefined) {
+        if (Object.keys(query).length > 0) {
+            return routesUtils.responseNoBody(errors.InvalidArgument
+                .customizeDescription("Query String Parameters not allowed on POST requests."), null,
+                response, 400, log);
+        }
         return api.callPostObject!('objectPost', request, response, log, (err, resHeaders) => routesUtils.responseNoBody(err, resHeaders, response, 204, log));
     }
 
