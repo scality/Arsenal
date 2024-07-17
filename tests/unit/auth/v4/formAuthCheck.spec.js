@@ -51,6 +51,14 @@ const request = {
 };
 
 describe('v4 formAuthCheck', () => {
+    let clock;
+
+    afterEach(() => {
+        if (clock) {
+            clock.uninstall();
+        }
+    });
+
     it('should return error if algorithm param incorrect', done => {
         const alteredRequest = createAlteredRequest({
             'x-amz-algorithm':
@@ -145,13 +153,12 @@ describe('v4 formAuthCheck', () => {
 
     it('should return error if scope date from x-amz-credential param' +
         'does not match date from x-amz-date param', done => {
-        const clock = fakeTimers.install({ now: 1454974984001 });
+        clock = fakeTimers.install({ now: 1454974984001 });
         const alteredRequest = createAlteredRequest({
             'x-amz-credential': 'accessKey1/20160209/' +
                     'us-east-1/s3/aws4_request',
         }, 'formData', request, formData);
         const res = formAuthCheck(alteredRequest, log, alteredRequest.formData);
-        clock.uninstall();
         assert.deepStrictEqual(res.err, errors.RequestTimeTooSkewed);
         done();
     });
@@ -159,9 +166,8 @@ describe('v4 formAuthCheck', () => {
     it('should successfully return v4 and no error', done => {
         // Freezes time so date created within function will be Feb 8, 2016
         // (within 15 minutes of timestamp in request)
-        const clock = fakeTimers.install({ now: 1454974984001 });
+        clock = fakeTimers.install({ now: 1454974984001 });
         const res = formAuthCheck(request, log, request.formData);
-        clock.uninstall();
         assert.deepStrictEqual(res.err, null);
         assert.strictEqual(res.params.version, 4);
         done();

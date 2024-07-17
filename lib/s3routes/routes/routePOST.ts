@@ -59,7 +59,7 @@ export default function routePOST(
     }
 
     if (objectKey === undefined && Object.keys(query).length === 0) {
-        return api.callPostObject!(request, response, log, (err, resHeaders) => routesUtils.responseNoBody(err, resHeaders, response, 204, log));
+        return api.callPostObject!('objectPost', request, response, log, (err, resHeaders) => routesUtils.responseNoBody(err, resHeaders, response, 204, log));
     }
 
     return routesUtils.responseNoBody(errors.NotImplemented, null, response,
