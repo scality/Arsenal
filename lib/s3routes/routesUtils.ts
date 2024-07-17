@@ -11,8 +11,8 @@ import DataWrapper from '../storage/data/DataWrapper';
 import StatsClient from '../metrics/StatsClient';
 
 export type ApiMethods = {
-        callApiMethod: CallApiMethod;
-        callPostObject: CallApiMethod;
+    callApiMethod: CallApiMethod;
+    callPostObject: CallApiMethod;
 };
 
 export type CallApiMethod = (

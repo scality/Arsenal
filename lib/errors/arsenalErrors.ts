@@ -247,7 +247,7 @@ export const InvalidURI: ErrorFormat = {
     description: "Couldn't parse the specified URI.",
 };
 
-export const KeyTooLongError: ErrorFormat = {
+export const KeyTooLong: ErrorFormat = {
     code: 400,
     description: 'Your key is too long.',
 };

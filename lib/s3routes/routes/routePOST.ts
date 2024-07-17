@@ -64,7 +64,7 @@ export default function routePOST(
                 .customizeDescription("Query String Parameters not allowed on POST requests."), null,
                 response, 400, log);
         }
-        return api.callPostObject!('objectPost', request, response, log, (err, resHeaders) => routesUtils.responseNoBody(err, resHeaders, response, 204, log));
+        return api.callPostObject('objectPost', request, response, log, (err, resHeaders) => routesUtils.responseNoBody(err, resHeaders, response, 204, log));
     }
 
     return routesUtils.responseNoBody(errors.NotImplemented, null, response,
