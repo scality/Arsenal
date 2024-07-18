@@ -8,7 +8,7 @@ import * as http from 'http';
 export default function routePOST(
     request: http.IncomingMessage,
     response: http.ServerResponse,
-    api: { callApiMethod: routesUtils.CallApiMethod },
+    api: routesUtils.ApiMethods,
     log: RequestLogger,
 ) {
     log.debug('routing request', { method: 'routePOST' });
@@ -56,6 +56,20 @@ export default function routePOST(
             log, (err, xml, corsHeaders) =>
                 routesUtils.responseXMLBody(err, xml, response, log,
                     corsHeaders));
+    }
+
+    if (objectKey && Object.keys(query).length !== 0) {
+        return routesUtils.responseNoBody(errors.MethodNotAllowed, null, response, 405, log);
+    }
+    
+    if (objectKey === undefined) {
+            // Handle invalid query string parameters
+            if (Object.keys(query).length > 0) {
+                return routesUtils.responseNoBody(errors.InvalidArgument
+                    .customizeDescription("Query String Parameters not allowed on POST requests."), null, response, 400, log);
+            }
+            return api.callPostObject('objectPost', request, response, log, (err, resHeaders) =>
+                routesUtils.responseNoBody(err, resHeaders, response, 204, log));
     }
 
     return routesUtils.responseNoBody(errors.NotImplemented, null, response,

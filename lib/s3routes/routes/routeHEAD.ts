@@ -8,7 +8,7 @@ import * as http from 'http';
 export default function routeHEAD(
     request: http.IncomingMessage,
     response: http.ServerResponse,
-    api: { callApiMethod: routesUtils.CallApiMethod },
+    api: routesUtils.ApiMethods,
     log: RequestLogger,
     statsClient?: StatsClient,
 ) {
