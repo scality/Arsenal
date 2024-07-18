@@ -58,13 +58,18 @@ export default function routePOST(
                     corsHeaders));
     }
 
+    if (objectKey && Object.keys(query).length !== 0) {
+        return routesUtils.responseNoBody(errors.MethodNotAllowed, null, response, 405, log);
+    }
+    
     if (objectKey === undefined) {
-        if (Object.keys(query).length > 0) {
-            return routesUtils.responseNoBody(errors.InvalidArgument
-                .customizeDescription("Query String Parameters not allowed on POST requests."), null,
-                response, 400, log);
-        }
-        return api.callPostObject('objectPost', request, response, log, (err, resHeaders) => routesUtils.responseNoBody(err, resHeaders, response, 204, log));
+            // Handle invalid query string parameters
+            if (Object.keys(query).length > 0) {
+                return routesUtils.responseNoBody(errors.InvalidArgument
+                    .customizeDescription("Query String Parameters not allowed on POST requests."), null, response, 400, log);
+            }
+            return api.callPostObject('objectPost', request, response, log, (err, resHeaders) =>
+                routesUtils.responseNoBody(err, resHeaders, response, 204, log));
     }
 
     return routesUtils.responseNoBody(errors.NotImplemented, null, response,
