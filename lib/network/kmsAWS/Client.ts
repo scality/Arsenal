@@ -2,8 +2,11 @@
 /* eslint new-cap: "off" */
 
 import errors from '../../errors';
+import { Agent } from "https";
+import { SecureVersion } from "tls";
 import * as werelogs from 'werelogs';
 import { KMSClient, CreateKeyCommand, ScheduleKeyDeletionCommand, EncryptCommand, DecryptCommand, GenerateDataKeyCommand, DataKeySpec } from "@aws-sdk/client-kms";
+import { NodeHttpHandler } from "@smithy/node-http-handler";
 import { AwsCredentialIdentity } from "@smithy/types";
 import assert from 'assert';
 
@@ -45,9 +48,17 @@ export default class Client {
      * @param options.kmsAWS.endpoint - Endpoint URL of the KMS service
      * @param options.kmsAWS.ak - Application Key
      * @param options.kmsAWS.sk - Secret Key
+     * @param options.kmsAWS.tls.rejectUnauthorized - default to true, reject unauthenticated TLS connections (set to false to accept auto-signed certificates, useful in development ONLY)
+     * @param options.kmsAWS.tls.ca - override CA definition(s)
+     * @param options.kmsAWS.tls.cert - certificate or list of certificates
+     * @param options.kmsAWS.tls.minVersion - min TLS version accepted, One of 'TLSv1.3', 'TLSv1.2', 'TLSv1.1', or 'TLSv1' (see https://nodejs.org/api/tls.html#tlscreatesecurecontextoptions)
+     * @param options.kmsAWS.tls.maxVersion - max TLS version accepted, One of 'TLSv1.3', 'TLSv1.2', 'TLSv1.1', or 'TLSv1' (see https://nodejs.org/api/tls.html#tlscreatesecurecontextoptions)
+     * @param options.kmsAWS.tls.key - private key or list of private keys
      * 
      * This client also looks in the standard AWS configuration files (https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
      * If no option is passed to this constructor, the client will try to get it from the configuration file.
+     * 
+     * TLS configuration options are those of nodejs, you can refere to https://nodejs.org/api/tls.html#tlsconnectoptions and https://nodejs.org/api/tls.html#tlscreatesecurecontextoptions
      */
     constructor(
         options: {
@@ -56,9 +67,35 @@ export default class Client {
                 endpoint?: string,
                 ak?: string,
                 sk?: string,
+                tls?: {
+                    rejectUnauthorized?: boolean,
+                    ca?: [Buffer] | Buffer,
+                    cert?: [Buffer] | Buffer,
+                    minVersion?: string,
+                    maxVersion?: string,
+                    key?: [Buffer] | Buffer,
+                }
             }
         },
     ) {
+        let requestHandler: {requestHandler: NodeHttpHandler} | null = null;
+        const tlsOpts = options.kmsAWS.tls;
+        if (tlsOpts) {
+            const agent = new Agent({
+                rejectUnauthorized: tlsOpts?.rejectUnauthorized,
+                ca: tlsOpts?.ca,
+                cert: tlsOpts?.cert,
+                minVersion: <SecureVersion>tlsOpts?.minVersion,
+                maxVersion: <SecureVersion>tlsOpts?.maxVersion,
+                key: tlsOpts?.key,
+            });
+
+            requestHandler = {requestHandler: new NodeHttpHandler({
+                httpAgent: agent,
+                httpsAgent: agent,
+            })}
+        }
+
         let credentials: {credentials: AwsCredentialIdentity} | null = null;
         if (options.kmsAWS.ak && options.kmsAWS.sk) {
             credentials = {credentials: {
@@ -70,7 +107,8 @@ export default class Client {
         this.client = new KMSClient({
             region: options.kmsAWS.region,
             endpoint: options.kmsAWS.endpoint,
-            ...credentials
+            ...credentials,
+            ...requestHandler
         });
     }
 
