@@ -69,15 +69,17 @@ export type AuthV4RequestParams = {
 export default class Vault {
     client: any;
     implName: string;
+    authWithPost: boolean;
 
     /**
      * @constructor
      * @param {object} client - authentication backend or vault client
      * @param {string} implName - implementation name for auth backend
      */
-    constructor(client: any, implName: string) {
+    constructor(client: any, implName: string, authWithPost: boolean = false) {
         this.client = client;
         this.implName = implName;
+        this.authWithPost = authWithPost;
     }
     /**
      * authenticateV2Request
@@ -196,6 +198,7 @@ export default class Vault {
                 logger: params.log,
                 securityToken: params.data.securityToken,
                 requestContext: serializedRCs,
+                post: this.authWithPost,
             },
             (err: Error | null, userInfo?: any) => vaultSignatureCb(err, userInfo,
                 params.log, callback, streamingV4Params),
