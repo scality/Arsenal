@@ -1,6 +1,6 @@
 import { Logger } from 'werelogs';
 import errors from '../errors';
-import AuthInfo from './AuthInfo';
+import AuthInfo, { AuthInfoType } from './AuthInfo';
 
 /** vaultSignatureCb parses message from Vault and instantiates
  * @param err - error from vault
@@ -12,7 +12,16 @@ import AuthInfo from './AuthInfo';
  */
 function vaultSignatureCb(
     err: Error | null,
-    authInfo: { message: { body: any } },
+    authInfo: {
+        message: {
+            message: string,
+            body: {
+                userInfo: AuthInfoType,
+                authorizationResults: { [key: string]: any },
+                accountQuota: number,
+            },
+        },
+    },
     log: Logger,
     callback: (err: Error | null, data?: any, results?: any, params?: any, infos?: any) => void,
     streamingV4Params?: any
@@ -26,7 +35,20 @@ function vaultSignatureCb(
             { errorMessage: err });
         return callback(err);
     }
-    log.debug('received info from Vault', { authInfo });
+
+    const { email, ...userInfoWithoutEmail } = authInfo.message.body.userInfo;
+
+    log.debug('received info from Vault', {
+        ...authInfo,
+        message: {
+            message: authInfo.message.message,
+            body: {
+                ...authInfo.message.body,
+                userInfo: userInfoWithoutEmail,
+            },
+        },
+    });
+
     const info = authInfo.message.body;
     const userInfo = new AuthInfo(info.userInfo);
     const authorizationResults = info.authorizationResults;

@@ -1,5 +1,14 @@
 import * as constants from '../constants';
 
+export type AuthInfoType = {
+    arn: string;
+    canonicalID: string;
+    shortid: string;
+    email: string;
+    accountDisplayName: string;
+    IAMdisplayName: string;
+};
+
 /**
  * Class containing requester's information received from Vault
  * @param {object} info from Vault including arn, canonicalID,
