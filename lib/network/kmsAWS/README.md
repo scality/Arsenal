@@ -47,6 +47,7 @@ and
         "sk": "xxxxxxx"
     }
 }
+```
 
 With TLS configuration:
 

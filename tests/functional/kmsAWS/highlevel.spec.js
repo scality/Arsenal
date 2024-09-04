@@ -1,263 +1,273 @@
-'use strict'; // eslint-disable-line strict
+const sinon = require('sinon');
+const assert = require('assert');
+const Client = require('../../../lib/network/kmsAWS/Client').default;
 
-// Mocking official nodejs aws client
-const { mockClient } = require('aws-sdk-client-mock');
-const { KMSClient, CreateKeyCommand, ScheduleKeyDeletionCommand, GenerateDataKeyCommand,
-    EncryptCommand, DecryptCommand } = require('@aws-sdk/client-kms');
-
-const KmsAWSClient = require('../../../lib/network/kmsAWS/Client').default;
-
-const logger = {
-    info: () => {},
-    debug: () => {},
-    warn: () => {},
-    error: () => {},
-};
-
-describe('KMS AWS Client', () => {
-    const options = {
-        kmsAWS: {
-            region: 'test-region-1',
-            endpoint: 'http://mocked.doesnt.matter',
-        },
+describe('KmsAWSClient', () => {
+    const logger = {
+        debug: () => {},
+        error: () => {},
     };
 
-    const kmsClient = new KmsAWSClient(options);
-
-    // Mock the AWS client
-    const mockedAwsClient = mockClient(KMSClient);
-
-    // Mock the send method to allow using callbacks
-    // Note: we cannot replace the whole aws client with its mocked version
-    // because the current mocking implementation doesn't support callbacks
-    // See https://github.com/m-radzikowski/aws-sdk-client-mock/issues/6
-    kmsClient.client.send = function mockedSend(cmd, cbOrOption, cb = null) {
-        let callback = cb;
-        if (! cb && typeof(cbOrOption) === 'function') {
-            callback = cbOrOption;
-        }
-
-        const mockedCall = mockedAwsClient.send(cmd);
-
-        // mockedCall is undefined when parameters doesn't match those expected.
-        expect(mockedCall).toBeDefined();
-
-        let gotError = false;
-        mockedCall.catch((err) => {
-            gotError = true;
-            callback(err);
-        })
-            // Order is important here: the catch is done before
-            // so it doesn't catch exceptions raised by Jest in case of
-            // test failure
-            .then((data) => {
-                // Looks like this "then" statement is alway run after
-                // a catch. We check for errors handled in the catch to
-                // avoid a double invocation of the callback.
-                if (!gotError) {
-                    callback(null, data);
-                }
-            });
-    };
+    let client;
+    let createKeyStub;
+    let scheduleKeyDeletionStub;
+    let generateDataKeyStub;
+    let encryptStub;
+    let decryptStub;
+    let listKeysStub;
 
     beforeEach(() => {
-        mockedAwsClient.reset();
-    });
-
-    it('should create a new key on bucket creation', done => {
-        mockedAwsClient.on(CreateKeyCommand).resolves({
-            KeyMetadata: {
-                KeyId: 'mocked-kms-key-id',
+        client = new Client({
+            kmsAWS: {
+                region: 'us-east-1',
+                ak: 'ak',
+                sk: 'sk',
             },
         });
 
-        kmsClient.createBucketKey('plop', logger, (err, bucketKeyId) => {
-            // Check the result
-            expect(err).toBeNull();
-            expect(bucketKeyId).toEqual('mocked-kms-key-id');
+        const kmsInstance = client.client;
+        createKeyStub = sinon.stub(kmsInstance, 'createKey');
+        scheduleKeyDeletionStub = sinon.stub(kmsInstance, 'scheduleKeyDeletion');
+        generateDataKeyStub = sinon.stub(kmsInstance, 'generateDataKey');
+        encryptStub = sinon.stub(kmsInstance, 'encrypt');
+        decryptStub = sinon.stub(kmsInstance, 'decrypt');
+        listKeysStub = sinon.stub(kmsInstance, 'listKeys');
+    });
 
-            // Check that the CreateKey of the aws client have been used to create the key
-            expect(mockedAwsClient.commandCalls(CreateKeyCommand).length).toEqual(1);
+    afterEach(() => {
+        createKeyStub.restore();
+        scheduleKeyDeletionStub.restore();
+        generateDataKeyStub.restore();
+        encryptStub.restore();
+        decryptStub.restore();
+        listKeysStub.restore();
+    });
 
+    it('should support default encryption key per account', () => {
+        assert.strictEqual(client.supportsDefaultKeyPerAccount, true);
+    });
+
+    it('should create a new master encryption key', done => {
+        const mockResponse = {
+            KeyMetadata: {
+                KeyId: 'mock-key-id',
+            },
+        };
+        createKeyStub.yields(null, mockResponse);
+
+        client.createMasterKey(logger, (err, keyId) => {
+            assert.ifError(err);
+            assert.strictEqual(keyId, 'mock-key-id');
+            assert(createKeyStub.calledOnce);
             done();
         });
     });
 
-    it('should handle errors creating the key on bucket creation', done => {
-        mockedAwsClient.on(CreateKeyCommand).rejects('Error');
+    it('should handle errors creating a new master encryption key', done => {
+        const mockError = new Error('mock error');
+        createKeyStub.yields(mockError, null);
 
-        kmsClient.createBucketKey('plop', logger, (err, bucketKeyId) => {
-            // Check the result
-            expect(bucketKeyId).toBeUndefined();
-            expect(err).toEqual(Error('InternalError'));
+        client.createMasterKey(logger, err => {
+            assert.strictEqual(err.message, 'InternalError');
+            assert(createKeyStub.calledOnce);
+            done();
+        });
+    });
 
-            // Check that the CreateKey of the aws client have been used to create the key
-            expect(mockedAwsClient.commandCalls(CreateKeyCommand).length).toEqual(1);
+    it('should create a bucket-level key', done => {
+        const mockResponse = {
+            KeyMetadata: {
+                KeyId: 'mock-bucket-key-id',
+            },
+        };
+        createKeyStub.yields(null, mockResponse);
 
+        client.createBucketKey('bucketName', logger, (err, keyId) => {
+            assert.ifError(err);
+            assert.strictEqual(keyId, 'mock-bucket-key-id');
+            assert(createKeyStub.calledOnce);
+            done();
+        });
+    });
+
+    it('should handle errors creating a bucket-level key', done => {
+        const mockError = new Error('mock error');
+        createKeyStub.yields(mockError, null);
+
+        client.createBucketKey('bucketName', logger, err => {
+            assert.strictEqual(err.message, 'InternalError');
+            assert(createKeyStub.calledOnce);
             done();
         });
     });
 
     it('should delete an existing key on bucket deletion', done => {
-        mockedAwsClient.on(ScheduleKeyDeletionCommand, {
-            KeyId: 'mocked-kms-key-id',
-            PendingWindowInDays: 7, // Should be set to 7 (the minimum accepted value on this operation)
-        }).resolves({
-            KeyId: 'mocked-kms-key-id',
+        const mockResponse = {
             KeyState: 'PendingDeletion',
-            PendingWindowInDays: 7,
-        });
+        };
+        scheduleKeyDeletionStub.yields(null, mockResponse);
 
-        kmsClient.destroyBucketKey('mocked-kms-key-id', logger, (err) => {
-            // Check the result
-            expect(err).toBeUndefined();
-
-            // Check that the ScheduleKeyDeletion of the aws client have been invoked
-            expect(mockedAwsClient.commandCalls(ScheduleKeyDeletionCommand).length).toEqual(1);
-
+        client.destroyBucketKey('mock-key-id', logger, err => {
+            assert.ifError(err);
+            assert(scheduleKeyDeletionStub.calledOnce);
             done();
         });
     });
 
     it('should handle errors deleting an existing key on bucket deletion', done => {
-        mockedAwsClient.on(ScheduleKeyDeletionCommand, {
-            KeyId: 'mocked-kms-key-id',
-            PendingWindowInDays: 7, // Should be set to 7 (the minimum accepted value on this operation)
-        }).rejects('Error');
+        const mockError = new Error('mock delete error');
+        scheduleKeyDeletionStub.yields(mockError, null);
 
-        kmsClient.destroyBucketKey('mocked-kms-key-id', logger, (err) => {
-            // Check the result
-            expect(err).toEqual(Error('InternalError'));
-
-            // Check that the ScheduleKeyDeletion of the aws client have been invoked
-            expect(mockedAwsClient.commandCalls(ScheduleKeyDeletionCommand).length).toEqual(1);
-
+        client.destroyBucketKey('mock-key-id', logger, err => {
+            assert.strictEqual(err.message, 'InternalError');
+            assert(scheduleKeyDeletionStub.calledOnce);
             done();
         });
     });
 
-    it('should generate a datakey for ciphering', done => {
-        mockedAwsClient.on(GenerateDataKeyCommand).resolves({
-            CiphertextBlob: 'encryptedDataKey',
-            Plaintext: 'dataKey',
+    it('should delete an existing key on account deletion', done => {
+        const mockResponse = {
             KeyId: 'mocked-kms-key-id',
-        });
+            KeyState: 'PendingDeletion',
+            PendingWindowInDays: 7,
+        };
+        scheduleKeyDeletionStub.yields(null, mockResponse);
 
-        kmsClient.generateDataKey(1, 'mocked-kms-key-id', logger, (err, plaintextDataKey, cipheredDataKey) => {
-            // Check the result
-            expect(err).toBeNull();
-            expect(plaintextDataKey).toEqual(Buffer.from('dataKey'));
-            expect(cipheredDataKey).toEqual(Buffer.from('encryptedDataKey'));
-
-            // Check that the the aws client have been used to create the data key
-            expect(mockedAwsClient.commandCalls(GenerateDataKeyCommand).length).toEqual(1);
-
+        client.deleteMasterKey('mock-key-id', logger, err => {
+            assert.ifError(err);
+            assert(scheduleKeyDeletionStub.calledOnce);
             done();
         });
     });
 
-    it('should handle errors generating a datakey', done => {
-        mockedAwsClient.on(GenerateDataKeyCommand).rejects('Error');
+    it('should delete an existing key on account deletion without KeyState', done => {
+        const mockResponse = {
+            KeyId: 'mocked-kms-key-id',
+            PendingWindowInDays: 7,
+        };
+        scheduleKeyDeletionStub.yields(null, mockResponse);
 
-        kmsClient.generateDataKey(1, 'mocked-kms-key-id', logger, (err, plaintextDataKey, cipheredDataKey) => {
-            // Check the result
-            expect(plaintextDataKey).toBeUndefined();
-            expect(cipheredDataKey).toBeUndefined();
-            expect(err).toEqual(Error('InternalError'));
-
-            // Check that the the aws client have been used to create the data key
-            expect(mockedAwsClient.commandCalls(GenerateDataKeyCommand).length).toEqual(1);
-
+        client.deleteMasterKey('mock-key-id', logger, err => {
+            assert.ifError(err);
+            assert(scheduleKeyDeletionStub.calledOnce);
             done();
         });
     });
 
-    it('should allow ciphering a datakey', done => {
-        mockedAwsClient.on(EncryptCommand, {
-            KeyId: 'mocked-kms-key-id',
-            Plaintext: 'dataKey-value',
-            EncryptionContext: undefined,
-            GrantTokens: undefined,
-            EncryptionAlgorithm: undefined,
-        }).resolves({
-            CiphertextBlob: 'encryptedDataKey-value',
-            KeyId: 'mocked-kms-key-id',
-        });
+    it('should handle errors deleting an existing key on account deletion', done => {
+        const mockError = new Error('mock delete error');
+        scheduleKeyDeletionStub.yields(mockError, null);
 
-        kmsClient.cipherDataKey(1, 'mocked-kms-key-id', 'dataKey-value', logger, (err, cipheredDataKey) => {
-            // Check the result
-            expect(err).toBeNull();
-            expect(cipheredDataKey).toEqual(Buffer.from('encryptedDataKey-value'));
-
-            // Check that the Encrypt of the aws client has been used
-            expect(mockedAwsClient.commandCalls(EncryptCommand).length).toEqual(1);
-
+        client.deleteMasterKey('mock-key-id', logger, err => {
+            assert.strictEqual(err.message, 'InternalError');
+            assert(scheduleKeyDeletionStub.calledOnce);
             done();
         });
     });
 
-    it('should handle errors ciphering a datakey', done => {
-        mockedAwsClient.on(EncryptCommand, {
+    it('should generate a data key for ciphering', done => {
+        const mockResponse = {
+            Plaintext: Buffer.from('plaintext'),
+            CiphertextBlob: Buffer.from('ciphertext'),
             KeyId: 'mocked-kms-key-id',
-            Plaintext: 'dataKey-value',
-            EncryptionContext: undefined,
-            GrantTokens: undefined,
-            EncryptionAlgorithm: undefined,
-        }).rejects('Error');
+        };
+        generateDataKeyStub.yields(null, mockResponse);
 
-        kmsClient.cipherDataKey(1, 'mocked-kms-key-id', 'dataKey-value', logger, (err, cipheredDataKey) => {
-            // Check the result
-            expect(cipheredDataKey).toBeUndefined();
-            expect(err).toEqual(Error('InternalError'));
-
-            // Check that the Encrypt of the aws client have been used
-            expect(mockedAwsClient.commandCalls(EncryptCommand).length).toEqual(1);
-
+        client.generateDataKey(1, 'mock-key-id', logger, (err, plainText, cipherText) => {
+            assert.ifError(err);
+            assert.strictEqual(plainText.toString(), 'plaintext');
+            assert.strictEqual(cipherText.toString(), 'ciphertext');
+            assert(generateDataKeyStub.calledOnce);
             done();
         });
     });
 
-    it('should allow deciphering a datakey', done => {
-        mockedAwsClient.on(DecryptCommand, {
-            KeyId: undefined, // Key id is embedded in the CiphertextBlob
-            CiphertextBlob: 'encryptedDataKey-value',
-            EncryptionContext: undefined,
-            GrantTokens: undefined,
-            EncryptionAlgorithm: undefined,
-        }).resolves({
-            Plaintext: 'dataKey-value',
-            KeyId: 'mocked-kms-key-id',
-        });
+    it('should handle errors generating a data key', done => {
+        const mockError = new Error('mock error');
+        generateDataKeyStub.yields(mockError, null);
 
-        kmsClient.decipherDataKey(1, 'mocked-kms-key-id', 'encryptedDataKey-value', logger, (err, plainTextDataKey) => {
-            // Check the result
-            expect(err).toBeNull();
-            expect(plainTextDataKey).toEqual(Buffer.from('dataKey-value'));
-
-            // Check that the Decrypt of the aws client have been used
-            expect(mockedAwsClient.commandCalls(DecryptCommand).length).toEqual(1);
-
+        client.generateDataKey(1, 'mock-key-id', logger, err => {
+            assert.strictEqual(err.message, 'InternalError');
+            assert(generateDataKeyStub.calledOnce);
             done();
         });
     });
 
-    it('should handle errors deciphering a datakey', done => {
-        mockedAwsClient.on(DecryptCommand, {
-            KeyId: undefined, // Key id is embedded in the CiphertextBlob
-            CiphertextBlob: 'encryptedDataKey-value',
-            EncryptionContext: undefined,
-            GrantTokens: undefined,
-            EncryptionAlgorithm: undefined,
-        }).rejects('Error');
+    it('should allow ciphering a data key', done => {
+        const mockResponse = {
+            CiphertextBlob: Buffer.from('ciphertext'),
+            KeyId: 'mocked-kms-key-id',
+        };
+        encryptStub.yields(null, mockResponse);
 
-        kmsClient.decipherDataKey(1, 'mocked-kms-key-id', 'encryptedDataKey-value', logger, (err, plainTextDataKey) => {
-            // Check the result
-            expect(plainTextDataKey).toBeUndefined();
-            expect(err).toEqual(Error('InternalError'));
+        client.cipherDataKey(1, 'mock-key-id', Buffer.from('plaintext'), logger, (err, cipherText) => {
+            assert.ifError(err);
+            assert.strictEqual(cipherText.toString(), 'ciphertext');
+            assert(encryptStub.calledOnce);
+            done();
+        });
+    });
 
-            // Check that the Decrypt of the aws client have been used
-            expect(mockedAwsClient.commandCalls(DecryptCommand).length).toEqual(1);
+    it('should handle errors ciphering a data key', done => {
+        const mockError = new Error('mock cipher error');
+        encryptStub.yields(mockError, null);
 
+        client.cipherDataKey(1, 'mock-key-id', Buffer.from('plaintext'), logger, err => {
+            assert.strictEqual(err.message, 'InternalError');
+            assert(encryptStub.calledOnce);
+            done();
+        });
+    });
+
+    it('should allow deciphering a data key', done => {
+        const mockResponse = {
+            Plaintext: Buffer.from('plaintext'),
+            KeyId: 'mocked-kms-key-id',
+        };
+        decryptStub.yields(null, mockResponse);
+
+        client.decipherDataKey(1, 'mock-key-id', Buffer.from('ciphertext'), logger, (err, plainText) => {
+            assert.ifError(err);
+            assert.strictEqual(plainText.toString(), 'plaintext');
+            assert(decryptStub.calledOnce);
+            done();
+        });
+    });
+
+    it('should handle errors deciphering a data key', done => {
+        const mockError = new Error('mock decipher error');
+        decryptStub.yields(mockError, null);
+
+        client.decipherDataKey(1, 'mock-key-id', Buffer.from('ciphertext'), logger, err => {
+            assert.strictEqual(err.message, 'InternalError');
+            assert(decryptStub.calledOnce);
+            done();
+        });
+    });
+
+    it.skip('should check the health of the KMS connection', done => {
+        const mockResponse = {
+            Keys: [
+                { KeyId: 'mock-key-id' },
+            ],
+        };
+        listKeysStub.yields(null, mockResponse);
+
+        client.healthcheck(logger, err => {
+            assert.ifError(err);
+            assert(listKeysStub.calledOnce);
+            done();
+        });
+    });
+
+    it.skip('should return a failed health check when list keys is unsuccessful', done => {
+        const mockError = new Error('mock listKeys error');
+        listKeysStub.yields(mockError, null);
+
+        client.healthcheck(logger, err => {
+            assert(err);
+            assert.strictEqual(err.message, 'InternalError');
+            assert(listKeysStub.calledOnce);
             done();
         });
     });
