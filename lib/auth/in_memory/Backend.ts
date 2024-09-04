@@ -179,6 +179,38 @@ class Backend {
         };
         return cb(null, vaultReturnObject);
     }
+
+        /**
+         * Retrieves or creates an encryption key id for the specified canonical id.
+         *
+         * @param {string} canonicalId - The canonical id of the account for which to retrieve or create the encryption key.
+         * @param {any} _options - An options object, currently unused.
+         * @param {(err: Error | null, data?: { 
+         *    canonicalId: string, 
+         *    encryptionKeyId: string, 
+         *    action: 'retrieved' | 'created' 
+         * }) => void}
+         *   - canonicalId: The canonical id of the account.
+         *   - encryptionKeyId: The retrieved or newly created encryption key id.
+         *   - action: Describes if the key was 'retrieved' or 'created'.
+         *
+         * @returns {void}
+         */
+        getOrCreateEncryptionKeyId(
+            canonicalId: string, 
+            _options: any, 
+            cb: (err: null, data: { message: { body: { canonicalId: string, encryptionKeyId: string, action: string } } }) => void
+        ): void {
+            return cb(null, {
+                message: {
+                    body: {
+                        canonicalId,
+                        encryptionKeyId: 'account-level-master-encryption-key',
+                        action: 'retrieved',
+                    }
+                }
+            });
+        }
 }
 
 class S3AuthBackend extends Backend {
