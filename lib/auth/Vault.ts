@@ -423,4 +423,45 @@ export default class Vault {
             return callback(null, obj);
         });
     }
+
+    /**
+     * Calls Vault to retrieve the default encryption key id of the account, or creates it if it doesn't exist.
+     *
+     * @param {string} canonicalID - The canonical id of the account for which 
+     * the encryption key id is being retrieved or created.
+     * @param {Logger} log - logger
+     * @param {(err: Error | null, data?: { 
+     *    canonicalId: string, 
+     *    encryptionKeyId: string, 
+     *    action: 'retrieved' | 'created' 
+     * }) => void}
+     *   - canonicalId: The canonical id of the account.
+     *   - encryptionKeyId: The retrieved or newly created encryption key id.
+     *   - action: Describes if the key was 'retrieved' or 'created'.
+     *
+     * @returns {void}
+    */
+    getOrCreateEncryptionKeyId(
+        canonicalID: string,
+        log: Logger,
+        callback: (err: Error | null, data?: { 
+            canonicalId: string, 
+            encryptionKeyId: string, 
+            action: 'retrieved' | 'created' 
+        }) => void
+    ) {
+        log.trace('sending request context params to vault to get or create encryption key id');
+        this.client.getOrCreateEncryptionKeyId(canonicalID, {
+            // @ts-ignore
+            reqUid: log.getSerializedUids(),
+        }, (err: Error | null, info?: any) => {
+            if (err) {
+                log.debug('received error message from auth provider',
+                    { error: err });
+                return callback(err);
+            }
+            const result = info.message.body;
+            return callback(null, result);
+        });
+    }
 }

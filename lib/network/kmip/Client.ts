@@ -2,11 +2,11 @@
 /* eslint new-cap: "off" */
 
 import async from 'async';
-import errors from '../../errors';
 import TTLVCodec from './codec/ttlv';
 import TlsTransport from './transport/tls';
 import KMIP from '.';
 import * as werelogs from 'werelogs';
+import { arsenalErrorKMIP } from '../utils'
 
 const CRYPTOGRAPHIC_OBJECT_TYPE = 'Symmetric Key';
 const CRYPTOGRAPHIC_ALGORITHM = 'AES';
@@ -46,31 +46,6 @@ const searchFilter = {
 };
 
 /**
- * Normalize errors according to arsenal definitions
- * @param err - an Error instance or a message string
- * @returns - arsenal error
- */
-function _arsenalError(err: string | Error) {
-    const messagePrefix = 'KMIP:';
-    if (typeof err === 'string') {
-        return errors.InternalError
-            .customizeDescription(`${messagePrefix} ${err}`);
-    } else if (
-        err instanceof Error ||
-        // INFO: The second part is here only for Jest, to remove when we'll be
-        //   fully migrated to TS
-        // @ts-expect-error
-        (err && typeof err.message === 'string')
-    ) {
-        return errors.InternalError
-            .customizeDescription(`${messagePrefix} ${err.message}`);
-    }
-    return errors.InternalError
-        .customizeDescription(`${messagePrefix} Unspecified error`);
-}
-
-
-/**
  * Negotiate with the server the use of a recent version of the protocol and
  * update the low level driver with this new knowledge.
  * @param client - The Client instance
@@ -93,7 +68,7 @@ function _negotiateProtocolVersion(client: any, logger: werelogs.Logger, cb: any
         ]),
     ], (err, response) => {
         if (err) {
-            const error = _arsenalError(err);
+            const error = arsenalErrorKMIP(err);
             logger.error('KMIP::negotiateProtocolVersion',
                 { error,
                     vendorIdentification: client.vendorIdentification });
@@ -105,7 +80,7 @@ function _negotiateProtocolVersion(client: any, logger: werelogs.Logger, cb: any
               response.lookup(searchFilter.protocolVersionMinor);
         if (majorVersions.length === 0 ||
             majorVersions.length !== minorVersions.length) {
-            const error = _arsenalError('No suitable protocol version');
+            const error = arsenalErrorKMIP('No suitable protocol version');
             logger.error('KMIP::negotiateProtocolVersion',
                 { error,
                     vendorIdentification: client.vendorIdentification });
@@ -128,7 +103,7 @@ function _mapExtensions(client: any, logger: werelogs.Logger, cb: any) {
         KMIP.Enumeration('Query Function', 'Query Extension Map'),
     ], (err, response) => {
         if (err) {
-            const error = _arsenalError(err);
+            const error = arsenalErrorKMIP(err);
             logger.error('KMIP::mapExtensions',
                 { error,
                     vendorIdentification: client.vendorIdentification });
@@ -137,7 +112,7 @@ function _mapExtensions(client: any, logger: werelogs.Logger, cb: any) {
         const extensionNames = response.lookup(searchFilter.extensionName);
         const extensionTags = response.lookup(searchFilter.extensionTag);
         if (extensionNames.length !== extensionTags.length) {
-            const error = _arsenalError('Inconsistent extension list');
+            const error = arsenalErrorKMIP('Inconsistent extension list');
             logger.error('KMIP::mapExtensions',
                 { error,
                     vendorIdentification: client.vendorIdentification });
@@ -161,7 +136,7 @@ function _queryServerInformation(client: any, logger: werelogs.Logger, cb: any) 
         KMIP.Enumeration('Query Function', 'Query Server Information'),
     ], (err, response) => {
         if (err) {
-            const error = _arsenalError(err);
+            const error = arsenalErrorKMIP(err);
             logger.warn('KMIP::queryServerInformation',
                 { error });
             /* no error returned, caller can keep going */
@@ -196,7 +171,7 @@ function _queryOperationsAndObjects(client: any, logger: werelogs.Logger, cb: an
         KMIP.Enumeration('Query Function', 'Query Objects'),
     ], (err, response) => {
         if (err) {
-            const error = _arsenalError(err);
+            const error = arsenalErrorKMIP(err);
             logger.error('KMIP::queryOperationsAndObjects',
                 { error,
                     vendorIdentification: client.vendorIdentification });
@@ -336,7 +311,7 @@ export default class Client {
             KMIP.TextString('Unique Identifier', keyIdentifier),
         ], (err, response) => {
             if (err) {
-                const error = _arsenalError(err);
+                const error = arsenalErrorKMIP(err);
                 logger.error('KMIP::_activateBucketKey',
                     { error,
                         serverInformation: this.serverInformation });
@@ -345,7 +320,7 @@ export default class Client {
             const uniqueIdentifier =
                   response.lookup(searchFilter.uniqueIdentifier)[0];
             if (uniqueIdentifier !== keyIdentifier) {
-                const error = _arsenalError(
+                const error = arsenalErrorKMIP(
                     'Server did not return the expected identifier');
                 logger.error('KMIP::cipherDataKey',
                     { error, uniqueIdentifier });
@@ -389,7 +364,7 @@ export default class Client {
             KMIP.Structure('Template-Attribute', attributes),
         ], (err, response) => {
             if (err) {
-                const error = _arsenalError(err);
+                const error = arsenalErrorKMIP(err);
                 logger.error('KMIP::createBucketKey',
                     { error,
                         serverInformation: this.serverInformation });
@@ -400,7 +375,7 @@ export default class Client {
             const uniqueIdentifier =
                   response.lookup(searchFilter.uniqueIdentifier)[0];
             if (createdObjectType !== CRYPTOGRAPHIC_OBJECT_TYPE) {
-                const error = _arsenalError(
+                const error = arsenalErrorKMIP(
                     'Server created an object of wrong type');
                 logger.error('KMIP::createBucketKey',
                     { error, createdObjectType });
@@ -433,7 +408,7 @@ export default class Client {
             ]),
         ], (err, response) => {
             if (err) {
-                const error = _arsenalError(err);
+                const error = arsenalErrorKMIP(err);
                 logger.error('KMIP::_revokeBucketKey',
                     { error,
                         serverInformation: this.serverInformation });
@@ -442,7 +417,7 @@ export default class Client {
             const uniqueIdentifier =
                   response.lookup(searchFilter.uniqueIdentifier)[0];
             if (uniqueIdentifier !== bucketKeyId) {
-                const error = _arsenalError(
+                const error = arsenalErrorKMIP(
                     'Server did not return the expected identifier');
                 logger.error('KMIP::_revokeBucketKey',
                     { error, uniqueIdentifier });
@@ -461,7 +436,7 @@ export default class Client {
     destroyBucketKey(bucketKeyId: string, logger: werelogs.Logger, cb: any) {
         return this._revokeBucketKey(bucketKeyId, logger, err => {
             if (err) {
-                const error = _arsenalError(err);
+                const error = arsenalErrorKMIP(err);
                 logger.error('KMIP::destroyBucketKey: revocation failed',
                     { error,
                         serverInformation: this.serverInformation });
@@ -471,7 +446,7 @@ export default class Client {
                 KMIP.TextString('Unique Identifier', bucketKeyId),
             ], (err, response) => {
                 if (err) {
-                    const error = _arsenalError(err);
+                    const error = arsenalErrorKMIP(err);
                     logger.error('KMIP::destroyBucketKey',
                         { error,
                             serverInformation: this.serverInformation });
@@ -480,7 +455,7 @@ export default class Client {
                 const uniqueIdentifier =
                       response.lookup(searchFilter.uniqueIdentifier)[0];
                 if (uniqueIdentifier !== bucketKeyId) {
-                    const error = _arsenalError(
+                    const error = arsenalErrorKMIP(
                         'Server did not return the expected identifier');
                     logger.error('KMIP::destroyBucketKey',
                         { error, uniqueIdentifier });
@@ -521,7 +496,7 @@ export default class Client {
             KMIP.ByteString('IV/Counter/Nonce', CRYPTOGRAPHIC_DEFAULT_IV),
         ], (err, response) => {
             if (err) {
-                const error = _arsenalError(err);
+                const error = arsenalErrorKMIP(err);
                 logger.error('KMIP::cipherDataKey',
                     { error,
                         serverInformation: this.serverInformation });
@@ -531,7 +506,7 @@ export default class Client {
                   response.lookup(searchFilter.uniqueIdentifier)[0];
             const data = response.lookup(searchFilter.data)[0];
             if (uniqueIdentifier !== masterKeyId) {
-                const error = _arsenalError(
+                const error = arsenalErrorKMIP(
                     'Server did not return the expected identifier');
                 logger.error('KMIP::cipherDataKey',
                     { error, uniqueIdentifier });
@@ -571,7 +546,7 @@ export default class Client {
             KMIP.ByteString('IV/Counter/Nonce', CRYPTOGRAPHIC_DEFAULT_IV),
         ], (err, response) => {
             if (err) {
-                const error = _arsenalError(err);
+                const error = arsenalErrorKMIP(err);
                 logger.error('KMIP::decipherDataKey',
                     { error,
                         serverInformation: this.serverInformation });
@@ -581,7 +556,7 @@ export default class Client {
                   response.lookup(searchFilter.uniqueIdentifier)[0];
             const data = response.lookup(searchFilter.data)[0];
             if (uniqueIdentifier !== masterKeyId) {
-                const error = _arsenalError(
+                const error = arsenalErrorKMIP(
                     'Server did not return the right identifier');
                 logger.error('KMIP::decipherDataKey',
                     { error, uniqueIdentifier });

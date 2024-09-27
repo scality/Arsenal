@@ -30,6 +30,7 @@ export type SSE = {
     masterKeyId: string;
     configuredMasterKeyId: string;
     mandatory: boolean;
+    isAccountEncryptionEnabled: boolean;
 };
 
 export type VersioningConfiguration = {
@@ -210,10 +211,13 @@ export default class BucketInfo {
                 configuredMasterKeyId, mandatory } = serverSideEncryption;
             assert.strictEqual(typeof cryptoScheme, 'number');
             assert.strictEqual(typeof algorithm, 'string');
-            assert.strictEqual(typeof masterKeyId, 'string');
             assert.strictEqual(typeof mandatory, 'boolean');
+            assert.ok(masterKeyId !== undefined || configuredMasterKeyId !== undefined, 'At least one of masterKeyId or configuredMasterKeyId must be defined');
+            if (masterKeyId !== undefined) {
+                assert.strictEqual(typeof masterKeyId, 'string', 'masterKeyId must be a string');
+            }
             if (configuredMasterKeyId !== undefined) {
-                assert.strictEqual(typeof configuredMasterKeyId, 'string');
+                assert.strictEqual(typeof configuredMasterKeyId, 'string', 'configuredMasterKeyId must be a string');
             }
         }
         if (versioningConfiguration) {
@@ -634,6 +638,21 @@ export default class BucketInfo {
             return null;
         }
         return this._serverSideEncryption.masterKeyId;
+    }
+
+    /**
+     * Checks if the default encryption is set at the account level instead of the legacy bucket level.
+     * This method helps to prevent deletion of the account-level master encryption key when deleting buckets. 
+     *
+     * @returns {boolean} - Returns true if account-level default encryption is enabled, 
+     * false if it uses the legacy bucket level.
+     */
+    isAccountEncryptionEnabled() {
+        if (!this._serverSideEncryption) {
+            return false;
+        }
+
+        return this._serverSideEncryption.isAccountEncryptionEnabled;
     }
     /**
     * Get bucket name.
