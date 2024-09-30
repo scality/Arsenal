@@ -3,7 +3,8 @@
 
 import errors from '../../errors';
 import { arsenalErrorAWSKMS } from '../utils'
-import { Agent } from 'https';
+import { Agent as HttpAgent } from 'http';
+import { Agent as HttpsAgent } from 'https';
 import { KMS, AWSError } from 'aws-sdk';
 import * as werelogs from 'werelogs';
 import assert from 'assert';
@@ -38,7 +39,8 @@ export default class Client {
         const { tls, ak, sk, region, endpoint } = options.kmsAWS;
 
         const httpOptions = tls ? {
-            agent: new Agent({
+            agent: new HttpsAgent({
+                keepAlive: true,
                 rejectUnauthorized: tls.rejectUnauthorized,
                 ca: tls.ca,
                 cert: tls.cert,
@@ -46,7 +48,11 @@ export default class Client {
                 maxVersion: tls.maxVersion,
                 key: tls.key,
             }),
-        } : undefined;
+        } : {
+            agent: new HttpAgent({
+                keepAlive: true,
+            }),
+        };
 
         const credentials = (ak && sk) ? {
             credentials: {
