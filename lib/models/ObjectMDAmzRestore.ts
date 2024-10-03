@@ -11,6 +11,7 @@
 export default class ObjectMDAmzRestore {
     'expiry-date': Date | string;
     'ongoing-request': boolean;
+    'content-md5': string;
 
     /**
      *
