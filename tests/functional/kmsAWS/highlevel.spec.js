@@ -4,6 +4,7 @@ const Client = require('../../../lib/network/kmsAWS/Client').default;
 
 describe('KmsAWSClient', () => {
     const logger = {
+        info: () => {},
         debug: () => {},
         error: () => {},
     };
@@ -160,6 +161,32 @@ describe('KmsAWSClient', () => {
 
         client.deleteMasterKey('mock-key-id', logger, err => {
             assert.strictEqual(err.message, 'InternalError');
+            assert(scheduleKeyDeletionStub.calledOnce);
+            done();
+        });
+    });
+
+    it('should handle NotFoundException when deleting master key', done => {
+        const mockError = new Error('NotFoundException');
+        mockError.code = 'NotFoundException';
+
+        scheduleKeyDeletionStub.yields(mockError, null);
+
+        client.deleteMasterKey('mock-key-id', logger, err => {
+            assert.ifError(err);
+            assert(scheduleKeyDeletionStub.calledOnce);
+            done();
+        });
+    });
+
+    it('should handle KMSInvalidStateException when deleting master key', done => {
+        const mockError = new Error('KMSInvalidStateException');
+        mockError.code = 'KMSInvalidStateException';
+
+        scheduleKeyDeletionStub.yields(mockError, null);
+
+        client.deleteMasterKey('mock-key-id', logger, err => {
+            assert.ifError(err);
             assert(scheduleKeyDeletionStub.calledOnce);
             done();
         });
