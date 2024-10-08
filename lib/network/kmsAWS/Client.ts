@@ -127,6 +127,13 @@ export default class Client {
         };
         this.client.scheduleKeyDeletion(params, (err: AWSError, data) => {
             if (err) {
+                if (err.code === 'NotFoundException' || err.code === 'KMSInvalidStateException') {
+                    // master key does not exist or is already pending deletion
+                    logger.info('AWS KMS: key does not exist or is already pending deletion', { masterKeyId, error: err });
+                    cb(null);
+                    return;
+                }
+
                 const error = arsenalErrorAWSKMS(err);
                 logger.error("AWS KMS: failed to delete master encryption key", { err });
                 cb(error);
