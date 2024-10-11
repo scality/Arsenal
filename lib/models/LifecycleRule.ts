@@ -1,4 +1,4 @@
-import uuid from 'uuid/v4';
+import { v4 as uuid } from 'uuid';
 
 export type Status = 'Disabled' | 'Enabled';
 export type Tag = { Key: string; Value: string };

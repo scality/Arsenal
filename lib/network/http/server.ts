@@ -428,7 +428,6 @@ export default class Server {
             this._server.on('connection', sock => {
                 // Setting no delay of the socket to the value configured
                 // TODO fix this
-                // @ts-expect-errors
                 sock.setNoDelay(this.isNoDelay());
                 sock.on('error', err => this._logger.info(
                     'socket error - request rejected', { error: err }));

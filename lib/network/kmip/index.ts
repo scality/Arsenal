@@ -1,4 +1,4 @@
-import uuid from 'uuid/v4';
+import { v4 as uuid } from 'uuid';
 import Message from './Message';
 import * as werelogs from 'werelogs';
 

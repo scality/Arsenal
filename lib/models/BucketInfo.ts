@@ -1,5 +1,5 @@
 import assert from 'assert';
-import uuid from 'uuid/v4';
+import { v4 as uuid } from 'uuid';
 
 import { WebsiteConfiguration } from './WebsiteConfiguration';
 import ReplicationConfiguration from './ReplicationConfiguration';

@@ -90,7 +90,7 @@ export default class StatsModel extends StatsClient {
         key: string,
         score: number,
         value: string,
-        cb: (error: Error | null, value?: any) => void,
+        cb: (error?: Error | null, value?: any) => void,
     ) {
         this._redis.exists(key, (err, resCode) => {
             if (err) {
