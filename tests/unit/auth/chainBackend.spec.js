@@ -192,11 +192,11 @@ describe('Auth Backend: Chain Backend', () => {
         it('should return an error if any of the clients fails', done => {
             const backend = new ChainBackend('chain', [
                 new TestBackend('test1', null, {
-                    message: { body: [{ isAllowed: false, arn: 'arn:aws:s3:::policybucket/obj1' }] },
+                    message: { body: [{ action: "PutObject", isAllowed: false, isImplicit: false, arn: 'arn:aws:s3:::policybucket/obj1' }] },
                 }),
                 new TestBackend('test2', testError, null),
                 new TestBackend('test3', null, {
-                    message: { body: [{ isAllowed: true, arn: 'arn:aws:s3:::policybucket/obj1' }] },
+                    message: { body: [{ action: "PutObject", isAllowed: true, isImplicit: false, arn: 'arn:aws:s3:::policybucket/obj1' }] },
                 }),
             ]);
 
@@ -209,23 +209,25 @@ describe('Auth Backend: Chain Backend', () => {
         it('should merge results from clients into a single response object', done => {
             const backend = new ChainBackend('chain', [
                 new TestBackend('test1', null, {
-                    message: { body: [{ isAllowed: false, arn: 'arn:aws:s3:::policybucket/obj1' }] },
+                    message: { body: [{ action: "PutObject", isAllowed: false, isImplicit: false, arn: 'arn:aws:s3:::policybucket/obj1' }] },
                 }),
                 new TestBackend('test2', null, {
-                    message: { body: [{ isAllowed: true, arn: 'arn:aws:s3:::policybucket/obj2' }] },
+                    message: { body: [{ action: "PutObject", isAllowed: true, isImplicit: false, arn: 'arn:aws:s3:::policybucket/obj2' }] },
                 }),
                 new TestBackend('test3', null, {
-                    message: { body: [{ isAllowed: true, arn: 'arn:aws:s3:::policybucket/obj1' }] },
+                    message: { body: [{ action: "PutObject", isAllowed: true, isImplicit: false, arn: 'arn:aws:s3:::policybucket/obj1' }] },
                 }),
             ]);
 
             backend.checkPolicies(null, null, null, (err, res) => {
                 assert.ifError(err);
                 assert.deepStrictEqual(res, {
-                    message: { body: [
-                        { isAllowed: true, arn: 'arn:aws:s3:::policybucket/obj1' },
-                        { isAllowed: true, arn: 'arn:aws:s3:::policybucket/obj2' },
-                    ] },
+                    message: {
+                        body: [
+                            { action: "PutObject", isAllowed: true, isImplicit: false, arn: 'arn:aws:s3:::policybucket/obj1' },
+                            { action: "PutObject", isAllowed: true, isImplicit: false, arn: 'arn:aws:s3:::policybucket/obj2' },
+                        ]
+                    },
                 });
                 done();
             });
@@ -264,45 +266,63 @@ describe('Auth Backend: Chain Backend', () => {
     describe('::_mergePolicies', () => {
         it('should correctly merge policies', () => {
             const policyResps = [
-                { message: { body: [
-                    { isAllowed: false, arn: 'arn:aws:s3:::policybucket/true1' },
-                    { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true2' },
-                    { isAllowed: false, arn: 'arn:aws:s3:::policybucket/false1' },
-                ] } },
-                { message: { body: [
-                    { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true1' },
-                    { isAllowed: false, arn: 'arn:aws:s3:::policybucket/true2' },
-                    { isAllowed: false, arn: 'arn:aws:s3:::policybucket/false2' },
-                ] } },
+                {
+                    message: {
+                        body: [
+                            { action: 'GetObject', isAllowed: false, isImplicit: false, arn: 'arn:aws:s3:::policybucket/true1' },
+                            { action: 'GetObject', isAllowed: true, isImplicit: false, arn: 'arn:aws:s3:::policybucket/true2' },
+                            { action: 'GetObject', isAllowed: false, isImplicit: false, arn: 'arn:aws:s3:::policybucket/false1' },
+                            { action: 'GetObject', isAllowed: false, isImplicit: true, arn: 'arn:aws:s3:::policybucket/false2' },
+                        ]
+                    }
+                },
+                {
+                    message: {
+                        body: [
+                            { action: 'GetObject', isAllowed: true, isImplicit: false, arn: 'arn:aws:s3:::policybucket/true1' },
+                            { action: 'GetObject', isAllowed: false, isImplicit: false, arn: 'arn:aws:s3:::policybucket/true2' },
+                            { action: 'GetObject', isAllowed: false, isImplicit: true, arn: 'arn:aws:s3:::policybucket/false1' },
+                            { action: 'GetObject', isAllowed: false, isImplicit: false, arn: 'arn:aws:s3:::policybucket/false2' },
+                        ]
+                    }
+                },
             ];
             assert.deepStrictEqual(
                 ChainBackend._mergePolicies(policyResps),
                 [
-                    { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true1' },
-                    { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true2' },
-                    { isAllowed: false, arn: 'arn:aws:s3:::policybucket/false1' },
-                    { isAllowed: false, arn: 'arn:aws:s3:::policybucket/false2' },
+                    { action: 'GetObject', isAllowed: true, isImplicit: false, arn: 'arn:aws:s3:::policybucket/true1' },
+                    { action: 'GetObject', isAllowed: true, isImplicit: false, arn: 'arn:aws:s3:::policybucket/true2' },
+                    { action: 'GetObject', isAllowed: false, isImplicit: true, arn: 'arn:aws:s3:::policybucket/false1' },
+                    { action: 'GetObject', isAllowed: false, isImplicit: false, arn: 'arn:aws:s3:::policybucket/false2' },
                 ],
             );
             const policyRespsNested = [
-                { message: { body: [
-                    [
-                        { isAllowed: false, arn: 'arn:aws:s3:::policybucket/true1' },
-                        { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true2' },
-                    ],
-                ] } },
-                { message: { body: [
-                    [
-                        { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true1' },
-                        { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true2' },
-                    ],
-                ] } },
+                {
+                    message: {
+                        body: [
+                            [
+                                { action: 'GetObject', isAllowed: false, isImplicit: false, arn: 'arn:aws:s3:::policybucket/true1' },
+                                { action: 'GetObject', isAllowed: true, isImplicit: false, arn: 'arn:aws:s3:::policybucket/true2' },
+                            ],
+                        ]
+                    }
+                },
+                {
+                    message: {
+                        body: [
+                            [
+                                { action: 'GetObject', isAllowed: true, isImplicit: false, arn: 'arn:aws:s3:::policybucket/true1' },
+                                { action: 'GetObject', isAllowed: true, isImplicit: false, arn: 'arn:aws:s3:::policybucket/true2' },
+                            ],
+                        ]
+                    }
+                },
             ];
             assert.deepStrictEqual(
                 ChainBackend._mergePolicies(policyRespsNested),
                 [
-                    { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true1' },
-                    { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true2' },
+                    { action: 'GetObject', isAllowed: true, isImplicit: false, arn: 'arn:aws:s3:::policybucket/true1' },
+                    { action: 'GetObject', isAllowed: true, isImplicit: false, arn: 'arn:aws:s3:::policybucket/true2' },
                 ],
             );
         });

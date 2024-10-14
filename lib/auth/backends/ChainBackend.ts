@@ -151,7 +151,15 @@ export default class ChainBackend extends BaseBackend {
         });
 
         return Object.keys(policyMap).map(key => {
-            const policyRes: any = { isAllowed: policyMap[key].isAllowed };
+            const policyRes: any = {
+                isAllowed: policyMap[key].isAllowed,
+            };
+            if (policyMap[key].action) {
+                policyRes.action = policyMap[key].action;
+            }
+            if (typeof policyMap[key].isImplicit === 'boolean') {
+                policyRes.isImplicit = policyMap[key].isImplicit;
+            }
             if (policyMap[key].arn !== '') {
                 policyRes.arn = policyMap[key].arn;
             }
