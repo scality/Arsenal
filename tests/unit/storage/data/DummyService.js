@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const uuid = require('uuid/v4');
 const { EventEmitter } = require('events');
 const assert = require('assert');

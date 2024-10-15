@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable no-param-reassign */
+
 import { RequestLogger } from 'werelogs';
 
 import * as routesUtils from '../routesUtils';
@@ -14,7 +17,7 @@ export default function routePUT(
 ) {
     log.debug('routing request', { method: 'routePUT' });
 
-    const { objectKey, query, bucketName, parsedContentLength } = request as any
+    const { objectKey, query, bucketName, parsedContentLength } = request as any;
 
     if (objectKey === undefined) {
         // PUT bucket - PUT bucket ACL
@@ -131,19 +134,19 @@ export default function routePUT(
                 .responseNoBody(errors.InvalidDigest, null, response, 200, log);
         }
         if (request.headers['content-md5']) {
-            // @ts-ignore
+            // @ts-expect-error contentMD5 is not a property of request
             request.contentMD5 = request.headers['content-md5'];
         } else {
-            // @ts-ignore
+            // @ts-expect-error contentMD5 is not a property of request
             request.contentMD5 = routesUtils.parseContentMD5(request.headers);
         }
-        // @ts-ignore
+        // @ts-expect-error contentMD5 is not a property of request
         if (request.contentMD5 && request.contentMD5.length !== 32) {
-            // @ts-ignore
+            // @ts-expect-error contentMD5 is not a property of request
             request.contentMD5 = Buffer.from(request.contentMD5, 'base64').toString('hex');
-            // @ts-ignore
+            // @ts-expect-error contentMD5 is not a property of request
             if (request.contentMD5 && request.contentMD5.length !== 32) {
-                // @ts-ignore
+                // @ts-expect-error contentMD5 is not a property of request
                 log.debug('invalid md5 digest', { contentMD5: request.contentMD5 });
                 return routesUtils
                     .responseNoBody(errors.InvalidDigest, null, response, 200,
@@ -218,9 +221,8 @@ export default function routePUT(
                 return routesUtils.responseNoBody(errors.BadRequest,
                     null, response, 400, log);
             }
-            // TODO ARSN-216 What's happening?
-            // @ts-ignore
-            log.end().addDefaultFields({ contentLength: request.parsedContentLength });
+            // @ts-expect-error contentLength is not a property of request
+            log.addDefaultFields({ contentLength: request.parsedContentLength });
             api.callApiMethod('objectPut', request, response, log,
                 (err, resHeaders) => {
                     routesUtils.statsReport500(err, statsClient);

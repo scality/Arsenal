@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { Logger } from 'werelogs';
 import * as constants from '../../constants';
 import errors from '../../errors';
@@ -38,8 +40,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
         return { err: errors.AccessDenied };
     }
 
-    const validationResult = validateCredentials(credential, timestamp,
-      log);
+    const validationResult = validateCredentials(credential, timestamp, log);
     if (validationResult instanceof Error) {
         log.debug('credentials in improper format', { credential,
             timestamp, validationResult });

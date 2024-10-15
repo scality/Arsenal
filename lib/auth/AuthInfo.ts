@@ -14,6 +14,7 @@ export default class AuthInfo {
     accountDisplayName: string;
     IAMdisplayName: string;
 
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
     constructor(objectFromVault: any) {
         // amazon resource name for IAM user (if applicable)
         this.arn = objectFromVault.arn;

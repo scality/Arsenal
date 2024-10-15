@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+
 import assert from 'assert';
 import * as http from 'http';
 import * as werelogs from 'werelogs';
@@ -51,7 +53,7 @@ function makeErrorFromHTTPResponse(response: http.IncomingMessage) {
         const fields = JSON.parse(body);
         error = errors[fields.errorType]
             .customizeDescription(fields.errorMessage);
-    } catch (err) {
+    } catch {
         error = new Error(body);
     }
     // error is always a newly created object, so we can modify its

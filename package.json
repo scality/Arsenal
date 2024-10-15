@@ -33,6 +33,7 @@
     "debug": "^4.3.7",
     "diskusage": "^1.2.0",
     "fcntl": "github:scality/node-fcntl#0.2.2",
+    "globals": "^15.11.0",
     "hdclient": "scality/hdclient#1.1.7",
     "https-proxy-agent": "^7.0.5",
     "ioredis": "^5.4.1",

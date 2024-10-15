@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const http = require('http');
 
 /**
@@ -43,7 +44,9 @@ class HttpResponseMock {
         if (!cb && typeof encoding === 'function') {
             cb = encoding;
         }
-        if (cb) cb();
+        if (cb) { 
+            cb();
+        }
     }
 
     writeHead(statusCode, statusMessage, headers) {
@@ -55,7 +58,9 @@ class HttpResponseMock {
             headersObj = statusMessage;
         }
 
-        if (!headersObj) return;
+        if (!headersObj) {
+            return;
+        }
 
         if (Array.isArray(headersObj)) {
             // the even-numbered offsets are key values,

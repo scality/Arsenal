@@ -1,4 +1,5 @@
-'use strict'; // eslint-disable-line strict
+'use strict';
+/* eslint-disable @typescript-eslint/no-require-imports */
 
 const { validateUserPolicy, validateResourcePolicy } =
     require('../../../lib/policy/policyValidator');

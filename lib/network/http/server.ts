@@ -9,6 +9,7 @@ import errors from '../../errors';
 import { checkSupportIPv6 } from './utils';
 import { Logger } from 'werelogs';
 
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 export default class Server {
     _noDelay: boolean;
     _cbOnListening: () => void;
@@ -435,7 +436,7 @@ export default class Server {
             this._server.on('tlsClientError', (err, sock) =>
                 this._onClientError(err, sock));
             this._server.on('clientError', (err, sock) =>
-                // @ts-expect-errors
+                // @ts-expect-error
                 this._onClientError(err, sock));
             this._server.on('checkContinue', (req, res) =>
                 this._onCheckContinue(req, res));

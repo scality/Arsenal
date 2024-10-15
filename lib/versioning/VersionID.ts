@@ -29,7 +29,7 @@ const TEMPLATE_RG = new Array(LENGTH_RG + 1).join(' ');
  * @param template - padding template
  * @return - padded string
  */
-function padLeft(value: any, template: string) {
+function padLeft(value: number, template: string) {
     return `${template}${value}`.slice(-template.length);
 }
 
@@ -41,7 +41,7 @@ function padLeft(value: any, template: string) {
  * @param template - padding template
  * @return - padded string
  */
-function padRight(value: any, template: string) {
+function padRight(value: string, template: string) {
     return `${value}${template}`.slice(0, template.length);
 }
 
@@ -167,7 +167,7 @@ export function hexDecode(str: string): string | Error {
     } catch (err) {
         // Buffer.from() may throw TypeError if invalid input, e.g. non-string
         // or string with inappropriate charlength
-        return err as any;
+        return err as Error;
     }
 }
 

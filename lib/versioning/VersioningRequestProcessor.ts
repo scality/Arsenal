@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { RequestLogger } from 'werelogs';
 
 import errors, { ArsenalError } from '../errors';
@@ -40,8 +42,8 @@ export default class VersioningRequestProcessor {
     wgm: WriteGatheringManager;
     replicationGroupId: string;
     uidCounter: number;
-    queue: {};
-    repairing: {};
+    queue: object;
+    repairing: object;
 
     /**
      * This class takes a random string generator as additional input.
@@ -389,7 +391,7 @@ export default class VersioningRequestProcessor {
                 // master key exists
                 if (versionIdFromMaster === undefined ||
                     versionIdFromMaster >= versionId) {
-                        // master key is not newer than the put version
+                    // master key is not newer than the put version
                     let masterVersionId;
                     let value = request.value;
                     if (masterVersion.isNullVersion() && versionIdFromMaster) {
@@ -410,7 +412,7 @@ export default class VersioningRequestProcessor {
                         }
                         masterVersion.setNullVersion();
                         ops.push({ key: masterVersionKey,
-                                   value: masterVersion.toString() });
+                            value: masterVersion.toString() });
                     }
                     // => update the master key, note that older
                     //    versions have a greater version ID

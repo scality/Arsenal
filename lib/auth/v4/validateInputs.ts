@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+
 import { Logger } from 'werelogs';
 import errors from '../../../lib/errors';
 
@@ -13,7 +15,7 @@ export function validateCredentials(
     credentials: [string, string, string, string, string],
     timestamp: string,
     log: Logger
-): Error | {} {
+): Error | object {
     if (!Array.isArray(credentials) || credentials.length !== 5) {
         log.warn('credentials in improper format', { credentials });
         return errors.InvalidArgument;
@@ -27,20 +29,20 @@ export function validateCredentials(
         log.warn('accessKey provided is wrong format', { accessKey });
         return errors.InvalidArgument;
     }
-     // The scope date (format YYYYMMDD) must be same date as the timestamp
-     // on the request from the x-amz-date param (if queryAuthCheck)
-     // or from the x-amz-date header or date header (if headerAuthCheck)
-     // Format of timestamp is ISO 8601: YYYYMMDDTHHMMSSZ.
-     // http://docs.aws.amazon.com/AmazonS3/latest/API/
-     // sigv4-query-string-auth.html
-     // http://docs.aws.amazon.com/general/latest/gr/
-     // sigv4-date-handling.html
+    // The scope date (format YYYYMMDD) must be same date as the timestamp
+    // on the request from the x-amz-date param (if queryAuthCheck)
+    // or from the x-amz-date header or date header (if headerAuthCheck)
+    // Format of timestamp is ISO 8601: YYYYMMDDTHHMMSSZ.
+    // http://docs.aws.amazon.com/AmazonS3/latest/API/
+    // sigv4-query-string-auth.html
+    // http://docs.aws.amazon.com/general/latest/gr/
+    // sigv4-date-handling.html
 
-     // convert timestamp to format of scopeDate YYYYMMDD
+    // convert timestamp to format of scopeDate YYYYMMDD
     const timestampDate = timestamp.split('T')[0];
     if (scopeDate.length !== 8 || scopeDate !== timestampDate) {
         log.warn('scope date must be the same date as the timestamp date',
-           { scopeDate, timestampDate });
+            { scopeDate, timestampDate });
         return errors.RequestTimeTooSkewed;
     }
     if (service !== 's3' && service !== 'iam' && service !== 'ring' &&
@@ -52,7 +54,7 @@ export function validateCredentials(
     }
     if (requestType !== 'aws4_request') {
         log.warn('requestType contained in params is not aws4_request',
-           { requestType });
+            { requestType });
         return errors.InvalidArgument;
     }
     return {};
@@ -79,7 +81,7 @@ export function extractQueryParams(
     // Do not need the algorithm sent back
     if (queryObj['X-Amz-Algorithm'] !== 'AWS4-HMAC-SHA256') {
         log.warn('algorithm param incorrect',
-        { algo: queryObj['X-Amz-Algorithm'] });
+            { algo: queryObj['X-Amz-Algorithm'] });
         return authParams;
     }
 
@@ -121,7 +123,7 @@ export function extractQueryParams(
 
     const credential = queryObj['X-Amz-Credential'];
     if (credential && credential.length > 28 && credential.indexOf('/') > -1) {
-        // @ts-ignore
+        // @ts-expect-error
         authParams.credential = credential.split('/');
     } else {
         log.warn('invalid credential param', { credential });
@@ -158,7 +160,7 @@ export function extractAuthItems(authHeader: string, log: Logger) {
         credentialStr.trim().startsWith('Credential=') &&
         credentialStr.indexOf('/') > -1
     ) {
-        // @ts-ignore
+        // @ts-expect-error
         authItems.credentialsArr = credentialStr
             .trim().replace('Credential=', '').split('/');
     } else {

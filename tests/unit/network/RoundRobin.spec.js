@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const assert = require('assert');
 
 const RoundRobin = require('../../../lib/network/RoundRobin').default;
@@ -91,12 +92,8 @@ describe('round robin hosts', () => {
             assert.throws(() => new RoundRobin(['zenko.io:1000:bad']),
                 Error);
 
-            // this is valid
-            // eslint-disable-next-line no-new
             new RoundRobin([{ host: 'zenko.io', port: '42' }]);
-            // eslint-disable-next-line no-new
             new RoundRobin(['zenko.io:42']);
-            // eslint-disable-next-line no-new
             new RoundRobin(['zenko.io', 'zenka.ia']);
         });
 

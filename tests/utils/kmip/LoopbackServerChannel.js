@@ -1,6 +1,7 @@
-'use strict'; // eslint-disable-line strict
+'use strict';
 /* eslint new-cap: "off" */
 /* eslint dot-notation: "off" */
+/* eslint-disable @typescript-eslint/no-require-imports */
 
 const assert = require('assert');
 const crypto = require('crypto');

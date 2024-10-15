@@ -72,10 +72,10 @@ export const permittedCapitalizedBuckets = {
     METADATA: true,
 };
 /* eslint-disable camelcase */
-export const externalBackends = { aws_s3: true, azure: true, gcp: true, pfs: true }
-export const hasCopyPartBackends = { aws_s3: true, gcp: true }
-export const versioningNotImplBackends = { azure: true, gcp: true }
-export const mpuMDStoredExternallyBackend = { aws_s3: true, gcp: true }
+export const externalBackends = { aws_s3: true, azure: true, gcp: true, pfs: true };
+export const hasCopyPartBackends = { aws_s3: true, gcp: true };
+export const versioningNotImplBackends = { azure: true, gcp: true };
+export const mpuMDStoredExternallyBackend = { aws_s3: true, gcp: true };
 // AWS sets a minimum size limit for parts except for the last part.
 // http://docs.aws.amazon.com/AmazonS3/latest/API/mpUploadComplete.html
 export const minimumAllowedPartSize = 5242880;

@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+
 import { Logger } from 'werelogs';
 import errors from '../errors';
 import AuthInfo from './AuthInfo';
@@ -36,7 +39,7 @@ function vaultSignatureCb(
     if (iamDisplayName) {
         auditLog.IAMdisplayName = iamDisplayName;
     }
-    // @ts-ignore
+    // @ts-expect-error
     log.addDefaultFields(auditLog);
     return callback(null, userInfo, authorizationResults, streamingV4Params);
 }
@@ -132,7 +135,7 @@ export default class Vault {
             params.data.accessKey,
             {
                 algo: params.data.algo,
-                // @ts-ignore
+                // @ts-expect-error
                 reqUid: params.log.getSerializedUids(),
                 logger: params.log,
                 securityToken: params.data.securityToken,
@@ -191,7 +194,7 @@ export default class Vault {
             params.data.region,
             params.data.scopeDate,
             {
-                // @ts-ignore
+                // @ts-expect-error
                 reqUid: params.log.getSerializedUids(),
                 logger: params.log,
                 securityToken: params.data.securityToken,
@@ -221,7 +224,7 @@ export default class Vault {
         log.trace('getting canonicalIDs from Vault based on emailAddresses',
             { emailAddresses });
         this.client.getCanonicalIds(emailAddresses,
-            // @ts-ignore
+            // @ts-expect-error
             { reqUid: log.getSerializedUids() },
             (err: Error | null, info?: any) => {
                 if (err) {
@@ -241,7 +244,7 @@ export default class Vault {
                     foundIds.push({
                         email: key,
                         canonicalID: infoFromVault[key],
-                    })
+                    });
                 }
                 return callback(null, foundIds);
             });
@@ -262,7 +265,7 @@ export default class Vault {
         log.trace('getting emailAddresses from Vault based on canonicalIDs',
             { canonicalIDs });
         this.client.getEmailAddresses(canonicalIDs,
-            // @ts-ignore
+            // @ts-expect-error
             { reqUid: log.getSerializedUids() },
             (err: Error | null, info?: any) => {
                 if (err) {
@@ -298,7 +301,7 @@ export default class Vault {
         callback: (err: Error | null, data?: { [key: string]: string }) => void
     ) {
         log.trace('getting accountIds from Vault based on canonicalIDs',
-        { canonicalIDs });
+            { canonicalIDs });
         this.client.getAccountIds(canonicalIDs,
             // @ts-expect-error
             { reqUid: log.getSerializedUids() },
@@ -312,15 +315,14 @@ export default class Vault {
                 log.trace('info received from vault', { infoFromVault });
                 const result = {};
                 /* If the accountId was not found in Vault, do not
-            send the canonicalID back to the API */
-            Object.keys(infoFromVault).forEach(key => {
-                if (infoFromVault[key] !== 'NotFound' &&
-                infoFromVault[key] !== 'WrongFormat') {
-                    result[key] = infoFromVault[key];
-                }
+                send the canonicalID back to the API */
+                Object.keys(infoFromVault).forEach(key => {
+                    if (infoFromVault[key] !== 'NotFound' && infoFromVault[key] !== 'WrongFormat') {
+                        result[key] = infoFromVault[key];
+                    }
+                });
+                return callback(null, result);
             });
-            return callback(null, result);
-        });
     }
 
     /** checkPolicies -- call Vault to evaluate policies

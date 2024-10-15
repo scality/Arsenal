@@ -1,5 +1,7 @@
-'use strict'; // eslint-disable-line
+'use strict';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint new-cap: "off" */
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 
 import async from 'async';
 import errors from '../../errors';
@@ -364,6 +366,7 @@ export default class Client {
      */
     createBucketKey(bucketName: string, logger: werelogs.Logger, cb: any) {
         const attributes: any = [];
+        // eslint-disable-next-line no-extra-boolean-cast
         if (!!this.options.bucketNameAttributeName) {
             attributes.push(KMIP.Attribute('TextString',
                 this.options.bucketNameAttributeName,

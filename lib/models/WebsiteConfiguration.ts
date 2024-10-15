@@ -101,7 +101,7 @@ export class WebsiteConfiguration {
         indexDocument: string;
         errorDocument: string;
         redirectAllRequestsTo: RedirectAllRequestsTo;
-        routingRules: RoutingRule[] | any[],
+        routingRules: RoutingRule[],
     }) {
         if (params) {
             this._indexDocument = params.indexDocument;

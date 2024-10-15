@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const assert = require('assert');
 const http = require('http');
 const { GCP } = require('../../../../../lib/storage/data/external/GCP');

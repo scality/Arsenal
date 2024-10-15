@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 export enum HeapOrder {
     Min = -1,
     Max = 1,

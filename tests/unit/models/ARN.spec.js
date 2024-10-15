@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const assert = require('assert');
 
 const ARN = require('../../../lib/models/ARN').default;

@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+
 import assert from 'assert';
 import { v4 as uuid } from 'uuid';
 
@@ -276,9 +279,9 @@ export default class BucketInfo {
         };
         const final = this._websiteConfiguration
             ? {
-                  ...bucketInfos,
-                  websiteConfiguration: this._websiteConfiguration.getConfig(),
-              }
+                ...bucketInfos,
+                websiteConfiguration: this._websiteConfiguration.getConfig(),
+            }
             : bucketInfos;
         return JSON.stringify(final);
     }

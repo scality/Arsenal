@@ -1,3 +1,5 @@
+/* eslint-disable camelcase */
+
 import type { ServerResponse } from 'http';
 import * as rawErrors from './arsenalErrors';
 
@@ -21,7 +23,7 @@ const isBase = Object.fromEntries(
 // Activate CI tests with `ALLOW_UNSAFE_ERROR_COMPARISON=false yarn test`.
 // Remove this mechanism in ARSN-176.
 export const allowUnsafeErrComp = (
-    process.env.ALLOW_UNSAFE_ERROR_COMPARISON ?? 'true') === 'true'
+    process.env.ALLOW_UNSAFE_ERROR_COMPARISON ?? 'true') === 'true';
 
 // This contains some metaprog. Be careful.
 // Proxy can be found on MDN.
@@ -32,7 +34,7 @@ export const allowUnsafeErrComp = (
 // the Proxy will return false.
 const createIs = (type: Name): Is => {
     const get = (is: Is, value: string | symbol) => is[value] ?? false;
-    const final = Object.freeze({ ...isBase, [type]: true })
+    const final = Object.freeze({ ...isBase, [type]: true });
     return new Proxy(final, { get });
 };
 
@@ -78,7 +80,7 @@ export class ArsenalError extends Error {
             description: this.#description,
             type: this.#type,
             stack: this.stack
-        }
+        };
     }
 
     static unflatten(flat_obj) {
@@ -90,8 +92,8 @@ export class ArsenalError extends Error {
             flat_obj.type,
             flat_obj.code,
             flat_obj.description
-        )
-        err.stack = flat_obj.stack
+        );
+        err.stack = flat_obj.stack;
         return err;
     }
 
@@ -133,15 +135,15 @@ export class ArsenalError extends Error {
 
     /** Generate all possible errors. An instance is created by default. */
     static errors() {
-        const errors = {}
-        Object.entries(rawErrors).forEach((value) => {
+        const errors = {};
+        Object.entries(rawErrors).forEach(value => {
             const name = value[0] as Name;
             const error = value[1];
             const { code, description } = error;
             const get = () => new ArsenalError(name, code, description);
             Object.defineProperty(errors, name, { get });
         });
-        return errors as Errors
+        return errors as Errors;
     }
 }
 

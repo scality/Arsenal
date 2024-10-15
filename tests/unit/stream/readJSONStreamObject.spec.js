@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const assert = require('assert');
 const stream = require('stream');
 const joi = require('joi');
@@ -44,7 +45,7 @@ describe('readJSONStreamObject', () => {
             try {
                 value = await readJSONStreamObject(
                     new ReqStream(testCase.contents), testCase.joiSchema);
-            } catch (err) {
+            } catch {
                 assert.strictEqual(testCase.error, true);
                 return undefined;
             }

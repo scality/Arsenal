@@ -5,6 +5,7 @@ import constructStringToSign from './constructStringToSign';
 import checkRequestExpiry from './checkRequestExpiry';
 import algoCheck from './algoCheck';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function check(request: any, log: Logger, data: { [key: string]: string }) {
     log.trace('running header auth check');
     const headers = request.headers;
@@ -21,10 +22,10 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
     timestamp = Date.parse(timestamp);
     if (!timestamp) {
         log.debug('missing or invalid date header',
-        { method: 'auth/v2/headerAuthCheck.check' });
+            { method: 'auth/v2/headerAuthCheck.check' });
         return { err: errors.AccessDenied.
-          customizeDescription('Authentication requires a valid Date or ' +
-          'x-amz-date header') };
+            customizeDescription('Authentication requires a valid Date or ' +
+            'x-amz-date header') };
     }
 
     const err = checkRequestExpiry(timestamp, log);
@@ -51,7 +52,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
         log.trace('invalid authorization header', { authInfo });
         return { err: errors.MissingSecurityHeader };
     }
-    // @ts-ignore
+    // @ts-expect-error Property 'addDefaultFields' does not exist on type 'Logger'
     log.addDefaultFields({ accessKey });
 
     const signatureFromRequest = authInfo.substring(semicolonIndex + 1).trim();

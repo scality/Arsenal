@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import * as util from 'util';
 const debug = util.debuglog('jsutil');
 

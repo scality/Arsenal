@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint new-cap: "off" */
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+
 import { v4 as uuid } from 'uuid';
 import Message from './Message';
 import * as werelogs from 'werelogs';
@@ -284,7 +288,8 @@ export default class KMIP {
      * @param {Function} cb - The callback(error: Object, response: Object)
      * @returns {undefined}
      */
-    request(logger: werelogs.Logger, operation: string, payload: any, cb: (error: Error | null, response?: any) => void) {
+    request(logger: werelogs.Logger, operation: string, payload: any,
+        cb: (error: Error | null, response?: any) => void) {
         const uuid = _uniqueBatchItemID();
         const message = KMIP.Message([
             KMIP.Structure('Request Message', [
@@ -334,7 +339,7 @@ export default class KMIP {
                     this.transport.abortPipeline(conversation);
                     const error = Error('Operation mismatch',
                         // TODO
-                        // @ts-ignore
+                        // @ts-expect-error
                         { got: performedOperation,
                             expected: operation });
                     logger.error('KMIP::request: Operation mismatch',
@@ -350,7 +355,7 @@ export default class KMIP {
                               'Response Message/Batch Item/Result Message')[0];
                     const error = Error('KMIP request failure',
                         // TODO
-                        // @ts-ignore
+                        // @ts-expect-error
                         { resultStatus,
                             resultReason,
                             resultMessage });

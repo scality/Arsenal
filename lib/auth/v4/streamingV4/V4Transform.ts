@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+
 import { Transform } from 'stream';
 import async from 'async';
 import errors from '../../../errors';

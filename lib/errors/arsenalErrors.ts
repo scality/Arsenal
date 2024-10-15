@@ -1,3 +1,5 @@
+/* eslint-disable max-len */
+
 export type ErrorFormat = {
     code: number,
     description: string,

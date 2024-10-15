@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { Logger } from 'werelogs';
 import utf8 from 'utf8';
 import getCanonicalizedAmzHeaders from './getCanonicalizedAmzHeaders';

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { RequestLogger } from 'werelogs';
 
 import { ArsenalError } from '../errors';
@@ -12,7 +14,7 @@ const WG_TIMEOUT = 5; // batching period in milliseconds
 export default class WriteGatheringManager {
     // TODO Fix this
     db: any;
-    dbState: {};
+    dbState: object;
 
     constructor(db: any) {
         this.db = db;

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import * as crypto from 'crypto';
 import errors from '../../errors';
 import { calculateSigningKey, hashSignature } from './vaultUtilities';
@@ -51,7 +53,7 @@ class Backend {
             canonicalID: entity.canonicalID,
             arn: entity.arn,
             // TODO Why?
-            // @ts-ignore
+            // @ts-expect-error Property 'IAMdisplayName' does not exist on type 'Entity'
             IAMdisplayName: entity.IAMdisplayName,
         };
         const vaultReturnObject = _formatResponse(userInfoToSend);
@@ -88,7 +90,7 @@ class Backend {
             canonicalID: entity.canonicalID,
             arn: entity.arn,
             // TODO Why?
-            // @ts-ignore
+            // @ts-expect-error Property 'IAMdisplayName' does not exist on type 'Entity'
             IAMdisplayName: entity.IAMdisplayName,
         };
         const vaultReturnObject = _formatResponse(userInfoToSend);

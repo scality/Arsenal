@@ -1,4 +1,5 @@
-'use strict'; // eslint-disable-line strict
+'use strict';
+/* eslint-disable @typescript-eslint/no-require-imports */
 
 const AuthInfo = require('../../lib/auth/AuthInfo');
 const constants = require('../../lib/constants');

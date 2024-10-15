@@ -1,9 +1,11 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
+
 import * as evaluators from './lib/policyEvaluator/evaluator';
 import evaluatePrincipal from './lib/policyEvaluator/principal';
 import RequestContext from './lib/policyEvaluator/RequestContext';
 import * as requestUtils from './lib/policyEvaluator/requestUtils';
 import * as actionMaps from './lib/policyEvaluator/utils/actionMaps';
-import { validateUserPolicy } from './lib/policy/policyValidator'
+import { validateUserPolicy } from './lib/policy/policyValidator';
 import * as userMetadata from './lib/s3middleware/userMetadata';
 import convertToXml from './lib/s3middleware/convertToXml';
 import escapeForXml from './lib/s3middleware/escapeForXml';

@@ -10,13 +10,13 @@ import joi from 'joi';
  * @param [joiSchema] - optional validation schema for the JSON object
  * @return a Promise resolved with the parsed JSON object as a result
  */
-export default async function readJSONStreamObject<Data = any>(
+export default async function readJSONStreamObject<Data = string[]>(
     s: stream.Readable,
     joiSchema?: joi.Schema<Data>
 ): Promise<Data> {
     return new Promise((resolve, reject) => {
-        const contentsChunks: any = [];
-        s.on('data', (chunk) => contentsChunks.push(chunk));
+        const contentsChunks: string[] = [];
+        s.on('data', chunk => contentsChunks.push(chunk));
         s.on('end', () => {
             const contents = contentsChunks.join('');
             try {
@@ -29,12 +29,20 @@ export default async function readJSONStreamObject<Data = any>(
                     return resolve(value);
                 }
                 return resolve(parsedContents);
-            } catch (err: any) {
-                return reject(
-                    errors.InvalidArgument.customizeDescription(
-                        `invalid input: ${err.message}`
-                    )
-                );
+            } catch (err) {
+                if (err instanceof Error) {
+                    return reject(
+                        errors.InvalidArgument.customizeDescription(
+                            `invalid input: ${err.message}`
+                        )
+                    );
+                } else {
+                    return reject(
+                        errors.InvalidArgument.customizeDescription(
+                            `invalid input: ${err}`
+                        )
+                    );
+                }
             }
         });
         s.once('error', reject);

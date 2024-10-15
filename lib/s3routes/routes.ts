@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import assert from 'assert';
 
 import { RequestLogger } from 'werelogs';
@@ -197,7 +199,7 @@ export default function routes(
         clientPort: req.socket.remotePort,
         httpMethod: req.method,
         httpURL: req.url,
-        // @ts-ignore
+        // @ts-expect-error Property 'endpoint' does not exist on type 'IncomingMessage'
         endpoint: req.endpoint,
     };
 
@@ -208,9 +210,9 @@ export default function routes(
         reqUids = undefined;
     }
     const log = (reqUids !== undefined ?
-        // @ts-ignore
+        // @ts-expect-error Property 'newRequestLoggerFromSerializedUids' does not exist on type 'RequestLogger'
         logger.newRequestLoggerFromSerializedUids(reqUids) :
-        // @ts-ignore
+        // @ts-expect-error Property 'newRequestLogger' does not exist on type 'RequestLogger'
         logger.newRequestLogger());
 
     if (!req.url!.startsWith('/_/healthcheck')) {
@@ -250,28 +252,27 @@ export default function routes(
     }
 
     log.addDefaultFields({
-        // @ts-ignore
+        // @ts-expect-error Property 'bucketName' does not exist on type 'IncomingMessage'
         bucketName: req.bucketName,
-        // @ts-ignore
+        // @ts-expect-error Property 'objectKey' does not exist on type 'IncomingMessage'
         objectKey: req.objectKey,
-        // @ts-ignore
+        // @ts-expect-error Property 'parsedContentLength' does not exist on type 'IncomingMessage'
         bytesReceived: req.parsedContentLength || 0,
-        // @ts-ignore
+        // @ts-expect-error Property 'parsedHost' does not exist on type 'IncomingMessage'
         bodyLength: parseInt(req.headers['content-length'], 10) || 0,
     });
 
-    // @ts-ignore
+    // @ts-expect-error Property 'query' does not exist on type 'IncomingMessage'
     const { error, method } = checkUnsupportedRoutes(req.method, req.query);
 
     if (error) {
         log.trace('error validating route or uri params', { error });
-        // @ts-ignore
         return routesUtils.responseXMLBody(error, '', res, log);
     }
 
-    // @ts-ignore
+    // @ts-expect-error Properties 'bucketName' and 'objectKey' do not exist on type 'IncomingMessage'
     const bucketOrKeyError = checkBucketAndKey(req.bucketName, req.objectKey,
-        // @ts-ignore
+        // @ts-expect-error Properties 'method' and 'query' do not exist on type 'IncomingMessage'
         req.method, req.query, blacklistedPrefixes, log);
 
     if (bucketOrKeyError) {
@@ -281,7 +282,7 @@ export default function routes(
     }
 
     // bucket website request
-    // @ts-ignore
+    // @ts-expect-error Property 'parsedHost' does not exist on type 'IncomingMessage'
     if (websiteEndpoints && websiteEndpoints.indexOf(req.parsedHost) > -1) {
         return routeWebsite(req, res, api, log, statsClient, dataRetrievalParams);
     }

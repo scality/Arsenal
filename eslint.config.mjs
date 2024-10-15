@@ -4,7 +4,7 @@ import js from "@eslint/js";
 import { FlatCompat } from "@eslint/eslintrc";
 import tseslint from 'typescript-eslint';
 import { includeIgnoreFile } from '@eslint/compat';
-
+import globals from "globals";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,5 +18,10 @@ const compat = new FlatCompat({
 export default tseslint.config(
     ...compat.extends('scality'),
     ...tseslint.configs.recommended,
-    includeIgnoreFile(gitignorePath)
+    includeIgnoreFile(gitignorePath),
+    {
+        languageOptions: {
+            globals: globals.jest
+        }
+    },
 );

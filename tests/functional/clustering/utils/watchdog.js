@@ -1,4 +1,5 @@
-'use strict'; // eslint-disable-line
+'use strict';
+/* eslint-disable @typescript-eslint/no-require-imports */
 
 const Logger = require('werelogs').Logger;
 const http = require('http');
@@ -73,7 +74,7 @@ if (Cluster.isMaster) {
             }
             try {
                 return process.kill(worker.process.pid, 0);
-            } catch (e) {
+            } catch {
                 log.error('Worker not restarted', {
                     id: i,
                 });

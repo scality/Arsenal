@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const assert = require('assert');
 const Principal = require('../../../lib/policyEvaluator/principal').default;
 const RequestContext = require('../../../lib/policyEvaluator/RequestContext').default;

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import uuid from 'uuid';
 import * as stream from 'stream';
 import debug_ from 'debug';
@@ -63,7 +65,7 @@ class SIOOutputStream extends stream.Writable {
         async.timeout((cb: any) => {
             this.socket._write(this.streamId, payload, cb);
         }, this.ackTimeoutMs, timeoutInfo)(
-            (err) => {
+            err => {
                 debug(`ack stream-data ${this.streamId}
                       (${JSON.stringify(payload)}):`, err);
                 if (this.nPendingAck === this.maxPendingAck) {
@@ -104,7 +106,7 @@ class SIOInputStream extends stream.Readable {
         };
     }
 
-    destroy(_error?: Error | undefined) {
+    destroy() {
         debug('destroy called', this.streamId);
         this._destroyed = true;
         this.pause();
@@ -167,7 +169,7 @@ class SIOInputStream extends stream.Readable {
     _onerror(receivedErr: Error) {
         debug('_onerror', this.streamId, 'error', receivedErr);
         const err = reconstructError(receivedErr);
-        // @ts-expect-error
+        // @ts-expect-error property 'remote' doesn't exist on type 'Error'
         err.remote = true;
         this.emit('error', err);
     }
@@ -341,7 +343,6 @@ class SIOStreamSocket {
                 encodedObj = {};
                 // user objects are simple flat objects and we want to
                 // copy all their properties
-                // eslint-disable-next-line
                 for (const k in arg) {
                     encodedObj[k] = this.encodeStreams(arg[k]);
                 }
@@ -415,7 +416,6 @@ class SIOStreamSocket {
                 decodedObj = {};
                 // user objects are simple flat objects and we want to
                 // copy all their properties
-                // eslint-disable-next-line
                 for (const k in arg) {
                     decodedObj[k] = this.decodeStreams(arg[k]);
                 }

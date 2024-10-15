@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import assert from 'assert';
 import UUID from 'uuid';
 
@@ -192,7 +194,7 @@ export default class ReplicationConfiguration {
                     'Role may not contain a comma separator'
             );
         }
-        const invalidRole = rolesArr.find((r) => !this._isValidRoleARN(r));
+        const invalidRole = rolesArr.find(r => !this._isValidRoleARN(r));
         if (invalidRole !== undefined) {
             return errors.InvalidArgument.customizeDescription(
                 'Invalid Role specified in replication configuration: ' +
@@ -328,7 +330,7 @@ export default class ReplicationConfiguration {
             return undefined;
         }
         const storageClasses = destination.StorageClass[0].split(',');
-        const isValidStorageClass = storageClasses.every((storageClass) => {
+        const isValidStorageClass = storageClasses.every(storageClass => {
             if (validStorageClasses.includes(storageClass)) {
                 this._hasScalityDestination =
                     defaultEndpoint.type === undefined;
@@ -444,7 +446,7 @@ export default class ReplicationConfiguration {
         const Role = `<Role>${escapeForXml(role)}</Role>`;
         const Bucket = `<Bucket>${escapeForXml(destination)}</Bucket>`;
         const rulesXML = rules
-            .map((rule) => {
+            .map(rule => {
                 const { prefix, enabled, storageClass, id } = rule;
                 const Prefix =
                     prefix === ''
@@ -487,7 +489,7 @@ export default class ReplicationConfiguration {
         assert.strictEqual(typeof role, 'string');
         assert.strictEqual(typeof destination, 'string');
         assert.strictEqual(Array.isArray(rules), true);
-        rules.forEach((rule) => {
+        rules.forEach(rule => {
             assert.strictEqual(typeof rule, 'object');
             const { prefix, enabled, id, storageClass } = rule;
             assert.strictEqual(typeof prefix, 'string');

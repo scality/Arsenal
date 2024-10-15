@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const assert = require('assert');
 const ObjectMD = require('../../../lib/models/ObjectMD').default;
 const constants = require('../../../lib/constants');

@@ -1,4 +1,7 @@
 /* eslint dot-notation: "off" */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+
 import KMIPTags from '../tags.json';
 import KMIPMessage from '../Message';
 import * as werelogs from 'werelogs';
@@ -27,7 +30,7 @@ function _throwError(logger: werelogs.Logger, msg: string, data?: LogDictionary)
 
 export default function TTLVCodec() {
     if (!new.target) {
-        // @ts-ignore
+        // @ts-expect-error
         return new TTLVCodec();
     }
 
@@ -382,7 +385,7 @@ export default function TTLVCodec() {
         return mask;
     };
 
-    // @ts-ignore
+    // @ts-expect-error
     this.decodeMask = (tagName, givenMask) => {
         let mask = givenMask;
         const value: any[] = [];
@@ -397,14 +400,14 @@ export default function TTLVCodec() {
         return value;
     };
 
-    // @ts-ignore
+    // @ts-expect-error
     this.decode = (logger, rawMessage) => {
         const messageContent =
               TypeDecoder['01'].decode(logger, null, rawMessage);
         return new KMIPMessage(messageContent);
     };
 
-    // @ts-ignore
+    // @ts-expect-error
     this.encode = message => {
         const value = message.content;
         let result: any[] = [];
@@ -426,13 +429,13 @@ export default function TTLVCodec() {
         return Buffer.concat(_ttlvPadVector(result));
     };
 
-    // @ts-ignore
+    // @ts-expect-error
     this.mapExtension = (tagName, tagValue) => {
         const tagValueStr = tagValue.toString(16);
         TagDecoder[tagValueStr] = { name: tagName };
         TagEncoder[tagName] = { value: tagValueStr };
     };
 
-    // @ts-ignore
+    // @ts-expect-error
     return this;
 }

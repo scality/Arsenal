@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const VID = require('../../../lib/versioning/VersionID');
 const assert = require('assert');
 const { env } = require('process');

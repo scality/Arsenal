@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 /**
  * Like Error, but with a property set to true.
  * TODO: this is copied from kineticlib, should consolidate with the
@@ -17,7 +19,7 @@
 function propError(propName: string, message: string): Error {
     const err = new Error(message);
     err[propName] = true;
-    // @ts-ignore
+    // @ts-expect-error Property 'is' does not exist on type 'Error'
     err.is = { [propName]: true };
     return err;
 }

@@ -1,4 +1,5 @@
-'use strict'; // eslint-disable-line
+'use strict';
+/* eslint-disable @typescript-eslint/no-require-imports */
 
 const temp = require('temp');
 const assert = require('assert');

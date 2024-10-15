@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { parseIp } from '../ipCheck';
 
 // http://docs.aws.amazon.com/IAM/latest/UserGuide/list_s3.html
@@ -22,25 +24,25 @@ const _actionNeedQuotaCheck = {
 
 function _findAction(service: string, method: string) {
     switch (service) {
-        case 's3':
-            return actionMapRQ[method];
-        case 'iam':
-            return actionMapIAM[method];
-        case 'sso':
-            return actionMapSSO[method];
-        case 'ring':
-            return `ring:${method}`;
-        case 'utapi':
-            // currently only method is ListMetrics
-            return `utapi:${method}`;
-        case 'sts':
-            return actionMapSTS[method];
-        case 'metadata':
-            return actionMapMetadata[method];
-        case 'scuba':
-            return actionMapScuba[method];
-        default:
-            return undefined;
+    case 's3':
+        return actionMapRQ[method];
+    case 'iam':
+        return actionMapIAM[method];
+    case 'sso':
+        return actionMapSSO[method];
+    case 'ring':
+        return `ring:${method}`;
+    case 'utapi':
+        // currently only method is ListMetrics
+        return `utapi:${method}`;
+    case 'sts':
+        return actionMapSTS[method];
+    case 'metadata':
+        return actionMapMetadata[method];
+    case 'scuba':
+        return actionMapScuba[method];
+    default:
+        return undefined;
     }
 }
 
@@ -52,68 +54,68 @@ function _buildArn(
 ) {
     // arn:partition:service:region:account-id:resourcetype/resource
     switch (service) {
-        case 's3': {
-            // arn:aws:s3:::bucket/object
-            // General resource is bucketName
-            if (generalResource && specificResource) {
-                return `arn:aws:s3:::${generalResource}/${specificResource}`;
-            } else if (generalResource) {
-                return `arn:aws:s3:::${generalResource}`;
-            }
-            return 'arn:aws:s3:::';
+    case 's3': {
+        // arn:aws:s3:::bucket/object
+        // General resource is bucketName
+        if (generalResource && specificResource) {
+            return `arn:aws:s3:::${generalResource}/${specificResource}`;
+        } else if (generalResource) {
+            return `arn:aws:s3:::${generalResource}`;
         }
-        case 'iam':
-        case 'sts': {
-            // arn:aws:iam::<account-id>:<resource-type>/<resource>
-            let accountId = requesterInfo!.accountid;
-            if (service === 'sts') {
-                accountId = requesterInfo!.targetAccountId;
-            }
-            if (specificResource) {
-                return `arn:aws:iam::${accountId}:` +
-                `${generalResource}${specificResource}`;
-            }
-            return `arn:aws:iam::${accountId}:${generalResource}`;
+        return 'arn:aws:s3:::';
+    }
+    case 'iam':
+    case 'sts': {
+        // arn:aws:iam::<account-id>:<resource-type>/<resource>
+        let accountId = requesterInfo!.accountid;
+        if (service === 'sts') {
+            accountId = requesterInfo!.targetAccountId;
         }
-        case 'ring': {
-            // arn:aws:iam::<account-id>:<resource-type>/<resource>
-            if (specificResource) {
-                return `arn:aws:ring::${requesterInfo!.accountid}:` +
-                `${generalResource}/${specificResource}`;
-            }
-            return `arn:aws:ring::${requesterInfo!.accountid}:${generalResource}`;
+        if (specificResource) {
+            return `arn:aws:iam::${accountId}:` +
+            `${generalResource}${specificResource}`;
         }
-        case 'utapi': {
-            // arn:scality:utapi:::resourcetype/resource
-            // (possible resource types are buckets, accounts or users)
-            if (specificResource) {
-                return `arn:scality:utapi::${requesterInfo!.accountid}:` +
-                `${generalResource}/${specificResource}`;
-            }
+        return `arn:aws:iam::${accountId}:${generalResource}`;
+    }
+    case 'ring': {
+        // arn:aws:iam::<account-id>:<resource-type>/<resource>
+        if (specificResource) {
+            return `arn:aws:ring::${requesterInfo!.accountid}:` +
+            `${generalResource}/${specificResource}`;
+        }
+        return `arn:aws:ring::${requesterInfo!.accountid}:${generalResource}`;
+    }
+    case 'utapi': {
+        // arn:scality:utapi:::resourcetype/resource
+        // (possible resource types are buckets, accounts or users)
+        if (specificResource) {
             return `arn:scality:utapi::${requesterInfo!.accountid}:` +
-            `${generalResource}/`;
+            `${generalResource}/${specificResource}`;
         }
-        case 'sso': {
-            if (specificResource) {
-                return `arn:scality:sso:::${generalResource}/${specificResource}`;
-            }
-            return `arn:scality:sso:::${generalResource}`;
+        return `arn:scality:utapi::${requesterInfo!.accountid}:` +
+        `${generalResource}/`;
+    }
+    case 'sso': {
+        if (specificResource) {
+            return `arn:scality:sso:::${generalResource}/${specificResource}`;
         }
-        case 'metadata': {
-            // arn:scality:metadata::<account-id>:<resource-type>/<resource>
-            if (specificResource) {
-                return `arn:scality:metadata::${requesterInfo!.accountid}:` +
-                `${generalResource}/${specificResource}`;
-            }
+        return `arn:scality:sso:::${generalResource}`;
+    }
+    case 'metadata': {
+        // arn:scality:metadata::<account-id>:<resource-type>/<resource>
+        if (specificResource) {
             return `arn:scality:metadata::${requesterInfo!.accountid}:` +
-            `${generalResource}/`;
+            `${generalResource}/${specificResource}`;
         }
-        case 'scuba': {
-            return `arn:scality:scuba::${requesterInfo!.accountid}:` +
-            `${generalResource}${specificResource ? '/' + specificResource : ''}`;
-        }
-        default:
-            return undefined;
+        return `arn:scality:metadata::${requesterInfo!.accountid}:` +
+        `${generalResource}/`;
+    }
+    case 'scuba': {
+        return `arn:scality:scuba::${requesterInfo!.accountid}:${generalResource}` +
+            `${specificResource ? `/${specificResource}` : ''}`;
+    }
+    default:
+        return undefined;
     }
 }
 

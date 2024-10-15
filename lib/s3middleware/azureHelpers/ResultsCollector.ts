@@ -1,5 +1,10 @@
 import { EventEmitter } from 'events';
 
+interface Result {
+    error: Error | undefined;
+    subPartIndex: number;
+}
+
 /**
  * Class to collect results of streaming subparts.
  * Emits "done" event when streaming is complete and Azure has returned
@@ -9,8 +14,7 @@ import { EventEmitter } from 'events';
  * @class ResultsCollector
  */
 export default class ResultsCollector extends EventEmitter {
-    // TODO Add better type.
-    _results: any[];
+    _results: Result[];
     _queue: number;
     _streamingFinished: boolean;
 

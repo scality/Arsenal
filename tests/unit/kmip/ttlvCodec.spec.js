@@ -1,5 +1,6 @@
-'use strict'; // eslint-disable-line strict
+'use strict';
 /* eslint new-cap: "off" */
+/* eslint-disable @typescript-eslint/no-require-imports */
 
 const assert = require('assert');
 
@@ -142,7 +143,7 @@ describe('KMIP TTLV Codec', () => {
         try {
             kmip.encodeMask('Cryptographic Usage Mask', usageMask);
             done(Error('Must not succeed'));
-        } catch (e) {
+        } catch {
             done();
         }
     });
@@ -164,7 +165,7 @@ describe('KMIP TTLV Codec', () => {
                 try {
                     kmip._decodeMessage(logger, rawMessage);
                     done(Error('Must not succeed'));
-                } catch (e) {
+                } catch {
                     done();
                 }
             });

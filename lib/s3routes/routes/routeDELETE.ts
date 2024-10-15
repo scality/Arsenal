@@ -1,5 +1,4 @@
 import { RequestLogger } from 'werelogs';
-
 import * as routesUtils from '../routesUtils';
 import errors from '../../errors';
 import StatsClient from '../../metrics/StatsClient';
@@ -12,15 +11,17 @@ export default function routeDELETE(
     log: RequestLogger,
     statsClient?: StatsClient,
 ) {
-    const call = (name: string) => {
-        return api.callApiMethod(name, request, response, log, (err, corsHeaders) => {
+    const call = (name: string) => 
+        api.callApiMethod(name, request, response, log, (err, corsHeaders) => {
             routesUtils.statsReport500(err, statsClient);
             return routesUtils.responseNoBody(err, corsHeaders, response, 204, log);
         });
-    }
+
     log.debug('routing request', { method: 'routeDELETE' });
 
-    const { query, objectKey } = request as any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { query, objectKey } = request as any;
+
     if (query?.uploadId) {
         if (objectKey === undefined) {
             const message = 'A key must be specified';
@@ -44,12 +45,12 @@ export default function routeDELETE(
         } else if (query?.tagging !== undefined) {
             return call('bucketDeleteTagging');
         }
-        call('bucketDelete');
+        return call('bucketDelete');
     } else {
         if (query?.tagging !== undefined) {
             return call('objectDeleteTagging');
         }
-        api.callApiMethod('objectDelete', request, response, log,
+        return api.callApiMethod('objectDelete', request, response, log,
             (err, corsHeaders) => {
                 /*
               * Since AWS expects a 204 regardless of the existence of

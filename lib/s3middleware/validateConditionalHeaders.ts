@@ -91,7 +91,7 @@ export function validateConditionalHeaders(
     headers: http.IncomingHttpHeaders,
     lastModified: string,
     contentMD5: string,
-): {} | { present: boolean; error: ArsenalError } {
+): object | { present: boolean; error: ArsenalError } {
     const lastModifiedDate = new Date(lastModified);
     lastModifiedDate.setMilliseconds(0);
     const millis = lastModifiedDate.getTime();

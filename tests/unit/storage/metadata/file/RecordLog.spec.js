@@ -1,4 +1,5 @@
-'use strict'; //eslint-disable-line
+'use strict';
+/* eslint-disable @typescript-eslint/no-require-imports */
 
 const assert = require('assert');
 const temp = require('temp');
@@ -57,7 +58,7 @@ describe('record log - persistent log of metadata operations', () => {
         server = new rpc.RPCServer({ logger: srvLogger });
         server.listen(6677);
 
-        new RecordLogService({ // eslint-disable-line no-new
+        new RecordLogService({
             server,
             namespace: '/test/recordLog',
             logger: srvLogger,

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import * as fs from 'fs';
 import glob from 'simple-glob';
 import joi from 'joi';
@@ -51,7 +53,7 @@ export default class AuthLoader {
         // On deprecation, remove the legacy part and keep the promises.
         const readFunc: any = options.legacy ? fs.readFileSync : fs.promises.readFile;
         const readResult = readFunc(filePath, 'utf8') as Promise<string> | string;
-        const prom = Promise.resolve(readResult).then((data) => {
+        const prom = Promise.resolve(readResult).then(data => {
             const authData = JSON.parse(data);
             this.addAccounts(authData, filePath);
         });
@@ -71,7 +73,7 @@ export default class AuthLoader {
     addFilesByGlob(globPattern: string | string[]) {
         // FIXME switch glob to async version
         const files = glob(globPattern);
-        files.forEach((filePath) => this.addFile(filePath));
+        files.forEach(filePath => this.addFile(filePath));
     }
 
     /**
@@ -171,7 +173,7 @@ export default class AuthLoader {
         if (areSomeInvalidAccounts) {
             return false;
         }
-        const keys = validAccounts.flatMap((account) => account.keys);
+        const keys = validAccounts.flatMap(account => account.keys);
         const uniqueKeysValidator = types.validators.keys.unique('access');
         const areKeysUnique = uniqueKeysValidator.validate(keys);
         if (areKeysUnique.error) {
@@ -182,7 +184,7 @@ export default class AuthLoader {
     }
 
     #dumpJoiErrors(errors: joi.ValidationErrorItem[], filePath?: string) {
-        errors.forEach((err) => {
+        errors.forEach(err => {
             const baseLogInfo = { item: err.path, filePath };
             const logInfo = () => {
                 if (err.type === 'array.unique') {

@@ -2,6 +2,7 @@ import Redis from 'ioredis';
 import { Logger } from 'werelogs';
 
 export type Config = { host: string; port: number; password: string };
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Callback = (error?: Error | null, value?: any) => void;
 
 export default class RedisClient {
@@ -77,7 +78,7 @@ export default class RedisClient {
      * Note: using this on a value that does not exist in a valid sorted set key
      *       will return nil.
      */
-     zscore(key: string, value: string, cb: Callback) {
+    zscore(key: string, value: string, cb: Callback) {
         return this._client.zscore(key, value, cb);
     }
 

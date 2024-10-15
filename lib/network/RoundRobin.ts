@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { Logger } from 'werelogs';
 
 const DEFAULT_STICKY_COUNT = 100;
@@ -22,7 +24,7 @@ export default class RoundRobin {
     logger?: Logger;
     stickyCount: number;
     defaultPort?: number;
-    hostsList: { host: string; port?: number }[]
+    hostsList: { host: string; port?: number }[];
     hostIndex: number;
     pickCount: number;
 

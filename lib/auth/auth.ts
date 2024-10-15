@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+/* eslint-disable no-param-reassign */
+
 import * as crypto from 'crypto';
 import { Logger } from 'werelogs';
 import errors from '../errors';
@@ -76,7 +80,7 @@ function extractParams(
             version = 'v4';
         } else {
             log.trace('invalid authorization security header',
-                      { header: authHeader });
+                { header: authHeader });
             return { err: errors.AccessDenied };
         }
     } else if (data.Signature) {
@@ -91,7 +95,7 @@ function extractParams(
     if (version !== null && method !== null) {
         if (!checkFunctions[version] || !checkFunctions[version][method]) {
             log.trace('invalid auth version or method',
-                      { version, authMethod: method });
+                { version, authMethod: method });
             return { err: errors.NotImplemented };
         }
         log.trace('identified auth method', { version, authMethod: method });
@@ -128,10 +132,10 @@ function doAuth(
         return cb(null, res.params);
     }
     if (requestContexts) {
-        requestContexts.forEach((requestContext) => {
-            const { params } = res
+        requestContexts.forEach(requestContext => {
+            const { params } = res;
             if ('data' in params) {
-                const { data } = params
+                const { data } = params;
                 requestContext.setAuthType(data.authType);
                 requestContext.setSignatureVersion(data.signatureVersion);
                 requestContext.setSecurityToken(data.securityToken);
@@ -144,14 +148,14 @@ function doAuth(
 
     // Corner cases managed, we're left with normal auth
     // TODO What's happening here?
-    // @ts-ignore
+    // @ts-expect-error
     res.params.log = log;
     if (res.params.version === 2) {
-        // @ts-ignore
+        // @ts-expect-error
         return vault!.authenticateV2Request(res.params, requestContexts, cb);
     }
     if (res.params.version === 4) {
-        // @ts-ignore
+        // @ts-expect-error
         return vault!.authenticateV4Request(res.params, requestContexts, cb);
     }
 
@@ -240,9 +244,9 @@ function generateV4Headers(
         awsService: service, proxyPath };
     const stringToSign = constructStringToSignV4(params);
     const signingKey = vaultUtilities.calculateSigningKey(secretKeyValue,
-                                                          region,
-                                                          scopeDate,
-                                                          service);
+        region,
+        scopeDate,
+        service);
     const signature = crypto.createHmac('sha256', signingKey)
         .update(stringToSign as string, 'binary').digest('hex');
     const authorizationHeader = `${algorithm} Credential=${accessKey}` +
@@ -252,11 +256,11 @@ function generateV4Headers(
     Object.assign(request, { headers: {} });
 }
 
-export const server = { extractParams, doAuth }
-export const client = { generateV4Headers, constructStringToSignV2 }
-export const inMemory = { backend, validateAuthConfig, AuthLoader }
+export const server = { extractParams, doAuth };
+export const client = { generateV4Headers, constructStringToSignV2 };
+export const inMemory = { backend, validateAuthConfig, AuthLoader };
 export {
     setAuthHandler as setHandler,
     AuthInfo,
     Vault
-}
+};

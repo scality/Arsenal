@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import StatsClient from './StatsClient';
 
 /**
@@ -44,7 +46,7 @@ export default class StatsModel extends StatsClient {
      * @return array of integers, ordered from most recent interval to
      *   oldest interval
      */
-    // @ts-ignore
+    // @ts-expect-error 'StatsModel' is not assignable to the same property in base type 'StatsClient
     // TODO change name or conform to parent class method
     _getCount(arr: [any, string | null][]) {
         return arr.reduce<number[]>((store, i) => {

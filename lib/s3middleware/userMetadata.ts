@@ -11,7 +11,7 @@ export function getMetaHeaders(headers: http.IncomingHttpHeaders) {
     const rawHeaders = Object.entries(headers);
     const filtered = rawHeaders.filter(([k]) => k.startsWith('x-amz-meta-'));
     const totalLength = filtered.reduce((length, [k, v]) => {
-        if (!v) return length;
+        if (!v) { return length; }
         return length + k.length + v.toString().length;
     }, 0);
     if (totalLength <= constants.maximumMetaHeadersSize) {

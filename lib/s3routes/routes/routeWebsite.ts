@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { RequestLogger } from 'werelogs';
 
 import * as routesUtils from '../routesUtils';
@@ -13,7 +15,7 @@ export default function routerWebsite(
     statsClient?: StatsClient,
     dataRetrievalFn?: any,
 ) {
-    const { bucketName, query } = request as any
+    const { bucketName, query } = request as any;
     log.debug('routing request', { method: 'routerWebsite' });
     // website endpoint only supports GET and HEAD and must have a bucket
     // http://docs.aws.amazon.com/AmazonS3/latest/dev/WebsiteEndpoints.html
@@ -32,13 +34,13 @@ export default function routerWebsite(
                     if (err && redirectInfo.withError) {
                         return routesUtils.redirectRequestOnError(err,
                             'GET', redirectInfo, dataGetInfo, dataRetrievalFn,
-                            response, resMetaHeaders, log)
+                            response, resMetaHeaders, log);
                     }
                     // note that key might have been modified in websiteGet
                     // api to add index document
                     return routesUtils.redirectRequest(redirectInfo,
                         // TODO ARSN-217 encrypted does not exists in request.connection
-                        // @ts-ignore
+                        // @ts-expect-error Property 'encrypted' does not exist on type 'Socket'
                         key, request.connection.encrypted,
                         response, request.headers.host!, resMetaHeaders, log);
                 }
@@ -67,11 +69,11 @@ export default function routerWebsite(
                     if (err && redirectInfo.withError) {
                         return routesUtils.redirectRequestOnError(err,
                             'HEAD', redirectInfo, null, dataRetrievalFn,
-                            response, resMetaHeaders, log)
+                            response, resMetaHeaders, log);
                     }
                     return routesUtils.redirectRequest(redirectInfo,
                         // TODO ARSN-217 encrypted does not exists in request.connection
-                        // @ts-ignore
+                        // @ts-expect-error Property 'encrypted' does not exist on type 'Socket'
                         key, request.connection.encrypted,
                         response, request.headers.host!, resMetaHeaders, log);
                 }

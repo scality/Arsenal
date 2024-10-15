@@ -26,7 +26,7 @@ export const completeMultipartUpload = (xmlParams: CompleteParams) => {
             <ETag>${eTag}</ETag>
         </CompleteMultipartUploadResult>
     `.trim();
-}
+};
 
 export type InitParams = { bucketName: string; objectKey: string; uploadId: string }
 export const initiateMultipartUpload = (xmlParams: InitParams) => `
@@ -115,24 +115,24 @@ export const listMultipartUploads = (xmlParams: ListParams) => {
 
         xml.push(
             '<Upload>',
-                `<Key>${escapeForXml(key)}</Key>`,
-                `<UploadId>${escapeForXml(val.UploadId)}</UploadId>`,
-                '<Initiator>',
-                    `<ID>${escapeForXml(val.Initiator.ID)}</ID>`,
-                    `<DisplayName>`,
-                        escapeForXml(val.Initiator.DisplayName),
-                    '</DisplayName>',
-                '</Initiator>',
-                '<Owner>',
-                    `<ID>${escapeForXml(val.Owner.ID)}</ID>`,
-                    `<DisplayName>`,
-                        escapeForXml(val.Owner.DisplayName),
-                    '</DisplayName>',
-                '</Owner>',
-                `<StorageClass>`,
-                    escapeForXml(val.StorageClass),
-                '</StorageClass>',
-                `<Initiated>${escapeForXml(val.Initiated)}</Initiated>`,
+            `<Key>${escapeForXml(key)}</Key>`,
+            `<UploadId>${escapeForXml(val.UploadId)}</UploadId>`,
+            '<Initiator>',
+            `<ID>${escapeForXml(val.Initiator.ID)}</ID>`,
+            '<DisplayName>',
+            escapeForXml(val.Initiator.DisplayName),
+            '</DisplayName>',
+            '</Initiator>',
+            '<Owner>',
+            `<ID>${escapeForXml(val.Owner.ID)}</ID>`,
+            '<DisplayName>',
+            escapeForXml(val.Owner.DisplayName),
+            '</DisplayName>',
+            '</Owner>',
+            '<StorageClass>',
+            escapeForXml(val.StorageClass),
+            '</StorageClass>',
+            `<Initiated>${escapeForXml(val.Initiated)}</Initiated>`,
             '</Upload>',
         );
     });
@@ -140,7 +140,7 @@ export const listMultipartUploads = (xmlParams: ListParams) => {
     l.CommonPrefixes.forEach(prefix => {
         xml.push(
             '<CommonPrefixes>',
-                `<Prefix>${escapeForXml(prefix)}</Prefix>`,
+            `<Prefix>${escapeForXml(prefix)}</Prefix>`,
             '</CommonPrefixes>',
         );
     });
@@ -148,17 +148,17 @@ export const listMultipartUploads = (xmlParams: ListParams) => {
     xml.push('</ListMultipartUploadsResult>');
 
     return xml.join('');
-}
+};
 
 const methods = {
     listMultipartUploads,
     initiateMultipartUpload,
     completeMultipartUpload,
-}
+};
 
 export default function convertToXml(method: 'initiateMultipartUpload', params: InitParams): string;
 export default function convertToXml(method: 'listMultipartUploads', params: ListParams): string;
 export default function convertToXml(method: 'completeMultipartUpload', params: CompleteParams): string;
-export default function convertToXml(method: keyof typeof methods, xmlParams: any) {
+export default function convertToXml(method: keyof typeof methods, xmlParams) {
     return methods[method](xmlParams);
 }

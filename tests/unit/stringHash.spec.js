@@ -1,4 +1,5 @@
-'use strict';// eslint-disable-line strict
+'use strict';
+/* eslint-disable @typescript-eslint/no-require-imports */
 
 const assert = require('assert');
 const crypto = require('crypto');
@@ -32,7 +33,7 @@ describe('StringHash', () => {
         done();
     });
     it(`Should distribute uniformly with a maximum of ${ERROR}% of deviation`,
-        (done) => {
+        done => {
             jest.setTimeout(20000);
             const strings = new Array(STRING_COUNT).fill('')
                 .map(() => randomString(10));

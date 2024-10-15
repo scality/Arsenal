@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import assert from 'assert';
 import errors, { ArsenalError } from '../errors';
 
@@ -125,7 +127,7 @@ export default class ObjectLockConfiguration {
         }
         return {
             timeType: timeType.toLowerCase() as 'days' | 'years',
-            timeValue: timeValue,
+            timeValue,
         };
     }
 

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const assert = require('assert');
 const async = require('async');
 const stream = require('stream');
@@ -205,11 +206,11 @@ describe('external backend clients', () => {
                 };
                 async.series(
                     [
-                        next => testClient.objectPutTagging(key, bucket.getName(), objectMD, log, (err) => {
+                        next => testClient.objectPutTagging(key, bucket.getName(), objectMD, log, err => {
                             assert(err.is.ServiceUnavailable);
                             next();
                         }),
-                        next => testClient.objectDeleteTagging(key, bucket.getName(), objectMD, log, (err) => {
+                        next => testClient.objectDeleteTagging(key, bucket.getName(), objectMD, log, err => {
                             assert(err.is.ServiceUnavailable);
                             next();
                         }),

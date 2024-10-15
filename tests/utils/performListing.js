@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const assert = require('assert');
 
 module.exports = function performListing(data, Extension, params, logger, vFormat) {

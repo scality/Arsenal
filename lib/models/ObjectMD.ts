@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+
 import * as constants from '../constants';
 import * as VersionIDUtils from '../versioning/VersionID';
 import ObjectMDLocation, {
@@ -67,7 +70,7 @@ export type ObjectMDData = {
     legalHold?: boolean;
     retentionMode?: string;
     retentionDate?: string;
-    tags: {};
+    tags: object;
     replicationInfo: ReplicationInfo;
     dataStoreName: string;
     originOp: string;
@@ -91,6 +94,7 @@ export default class ObjectMD {
      *   either an ObjectMD instance or a native JS object parsed from
      *   JSON
      */
+    // eslint-disable-next-line  @typescript-eslint/no-wrapper-object-types
     constructor(objMd?: Object | ObjectMD) {
         this._data = this._initMd();
         if (objMd !== undefined) {
@@ -134,7 +138,7 @@ export default class ObjectMD {
     static getAttributes() {
         const sample = new ObjectMD();
         const attributes: { [key in keyof ObjectMDData]?: true } = {};
-        Object.keys(sample.getValue()).forEach((key) => {
+        Object.keys(sample.getValue()).forEach(key => {
             attributes[key] = true;
         });
         return attributes;
@@ -152,7 +156,7 @@ export default class ObjectMD {
             'cache-control': '',
             'content-disposition': '',
             'content-encoding': '',
-            expires: '',
+            'expires': '',
             'content-length': 0,
             'content-type': '',
             'content-md5': '',
@@ -168,25 +172,25 @@ export default class ObjectMD {
             'x-amz-server-side-encryption-aws-kms-key-id': '',
             'x-amz-server-side-encryption-customer-algorithm': '',
             'x-amz-website-redirect-location': '',
-            acl: {
+            'acl': {
                 Canned: 'private',
                 FULL_CONTROL: [],
                 WRITE_ACP: [],
                 READ: [],
                 READ_ACP: [],
             },
-            key: '',
-            location: null,
+            'key': '',
+            'location': null,
             // versionId, isNull, nullVersionId and isDeleteMarker
             // should be undefined when not set explicitly
-            isNull: undefined,
-            nullVersionId: undefined,
-            nullUploadId: undefined,
-            isDeleteMarker: undefined,
-            versionId: undefined,
-            uploadId: undefined,
-            tags: {},
-            replicationInfo: {
+            'isNull': undefined,
+            'nullVersionId': undefined,
+            'nullUploadId': undefined,
+            'isDeleteMarker': undefined,
+            'versionId': undefined,
+            'uploadId': undefined,
+            'tags': {},
+            'replicationInfo': {
                 status: '',
                 backends: [],
                 content: [],
@@ -196,8 +200,8 @@ export default class ObjectMD {
                 storageType: '',
                 dataStoreVersionId: '',
             },
-            dataStoreName: '',
-            originOp: '',
+            'dataStoreName': '',
+            'originOp': '',
         };
     }
 
@@ -211,6 +215,7 @@ export default class ObjectMD {
         Object.assign(this._data.replicationInfo, objMd._data.replicationInfo);
     }
 
+    //eslint-disable-next-line @typescript-eslint/no-wrapper-object-types
     _updateFromParsedJSON(objMd: Object) {
         // objMd is a new JS object created for the purpose, it's safe
         // to just assign its top-level properties.
@@ -222,7 +227,7 @@ export default class ObjectMD {
     _convertToLatestModel() {
         // handle backward-compat stuff
         if (typeof this._data.location === 'string') {
-            // @ts-ignore
+            // @ts-expect-error
             this.setLocation([{ key: this._data.location }]);
         }
     }
@@ -661,10 +666,10 @@ export default class ObjectMD {
             partTotal += currPart.getPartSize();
             if (currPartNum !== nextPartNum) {
                 currPart.setPartSize(partTotal);
-                // @ts-ignore
+                // @ts-expect-error
                 currPart.setPartStart(start);
                 reducedLocations.push(currPart.getValue());
-                // @ts-ignore
+                // @ts-expect-error
                 start += partTotal;
                 partTotal = 0;
             }
@@ -784,6 +789,7 @@ export default class ObjectMD {
         if (versionId) {
             return VersionIDUtils.encode(versionId);
         }
+        return undefined;
     }
 
     /**
@@ -881,7 +887,7 @@ export default class ObjectMD {
 
     setReplicationSiteStatus(site: string, status: string) {
         const backend = this._data.replicationInfo.backends.find(
-            (o) => o.site === site
+            o => o.site === site
         );
         if (backend) {
             backend.status = status;
@@ -891,7 +897,7 @@ export default class ObjectMD {
 
     getReplicationSiteStatus(site: string) {
         const backend = this._data.replicationInfo.backends.find(
-            (o) => o.site === site
+            o => o.site === site
         );
         if (backend) {
             return backend.status;
@@ -906,7 +912,7 @@ export default class ObjectMD {
 
     setReplicationSiteDataStoreVersionId(site: string, versionId: string) {
         const backend = this._data.replicationInfo.backends.find(
-            (o) => o.site === site
+            o => o.site === site
         );
         if (backend) {
             backend.dataStoreVersionId = versionId;
@@ -916,7 +922,7 @@ export default class ObjectMD {
 
     getReplicationSiteDataStoreVersionId(site: string) {
         const backend = this._data.replicationInfo.backends.find(
-            (o) => o.site === site
+            o => o.site === site
         );
         if (backend) {
             return backend.dataStoreVersionId;
@@ -1007,7 +1013,7 @@ export default class ObjectMD {
      * @return itself
      */
     setUserMetadata(metaHeaders: any) {
-        Object.keys(metaHeaders).forEach((key) => {
+        Object.keys(metaHeaders).forEach(key => {
             if (key.startsWith('x-amz-meta-')) {
                 this._data[key] = metaHeaders[key];
             }

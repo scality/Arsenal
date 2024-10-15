@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
+
 const assert = require('assert');
 
 const Indexer = require('../../../../lib/auth/in_memory/Indexer').default;

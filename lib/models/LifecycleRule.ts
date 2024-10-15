@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+
 import { v4 as uuid } from 'uuid';
 
 export type Status = 'Disabled' | 'Enabled';
@@ -53,7 +56,7 @@ export default class LifecycleRule {
             rule.Expiration = this.expiration;
         }
         if (this.ncvExpiration) {
-            rule.NoncurrentVersionExpiration = this.ncvExpiration
+            rule.NoncurrentVersionExpiration = this.ncvExpiration;
         }
         if (this.abortMPU) {
             rule.AbortIncompleteMultipartUpload = this.abortMPU;
