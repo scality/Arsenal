@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/ban-ts-comment */
+/* eslint-disable new-cap */
 
 import assert from 'assert';
-import { v4 as UUID } from 'uuid'
+import { v4 as UUID } from 'uuid';
 
 import errors, { ArsenalError } from '../errors';
 import LifecycleRule from './LifecycleRule';

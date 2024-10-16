@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable new-cap */
 
 import assert from 'assert';
-import { v4 as UUID } from 'uuid'
+import { v4 as UUID } from 'uuid';
 
 import { RequestLogger } from 'werelogs';
 
