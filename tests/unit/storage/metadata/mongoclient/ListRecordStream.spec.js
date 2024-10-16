@@ -11,7 +11,7 @@ const logger = new DummyRequestLogger();
 const mongoProcessedLogEntries = {
     insert: {
         h: -42,
-        ts: new Timestamp(1, 1651144629),
+        ts: new Timestamp({ t: 1651144629 , i: 1 }),
         op: 'i',
         ns: 'metadata.replicated-bucket',
         o: {
@@ -23,7 +23,7 @@ const mongoProcessedLogEntries = {
     },
     updateObject: {
         h: -42,
-        ts: new Timestamp(1, 1651144629),
+        ts: new Timestamp({ t: 1651144629 , i: 1 }),
         op: 'u',
         ns: 'metadata.replicated-bucket',
         o2: {
@@ -39,7 +39,7 @@ const mongoProcessedLogEntries = {
     },
     deleteObject: {
         h: -42,
-        ts: new Timestamp(1, 1651144629),
+        ts: new Timestamp({ t: 1651144629 , i: 1 }),
         op: 'd',
         ns: 'metadata.replicated-bucket',
         o: {
@@ -48,7 +48,7 @@ const mongoProcessedLogEntries = {
     },
     putBucketAttributes: {
         h: -42,
-        ts: new Timestamp(1, 1651144629),
+        ts: new Timestamp({ t: 1651144629 , i: 1 }),
         op: 'u',
         ns: 'metadata.__metastore',
         o2: {
@@ -62,7 +62,7 @@ const mongoProcessedLogEntries = {
     },
     deleteBucket: {
         h: -42,
-        ts: new Timestamp(1, 1651144629),
+        ts: new Timestamp({ t: 1651144629 , i: 1 }),
         op: 'd',
         ns: 'metadata.__metastore',
         o: {
@@ -74,7 +74,7 @@ const mongoProcessedLogEntries = {
 const mongoIgnoredLogEntries = {
     createBucket: {
         h: -42,
-        ts: new Timestamp(1, 1651144629),
+        ts: new Timestamp({ t: 1651144629 , i: 1 }),
         op: 'c',
         ns: 'metadata.$cmd',
         o: {
@@ -89,7 +89,7 @@ const mongoIgnoredLogEntries = {
     },
     dropBucketDb: {
         h: -42,
-        ts: new Timestamp(1, 1651144629),
+        ts: new Timestamp({ t: 1651144629 , i: 1 }),
         op: 'c',
         ns: 'metadata.$cmd',
         o: {
@@ -242,13 +242,13 @@ describe('mongoclient.ListRecordStream', () => {
     it('should skip entries until uniqID is encountered', done => {
         const logEntries = [
             Object.assign({}, mongoProcessedLogEntries.insert,
-                { h: 1234, ts: new Timestamp(1, 1651144629) }),
+                { h: 1234, ts: new Timestamp({ t: 1651144629 , i: 1 }) }),
             Object.assign({}, mongoProcessedLogEntries.insert,
-                { h: 5678, ts: new Timestamp(1, 1651144629) }),
+                { h: 5678, ts: new Timestamp({ t: 1651144629 , i: 1 }) }),
             Object.assign({}, mongoProcessedLogEntries.insert,
-                { h: -1234, ts: new Timestamp(1, 1651144629) }),
+                { h: -1234, ts: new Timestamp({ t: 1651144629 , i: 1 }) }),
             Object.assign({}, mongoProcessedLogEntries.insert,
-                { h: 2345, ts: new Timestamp(1, 1651144629) }),
+                { h: 2345, ts: new Timestamp({ t: 1651144629 , i: 1 }) }),
         ];
         const cursor = new MongoCursorMock(logEntries);
         const lrs = new ListRecordStream(cursor, logger, '5678');
@@ -272,13 +272,13 @@ describe('mongoclient.ListRecordStream', () => {
     it('should start after latest entry if uniqID is not encountered', done => {
         const logEntries = [
             Object.assign({}, mongoProcessedLogEntries.insert,
-                { h: 1234, ts: new Timestamp(1, 1651144629) }),
+                { h: 1234, ts: new Timestamp({ t: 1651144629 , i: 1 }) }),
             Object.assign({}, mongoProcessedLogEntries.insert,
-                { h: 5678, ts: new Timestamp(1, 1651144629) }),
+                { h: 5678, ts: new Timestamp({ t: 1651144629 , i: 1 }) }),
             Object.assign({}, mongoProcessedLogEntries.insert,
-                { h: -1234, ts: new Timestamp(1, 1651144629) }),
+                { h: -1234, ts: new Timestamp({ t: 1651144629 , i: 1 }) }),
             Object.assign({}, mongoProcessedLogEntries.insert,
-                { h: 2345, ts: new Timestamp(1, 1651144629) }),
+                { h: 2345, ts: new Timestamp({ t: 1651144629 , i: 1 }) }),
         ];
         const cursor = new MongoCursorMock(logEntries);
         const lrs = new ListRecordStream(cursor, logger, '4242', '-1234');
@@ -300,13 +300,13 @@ describe('mongoclient.ListRecordStream', () => {
     it('should consume from the first entry if there is no saved ID', done => {
         const logEntries = [
             Object.assign({}, mongoProcessedLogEntries.insert,
-                { h: 1234, ts: new Timestamp(1, 1651144629) }),
+                { h: 1234, ts: new Timestamp({ t: 1651144629 , i: 1 }) }),
             Object.assign({}, mongoProcessedLogEntries.insert,
-                { h: 5678, ts: new Timestamp(1, 1651144629) }),
+                { h: 5678, ts: new Timestamp({ t: 1651144629 , i: 1 }) }),
             Object.assign({}, mongoProcessedLogEntries.insert,
-                { h: -1234, ts: new Timestamp(1, 1651144629) }),
+                { h: -1234, ts: new Timestamp({ t: 1651144629 , i: 1 }) }),
             Object.assign({}, mongoProcessedLogEntries.insert,
-                { h: 2345, ts: new Timestamp(1, 1651144629) }),
+                { h: 2345, ts: new Timestamp({ t: 1651144629 , i: 1 }) }),
         ];
         const cursor = new MongoCursorMock(logEntries);
         const lrs = new ListRecordStream(cursor, logger, undefined, '-1234');
@@ -337,7 +337,7 @@ describe('mongoclient.ListRecordStream', () => {
     it('should support bucket names with dots', done => {
         const logEntry = {
             h: -42,
-            ts: new Timestamp(1, 1651144629),
+            ts: new Timestamp({ t: 1651144629 , i: 1 }),
             op: 'i',
             ns: 'metadata.some.bucket.with.dots',
             o: {
@@ -373,7 +373,7 @@ describe('mongoclient.ListRecordStream', () => {
     it('should support tags with dots and dollars', done => {
         const logEntry = {
             h: -42,
-            ts: new Timestamp(1, 1651144629),
+            ts: new Timestamp({ t: 1651144629 , i: 1 }),
             op: 'i',
             ns: 'some-bucket',
             o: {
