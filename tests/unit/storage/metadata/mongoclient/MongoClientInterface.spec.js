@@ -27,6 +27,16 @@ const mongoserver = new MongoMemoryReplSet({
     },
 });
 
+beforeAll(async () => {
+    await mongoserver.start();
+    const uri = await mongoserver.getUri();
+    process.env.MONGO_URL = uri;
+});
+
+afterAll(async () => {
+    await mongoserver.stop();
+});
+
 const MongoClientInterface = require(
     '../../../../../lib/storage/metadata/mongoclient/MongoClientInterface');
 const DummyConfigObject = require('./utils/DummyConfigObject');
