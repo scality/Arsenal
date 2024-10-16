@@ -5,7 +5,8 @@
 
 const assert = require('assert');
 const crypto = require('crypto');
-const uuidv4 = require('uuid/v4');
+const { v4: uuidv4 } = require('uuid');
+
 
 const {
     EchoChannel,

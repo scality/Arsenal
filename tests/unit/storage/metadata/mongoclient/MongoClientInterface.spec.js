@@ -15,7 +15,7 @@ const { formatMasterKey } = require('../../../../../lib/storage/metadata/mongocl
 const dbName = 'metadata';
 
 const mongoserver = new MongoMemoryReplSet({
-    debug: false,
+    debug: true,
     instanceOpts: [
         { port: 27018 },
     ],

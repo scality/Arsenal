@@ -1,4 +1,4 @@
-import  Ajv , { ErrorObject } from 'ajv';
+import Ajv from 'ajv';
 import userPolicySchema from './userPolicySchema.json';
 import resourcePolicySchema from './resourcePolicySchema.json';
 import errors, { ArsenalError } from '../errors';
@@ -36,7 +36,7 @@ const errDict = {
 };
 
 // parse ajv errors and return early with the first relevant error
-function _parseErrors(ajvErrors: ErrorObject[], policyType: PolicyType) {
+function _parseErrors(ajvErrors: Ajv.ErrorObject[], policyType: PolicyType) {
     let parsedErr: ArsenalError | undefined;
     if (policyType === 'user') {
         // deep copy is needed as we have to assign custom error description
@@ -46,8 +46,8 @@ function _parseErrors(ajvErrors: ErrorObject[], policyType: PolicyType) {
         parsedErr = errors.MalformedPolicy;
     }
     ajvErrors.some(err => {
-        const resource = err.instancePath;
-        const field = (err.params)?.missingProperty;
+        const resource = err.dataPath;
+        const field = (err.params as Ajv.RequiredParams | undefined)?.missingProperty;
         const errType = err.keyword;
         if (errType === 'type' && (resource === '.Statement' ||
             resource.includes('.Resource') ||
