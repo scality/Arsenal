@@ -10,6 +10,8 @@ const { versioning } = require('../../../../index');
 const { BucketVersioningKeyFormat } = versioning.VersioningConstants;
 const sinon = require('sinon');
 const MongoReadStream = require('../../../../lib/storage/metadata/mongoclient/readStream');
+const { DelimiterMaster } = require('../../../../lib/algos/list/delimiterMaster');
+const { FILTER_SKIP } = require('../../../../lib/algos/list/tools');
 
 const IMPL_NAME = 'mongodb';
 const DB_NAME = 'metadata';
@@ -166,7 +168,7 @@ describe('MongoClientInterface::metadata.listObject', () => {
                                     dataStoreVersionId: 'versionId',
                                 }],
                             },
-                            nbVersions: 5,
+                            nbVersions: 100,
                         };
                         putBulkObjectVersions(BUCKET_NAME, params.objName, params.objVal, versionParams,
                             params.nbVersions, next);
@@ -178,7 +180,7 @@ describe('MongoClientInterface::metadata.listObject', () => {
                                 key: 'pfx2-test-object',
                                 versionId: 'null',
                             },
-                            nbVersions: 5,
+                            nbVersions: 100,
                         };
                         putBulkObjectVersions(BUCKET_NAME, params.objName, params.objVal, versionParams,
                             params.nbVersions, next);
@@ -190,7 +192,7 @@ describe('MongoClientInterface::metadata.listObject', () => {
                                 key: 'pfx3-test-object',
                                 versionId: 'null',
                             },
-                            nbVersions: 5,
+                            nbVersions: 100,
                         };
                         putBulkObjectVersions(BUCKET_NAME, params.objName, params.objVal, versionParams,
                             params.nbVersions, next);
@@ -200,6 +202,7 @@ describe('MongoClientInterface::metadata.listObject', () => {
 
             afterEach(done => {
                 metadata.deleteBucket(BUCKET_NAME, logger, done);
+                sinon.restore();
             });
 
             it(`Should list master versions of objects ${variation.it}`, done => {
@@ -269,13 +272,13 @@ describe('MongoClientInterface::metadata.listObject', () => {
                 const versionsPerKey = {};
                 return metadata.listObject(bucketName, params, logger, (err, data) => {
                     assert.deepStrictEqual(err, null);
-                    assert.strictEqual(data.Versions.length, 15);
+                    assert.strictEqual(data.Versions.length, 300);
                     data.Versions.forEach(version => {
                         versionsPerKey[version.key] = (versionsPerKey[version.key] || 0) + 1;
                     });
-                    assert.strictEqual(versionsPerKey['pfx1-test-object'], 5);
-                    assert.strictEqual(versionsPerKey['pfx2-test-object'], 5);
-                    assert.strictEqual(versionsPerKey['pfx3-test-object'], 5);
+                    assert.strictEqual(versionsPerKey['pfx1-test-object'], 100);
+                    assert.strictEqual(versionsPerKey['pfx2-test-object'], 100);
+                    assert.strictEqual(versionsPerKey['pfx3-test-object'], 100);
                     return done();
                 });
             });
@@ -283,16 +286,16 @@ describe('MongoClientInterface::metadata.listObject', () => {
             it(`Should truncate list of master versions of objects ${variation.it}`, done => {
                 const params = {
                     listingType: 'DelimiterVersions',
-                    maxKeys: 5,
+                    maxKeys: 50,
                 };
                 const versionsPerKey = {};
                 return metadata.listObject(BUCKET_NAME, params, logger, (err, data) => {
                     assert.deepStrictEqual(err, null);
-                    assert.strictEqual(data.Versions.length, 5);
+                    assert.strictEqual(data.Versions.length, 50);
                     data.Versions.forEach(version => {
                         versionsPerKey[version.key] = (versionsPerKey[version.key] || 0) + 1;
                     });
-                    assert.strictEqual(versionsPerKey['pfx1-test-object'], 5);
+                    assert.strictEqual(versionsPerKey['pfx1-test-object'], 50);
                     return done();
                 });
             });
@@ -306,11 +309,11 @@ describe('MongoClientInterface::metadata.listObject', () => {
                 const versionsPerKey = {};
                 return metadata.listObject(BUCKET_NAME, params, logger, (err, data) => {
                     assert.deepStrictEqual(err, null);
-                    assert.strictEqual(data.Versions.length, 5);
+                    assert.strictEqual(data.Versions.length, 100);
                     data.Versions.forEach(version => {
                         versionsPerKey[version.key] = (versionsPerKey[version.key] || 0) + 1;
                     });
-                    assert.strictEqual(versionsPerKey['pfx2-test-object'], 5);
+                    assert.strictEqual(versionsPerKey['pfx2-test-object'], 100);
                     return done();
                 });
             });
@@ -352,9 +355,9 @@ describe('MongoClientInterface::metadata.listObject', () => {
                 return get(3, null, null, err => {
                     assert.deepStrictEqual(err, null);
                     assert.strictEqual(Object.keys(versionsPerKey).length, 3);
-                    assert.strictEqual(versionsPerKey['pfx1-test-object'], 5);
-                    assert.strictEqual(versionsPerKey['pfx2-test-object'], 5);
-                    assert.strictEqual(versionsPerKey['pfx3-test-object'], 5);
+                    assert.strictEqual(versionsPerKey['pfx1-test-object'], 100);
+                    assert.strictEqual(versionsPerKey['pfx2-test-object'], 100);
+                    assert.strictEqual(versionsPerKey['pfx3-test-object'], 100);
                     done();
                 });
             });
@@ -419,7 +422,7 @@ describe('MongoClientInterface::metadata.listObject', () => {
                 async.series([
                     next => metadata.listObject(BUCKET_NAME, params, logger, (err, data) => {
                         assert.ifError(err);
-                        assert.strictEqual(data.Versions.length, 5);
+                        assert.strictEqual(data.Versions.length, 100);
                         versionIds = data.Versions.map(version => version.VersionId);
                         return next();
                     }),
@@ -438,7 +441,7 @@ describe('MongoClientInterface::metadata.listObject', () => {
                     next => metadata.listObject(BUCKET_NAME, params, logger, (err, data) => {
                         assert.ifError(err);
                         const newVersionIds = data.Versions.map(version => version.VersionId);
-                        assert.strictEqual(data.Versions.length, 5);
+                        assert.strictEqual(data.Versions.length, 100);
                         assert(versionIds.every(version => newVersionIds.includes(version)));
                         return next();
                     }),
@@ -485,7 +488,7 @@ describe('MongoClientInterface::metadata.listObject', () => {
                     next => flagObjectForDeletion(objVal.key, next),
                     next => metadata.listObject(BUCKET_NAME, params, logger, (err, data) => {
                         assert.ifError(err);
-                        assert.strictEqual(data.Versions.length, 15);
+                        assert.strictEqual(data.Versions.length, 300);
                         const listedObjectNames = data.Versions.map(x => x.key);
                         assert(!listedObjectNames.includes(objVal.key));
                         return next();
@@ -512,7 +515,6 @@ describe('MongoClientInterface::metadata.listObject', () => {
                 });
             });
 
-
             it('Should properly destroy the MongoDBReadStream on error', done => {
                 // eslint-disable-next-line func-names
                 const destroyStub = sinon.stub(MongoReadStream.prototype, 'destroy').callsFake(function (...args) {
@@ -535,6 +537,44 @@ describe('MongoClientInterface::metadata.listObject', () => {
                     readStub.restore();
                     return done();
                 });
+            });
+
+            it('Should properly destroy the stream when the skip algorithm triggers the setSkipRangeCb fn', done => {
+                const destroyStub = sinon.stub(MongoReadStream.prototype, 'destroy')
+                    .callsFake((...args) => {
+                        MongoReadStream.prototype.destroy.wrappedMethod.apply(this, ...args);
+                    });
+
+                const extension = new DelimiterMaster({
+                    maxKeys: 100,
+                }, logger, BucketVersioningKeyFormat.v1);
+
+                sinon.stub(extension, 'filter').returns(FILTER_SKIP);
+                sinon.stub(extension, 'skipping').returns(['newRangeMain', 'newRangeSecondary']);
+
+                const params = {
+                    mainStreamParams: {
+                        gte: 'someKey',
+                    },
+                    secondaryStreamParams: null,
+                    mongifiedSearch: false,
+                };
+
+                return metadata.client.internalListObject(BUCKET_NAME, params, extension,
+                    BucketVersioningKeyFormat.v1, logger, err => {
+                        assert(!err, 'No error should occur');
+                        assert(destroyStub.called, 'Destroy should have been called on MongoReadStream');
+
+                        if (variation.vFormat === BucketVersioningKeyFormat.v1) {
+                            // In v1 case, the skip algorithm will trigger a recursive
+                            // call of the internal listing function
+                            // that should, upon completion, call the destroy method
+                            assert(destroyStub.callCount === 3, 'Destroy should have been called 3 times');
+                        } else {
+                            assert(destroyStub.callCount === 2, 'Destroy should have been called once');
+                        }
+                        return done();
+                    });
             });
 
             it('Should not include location in listing result and use custom listing parser', done => {
