@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 
 import assert from 'assert';
-import UUID from 'uuid';
+import { v4 as UUID } from 'uuid'
 
 import errors, { ArsenalError } from '../errors';
 import LifecycleRule from './LifecycleRule';
@@ -456,7 +456,7 @@ export default class LifecycleConfiguration {
         if (!id || !id[0] || id[0] === '') {
             // ID is optional property, but create one if not provided or is ''
             // We generate 48-character alphanumeric, unique ID for rule
-            idObj.ruleID = Buffer.from(UUID.v4()).toString('base64');
+            idObj.ruleID = Buffer.from(UUID()).toString('base64');
         } else {
             idObj.ruleID = id[0];
         }

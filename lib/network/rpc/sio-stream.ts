@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import uuid from 'uuid';
+import { v4 as uuid } from 'uuid';
 import * as stream from 'stream';
 import debug_ from 'debug';
 import assert from 'assert';

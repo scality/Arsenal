@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import assert from 'assert';
-import UUID from 'uuid';
+import { v4 as UUID } from 'uuid'
 
 import { RequestLogger } from 'werelogs';
 
@@ -144,7 +144,7 @@ export default class ReplicationConfiguration {
         obj.id =
             rule.ID && rule.ID[0] !== ''
                 ? rule.ID[0]
-                : Buffer.from(UUID.v4()).toString('base64');
+                : Buffer.from(UUID()).toString('base64');
         // StorageClass is an optional property.
         if (rule.Destination[0].StorageClass) {
             obj.storageClass = rule.Destination[0].StorageClass[0];
