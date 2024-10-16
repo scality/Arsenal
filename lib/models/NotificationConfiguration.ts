@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import assert from 'assert';
-import UUID from 'uuid';
+import { v4 as uuid } from 'uuid';
 
 import {
     supportedNotificationEvents,
@@ -222,7 +222,7 @@ export default class NotificationConfiguration {
         if (!id || !id[0]) {
             // id is optional property, so create one if not provided or is ''
             // We generate 48-character alphanumeric, unique id for rule
-            validId = Buffer.from(UUID.v4()).toString('base64');
+            validId = Buffer.from(uuid()).toString('base64');
         } else {
             validId = id[0];
         }
