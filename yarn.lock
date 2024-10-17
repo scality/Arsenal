@@ -6006,9 +6006,9 @@ werelogs@scality/werelogs#8.1.0:
   dependencies:
     safe-json-stringify "1.0.3"
 
-werelogs@scality/werelogs#8.2.0:
-  version "8.2.0"
-  resolved "https://codeload.github.com/scality/werelogs/tar.gz/7bf334cea94002d118f27d7ec1c7a5af74b51b8d"
+werelogs@scality/werelogs#8.1.5:
+  version "8.1.5"
+  resolved "https://codeload.github.com/scality/werelogs/tar.gz/4131abec824a336eeb68b531e6c91f2748a0644a"
   dependencies:
     fast-safe-stringify "^2.1.1"
     safe-json-stringify "^1.2.0"
