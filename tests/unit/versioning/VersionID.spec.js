@@ -46,6 +46,7 @@ describe('test generating versionIds', () => {
         });
 
         // nodejs 10 no longer returns error for non-hex string versionIds
+        // Disabling the test as no error is returned on node 20
         it.skip('should return error decoding non-hex string versionIds', () => {
             const encoded = vids.map(vid => VID.hexEncode(vid));
             const decoded = encoded.map(vid => VID.hexDecode(`${vid}foo`));
