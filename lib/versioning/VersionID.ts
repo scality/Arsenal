@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 // VersionID format:
 //         timestamp  sequential_position  rep_group_id  other_information
 // where:

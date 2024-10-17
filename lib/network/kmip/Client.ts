@@ -597,18 +597,14 @@ export default class Client {
     healthcheck(logger, cb) {
         // the bucket does not have to exist, just passing a common bucket name here
         this.createBucketKey('kmip-healthcheck-test-bucket', logger, (err, bucketKeyId) => {
-            console.log('bucketKeyId', bucketKeyId);
-            console.log('createBucketKey', err);
             if (err) {
                 logger.error('KMIP::healthcheck: failure to create a test bucket key', {
                     error: err,
                 });
                 return cb(err);
             }
-            console.log('createBucketKey', 'cb');
             logger.debug('KMIP::healthcheck: success creating a test bucket key');
             this.destroyBucketKey(bucketKeyId, logger, err => {
-                console.log('destroyBucketKey', err);
                 if (err) {
                     logger.error('KMIP::healthcheck: failure to remove the test bucket key', {
                         bucketKeyId,
