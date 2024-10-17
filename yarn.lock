@@ -1863,7 +1863,7 @@ async-mutex@^0.3.0:
   dependencies:
     tslib "^2.3.1"
 
-async@^3.2.3, async@^3.2.6:
+async@^3.2.0, async@^3.2.3, async@^3.2.6:
   version "3.2.6"
   resolved "https://registry.yarnpkg.com/async/-/async-3.2.6.tgz#1b0728e14929d51b85b449b7f06e27c1145e38ce"
   integrity sha512-htCUDlxyyCLMgaM3xXg0C0LW2xqfuQ6p05pCEIsXuyQ+a1koYKTuBMzRNwmybfLgvJDMd0r1LTn4+E0Ti6C2AA==
@@ -3306,12 +3306,6 @@ http-signature@~1.2.0:
   resolved "https://codeload.github.com/scality/httpagent/tar.gz/66e97ab93532d79dbddcf6c4ea4df849b84c33c9"
   dependencies:
     agentkeepalive "^4.2.1"
-
-"httpagent@github:scality/httpagent#1.1.0":
-  version "1.1.0"
-  resolved "https://codeload.github.com/scality/httpagent/tar.gz/8f9958eb9cde086db7819a86582fba640a5f8876"
-  dependencies:
-    agentkeepalive "^4.5.0"
 
 https-proxy-agent@^5.0.0:
   version "5.0.1"
@@ -5291,6 +5285,11 @@ safe-buffer@~5.1.0, safe-buffer@~5.1.1:
   resolved "https://registry.yarnpkg.com/safe-buffer/-/safe-buffer-5.1.2.tgz#991ec69d296e0313747d59bdfd2b745c35f8828d"
   integrity sha512-Gd2UZBJDkXlY7GbJxfsE8/nvKkUEU1G38c1siN6QP6a9PT9MmHB8GnpscSmMJSoF8LOIrt8ud/wPtojys4G6+g==
 
+safe-json-stringify@1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/safe-json-stringify/-/safe-json-stringify-1.0.3.tgz#3cb6717660a086d07cb5bd9b7a6875bcf67bd05e"
+  integrity sha512-FspOTGvddR3ZE2k+NqHsywbCrnD7xow+r156P04MEMURbRF65Pdccpl2f4XU3KjXKsK5zdF03ScdKoL7Ti4Gpg==
+
 safe-json-stringify@^1.2.0:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/safe-json-stringify/-/safe-json-stringify-1.2.0.tgz#356e44bc98f1f93ce45df14bcd7c01cda86e0afd"
@@ -5502,13 +5501,12 @@ sprintf-js@~1.0.2:
   resolved "https://registry.yarnpkg.com/sprintf-js/-/sprintf-js-1.0.3.tgz#04e6926f662895354f3dd015203633b857297e2c"
   integrity sha512-D9cPgkvLlV3t3IzL0D0YLvGA9Ahk4PcvVwUbN0dSGr1aP0Nrt4AEnTUbuGvquEC0mA64Gqt1fzirlRs5ibXx8g==
 
-"sproxydclient@github:scality/sproxydclient#8.1.0":
-  version "8.1.0"
-  resolved "https://codeload.github.com/scality/sproxydclient/tar.gz/8f26d4e256780aa85c5a6b7f9a358773d22f3193"
+"sproxydclient@github:scality/sproxydclient#8.0.4":
+  version "8.0.4"
+  resolved "https://codeload.github.com/scality/sproxydclient/tar.gz/d413a3ee26dc090a6db1af6cf7b0094f131a4913"
   dependencies:
-    async "^3.2.6"
-    httpagent "github:scality/httpagent#1.1.0"
-    werelogs scality/werelogs#8.2.0
+    async "^3.2.0"
+    werelogs scality/werelogs#8.1.0
 
 sshpk@^1.7.0:
   version "1.18.0"
@@ -6001,6 +5999,12 @@ walker@^1.0.8:
   dependencies:
     fast-safe-stringify "^2.1.1"
     safe-json-stringify "^1.2.0"
+
+werelogs@scality/werelogs#8.1.0:
+  version "8.1.0"
+  resolved "https://codeload.github.com/scality/werelogs/tar.gz/e8f828725642c54c511cdbe580b18f43d3589313"
+  dependencies:
+    safe-json-stringify "1.0.3"
 
 werelogs@scality/werelogs#8.2.0:
   version "8.2.0"
