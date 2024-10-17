@@ -2,10 +2,11 @@ import Redis from 'ioredis';
 import { Logger } from 'werelogs';
 
 export type Config = { host: string; port: number; password: string };
-export type Callback = (error: Error | null, value?: any) => void;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type Callback = (error?: Error | null, value?: any) => void;
 
 export default class RedisClient {
-    _client: Redis.Redis;
+    _client: Redis;
 
     constructor(config: Config, logger: Logger) {
         this._client = new Redis(config);
@@ -77,7 +78,7 @@ export default class RedisClient {
      * Note: using this on a value that does not exist in a valid sorted set key
      *       will return nil.
      */
-     zscore(key: string, value: string, cb: Callback) {
+    zscore(key: string, value: string, cb: Callback) {
         return this._client.zscore(key, value, cb);
     }
 
@@ -88,7 +89,8 @@ export default class RedisClient {
      *   The cb response returns number of values removed
      */
     zrem(key: string, value: string | string[], cb: Callback) {
-        return this._client.zrem(key, value, cb);
+        const members = Array.isArray(value) ? value : [value];
+        return this._client.zrem(key, members, cb);
     }
 
     /**

@@ -23,7 +23,7 @@ export function flattenError(err: Error) {
     const flattenedErr = {};
 
     // TODO fix this
-    // @ts-expect-errors
+    // @ts-expect-errors Property 'message' does not exist on type '{}'
     flattenedErr.message = err.message;
     for (const k in err) {
         if (!(k in flattenedErr)) {
@@ -59,7 +59,7 @@ export function reconstructError(err: Error) {
     // as all dependent codebases have been migrated to `is` accessors (ARSN-176).
     reconstructedErr[err.message] = true;
     if (allowUnsafeErrComp){
-        // @ts-expect-error
+        // @ts-expect-error Property 'is' does not exist on type 'Error'
         reconstructedErr.is = { [err.message]: true };
     }
     Object.keys(err).forEach(k => {

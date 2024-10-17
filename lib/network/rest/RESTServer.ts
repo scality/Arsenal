@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import assert from 'assert';
 import * as url from 'url';
 import * as werelogs from 'werelogs';

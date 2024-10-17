@@ -11,6 +11,6 @@ export default function algoCheck(signatureLength: number) {
     if (signatureLength === SHA1LEN) {
         algo = 'sha1';
     }
-    // @ts-ignore
+    // @ts-expect-error Variable 'algo' is used before being assigned
     return algo;
 }

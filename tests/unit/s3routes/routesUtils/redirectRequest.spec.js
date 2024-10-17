@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const assert = require('assert');
 
 const DummyRequestLogger = require('../../storage/metadata/mongoclient/utils/DummyRequestLogger');

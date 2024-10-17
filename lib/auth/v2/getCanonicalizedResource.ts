@@ -39,6 +39,7 @@ const awsSubresources = [
     'website',
 ];
 
+//eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function getCanonicalizedResource(request: any, clientType: string) {
     /*
     This variable is used to determine whether to insert

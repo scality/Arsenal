@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import assert from 'assert';
 
 function _lookup(decodedTTLV: any[], path: string) {

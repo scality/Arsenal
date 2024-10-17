@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const assert = require('assert');
 const { getMetaHeaders } = require('../../../lib/s3middleware/userMetadata');
 const { maximumMetaHeadersSize } = require('../../../lib/constants');

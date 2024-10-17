@@ -1,4 +1,6 @@
-'use strict'; // eslint-disable-line strict
+'use strict';
+/* eslint-disable @typescript-eslint/no-require-imports */
+/* eslint-disable camelcase */
 
 const Extension = require('./Extension').default;
 const { inc, listingParamsMasterKeysV0ToV1,
@@ -210,10 +212,9 @@ export class Delimiter extends Extension {
     /**
      * Add a Common Prefix in the list
      * @param {String} commonPrefix   - common prefix to add
-     * @param {String} key            - full key starting with commonPrefix
      * @return {Boolean}     - indicates if iteration should continue
      */
-    addCommonPrefix(commonPrefix: string, key: string): void {
+    addCommonPrefix(commonPrefix: string): void {
         // add the new prefix to the list
         this.CommonPrefixes.push(commonPrefix);
         ++this.keys;
@@ -224,7 +225,7 @@ export class Delimiter extends Extension {
         // add the subprefix to the common prefixes if the key has the delimiter
         const commonPrefix = this.getCommonPrefix(key);
         if (commonPrefix) {
-            this.addCommonPrefix(commonPrefix, key);
+            this.addCommonPrefix(commonPrefix);
             return commonPrefix;
         }
         this.addContents(key, value);
@@ -307,6 +308,7 @@ export class Delimiter extends Extension {
     skippingBase(): string | undefined {
         switch (this.state.id) {
         case DelimiterFilterStateId.SkippingPrefix:
+            // eslint-disable-next-line no-case-declarations
             const { prefix } = <DelimiterFilterState_SkippingPrefix> this.state;
             return prefix;
 

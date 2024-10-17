@@ -55,5 +55,6 @@ export default class LifecycleDateTime {
             const timeTravel = this._transitionOneDayEarlier ? -oneDay : 0;
             return lastModifiedTime + (transition.Days * oneDay) + timeTravel;
         }
+        return undefined;
     }
 }

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { Logger } from 'werelogs';
 import errors from '../../../lib/errors';
 import * as constants from '../../constants';
@@ -92,15 +94,13 @@ export function check(
         timestamp = convertUTCtoISO8601(request.headers.date);
     }
     if (!timestamp) {
-        log.debug('missing or invalid date header',
-          { method: 'auth/v4/headerAuthCheck.check' });
+        log.debug('missing or invalid date header', { method: 'auth/v4/headerAuthCheck.check' });
         return { err: errors.AccessDenied.
-          customizeDescription('Authentication requires a valid Date or ' +
-          'x-amz-date header') };
+            customizeDescription('Authentication requires a valid Date or ' +
+            'x-amz-date header') };
     }
 
-    const validationResult = validateCredentials(credentialsArr, timestamp,
-      log);
+    const validationResult = validateCredentials(credentialsArr, timestamp, log);
     if (validationResult instanceof Error) {
         log.debug('credentials in improper format', { credentialsArr,
             timestamp, validationResult });

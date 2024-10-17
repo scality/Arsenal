@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+
 import * as url from 'url';
 import * as http from 'http';
 import { eachSeries } from 'async';
@@ -15,9 +17,11 @@ export type CallApiMethod = (
     request: http.IncomingMessage,
     response: http.ServerResponse,
     log: RequestLogger,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     callback: (err: ArsenalError | null, ...data: any[]) => void,
 ) => void;
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * setCommonResponseHeaders - Set HTTP response headers
  * @param headers - key and value of new headers to add
@@ -69,9 +73,7 @@ function okHeaderResponse(
     log.debug('response http code', { httpCode });
     response.writeHead(httpCode);
     return response.end(() => {
-        // TODO ARSN-216 Fix logger
-        // @ts-expect-error
-        log.end().info('responded to request', {
+        log.end('responded to request', {
             httpCode: response.statusCode,
         });
     });
@@ -104,9 +106,7 @@ const XMLResponseBackend = {
         log.debug('response http code', { httpCode: 200 });
         log.trace('xml response', { xml });
         return response.end(xml, 'utf8', () => {
-            // TODO ARSN-216 Fix logger
-            // @ts-expect-error
-            log.end().info('responded with XML', {
+            log.end('responded with XML', {
                 httpCode: response.statusCode,
             });
         });
@@ -123,9 +123,7 @@ const XMLResponseBackend = {
         if (errCode.code === 304) {
             response.writeHead(errCode.code);
             return response.end('', 'utf8', () => {
-                // TODO ARSN-216 Fix logger
-                // @ts-expect-error
-                log.end().info('responded with empty body', {
+                log.end('responded with empty body', {
                     httpCode: response.statusCode,
                 });
             });
@@ -145,10 +143,10 @@ const XMLResponseBackend = {
         xml.push(
             '<?xml version="1.0" encoding="UTF-8"?>',
             '<Error>',
-                `<Code>${errCode.message}</Code>`,
-                `<Message>${errCode.description}</Message>`,
-                '<Resource></Resource>',
-                `<RequestId>${log.getSerializedUids()}</RequestId>`,
+            `<Code>${errCode.message}</Code>`,
+            `<Message>${errCode.description}</Message>`,
+            '<Resource></Resource>',
+            `<RequestId>${log.getSerializedUids()}</RequestId>`,
             '</Error>',
         );
         const xmlStr = xml.join('');
@@ -159,9 +157,7 @@ const XMLResponseBackend = {
             'Content-Length': bytesSent ,
         });
         return response.end(xmlStr, 'utf8', () => {
-            // TODO ARSN-216 Fix logger
-            // @ts-expect-error
-            log.end().info('responded with error XML', {
+            log.end('responded with error XML', {
                 httpCode: response.statusCode,
             });
         });
@@ -193,9 +189,7 @@ const JSONResponseBackend = {
         log.debug('response http code', { httpCode: 200 });
         log.trace('json response', { json });
         return response.end(json, 'utf8', () => {
-            // TODO ARSN-216 Fix logger
-            // @ts-expect-error
-            log.end().info('responded with JSON', {
+            log.end('responded with JSON', {
                 httpCode: response.statusCode,
             });
         });
@@ -230,9 +224,7 @@ const JSONResponseBackend = {
             'Content-Length': bytesSent,
         });
         return response.end(data, 'utf8', () => {
-            // TODO ARSN-216 Fix logger
-            // @ts-expect-error
-            log.end().info('responded with error JSON', {
+            log.end('responded with error JSON', {
                 httpCode: response.statusCode,
             });
         });
@@ -314,6 +306,7 @@ function retrieveDataAzure(
     response: http.ServerResponse,
     logger: RequestLogger,
 ) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const errorHandlerFn = (_: any) => { response.socket?.destroy(); };
     const current = locations.shift();
 
@@ -399,13 +392,13 @@ function retrieveData(
                 // response.isclosed is set by the S3 server. Might happen if
                 // the S3-client closes the connection before the first request
                 // to the backend is started.
-                // @ts-expect-error
+                // @ts-expect-error Property 'isclosed' does not exist on type 'ServerResponse<IncomingMessage>'
                 if (responseDestroyed || response.isclosed) {
                     log.debug(
                         'response destroyed before readable could stream');
                     readable.destroy();
                     const responseErr = new Error();
-                    // @ts-ignore
+                    // @ts-expect-error - code is not a property of Error
                     responseErr.code = 'ResponseError';
                     responseErr.message = 'response closed by client request before all data sent';
                     return next(responseErr);
@@ -428,7 +421,7 @@ function retrieveData(
             currentStream = null;
             if (err) {
                 log.debug('abort response due to error', {
-                    // @ts-expect-error
+                    // @ts-expect-error code is not a property of Error
                     error: err.code, errMsg: err.message });
             }
             // call end for all cases (error/success) per node.js docs
@@ -468,6 +461,7 @@ function _computeContentLengthFromLocation(
                 return sum + parseInt(location.size, 10);
             }
         }
+        return sum;
     }, 0);
 }
 
@@ -573,9 +567,7 @@ export function responseContentHeaders(
             undefined, log);
     }
     return response.end(() => {
-        // TODO ARSN-216 Fix logger
-        // @ts-expect-error
-        log.end().info('responded with content headers', {
+        log.end('responded with content headers', {
             httpCode: response.statusCode,
         });
     });
@@ -631,17 +623,13 @@ export function responseStreamData(
     }
     if (dataLocations === null || _computeContentLengthFromLocation(dataLocations) === 0) {
         return response.end(() => {
-            // TODO ARSN-216 Fix logger
-            // @ts-expect-error
-            log.end().info('responded with only metadata', {
+            log.end('responded with only metadata', {
                 httpCode: response.statusCode,
             });
         });
     }
     response.on('finish', () => {
-        // TODO ARSN-216 Fix logger
-        // @ts-expect-error
-        log.end().info('responded with streamed content', {
+        log.end('responded with streamed content', {
             httpCode: response.statusCode,
         });
     });
@@ -671,9 +659,7 @@ export function streamUserErrorPage(
     response.setHeader('x-amz-error-message', err.description);
     response.writeHead(err.code, { 'Content-type': 'text/html' });
     response.on('finish', () => {
-        // TODO ARSN-216 Fix logger
-        // @ts-expect-error
-        log.end().info('responded with streamed content', {
+        log.end('responded with streamed content', {
             httpCode: response.statusCode,
         });
     });
@@ -743,9 +729,7 @@ export function errorHtmlResponse(
     );
 
     return response.end(html.join(''), 'utf8', () => {
-        // TODO ARSN-216 Fix logger
-        // @ts-expect-error
-        log.end().info('responded with error html', {
+        log.end('responded with error html', {
             httpCode: response.statusCode,
         });
     });
@@ -770,9 +754,7 @@ export function errorHeaderResponse(
     response.setHeader('x-amz-error-message', err.description);
     response.writeHead(err.code);
     return response.end(() => {
-        // TODO ARSN-216 Fix logger
-        // @ts-expect-error
-        log.end().info('responded with error headers', {
+        log.end('responded with error headers', {
             httpCode: response.statusCode,
         });
     });
@@ -1069,20 +1051,20 @@ export function normalizeRequest(
     // @ts-expect-error
     request.query = parsedUrl.query;
     // TODO: make the namespace come from a config variable.
-    // @ts-expect-error
+    // @ts-expect-error property 'namespace' doesn't exist on type 'IncomingMessage'
     request.namespace = 'default';
     // Parse bucket and/or object names from request
     const resources = getResourceNames(request, parsedUrl.pathname!,
         validHosts);
-        // @ts-expect-error
+        // @ts-expect-error property 'gotBucketNameFromHost' doesn't exist on type 'IncomingMessage'
     request.gotBucketNameFromHost = resources.gotBucketNameFromHost;
-    // @ts-expect-error
+    // @ts-expect-error property 'bucketName' doesn't exist on type 'IncomingMessage'
     request.bucketName = resources.bucket;
-    // @ts-expect-error
+    // @ts-expect-error property 'objectKey' doesn't exist on type 'IncomingMessage'
     request.objectKey = resources.object;
-    // @ts-expect-error
+    // @ts-expect-error property 'parsedHost' doesn't exist on type 'IncomingMessage'
     request.parsedHost = resources.host;
-    // @ts-expect-error
+    // @ts-expect-error property 'path' doesn't exist on type 'IncomingMessage'
     request.path = resources.path;
     // For streaming v4 auth, the total body content length
     // without the chunk metadata is sent as
@@ -1090,7 +1072,7 @@ export function normalizeRequest(
     const contentLength = request.headers['x-amz-decoded-content-length'] ?
         request.headers['x-amz-decoded-content-length'] :
         request.headers['content-length'];
-    // @ts-expect-error
+    // @ts-expect-error property 'parsedContentLength' doesn't exist on type 'IncomingMessage'
     request.parsedContentLength =
         Number.parseInt(contentLength?.toString() ?? '', 10);
 

@@ -1,4 +1,5 @@
-'use strict';// eslint-disable-line strict
+'use strict';
+/* eslint-disable @typescript-eslint/no-require-imports */
 
 const assert = require('assert');
 
@@ -204,7 +205,7 @@ describe('Matrix', () => {
                     assert(testMatrix.params.auth !== undefined, true);
                     done();
                 }, 'should generate matrix').execute();
-        } catch (e) {
+        } catch {
             anExceptionWasFound = true;
         }
         it('An exception was launched', done => {
@@ -223,7 +224,7 @@ describe('Matrix', () => {
                         assert(testMatrix.params.auth !== undefined, true);
                     }, 'should generate matrix');
                 }).execute();
-            } catch (e) {
+            } catch {
                 anExceptionWasFound = true;
             }
             it('An exception was launched', done => {

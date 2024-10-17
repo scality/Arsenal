@@ -1,5 +1,6 @@
-'use strict'; // eslint-disable-line strict
+'use strict';
 /* eslint new-cap: "off" */
+/* eslint-disable @typescript-eslint/no-require-imports */
 
 const KMIP = require('../../../lib/network/kmip').default;
 

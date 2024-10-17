@@ -72,7 +72,7 @@ export default class ObjectMDLocation {
      */
     setDataLocation(location: BaseLocation | (BaseLocation & Ciphered)) {
         ['key', 'dataStoreName', 'cryptoScheme', 'cipheredDataKey'].forEach(
-            (attrName) => {
+            attrName => {
                 if (location[attrName] !== undefined) {
                     this._data[attrName] = location[attrName];
                 } else {

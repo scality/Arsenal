@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
+
 const assert = require('assert');
 const { indexOf, indexAtOrBelow, symDiff } = require('../../../../lib/algos/set/ArrayUtils');
 const crypto = require('crypto');

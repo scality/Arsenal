@@ -62,7 +62,7 @@ export function parseRangeSpec(
 export function getByteRangeFromSpec(
     rangeSpec: { suffix: number } | { start: number; end?: number },
     objectSize: number
-): { error: ArsenalError } | { range: [number, number] } | {} {
+): { error: ArsenalError } | { range: [number, number] } | object {
     if ('suffix' in rangeSpec) {
         if (rangeSpec.suffix === 0) {
             // 0-byte suffix is always invalid (even on empty objects)
@@ -103,10 +103,10 @@ export function getByteRangeFromSpec(
  * - or an 'error' attribute instead of type errors.InvalidRange if
  *     the requested range is out of object's boundaries.
  */
- export function parseRange(
-     rangeHeader: string,
-     objectSize: number
- ): { range: [number, number] } | {} | { error: ArsenalError } {
+export function parseRange(
+    rangeHeader: string,
+    objectSize: number
+): { range: [number, number] } | object | { error: ArsenalError } {
     const rangeSpec = parseRangeSpec(rangeHeader);
     if ('error' in rangeSpec) {
         // invalid range syntax is silently ignored in HTTP spec,
@@ -118,6 +118,6 @@ export function getByteRangeFromSpec(
 
 export function checkSupportIPv6() {
     const niList = os.networkInterfaces();
-    return Object.keys(niList).some((network) =>
+    return Object.keys(niList).some(network =>
         niList[network]?.some(intfc => intfc.family === 'IPv6'));
 }

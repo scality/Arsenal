@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { RequestLogger } from 'werelogs';
 
 import * as routesUtils from '../routesUtils';
@@ -15,14 +17,14 @@ export default function routerGET(
 ) {
     log.debug('routing request', { method: 'routerGET' });
 
-    const { bucketName, objectKey, query } = request as any
+    const { bucketName, objectKey, query } = request as any;
 
     const call = (name: string) => {
         api.callApiMethod(name, request, response, log, (err, xml, corsHeaders) => {
             routesUtils.statsReport500(err, statsClient);
             return routesUtils.responseXMLBody(err, xml, response, log, corsHeaders);
         });
-    }
+    };
 
     if (bucketName === undefined && objectKey !== undefined) {
         routesUtils.responseXMLBody(errors.NoSuchBucket, null, response, log);
@@ -83,9 +85,7 @@ export default function routerGET(
                     if (resMetaHeaders && resMetaHeaders['Content-Length']) {
                         contentLength = resMetaHeaders['Content-Length'];
                     }
-                    // TODO ARSN-216 Fix logger
-                    // @ts-ignore
-                    log.end().addDefaultFields({ contentLength });
+                    log.addDefaultFields({ contentLength });
                     routesUtils.statsReport500(err, statsClient);
                     return routesUtils.responseStreamData(err, query,
                         resMetaHeaders, dataGetInfo, dataRetrievalParams, response,

@@ -1,4 +1,5 @@
-'use strict'; // eslint-disable-line
+'use strict';
+/* eslint-disable @typescript-eslint/no-require-imports */
 
 const level = require('level');
 const sublevel = require('level-sublevel');

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { parseString } from 'xml2js';
 import * as werelogs from 'werelogs';
 import errors, { ArsenalError } from '../errors';
@@ -196,7 +198,7 @@ export function parseTagFromQuery(tagQuery: string) {
         try {
             key = decodeURIComponent(pairArray[0]);
             value = decodeURIComponent(pairArray[1]);
-        } catch (err) {
+        } catch {
             return errorInvalidArgument();
         }
         if (!key) {

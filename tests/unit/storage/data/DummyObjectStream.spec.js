@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const assert = require('assert');
 const DummyObjectStream = require('./DummyObjectStream');
 
@@ -19,7 +20,6 @@ async function testStream(startByteOffset, streamSize, expectedData) {
 describe('DummyObjectStream', () => {
     jest.setTimeout(30000);
     it('should return a stream of 8-byte hex-encoded blocks', async () => {
-        /* eslint-disable no-unused-expressions */
         await testStream(0, 0, '');
         await testStream(50, 0, '');
         await testStream(0, 1, ' ');
@@ -52,6 +52,5 @@ describe('DummyObjectStream', () => {
                   .concat([' 25'])
                   .join('');
         await testStream(567890123, 5 + 8 * 1024 * 1024 + 3, expectedLarge2);
-        /* eslint-enable no-unused-expressions */
     });
 });

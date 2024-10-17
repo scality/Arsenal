@@ -1,5 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable new-cap */
+
 import assert from 'assert';
-import UUID from 'uuid';
+import { v4 as UUID } from 'uuid';
 
 import { RequestLogger } from 'werelogs';
 
@@ -142,7 +145,7 @@ export default class ReplicationConfiguration {
         obj.id =
             rule.ID && rule.ID[0] !== ''
                 ? rule.ID[0]
-                : Buffer.from(UUID.v4()).toString('base64');
+                : Buffer.from(UUID()).toString('base64');
         // StorageClass is an optional property.
         if (rule.Destination[0].StorageClass) {
             obj.storageClass = rule.Destination[0].StorageClass[0];
@@ -192,7 +195,7 @@ export default class ReplicationConfiguration {
                     'Role may not contain a comma separator'
             );
         }
-        const invalidRole = rolesArr.find((r) => !this._isValidRoleARN(r));
+        const invalidRole = rolesArr.find(r => !this._isValidRoleARN(r));
         if (invalidRole !== undefined) {
             return errors.InvalidArgument.customizeDescription(
                 'Invalid Role specified in replication configuration: ' +
@@ -328,7 +331,7 @@ export default class ReplicationConfiguration {
             return undefined;
         }
         const storageClasses = destination.StorageClass[0].split(',');
-        const isValidStorageClass = storageClasses.every((storageClass) => {
+        const isValidStorageClass = storageClasses.every(storageClass => {
             if (validStorageClasses.includes(storageClass)) {
                 this._hasScalityDestination =
                     defaultEndpoint.type === undefined;
@@ -444,7 +447,7 @@ export default class ReplicationConfiguration {
         const Role = `<Role>${escapeForXml(role)}</Role>`;
         const Bucket = `<Bucket>${escapeForXml(destination)}</Bucket>`;
         const rulesXML = rules
-            .map((rule) => {
+            .map(rule => {
                 const { prefix, enabled, storageClass, id } = rule;
                 const Prefix =
                     prefix === ''
@@ -487,7 +490,7 @@ export default class ReplicationConfiguration {
         assert.strictEqual(typeof role, 'string');
         assert.strictEqual(typeof destination, 'string');
         assert.strictEqual(Array.isArray(rules), true);
-        rules.forEach((rule) => {
+        rules.forEach(rule => {
             assert.strictEqual(typeof rule, 'object');
             const { prefix, enabled, id, storageClass } = rule;
             assert.strictEqual(typeof prefix, 'string');

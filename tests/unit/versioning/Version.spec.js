@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const { Version } = require('../../../lib/versioning/Version');
 
 describe('Version', () => {

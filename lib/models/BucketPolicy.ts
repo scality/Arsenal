@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import assert from 'assert';
 import errors, { ArsenalError } from '../errors';
 import { validateResourcePolicy } from '../policy/policyValidator';

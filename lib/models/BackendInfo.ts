@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { RequestLogger } from 'werelogs';
 
 import { legacyLocations } from '../constants';

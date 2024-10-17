@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { meetConditions } from './evaluator';
 import RequestContext from './RequestContext';
 import { Logger } from 'werelogs';

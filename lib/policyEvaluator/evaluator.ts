@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import substituteVariables from './utils/variables';
 import { handleWildcards } from './utils/wildcards';
 import { findConditionKey, convertConditionOperator } from './utils/conditions';
@@ -196,7 +198,7 @@ export function meetConditions(
             // Note: Wildcards are handled in the comparison operator function
             // itself since StringLike, StringNotLike, ArnLike and ArnNotLike
             // are the only operators where wildcards are allowed
-            // @ts-expect-error
+            // @ts-expect-error Type 'Boolean' has no call signatures
             if (!operatorFunction(keyBasedOnRequestContext, transformedValue, prefix)) {
                 log.trace('did not satisfy condition', { operator: bareOperator,
                     keyBasedOnRequestContext, policyValue: transformedValue });

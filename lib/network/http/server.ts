@@ -9,6 +9,7 @@ import errors from '../../errors';
 import { checkSupportIPv6 } from './utils';
 import { Logger } from 'werelogs';
 
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 export default class Server {
     _noDelay: boolean;
     _cbOnListening: () => void;
@@ -428,7 +429,6 @@ export default class Server {
             this._server.on('connection', sock => {
                 // Setting no delay of the socket to the value configured
                 // TODO fix this
-                // @ts-expect-errors
                 sock.setNoDelay(this.isNoDelay());
                 sock.on('error', err => this._logger.info(
                     'socket error - request rejected', { error: err }));
@@ -436,7 +436,7 @@ export default class Server {
             this._server.on('tlsClientError', (err, sock) =>
                 this._onClientError(err, sock));
             this._server.on('clientError', (err, sock) =>
-                // @ts-expect-errors
+                // @ts-expect-error
                 this._onClientError(err, sock));
             this._server.on('checkContinue', (req, res) =>
                 this._onCheckContinue(req, res));

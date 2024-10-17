@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { Logger } from 'werelogs';
 import errors from '../../errors';
 import * as constants from '../../constants';
@@ -41,16 +43,16 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
 
     if (expirationTime > currentTime + preSignedURLExpiry) {
         log.debug('expires parameter too far in future',
-        { expires: request.query.Expires });
+            { expires: request.query.Expires });
         return { err: errors.AccessDenied };
     }
     if (currentTime > expirationTime) {
         log.debug('current time exceeds expires time',
-        { expires: request.query.Expires });
+            { expires: request.query.Expires });
         return { err: errors.RequestTimeTooSkewed };
     }
     const accessKey = data.AWSAccessKeyId;
-    // @ts-ignore
+    // @ts-expect-error property 'addDefaultFields' does not exist on type 'Logger'
     log.addDefaultFields({ accessKey });
 
     const signatureFromRequest = decodeURIComponent(data.Signature);

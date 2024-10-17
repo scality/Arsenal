@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
+
 import * as rawErrors from '../../lib/errors/arsenalErrors';
 import { errors } from '../../index';
 import { ArsenalError } from '../../lib/errors';
@@ -23,12 +25,13 @@ describe('Errors: ', () => {
     });
 
     it('can be used as an http response', () => {
-        // @ts-expect-errors
+        // @ts-expect-error types are not compatible
         errors.NoSuchEntity.writeResponse({
             writeHead(statusCode: number) {
                 expect(statusCode).toEqual(404);
                 return this;
             },
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             end(msg: any) {
                 const asStr = errors.NoSuchEntity.toString();
                 expect(msg).toEqual(asStr);
@@ -49,7 +52,7 @@ describe('Backward compatibility flag', () => {
 
     afterEach(() => {
         process.env = { ...env };
-    })
+    });
 
     it('should be enabled when no env variable is present', () => {
         const errors = require('../../lib/errors');

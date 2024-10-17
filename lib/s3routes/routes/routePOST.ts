@@ -5,6 +5,7 @@ import errors from '../../errors';
 import * as http from 'http';
 
 /* eslint-disable no-param-reassign */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export default function routePOST(
     request: http.IncomingMessage,
     response: http.ServerResponse,
@@ -13,7 +14,7 @@ export default function routePOST(
 ) {
     log.debug('routing request', { method: 'routePOST' });
 
-    const { query, bucketName, objectKey } = request as any
+    const { query, bucketName, objectKey } = request as any;
 
     const invalidMultiObjectDelReq = query.delete !== undefined
         && bucketName === undefined;
@@ -22,7 +23,7 @@ export default function routePOST(
             response, undefined, log);
     }
 
-    // @ts-ignore
+    // @ts-expect-error Property 'post' does not exist on type 'IncomingMessage'
     request.post = '';
 
     const invalidInitiateMpuReq = query.uploads !== undefined

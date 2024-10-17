@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import V4Transform, { TransformParams } from '../auth/v4/streamingV4/V4Transform';
 import Vault from '../auth/Vault';
 import * as werelogs from 'werelogs';

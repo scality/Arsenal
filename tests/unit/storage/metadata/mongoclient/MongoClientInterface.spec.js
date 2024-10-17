@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
+
 const async = require('async');
 const assert = require('assert');
 const werelogs = require('werelogs');
@@ -13,7 +15,7 @@ const { formatMasterKey } = require('../../../../../lib/storage/metadata/mongocl
 const dbName = 'metadata';
 
 const mongoserver = new MongoMemoryReplSet({
-    debug: false,
+    debug: true,
     instanceOpts: [
         { port: 27018 },
     ],
@@ -23,6 +25,16 @@ const mongoserver = new MongoMemoryReplSet({
         dbName,
         storageEngine: 'ephemeralForTest',
     },
+});
+
+beforeAll(async () => {
+    await mongoserver.start();
+    const uri = await mongoserver.getUri();
+    process.env.MONGO_URL = uri;
+});
+
+afterAll(async () => {
+    await mongoserver.stop();
 });
 
 const MongoClientInterface = require(

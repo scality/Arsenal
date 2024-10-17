@@ -38,6 +38,5 @@ export default function getCanonicalizedAmzHeaders(headers: Headers, clientType:
     });
     // Build headerString
     return amzHeaders.reduce((headerStr, current) =>
-        `${headerStr}${current[0]}:${current[1]}\n`,
-        '');
+        `${headerStr}${current[0]}:${current[1]}\n`, '');
 }

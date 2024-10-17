@@ -5,7 +5,8 @@ import * as crypto from 'crypto';
  * @param array the array to shuffle
  * @returns the reference on the array
  */
-export default function shuffle<T>(array: T[]) {
+export default function shuffle<T>(inputArray: T[]): T[] {
+    const array = [...inputArray]; // Create a local copy of the array
     for (let i = array.length - 1; i > 0; i--) {
         const randIndex = crypto.randomInt(0, i);
         [array[randIndex], array[i]] = [array[i], array[randIndex]];

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const assert = require('assert');
 const NullStream = require('../../../lib/s3middleware/nullStream').default;
 const MD5Sum = require('../../../lib/s3middleware/MD5Sum').default;

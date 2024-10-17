@@ -1,8 +1,8 @@
-'use strict'
+'use strict';
 
 import * as Heap from '../../../../lib/algos/heap/Heap';
 
-function numberCompare(x: any, y: any): Heap.CompareResult {
+function numberCompare(x: number, y: number): Heap.CompareResult {
     if (x > y) {
         return Heap.CompareResult.GT;
     }

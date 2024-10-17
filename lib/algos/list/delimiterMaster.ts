@@ -1,3 +1,6 @@
+/* eslint-disable camelcase */
+/* eslint-disable @typescript-eslint/no-require-imports */
+
 import {
     Delimiter,
     FilterState,
@@ -180,6 +183,7 @@ export class DelimiterMaster extends Delimiter {
     skippingBase(): string | undefined {
         switch (this.state.id) {
         case DelimiterMasterFilterStateId.SkippingVersionsV0:
+            // eslint-disable-next-line no-case-declarations
             const { masterKey } = <DelimiterMasterFilterState_SkippingVersionsV0> this.state;
             return masterKey + VID_SEP;
 

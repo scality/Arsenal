@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import * as crypto from 'crypto';
 import { Logger } from 'werelogs';
 import createCanonicalRequest from './createCanonicalRequest';
@@ -41,7 +43,7 @@ export default function constructStringToSign(params: {
     });
 
     // TODO Why that line?
-    // @ts-ignore
+    // @ts-expect-error The left-hand side of an 'instanceof' expression must be of type 'any'
     if (canonicalReqResult instanceof Error) {
         if (log) {
             log.error('error creating canonicalRequest');

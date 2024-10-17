@@ -1,5 +1,5 @@
 /* eslint new-cap: "off" */
-
+/* eslint-disable @typescript-eslint/no-require-imports */
 const { EventEmitter } = require('events');
 
 const logger = {

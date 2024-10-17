@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import assert from 'assert';
 import * as crypto from 'crypto';
 import * as stream from 'stream';
@@ -101,7 +103,7 @@ export const getSubPartIds = (
     part: { numberSubParts: number; partNumber: number },
     uploadId: string,
 ) => [...Array(part.numberSubParts).keys()].map(subPartIndex =>
-        getBlockId(uploadId, part.partNumber, subPartIndex));
+    getBlockId(uploadId, part.partNumber, subPartIndex));
 
 // TODO Better type this
 export const putSinglePart = (

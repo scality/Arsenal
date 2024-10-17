@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+
 import ioClient from 'socket.io-client';
 import * as http from 'http';
 import { Server as IOServer } from 'socket.io';
@@ -124,10 +127,10 @@ export class BaseClient extends EventEmitter {
         if (typeof cb !== 'function') {
             throw new Error(`argument cb=${cb} is not a callback`);
         }
-        // @ts-ignore
+        // @ts-expect-error
         async.timeout(this._call.bind(this), timeoutMs,
             `operation ${remoteCall} timed out`)(remoteCall,
-            // @ts-ignore
+            // @ts-expect-error
             args, cb);
         return undefined;
     }
@@ -267,8 +270,8 @@ export class BaseService {
     apiVersion: string;
     server: any;
     requestInfoConsumers: any[];
-    syncAPI: {};
-    asyncAPI: {};
+    syncAPI: object;
+    asyncAPI: object;
     requestParams: any;
 
     /**

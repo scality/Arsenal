@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+
 import assert from 'assert';
 import * as rpc from './rpc';
 import { Logger } from 'werelogs';
@@ -102,17 +105,16 @@ export class LevelDbService extends rpc.BaseService {
      * @param [params.server] - convenience parameter,
      * calls server.registerServices() automatically
      */
-    constructor(params: { namespace: string; rootDb: any; logger: Logger; apiVersion: string; server: typeof rpc.RPCServer }) {
+    constructor(params: { namespace: string; rootDb: any; logger: Logger;
+        apiVersion: string; server: typeof rpc.RPCServer }) {
         assert(params.rootDb);
         super(params);
         this.rootDb = params.rootDb;
 
-        this.addRequestInfoConsumer((dbService, reqParams) => {
-            return {
-                subLevel: reqParams.subLevel,
-                subDb: this.lookupSubLevel(reqParams.subLevel),
-            };
-        });
+        this.addRequestInfoConsumer((dbService, reqParams) => ({
+            subLevel: reqParams.subLevel,
+            subDb: this.lookupSubLevel(reqParams.subLevel),
+        }));
     }
 
     /**

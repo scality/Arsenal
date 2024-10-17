@@ -1,5 +1,4 @@
-'use strict'; // eslint-disable-line strict
-
+'use strict';
 module.exports = [
     {
         request: Buffer.from('42007801000000904200770100000048' +

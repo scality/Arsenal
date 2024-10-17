@@ -39,7 +39,7 @@ export default function awsURIencode(
      * Duplicate query params are not suppported by AWS S3 APIs. These params
      * are parsed as Arrays by Node.js HTTP parser which breaks this method
      */
-     if (typeof input !== 'string') {
+    if (typeof input !== 'string') {
         return '';
     }
 
@@ -51,27 +51,27 @@ export default function awsURIencode(
     const charArray = Array.from(input);
     for (const ch of charArray) {
         switch (true) {
-            case ch >= 'A' && ch <= 'Z':
-            case ch >= 'a' && ch <= 'z':
-            case ch >= '0' && ch <= '9':
-            case ch === '-':
-            case ch === '_':
-            case ch === '~':
-            case ch === '.':
-                encoded.push(ch);
-                break;
-            case ch === '/':
-                encoded.push(slash);
-                break;
-            case ch === '*':
-                encoded.push(star);
-                break;
-            case ch === ' ':
-                encoded.push('%20');
-                break;
-            default:
-                encoded.push(_toHexUTF8(ch));
-                break;
+        case ch >= 'A' && ch <= 'Z':
+        case ch >= 'a' && ch <= 'z':
+        case ch >= '0' && ch <= '9':
+        case ch === '-':
+        case ch === '_':
+        case ch === '~':
+        case ch === '.':
+            encoded.push(ch);
+            break;
+        case ch === '/':
+            encoded.push(slash);
+            break;
+        case ch === '*':
+            encoded.push(star);
+            break;
+        case ch === ' ':
+            encoded.push('%20');
+            break;
+        default:
+            encoded.push(_toHexUTF8(ch));
+            break;
         }
     }
     return encoded.join('');

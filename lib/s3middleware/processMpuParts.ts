@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import errors from '../errors';
 import * as crypto from 'crypto';
 import * as constants from '../constants';
@@ -86,7 +88,6 @@ export function generateMpuPartStorageInfo(filteredPartList: any[]) {
                 cipheredDataKey: location.sseCipheredDataKey,
             };
             dataLocations.push(pieceRetrievalInfo);
-            // eslint-disable-next-line no-param-reassign
             calculatedSize += pieceSize;
         }
     });
