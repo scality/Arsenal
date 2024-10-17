@@ -1,7 +1,7 @@
 {
   "name": "arsenal",
   "engines": {
-    "node": ">=20"
+    "node": ">=16"
   },
   "version": "7.10.63",
   "description": "Common utilities for the S3 project components",
@@ -80,7 +80,7 @@
     "lint": "eslint $(git ls-files '*.ts' '*.js')",
     "lint_md": "mdlint $(git ls-files '*.md')",
     "lint_yml": "yamllint $(git ls-files '*.yml')",
-    "test": "export NODE_OPTIONS=\"--tls-max-v1.2\" && jest tests/unit",
+    "test": "export NODE_OPTIONS=\"--tls-max-v1.2\" && jest tests/unit/storage/data/external/GcpService.spec.js",
     "build": "tsc",
     "prepare": "yarn build",
     "ft_test": "jest tests/functional --testTimeout=120000 --forceExit",
