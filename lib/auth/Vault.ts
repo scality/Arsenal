@@ -1,5 +1,5 @@
 import { Logger } from 'werelogs';
-import errors from '../errors';
+import errors, { ArsenalError } from '../errors';
 import AuthInfo from './AuthInfo';
 
 /** vaultSignatureCb parses message from Vault and instantiates
@@ -11,10 +11,10 @@ import AuthInfo from './AuthInfo';
  * items used to calculate signature on chunks if streaming auth
  */
 function vaultSignatureCb(
-    err: Error | null,
+    err: Error & { code: string, description: string } | null,
     authInfo: { message: { body: any } },
     log: Logger,
-    callback: (err: Error | null, data?: any, results?: any, params?: any) => void,
+    callback: (err: Error | ArsenalError | null, data?: any, results?: any, params?: any) => void,
     streamingV4Params?: any
 ) {
     // vaultclient API guarantees that it returns:
@@ -24,6 +24,9 @@ function vaultSignatureCb(
     if (err) {
         log.debug('received error message from auth provider',
             { errorMessage: err });
+        if (err.code && err.code === 'InvalidAccessKeyId') {
+            return callback(errors.InvalidAccessKeyId);
+        }
         return callback(err);
     }
     log.debug('received info from Vault', { authInfo });
@@ -138,7 +141,7 @@ export default class Vault {
                 securityToken: params.data.securityToken,
                 requestContext: serializedRCsArr,
             },
-            (err: Error | null, userInfo?: any) => vaultSignatureCb(err, userInfo,
+            (err: Error & { code: string, description: string } | null, userInfo?: any) => vaultSignatureCb(err, userInfo,
                 params.log, callback),
         );
     }
@@ -197,7 +200,7 @@ export default class Vault {
                 securityToken: params.data.securityToken,
                 requestContext: serializedRCs,
             },
-            (err: Error | null, userInfo?: any) => vaultSignatureCb(err, userInfo,
+            (err: Error & { code: string, description: string } | null, userInfo?: any) => vaultSignatureCb(err, userInfo,
                 params.log, callback, streamingV4Params),
         );
     }
