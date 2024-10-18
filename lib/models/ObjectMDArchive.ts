@@ -60,7 +60,7 @@ export default class ObjectMDArchive {
                 data.restoreWillExpireAt,
             );
             return true;
-        } catch (err) {
+        } catch {
             return false;
         }
     }

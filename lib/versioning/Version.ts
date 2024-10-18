@@ -71,8 +71,7 @@ export class Version {
         // parse the value if it has the keyword 'isPHD'
         try {
             return Version.from(value).isPHDVersion();
-        } catch (exception) {
-             
+        } catch {
             return false; // nice, Vault
         }
     }
@@ -200,8 +199,7 @@ export class Version {
         // parse the value
         try {
             return Version.from(value).isDeleteMarkerVersion();
-        } catch (exception) {
-             
+        } catch {
             return false;
         }
     }

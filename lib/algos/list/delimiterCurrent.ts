@@ -1,5 +1,4 @@
 const { DelimiterMaster } = require('./delimiterMaster');
-const { FILTER_ACCEPT, FILTER_END } = require('./tools');
 
 type ResultObject = {
     Contents: {

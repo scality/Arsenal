@@ -28,11 +28,10 @@ jobs:
       uses: actions/checkout@v4
     - uses: actions/setup-node@v4
       with:
-        node-version: '16'
+        node-version: '20'
         cache: 'yarn'
     - name: install dependencies
       run: yarn install --frozen-lockfile --prefer-offline --network-concurrency 1
-      continue-on-error: true # TODO ARSN-97 Remove it when no errors in TS
     - name: lint yaml
       run: yarn --silent lint_yml
     - name: lint javascript
@@ -63,14 +62,12 @@ jobs:
     - name: Install NodeJS
       uses: actions/setup-node@v4
       with:
-        node-version: '16'
+        node-version: '20'
         cache: yarn
     - name: Install dependencies
       run: yarn install --frozen-lockfile --prefer-offline
-      continue-on-error: true # TODO ARSN-97 Remove it when no errors in TS
     - name: Compile
       run: yarn build
-      continue-on-error: true # TODO ARSN-97 Remove it when no errors in TS
     - name: Upload artifacts
       uses: scality/action-artifacts@v4
       with:

@@ -1,5 +1,5 @@
 import assert from 'assert';
-import UUID from 'uuid';
+const { v4: uuid } = require('uuid');
 
 import errors, { ArsenalError } from '../errors';
 import LifecycleRule from './LifecycleRule';
@@ -455,7 +455,7 @@ export default class LifecycleConfiguration {
         if (!id || !id[0] || id[0] === '') {
             // ID is optional property, but create one if not provided or is ''
             // We generate 48-character alphanumeric, unique ID for rule
-            idObj.ruleID = Buffer.from(UUID.v4()).toString('base64');
+            idObj.ruleID = Buffer.from(uuid()).toString('base64');
         } else {
             idObj.ruleID = id[0];
         }
@@ -922,7 +922,6 @@ export default class LifecycleConfiguration {
                 ];
                 actionTimes.forEach(t => {
                     if (action[t]) {
-                        // eslint-disable-next-line no-param-reassign
                         a[t] = action[t];
                     }
                 });

@@ -102,7 +102,8 @@ export class LevelDbService extends rpc.BaseService {
      * @param [params.server] - convenience parameter,
      * calls server.registerServices() automatically
      */
-    constructor(params: { namespace: string; rootDb: any; logger: Logger; apiVersion: string; server: typeof rpc.RPCServer }) {
+    constructor(params: { namespace: string; rootDb: any; logger: Logger;
+        apiVersion: string; server: typeof rpc.RPCServer }) {
         assert(params.rootDb);
         super(params);
         this.rootDb = params.rootDb;

@@ -127,7 +127,7 @@ export const putSinglePart = (
     log: RequestLogger,
     cb: (err: ArsenalError | null | undefined, dataStoreETag?: string, size?: number) => void,
 ) => {
-    const { bucketName, partNumber, size, objectKey, contentMD5, uploadId }
+    const { partNumber, size, objectKey, contentMD5, uploadId }
         = params;
     const blockId = getBlockId(uploadId, partNumber, 0);
     const passThrough = new stream.PassThrough();
@@ -175,7 +175,7 @@ const putNextSubPart = (
     resultsCollector: ResultsCollector,
     log: RequestLogger,
 ) => {
-    const { uploadId, partNumber, bucketName, objectKey } = partParams;
+    const { uploadId, partNumber, objectKey } = partParams;
     const subPartSize = getSubPartSize(
         subPartInfo, subPartIndex);
     const subPartId = getBlockId(uploadId, partNumber,
@@ -183,7 +183,7 @@ const putNextSubPart = (
     resultsCollector.pushOp();
     errorWrapperFn('uploadPart', 'createBlockFromStream', async client => {
         try {
-            const result = await client.getBlockBlobClient(objectKey)
+            await client.getBlockBlobClient(objectKey)
                 .stageBlock(subPartId, () => subPartStream, subPartSize, {});
             resultsCollector.pushResult(null, subPartIndex);
         } catch (err: any) {

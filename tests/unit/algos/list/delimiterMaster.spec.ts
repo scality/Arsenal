@@ -1444,7 +1444,7 @@ describe('DelimiterMaster listing algorithm: gap caching and lookup', () => {
 
         // here comes the next master delete marker, it should be skipped as it is still within
         // the cached gap's range (its key is "0003" and version "v100")
-        resumeState = filterEntries(listing, 'D', 's', resumeState);
+        filterEntries(listing, 'D', 's', resumeState);
         // the listing algorithm should now be actively skipping the gap
         expect(listing.state.id).toEqual(DelimiterMasterFilterStateId.SkippingGapV0);
 
@@ -1465,8 +1465,6 @@ describe('DelimiterMaster listing algorithm: gap caching and lookup', () => {
         // - The following master delete marker "0007" is past the gap so returns
         //   FILTER_ACCEPT ('a') and should have triggered a new cache lookup, and
         //   the listing state should have been switched back to SkippingVersionsV0.
-        resumeState = filterEntries(listing, 'dv Ddv Ddv Vvvv Ddv', 'ss sss sss ssss ass',
-            resumeState);
         expect(listing._gapCaching.state).toEqual(GapCachingState.GapLookupInProgress);
         expect(listing.state.id).toEqual(DelimiterMasterFilterStateId.SkippingVersionsV0);
 
@@ -1485,14 +1483,14 @@ describe('DelimiterMaster listing algorithm: gap caching and lookup', () => {
             ), 100);
             listing.refreshGapCache(gapCache, 2);
 
-            let resumeState = filterEntries(listing, 'Vv D', 'as a');
+            const resumeState = filterEntries(listing, 'Vv D', 'as a');
             // wait until the lookup completes (should happen in the next
             // event loop iteration so always quicker than a non-immediate timer)
             await new Promise(resolve => setTimeout(resolve, 1));
 
             // the lookup should have completed now and the next gap should be cached,
             // continue with filtering
-            resumeState = filterEntries(listing, 'dv Ddv Ddv Ddv Ddv Ddvvv Vv Ddv Vv',
+            filterEntries(listing, 'dv Ddv Ddv Ddv Ddv Ddvvv Vv Ddv Vv',
                 'ss sss sss sss ass assss as ass as',
                 resumeState);
             // the cached gap should be extended to the last key before the last regular
@@ -1518,7 +1516,7 @@ describe('DelimiterMaster listing algorithm: gap caching and lookup', () => {
         ), 100);
         listing.refreshGapCache(gapCache, 2);
 
-        let resumeState = filterEntries(listing, 'Vv D', 'as a');
+        const resumeState = filterEntries(listing, 'Vv D', 'as a');
         // wait until the lookup completes (should happen in the next
         // event loop iteration so always quicker than a non-immediate timer)
         await new Promise(resolve => setTimeout(resolve, 1));
@@ -1526,7 +1524,7 @@ describe('DelimiterMaster listing algorithm: gap caching and lookup', () => {
         // the lookup should have completed now and the next gap should be cached,
         // continue with filtering
         expect(listing._gapCaching.state).toEqual(GapCachingState.GapCached);
-        resumeState = filterEntries(listing, 'dv Ddv Ddv Ddv Vv Ddv Vv',
+        filterEntries(listing, 'dv Ddv Ddv Ddv Vv Ddv Vv',
             'ss ass sss sss as ass as', resumeState);
         // the cached gap should be extended to the last key before the last regular
         // master version ('V')
@@ -1563,7 +1561,7 @@ describe('DelimiterMaster listing algorithm: gap caching and lookup', () => {
             resumeState = filterEntries(listing, 'dv Ddv Ddv Ddv',
                 'ss sss sss sss', resumeState);
             gapCache.removeOverlappingGaps(['pre/0002']);
-            resumeState = filterEntries(listing, 'Vv', 'as', resumeState);
+            filterEntries(listing, 'Vv', 'as', resumeState);
             // no new gap should have been added
             expect(gapCache.toArray()).toEqual([]);
         });

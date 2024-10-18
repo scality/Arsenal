@@ -25,6 +25,9 @@ export default tseslint.config(
             '@typescript-eslint/no-require-imports': 'off',
             '@typescript-eslint/no-explicit-any': 'off',
             '@typescript-eslint/no-empty-object-type': 'off',
+            'camelcase': 'off',
+            'no-param-reassign': 'off',
+            'new-cap': 'off',
         }
     }
 );

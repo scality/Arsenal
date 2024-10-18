@@ -104,7 +104,7 @@ class SIOInputStream extends stream.Readable {
         };
     }
 
-    destroy(_error?: Error | undefined) {
+    destroy() {
         debug('destroy called', this.streamId);
         this._destroyed = true;
         this.pause();

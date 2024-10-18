@@ -35,7 +35,7 @@ export default class ObjectMDAmzRestore {
              
             new ObjectMDAmzRestore(data['ongoing-request'], data['expiry-date']);
             return true;
-        } catch (err) {
+        } catch {
             return false;
         }
     }

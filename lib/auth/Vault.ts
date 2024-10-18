@@ -36,7 +36,7 @@ function vaultSignatureCb(
         return callback(err);
     }
 
-    const { email, ...userInfoWithoutEmail } = authInfo.message.body.userInfo;
+    const { ...userInfoWithoutEmail } = authInfo.message.body.userInfo;
 
     log.debug('received info from Vault', {
         ...authInfo,

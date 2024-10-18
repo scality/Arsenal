@@ -23,7 +23,7 @@ export function checkIPinRangeOrMatch(
             const range = ipaddr.IPv4.parseCIDR(cidr);
             return ip.match(range);
         }
-    } catch (error) {
+    } catch {
         return false;
     }
 }

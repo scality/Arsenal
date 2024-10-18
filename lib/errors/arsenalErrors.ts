@@ -17,7 +17,8 @@ export const AccessForbidden: ErrorFormat = {
 export const AccountProblem: ErrorFormat = {
     code: 403,
     description:
-        'There is a problem with your AWS account that prevents the operation from completing successfully. Please use Contact Us.',
+        'There is a problem with your AWS account that prevents the operation from completing successfully. ' +
+        'Please use Contact Us.',
 };
 
 export const AmbiguousGrantByEmailAddress: ErrorFormat = {
@@ -35,7 +36,8 @@ export const BadDigest: ErrorFormat = {
 export const BucketAlreadyExists: ErrorFormat = {
     code: 409,
     description:
-        'The requested bucket name is not available. The bucket namespace is shared by all users of the system. Please select a different name and try again.',
+        'The requested bucket name is not available. The bucket namespace is shared by all users of the system. ' +
+        'Please select a different name and try again.',
 };
 
 export const BucketAlreadyOwnedByYou: ErrorFormat = {
@@ -58,14 +60,16 @@ export const CredentialsNotSupported: ErrorFormat = {
 export const CrossLocationLoggingProhibited: ErrorFormat = {
     code: 403,
     description:
-        'Cross-location logging not allowed. Buckets in one geographic location cannot log information to a bucket in another location.',
+        'Cross-location logging not allowed. Buckets in one geographic location cannot log information ' +
+        'to a bucket in another location.',
 };
 
 export const DeleteConflict: ErrorFormat = {
     code: 409,
 
     description:
-        'The request was rejected because it attempted to delete a resource that has attached subordinate entities. The error message describes these entities.',
+        'The request was rejected because it attempted to delete a resource that has attached subordinate entities. ' +
+        'The error message describes these entities.',
 };
 
 export const EntityTooSmall: ErrorFormat = {
@@ -170,7 +174,8 @@ export const InvalidObjectState: ErrorFormat = {
 export const InvalidPart: ErrorFormat = {
     code: 400,
     description:
-        "One or more of the specified parts could not be found. The part might not have been uploaded, or the specified entity tag might not have matched the part's entity tag.",
+        'One or more of the specified parts could not be found. The part might not have been uploaded, ' +
+        'or the specified entity tag might not have matched the part\'s entity tag.',
 };
 
 export const InvalidPartOrder: ErrorFormat = {
@@ -234,7 +239,8 @@ export const InvalidTag: ErrorFormat = {
 export const InvalidTargetBucketForLogging: ErrorFormat = {
     code: 400,
     description:
-        'The target bucket for logging does not exist, is not owned by you, or does not have the appropriate grants for the log-delivery group.',
+        'The target bucket for logging does not exist, is not owned by you, '+ 
+        'or does not have the appropriate grants for the log-delivery group.',
 };
 
 export const InvalidToken: ErrorFormat = {
@@ -255,7 +261,8 @@ export const KeyTooLong: ErrorFormat = {
 export const LimitExceeded: ErrorFormat = {
     code: 409,
     description:
-        '    The request was rejected because it attempted to create resources beyond the current AWS account limits. The error message describes the limit exceeded.',
+        '    The request was rejected because it attempted to create resources beyond the current AWS account ' +
+        'limits. The error message describes the limit exceeded.',
 };
 
 export const MalformedACLError: ErrorFormat = {
@@ -373,7 +380,8 @@ export const NoSuchTagSet: ErrorFormat = {
 export const NoSuchUpload: ErrorFormat = {
     code: 404,
     description:
-        'The specified multipart upload does not exist. The upload ID might be invalid, or the multipart upload might have been aborted or completed.',
+        'The specified multipart upload does not exist. ' +
+        'The upload ID might be invalid, or the multipart upload might have been aborted or completed.',
 };
 
 export const NoSuchVersion: ErrorFormat = {
@@ -426,7 +434,8 @@ export const OperationAborted: ErrorFormat = {
 export const PermanentRedirect: ErrorFormat = {
     code: 301,
     description:
-        'The bucket you are attempting to access must be addressed using the specified endpoint. Send all future requests to this endpoint.',
+        'The bucket you are attempting to access must be addressed using the specified endpoint. ' +
+        'Send all future requests to this endpoint.',
 };
 
 export const PreconditionFailed: ErrorFormat = {
@@ -472,7 +481,9 @@ export const SignatureDoesNotMatch: ErrorFormat = {
     description:
         'The request signature we calculated does not match the signature you provided.',
 };
-// "This is an AWS S3 specific error. We are opting to use the more general 'ServiceUnavailable' error used throughout AWS (IAM/EC2) to have uniformity of error messages even though we are potentially compromising S3 compatibility.",
+// "This is an AWS S3 specific error. We are opting to use the more general 'ServiceUnavailable' 
+// error used throughout AWS (IAM/EC2) to have uniformity of error messages even though we are 
+// potentially compromising S3 compatibility.",
 
 // export const ServiceUnavailable: ErrorFormat = {
 //     code: 503,
@@ -530,7 +541,8 @@ export const UserKeyMustBeSpecified: ErrorFormat = {
 export const NoSuchEntity: ErrorFormat = {
     code: 404,
     description:
-        'The request was rejected because it referenced an entity that does not exist. The error message describes the entity.',
+        'The request was rejected because it referenced an entity that does not exist. ' +
+        'The error message describes the entity.',
 };
 
 export const WrongFormat: ErrorFormat = {
@@ -638,7 +650,9 @@ export const RequestExpired: ErrorFormat = {
     code: 400,
 
     description:
-        'The request reached the service more than 15 minutes after the date stamp on the request or more than 15 minutes after the request expiration date (such as for pre-signed URLs), or the date stamp on the request is more than 15 minutes in the future.',
+        'The request reached the service more than 15 minutes after the date stamp on the request or more than ' +
+        '15 minutes after the request expiration date (such as for pre-signed URLs), or the date stamp on the ' +
+        'request is more than 15 minutes in the future.',
 };
 
 export const Throttling: ErrorFormat = {
@@ -675,7 +689,8 @@ export const MalformedPolicy: ErrorFormat = {
 export const ReportExpired: ErrorFormat = {
     code: 410,
     description:
-        'The request was rejected because the most recent credential report has expired. To generate a new credential report, use GenerateCredentialReport.',
+        'The request was rejected because the most recent credential report has expired. ' +
+        'To generate a new credential report, use GenerateCredentialReport.',
 };
 
 export const ReportInProgress: ErrorFormat = {
@@ -687,7 +702,8 @@ export const ReportInProgress: ErrorFormat = {
 export const ReportNotPresent: ErrorFormat = {
     code: 410,
     description:
-        'The request was rejected because the credential report does not exist. To generate a credential report, use GenerateCredentialReport.',
+        'The request was rejected because the credential report does not exist. ' +
+        'To generate a credential report, use GenerateCredentialReport.',
 };
 
 export const Found: ErrorFormat = {

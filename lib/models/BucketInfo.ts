@@ -212,7 +212,8 @@ export default class BucketInfo {
             assert.strictEqual(typeof cryptoScheme, 'number');
             assert.strictEqual(typeof algorithm, 'string');
             assert.strictEqual(typeof mandatory, 'boolean');
-            assert.ok(masterKeyId !== undefined || configuredMasterKeyId !== undefined, 'At least one of masterKeyId or configuredMasterKeyId must be defined');
+            assert.ok(masterKeyId !== undefined || configuredMasterKeyId !== undefined, 
+                'At least one of masterKeyId or configuredMasterKeyId must be defined');
             if (masterKeyId !== undefined) {
                 assert.strictEqual(typeof masterKeyId, 'string', 'masterKeyId must be a string');
             }

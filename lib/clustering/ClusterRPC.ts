@@ -376,6 +376,7 @@ function _handlePrimaryCommandMessage(
             _dispatchCommandErrorToWorker(fromWorker, uids, errors.NotImplemented);
         }
     }
+    return undefined;
 }
 
 function _handlePrimaryCommandResultMessage(
@@ -426,6 +427,7 @@ function _handlePrimaryCommandResultMessage(
         // send back response to original worker
         _dispatchCommandResultsToWorker(toWorker, uids, completeCommandResultsArray);
     }
+    return undefined;
 }
 
 function _handlePrimaryMessage(

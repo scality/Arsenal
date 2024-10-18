@@ -1,8 +1,6 @@
 import assert from 'assert';
 import { OrderedSet } from '@js-sdsl/ordered-set';
 
-import errors from '../../errors';
-
 export type GapSetEntry = {
     firstKey: string,
     lastKey: string,

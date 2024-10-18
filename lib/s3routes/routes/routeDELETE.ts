@@ -44,12 +44,12 @@ export default function routeDELETE(
         } else if (query?.quota !== undefined) {
             return call('bucketDeleteQuota');
         }
-        call('bucketDelete');
+        return call('bucketDelete');
     } else {
         if (query?.tagging !== undefined) {
             return call('objectDeleteTagging');
         }
-        api.callApiMethod('objectDelete', request, response, log,
+        return api.callApiMethod('objectDelete', request, response, log,
             (err, corsHeaders) => {
                 /*
               * Since AWS expects a 204 regardless of the existence of

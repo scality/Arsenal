@@ -47,11 +47,9 @@ function genRandomChainedGaps(nGaps) {
 function shuffleArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
         const randIndex = Math.trunc(Math.random() * (i + 1));
-        /* eslint-disable no-param-reassign */
         const randIndexVal = array[randIndex];
         array[randIndex] = array[i];
         array[i] = randIndexVal;
-        /* eslint-enable no-param-reassign */
     }
 }
 

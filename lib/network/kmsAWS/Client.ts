@@ -1,7 +1,5 @@
 'use strict';  
-/* eslint new-cap: "off" */
 
-import errors from '../../errors';
 import { arsenalErrorAWSKMS } from '../utils';
 import { Agent as HttpAgent } from 'http';
 import { Agent as HttpsAgent } from 'https';
@@ -92,8 +90,10 @@ export default class Client {
     // createBucketKey is a method used by CloudServer to create a default master encryption key per bucket.
     // New KMS backends like AWS KMS now allow the customer to use the default master encryption key per account.
     // To achieve this, Vault will call createMasterKey and store the master encryption ID in the account metadata.
-    createBucketKey(bucketName: string, logger: werelogs.Logger, cb: (err: Error | null, keyId?: string) => void): void {
-        logger.debug('AWS KMS: creating encryption key managed at the bucket level', { bucketName });
+    createBucketKey(bucketName: string, logger: werelogs.Logger, cb: (err: Error | null, keyId?: string) => void):
+        void {
+        logger.debug('AWS KMS: creating encryption key managed at the bucket level',
+            { bucketName });
         this.createMasterKey(logger, cb);
     }
 
@@ -129,7 +129,8 @@ export default class Client {
             if (err) {
                 if (err.code === 'NotFoundException' || err.code === 'KMSInvalidStateException') {
                     // master key does not exist or is already pending deletion
-                    logger.info('AWS KMS: key does not exist or is already pending deletion', { masterKeyId, error: err });
+                    logger.info('AWS KMS: key does not exist or is already pending deletion',
+                        { masterKeyId, error: err });
                     cb(null);
                     return;
                 }
