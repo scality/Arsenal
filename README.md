@@ -55,7 +55,7 @@ console.log(errors.AccessDenied);
 
 ```
 
-# Build Status
+## Build Status
 
 ![Public Build Status][badgepub]
 ![Private Build Status][badgepriv]
