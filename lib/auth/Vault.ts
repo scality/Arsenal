@@ -11,7 +11,7 @@ import AuthInfo from './AuthInfo';
  * items used to calculate signature on chunks if streaming auth
  */
 function vaultSignatureCb(
-    err: Error | null,
+    err: Error | any | null,
     authInfo: { message: { body: any } },
     log: Logger,
     callback: (err: Error | null, data?: any, results?: any, params?: any) => void,
@@ -24,6 +24,9 @@ function vaultSignatureCb(
     if (err) {
         log.debug('received error message from auth provider',
             { errorMessage: err });
+        if (err.code === 'InvalidAccessKeyId') {
+            return callback(errors.InvalidAccessKeyId);
+        }
         return callback(err);
     }
     log.debug('received info from Vault', { authInfo });
