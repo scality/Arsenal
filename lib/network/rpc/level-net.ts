@@ -107,12 +107,10 @@ export class LevelDbService extends rpc.BaseService {
         super(params);
         this.rootDb = params.rootDb;
 
-        this.addRequestInfoConsumer((dbService, reqParams) => {
-            return {
-                subLevel: reqParams.subLevel,
-                subDb: this.lookupSubLevel(reqParams.subLevel),
-            };
-        });
+        this.addRequestInfoConsumer((dbService, reqParams) => ({
+            subLevel: reqParams.subLevel,
+            subDb: this.lookupSubLevel(reqParams.subLevel),
+        }));
     }
 
     /**

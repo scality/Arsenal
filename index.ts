@@ -6,7 +6,7 @@ import RequestContext, {
     actionWithDataDeletion } from './lib/policyEvaluator/RequestContext';
 import * as requestUtils from './lib/policyEvaluator/requestUtils';
 import * as actionMaps from './lib/policyEvaluator/utils/actionMaps';
-import { validateUserPolicy } from './lib/policy/policyValidator'
+import { validateUserPolicy } from './lib/policy/policyValidator';
 import * as locationConstraints from './lib/patches/locationConstraints';
 import * as userMetadata from './lib/s3middleware/userMetadata';
 import convertToXml from './lib/s3middleware/convertToXml';

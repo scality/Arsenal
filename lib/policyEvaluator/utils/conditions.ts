@@ -435,10 +435,10 @@ export function convertConditionOperator(operator: string): boolean {
             return !operatorMap.ArnLike(key, value);
         },
         Null: function nullOperator(key: string, value: string[]) {
-         // Null is used to check if a condition key is present.
-         // The policy statement value should be either true (the key doesn't
-         // exist — it is null) or false (the key exists and its value is
-         // not null).
+            // Null is used to check if a condition key is present.
+            // The policy statement value should be either true (the key doesn't
+            // exist — it is null) or false (the key exists and its value is
+            // not null).
             if ((key === undefined || key === null)
                 && value[0] === 'true' ||
                 (key !== undefined && key !== null)

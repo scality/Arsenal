@@ -6,7 +6,7 @@ import ZenkoMetrics from '../../metrics/ZenkoMetrics';
 import { sendSuccess, sendError } from './Utils';
 
 function checkStub(_log: any) {
-    // eslint-disable-line
+     
     return true;
 }
 

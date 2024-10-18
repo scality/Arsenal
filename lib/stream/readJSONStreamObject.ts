@@ -16,7 +16,7 @@ export default async function readJSONStreamObject<Data = any>(
 ): Promise<Data> {
     return new Promise((resolve, reject) => {
         const contentsChunks: any = [];
-        s.on('data', (chunk) => contentsChunks.push(chunk));
+        s.on('data', chunk => contentsChunks.push(chunk));
         s.on('end', () => {
             const contents = contentsChunks.join('');
             try {

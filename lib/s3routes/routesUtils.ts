@@ -147,8 +147,8 @@ const XMLResponseBackend = {
         xml.push(
             '<?xml version="1.0" encoding="UTF-8"?>',
             '<Error>',
-                `<Code>${errCode.message}</Code>`,
-                `<Message>${errCode.description}</Message>`,
+            `<Code>${errCode.message}</Code>`,
+            `<Message>${errCode.description}</Message>`,
         );
         const invalidArguments = errCode.metadata.get('invalidArguments') || [];
         invalidArguments.forEach((invalidArgument, index) => {
@@ -158,8 +158,8 @@ const XMLResponseBackend = {
             xml.push(`<ArgumentValue${counter}>${ArgumentValue}</ArgumentValue${counter}>`);
         });
         xml.push(
-                '<Resource></Resource>',
-                `<RequestId>${log.getSerializedUids()}</RequestId>`,
+            '<Resource></Resource>',
+            `<RequestId>${log.getSerializedUids()}</RequestId>`,
             '</Error>',
         );
         const xmlStr = xml.join('');

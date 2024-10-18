@@ -30,12 +30,12 @@ describe('Errors: ', () => {
         const custom = error.addMetadataEntry('fieldName', [{ key: 'value' }]);
         expect(custom.metadata.get('fieldName')).toEqual([{ key: 'value' }]);
         // Other properties should not change
-        expect(custom.is[origintype]).toBeTruthy()
+        expect(custom.is[origintype]).toBeTruthy();
         expect(custom.description).toStrictEqual(originDescription);
         expect(custom.code).toStrictEqual(origincode);
         expect(custom.type).toStrictEqual(origintype);
         // The original error should not be modified
-        expect(error.metadata.get('fieldName')).toBeUndefined()
+        expect(error.metadata.get('fieldName')).toBeUndefined();
     });
 
     it('can be used as an http response', () => {
@@ -65,7 +65,7 @@ describe('Backward compatibility flag', () => {
 
     afterEach(() => {
         process.env = { ...env };
-    })
+    });
 
     it('should be enabled when no env variable is present', () => {
         const errors = require('../../lib/errors');

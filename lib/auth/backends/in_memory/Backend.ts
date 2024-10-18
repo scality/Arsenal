@@ -223,4 +223,4 @@ class S3AuthBackend extends InMemoryBackend {
     }
 }
 
-export { S3AuthBackend as s3 }
+export { S3AuthBackend as s3 };

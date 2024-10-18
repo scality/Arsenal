@@ -20,32 +20,28 @@ const keys = ((): joi.ArraySchema => {
     return joi.array().items(items).required();
 })();
 
-const account = (() => {
-    return joi.object<Account>({
-        name: joi.string().required(),
-        email: joi.string().email().required(),
-        arn: joi.string().required(),
-        canonicalID: joi.string().required(),
-        shortid: joi
-            .string()
-            .regex(/^[0-9]{12}$/)
-            .required(),
-        keys: keys,
-        // backward-compat
-        users: joi.array(),
-    });
-})();
+const account = (() => joi.object<Account>({
+    name: joi.string().required(),
+    email: joi.string().email().required(),
+    arn: joi.string().required(),
+    canonicalID: joi.string().required(),
+    shortid: joi
+        .string()
+        .regex(/^[0-9]{12}$/)
+        .required(),
+    keys,
+    // backward-compat
+    users: joi.array(),
+}))();
 
-const accounts = (() => {
-    return joi.object<Accounts>({
-        accounts: joi
-            .array()
-            .items(account)
-            .required()
-            .unique('arn')
-            .unique('email')
-            .unique('canonicalID'),
-    });
-})();
+const accounts = (() => joi.object<Accounts>({
+    accounts: joi
+        .array()
+        .items(account)
+        .required()
+        .unique('arn')
+        .unique('email')
+        .unique('canonicalID'),
+}))();
 
 export const validators = { keys, account, accounts };

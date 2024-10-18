@@ -103,10 +103,10 @@ export function getByteRangeFromSpec(
  * - or an 'error' attribute instead of type errors.InvalidRange if
  *     the requested range is out of object's boundaries.
  */
- export function parseRange(
-     rangeHeader: string,
-     objectSize: number
- ): { range: [number, number] } | {} | { error: ArsenalError } {
+export function parseRange(
+    rangeHeader: string,
+    objectSize: number
+): { range: [number, number] } | {} | { error: ArsenalError } {
     const rangeSpec = parseRangeSpec(rangeHeader);
     if ('error' in rangeSpec) {
         // invalid range syntax is silently ignored in HTTP spec,
@@ -118,6 +118,6 @@ export function getByteRangeFromSpec(
 
 export function checkSupportIPv6() {
     const niList = os.networkInterfaces();
-    return Object.keys(niList).some((network) =>
+    return Object.keys(niList).some(network =>
         niList[network]?.some(intfc => intfc.family === 'IPv6'));
 }

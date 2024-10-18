@@ -1,4 +1,4 @@
-'use strict'; // eslint-disable-line strict
+'use strict';  
 
 const Extension = require('./Extension').default;
 const { inc, listingParamsMasterKeysV0ToV1,

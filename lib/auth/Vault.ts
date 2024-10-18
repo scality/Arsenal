@@ -265,7 +265,7 @@ export default class Vault {
                     foundIds.push({
                         email: key,
                         canonicalID: infoFromVault[key],
-                    })
+                    });
                 }
                 return callback(null, foundIds);
             });

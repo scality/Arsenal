@@ -51,7 +51,7 @@ export default class ObjectMDArchive {
         restoreWillExpireAt?: Date;
     }) {
         try {
-            // eslint-disable-next-line no-new
+             
             new ObjectMDArchive(
                 data.archiveInfo,
                 data.restoreRequestedAt,

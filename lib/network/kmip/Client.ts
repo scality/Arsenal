@@ -1,4 +1,4 @@
-'use strict'; // eslint-disable-line
+'use strict';  
 /* eslint new-cap: "off" */
 
 import async from 'async';
@@ -6,7 +6,7 @@ import TTLVCodec from './codec/ttlv';
 import TlsTransport from './transport/tls';
 import KMIP from '.';
 import * as werelogs from 'werelogs';
-import { arsenalErrorKMIP } from '../utils'
+import { arsenalErrorKMIP } from '../utils';
 
 const CRYPTOGRAPHIC_OBJECT_TYPE = 'Symmetric Key';
 const CRYPTOGRAPHIC_ALGORITHM = 'AES';
@@ -339,7 +339,7 @@ export default class Client {
      */
     createBucketKey(bucketName: string, logger: werelogs.Logger, cb: any) {
         const attributes: any = [];
-        if (!!this.options.bucketNameAttributeName) {
+        if (this.options.bucketNameAttributeName) {
             attributes.push(KMIP.Attribute('TextString',
                 this.options.bucketNameAttributeName,
                 bucketName));

@@ -13,7 +13,7 @@ export default function routerWebsite(
     statsClient?: StatsClient,
     dataRetrievalParams?: any,
 ) {
-    const { bucketName, query } = request as any
+    const { bucketName, query } = request as any;
     log.debug('routing request', { method: 'routerWebsite' });
     // website endpoint only supports GET and HEAD and must have a bucket
     // http://docs.aws.amazon.com/AmazonS3/latest/dev/WebsiteEndpoints.html
@@ -32,7 +32,7 @@ export default function routerWebsite(
                     if (err && redirectInfo.withError) {
                         return routesUtils.redirectRequestOnError(err,
                             'GET', redirectInfo, dataGetInfo, dataRetrievalParams,
-                            response, resMetaHeaders, log)
+                            response, resMetaHeaders, log);
                     }
                     // note that key might have been modified in websiteGet
                     // api to add index document
@@ -67,7 +67,7 @@ export default function routerWebsite(
                     if (err && redirectInfo.withError) {
                         return routesUtils.redirectRequestOnError(err,
                             'HEAD', redirectInfo, null, dataRetrievalParams,
-                            response, resMetaHeaders, log)
+                            response, resMetaHeaders, log);
                     }
                     return routesUtils.redirectRequest(redirectInfo,
                         // TODO ARSN-217 encrypted does not exists in request.connection

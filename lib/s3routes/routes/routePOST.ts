@@ -13,7 +13,7 @@ export default function routePOST(
 ) {
     log.debug('routing request', { method: 'routePOST' });
 
-    const { query, bucketName, objectKey } = request as any
+    const { query, bucketName, objectKey } = request as any;
 
     const invalidMultiObjectDelReq = query.delete !== undefined
         && bucketName === undefined;

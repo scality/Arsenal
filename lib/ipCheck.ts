@@ -52,7 +52,7 @@ export function parseIp(ip: string): ipaddr.IPv4 | ipaddr.IPv6 | {} {
  */
 export function ipMatchCidrList(cidrList: string[], ip: string): boolean {
     const parsedIp = parseIp(ip);
-    return cidrList.some((item) => {
+    return cidrList.some(item => {
         let cidr: string | undefined;
         // patch the cidr if range is not specified
         if (item.indexOf('/') === -1) {

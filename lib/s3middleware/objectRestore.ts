@@ -1,7 +1,7 @@
 import {parseStringPromise} from 'xml2js';
 import errors, {ArsenalError} from '../errors';
 import * as werelogs from 'werelogs';
-import {validRestoreObjectTiers} from "../constants";
+import {validRestoreObjectTiers} from '../constants';
 
 /*
     Format of xml request:

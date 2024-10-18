@@ -102,7 +102,7 @@ export const getSubPartIds = (
     part: { numberSubParts: number; partNumber: number },
     uploadId: string,
 ) => [...Array(part.numberSubParts).keys()].map(subPartIndex =>
-        getBlockId(uploadId, part.partNumber, subPartIndex));
+    getBlockId(uploadId, part.partNumber, subPartIndex));
 
 type ErrorWrapperFn = (
     s3Method: string,
@@ -141,7 +141,7 @@ export const putSinglePart = (
                 .stageBlock(blockId, () => passThrough, size, options);
             const md5 = result.contentMD5 || '';
             const eTag = objectUtils.getHexMD5(md5);
-            return eTag
+            return eTag;
         } catch (err: any) {
             log.error('Error from Azure data backend uploadPart',
                 { error: err.message, dataStoreName });

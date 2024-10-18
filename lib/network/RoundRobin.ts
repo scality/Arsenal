@@ -22,7 +22,7 @@ export default class RoundRobin {
     logger?: Logger;
     stickyCount: number;
     defaultPort?: number;
-    hostsList: { host: string; port?: number }[]
+    hostsList: { host: string; port?: number }[];
     hostIndex: number;
     pickCount: number;
 

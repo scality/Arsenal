@@ -128,7 +128,7 @@ export default class WriteCache {
             // dequeueing will read, compute, and update the cache
             const dequeueSignature = this.counter++;
             this.cache[cacheKey] = { signature: dequeueSignature, value };
-            this.queue[cacheKey].queue.forEach((callback) => {
+            this.queue[cacheKey].queue.forEach(callback => {
                 // always return the value from cache, not the value that
                 // started dequeueing, because the cache might be updated
                 // synchronously by a dequeued request
@@ -183,7 +183,7 @@ export default class WriteCache {
      */
     _cacheWrite(db: string, array: { key: string; value: any }[]) {
         const signature = this.counter++;
-        array.forEach((entry) => {
+        array.forEach(entry => {
             const cacheKey = formatCacheKey(db, entry.key);
             this.cache[cacheKey] = { signature, value: entry.value };
             this._dequeue(cacheKey, null, null, entry.value, true);
@@ -199,7 +199,7 @@ export default class WriteCache {
      * @param signature - signature if temporarily cached
      */
     _cacheClear(db: string, array: { key: string }[], signature: number) {
-        array.forEach((entry) => {
+        array.forEach(entry => {
             const key = formatCacheKey(db, entry.key);
             if (this.cache[key] && this.cache[key].signature === signature) {
                 // only clear cache when the temporarily cached entry

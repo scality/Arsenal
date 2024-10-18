@@ -2,7 +2,7 @@ import async from 'async';
 import RedisClient from './RedisClient';
 import { Logger } from 'werelogs';
 
-export type Callback = (error: Error | null, value?: any) => void;
+export type Callback = (error?: Error | null, value?: any) => void;
 
 export default class StatsClient {
     _redis: RedisClient;
@@ -75,14 +75,14 @@ export default class StatsClient {
     */
     reportNewRequest(
         id: string,
-        incr?: number | ((error: Error | null, value?: any) => void),
-        cb?: (error: Error | null, value?: any) => void,
+        incr?: number | ((error?: Error | null, value?: any) => void),
+        cb?: (error?: Error | null, value?: any) => void,
     ) {
         if (!this._redis) {
             return undefined;
         }
 
-        let callback: (error: Error | null, value?: any) => void;
+        let callback: (error?: Error | null, value?: any) => void;
         let amount: number;
         if (typeof incr === 'function') {
             // In case where optional `incr` is not passed, but `cb` is passed
@@ -124,7 +124,7 @@ export default class StatsClient {
     * report/record a request that ended up being a 500 on the server
     * @param id - service identifier
     */
-    report500(id: string, cb?: (error: Error | null, value?: any) => void) {
+    report500(id: string, cb?: (error?: Error | null, value?: any) => void) {
         if (!this._redis) {
             return undefined;
         }
@@ -181,7 +181,7 @@ export default class StatsClient {
     * @param log - Werelogs request logger
     * @param id - service identifier
     */
-    getStats(log: Logger, id: string, cb: (error: Error | null, value?: any) => void) {
+    getStats(log: Logger, id: string, cb: (error?: Error | null, value?: any) => void) {
         if (!this._redis) {
             return cb(null, {});
         }

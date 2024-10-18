@@ -46,7 +46,7 @@ class DelimiterCurrent extends DelimiterMaster {
         if (this.excludedDataStoreName) {
             params.dataStoreName = {
                 ne: this.excludedDataStoreName,
-            }
+            };
         }
 
         return params;

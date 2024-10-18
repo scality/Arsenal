@@ -1,5 +1,5 @@
-import * as ipCheck from '../ipCheck'
-import { IncomingMessage } from 'http'
+import * as ipCheck from '../ipCheck';
+import { IncomingMessage } from 'http';
 
 export interface S3Config {
     requests: {

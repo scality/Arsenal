@@ -32,7 +32,7 @@ export default class ObjectMDAmzRestore {
      */
     static isValid(data: { 'ongoing-request': boolean; 'expiry-date': Date | string }) {
         try {
-            // eslint-disable-next-line no-new
+             
             new ObjectMDAmzRestore(data['ongoing-request'], data['expiry-date']);
             return true;
         } catch (err) {

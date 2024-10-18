@@ -555,7 +555,7 @@ export default class VersioningRequestProcessor {
                             // isNull === false means Cloudserver supports null keys,
                             // so create a null key in this case, and a version key otherwise
                             const masterKeyVersionId = request.options.isNull === false ?
-                                  '' : masterVersionId;
+                                '' : masterVersionId;
                             const masterVersionKey = formatVersionKey(key, masterKeyVersionId);
                             masterVersion.setNullVersion();
                             // isNull === false means Cloudserver supports null keys,
@@ -570,12 +570,12 @@ export default class VersioningRequestProcessor {
                                 value = Version.updateOrAppendNullVersionId(request.value, masterVersionId);
                             }
                             ops.push({ key: masterVersionKey,
-                                       value: masterVersion.toString() });
+                                value: masterVersion.toString() });
                         }
                     } else {
                         logger.debug('version to put is the master');
                     }
-                    ops.push({ key, value: value });
+                    ops.push({ key, value });
                 } else {
                     logger.debug('version to put is older than master');
                     if (request.options.isNull === true && !masterVersion.isNullVersion()) {

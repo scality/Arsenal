@@ -1,4 +1,4 @@
-'use strict'; // eslint-disable-line strict
+'use strict';  
 
 const Extension = require('./Extension').default;
 
@@ -239,7 +239,7 @@ export class DelimiterVersions extends Extension {
             return { key: fullKey };
         }
         const nonversionedKey: string = fullKey.slice(0, versionIdIndex);
-        let versionId: string = fullKey.slice(versionIdIndex + 1);
+        const versionId: string = fullKey.slice(versionIdIndex + 1);
         return { key: nonversionedKey, versionId };
     }
 
