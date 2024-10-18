@@ -1444,7 +1444,7 @@ describe('DelimiterMaster listing algorithm: gap caching and lookup', () => {
 
         // here comes the next master delete marker, it should be skipped as it is still within
         // the cached gap's range (its key is "0003" and version "v100")
-        filterEntries(listing, 'D', 's', resumeState);
+        resumeState = filterEntries(listing, 'D', 's', resumeState);
         // the listing algorithm should now be actively skipping the gap
         expect(listing.state.id).toEqual(DelimiterMasterFilterStateId.SkippingGapV0);
 
@@ -1465,6 +1465,8 @@ describe('DelimiterMaster listing algorithm: gap caching and lookup', () => {
         // - The following master delete marker "0007" is past the gap so returns
         //   FILTER_ACCEPT ('a') and should have triggered a new cache lookup, and
         //   the listing state should have been switched back to SkippingVersionsV0.
+        filterEntries(listing, 'dv Ddv Ddv Vvvv Ddv', 'ss sss sss ssss ass',
+            resumeState);
         expect(listing._gapCaching.state).toEqual(GapCachingState.GapLookupInProgress);
         expect(listing.state.id).toEqual(DelimiterMasterFilterStateId.SkippingVersionsV0);
 

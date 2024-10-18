@@ -90,6 +90,7 @@ describe('GcpService request behavior', () => {
     jest.setTimeout(120000);
     let httpServer;
     let client;
+    console.log('here');
 
     beforeAll(done => {
         client = new GCP({
@@ -178,6 +179,7 @@ describe('GcpService dnsStyle tests', () => {
         });
         httpServer =
             http.createServer(handler(false)).listen(httpPort);
+        console.log*('httpServer', httpServer);
         httpServer.on('listening', done);
         httpServer.on('error', err => {
             process.stdout.write(`https server: ${err.stack}\n`);
@@ -191,6 +193,7 @@ describe('GcpService dnsStyle tests', () => {
 
     operations.forEach(test => it(`GCP::${test.op}`, done => {
         client[test.op](test.params, err => {
+            console.log(err);
             assert.ifError(err);
             done();
         });

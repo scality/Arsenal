@@ -1,4 +1,4 @@
-import uuid from 'uuid';
+const { v4: uuid } = require('uuid');
 import * as stream from 'stream';
 import debug_ from 'debug';
 import assert from 'assert';
