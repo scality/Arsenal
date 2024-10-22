@@ -1,6 +1,5 @@
 const async = require('async');
 const assert = require('assert');
-const sinon = require('sinon');
 const werelogs = require('werelogs');
 const { MongoMemoryReplSet } = require('mongodb-memory-server');
 const { errors, versioning } = require('../../../../index');
@@ -377,12 +376,12 @@ describe('MongoClientInterface::metadata.deleteObjectMD', () => {
                     },
                     next => {
                         // using fake clock to override the setTimeout used by the repair
-                        const clock = sinon.useFakeTimers();
+                        jest.useFakeTimers({ legacyFakeTimers : true});
                         return metadata.deleteObjectMD(BUCKET_NAME, 'test-object', { versionId: deleteMarkerVersionId },
                             logger, () => {
                                 // running the repair callback
-                                clock.runAll();
-                                clock.restore();
+                                jest.runAllTimers();
+                                jest.useRealTimers();
                                 return next();
                             });
                     },
@@ -434,12 +433,12 @@ describe('MongoClientInterface::metadata.deleteObjectMD', () => {
                     },
                     next => {
                         // using fake clock to override the setTimeout used by the repair
-                        const clock = sinon.useFakeTimers();
+                        jest.useFakeTimers({ legacyFakeTimers : true});
                         return metadata.deleteObjectMD(BUCKET_NAME, 'test-object', { versionId },
                             logger, () => {
                                 // running the repair callback
-                                clock.runAll();
-                                clock.restore();
+                                jest.runAllTimers();
+                                jest.useRealTimers();
                                 return next();
                             });
                     },
