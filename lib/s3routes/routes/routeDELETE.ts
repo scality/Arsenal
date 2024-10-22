@@ -1,7 +1,7 @@
 import { RequestLogger } from 'werelogs';
 
 import * as routesUtils from '../routesUtils';
-import errors from '../../errors';
+import errors, { ArsenalError } from '../../errors';
 import StatsClient from '../../metrics/StatsClient';
 import * as http from 'http';
 
@@ -54,11 +54,11 @@ export default function routeDELETE(
         api.callApiMethod('objectDelete', request, response, log,
             (err, corsHeaders) => {
                 /*
-              * Since AWS expects a 204 regardless of the existence of
-              the object, the errors NoSuchKey and NoSuchVersion should not
-              * be sent back as a response.
-              */
-                if (err && !err.is.NoSuchKey && !err.is.NoSuchVersion) {
+                 * Since AWS expects a 204 regardless of the existence of
+                 * the object, the errors NoSuchKey and NoSuchVersion should not
+                 * be sent back as a response.
+                 */
+                if (err instanceof ArsenalError && !err.is?.NoSuchKey && !err.is?.NoSuchVersion) {
                     return routesUtils.responseNoBody(err, corsHeaders,
                         response, undefined, log);
                 }
