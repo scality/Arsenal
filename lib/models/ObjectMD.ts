@@ -197,7 +197,7 @@ export default class ObjectMD {
             'x-amz-server-side-encryption-aws-kms-key-id': '',
             'x-amz-server-side-encryption-customer-algorithm': '',
             'x-amz-website-redirect-location': '',
-            'x-amz-scal-transition-in-progress': false,
+            'x-amz-scal-transition-in-progress': undefined,
             'acl': {
                 Canned: 'private',
                 FULL_CONTROL: [],
