@@ -1,4 +1,4 @@
-'use strict'; // eslint-disable-line strict
+'use strict';  
 
 const assert = require('assert');
 
@@ -1183,39 +1183,39 @@ describe('DelimiterMaster listing algorithm: gap caching and lookup', () => {
     });
 
     it('should not cache a gap if listing has been running for more than exposureDelayMs',
-    async () => {
-        const listing = new DelimiterMaster({}, fakeLogger, 'v0');
-        const gapsArray = [
-            { firstKey: 'pre/0006', lastKey: `pre/0007${VID_SEP}v100`, weight: 6 },
-        ];
-        const gapCache = GapCacheAsSet.createFromArray(JSON.parse(
-            JSON.stringify(gapsArray)
-        ), 100);
-        listing.refreshGapCache(gapCache, 1, 1);
+        async () => {
+            const listing = new DelimiterMaster({}, fakeLogger, 'v0');
+            const gapsArray = [
+                { firstKey: 'pre/0006', lastKey: `pre/0007${VID_SEP}v100`, weight: 6 },
+            ];
+            const gapCache = GapCacheAsSet.createFromArray(JSON.parse(
+                JSON.stringify(gapsArray)
+            ), 100);
+            listing.refreshGapCache(gapCache, 1, 1);
 
-        let resumeFromState = filterEntries(listing, 'Vv', 'as');
-        let validityPeriod = listing.getGapBuildingValidityPeriodMs();
-        expect(validityPeriod).toBeGreaterThan(gapCache.exposureDelayMs - 10);
-        expect(validityPeriod).toBeLessThan(gapCache.exposureDelayMs + 10);
+            let resumeFromState = filterEntries(listing, 'Vv', 'as');
+            let validityPeriod = listing.getGapBuildingValidityPeriodMs();
+            expect(validityPeriod).toBeGreaterThan(gapCache.exposureDelayMs - 10);
+            expect(validityPeriod).toBeLessThan(gapCache.exposureDelayMs + 10);
 
-        await new Promise(resolve => setTimeout(resolve, gapCache.exposureDelayMs + 10));
-        validityPeriod = listing.getGapBuildingValidityPeriodMs();
-        expect(validityPeriod).toEqual(0);
-        resumeFromState = filterEntries(listing, 'Ddv Ddv Ddv Vvv', 'ass ass ass ass',
-                                        resumeFromState);
-        expect(gapCache.toArray()).toEqual(gapsArray);
-        // gap building should be in expired state
-        expect(listing._gapBuilding.state).toEqual(GapBuildingState.Expired);
-        // remaining validity period should still be 0 because gap building has expired
-        validityPeriod = listing.getGapBuildingValidityPeriodMs();
-        expect(validityPeriod).toEqual(0);
+            await new Promise(resolve => setTimeout(resolve, gapCache.exposureDelayMs + 10));
+            validityPeriod = listing.getGapBuildingValidityPeriodMs();
+            expect(validityPeriod).toEqual(0);
+            resumeFromState = filterEntries(listing, 'Ddv Ddv Ddv Vvv', 'ass ass ass ass',
+                resumeFromState);
+            expect(gapCache.toArray()).toEqual(gapsArray);
+            // gap building should be in expired state
+            expect(listing._gapBuilding.state).toEqual(GapBuildingState.Expired);
+            // remaining validity period should still be 0 because gap building has expired
+            validityPeriod = listing.getGapBuildingValidityPeriodMs();
+            expect(validityPeriod).toEqual(0);
 
-        // we should still be able to skip over the existing cached gaps
-        expect(listing._gapCaching.state).toEqual(GapCachingState.GapLookupInProgress);
-        await new Promise(resolve => setTimeout(resolve, 1));
-        expect(listing._gapCaching.state).toEqual(GapCachingState.GapCached);
-        filterEntries(listing, 'Ddv Ddv Ddv', 'sss sss ass', resumeFromState);
-    });
+            // we should still be able to skip over the existing cached gaps
+            expect(listing._gapCaching.state).toEqual(GapCachingState.GapLookupInProgress);
+            await new Promise(resolve => setTimeout(resolve, 1));
+            expect(listing._gapCaching.state).toEqual(GapCachingState.GapCached);
+            filterEntries(listing, 'Ddv Ddv Ddv', 'sss sss ass', resumeFromState);
+        });
 
     [1, 3, 5, 10].forEach(triggerSaveGapWeight => {
         it('should cache a gap of weight maxWeight + 1 in two chained gaps ' +
@@ -1330,49 +1330,49 @@ describe('DelimiterMaster listing algorithm: gap caching and lookup', () => {
     });
 
     it('should refresh the building params when refreshGapCache() is called in NonBuilding state',
-    () => {
-        const listing = new DelimiterMaster({}, fakeLogger, 'v0');
-        const gapCache = new GapCacheAsSet(100);
-        // ensure the first gap with weight=9 gets saved
-        listing.refreshGapCache(gapCache, 9);
-        let resumeFromState = filterEntries(listing, 'Vv', 'as');
-        // refresh with a different value for minGapWeight (12)
-        listing.refreshGapCache(gapCache, 12);
+        () => {
+            const listing = new DelimiterMaster({}, fakeLogger, 'v0');
+            const gapCache = new GapCacheAsSet(100);
+            // ensure the first gap with weight=9 gets saved
+            listing.refreshGapCache(gapCache, 9);
+            let resumeFromState = filterEntries(listing, 'Vv', 'as');
+            // refresh with a different value for minGapWeight (12)
+            listing.refreshGapCache(gapCache, 12);
 
-        resumeFromState = filterEntries(listing, 'Ddv Ddv Ddv Vv', 'ass ass ass as',
-                                        resumeFromState);
-        // for the building gap, minGapWeight should have been updated to 12, hence the
-        // gap should not have been created
-        expect(gapCache.toArray()).toEqual([]);
-        filterEntries(listing, 'Ddv Ddv Ddv Ddv Vv', 'ass ass ass ass as', resumeFromState);
-        // there should now be a new gap with weight=12
-        expect(gapCache.toArray()).toEqual([
-            { firstKey: 'pre/0006', lastKey: `pre/0009${VID_SEP}v101`, weight: 12 },
-        ]);
-    });
+            resumeFromState = filterEntries(listing, 'Ddv Ddv Ddv Vv', 'ass ass ass as',
+                resumeFromState);
+            // for the building gap, minGapWeight should have been updated to 12, hence the
+            // gap should not have been created
+            expect(gapCache.toArray()).toEqual([]);
+            filterEntries(listing, 'Ddv Ddv Ddv Ddv Vv', 'ass ass ass ass as', resumeFromState);
+            // there should now be a new gap with weight=12
+            expect(gapCache.toArray()).toEqual([
+                { firstKey: 'pre/0006', lastKey: `pre/0009${VID_SEP}v101`, weight: 12 },
+            ]);
+        });
 
     it('should save the refreshed building params when refreshGapCache() is called in Building state',
-    () => {
-        const listing = new DelimiterMaster({}, fakeLogger, 'v0');
-        const gapCache = new GapCacheAsSet(100);
-        // ensure the first gap with weight=9 gets saved
-        listing.refreshGapCache(gapCache, 9);
+        () => {
+            const listing = new DelimiterMaster({}, fakeLogger, 'v0');
+            const gapCache = new GapCacheAsSet(100);
+            // ensure the first gap with weight=9 gets saved
+            listing.refreshGapCache(gapCache, 9);
 
-        let resumeFromState = filterEntries(listing, 'Vv Ddv Ddv', 'as ass ass');
-        // refresh with a different value for minGapWeight (12)
-        listing.refreshGapCache(gapCache, 12);
-        resumeFromState = filterEntries(listing, 'Ddv Vv', 'ass as', resumeFromState);
-        // for the building gap, minGapWeight should still be 9, hence the gap should
-        // have been created
-        expect(gapCache.toArray()).toEqual([
-            { firstKey: 'pre/0002', lastKey: `pre/0004${VID_SEP}v101`, weight: 9 },
-        ]);
-        filterEntries(listing, 'Ddv Ddv Ddv Vv', 'ass ass ass as', resumeFromState);
-        // there should still be only one gap because the next gap's weight is 9 and 9 < 12
-        expect(gapCache.toArray()).toEqual([
-            { firstKey: 'pre/0002', lastKey: `pre/0004${VID_SEP}v101`, weight: 9 },
-        ]);
-    });
+            let resumeFromState = filterEntries(listing, 'Vv Ddv Ddv', 'as ass ass');
+            // refresh with a different value for minGapWeight (12)
+            listing.refreshGapCache(gapCache, 12);
+            resumeFromState = filterEntries(listing, 'Ddv Vv', 'ass as', resumeFromState);
+            // for the building gap, minGapWeight should still be 9, hence the gap should
+            // have been created
+            expect(gapCache.toArray()).toEqual([
+                { firstKey: 'pre/0002', lastKey: `pre/0004${VID_SEP}v101`, weight: 9 },
+            ]);
+            filterEntries(listing, 'Ddv Ddv Ddv Vv', 'ass ass ass as', resumeFromState);
+            // there should still be only one gap because the next gap's weight is 9 and 9 < 12
+            expect(gapCache.toArray()).toEqual([
+                { firstKey: 'pre/0002', lastKey: `pre/0004${VID_SEP}v101`, weight: 9 },
+            ]);
+        });
 
     it('should not build a new gap when skipping a prefix', () => {
         const listing = new DelimiterMaster({
@@ -1465,8 +1465,8 @@ describe('DelimiterMaster listing algorithm: gap caching and lookup', () => {
         // - The following master delete marker "0007" is past the gap so returns
         //   FILTER_ACCEPT ('a') and should have triggered a new cache lookup, and
         //   the listing state should have been switched back to SkippingVersionsV0.
-        resumeState = filterEntries(listing, 'dv Ddv Ddv Vvvv Ddv', 'ss sss sss ssss ass',
-                                    resumeState);
+        filterEntries(listing, 'dv Ddv Ddv Vvvv Ddv', 'ss sss sss ssss ass',
+            resumeState);
         expect(listing._gapCaching.state).toEqual(GapCachingState.GapLookupInProgress);
         expect(listing.state.id).toEqual(DelimiterMasterFilterStateId.SkippingVersionsV0);
 
@@ -1475,37 +1475,37 @@ describe('DelimiterMaster listing algorithm: gap caching and lookup', () => {
     });
 
     it('should extend a cached gap forward if current delete markers are listed beyond',
-    async () => {
-        const listing = new DelimiterMaster({}, fakeLogger, 'v0');
-        const gapsArray = [
-            { firstKey: 'pre/0002', lastKey: `pre/0005${VID_SEP}v100`, weight: 12 },
-        ];
-        const gapCache = GapCacheAsSet.createFromArray(JSON.parse(
-            JSON.stringify(gapsArray)
-        ), 100);
-        listing.refreshGapCache(gapCache, 2);
+        async () => {
+            const listing = new DelimiterMaster({}, fakeLogger, 'v0');
+            const gapsArray = [
+                { firstKey: 'pre/0002', lastKey: `pre/0005${VID_SEP}v100`, weight: 12 },
+            ];
+            const gapCache = GapCacheAsSet.createFromArray(JSON.parse(
+                JSON.stringify(gapsArray)
+            ), 100);
+            listing.refreshGapCache(gapCache, 2);
 
-        let resumeState = filterEntries(listing, 'Vv D', 'as a');
-        // wait until the lookup completes (should happen in the next
-        // event loop iteration so always quicker than a non-immediate timer)
-        await new Promise(resolve => setTimeout(resolve, 1));
+            const resumeState = filterEntries(listing, 'Vv D', 'as a');
+            // wait until the lookup completes (should happen in the next
+            // event loop iteration so always quicker than a non-immediate timer)
+            await new Promise(resolve => setTimeout(resolve, 1));
 
-        // the lookup should have completed now and the next gap should be cached,
-        // continue with filtering
-        resumeState = filterEntries(listing, 'dv Ddv Ddv Ddv Ddv Ddvvv Vv Ddv Vv',
-                                    'ss sss sss sss ass assss as ass as',
-                                    resumeState);
-        // the cached gap should be extended to the last key before the last regular
-        // master version ('V')
-        expect(gapCache.toArray()).toEqual([
+            // the lookup should have completed now and the next gap should be cached,
+            // continue with filtering
+            filterEntries(listing, 'dv Ddv Ddv Ddv Ddv Ddvvv Vv Ddv Vv',
+                'ss sss sss sss ass assss as ass as',
+                resumeState);
+            // the cached gap should be extended to the last key before the last regular
+            // master version ('V')
+            expect(gapCache.toArray()).toEqual([
             // this gap has been extended forward up to right before the first non-deleted
             // current version following the gap, and its weight updated with how many
             // extra keys are skippable
-            { firstKey: 'pre/0002', lastKey: `pre/0007${VID_SEP}v103`, weight: 21 },
-            // this gap has been created from the next deleted current version
-            { firstKey: 'pre/0009', lastKey: `pre/0009${VID_SEP}v101`, weight: 3 },
-        ]);
-    });
+                { firstKey: 'pre/0002', lastKey: `pre/0007${VID_SEP}v103`, weight: 21 },
+                // this gap has been created from the next deleted current version
+                { firstKey: 'pre/0009', lastKey: `pre/0009${VID_SEP}v101`, weight: 3 },
+            ]);
+        });
 
     it('should extend a cached gap backwards if current delete markers are listed ahead, ' +
     'and forward if more skippable keys are seen', async () => {
@@ -1518,7 +1518,7 @@ describe('DelimiterMaster listing algorithm: gap caching and lookup', () => {
         ), 100);
         listing.refreshGapCache(gapCache, 2);
 
-        let resumeState = filterEntries(listing, 'Vv D', 'as a');
+        const resumeState = filterEntries(listing, 'Vv D', 'as a');
         // wait until the lookup completes (should happen in the next
         // event loop iteration so always quicker than a non-immediate timer)
         await new Promise(resolve => setTimeout(resolve, 1));
@@ -1526,8 +1526,8 @@ describe('DelimiterMaster listing algorithm: gap caching and lookup', () => {
         // the lookup should have completed now and the next gap should be cached,
         // continue with filtering
         expect(listing._gapCaching.state).toEqual(GapCachingState.GapCached);
-        resumeState = filterEntries(listing, 'dv Ddv Ddv Ddv Vv Ddv Vv',
-                                    'ss ass sss sss as ass as', resumeState);
+        filterEntries(listing, 'dv Ddv Ddv Ddv Vv Ddv Vv',
+            'ss ass sss sss as ass as', resumeState);
         // the cached gap should be extended to the last key before the last regular
         // master version ('V')
         expect(gapCache.toArray()).toEqual([
@@ -1542,31 +1542,31 @@ describe('DelimiterMaster listing algorithm: gap caching and lookup', () => {
     });
 
     it('should not extend a cached gap forward if extension weight is 0',
-    async () => {
-        const listing = new DelimiterMaster({}, fakeLogger, 'v0');
-        const gapsArray = [
-            { firstKey: 'pre/0002', lastKey: `pre/0005${VID_SEP}v101`, weight: 13 },
-        ];
-        const gapCache = GapCacheAsSet.createFromArray(JSON.parse(
-            JSON.stringify(gapsArray)
-        ), 100);
-        listing.refreshGapCache(gapCache, 2);
+        async () => {
+            const listing = new DelimiterMaster({}, fakeLogger, 'v0');
+            const gapsArray = [
+                { firstKey: 'pre/0002', lastKey: `pre/0005${VID_SEP}v101`, weight: 13 },
+            ];
+            const gapCache = GapCacheAsSet.createFromArray(JSON.parse(
+                JSON.stringify(gapsArray)
+            ), 100);
+            listing.refreshGapCache(gapCache, 2);
 
-        let resumeState = filterEntries(listing, 'Vv D', 'as a');
-        // wait until the lookup completes (should happen in the next
-        // event loop iteration so always quicker than a non-immediate timer)
-        await new Promise(resolve => setTimeout(resolve, 1));
+            let resumeState = filterEntries(listing, 'Vv D', 'as a');
+            // wait until the lookup completes (should happen in the next
+            // event loop iteration so always quicker than a non-immediate timer)
+            await new Promise(resolve => setTimeout(resolve, 1));
 
-        // the lookup should have completed now and the next gap should
-        // be cached, simulate a concurrent invalidation by removing the
-        // existing gap immediately, then continue with filtering
-        resumeState = filterEntries(listing, 'dv Ddv Ddv Ddv',
-                                    'ss sss sss sss', resumeState);
-        gapCache.removeOverlappingGaps(['pre/0002']);
-        resumeState = filterEntries(listing, 'Vv', 'as', resumeState);
-        // no new gap should have been added
-        expect(gapCache.toArray()).toEqual([]);
-    });
+            // the lookup should have completed now and the next gap should
+            // be cached, simulate a concurrent invalidation by removing the
+            // existing gap immediately, then continue with filtering
+            resumeState = filterEntries(listing, 'dv Ddv Ddv Ddv',
+                'ss sss sss sss', resumeState);
+            gapCache.removeOverlappingGaps(['pre/0002']);
+            filterEntries(listing, 'Vv', 'as', resumeState);
+            // no new gap should have been added
+            expect(gapCache.toArray()).toEqual([]);
+        });
 
     it('should ignore gap with 0 listed key in it (e.g. due to skipping a prefix)', async () => {
         const listing = new DelimiterMaster({}, fakeLogger, 'v0');

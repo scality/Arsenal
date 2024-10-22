@@ -42,7 +42,7 @@ function startTestServer(done) {
 }
 
 function stopTestServer(done) {
-    testServer.kill('SIGTERM');
+    testServer.kill('SIGKILL');
     testServer.on('close', done);
 }
 
@@ -93,7 +93,7 @@ function runTest(testUrl, cb) {
         .on('error', err => cb(err));
 }
 
-describe('ClusterRPC', () => {
+describe.only('ClusterRPC', () => {
     beforeAll(done => startTestServer(done));
     afterAll(done => stopTestServer(done));
 
