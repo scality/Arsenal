@@ -246,7 +246,6 @@ export function convertConditionOperator(operator: string): boolean {
             });
         },
         StringNotEquals: function stringNotEquals(key: string, value: string[]) {
-            // eslint-disable-next-line new-cap
             return !operatorMap.StringEquals(key, value);
         },
         StringEqualsIgnoreCase: function stringEqualsIgnoreCase(key: string, value: string[]) {
@@ -258,7 +257,6 @@ export function convertConditionOperator(operator: string): boolean {
         },
         StringNotEqualsIgnoreCase:
             function stringNotEqualsIgnoreCase(key: string, value: string[]) {
-                // eslint-disable-next-line new-cap
                 return !operatorMap.StringEqualsIgnoreCase(key, value);
             },
         StringLike: function stringLike(key: string | string[], value: string[], prefix?: string) {
@@ -279,9 +277,9 @@ export function convertConditionOperator(operator: string): boolean {
             } else {
                 return policyValRegex(key);
             }
+            return true;
         },
         StringNotLike: function stringNotLike(key: string, value: string[]) {
-            // eslint-disable-next-line new-cap
             return !operatorMap.StringLike(key, value);
         },
         NumericEquals: function numericEquals(key: string, value: string[]) {
@@ -298,7 +296,6 @@ export function convertConditionOperator(operator: string): boolean {
             });
         },
         NumericNotEquals: function numericNotEquals(key: string, value: string[]) {
-            // eslint-disable-next-line new-cap
             return !operatorMap.NumericEquals(key, value);
         },
         NumericLessThan: function lessThan(key: string, value: string[]) {
@@ -356,43 +353,36 @@ export function convertConditionOperator(operator: string): boolean {
         DateEquals: function dateEquals(key: string, value: string[]) {
             const epochKey = convertToEpochTime(key);
             const epochValues = convertToEpochTime(value);
-            // eslint-disable-next-line new-cap
             return operatorMap.NumericEquals(epochKey, epochValues);
         },
         DateNotEquals: function dateNotEquals(key: string, value: string[]) {
             const epochKey = convertToEpochTime(key);
             const epochValues = convertToEpochTime(value);
-            // eslint-disable-next-line new-cap
             return operatorMap.NumericNotEquals(epochKey, epochValues);
         },
         DateLessThan: function dateLessThan(key: string, value: string[]) {
             const epochKey = convertToEpochTime(key);
             const epochValues = convertToEpochTime(value);
-            // eslint-disable-next-line new-cap
             return operatorMap.NumericLessThan(epochKey, epochValues);
         },
         DateLessThanEquals: function dateLessThanEquals(key: string, value: string[]) {
             const epochKey = convertToEpochTime(key);
             const epochValues = convertToEpochTime(value);
-            // eslint-disable-next-line new-cap
             return operatorMap.NumericLessThanEquals(epochKey, epochValues);
         },
         DateGreaterThan: function dateGreaterThan(key: string, value: string[]) {
             const epochKey = convertToEpochTime(key);
             const epochValues = convertToEpochTime(value);
-            // eslint-disable-next-line new-cap
             return operatorMap.NumericGreaterThan(epochKey, epochValues);
         },
         DateGreaterThanEquals: function dateGreaterThanEquals(key: string, value: string[]) {
             const epochKey = convertToEpochTime(key);
             const epochValues = convertToEpochTime(value);
-            // eslint-disable-next-line new-cap
             return operatorMap.NumericGreaterThanEquals(epochKey, epochValues);
         },
         Bool: function bool(key: string, value: string[]) {
             // Tested with policy validator and it just appears to be a string
             // comparison (can send in values other than true or false)
-            // eslint-disable-next-line new-cap
             return operatorMap.StringEquals(key, value);
         },
         BinaryEquals: function binaryEquals(key: string, value: string[]) {
@@ -400,24 +390,20 @@ export function convertConditionOperator(operator: string): boolean {
             return value.some(item => item === base64Key);
         },
         BinaryNotEquals: function binaryNotEquals(key: string, value: string[]) {
-            // eslint-disable-next-line new-cap
             return !operatorMap.BinaryEquals(key, value);
         },
         IpAddress: function ipAddress(key: ipaddr.IPv4 | ipaddr.IPv6, value: string[]) {
             return value.some(item => checkIPinRangeOrMatch(item, key));
         },
         NotIpAddress: function notIpAddress(key: ipaddr.IPv4 | ipaddr.IPv6, value: string[]) {
-            // eslint-disable-next-line new-cap
             return !operatorMap.IpAddress(key, value);
         },
         // Note that ARN operators are for comparing a source ARN
         // against a given value (such as an EC2 instance) so N/A here.
         ArnEquals: function ArnEquals(key: string, value: string[]) {
-            // eslint-disable-next-line new-cap
             return operatorMap.StringEquals(key, value);
         },
         ArnNotEquals: function ArnNotEquals(key: string, value: string[]) {
-            // eslint-disable-next-line new-cap
             return !operatorMap.StringEquals(key, value);
         },
         ArnLike: function ArnLike(key: string, value: string[]) {
@@ -431,14 +417,13 @@ export function convertConditionOperator(operator: string): boolean {
                 requestRelativeId, requestArnArr, false));
         },
         ArnNotLike: function ArnNotLike(key: string, value: string[]) {
-            // eslint-disable-next-line new-cap
             return !operatorMap.ArnLike(key, value);
         },
         Null: function nullOperator(key: string, value: string[]) {
-         // Null is used to check if a condition key is present.
-         // The policy statement value should be either true (the key doesn't
-         // exist — it is null) or false (the key exists and its value is
-         // not null).
+            // Null is used to check if a condition key is present.
+            // The policy statement value should be either true (the key doesn't
+            // exist — it is null) or false (the key exists and its value is
+            // not null).
             if ((key === undefined || key === null)
                 && value[0] === 'true' ||
                 (key !== undefined && key !== null)

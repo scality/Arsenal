@@ -30,7 +30,7 @@ function _validateStatus(status?: string[]) {
         const error = errors.MalformedXML.customizeDescription(desc);
         return { error };
     }
-    return { status: status[0] as 'OFF' | 'ON' }
+    return { status: status[0] as 'OFF' | 'ON' };
 }
 
 /**
@@ -105,7 +105,7 @@ export function convertToXml(legalHold?: boolean) {
     return [
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
         '<LegalHold>',
-            `<Status>${legalHold ? 'ON' : 'OFF'}</Status>`,
+        `<Status>${legalHold ? 'ON' : 'OFF'}</Status>`,
         '</LegalHold>',
     ].join('');
 }

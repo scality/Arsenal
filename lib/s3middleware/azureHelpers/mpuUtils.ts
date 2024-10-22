@@ -102,7 +102,7 @@ export const getSubPartIds = (
     part: { numberSubParts: number; partNumber: number },
     uploadId: string,
 ) => [...Array(part.numberSubParts).keys()].map(subPartIndex =>
-        getBlockId(uploadId, part.partNumber, subPartIndex));
+    getBlockId(uploadId, part.partNumber, subPartIndex));
 
 type ErrorWrapperFn = (
     s3Method: string,
@@ -127,7 +127,7 @@ export const putSinglePart = (
     log: RequestLogger,
     cb: (err: ArsenalError | null | undefined, dataStoreETag?: string, size?: number) => void,
 ) => {
-    const { bucketName, partNumber, size, objectKey, contentMD5, uploadId }
+    const { partNumber, size, objectKey, contentMD5, uploadId }
         = params;
     const blockId = getBlockId(uploadId, partNumber, 0);
     const passThrough = new stream.PassThrough();
@@ -141,7 +141,7 @@ export const putSinglePart = (
                 .stageBlock(blockId, () => passThrough, size, options);
             const md5 = result.contentMD5 || '';
             const eTag = objectUtils.getHexMD5(md5);
-            return eTag
+            return eTag;
         } catch (err: any) {
             log.error('Error from Azure data backend uploadPart',
                 { error: err.message, dataStoreName });
@@ -175,7 +175,7 @@ const putNextSubPart = (
     resultsCollector: ResultsCollector,
     log: RequestLogger,
 ) => {
-    const { uploadId, partNumber, bucketName, objectKey } = partParams;
+    const { uploadId, partNumber, objectKey } = partParams;
     const subPartSize = getSubPartSize(
         subPartInfo, subPartIndex);
     const subPartId = getBlockId(uploadId, partNumber,
@@ -183,7 +183,7 @@ const putNextSubPart = (
     resultsCollector.pushOp();
     errorWrapperFn('uploadPart', 'createBlockFromStream', async client => {
         try {
-            const result = await client.getBlockBlobClient(objectKey)
+            await client.getBlockBlobClient(objectKey)
                 .stageBlock(subPartId, () => subPartStream, subPartSize, {});
             resultsCollector.pushResult(null, subPartIndex);
         } catch (err: any) {

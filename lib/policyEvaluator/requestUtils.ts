@@ -1,5 +1,5 @@
-import * as ipCheck from '../ipCheck'
-import { IncomingMessage } from 'http'
+import * as ipCheck from '../ipCheck';
+import { IncomingMessage } from 'http';
 
 export interface S3Config {
     requests: {
@@ -17,7 +17,9 @@ export interface S3Config {
 export function getClientIp(request: IncomingMessage, s3config?: S3Config): string {
     const requestConfig = s3config?.requests;
     const remoteAddress = request.socket.remoteAddress;
-    const clientIp = remoteAddress?.toString() ?? '';
+    // TODO What to do if clientIp === undefined ?
+    const clientIp = (requestConfig ? remoteAddress : request.headers['x-forwarded-for'] ||
+        remoteAddress)?.toString() ?? '';
     if (requestConfig) {
         const { trustedProxyCIDRs, extractClientIPFromHeader } = requestConfig;
         /**

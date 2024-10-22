@@ -10,7 +10,7 @@ import {
 const Version = require('../../versioning/Version').Version;
 const VSConst = require('../../versioning/constants').VersioningConstants;
 const { BucketVersioningKeyFormat } = VSConst;
-const { FILTER_ACCEPT, FILTER_SKIP, FILTER_END, SKIP_NONE, inc } = require('./tools');
+const { FILTER_ACCEPT, FILTER_SKIP, FILTER_END, inc } = require('./tools');
 
 import { GapSetEntry } from '../cache/GapSet';
 import { GapCacheInterface } from '../cache/GapCache';
@@ -492,13 +492,15 @@ export class DelimiterMaster extends Delimiter {
 
     skippingBase(): string | undefined {
         switch (this.state.id) {
-        case DelimiterMasterFilterStateId.SkippingVersionsV0:
+        case DelimiterMasterFilterStateId.SkippingVersionsV0: {
             const { masterKey } = <DelimiterMasterFilterState_SkippingVersionsV0> this.state;
             return masterKey + inc(VID_SEP);
+        }
 
-        case DelimiterMasterFilterStateId.SkippingGapV0:
+        case DelimiterMasterFilterStateId.SkippingGapV0: {
             const { gapCached } = <GapCachingInfo_GapCached> this._gapCaching;
             return gapCached.lastKey;
+        }
 
         default:
             return super.skippingBase();
@@ -598,7 +600,8 @@ export class DelimiterMaster extends Delimiter {
     _cutBuildingGap(): void {
         if (this._gapBuilding.state === GapBuildingState.Building) {
             let gapBuilding = <GapBuildingInfo_Building> this._gapBuilding;
-            let { gapCache, params, gap, gapWeight } = gapBuilding;
+            const { gapCache, gap, gapWeight } = gapBuilding;
+            let params = gapBuilding.params;
             // only set gaps that are significant enough in weight and
             // with a non-empty extension
             if (gapWeight >= params.minGapWeight && gap.weight > 0) {

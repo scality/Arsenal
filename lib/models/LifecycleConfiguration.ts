@@ -1,5 +1,5 @@
 import assert from 'assert';
-import UUID from 'uuid';
+const { v4: uuid } = require('uuid');
 
 import errors, { ArsenalError } from '../errors';
 import LifecycleRule from './LifecycleRule';
@@ -262,7 +262,7 @@ export default class LifecycleConfiguration {
                 break;
             } else {
                 const propName = prop.propName;
-                // eslint-disable-next-line no-param-reassign
+                 
                 delete prop.propName;
                 if (prop[propName] !== undefined) {
                     ruleObj[propName] = prop[propName];
@@ -455,7 +455,7 @@ export default class LifecycleConfiguration {
         if (!id || !id[0] || id[0] === '') {
             // ID is optional property, but create one if not provided or is ''
             // We generate 48-character alphanumeric, unique ID for rule
-            idObj.ruleID = Buffer.from(UUID.v4()).toString('base64');
+            idObj.ruleID = Buffer.from(uuid()).toString('base64');
         } else {
             idObj.ruleID = id[0];
         }
@@ -483,14 +483,14 @@ export default class LifecycleConfiguration {
      * }
      */
     _parseStatus(status: string) {
-        const base: { propName: 'ruleStatus' } = { propName: 'ruleStatus' }
+        const base: { propName: 'ruleStatus' } = { propName: 'ruleStatus' };
         const validStatuses = ['Enabled', 'Disabled'];
         if (!validStatuses.includes(status)) {
             const msg = 'Status is not valid';
             const error = errors.MalformedXML.customizeDescription(msg);
             return { ...base, error };
         }
-        return { ...base, ruleStatus: status }
+        return { ...base, ruleStatus: status };
     }
 
     /**
@@ -667,15 +667,15 @@ export default class LifecycleConfiguration {
      */
     _checkDate(date: string) {
         const isoRegex = new RegExp(
-            "^(-?(?:[1-9][0-9]*)?[0-9]{4})" + // Year
-            "-(1[0-2]|0[1-9])" + // Month
-            "-(3[01]|0[1-9]|[12][0-9])" + // Day
-            "T(2[0-3]|[01][0-9])" + // Hour
-            ":([0-5][0-9])" + // Minute
-            ":([0-5][0-9])" + // Second
-            "(\\.[0-9]+)?" + // Fractional second
-            "(Z|[+-][01][0-9]:[0-5][0-9])?$", // Timezone
-            "g"
+            '^(-?(?:[1-9][0-9]*)?[0-9]{4})' + // Year
+            '-(1[0-2]|0[1-9])' + // Month
+            '-(3[01]|0[1-9]|[12][0-9])' + // Day
+            'T(2[0-3]|[01][0-9])' + // Hour
+            ':([0-5][0-9])' + // Minute
+            ':([0-5][0-9])' + // Second
+            '(\\.[0-9]+)?' + // Fractional second
+            '(Z|[+-][01][0-9]:[0-5][0-9])?$', // Timezone
+            'g'
         );
         const matches = [...date.matchAll(isoRegex)];
         if (matches.length !== 1) {
@@ -922,7 +922,6 @@ export default class LifecycleConfiguration {
                 ];
                 actionTimes.forEach(t => {
                     if (action[t]) {
-                        // eslint-disable-next-line no-param-reassign
                         a[t] = action[t];
                     }
                 });
@@ -1188,7 +1187,7 @@ export default class LifecycleConfiguration {
      */
     static getConfigXml(config: { rules: Rule[] }) {
         const rules = config.rules;
-        const rulesXML = rules.map((rule) => {
+        const rulesXML = rules.map(rule => {
             const { ruleID, ruleStatus, filter, actions, prefix } = rule;
             const ID = `<ID>${escapeForXml(ruleID)}</ID>`;
             const Status = `<Status>${ruleStatus}</Status>`;

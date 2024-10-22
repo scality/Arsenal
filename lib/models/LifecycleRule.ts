@@ -1,4 +1,4 @@
-import uuid from 'uuid/v4';
+import { v4 as uuid } from 'uuid';
 
 export type Status = 'Disabled' | 'Enabled';
 export type Tag = { Key: string; Value: string };
@@ -55,7 +55,7 @@ export default class LifecycleRule {
             rule.Expiration = this.expiration;
         }
         if (this.ncvExpiration) {
-            rule.NoncurrentVersionExpiration = this.ncvExpiration
+            rule.NoncurrentVersionExpiration = this.ncvExpiration;
         }
         if (this.abortMPU) {
             rule.AbortIncompleteMultipartUpload = this.abortMPU;

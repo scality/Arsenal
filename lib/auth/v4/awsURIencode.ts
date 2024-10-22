@@ -39,10 +39,10 @@ export default function awsURIencode(
      * Duplicate query params are not suppported by AWS S3 APIs. These params
      * are parsed as Arrays by Node.js HTTP parser which breaks this method
      */
-     if (typeof input !== 'string') {
+    if (typeof input !== 'string') {
         return '';
     }
-    let encoded = "";
+    let encoded = '';
     const slash = encodeSlash === undefined || encodeSlash ? '%2F' : '/';
     const star = noEncodeStar !== undefined && noEncodeStar ? '*' : '%2A';
     for (let i = 0; i < input.length; i++) {

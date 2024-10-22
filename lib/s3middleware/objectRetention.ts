@@ -32,7 +32,7 @@ function validateMode(mode?: string[]) {
         const error = errors.MalformedXML.customizeDescription(desc);
         return { error };
     }
-    return { mode: mode[0] as 'GOVERNANCE' | 'COMPLIANCE' }
+    return { mode: mode[0] as 'GOVERNANCE' | 'COMPLIANCE' };
 }
 
 /**
@@ -133,12 +133,12 @@ export function parseRetentionXml(
  */
 export function convertToXml(mode: string, date: string) {
     if (!(mode && date)) {
-        return ''
+        return '';
     }
     return [
         '<Retention xmlns="http://s3.amazonaws.com/doc/2006-03-01/">',
-            `<Mode>${mode}</Mode>`,
-            `<RetainUntilDate>${date}</RetainUntilDate>`,
+        `<Mode>${mode}</Mode>`,
+        `<RetainUntilDate>${date}</RetainUntilDate>`,
         '</Retention>',
     ].join('');
 }

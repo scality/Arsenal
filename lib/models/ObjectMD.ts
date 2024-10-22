@@ -110,7 +110,7 @@ export default class ObjectMD {
      *   either an ObjectMD instance or a native JS object parsed from
      *   JSON
      */
-    constructor(objMd?: Object | ObjectMD) {
+    constructor(objMd?: object | ObjectMD) {
         this._data = this._initMd();
         if (objMd !== undefined) {
             if (objMd instanceof ObjectMD) {
@@ -161,7 +161,7 @@ export default class ObjectMD {
     static getAttributes() {
         const sample = new ObjectMD();
         const attributes: { [key in keyof ObjectMDData]?: true } = {};
-        Object.keys(sample.getValue()).forEach((key) => {
+        Object.keys(sample.getValue()).forEach(key => {
             attributes[key] = true;
         });
         return attributes;
@@ -179,7 +179,7 @@ export default class ObjectMD {
             'cache-control': '',
             'content-disposition': '',
             'content-encoding': '',
-            expires: '',
+            'expires': '',
             'content-length': 0,
             'content-type': '',
             'content-md5': '',
@@ -197,28 +197,28 @@ export default class ObjectMD {
             'x-amz-server-side-encryption-aws-kms-key-id': '',
             'x-amz-server-side-encryption-customer-algorithm': '',
             'x-amz-website-redirect-location': '',
-            'x-amz-scal-transition-in-progress': undefined,
-            acl: {
+            'x-amz-scal-transition-in-progress': false,
+            'acl': {
                 Canned: 'private',
                 FULL_CONTROL: [],
                 WRITE_ACP: [],
                 READ: [],
                 READ_ACP: [],
             },
-            key: '',
-            location: null,
-            azureInfo: undefined,
+            'key': '',
+            'location': null,
+            'azureInfo': undefined,
             // versionId, isNull, nullVersionId and isDeleteMarker
             // should be undefined when not set explicitly
-            isNull: undefined,
-            isNull2: undefined,
-            nullVersionId: undefined,
-            nullUploadId: undefined,
-            isDeleteMarker: undefined,
-            versionId: undefined,
-            uploadId: undefined,
-            tags: {},
-            replicationInfo: {
+            'isNull': undefined,
+            'isNull2': undefined,
+            'nullVersionId': undefined,
+            'nullUploadId': undefined,
+            'isDeleteMarker': undefined,
+            'versionId': undefined,
+            'uploadId': undefined,
+            'tags': {},
+            'replicationInfo': {
                 status: '',
                 backends: [],
                 content: [],
@@ -229,10 +229,10 @@ export default class ObjectMD {
                 dataStoreVersionId: '',
                 isNFS: undefined,
             },
-            dataStoreName: '',
-            originOp: '',
-            deleted: undefined,
-            isPHD: undefined,
+            'dataStoreName': '',
+            'originOp': '',
+            'deleted': undefined,
+            'isPHD': undefined,
         };
     }
 
@@ -246,7 +246,7 @@ export default class ObjectMD {
         Object.assign(this._data.replicationInfo, objMd._data.replicationInfo);
     }
 
-    _updateFromParsedJSON(objMd: Object) {
+    _updateFromParsedJSON(objMd: object) {
         // objMd is a new JS object created for the purpose, it's safe
         // to just assign its top-level properties.
 
@@ -1107,7 +1107,7 @@ export default class ObjectMD {
 
     setReplicationSiteStatus(site: string, status: string) {
         const backend = this._data.replicationInfo.backends.find(
-            (o) => o.site === site
+            o => o.site === site
         );
         if (backend) {
             backend.status = status;
@@ -1117,7 +1117,7 @@ export default class ObjectMD {
 
     getReplicationSiteStatus(site: string) {
         const backend = this._data.replicationInfo.backends.find(
-            (o) => o.site === site
+            o => o.site === site
         );
         if (backend) {
             return backend.status;
@@ -1132,7 +1132,7 @@ export default class ObjectMD {
 
     setReplicationSiteDataStoreVersionId(site: string, versionId: string) {
         const backend = this._data.replicationInfo.backends.find(
-            (o) => o.site === site
+            o => o.site === site
         );
         if (backend) {
             backend.dataStoreVersionId = versionId;
@@ -1142,7 +1142,7 @@ export default class ObjectMD {
 
     getReplicationSiteDataStoreVersionId(site: string) {
         const backend = this._data.replicationInfo.backends.find(
-            (o) => o.site === site
+            o => o.site === site
         );
         if (backend) {
             return backend.dataStoreVersionId;
@@ -1238,7 +1238,7 @@ export default class ObjectMD {
      * @return itself
      */
     setUserMetadata(metaHeaders: any) {
-        Object.keys(metaHeaders).forEach((key) => {
+        Object.keys(metaHeaders).forEach(key => {
             if (key.startsWith('x-amz-meta-')) {
                 this._data[key] = metaHeaders[key];
             } else if (key.startsWith('x-ms-meta-')) {
@@ -1454,7 +1454,7 @@ export default class ObjectMD {
     * @param {Boolean} value deleted object
     * @return {ObjectMD}
     */
-     setDeleted(value) {
+    setDeleted(value) {
         this._data.deleted = value;
         return this;
     }
