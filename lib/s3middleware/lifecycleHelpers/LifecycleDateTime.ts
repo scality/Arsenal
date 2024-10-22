@@ -61,6 +61,7 @@ export default class LifecycleDateTime {
             const timeTravel = this._transitionOneDayEarlier ? -msInOneDay : 0;
             return lastModifiedTime + (transition.Days * this._scaledMsPerDay) + timeTravel;
         }
+        return null;
     }
 
     /**
@@ -78,5 +79,6 @@ export default class LifecycleDateTime {
             const timeTravel = this._transitionOneDayEarlier ? -msInOneDay : 0;
             return lastModifiedTime + (transition.NoncurrentDays * this._scaledMsPerDay) + timeTravel;
         }
+        return undefined;
     }
 }

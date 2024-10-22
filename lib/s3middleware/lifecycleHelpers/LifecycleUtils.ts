@@ -251,7 +251,6 @@ export default class LifecycleUtils {
         // Declare the current date before the reducing function so that all
         // rule comparisons use the same date.
         const currentDate = new Date();
-        /* eslint-disable no-param-reassign */
         const applicableRules = rules.reduce((store, rule) => {
             // filter and find earliest dates
             if (rule.Expiration && this._supportedRules.includes('expiration')) {
@@ -343,6 +342,5 @@ export default class LifecycleUtils {
         }
 
         return applicableRules;
-        /* eslint-enable no-param-reassign */
     }
 }

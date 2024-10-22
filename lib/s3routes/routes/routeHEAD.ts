@@ -13,7 +13,7 @@ export default function routeHEAD(
     statsClient?: StatsClient,
 ) {
     log.debug('routing request', { method: 'routeHEAD' });
-    const { bucketName, objectKey } = request as any
+    const { bucketName, objectKey } = request as any;
     if (bucketName === undefined) {
         log.trace('head request without bucketName');
         routesUtils.responseXMLBody(errors.MethodNotAllowed,

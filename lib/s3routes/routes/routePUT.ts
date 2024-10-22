@@ -14,7 +14,7 @@ export default function routePUT(
 ) {
     log.debug('routing request', { method: 'routePUT' });
 
-    const { objectKey, query, bucketName, parsedContentLength } = request as any
+    const { objectKey, query, bucketName, parsedContentLength } = request as any;
 
     if (objectKey === undefined) {
         // PUT bucket - PUT bucket ACL

@@ -147,8 +147,8 @@ const XMLResponseBackend = {
         xml.push(
             '<?xml version="1.0" encoding="UTF-8"?>',
             '<Error>',
-                `<Code>${errCode.message}</Code>`,
-                `<Message>${errCode.description}</Message>`,
+            `<Code>${errCode.message}</Code>`,
+            `<Message>${errCode.description}</Message>`,
         );
         const invalidArguments = errCode.metadata.get('invalidArguments') || [];
         invalidArguments.forEach((invalidArgument, index) => {
@@ -158,8 +158,8 @@ const XMLResponseBackend = {
             xml.push(`<ArgumentValue${counter}>${ArgumentValue}</ArgumentValue${counter}>`);
         });
         xml.push(
-                '<Resource></Resource>',
-                `<RequestId>${log.getSerializedUids()}</RequestId>`,
+            '<Resource></Resource>',
+            `<RequestId>${log.getSerializedUids()}</RequestId>`,
             '</Error>',
         );
         const xmlStr = xml.join('');
@@ -286,11 +286,9 @@ function okContentHeadersResponse(
             const headerName = headersArr[i];
             if (headerName.startsWith('x-amz-')) {
                 const translatedHeaderName = headerName.replace(/\//g, '|+2f');
-                // eslint-disable-next-line no-param-reassign
                 resHeaders[translatedHeaderName] =
                     resHeaders[headerName];
                 if (translatedHeaderName !== headerName) {
-                    // eslint-disable-next-line no-param-reassign
                     delete resHeaders[headerName];
                 }
             }
@@ -334,12 +332,12 @@ function retrieveDataAzure(
     response: http.ServerResponse,
     logger: RequestLogger,
 ) {
-    const errorHandlerFn = (_: any) => { response.socket?.destroy(); };
+    const errorHandlerFn = () => { response.socket?.destroy(); };
     const current = locations.shift();
 
-    response.on('error', err => {
+    response.on('error', () => {
         logger.error('error piping data from source');
-        errorHandlerFn(err);
+        errorHandlerFn();
     });
     const {
         client,
@@ -359,7 +357,7 @@ function retrieveDataAzure(
                 method: 'retrieveData',
                 backend: 'Azure',
             });
-            return errorHandlerFn(err);
+            return errorHandlerFn();
         }
         return undefined;
     });
@@ -495,6 +493,7 @@ function _computeContentLengthFromLocation(
                 return sum + parseInt(location.size, 10);
             }
         }
+        return sum;
     }, 0);
 }
 
@@ -1091,7 +1090,6 @@ export function normalizeRequest(
     request: http.IncomingMessage,
     validHosts: string[],
 ) {
-    /* eslint-disable no-param-reassign */
     const parsedUrl = url.parse(request.url!, true);
     // @ts-expect-error
     request.query = parsedUrl.query;

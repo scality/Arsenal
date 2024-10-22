@@ -15,14 +15,14 @@ export default function routerGET(
 ) {
     log.debug('routing request', { method: 'routerGET' });
 
-    const { bucketName, objectKey, query } = request as any
+    const { bucketName, objectKey, query } = request as any;
 
     const call = (name: string) => {
         api.callApiMethod(name, request, response, log, (err, xml, corsHeaders) => {
             routesUtils.statsReport500(err, statsClient);
             return routesUtils.responseXMLBody(err, xml, response, log, corsHeaders);
         });
-    }
+    };
 
     if (bucketName === undefined && objectKey !== undefined) {
         routesUtils.responseXMLBody(errors.NoSuchBucket, null, response, log);
@@ -59,7 +59,7 @@ export default function routerGET(
         } else if (query.encryption !== undefined) {
             call('bucketGetEncryption');
         } else if (query.search !== undefined) {
-            call('metadataSearch')
+            call('metadataSearch');
         } else if (query.quota !== undefined) {
             call('bucketGetQuota');
         } else {

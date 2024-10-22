@@ -50,7 +50,7 @@ export default function createCanonicalRequest(
         }
     }
 
-    const canonicalURI = !!pResource ? awsURIencode(pResource, false) : '/';
+    const canonicalURI = pResource ? awsURIencode(pResource, false) : '/';
 
     // canonical query string
     let canonicalQueryStr = '';

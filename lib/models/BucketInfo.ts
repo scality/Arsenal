@@ -1,5 +1,5 @@
 import assert from 'assert';
-import uuid from 'uuid/v4';
+import { v4 as uuid } from 'uuid';
 
 import { WebsiteConfiguration } from './WebsiteConfiguration';
 import ReplicationConfiguration from './ReplicationConfiguration';
@@ -212,7 +212,8 @@ export default class BucketInfo {
             assert.strictEqual(typeof cryptoScheme, 'number');
             assert.strictEqual(typeof algorithm, 'string');
             assert.strictEqual(typeof mandatory, 'boolean');
-            assert.ok(masterKeyId !== undefined || configuredMasterKeyId !== undefined, 'At least one of masterKeyId or configuredMasterKeyId must be defined');
+            assert.ok(masterKeyId !== undefined || configuredMasterKeyId !== undefined, 
+                'At least one of masterKeyId or configuredMasterKeyId must be defined');
             if (masterKeyId !== undefined) {
                 assert.strictEqual(typeof masterKeyId, 'string', 'masterKeyId must be a string');
             }
@@ -364,9 +365,9 @@ export default class BucketInfo {
         };
         const final = this._websiteConfiguration
             ? {
-                  ...bucketInfos,
-                  websiteConfiguration: this._websiteConfiguration.getConfig(),
-              }
+                ...bucketInfos,
+                websiteConfiguration: this._websiteConfiguration.getConfig(),
+            }
             : bucketInfos;
         return JSON.stringify(final);
     }

@@ -60,7 +60,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
     if (request.headers.proxy_path) {
         try {
             proxyPath = decodeURIComponent(request.headers.proxy_path);
-        } catch (err) {
+        } catch {
             log.debug('invalid proxy_path header', { proxyPath });
             return { err: errors.InvalidArgument.customizeDescription(
                 'invalid proxy_path header') };

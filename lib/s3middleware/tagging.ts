@@ -245,7 +245,7 @@ export function parseTagFromQuery(tagQuery: string) {
         try {
             key = decodeURIComponent(pairArray[0]);
             value = decodeURIComponent(pairArray[1]);
-        } catch (err) {
+        } catch {
             return errorInvalidArgument();
         }
         if (!key) {

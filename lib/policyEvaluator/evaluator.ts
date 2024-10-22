@@ -35,7 +35,6 @@ export function isResourceApplicable(
 ): boolean {
     const resource = requestContext.getResource();
     if (!Array.isArray(statementResource)) {
-        // eslint-disable-next-line no-param-reassign
         statementResource = [statementResource];
     }
     // ARN format:
@@ -79,7 +78,6 @@ export function isActionApplicable(
     log: Logger,
 ): boolean {
     if (!Array.isArray(statementAction)) {
-        // eslint-disable-next-line no-param-reassign
         statementAction = [statementAction];
     }
     const length = statementAction.length;
@@ -233,7 +231,6 @@ export function evaluatePolicy(
     let denyWithTagCondition = false;
 
     if (!Array.isArray(policy.Statement)) {
-        // eslint-disable-next-line no-param-reassign
         policy.Statement = [policy.Statement];
     }
     for (let i = 0; i < policy.Statement.length; i++) {

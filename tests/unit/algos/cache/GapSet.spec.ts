@@ -47,11 +47,9 @@ function genRandomChainedGaps(nGaps) {
 function shuffleArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
         const randIndex = Math.trunc(Math.random() * (i + 1));
-        /* eslint-disable no-param-reassign */
         const randIndexVal = array[randIndex];
         array[randIndex] = array[i];
         array[i] = randIndexVal;
-        /* eslint-enable no-param-reassign */
     }
 }
 
@@ -70,7 +68,7 @@ describe('GapSet', () => {
         { firstKey: 'quz', lastKey: 'rat', weight: 25 },
         { firstKey: 'rat', lastKey: 'yak', weight: 30 },
         // end of chain
-    ]
+    ];
 
     let gapsArray;
     let gapSet;
@@ -361,26 +359,26 @@ describe('GapSet', () => {
         });
 
         it('should merge and extend + update weight a gap with overlap not past end of chained gaps',
-        () => {
-            const extendedGap = gapSetWithChain.setGap('baz', 'sea', 80);
-            expect(extendedGap).toEqual({ firstKey: 'baz', lastKey: 'yak', weight: 90 });
-            expect(gapSetWithChain.toArray()).toEqual([
-                { firstKey: 'ape', lastKey: 'ape', weight: 1 },
-                { firstKey: 'bar', lastKey: 'baz', weight: 10 },
-                { firstKey: 'baz', lastKey: 'yak', weight: 90 },
-            ]);
-        });
+            () => {
+                const extendedGap = gapSetWithChain.setGap('baz', 'sea', 80);
+                expect(extendedGap).toEqual({ firstKey: 'baz', lastKey: 'yak', weight: 90 });
+                expect(gapSetWithChain.toArray()).toEqual([
+                    { firstKey: 'ape', lastKey: 'ape', weight: 1 },
+                    { firstKey: 'bar', lastKey: 'baz', weight: 10 },
+                    { firstKey: 'baz', lastKey: 'yak', weight: 90 },
+                ]);
+            });
 
         it('should merge and extend + update weight a gap with overlap past end of chained gaps',
-        () => {
-            const extendedGap = gapSetWithChain.setGap('baz', 'zoo', 95);
-            expect(extendedGap).toEqual({ firstKey: 'baz', lastKey: 'zoo', weight: 95 });
-            expect(gapSetWithChain.toArray()).toEqual([
-                { firstKey: 'ape', lastKey: 'ape', weight: 1 },
-                { firstKey: 'bar', lastKey: 'baz', weight: 10 },
-                { firstKey: 'baz', lastKey: 'zoo', weight: 95 },
-            ]);
-        });
+            () => {
+                const extendedGap = gapSetWithChain.setGap('baz', 'zoo', 95);
+                expect(extendedGap).toEqual({ firstKey: 'baz', lastKey: 'zoo', weight: 95 });
+                expect(gapSetWithChain.toArray()).toEqual([
+                    { firstKey: 'ape', lastKey: 'ape', weight: 1 },
+                    { firstKey: 'bar', lastKey: 'baz', weight: 10 },
+                    { firstKey: 'baz', lastKey: 'zoo', weight: 95 },
+                ]);
+            });
 
         it('should extend gap + update weight with overlap past end of chained gaps and ' +
         'above maxWeight', () => {
@@ -509,7 +507,7 @@ describe('GapSet', () => {
 
         describe('with an array of two keys as parameter', () => {
             it('should not remove any gap if no overlap', () => {
-                const nRemoved = gapSet.removeOverlappingGaps(['rat', `rat\0v100`]);
+                const nRemoved = gapSet.removeOverlappingGaps(['rat', 'rat\0v100']);
                 expect(nRemoved).toEqual(0);
                 expect(gapSet.toArray()).toEqual(INITIAL_GAPSET);
             });
@@ -542,14 +540,14 @@ describe('GapSet', () => {
             });
 
             it('should not remove any gap if both keys straddle an existing gap without overlap',
-            () => {
-                const nRemoved = gapSet.removeOverlappingGaps(['cow', 'ape']);
-                expect(nRemoved).toEqual(0);
-                expect(gapSet.toArray()).toEqual([
-                    { firstKey: 'bar', lastKey: 'baz', weight: 10 },
-                    { firstKey: 'qux', lastKey: 'quz', weight: 20 },
-                ]);
-            });
+                () => {
+                    const nRemoved = gapSet.removeOverlappingGaps(['cow', 'ape']);
+                    expect(nRemoved).toEqual(0);
+                    expect(gapSet.toArray()).toEqual([
+                        { firstKey: 'bar', lastKey: 'baz', weight: 10 },
+                        { firstKey: 'qux', lastKey: 'quz', weight: 20 },
+                    ]);
+                });
 
             it('should remove the two last gaps in chained gaps if last gap bounds match ' +
             'the two keys', () => {
@@ -722,24 +720,24 @@ describe('GapSet', () => {
                     });
 
                     it(`should remove all gaps when they all overlap with one key ${testCase.desc}`,
-                       () => {
-                           // simulate a scenario made of 200 batches of 50 operations, each with
-                           // random keys scattered across all gaps that each overlaps a distinct gap
-                           // (supposedly a worst-case performance scenario for such batch sizes)
-                           const overlappingKeys = largeGapsArray.map(testCase.getGapKey);
-                           shuffleArray(overlappingKeys);
-                           for (let i = 0; i < overlappingKeys.length; i += 50) {
-                               const nRemoved = largeGapSet.removeOverlappingGaps(
-                                   overlappingKeys.slice(i, i + 50));
-                               // with unchained gaps, we expect to have removed exactly
-                               // 50 gaps (the size of 'overlappingKeys').
-                               if (!chained) {
-                                   expect(nRemoved).toEqual(50);
-                               }
-                           }
-                           const newGaps = largeGapSet.toArray();
-                           expect(newGaps).toEqual([]);
-                       });
+                        () => {
+                            // simulate a scenario made of 200 batches of 50 operations, each with
+                            // random keys scattered across all gaps that each overlaps a distinct gap
+                            // (supposedly a worst-case performance scenario for such batch sizes)
+                            const overlappingKeys = largeGapsArray.map(testCase.getGapKey);
+                            shuffleArray(overlappingKeys);
+                            for (let i = 0; i < overlappingKeys.length; i += 50) {
+                                const nRemoved = largeGapSet.removeOverlappingGaps(
+                                    overlappingKeys.slice(i, i + 50));
+                                // with unchained gaps, we expect to have removed exactly
+                                // 50 gaps (the size of 'overlappingKeys').
+                                if (!chained) {
+                                    expect(nRemoved).toEqual(50);
+                                }
+                            }
+                            const newGaps = largeGapSet.toArray();
+                            expect(newGaps).toEqual([]);
+                        });
                 });
 
                 it('should remove only and all overlapping gaps with 50K randomized keys', () => {
@@ -849,10 +847,10 @@ describe('GapSet', () => {
         });
 
         it('should return an existing gap that overlaps just with minKey when no maxKey is provided',
-        async () => {
-            const gap = await gapSet.lookupGap('ape');
-            expect(gap).toEqual({ firstKey: 'bar', lastKey: 'baz', weight: 10 });
-        });
+            async () => {
+                const gap = await gapSet.lookupGap('ape');
+                expect(gap).toEqual({ firstKey: 'bar', lastKey: 'baz', weight: 10 });
+            });
 
         it('should return an existing gap that overlaps with maxKey but not minKey', async () => {
             const gap = await gapSet.lookupGap('bat', 'cat');
@@ -870,9 +868,9 @@ describe('GapSet', () => {
         });
 
         it('should return a coalesced gap from chained gaps that contain [minKey, maxKey] strictly',
-        async () => {
-            const gap = await gapSetWithChain.lookupGap('bog', 'dog');
-            expect(gap).toEqual({ firstKey: 'baz', lastKey: 'yak', weight: 90 });
-        });
+            async () => {
+                const gap = await gapSetWithChain.lookupGap('bog', 'dog');
+                expect(gap).toEqual({ firstKey: 'baz', lastKey: 'yak', weight: 90 });
+            });
     });
 });

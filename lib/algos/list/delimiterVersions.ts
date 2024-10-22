@@ -1,4 +1,4 @@
-'use strict'; // eslint-disable-line strict
+'use strict';  
 
 const Extension = require('./Extension').default;
 
@@ -239,7 +239,7 @@ export class DelimiterVersions extends Extension {
             return { key: fullKey };
         }
         const nonversionedKey: string = fullKey.slice(0, versionIdIndex);
-        let versionId: string = fullKey.slice(versionIdIndex + 1);
+        const versionId: string = fullKey.slice(versionIdIndex + 1);
         return { key: nonversionedKey, versionId };
     }
 
@@ -455,16 +455,18 @@ export class DelimiterVersions extends Extension {
 
     skippingBase(): string | undefined {
         switch (this.state.id) {
-        case DelimiterVersionsFilterStateId.SkippingPrefix:
+        case DelimiterVersionsFilterStateId.SkippingPrefix: {
             const { prefix } = <DelimiterVersionsFilterState_SkippingPrefix> this.state;
             return inc(prefix);
+        }
 
-        case DelimiterVersionsFilterStateId.SkippingVersions:
+        case DelimiterVersionsFilterStateId.SkippingVersions: {
             const { gt } = <DelimiterVersionsFilterState_SkippingVersions> this.state;
             // the contract of skipping() is to return the first key
             // that can be skipped to, so adding a null byte to skip
             // over the existing versioned key set in 'gt'
             return `${gt}\0`;
+        }
 
         default:
             return SKIP_NONE;
