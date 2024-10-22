@@ -27,7 +27,7 @@ export type CallApiMethod = (
  * @param log - Werelogs logger
  * @return response - response object with additional headers
  */
-function setCommonResponseHeaders(
+export function setCommonResponseHeaders(
     headers: { [key: string]: string } | undefined | null,
     response: http.ServerResponse,
     log: RequestLogger,
@@ -77,7 +77,7 @@ function okHeaderResponse(
     });
 }
 
-const XMLResponseBackend = {
+export const XMLResponseBackend = {
 
     /**
      * okXMLResponse - Response with XML body
@@ -177,7 +177,7 @@ const XMLResponseBackend = {
     },
 };
 
-const JSONResponseBackend = {
+export const JSONResponseBackend = {
 
     /**
      * okJSONResponse - Response with JSON body
