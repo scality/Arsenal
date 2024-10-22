@@ -42,7 +42,7 @@ function startTestServer(done) {
 }
 
 function stopTestServer(done) {
-    testServer.kill('SIGTERM');
+    testServer.kill('SIGKILL');
     testServer.on('close', done);
 }
 

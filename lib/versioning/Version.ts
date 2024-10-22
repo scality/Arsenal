@@ -71,8 +71,7 @@ export class Version {
         // parse the value if it has the keyword 'isPHD'
         try {
             return Version.from(value).isPHDVersion();
-        } catch (exception) {
-            // eslint-disable-line strict
+        } catch {
             return false; // nice, Vault
         }
     }
@@ -111,9 +110,9 @@ export class Version {
         }
         const needComma = stringifiedObject.charAt(index) !== '{';
         return (
-            `${stringifiedObject.slice(0, stringifiedObject.length - 1)}` +
-            (needComma ? ',' : '') +
-            `"${key}":"${value}"}`
+            `${stringifiedObject.slice(0, stringifiedObject.length - 1)}${ 
+                needComma ? ',' : ''
+            }"${key}":"${value}"}`
         );
     }
 
@@ -200,8 +199,7 @@ export class Version {
         // parse the value
         try {
             return Version.from(value).isDeleteMarkerVersion();
-        } catch (exception) {
-            // eslint-disable-line strict
+        } catch {
             return false;
         }
     }

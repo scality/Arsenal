@@ -28,7 +28,7 @@ export default class BucketAzureInfo {
         hourMetrics: any;
         minuteMetrics: any;
         serviceVersion: string;
-    }
+    };
     /**
      * @constructor
      * @param obj - Raw structure for the Azure info on storage account

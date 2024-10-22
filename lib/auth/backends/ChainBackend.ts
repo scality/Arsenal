@@ -55,7 +55,7 @@ export default class ChainBackend extends BaseBackend {
         accessKey: string,
         options: any,
         callback: any,
-      ) {
+    ) {
         this._tryEachClient((client, done) => client.verifySignatureV2(
             stringToSign,
             signatureFromRequest,
@@ -66,13 +66,13 @@ export default class ChainBackend extends BaseBackend {
     }
 
     verifySignatureV4(
-      stringToSign: string,
-      signatureFromRequest: string,
-      accessKey: string,
-      region: string,
-      scopeDate: string,
-      options: any,
-      callback: any,
+        stringToSign: string,
+        signatureFromRequest: string,
+        accessKey: string,
+        region: string,
+        scopeDate: string,
+        options: any,
+        callback: any,
     ) {
         this._tryEachClient((client, done) => client.verifySignatureV4(
             stringToSign,
@@ -133,7 +133,7 @@ export default class ChainBackend extends BaseBackend {
                 return;
             }
 
-            const check = (policy) => {
+            const check = policy => {
                 const key = (policy.arn || '') + (policy.versionId || '') + (policy.action || '');
                 if (!policyMap[key] || !policyMap[key].isAllowed) {
                     policyMap[key] = policy;
@@ -197,7 +197,7 @@ export default class ChainBackend extends BaseBackend {
     healthcheck(reqUid: string, callback: any) {
         this._forEachClient((client, done) =>
             client.healthcheck(reqUid, (err, res) => done(null, {
-                error: !!err ? err : null,
+                error: err || null,
                 status: res,
             }),
             ), (err, res) => {
@@ -216,18 +216,18 @@ export default class ChainBackend extends BaseBackend {
     report(reqUid: string, callback: any) {
         this._forEachClient((client, done) =>
             client.report(reqUid, done),
-            (err, res) => {
-                if (err) {
-                    return callback(err);
-                }
-                const mergedRes = res.reduce((acc, val) => {
-                    Object.keys(val).forEach(k => {
-                        acc[k] = val[k];
-                    });
-                    return acc;
-                }, {});
+        (err, res) => {
+            if (err) {
+                return callback(err);
+            }
+            const mergedRes = res.reduce((acc, val) => {
+                Object.keys(val).forEach(k => {
+                    acc[k] = val[k];
+                });
+                return acc;
+            }, {});
 
-                return callback(null, mergedRes);
-            });
+            return callback(null, mergedRes);
+        });
     }
 }

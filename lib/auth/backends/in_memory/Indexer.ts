@@ -11,7 +11,7 @@ export default class Indexer {
         canId: { [id: string]: Entity | undefined },
         accessKey: { [id: string]: Entity | undefined },
         email: { [id: string]: Entity | undefined },
-    }
+    };
 
     constructor(authdata?: Accounts) {
         this.accountsBy = {

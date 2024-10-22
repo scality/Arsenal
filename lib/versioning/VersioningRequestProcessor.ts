@@ -131,7 +131,6 @@ export default class VersioningRequestProcessor {
     listVersionKeys(db, key, options, logger, callback) {
         const { limit } = options || {};
         const listingParams: any = {};
-        let nullKeyLength;
         // include master key in v0 listing
         listingParams.gte = key;
         listingParams.lt = `${key}${VID_SEPPLUS}`;
@@ -139,7 +138,7 @@ export default class VersioningRequestProcessor {
             // may have to skip master + null key, so 2 extra to list in the worst case
             listingParams.limit = limit + 2;
         }
-        nullKeyLength = key.length + 1;
+        const nullKeyLength = key.length + 1;
         return this.wgm.list({
             db,
             params: listingParams,
@@ -152,9 +151,8 @@ export default class VersioningRequestProcessor {
                 return callback(null, null, []);
             }
             let versions = rawVersions;
-            let master;
             // in v0 there is always a master key before versions
-            master = versions.shift();
+            const master = versions.shift();
             if (versions.length === 0) {
                 return callback(null, master, []);
             }
@@ -555,7 +553,7 @@ export default class VersioningRequestProcessor {
                             // isNull === false means Cloudserver supports null keys,
                             // so create a null key in this case, and a version key otherwise
                             const masterKeyVersionId = request.options.isNull === false ?
-                                  '' : masterVersionId;
+                                '' : masterVersionId;
                             const masterVersionKey = formatVersionKey(key, masterKeyVersionId);
                             masterVersion.setNullVersion();
                             // isNull === false means Cloudserver supports null keys,
@@ -563,19 +561,19 @@ export default class VersioningRequestProcessor {
                             if (request.options.isNull === false) {
                                 masterVersion.setNull2Version();
                             // else isNull === undefined means Cloudserver does not support null keys,
-                            // and versionIdFromMaster !== versionId means that a version is PUT on top of a null version
-                            // hence set/update the new master nullVersionId for backward compatibility
+                            // and versionIdFromMaster !== versionId means that a version is PUT on top of a null 
+                            // version hence set/update the new master nullVersionId for backward compatibility
                             } else if (versionIdFromMaster !== versionId) {
                                 // => set the nullVersionId to the master version if put version on top of null version.
                                 value = Version.updateOrAppendNullVersionId(request.value, masterVersionId);
                             }
                             ops.push({ key: masterVersionKey,
-                                       value: masterVersion.toString() });
+                                value: masterVersion.toString() });
                         }
                     } else {
                         logger.debug('version to put is the master');
                     }
-                    ops.push({ key, value: value });
+                    ops.push({ key, value });
                 } else {
                     logger.debug('version to put is older than master');
                     if (request.options.isNull === true && !masterVersion.isNullVersion()) {
@@ -651,7 +649,7 @@ export default class VersioningRequestProcessor {
             return callback(null, [{ key: nullKey, type: 'del' }], 'null');
         }
         // deleting a specific version
-        this.writeCache.get({ db, key }, logger, (err, data) => {
+        return this.writeCache.get({ db, key }, logger, (err, data) => {
             if (err && !err.is.ObjNotFound) {
                 return callback(err);
             }

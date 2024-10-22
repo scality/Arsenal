@@ -1,5 +1,4 @@
 const assert = require('assert');
-
 const RequestContext = require('../../../lib/policyEvaluator/RequestContext').default;
 
 describe('RequestContext', () => {
@@ -15,7 +14,7 @@ describe('RequestContext', () => {
         'us-east-1', // locationConstraint
         { // requesterInfo
             arn: 'arn:aws:iam::user/johndoe',
-            accountId: 'JOHNACCOUNT',
+            accountid: 'JOHNACCOUNT',
             username: 'John Doe',
             principalType: 'user',
         },
@@ -39,14 +38,14 @@ describe('RequestContext', () => {
         {
             name: 'getRequesterInfo',
             expectedValue: {
-                accountId: 'JOHNACCOUNT',
+                accountid: 'JOHNACCOUNT',
                 arn: 'arn:aws:iam::user/johndoe',
                 username: 'John Doe',
                 principalType: 'user',
             },
         },
         { name: 'getRequesterIp', expectedValueToString: '127.0.0.1' },
-        { name: 'getRequesterAccountId', expectedValue: undefined },
+        { name: 'getRequesterAccountId', expectedValue: 'JOHNACCOUNT' },
         { name: 'getRequesterEndArn', expectedValue: 'arn:aws:iam::user/johndoe' },
         { name: 'getRequesterExternalId', expectedValue: undefined },
         { name: 'getRequesterPrincipalArn', expectedValue: 'arn:aws:iam::user/johndoe' },
@@ -98,7 +97,7 @@ describe('RequestContext', () => {
             q2: 'v2',
         },
         requesterInfo: {
-            accountId: 'JOHNACCOUNT',
+            accountid: 'JOHNACCOUNT',
             arn: 'arn:aws:iam::user/johndoe',
             principalType: 'user',
             username: 'John Doe',
@@ -125,5 +124,47 @@ describe('RequestContext', () => {
         const deserializedRC = RequestContext.deSerialize(serialized);
         const newSerialized = JSON.parse(deserializedRC.serialize());
         assert.deepStrictEqual(newSerialized, SerializedFields);
+    });
+
+    it('should return correct ARN for utapi service', () => {
+        const utapiParams = [...constructorParams];
+        utapiParams[7] = 'utapi';
+        const utapiRC = new RequestContext(...utapiParams);
+        assert.strictEqual(utapiRC.getResource(), 'arn:scality:utapi::JOHNACCOUNT:general-resource/specific-resource');
+    });
+
+    it('should return correct ARN for sts service', () => {
+        const stsParams = [...constructorParams];
+        stsParams[7] = 'sts';
+        const stsRC = new RequestContext(...stsParams);
+        assert.strictEqual(stsRC.getResource(), 'arn:aws:iam::undefined:general-resourcespecific-resource');
+    });
+
+    it('should return correct ARN for metadata service', () => {
+        const metadataParams = [...constructorParams];
+        metadataParams[7] = 'metadata';
+        const metadataRC = new RequestContext(...metadataParams);
+        assert.strictEqual(metadataRC.getResource(), 'arn:scality:metadata::JOHNACCOUNT:general-resource/specific-resource');
+    });
+
+    it('should return correct ARN for scuba service', () => {
+        const scubaParams = [...constructorParams];
+        scubaParams[7] = 'scuba';
+        const scubaRC = new RequestContext(...scubaParams);
+        assert.strictEqual(scubaRC.getResource(), 'arn:scality:scuba::JOHNACCOUNT:general-resource/specific-resource');
+    });
+
+    it('should return correct ARN for ring service', () => {
+        const ringParams = [...constructorParams];
+        ringParams[7] = 'ring';
+        const ringRC = new RequestContext(...ringParams);
+        assert.strictEqual(ringRC.getResource(), 'arn:aws:ring::JOHNACCOUNT:general-resource/specific-resource');
+    });
+
+    it('should return correct ARN for sso service', () => {
+        const ssoParams = [...constructorParams];
+        ssoParams[7] = 'sso';
+        const ssoRC = new RequestContext(...ssoParams);
+        assert.strictEqual(ssoRC.getResource(), 'arn:scality:sso:::general-resource/specific-resource');
     });
 });

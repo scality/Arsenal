@@ -15,9 +15,8 @@ export function hashSignature(
     return hmacObject.update(stringToSign, 'binary').digest('base64');
 }
 
-const sha256Digest = (key: string | Buffer, data: string) => {
-    return crypto.createHmac('sha256', key).update(data, 'binary').digest();
-};
+const sha256Digest = (key: string | Buffer, data: string) => 
+    crypto.createHmac('sha256', key).update(data, 'binary').digest();
 
 /** calculateSigningKey for v4 Auth
  * @param {string} secretKey - requester's secretKey

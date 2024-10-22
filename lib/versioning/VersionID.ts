@@ -124,7 +124,7 @@ export function generateVersionId(info: string, replicationGroupId: string): str
     if (process.env.S3_VERSION_ID_ENCODING_TYPE === 'hex' || !process.env.S3_VERSION_ID_ENCODING_TYPE) {
         // info field stays as is
     } else {
-        info = ''; // eslint-disable-line
+        info = '';
     }
 
     // In the default cases, we reverse the chronological order of the

@@ -47,7 +47,7 @@ export default class StatsModel extends StatsClient {
     _getCount(arr: [any, string | null][]): number[] {
         const size = Math.floor(this._expiry / this._interval);
         const array = arr.reduce((store, i) => {
-            let num = parseInt(i[1] ?? '', 10);
+            let num = parseInt(i[1] ?? '', 10);
             num = Number.isNaN(num) ? 0 : num;
             store.push(num);
             return store;
@@ -197,7 +197,7 @@ export default class StatsModel extends StatsClient {
         key: string,
         score: number,
         value: string,
-        cb: (error: Error | null, value?: any) => void,
+        cb: (error?: Error | null, value?: any) => void,
     ) {
         this._redis.exists(key, (err, resCode) => {
             if (err) {

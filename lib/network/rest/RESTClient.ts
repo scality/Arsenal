@@ -10,7 +10,6 @@ import * as stream from 'stream';
 function setRequestUids(reqHeaders: http.IncomingHttpHeaders, reqUids: string) {
     // inhibit 'assignment to property of function parameter' -
     // this is what we want
-    // eslint-disable-next-line
     reqHeaders['X-Scal-Request-Uids'] = reqUids;
 }
 
@@ -22,7 +21,6 @@ function setRange(
     const rangeEnd = range[1]?.toString() ?? '';
     // inhibit 'assignment to property of function parameter' -
     // this is what we want
-    // eslint-disable-next-line
     reqHeaders['Range'] = `bytes=${rangeStart}-${rangeEnd}`;
 }
 
@@ -32,14 +30,12 @@ function setContentType(
 ) {
     // inhibit 'assignment to property of function parameter' -
     // this is what we want
-    // eslint-disable-next-line
     reqHeaders['Content-Type'] = contentType;
 }
 
 function setContentLength(reqHeaders: http.IncomingHttpHeaders, size: number) {
     // inhibit 'assignment to property of function parameter' -
     // this is what we want
-    // eslint-disable-next-line
     reqHeaders['Content-Length'] = size.toString();
 }
 
@@ -51,7 +47,7 @@ function makeErrorFromHTTPResponse(response: http.IncomingMessage) {
         const fields = JSON.parse(body);
         error = errors[fields.errorType]
             .customizeDescription(fields.errorMessage);
-    } catch (err) {
+    } catch {
         error = new Error(body);
     }
     // error is always a newly created object, so we can modify its

@@ -86,7 +86,6 @@ export function generateMpuPartStorageInfo(filteredPartList: any[]) {
                 cipheredDataKey: location.sseCipheredDataKey,
             };
             dataLocations.push(pieceRetrievalInfo);
-            // eslint-disable-next-line no-param-reassign
             calculatedSize += pieceSize;
         }
     });
