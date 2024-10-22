@@ -30,7 +30,7 @@ export const handleWildcards = (string: string) => {
     // Escape all regExp special characters
     // Then replace the AWS special characters with regExp equivalents
     const regExStr = string.replace(/[\\^$*+?.()|[\]{}]/g, '\\$&').replace(
-        // eslint-disable-next-line max-len
+         
         /(\\\*)|(\\\?)|(\\\$\\\{\\\*\\\})|(\\\$\\\{\\\?\\\})|(\\\$\\\{\\\$\\\})/g,
         characterMap
     );

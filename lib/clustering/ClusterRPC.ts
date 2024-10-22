@@ -83,7 +83,7 @@ export type ResultObject = {
 export type CommandPromise = {
     resolve: (results?: ResultObject[]) => void;
     reject: (error: Error) => void;
-    timeout: NodeJS.Timer | null;
+    timeout: NodeJS.Timeout | null;
 };
 export type HandlerCallback = (error: (Error & { code?: number }) | null | undefined, result?: any) => void;
 export type HandlerFunction = (payload: object, uids: string, callback: HandlerCallback) => void;
@@ -254,7 +254,7 @@ export async function sendWorkerCommand(
     }
     rpcLogger.info('sending command', { toWorkers, toHandler, uids, payload });
     return new Promise((resolve, reject) => {
-        let timeout: NodeJS.Timer | null = null;
+        let timeout: NodeJS.Timeout | null = null;
         if (timeoutMs) {
             timeout = setTimeout(() => {
                 delete uidsToCommandPromise[uids];
@@ -376,6 +376,7 @@ function _handlePrimaryCommandMessage(
             _dispatchCommandErrorToWorker(fromWorker, uids, errors.NotImplemented);
         }
     }
+    return undefined;
 }
 
 function _handlePrimaryCommandResultMessage(
@@ -426,6 +427,7 @@ function _handlePrimaryCommandResultMessage(
         // send back response to original worker
         _dispatchCommandResultsToWorker(toWorker, uids, completeCommandResultsArray);
     }
+    return undefined;
 }
 
 function _handlePrimaryMessage(

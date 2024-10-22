@@ -185,7 +185,8 @@ class InMemoryBackend extends BaseBackend {
     getOrCreateEncryptionKeyId(
         canonicalId: string, 
         _options: any, 
-        cb: (err: null, data: { message: { body: { canonicalId: string, encryptionKeyId: string, action: string } } }) => void
+        cb: (err: null, data: { message: { 
+            body: { canonicalId: string, encryptionKeyId: string, action: string } } }) => void
     ): void {
         return cb(null, {
             message: {
@@ -223,4 +224,4 @@ class S3AuthBackend extends InMemoryBackend {
     }
 }
 
-export { S3AuthBackend as s3 }
+export { S3AuthBackend as s3 };

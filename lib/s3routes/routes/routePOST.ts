@@ -4,7 +4,6 @@ import * as routesUtils from '../routesUtils';
 import errors from '../../errors';
 import * as http from 'http';
 
-/* eslint-disable no-param-reassign */
 export default function routePOST(
     request: http.IncomingMessage,
     response: http.ServerResponse,
@@ -13,7 +12,7 @@ export default function routePOST(
 ) {
     log.debug('routing request', { method: 'routePOST' });
 
-    const { query, bucketName, objectKey } = request as any
+    const { query, bucketName, objectKey } = request as any;
 
     const invalidMultiObjectDelReq = query.delete !== undefined
         && bucketName === undefined;

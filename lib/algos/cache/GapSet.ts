@@ -1,8 +1,6 @@
 import assert from 'assert';
 import { OrderedSet } from '@js-sdsl/ordered-set';
 
-import errors from '../../errors';
-
 export type GapSetEntry = {
     firstKey: string,
     lastKey: string,
@@ -40,7 +38,7 @@ export default class GapSet implements GapSetInterface, Iterable<GapSetEntry> {
             [],
             (left: GapSetEntry, right: GapSetEntry) => (
                 left.firstKey < right.firstKey ? -1 :
-                left.firstKey > right.firstKey ? 1 : 0
+                    left.firstKey > right.firstKey ? 1 : 0
             )
         );
         this._maxWeight = maxWeight;
@@ -90,7 +88,7 @@ export default class GapSet implements GapSetInterface, Iterable<GapSetEntry> {
             || curGap.lastKey < firstKey    // previous gap not overlapping
             || (curGap.lastKey === firstKey // previous gap overlapping by one key...
                 && curGap.weight + weight > this._maxWeight) // ...but we can't extend it
-           ) {
+        ) {
             // create a new gap indexed by 'firstKey'
             curGap = { firstKey, lastKey: firstKey, weight: 0 };
             this._gaps.insert(curGap);

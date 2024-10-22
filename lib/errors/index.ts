@@ -13,7 +13,7 @@ export type Errors = { [_ in Name]: ArsenalError };
 // This object is reused constantly through createIs, we store it there
 // to avoid recomputation.
 const isBase = Object.fromEntries(
-    Object.keys(rawErrors).map((key) => [key, false])
+    Object.keys(rawErrors).map(key => [key, false])
 ) as Is;
 
 // This allows to conditionally add the old behavior of errors to properly
@@ -21,7 +21,7 @@ const isBase = Object.fromEntries(
 // Activate CI tests with `ALLOW_UNSAFE_ERROR_COMPARISON=false yarn test`.
 // Remove this mechanism in ARSN-176.
 export const allowUnsafeErrComp = (
-    process.env.ALLOW_UNSAFE_ERROR_COMPARISON ?? 'true') === 'true'
+    process.env.ALLOW_UNSAFE_ERROR_COMPARISON ?? 'true') === 'true';
 
 // This contains some metaprog. Be careful.
 // Proxy can be found on MDN.
@@ -48,16 +48,16 @@ export class ArsenalError extends Error {
     #is: Is;
     /** A map of error metadata (can be extra fields
      * that only show in debug mode) */
-    #metadata: Map<string, Object[]>;
+    #metadata: Map<string, object[]>;
 
     private constructor(type: Name, code: number, description: string,
-        metadata?: Map<string, Object[]>) {
+        metadata?: Map<string, object[]>) {
         super(type);
         this.#code = code;
         this.#description = description;
         this.#type = type;
         this.#is = createIs(type);
-        this.#metadata = metadata ?? new Map<string, Object[]>();
+        this.#metadata = metadata ?? new Map<string, object[]>();
 
         // This restores the old behavior of errors, to make sure they're now
         // backward-compatible. Fortunately it's handled by TS, but it cannot
@@ -83,7 +83,7 @@ export class ArsenalError extends Error {
             description: this.#description,
             type: this.#type,
             stack: this.stack
-        }
+        };
     }
 
     static unflatten(flat_obj) {
@@ -95,8 +95,8 @@ export class ArsenalError extends Error {
             flat_obj.type,
             flat_obj.code,
             flat_obj.description
-        )
-        err.stack = flat_obj.stack
+        );
+        err.stack = flat_obj.stack;
         return err;
     }
 
@@ -118,7 +118,7 @@ export class ArsenalError extends Error {
     }
 
     /** Clone the error with a new metadata field */
-    addMetadataEntry(key: string, value: Object[]): ArsenalError {
+    addMetadataEntry(key: string, value: object[]): ArsenalError {
         const type = this.#type;
         const code = this.#code;
         const description = this.#description;
@@ -159,7 +159,7 @@ export class ArsenalError extends Error {
     /** Generate all possible errors. An instance is created by default. */
     static errors() {
         const errors = {};
-        Object.entries(rawErrors).forEach((value) => {
+        Object.entries(rawErrors).forEach(value => {
             const name = value[0] as Name;
             const error = value[1];
             const { code, description } = error;

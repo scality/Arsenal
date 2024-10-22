@@ -1,4 +1,4 @@
-import uuid from 'uuid';
+const { v4: uuid } = require('uuid');
 import * as stream from 'stream';
 import debug_ from 'debug';
 import assert from 'assert';
@@ -63,7 +63,7 @@ class SIOOutputStream extends stream.Writable {
         async.timeout((cb: any) => {
             this.socket._write(this.streamId, payload, cb);
         }, this.ackTimeoutMs, timeoutInfo)(
-            (err) => {
+            err => {
                 debug(`ack stream-data ${this.streamId}
                       (${JSON.stringify(payload)}):`, err);
                 if (this.nPendingAck === this.maxPendingAck) {
@@ -104,7 +104,7 @@ class SIOInputStream extends stream.Readable {
         };
     }
 
-    destroy(_error?: Error | undefined) {
+    destroy() {
         debug('destroy called', this.streamId);
         this._destroyed = true;
         this.pause();
@@ -341,7 +341,7 @@ class SIOStreamSocket {
                 encodedObj = {};
                 // user objects are simple flat objects and we want to
                 // copy all their properties
-                // eslint-disable-next-line
+                 
                 for (const k in arg) {
                     encodedObj[k] = this.encodeStreams(arg[k]);
                 }
@@ -415,7 +415,7 @@ class SIOStreamSocket {
                 decodedObj = {};
                 // user objects are simple flat objects and we want to
                 // copy all their properties
-                // eslint-disable-next-line
+                 
                 for (const k in arg) {
                     decodedObj[k] = this.decodeStreams(arg[k]);
                 }
