@@ -1,7 +1,7 @@
 import { RequestLogger } from 'werelogs';
 
 import * as routesUtils from '../routesUtils';
-import errors from '../../errors';
+import errors, { ArsenalError } from '../../errors';
 import * as http from 'http';
 import StatsClient from '../../metrics/StatsClient';
 
@@ -30,7 +30,7 @@ export default function routerWebsite(
                 // request being redirected
                 if (redirectInfo) {
                     if (err && redirectInfo.withError) {
-                        return routesUtils.redirectRequestOnError(err,
+                        return routesUtils.redirectRequestOnError(err as ArsenalError,
                             'GET', redirectInfo, dataGetInfo, dataRetrievalParams,
                             response, resMetaHeaders, log)
                     }
@@ -44,7 +44,7 @@ export default function routerWebsite(
                 }
                 // user has their own error page
                 if (err && dataGetInfo) {
-                    return routesUtils.streamUserErrorPage(err, dataGetInfo,
+                    return routesUtils.streamUserErrorPage(err as ArsenalError, dataGetInfo,
                         dataRetrievalParams, response, resMetaHeaders, log);
                 }
                 // send default error html response
@@ -65,7 +65,7 @@ export default function routerWebsite(
                 routesUtils.statsReport500(err, statsClient);
                 if (redirectInfo) {
                     if (err && redirectInfo.withError) {
-                        return routesUtils.redirectRequestOnError(err,
+                        return routesUtils.redirectRequestOnError(err as ArsenalError,
                             'HEAD', redirectInfo, null, dataRetrievalParams,
                             response, resMetaHeaders, log)
                     }
@@ -77,7 +77,7 @@ export default function routerWebsite(
                 }
                 // could redirect on err so check for redirectInfo first
                 if (err) {
-                    return routesUtils.errorHeaderResponse(err, response,
+                    return routesUtils.errorHeaderResponse(err as ArsenalError, response,
                         resMetaHeaders, log);
                 }
                 return routesUtils.responseContentHeaders(err, {}, resMetaHeaders,
