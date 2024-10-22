@@ -277,7 +277,7 @@ export function convertConditionOperator(operator: string): boolean {
             } else {
                 return policyValRegex(key);
             }
-            return true;
+            return undefined;
         },
         StringNotLike: function stringNotLike(key: string, value: string[]) {
             return !operatorMap.StringLike(key, value);

@@ -32,7 +32,6 @@ export default class ObjectMDAmzRestore {
      */
     static isValid(data: { 'ongoing-request': boolean; 'expiry-date': Date | string }) {
         try {
-             
             new ObjectMDAmzRestore(data['ongoing-request'], data['expiry-date']);
             return true;
         } catch {

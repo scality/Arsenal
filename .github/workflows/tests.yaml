@@ -28,7 +28,7 @@ jobs:
       uses: actions/checkout@v4
     - uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '22'
         cache: 'yarn'
     - name: install dependencies
       run: yarn install --frozen-lockfile --prefer-offline --network-concurrency 1
@@ -43,6 +43,8 @@ jobs:
         sudo sh -c "echo '127.0.0.1 testrequestbucket.localhost' >> /etc/hosts"
     - name: test and coverage
       run: yarn --silent coverage
+      env:
+        NODE_OPTIONS: "--tls-max-v1.2"
     - name: run functional tests
       run: yarn ft_test
     - uses: codecov/codecov-action@v4
@@ -62,7 +64,7 @@ jobs:
     - name: Install NodeJS
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '22'
         cache: yarn
     - name: Install dependencies
       run: yarn install --frozen-lockfile --prefer-offline
