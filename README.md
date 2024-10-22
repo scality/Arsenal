@@ -55,6 +55,11 @@ console.log(errors.AccessDenied);
 
 ```
 
+## Build Status
+
+![Public Build Status][badgepub]
+![Private Build Status][badgepriv]
+
 ## Clustering
 
 The clustering class can be used to set up a cluster of workers. The class will
