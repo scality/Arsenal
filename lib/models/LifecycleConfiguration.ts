@@ -262,7 +262,6 @@ export default class LifecycleConfiguration {
                 break;
             } else {
                 const propName = prop.propName;
-                 
                 delete prop.propName;
                 if (prop[propName] !== undefined) {
                     ruleObj[propName] = prop[propName];
@@ -675,7 +674,7 @@ export default class LifecycleConfiguration {
             ':([0-5][0-9])' + // Second
             '(\\.[0-9]+)?' + // Fractional second
             '(Z|[+-][01][0-9]:[0-5][0-9])?$', // Timezone
-            'g'
+            'g',
         );
         const matches = [...date.matchAll(isoRegex)];
         if (matches.length !== 1) {

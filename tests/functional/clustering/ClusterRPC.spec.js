@@ -93,7 +93,7 @@ function runTest(testUrl, cb) {
         .on('error', err => cb(err));
 }
 
-describe.only('ClusterRPC', () => {
+describe('ClusterRPC', () => {
     beforeAll(done => startTestServer(done));
     afterAll(done => stopTestServer(done));
 

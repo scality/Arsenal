@@ -111,7 +111,7 @@ export class Version {
         const needComma = stringifiedObject.charAt(index) !== '{';
         return (
             `${stringifiedObject.slice(0, stringifiedObject.length - 1)}${ 
-                needComma ? ',' : '' 
+                needComma ? ',' : ''
             }"${key}":"${value}"}`
         );
     }

@@ -51,7 +51,6 @@ export default class ObjectMDArchive {
         restoreWillExpireAt?: Date;
     }) {
         try {
-             
             new ObjectMDArchive(
                 data.archiveInfo,
                 data.restoreRequestedAt,
