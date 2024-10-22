@@ -38,7 +38,7 @@ function vaultSignatureCb(
         return callback(err);
     }
 
-    const { email, ...userInfoWithoutEmail } = authInfo.message.body.userInfo;
+    const { ...userInfoWithoutEmail } = authInfo.message.body.userInfo;
 
     log.debug('received info from Vault', {
         ...authInfo,
@@ -267,7 +267,7 @@ export default class Vault {
                     foundIds.push({
                         email: key,
                         canonicalID: infoFromVault[key],
-                    })
+                    });
                 }
                 return callback(null, foundIds);
             });

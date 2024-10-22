@@ -1,2 +1,2 @@
-export * as ciphers from './ciphers'
-export * as dhparam from './dh2048'
+export * as ciphers from './ciphers';
+export * as dhparam from './dh2048';

@@ -32,7 +32,7 @@ describe('responseXMLBody: ', () => {
                 return done();
             },
         }, logger.newRequestLogger());
-    })
+    });
 
     it('Should not include invalid arguments in reponse body', done => {
         const error = errors.InvalidArgument;
@@ -56,7 +56,7 @@ describe('responseXMLBody: ', () => {
                 return done();
             },
         }, logger.newRequestLogger());
-    })
+    });
 });
 
 describe('JSONResponseBackend: ', () => {
@@ -88,7 +88,7 @@ describe('JSONResponseBackend: ', () => {
                 return done();
             },
         }, logger.newRequestLogger());
-    })
+    });
 
     it('Should not include invalid arguments in reponse body', done => {
         const error = errors.InvalidArgument;
@@ -113,5 +113,5 @@ describe('JSONResponseBackend: ', () => {
                 return done();
             },
         }, logger.newRequestLogger());
-    })
+    });
 });

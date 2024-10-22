@@ -1,5 +1,4 @@
 const { DelimiterMaster } = require('./delimiterMaster');
-const { FILTER_ACCEPT, FILTER_END } = require('./tools');
 
 type ResultObject = {
     Contents: {
@@ -46,7 +45,7 @@ class DelimiterCurrent extends DelimiterMaster {
         if (this.excludedDataStoreName) {
             params.dataStoreName = {
                 ne: this.excludedDataStoreName,
-            }
+            };
         }
 
         return params;

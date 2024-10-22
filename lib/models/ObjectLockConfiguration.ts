@@ -125,7 +125,7 @@ export default class ObjectLockConfiguration {
         }
         return {
             timeType: timeType.toLowerCase() as 'days' | 'years',
-            timeValue: timeValue,
+            timeValue,
         };
     }
 

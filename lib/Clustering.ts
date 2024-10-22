@@ -265,15 +265,15 @@ export default class Clustering {
             this._workersTimeout[i] = setTimeout(() => {
                 // Kill the worker if the sigterm was ignored or take too long
                 if (worker.process.pid) {
-                  process.kill(worker.process.pid, 'SIGKILL');
+                    process.kill(worker.process.pid, 'SIGKILL');
                 }
             }, this._shutdownTimeout);
             // Send sigterm to the process, allowing to release ressources
             // and save some states
             if (worker.process.pid) {
-              return process.kill(worker.process.pid, 'SIGTERM');
+                return process.kill(worker.process.pid, 'SIGTERM');
             } else {
-              return true;
+                return true;
             }
         });
     }

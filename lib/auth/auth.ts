@@ -130,10 +130,10 @@ function doAuth(
         return cb(null, res.params);
     }
     if (requestContexts) {
-        requestContexts.forEach((requestContext) => {
-            const { params } = res
+        requestContexts.forEach(requestContext => {
+            const { params } = res;
             if ('data' in params) {
-                const { data } = params
+                const { data } = params;
                 requestContext.setAuthType(data.authType);
                 requestContext.setSignatureVersion(data.signatureVersion);
                 requestContext.setSecurityToken(data.securityToken);
@@ -254,12 +254,12 @@ function generateV4Headers(
     Object.assign(request, { headers: {} });
 }
 
-export const server = { extractParams, doAuth }
-export const client = { generateV4Headers, constructStringToSignV2 }
-export const inMemory = { backend: inMemoryBackend, validateAuthConfig, AuthLoader }
-export const backends = { baseBackend, chainBackend }
+export const server = { extractParams, doAuth };
+export const client = { generateV4Headers, constructStringToSignV2 };
+export const inMemory = { backend: inMemoryBackend, validateAuthConfig, AuthLoader };
+export const backends = { baseBackend, chainBackend };
 export {
     setAuthHandler as setHandler,
     AuthInfo,
     Vault
-}
+};

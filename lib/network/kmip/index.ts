@@ -1,4 +1,4 @@
-import uuid from 'uuid/v4';
+import { v4 as uuid } from 'uuid';
 import Message from './Message';
 import * as werelogs from 'werelogs';
 
@@ -284,7 +284,8 @@ export default class KMIP {
      * @param {Function} cb - The callback(error: Object, response: Object)
      * @returns {undefined}
      */
-    request(logger: werelogs.Logger, operation: string, payload: any, cb: (error: Error | null, response?: any) => void) {
+    request(logger: werelogs.Logger, operation: string, payload: any, 
+        cb: (error: Error | null, response?: any) => void) {
         const uuid = _uniqueBatchItemID();
         const message = KMIP.Message([
             KMIP.Structure('Request Message', [

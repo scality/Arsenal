@@ -116,7 +116,7 @@ export default class GapCache implements GapCacheInterface {
         maxGapWeight: number
     ): GapCache {
         const gapCache = new GapCache(exposureDelayMs, maxGaps, maxGapWeight);
-        gapCache._exposedGaps = GapSet.createFromArray(gaps, maxGapWeight)
+        gapCache._exposedGaps = GapSet.createFromArray(gaps, maxGapWeight);
         return gapCache;
     }
 
