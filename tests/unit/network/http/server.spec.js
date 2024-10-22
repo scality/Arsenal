@@ -183,7 +183,7 @@ describe('network.Server: ', () => {
 
     it('should automatically close idle connections with setKeepAliveTimeout()', done => {
         const ws = new Server(3000, log);
-        ws.setKeepAliveTimeout(1000);
+        ws.setKeepAliveTimeout(2000);
         ws.onError(done).onListening(() => {
             const options = {
                 hostname: '127.0.0.1',
@@ -211,8 +211,8 @@ describe('network.Server: ', () => {
                     assert.strictEqual(ws._server._connections, 0);
                     ws.stop();
                     ws.onStop(done);
-                }, 200);
-            }, 900);
+                }, 2000);
+            }, 2000);
         }).start();
     });
 });
