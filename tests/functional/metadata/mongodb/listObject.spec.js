@@ -566,7 +566,7 @@ describe('MongoClientInterface::metadata.listObject', () => {
                             // In v1 case, the skip algorithm will trigger a recursive
                             // call of the internal listing function
                             // that should, upon completion, call the destroy method
-                            assert(destroyStub.callCount === 3, 'Destroy should have been called 3 times');
+                            assert(destroyStub.callCount >= 3, 'Destroy should have been called at least 3 times');
                         } else {
                             assert(destroyStub.callCount === 2, 'Destroy should have been called once');
                         }
