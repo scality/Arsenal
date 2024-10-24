@@ -17,7 +17,7 @@ export type CallApiMethod = (
     request: http.IncomingMessage,
     response: http.ServerResponse,
     log: RequestLogger,
-    callback: (err: ArsenalError | null, ...data: any[]) => void,
+    callback: (err: ArsenalError | Error | null, ...data: any[]) => void,
 ) => void;
 
 /**
@@ -27,7 +27,7 @@ export type CallApiMethod = (
  * @param log - Werelogs logger
  * @return response - response object with additional headers
  */
-function setCommonResponseHeaders(
+export function setCommonResponseHeaders(
     headers: { [key: string]: string } | undefined | null,
     response: http.ServerResponse,
     log: RequestLogger,
@@ -71,15 +71,13 @@ function okHeaderResponse(
     log.debug('response http code', { httpCode });
     response.writeHead(httpCode);
     return response.end(() => {
-        // TODO ARSN-216 Fix logger
-        // @ts-expect-error
-        log.end().info('responded to request', {
+        log.end('responded to request', {
             httpCode: response.statusCode,
         });
     });
 }
 
-const XMLResponseBackend = {
+export const XMLResponseBackend = {
 
     /**
      * okXMLResponse - Response with XML body
@@ -106,34 +104,36 @@ const XMLResponseBackend = {
         log.debug('response http code', { httpCode: 200 });
         log.trace('xml response', { xml });
         return response.end(xml, 'utf8', () => {
-            // TODO ARSN-216 Fix logger
-            // @ts-expect-error
-            log.end().info('responded with XML', {
+            log.end('responded with XML', {
                 httpCode: response.statusCode,
             });
         });
     },
 
     errorResponse: function errorXMLResponse(
-        errCode: ArsenalError,
+        errCode: ArsenalError | Error,
         response: http.ServerResponse,
         log: RequestLogger,
         corsHeaders?: { [key: string]: string } | null,
     ) {
         setCommonResponseHeaders(corsHeaders, response, log);
+        let error: ArsenalError;
+        if (errCode instanceof ArsenalError) {
+            error = errCode;
+        } else {
+            error = errors.InternalError.customizeDescription(errCode.message);
+        }
         // early return to avoid extra headers and XML data
-        if (errCode.code === 304) {
-            response.writeHead(errCode.code);
+        if (error.code === 304) {
+            response.writeHead(error.code);
             return response.end('', 'utf8', () => {
-                // TODO ARSN-216 Fix logger
-                // @ts-expect-error
-                log.end().info('responded with empty body', {
+                log.end('responded with empty body', {
                     httpCode: response.statusCode,
                 });
             });
         }
 
-        log.trace('sending error xml response', { errCode });
+        log.trace('sending error xml response', { error });
         /*
          <?xml version="1.0" encoding="UTF-8"?>
          <Error>
@@ -147,10 +147,10 @@ const XMLResponseBackend = {
         xml.push(
             '<?xml version="1.0" encoding="UTF-8"?>',
             '<Error>',
-                `<Code>${errCode.message}</Code>`,
-                `<Message>${errCode.description}</Message>`,
+                `<Code>${error.message}</Code>`,
+                `<Message>${error.description}</Message>`,
         );
-        const invalidArguments = errCode.metadata.get('invalidArguments') || [];
+        const invalidArguments = error.metadata.get('invalidArguments') || [];
         invalidArguments.forEach((invalidArgument, index) => {
             const counter = index + 1;
             const { ArgumentName, ArgumentValue } = invalidArgument as any;
@@ -165,21 +165,19 @@ const XMLResponseBackend = {
         const xmlStr = xml.join('');
         const bytesSent = Buffer.byteLength(xmlStr);
         log.addDefaultFields({ bytesSent });
-        response.writeHead(errCode.code, {
+        response.writeHead(error.code, {
             'Content-Type': 'application/xml',
             'Content-Length': bytesSent ,
         });
         return response.end(xmlStr, 'utf8', () => {
-            // TODO ARSN-216 Fix logger
-            // @ts-expect-error
-            log.end().info('responded with error XML', {
+            log.end('responded with error XML', {
                 httpCode: response.statusCode,
             });
         });
     },
 };
 
-const JSONResponseBackend = {
+export const JSONResponseBackend = {
 
     /**
      * okJSONResponse - Response with JSON body
@@ -204,21 +202,25 @@ const JSONResponseBackend = {
         log.debug('response http code', { httpCode: 200 });
         log.trace('json response', { json });
         return response.end(json, 'utf8', () => {
-            // TODO ARSN-216 Fix logger
-            // @ts-expect-error
-            log.end().info('responded with JSON', {
+            log.end('responded with JSON', {
                 httpCode: response.statusCode,
             });
         });
     },
 
     errorResponse: function errorJSONResponse(
-        errCode: ArsenalError,
+        errCode: ArsenalError | Error,
         response: http.ServerResponse,
         log: RequestLogger,
         corsHeaders?: { [key: string]: string } | null,
     ) {
         log.trace('sending error json response', { errCode });
+        let error: ArsenalError;
+        if (errCode instanceof ArsenalError) {
+            error = errCode;
+        } else {
+            error = errors.InternalError.customizeDescription(errCode.message);
+        }
         /*
         {
             "code": "NoSuchKey",
@@ -227,7 +229,7 @@ const JSONResponseBackend = {
             "requestId": "4442587FB7D0A2F9"
         }
         */
-        const invalidArguments = errCode.metadata.get('invalidArguments') || [];
+        const invalidArguments = error.metadata.get('invalidArguments') || [];
         const invalids = invalidArguments.reduce((acc, invalidArgument, index) => {
             const counter = index + 1;
             const { ArgumentName, ArgumentValue } = invalidArgument as any;
@@ -236,8 +238,8 @@ const JSONResponseBackend = {
             return { ...acc, [name]: ArgumentName, [value]: ArgumentValue };
         }, {});
         const data = JSON.stringify({
-            code: errCode.message,
-            message: errCode.description,
+            code: error.message,
+            message: error.description,
             ...invalids,
             resource: null,
             requestId: log.getSerializedUids(),
@@ -245,14 +247,12 @@ const JSONResponseBackend = {
         const bytesSent = Buffer.byteLength(data);
         log.addDefaultFields({ bytesSent });
         setCommonResponseHeaders(corsHeaders, response, log);
-        response.writeHead(errCode.code, {
+        response.writeHead(error.code, {
             'Content-Type': 'application/json',
             'Content-Length': bytesSent,
         });
         return response.end(data, 'utf8', () => {
-            // TODO ARSN-216 Fix logger
-            // @ts-expect-error
-            log.end().info('responded with error JSON', {
+            log.end('responded with error JSON', {
                 httpCode: response.statusCode,
             });
         });
@@ -467,7 +467,7 @@ function retrieveData(
 
 function _responseBody(
     responseBackend: typeof XMLResponseBackend,
-    errCode: ArsenalError | null | undefined,
+    errCode: ArsenalError | Error | null | undefined,
     payload: string | null,
     response: http.ServerResponse,
     log: RequestLogger,
@@ -517,7 +517,7 @@ function _contentLengthMatchesLocations(
  * @return - error or success response utility
  */
 export function responseXMLBody(
-    errCode: ArsenalError | null | undefined,
+    errCode: ArsenalError | Error | null | undefined,
     xml: string | null,
     response: http.ServerResponse,
     log: RequestLogger,
@@ -557,7 +557,7 @@ export function responseJSONBody(
  * @return - error or success response utility
  */
 export function responseNoBody(
-    errCode: ArsenalError | null,
+    errCode: ArsenalError | Error | null,
     resHeaders: { [key: string]: string } | null,
     response: http.ServerResponse,
     httpCode = 200,
@@ -583,7 +583,7 @@ export function responseNoBody(
  * @return - router's response object
  */
 export function responseContentHeaders(
-    errCode: ArsenalError | null,
+    errCode: ArsenalError | Error | null,
     overrideParams: { [key: string]: string },
     resHeaders: { [key: string]: string },
     response: http.ServerResponse,
@@ -600,9 +600,7 @@ export function responseContentHeaders(
             undefined, log);
     }
     return response.end(() => {
-        // TODO ARSN-216 Fix logger
-        // @ts-expect-error
-        log.end().info('responded with content headers', {
+        log.end('responded with content headers', {
             httpCode: response.statusCode,
         });
     });
@@ -624,7 +622,7 @@ export function responseContentHeaders(
  * @param log - Werelogs logger
  */
 export function responseStreamData(
-    errCode: ArsenalError | null,
+    errCode: ArsenalError | Error | null,
     overrideParams: { [key: string]: string },
     resHeaders: { [key: string]: string },
     dataLocations: { size: string | number }[],
@@ -658,17 +656,13 @@ export function responseStreamData(
     }
     if (dataLocations === null || _computeContentLengthFromLocation(dataLocations) === 0) {
         return response.end(() => {
-            // TODO ARSN-216 Fix logger
-            // @ts-expect-error
-            log.end().info('responded with only metadata', {
+            log.end('responded with only metadata', {
                 httpCode: response.statusCode,
             });
         });
     }
     response.on('finish', () => {
-        // TODO ARSN-216 Fix logger
-        // @ts-expect-error
-        log.end().info('responded with streamed content', {
+        log.end('responded with streamed content', {
             httpCode: response.statusCode,
         });
     });
@@ -698,9 +692,7 @@ export function streamUserErrorPage(
     response.setHeader('x-amz-error-message', err.description);
     response.writeHead(err.code, { 'Content-type': 'text/html' });
     response.on('finish', () => {
-        // TODO ARSN-216 Fix logger
-        // @ts-expect-error
-        log.end().info('responded with streamed content', {
+        log.end('responded with streamed content', {
             httpCode: response.statusCode,
         });
     });
@@ -717,30 +709,37 @@ export function streamUserErrorPage(
  * @param log - Werelogs logger
 g */
 export function errorHtmlResponse(
-    err: ArsenalError,
+    err: ArsenalError | Error,
     userErrorPageFailure: boolean,
     bucketName: string,
     response: http.ServerResponse,
     corsHeaders: { [key: string]: string } | null,
     log: RequestLogger,
 ) {
+    let error;
+    if (err instanceof ArsenalError) {
+        error = err;
+    } else if (!(err instanceof ArsenalError)) {
+        error = errors.InternalError.customizeDescription(err.message);
+    }
+
     log.trace('sending generic html error page',
         { err });
     setCommonResponseHeaders(corsHeaders, response, log);
-    response.writeHead(err.code, { 'Content-type': 'text/html' });
+    response.writeHead(error.code, { 'Content-type': 'text/html' });
     const html: string[] = [];
     // response.statusMessage will provide standard message for status
     // code so much set response status code before creating html
     html.push(
         '<html>',
         '<head>',
-        `<title>${err.code} ${response.statusMessage}</title>`,
+        `<title>${error.code} ${response.statusMessage}</title>`,
         '</head>',
         '<body>',
-        `<h1>${err.code} ${response.statusMessage}</h1>`,
+        `<h1>${error.code} ${response.statusMessage}</h1>`,
         '<ul>',
-        `<li>Code: ${err.message}</li>`,
-        `<li>Message: ${err.description}</li>`,
+        `<li>Code: ${error.message}</li>`,
+        `<li>Message: ${error.description}</li>`,
     );
 
     if (!userErrorPageFailure && bucketName) {
@@ -758,8 +757,8 @@ export function errorHtmlResponse(
             'to Retrieve a Custom ',
             'Error Document</h3>',
             '<ul>',
-            `<li>Code: ${err.message}</li>`,
-            `<li>Message: ${err.description}</li>`,
+            `<li>Code: ${error.message}</li>`,
+            `<li>Message: ${error.description}</li>`,
             '</ul>',
         );
     }
@@ -770,9 +769,7 @@ export function errorHtmlResponse(
     );
 
     return response.end(html.join(''), 'utf8', () => {
-        // TODO ARSN-216 Fix logger
-        // @ts-expect-error
-        log.end().info('responded with error html', {
+        log.end('responded with error html', {
             httpCode: response.statusCode,
         });
     });
@@ -797,9 +794,7 @@ export function errorHeaderResponse(
     response.setHeader('x-amz-error-message', err.description);
     response.writeHead(err.code);
     return response.end(() => {
-        // TODO ARSN-216 Fix logger
-        // @ts-expect-error
-        log.end().info('responded with error headers', {
+        log.end('responded with error headers', {
             httpCode: response.statusCode,
         });
     });
@@ -882,9 +877,7 @@ export function redirectRequest(
         // remove hanging slash
         redirectLocation = redirectLocation.slice(0, -1);
     }
-    // TODO ARSN-216 Fix logger
-    // @ts-expect-error
-    log.end().info('redirecting request', {
+    log.end('redirecting request', {
         httpCode: redirectCode,
         redirectLocation: hostName,
     });
@@ -1222,8 +1215,8 @@ export function parseContentMD5(headers: http.IncomingHttpHeaders) {
 * @param err - Arsenal error
 * @param statsClient - StatsClient instance
 */
-export function statsReport500(err?: ArsenalError | null, statsClient?: StatsClient | null) {
-    if (statsClient && err && err.code === 500) {
+export function statsReport500(err?: ArsenalError | Error | null, statsClient?: StatsClient | null) {
+    if (statsClient && err instanceof ArsenalError && err?.code === 500) {
         statsClient.report500('s3');
     }
     return undefined;
