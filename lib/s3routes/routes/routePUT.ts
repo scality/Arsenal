@@ -225,7 +225,7 @@ export default function routePUT(
                 return routesUtils.responseNoBody(errors.BadRequest,
                     null, response, 400, log);
             }
-            log.addDefaultFields({ contentLength: parsedContentLength });
+            log.end().addDefaultFields({ contentLength: parsedContentLength });
             api.callApiMethod('objectPut', request, response, log,
                 (err, resHeaders) => {
                     routesUtils.statsReport500(err, statsClient);
