@@ -32,7 +32,7 @@ export type ReplicationInfo = {
     role: string;
     storageType: string;
     dataStoreVersionId: string;
-    isNFS: boolean | null;
+    isNFS?: boolean;
 };
 
 export type ObjectMDData = {
@@ -40,7 +40,7 @@ export type ObjectMDData = {
     'owner-id': string;
     'cache-control': string;
     'content-disposition': string;
-    'content-language': string;
+    'content-language'?: string;
     'content-encoding': string;
     'creation-time'?: string;
     'last-modified'?: string;
@@ -84,12 +84,12 @@ export type ObjectMDData = {
     // Used for keeping object metadata in the oplog event
     // In case of a deletion the flag is first updated before
     // deleting the object
-    deleted: boolean;
+    deleted?: boolean;
     // PHD flag indicates whether the object is a temporary placeholder.
     // This is the case when the latest version of an object gets deleted
     // the master is set as a placeholder and gets updated with the new latest
     // version data after a certain amount of time.
-    isPHD: boolean;
+    isPHD?: boolean;
 };
 
 /**
@@ -183,7 +183,7 @@ export default class ObjectMD {
             'content-length': 0,
             'content-type': '',
             'content-md5': '',
-            'content-language': '',
+            'content-language': undefined,
             'creation-time': undefined,
             // simple/no version. will expand once object versioning is
             // introduced
@@ -197,7 +197,7 @@ export default class ObjectMD {
             'x-amz-server-side-encryption-aws-kms-key-id': '',
             'x-amz-server-side-encryption-customer-algorithm': '',
             'x-amz-website-redirect-location': '',
-            'x-amz-scal-transition-in-progress': false,
+            'x-amz-scal-transition-in-progress': undefined,
             acl: {
                 Canned: 'private',
                 FULL_CONTROL: [],
@@ -227,12 +227,12 @@ export default class ObjectMD {
                 role: '',
                 storageType: '',
                 dataStoreVersionId: '',
-                isNFS: null,
+                isNFS: undefined,
             },
             dataStoreName: '',
             originOp: '',
-            deleted: false,
-            isPHD: false,
+            deleted: undefined,
+            isPHD: undefined,
         };
     }
 
@@ -250,7 +250,10 @@ export default class ObjectMD {
         // objMd is a new JS object created for the purpose, it's safe
         // to just assign its top-level properties.
 
-        Object.assign(this._data, objMd);
+        const { replicationInfo, ...md } = objMd as ObjectMDData;
+        Object.assign(this._data, md);
+        // keep default values inside replicationInfo
+        Object.assign(this._data.replicationInfo, replicationInfo);
         this._convertToLatestModel();
     }
 
@@ -479,7 +482,7 @@ export default class ObjectMD {
      * @return content-language
      */
     getContentLanguage() {
-        return this._data['content-language'];
+        return this._data['content-language'] || '';
     }
 
     /**
@@ -677,7 +680,7 @@ export default class ObjectMD {
      * @return True if transition is in progress, false otherwise
      */
     getTransitionInProgress() {
-        return this._data['x-amz-scal-transition-in-progress'];
+        return !!this._data['x-amz-scal-transition-in-progress'];
     }
 
     /**
@@ -1065,7 +1068,7 @@ export default class ObjectMD {
             role,
             storageType: storageType || '',
             dataStoreVersionId: dataStoreVersionId || '',
-            isNFS: isNFS || null,
+            isNFS,
         };
         return this;
     }
@@ -1099,7 +1102,7 @@ export default class ObjectMD {
      * @return Whether replication from an NFS bucket
      */
     getReplicationIsNFS() {
-        return this._data.replicationInfo.isNFS;
+        return !!this._data.replicationInfo.isNFS;
     }
 
     setReplicationSiteStatus(site: string, status: string) {
@@ -1461,7 +1464,7 @@ export default class ObjectMD {
     * @return {Boolean}
     */
     getDeleted() {
-        return this._data.deleted;
+        return !!this._data.deleted;
     }
 
     /**
@@ -1479,6 +1482,6 @@ export default class ObjectMD {
     * @return {Boolean}
     */
     getIsPHD() {
-        return this._data.isPHD;
+        return !!this._data.isPHD;
     }
 }
