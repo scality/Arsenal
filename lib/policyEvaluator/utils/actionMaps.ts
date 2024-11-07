@@ -161,7 +161,7 @@ const actionMonitoringMapS3 = {
     serviceGet: 'ListBuckets',
     bucketGetQuota: 'GetBucketQuota',
     bucketUpdateQuota: 'UpdateBucketQuota',
-    bucketDeleteQuota: 'DeleteBucketQuota', 
+    bucketDeleteQuota: 'DeleteBucketQuota',
 };
 
 const actionMapAccountQuotas = {
@@ -233,6 +233,9 @@ const actionMapScuba = {
     AdminStopIngest: 'scuba:AdminStopIngest',
     AdminReadRaftCseq: 'scuba:AdminReadRaftCseq',
     AdminTriggerRepair: 'scuba:AdminTriggerRepair',
+    AdminStartDownsample: 'scuba:AdminStartDownsample',
+    AdminStopDownsample: 'scuba:AdminStopDownsample',
+    AdminTriggerDownsample: 'scuba:AdminTriggerDownsample',
 };
 
 export {
