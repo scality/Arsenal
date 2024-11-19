@@ -98,7 +98,7 @@ describe('ObjectMD class setters/getters', () => {
             role: '',
             storageType: '',
             dataStoreVersionId: '',
-            isNFS: null,
+            isNFS: undefined,
         }],
         ['ReplicationInfo', {
             status: 'PENDING',
@@ -114,10 +114,10 @@ describe('ObjectMD class setters/getters', () => {
                 'arn:aws:iam::account-id:role/dest-resource',
             storageType: 'aws_s3',
             dataStoreVersionId: '',
-            isNFS: null,
+            isNFS: undefined,
         }],
         ['DataStoreName', null, ''],
-        ['ReplicationIsNFS', null, null],
+        ['ReplicationIsNFS', null, false],
         ['ReplicationIsNFS', true],
         ['AzureInfo', {
             containerPublicAccess: 'container',
