@@ -71,7 +71,7 @@ function okHeaderResponse(
     log.debug('response http code', { httpCode });
     response.writeHead(httpCode);
     return response.end(() => {
-        log.end('responded to request', {
+        log.end().info('responded to request', {
             httpCode: response.statusCode,
         });
     });
@@ -104,7 +104,7 @@ export const XMLResponseBackend = {
         log.debug('response http code', { httpCode: 200 });
         log.trace('xml response', { xml });
         return response.end(xml, 'utf8', () => {
-            log.end('responded with XML', {
+            log.end().info('responded with XML', {
                 httpCode: response.statusCode,
             });
         });
@@ -127,7 +127,7 @@ export const XMLResponseBackend = {
         if (error.code === 304) {
             response.writeHead(error.code);
             return response.end('', 'utf8', () => {
-                log.end('responded with empty body', {
+                log.end().info('responded with empty body', {
                     httpCode: response.statusCode,
                 });
             });
@@ -170,7 +170,7 @@ export const XMLResponseBackend = {
             'Content-Length': bytesSent ,
         });
         return response.end(xmlStr, 'utf8', () => {
-            log.end('responded with error XML', {
+            log.end().info('responded with error XML', {
                 httpCode: response.statusCode,
             });
         });
@@ -202,7 +202,7 @@ export const JSONResponseBackend = {
         log.debug('response http code', { httpCode: 200 });
         log.trace('json response', { json });
         return response.end(json, 'utf8', () => {
-            log.end('responded with JSON', {
+            log.end().info('responded with JSON', {
                 httpCode: response.statusCode,
             });
         });
@@ -252,7 +252,7 @@ export const JSONResponseBackend = {
             'Content-Length': bytesSent,
         });
         return response.end(data, 'utf8', () => {
-            log.end('responded with error JSON', {
+            log.end().info('responded with error JSON', {
                 httpCode: response.statusCode,
             });
         });
@@ -600,7 +600,7 @@ export function responseContentHeaders(
             undefined, log);
     }
     return response.end(() => {
-        log.end('responded with content headers', {
+        log.end().info('responded with content headers', {
             httpCode: response.statusCode,
         });
     });
@@ -656,13 +656,13 @@ export function responseStreamData(
     }
     if (dataLocations === null || _computeContentLengthFromLocation(dataLocations) === 0) {
         return response.end(() => {
-            log.end('responded with only metadata', {
+            log.end().info('responded with only metadata', {
                 httpCode: response.statusCode,
             });
         });
     }
     response.on('finish', () => {
-        log.end('responded with streamed content', {
+        log.end().info('responded with streamed content', {
             httpCode: response.statusCode,
         });
     });
@@ -692,7 +692,7 @@ export function streamUserErrorPage(
     response.setHeader('x-amz-error-message', err.description);
     response.writeHead(err.code, { 'Content-type': 'text/html' });
     response.on('finish', () => {
-        log.end('responded with streamed content', {
+        log.end().info('responded with streamed content', {
             httpCode: response.statusCode,
         });
     });
@@ -769,7 +769,7 @@ export function errorHtmlResponse(
     );
 
     return response.end(html.join(''), 'utf8', () => {
-        log.end('responded with error html', {
+        log.end().info('responded with error html', {
             httpCode: response.statusCode,
         });
     });
@@ -794,7 +794,7 @@ export function errorHeaderResponse(
     response.setHeader('x-amz-error-message', err.description);
     response.writeHead(err.code);
     return response.end(() => {
-        log.end('responded with error headers', {
+        log.end().info('responded with error headers', {
             httpCode: response.statusCode,
         });
     });
@@ -877,7 +877,7 @@ export function redirectRequest(
         // remove hanging slash
         redirectLocation = redirectLocation.slice(0, -1);
     }
-    log.end('redirecting request', {
+    log.end().info('redirecting request', {
         httpCode: redirectCode,
         redirectLocation: hostName,
     });
