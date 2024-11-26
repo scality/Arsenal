@@ -730,7 +730,7 @@ export function errorHtmlResponse(
     }
 
     log.trace('sending generic html error page',
-        { err });
+        { error });
     setCommonResponseHeaders(corsHeaders, response, log);
     response.writeHead(error.code, { 'Content-type': 'text/html' });
     const html: string[] = [];
@@ -800,9 +800,9 @@ export function errorHeaderResponse(
         error = errors.InternalError.customizeDescription(err.message);
     }
     log.trace('sending error header response',
-        { err });
+        { error });
     setCommonResponseHeaders(corsHeaders, response, log);
-    response.setHeader('x-amz-error-code', err.message);
+    response.setHeader('x-amz-error-code', error.message);
     response.setHeader('x-amz-error-message', error.description);
     response.writeHead(error.code);
     return response.end(() => {
@@ -941,9 +941,9 @@ export function redirectRequestOnError(
         if (method === 'HEAD') {
             return errorHeaderResponse(error, response, corsHeaders, log);
         }
-        response.setHeader('x-amz-error-code', err.message);
+        response.setHeader('x-amz-error-code', error.message);
         response.setHeader('x-amz-error-message', error.description);
-        return errorHtmlResponse(err, false, '', response, corsHeaders, log);
+        return errorHtmlResponse(error, false, '', response, corsHeaders, log);
     }
 
     // This is reached only for website error document (GET only)
