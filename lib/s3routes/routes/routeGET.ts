@@ -87,8 +87,6 @@ export default function routerGET(
                     if (resMetaHeaders && resMetaHeaders['Content-Length']) {
                         contentLength = resMetaHeaders['Content-Length'];
                     }
-                    // TODO ARSN-216 Fix logger
-                    // @ts-ignore
                     log.end().addDefaultFields({ contentLength });
                     routesUtils.statsReport500(err, statsClient);
                     return routesUtils.responseStreamData(err, query,
