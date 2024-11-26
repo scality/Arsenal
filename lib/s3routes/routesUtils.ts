@@ -680,17 +680,23 @@ export function responseStreamData(
  * @param log - Werelogs logger
  */
 export function streamUserErrorPage(
-    err: ArsenalError,
+    err: ArsenalError | Error,
     dataLocations: { size: string | number }[],
     retrieveDataParams: any,
     response: http.ServerResponse,
     corsHeaders: { [key: string]: string },
     log: RequestLogger,
 ) {
+    let error: ArsenalError;
+    if (err instanceof ArsenalError) {
+        error = err;
+    } else {
+        error = errors.InternalError.customizeDescription(err.message);
+    }
     setCommonResponseHeaders(corsHeaders, response, log);
-    response.setHeader('x-amz-error-code', err.message);
-    response.setHeader('x-amz-error-message', err.description);
-    response.writeHead(err.code, { 'Content-type': 'text/html' });
+    response.setHeader('x-amz-error-code', error.message);
+    response.setHeader('x-amz-error-message', error.description);
+    response.writeHead(error.code, { 'Content-type': 'text/html' });
     response.on('finish', () => {
         log.end().info('responded with streamed content', {
             httpCode: response.statusCode,
@@ -719,7 +725,7 @@ export function errorHtmlResponse(
     let error;
     if (err instanceof ArsenalError) {
         error = err;
-    } else if (!(err instanceof ArsenalError)) {
+    } else {
         error = errors.InternalError.customizeDescription(err.message);
     }
 
@@ -782,17 +788,23 @@ export function errorHtmlResponse(
  * @param log - Werelogs logger
  */
 export function errorHeaderResponse(
-    err: ArsenalError,
+    err: ArsenalError | Error,
     response: http.ServerResponse,
     corsHeaders: { [key: string]: string },
     log: RequestLogger,
 ) {
+    let error: ArsenalError;
+    if (err instanceof ArsenalError) {
+        error = err;
+    } else {
+        error = errors.InternalError.customizeDescription(err.message);
+    }
     log.trace('sending error header response',
         { err });
     setCommonResponseHeaders(corsHeaders, response, log);
     response.setHeader('x-amz-error-code', err.message);
-    response.setHeader('x-amz-error-message', err.description);
-    response.writeHead(err.code);
+    response.setHeader('x-amz-error-message', error.description);
+    response.writeHead(error.code);
     return response.end(() => {
         log.end().info('responded with error headers', {
             httpCode: response.statusCode,
