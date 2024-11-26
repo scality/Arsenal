@@ -30,7 +30,7 @@ export default function routerWebsite(
                 // request being redirected
                 if (redirectInfo) {
                     if (err && redirectInfo.withError) {
-                        return routesUtils.redirectRequestOnError(err as ArsenalError,
+                        return routesUtils.redirectRequestOnError(err,
                             'GET', redirectInfo, dataGetInfo, dataRetrievalParams,
                             response, resMetaHeaders, log)
                     }
@@ -65,7 +65,7 @@ export default function routerWebsite(
                 routesUtils.statsReport500(err, statsClient);
                 if (redirectInfo) {
                     if (err && redirectInfo.withError) {
-                        return routesUtils.redirectRequestOnError(err as ArsenalError,
+                        return routesUtils.redirectRequestOnError(err,
                             'HEAD', redirectInfo, null, dataRetrievalParams,
                             response, resMetaHeaders, log)
                     }
