@@ -107,7 +107,7 @@ describe('routeDELETE', () => {
         );
     });
 
-    it('should return 204 when objectDelete encounters errors other than NoSuchKey or NoSuchVersion', () => {
+    it('should return error code when objectDelete encounters non-arsenal errors', () => {
         request.objectKey = 'objectKey';
         request.query = {};
 
@@ -119,10 +119,7 @@ describe('routeDELETE', () => {
         routeDELETE(request, response, api, log, statsClient);
 
         expect(routesUtils.responseNoBody).toHaveBeenCalledWith(
-            null, {}, response, 204, log,
-        );
-        expect(routesUtils.statsReport500).toHaveBeenCalledWith(
-            otherError, statsClient,
+            otherError, {}, response, undefined, log,
         );
     });
 });

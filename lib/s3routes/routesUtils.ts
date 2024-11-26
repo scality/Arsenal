@@ -904,7 +904,7 @@ export function redirectRequest(
  * @param log - Werelogs instance
  */
 export function redirectRequestOnError(
-    err: ArsenalError,
+    err: ArsenalError | Error,
     method: 'HEAD' | 'GET',
     routingInfo: {
         withError: true;
@@ -918,17 +918,24 @@ export function redirectRequestOnError(
 ) {
     response.setHeader('Location', routingInfo.location);
 
-    if (!dataLocations && err.is.Found) {
+    let error: ArsenalError;
+    if (err instanceof ArsenalError) {
+        error = err;
+    } else {
+        error = errors.InternalError.customizeDescription(err.message);
+    }
+
+    if (!dataLocations && error.is.Found) {
         if (method === 'HEAD') {
-            return errorHeaderResponse(err, response, corsHeaders, log);
+            return errorHeaderResponse(error, response, corsHeaders, log);
         }
         response.setHeader('x-amz-error-code', err.message);
-        response.setHeader('x-amz-error-message', err.description);
+        response.setHeader('x-amz-error-message', error.description);
         return errorHtmlResponse(err, false, '', response, corsHeaders, log);
     }
 
     // This is reached only for website error document (GET only)
-    const overrideErrorCode = err.flatten();
+    const overrideErrorCode = error.flatten();
     overrideErrorCode.code = 301;
     return streamUserErrorPage(ArsenalError.unflatten(overrideErrorCode)!,
         dataLocations || [], retrieveDataParams, response, corsHeaders, log);
