@@ -147,8 +147,8 @@ export const XMLResponseBackend = {
         xml.push(
             '<?xml version="1.0" encoding="UTF-8"?>',
             '<Error>',
-            `<Code>${errCode.message}</Code>`,
-            `<Message>${errCode.description}</Message>`,
+            `<Code>${error.message}</Code>`,
+            `<Message>${error.description}</Message>`,
         );
         const invalidArguments = error.metadata.get('invalidArguments') || [];
         invalidArguments.forEach((invalidArgument, index) => {
