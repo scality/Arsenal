@@ -255,7 +255,7 @@ class MongoClientInterface {
     private readonly defaultBucketKeyFormat: BucketVersioningFormat;
     private cacheHit: number;
     private cacheMiss: number;
-    private cacheHitMissLoggerInterval: NodeJS.Timer | null;
+    private cacheHitMissLoggerInterval: NodeJS.Timer;
     private adminDb: Db | null;
 
     private isConnected = false;
@@ -289,7 +289,7 @@ class MongoClientInterface {
 
         this.cacheHit = 0;
         this.cacheMiss = 0;
-        this.cacheHitMissLoggerInterval = null;
+        this.cacheHitMissLoggerInterval = undefined;
     }
 
     setup(cb: Function) {
@@ -311,7 +311,9 @@ class MongoClientInterface {
             options.minPoolSize = Number.parseInt(MONGO_POOL_SIZE, 10);
             options.maxPoolSize = Number.parseInt(MONGO_POOL_SIZE, 10);
         }
-        return MongoClient.connect(this.mongoUrl, options)
+        const client = new MongoClient(this.mongoUrl, options);
+
+        return client.connect()
             .then(client => {
                 this.logger.info('connected to mongodb');
                 this.client = client;
@@ -679,6 +681,8 @@ class MongoClientInterface {
         const m = this.getCollection<BucketMetastoreDocument>(METASTORE);
         m.findOneAndDelete({
             _id: bucketName,
+        } , {
+            includeResultMetadata: true
         }, {})
             .then(result => {
                 if (result.ok !== 1) {
@@ -1595,6 +1599,7 @@ class MongoClientInterface {
             _id: masterKey,
             value: objVal,
         }, {
+            includeResultMetadata: true,
             upsert: true,
         }).then(result => {
             if (result.ok !== 1) {
@@ -2002,6 +2007,7 @@ class MongoClientInterface {
                     'value.deleted': true,
                 },
             }, {
+                includeResultMetadata : true,
                 upsert: false,
             }).then(doc => {
                 if (!doc.value) {
@@ -3089,8 +3095,9 @@ class MongoClientInterface {
                     value: objVal,
                 },
             }, {
+                includeResultMetadata: true,
                 upsert: true,
-            }).then(res => {
+            },).then(res => {
                 if (res.ok !== 1) {
                     log.error('failed to update object', {
                         method,
