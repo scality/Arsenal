@@ -3,7 +3,7 @@
   "engines": {
     "node": ">=16"
   },
-  "version": "8.1.140",
+  "version": "8.1.141",
   "description": "Common utilities for the S3 project components",
   "main": "build/index.js",
   "repository": {
