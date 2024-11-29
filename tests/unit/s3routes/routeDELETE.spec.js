@@ -91,13 +91,29 @@ describe('routeDELETE', () => {
         );
     });
 
-    it('should return 204 when objectDelete encounters NoSuchKey or NoSuchVersion errors', () => {
+    it('should return 204 when objectDelete encounters NoSuchKey errors', () => {
         request.objectKey = 'objectKey';
         request.query = {};
 
         const noSuchKeyError = new ArsenalError('NoSuchKey');
         api.callApiMethod = jest.fn((method, req, res, log, callback) => {
             callback(noSuchKeyError, {});
+        });
+
+        routeDELETE(request, response, api, log, statsClient);
+
+        expect(routesUtils.responseNoBody).toHaveBeenCalledWith(
+            null, {}, response, 204, log,
+        );
+    });
+
+    it('should return 204 when objectDelete encounters NoSuchVersion errors', () => {
+        request.objectKey = 'objectKey';
+        request.query = {};
+
+        const noSuchVersionError = new ArsenalError('NoSuchVersion');
+        api.callApiMethod = jest.fn((method, req, res, log, callback) => {
+            callback(noSuchVersionError, {});
         });
 
         routeDELETE(request, response, api, log, statsClient);
