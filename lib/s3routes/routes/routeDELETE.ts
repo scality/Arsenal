@@ -58,10 +58,8 @@ export default function routeDELETE(
                  * the object, the errors NoSuchKey and NoSuchVersion should not
                  * be sent back as a response.
                  */
-                if (err && (
-                    !(err instanceof ArsenalError) || 
-                    (!err.is.NoSuchKey && err.is.NoSuchVersion)
-                )) {
+                // @ts-ignore
+                if (err && !err.is.NoSuchKey && !err.is.NoSuchVersion) {
                     return routesUtils.responseNoBody(err, corsHeaders,
                         response, undefined, log);
                 }
