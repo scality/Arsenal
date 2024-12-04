@@ -61,7 +61,7 @@ export default class Server {
             rejectUnauthorized: true,
         };
         this._port = port;
-        this._address = checkSupportIPv6() ? '::' : '0.0.0.0';
+        this._address = checkSupportIPv6() ? '0.0.0.0' : '0.0.0.0';
         this._server = null;
         this._logger = logger;
         this._keepAliveTimeout = null; // null: use default node.js value
