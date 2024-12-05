@@ -56,6 +56,14 @@ export default function routeDELETE(
                  * the object, the errors NoSuchKey and NoSuchVersion should not
                  * be sent back as a response.
                  */
+                log.info('received response from objectDelete', {
+                    method: 'routeDELETE',
+                    error: err,
+                });
+                log.debug(`condition on callAPO method ${err && (
+                    !(err instanceof ArsenalError) || 
+                    (!err.is.NoSuchKey && err.is.NoSuchVersion)
+                )}`);
                 if (err && (
                     !(err instanceof ArsenalError) || 
                     (!err.is.NoSuchKey && err.is.NoSuchVersion)

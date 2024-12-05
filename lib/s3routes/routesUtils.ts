@@ -588,6 +588,9 @@ export function responseContentHeaders(
     response: http.ServerResponse,
     log: RequestLogger,
 ) {
+    log.debug(`errCode ${errCode}`);
+    log.debug(`headerSent' ${response.headersSent}`);
+    log.debug(`condition ${errCode && !response.headersSent}`);
     if (errCode && !response.headersSent) {
         return XMLResponseBackend.errorResponse(errCode, response, log,
             resHeaders);
