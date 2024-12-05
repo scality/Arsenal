@@ -62,11 +62,11 @@ export default function routeDELETE(
                 });
                 log.debug(`condition on callAPO method ${err && (
                     !(err instanceof ArsenalError) || 
-                    (!err.is.NoSuchKey && err.is.NoSuchVersion)
+                    (!err.is.NoSuchKey && !err.is.NoSuchVersion)
                 )}`);
                 if (err && (
                     !(err instanceof ArsenalError) || 
-                    (!err.is.NoSuchKey && err.is.NoSuchVersion)
+                    (!err.is.NoSuchKey && !err.is.NoSuchVersion)
                 )) {
                     return routesUtils.responseNoBody(err, corsHeaders,
                         response, undefined, log);
