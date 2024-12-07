@@ -228,6 +228,7 @@ export default class RequestContext {
         existingObjTag?: string,
         needTagEval?: false,
         objectLockRetentionDays?: number,
+        needQuota?: boolean,
     ) {
         this._headers = headers;
         this._query = query;
@@ -256,7 +257,7 @@ export default class RequestContext {
         this._securityToken = securityToken;
         this._policyArn = policyArn;
         this._action = action;
-        this._needQuota = actionNeedQuotaCheck[apiMethod] === true
+        this._needQuota = needQuota || actionNeedQuotaCheck[apiMethod] === true
             || actionWithDataDeletion[apiMethod] === true;
         this._requestObjTags = requestObjTags || null;
         this._existingObjTag = existingObjTag || null;
@@ -294,6 +295,7 @@ export default class RequestContext {
             existingObjTag: this._existingObjTag,
             needTagEval: this._needTagEval,
             objectLockRetentionDays: this._objectLockRetentionDays,
+            needQuota: this._needQuota,
         };
         return JSON.stringify(requestInfo);
     }
@@ -335,6 +337,7 @@ export default class RequestContext {
             obj.existingObjTag,
             obj.needTagEval,
             obj.objectLockRetentionDays,
+            obj.needQuota,
         );
     }
 

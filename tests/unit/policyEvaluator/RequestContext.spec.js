@@ -28,6 +28,8 @@ describe('RequestContext', () => {
         'reqTagOne=valueOne&reqTagTwo=valueTwo', // requestObjTags
         'existingTagOne=valueOne&existingTagTwo=valueTwo', // existingObjTag
         true, // needTagEval
+        5, // objectLockRetentionDays
+        true, // needQuota
     ];
     const rc = new RequestContext(...constructorParams);
 
@@ -62,10 +64,12 @@ describe('RequestContext', () => {
         { name: 'getMultiFactorAuthAge', expectedValue: null },
         { name: 'getSecurityToken', expectedValue: 'security-token' },
         { name: 'getPolicyArn', expectedValue: 'arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess' },
-        { name: 'isQuotaCheckNeeded', expectedValue: false },
         { name: 'getRequestObjTags', expectedValue: 'reqTagOne=valueOne&reqTagTwo=valueTwo' },
         { name: 'getExistingObjTag', expectedValue: 'existingTagOne=valueOne&existingTagTwo=valueTwo' },
         { name: 'getNeedTagEval', expectedValue: true },
+        { name: 'getObjectLockRetentionDays', expectedValue: 5 },
+        { name: 'isQuotaCheckNeeded', expectedValue: true },
+
     ];
     GetterTests.forEach(testCase => {
         it(`getter:${testCase.name}`, () => {
@@ -111,7 +115,8 @@ describe('RequestContext', () => {
         specificResource: 'specific-resource',
         sslEnabled: true,
         tokenIssueTime: null,
-        objectLockRetentionDays: null,
+        objectLockRetentionDays: 5,
+        needQuota: true,
     };
     it('serialize()', () => {
         assert.deepStrictEqual(JSON.parse(rc.serialize()), SerializedFields);
