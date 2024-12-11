@@ -1,22 +1,19 @@
 import assert from 'assert';
 
 import LifecycleDateTime from './LifecycleDateTime';
-import { supportedLifecycleRules } from '../../constants';
 
 export default class LifecycleUtils {
     _supportedRules: string[];
     _datetime: LifecycleDateTime;
 
-    constructor(supportedRules?: string[], datetime?: LifecycleDateTime) {
-        if (supportedRules) {
-            assert(Array.isArray(supportedRules));
-        }
+    constructor(supportedRules: string[], datetime?: LifecycleDateTime) {
+        assert(Array.isArray(supportedRules));
 
         if (datetime) {
             assert(datetime instanceof LifecycleDateTime);
         }
 
-        this._supportedRules = supportedRules || supportedLifecycleRules;
+        this._supportedRules = supportedRules;
         this._datetime = datetime || new LifecycleDateTime();
     }
 

@@ -31,17 +31,29 @@ function getRuleIDs(rules) {
     return rules.map(rule => rule.ID).sort();
 }
 
+const supportedLifecycleRules = [
+    'expiration',
+    'noncurrentVersionExpiration',
+    'abortIncompleteMultipartUpload',
+    'transitions',
+    'noncurrentVersionTransition',
+];
+
+describe('LifecycleUtils::constructor', () => {
+    it('should throw when not given supported lifecycle rules', () => {
+        assert.throws(() => new LifecycleUtils());
+    });
+
+    it('should throw when supported lifecycle rules is not an array', () => {
+        assert.throws(() => new LifecycleUtils('rules'));
+    });
+});
+
 describe('LifecycleUtils::getApplicableRules', () => {
     let lutils;
 
     beforeAll(() => {
-        lutils = new LifecycleUtils([
-            'expiration',
-            'noncurrentVersionExpiration',
-            'abortIncompleteMultipartUpload',
-            'transitions',
-            'noncurrentVersionTransition',
-        ]);
+        lutils = new LifecycleUtils(supportedLifecycleRules);
     });
 
     it('should return earliest applicable expirations', () => {
@@ -708,12 +720,11 @@ describe('LifecycleUtils::getApplicableRules', () => {
     });
 });
 
-
 describe('LifecycleUtils::filterRules', () => {
     let lutils;
 
     beforeAll(() => {
-        lutils = new LifecycleUtils();
+        lutils = new LifecycleUtils(supportedLifecycleRules);
     });
 
     it('should filter out Status disabled rules', () => {
@@ -898,7 +909,7 @@ describe('LifecycleUtils::getApplicableTransition', () => {
     let lutils;
 
     beforeAll(() => {
-        lutils = new LifecycleUtils();
+        lutils = new LifecycleUtils(supportedLifecycleRules);
     });
 
     describe('using Days time type', () => {
@@ -1071,7 +1082,7 @@ describe('LifecycleUtils::getApplicableNCVTransition', () => {
     let lutils;
 
     beforeAll(() => {
-        lutils = new LifecycleUtils();
+        lutils = new LifecycleUtils(supportedLifecycleRules);
     });
 
     describe('using NoncurrentDays time type', () => {
@@ -1175,7 +1186,7 @@ describe('LifecycleUtils::compareTransitions', () => {
     let lutils;
 
     beforeAll(() => {
-        lutils = new LifecycleUtils();
+        lutils = new LifecycleUtils(supportedLifecycleRules);
     });
 
     it('should return undefined if no rules given', () => {
@@ -1274,7 +1285,7 @@ describe('LifecycleUtils::getApplicableNCVTransition', () => {
     let lutils;
 
     beforeAll(() => {
-        lutils = new LifecycleUtils();
+        lutils = new LifecycleUtils(supportedLifecycleRules);
     });
 
     describe('using NoncurrentDays time type', () => {

@@ -159,13 +159,6 @@ export const notificationArnPrefix = 'arn:scality:bucketnotif';
 // http.Agent.
 export const httpServerKeepAliveTimeout = 60000;
 export const httpClientFreeSocketTimeout = 55000;
-export const supportedLifecycleRules = [
-    'expiration',
-    'noncurrentVersionExpiration',
-    'abortIncompleteMultipartUpload',
-    'transitions',
-    'noncurrentVersionTransition',
-];
 // Maximum number of buckets to cache (bucket metadata)
 export const maxCachedBuckets = process.env.METADATA_MAX_CACHED_BUCKETS ?
     Number(process.env.METADATA_MAX_CACHED_BUCKETS) : 1000;
