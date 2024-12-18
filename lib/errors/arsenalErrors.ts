@@ -42,7 +42,7 @@ export const BucketAlreadyOwnedByYou: ErrorFormat = {
     code: 409,
 
     description:
-        'A bucket with this name exists and is already owned by you',
+        'Your previous request to create the named bucket succeeded and you already own it.',
 };
 
 export const BucketNotEmpty: ErrorFormat = {
