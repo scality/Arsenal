@@ -60,6 +60,7 @@ console.log(errors.AccessDenied);
 ![Public Build Status][badgepub]
 
 ## Codecov Status
+
 ![codecov][codecov]
 
 ## Clustering
