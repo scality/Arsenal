@@ -341,7 +341,6 @@ class SIOStreamSocket {
                 encodedObj = {};
                 // user objects are simple flat objects and we want to
                 // copy all their properties
-                 
                 for (const k in arg) {
                     encodedObj[k] = this.encodeStreams(arg[k]);
                 }
@@ -415,7 +414,6 @@ class SIOStreamSocket {
                 decodedObj = {};
                 // user objects are simple flat objects and we want to
                 // copy all their properties
-                 
                 for (const k in arg) {
                     decodedObj[k] = this.decodeStreams(arg[k]);
                 }
