@@ -4519,13 +4519,13 @@ http-proxy-agent@^7.0.0:
     agent-base "^7.1.0"
     debug "^4.3.4"
 
-"httpagent@github:scality/httpagent#1.0.6", httpagent@scality/httpagent#1.0.6:
+"httpagent@github:scality/httpagent#1.0.6":
   version "1.0.6"
   resolved "https://codeload.github.com/scality/httpagent/tar.gz/66e97ab93532d79dbddcf6c4ea4df849b84c33c9"
   dependencies:
     agentkeepalive "^4.2.1"
 
-"httpagent@github:scality/httpagent#1.1.0":
+"httpagent@github:scality/httpagent#1.1.0", httpagent@scality/httpagent#1.1.0:
   version "1.1.0"
   resolved "https://codeload.github.com/scality/httpagent/tar.gz/8f9958eb9cde086db7819a86582fba640a5f8876"
   dependencies:
