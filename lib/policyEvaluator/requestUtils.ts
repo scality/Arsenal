@@ -26,6 +26,7 @@ export function getClientIp(request: IncomingMessage, s3config?: S3Config): stri
         remoteAddress,
         clientIp,
         requestConfig,
+        socket: request.socket,
         trustedProxyCIDRs: requestConfig?.trustedProxyCIDRs,
         extractClientIPFromHeader: requestConfig?.extractClientIPFromHeader,
         'request.headers': request.headers,
@@ -39,9 +40,10 @@ export function getClientIp(request: IncomingMessage, s3config?: S3Config): stri
          */
         if (ipCheck.ipMatchCidrList(trustedProxyCIDRs, clientIp)) {
             console.log('-> ip matches cidr');
-            const ipFromHeader = request.headers[extractClientIPFromHeader]?.toString();
+            const ipFromHeader = request.headers[extractClientIPFromHeader.toLowerCase()]?.toString();
             console.log('-> ipfromheader is', {
                 ipFromHeader,
+                final: ipFromHeader?.split(',')[0].trim(),
             })
             if (ipFromHeader && ipFromHeader.trim().length) {
                 return ipFromHeader.split(',')[0].trim();
