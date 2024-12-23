@@ -30,7 +30,10 @@ export function getClientIp(request: IncomingMessage, s3config?: S3Config): stri
          * which header to be used to extract client IP
          */
         if (ipCheck.ipMatchCidrList(trustedProxyCIDRs, clientIp)) {
-            const ipFromHeader = request.headers[extractClientIPFromHeader]?.toString();
+            // Request headers in nodejs are lower-cased, so we should not
+            // be case-sentive when looking for the header, as http headers
+            // are case-insensitive.
+            const ipFromHeader = request.headers[extractClientIPFromHeader.toLowerCase()]?.toString();
             if (ipFromHeader && ipFromHeader.trim().length) {
                 return ipFromHeader.split(',')[0].trim();
             }

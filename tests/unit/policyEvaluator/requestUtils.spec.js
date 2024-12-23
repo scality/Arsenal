@@ -27,6 +27,27 @@ describe('requestUtils.getClientIp', () => {
         assert.strictEqual(result, testClientIp1);
     });
 
+    it('should return client Ip address in the proxy case when the header has uppercases', () => {
+        const request = new DummyRequest({
+            headers: {
+                'x-forwarded-for': [testClientIp1, testProxyIp].join(','),
+            },
+            url: '/',
+            parsedHost: 'localhost',
+            socket: {
+                remoteAddress: testProxyIp,
+            },
+        });
+        const result = requestUtils.getClientIp(request, {
+            requests: {
+                viaProxy: true,
+                trustedProxyCIDRs: ['192.168.100.0/22'],
+                extractClientIPFromHeader: 'X-Forwarded-For',
+            },
+        });
+        assert.strictEqual(result, testClientIp1);
+    });
+
     it('should return client Ip address from socket info if the request is not forwarded from proxies', () => {
         const request = new DummyRequest({
             headers: {},
