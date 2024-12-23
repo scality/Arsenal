@@ -22,6 +22,14 @@ export function getClientIp(request: IncomingMessage, s3config?: S3Config): stri
     const remoteAddress = request.socket.remoteAddress;
     // TODO What to do if clientIp === undefined ?
     const clientIp = (requestConfig ? remoteAddress : request.headers['x-forwarded-for'] || remoteAddress)?.toString() ?? '';
+    console.log('->', {
+        remoteAddress,
+        clientIp,
+        requestConfig,
+        trustedProxyCIDRs: requestConfig?.trustedProxyCIDRs,
+        extractClientIPFromHeader: requestConfig?.extractClientIPFromHeader,
+        'request.headers': request.headers,
+    })
     if (requestConfig) {
         const { trustedProxyCIDRs, extractClientIPFromHeader } = requestConfig;
         /**
@@ -30,7 +38,11 @@ export function getClientIp(request: IncomingMessage, s3config?: S3Config): stri
          * which header to be used to extract client IP
          */
         if (ipCheck.ipMatchCidrList(trustedProxyCIDRs, clientIp)) {
+            console.log('-> ip matches cidr');
             const ipFromHeader = request.headers[extractClientIPFromHeader]?.toString();
+            console.log('-> ipfromheader is', {
+                ipFromHeader,
+            })
             if (ipFromHeader && ipFromHeader.trim().length) {
                 return ipFromHeader.split(',')[0].trim();
             }

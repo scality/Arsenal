@@ -1,4 +1,5 @@
 import { parseIp } from '../ipCheck';
+import { completeMultipartUpload } from '../storage/data/external/GCP/GcpApis';
 
 // http://docs.aws.amazon.com/IAM/latest/UserGuide/list_s3.html
 // For MPU actions:
@@ -31,6 +32,7 @@ export const actionWithDataDeletion = {
     objectDeleteVersion: true,
     multipartDelete: true,
     multiObjectDelete: true,
+    completeMultipartUpload: true,
 };
 
 /**
