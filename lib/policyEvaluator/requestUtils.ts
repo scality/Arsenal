@@ -8,9 +8,6 @@ export interface S3Config {
     }
 }
 
-// TODO
-//   I'm not sure about this behavior.
-//   Should it returns string | string[] | undefined or string ?
 /**
  * getClientIp - Gets the client IP from the request
  * @param request - http request object
@@ -20,8 +17,7 @@ export interface S3Config {
 export function getClientIp(request: IncomingMessage, s3config?: S3Config): string {
     const requestConfig = s3config?.requests;
     const remoteAddress = request.socket.remoteAddress;
-    // TODO What to do if clientIp === undefined ?
-    const clientIp = (requestConfig ? remoteAddress : request.headers['x-forwarded-for'] || remoteAddress)?.toString() ?? '';
+    const clientIp = remoteAddress?.toString() ?? '';
     if (requestConfig) {
         const { trustedProxyCIDRs, extractClientIPFromHeader } = requestConfig;
         /**
@@ -30,11 +26,14 @@ export function getClientIp(request: IncomingMessage, s3config?: S3Config): stri
          * which header to be used to extract client IP
          */
         if (ipCheck.ipMatchCidrList(trustedProxyCIDRs, clientIp)) {
-            const ipFromHeader = request.headers[extractClientIPFromHeader]?.toString();
+            // Request headers in nodejs are lower-cased, so we should not
+            // be case-sentive when looking for the header, as http headers
+            // are case-insensitive.
+            const ipFromHeader = request.headers[extractClientIPFromHeader.toLowerCase()]?.toString();
             if (ipFromHeader && ipFromHeader.trim().length) {
                 return ipFromHeader.split(',')[0].trim();
             }
         }
     }
-    return clientIp?.toString() ?? '';
+    return clientIp;
 }
