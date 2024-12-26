@@ -8,9 +8,6 @@ export interface S3Config {
     }
 }
 
-// TODO
-//   I'm not sure about this behavior.
-//   Should it returns string | string[] | undefined or string ?
 /**
  * getClientIp - Gets the client IP from the request
  * @param request - http request object
@@ -20,7 +17,6 @@ export interface S3Config {
 export function getClientIp(request: IncomingMessage, s3config?: S3Config): string {
     const requestConfig = s3config?.requests;
     const remoteAddress = request.socket.remoteAddress;
-    // TODO What to do if clientIp === undefined ?
     const clientIp = remoteAddress?.toString() ?? '';
     if (requestConfig) {
         const { trustedProxyCIDRs, extractClientIPFromHeader } = requestConfig;
@@ -39,5 +35,5 @@ export function getClientIp(request: IncomingMessage, s3config?: S3Config): stri
             }
         }
     }
-    return clientIp?.toString() ?? '';
+    return clientIp;
 }
