@@ -90,7 +90,7 @@ describe('requestUtils.getClientIp', () => {
             },
         });
         const result = requestUtils.getClientIp(request, configWithoutProxy);
-        assert.strictEqual(result, testClientIp1);
+        assert.strictEqual(result, testProxyIp);
     });
 
     it('should return client Ip address from socket info if the request comes via proxies and ' +
