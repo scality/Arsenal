@@ -90,9 +90,14 @@ export default class TransportTemplate {
         readyCallback: (error: Error | null) => void,
     ) {
         try {
+            const options = {
+                ...this.options.tls,
+                host: '127.0.0.1',
+                family: 4,         
+            };
             const socket = this.channel.connect(
                 this.options.tls.port || DEFAULT_KMIP_PORT,
-                this.options.tls,
+                options,
                 () => {
                     if (this.handshakeFunction) {
                         this.handshakeFunction(logger, readyCallback);

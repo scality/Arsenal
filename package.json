@@ -36,7 +36,7 @@
     "diskusage": "^1.2.0",
     "fcntl": "github:scality/node-fcntl#0.2.2",
     "hdclient": "scality/hdclient#1.1.7",
-    "httpagent": "scality/httpagent#1.0.6",
+    "httpagent": "scality/httpagent#1.1.0",
     "https-proxy-agent": "^7.0.5",
     "ioredis": "^5.4.1",
     "ipaddr.js": "^2.2.0",
@@ -52,7 +52,7 @@
     "sproxydclient": "github:scality/sproxydclient#8.1.0",
     "utf8": "^3.0.0",
     "uuid": "^10.0.0",
-    "werelogs": "scality/werelogs#8.2.0",
+    "werelogs": "scality/werelogs#8.2.2",
     "xml2js": "^0.6.2"
   },
   "optionalDependencies": {
@@ -85,11 +85,11 @@
     "lint": "eslint $(git ls-files '*ts' ' *.js')",
     "lint_md": "mdlint $(git ls-files '*.md')",
     "lint_yml": "yamllint $(git ls-files '*.yml')",
-    "test": "jest tests/unit --detectOpenHandles",
+    "test": "export NODE_OPTIONS=\"--tls-max-v1.2\" && jest tests/unit --detectOpenHandles",
     "build": "tsc",
     "prepare": "yarn build",
     "ft_test": "jest tests/functional --testTimeout=120000 --forceExit",
-    "coverage": "nyc --clean jest tests --coverage --testTimeout=120000 --forceExit",
+    "coverage": "export NODE_OPTIONS=\"--tls-max-v1.2\" && nyc --clean jest tests --coverage --testTimeout=120000 --forceExit",
     "build_doc": "cd documentation/listingAlgos/pics; dot -Tsvg delimiterStateChart.dot > delimiterStateChart.svg; dot -Tsvg delimiterMasterV0StateChart.dot > delimiterMasterV0StateChart.svg; dot -Tsvg delimiterVersionsStateChart.dot > delimiterVersionsStateChart.svg"
   },
   "private": true,

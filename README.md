@@ -58,7 +58,10 @@ console.log(errors.AccessDenied);
 ## Build Status
 
 ![Public Build Status][badgepub]
-![Private Build Status][badgepriv]
+
+## Codecov Status
+
+![codecov][codecov]
 
 ## Clustering
 
@@ -152,4 +155,4 @@ to the process (which results in an immediate termination, and this signal
 can't be caught).
 
 [badgepub]: https://circleci.com/gh/scality/Arsenal.svg?style=svg
-[badgepriv]: http://ci.ironmann.io/gh/scality/Arsenal.svg?style=svg&circle-token=c3d2570682cba6763a97ea0bc87521941413d75c
+[codecov]: https://codecov.io/gh/scality/Arsenal/branch/main/graph/badge.svg

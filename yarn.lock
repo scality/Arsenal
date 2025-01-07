@@ -4519,13 +4519,13 @@ http-proxy-agent@^7.0.0:
     agent-base "^7.1.0"
     debug "^4.3.4"
 
-"httpagent@github:scality/httpagent#1.0.6", httpagent@scality/httpagent#1.0.6:
+"httpagent@github:scality/httpagent#1.0.6":
   version "1.0.6"
   resolved "https://codeload.github.com/scality/httpagent/tar.gz/66e97ab93532d79dbddcf6c4ea4df849b84c33c9"
   dependencies:
     agentkeepalive "^4.2.1"
 
-"httpagent@github:scality/httpagent#1.1.0":
+"httpagent@github:scality/httpagent#1.1.0", httpagent@scality/httpagent#1.1.0:
   version "1.1.0"
   resolved "https://codeload.github.com/scality/httpagent/tar.gz/8f9958eb9cde086db7819a86582fba640a5f8876"
   dependencies:
@@ -7631,6 +7631,13 @@ webidl-conversions@^7.0.0:
 werelogs@scality/werelogs#8.2.0:
   version "8.2.0"
   resolved "https://codeload.github.com/scality/werelogs/tar.gz/7bf334cea94002d118f27d7ec1c7a5af74b51b8d"
+  dependencies:
+    fast-safe-stringify "^2.1.1"
+    safe-json-stringify "^1.2.0"
+
+werelogs@scality/werelogs#8.2.2:
+  version "8.2.2"
+  resolved "https://codeload.github.com/scality/werelogs/tar.gz/e53bef5145697bf8af940dcbe59408988d64854f"
   dependencies:
     fast-safe-stringify "^2.1.1"
     safe-json-stringify "^1.2.0"

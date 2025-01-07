@@ -18,8 +18,7 @@ export function getClientIp(request: IncomingMessage, s3config?: S3Config): stri
     const requestConfig = s3config?.requests;
     const remoteAddress = request.socket.remoteAddress;
     // TODO What to do if clientIp === undefined ?
-    const clientIp = (requestConfig ? remoteAddress : request.headers['x-forwarded-for'] ||
-        remoteAddress)?.toString() ?? '';
+    const clientIp = remoteAddress?.toString() ?? '';
     if (requestConfig) {
         const { trustedProxyCIDRs, extractClientIPFromHeader } = requestConfig;
         /**
