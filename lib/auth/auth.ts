@@ -121,7 +121,8 @@ function doAuth(
     log: Logger,
     cb: (err: Error | null, data?: any) => void,
     awsService: string,
-    requestContexts: any[] | null
+    requestContexts: any[] | null,
+    options: any = {},
 ) {
     const res = extractParams(request, log, awsService, request.query);
     if (res.err) {
@@ -154,7 +155,7 @@ function doAuth(
     }
     if (res.params.version === 4) {
         // @ts-ignore
-        return vault!.authenticateV4Request(res.params, requestContexts, cb);
+        return vault!.authenticateV4Request(res.params, requestContexts, cb, options);
     }
 
     log.error('authentication method not found', {

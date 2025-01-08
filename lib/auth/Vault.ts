@@ -194,7 +194,8 @@ export default class Vault {
     authenticateV4Request(
         params: AuthV4RequestParams,
         requestContexts: any[] | null,
-        callback: (err: Error | null, data?: any) => void
+        callback: (err: Error | null, data?: any) => void,
+        options: any = {},
     ) {
         params.log.debug('authenticating V4 request');
         let serializedRCs: any;
@@ -220,6 +221,7 @@ export default class Vault {
                 logger: params.log,
                 securityToken: params.data.securityToken,
                 requestContext: serializedRCs,
+                ...options,
             },
             (err: Error | null, userInfo?: any) => vaultSignatureCb(err, userInfo,
                 params.log, callback, streamingV4Params),
