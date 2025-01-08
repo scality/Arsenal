@@ -144,10 +144,10 @@ describe('requestUtils.getHttpProtocolSecurity', () => {
         assert.strictEqual(result, false);
     });
 
-    it('should check TLS when request not from trusted proxy', () => {
+    it('should check TLS when request not from trusted proxy with http', () => {
         const request = new DummyRequest({
             headers: {
-                'x-forwarded-proto': 'https',
+                'x-forwarded-proto': 'http',
             },
             socket: new TLSSocket(null),
         });
@@ -158,7 +158,9 @@ describe('requestUtils.getHttpProtocolSecurity', () => {
 
     it('should return false for non-TLS socket', () => {
         const request = new DummyRequest({
-            headers: {},
+            headers: {
+                'x-forwarded-proto': 'https',
+            },
             socket: {
                 remoteAddress: testClientIp,
             },
