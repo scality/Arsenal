@@ -1,10 +1,12 @@
 import * as ipCheck from '../ipCheck'
 import { IncomingMessage } from 'http'
+import { TLSSocket } from 'tls'
 
 export interface S3Config {
     requests: {
         trustedProxyCIDRs: string[],
-        extractClientIPFromHeader: string
+        extractClientIPFromHeader: string,
+        extractProtocolFromHeader: string,
     }
 }
 
@@ -36,4 +38,21 @@ export function getClientIp(request: IncomingMessage, s3config?: S3Config): stri
         }
     }
     return clientIp;
+}
+
+/**
+ * getHttpProtocolSecurity - Dete²object
+ * @param s3config - s3 config
+ * @return {boolean} - returns true if the request is secure
+ */
+export function getHttpProtocolSecurity(request: IncomingMessage, s3config?: S3Config): boolean {
+    const requestConfig = s3config?.requests;
+    if (requestConfig) {
+        const { trustedProxyCIDRs } = requestConfig;
+        const clientIp = request.socket.remoteAddress?.toString() ?? '';
+        if (ipCheck.ipMatchCidrList(trustedProxyCIDRs, clientIp)) {
+            return request.headers[requestConfig.extractProtocolFromHeader.toLowerCase()] === 'https';
+        }
+    }
+    return request.socket instanceof TLSSocket && request.socket.encrypted;
 }
