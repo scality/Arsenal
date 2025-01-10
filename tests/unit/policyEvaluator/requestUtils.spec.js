@@ -1,6 +1,7 @@
 const assert = require('assert');
 const DummyRequest = require('../../utils/DummyRequest');
 const requestUtils = require('../../../lib/policyEvaluator/requestUtils');
+const { TLSSocket } = require('tls');
 
 describe('requestUtils.getClientIp', () => {
     // s3 config with 'requests.viaProxy` enabled
@@ -108,5 +109,83 @@ describe('requestUtils.getClientIp', () => {
         });
         const result = requestUtils.getClientIp(request, configWithProxy);
         assert.strictEqual(result, dummyRemoteIP);
+    });
+});
+
+describe('requestUtils.getHttpProtocolSecurity', () => {
+    const configWithProxy = require('../../utils/dummyS3ConfigProxy.json');
+    const configWithoutProxy = require('../../utils/dummyS3Config.json');
+    const testClientIp = '192.168.100.1';
+    const testProxyIp = '192.168.100.2';
+
+    it('should return true if request comes via trusted proxy with https proto header', () => {
+        const request = new DummyRequest({
+            headers: {
+                'x-forwarded-proto': 'https',
+            },
+            socket: {
+                remoteAddress: testProxyIp,
+            },
+        });
+        const result = requestUtils.getHttpProtocolSecurity(request, configWithProxy);
+        assert.strictEqual(result, true);
+    });
+
+    it('should return false if request comes via trusted proxy with http proto header', () => {
+        const request = new DummyRequest({
+            headers: {
+                'x-forwarded-proto': 'http',
+            },
+            socket: {
+                remoteAddress: testProxyIp,
+            },
+        });
+        const result = requestUtils.getHttpProtocolSecurity(request, configWithProxy);
+        assert.strictEqual(result, false);
+    });
+
+    it('should check TLS when request not from trusted proxy with http', () => {
+        const request = new DummyRequest({
+            headers: {
+                'x-forwarded-proto': 'http',
+            },
+            socket: new TLSSocket(null),
+        });
+        request.socket.encrypted = true;
+        const result = requestUtils.getHttpProtocolSecurity(request, configWithoutProxy);
+        assert.strictEqual(result, true);
+    });
+
+    it('should return false for non-TLS socket', () => {
+        const request = new DummyRequest({
+            headers: {
+                'x-forwarded-proto': 'https',
+            },
+            socket: {
+                remoteAddress: testClientIp,
+            },
+        });
+        const result = requestUtils.getHttpProtocolSecurity(request, configWithoutProxy);
+        assert.strictEqual(result, false);
+    });
+
+    it('should handle configured headers with uppercases', () => {
+        const request = new DummyRequest({
+            headers: {
+                'x-forwarded-proto': 'https',
+            },
+            socket: {
+                remoteAddress: testProxyIp,
+            },
+        });
+        const result = requestUtils.getHttpProtocolSecurity(request, {
+            requests: {
+                viaProxy: true,
+                trustedProxyCIDRs: ['192.168.100.0/22'],
+                extractClientIPFromHeader: 'X-Forwarded-For',
+                extractProtocolFromHeader: 'X-Forwarded-Proto',
+            },
+        });
+        assert.strictEqual(result, true);
     });
 });

@@ -81,6 +81,7 @@
     "requests": {
         "viaProxy": true,
         "trustedProxyCIDRs": ["192.168.100.0/22"],
-        "extractClientIPFromHeader": "x-forwarded-for"
+        "extractClientIPFromHeader": "x-forwarded-for",
+        "extractProtocolFromHeader": "x-forwarded-proto"
     }
 }
