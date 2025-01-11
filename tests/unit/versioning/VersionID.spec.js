@@ -1,6 +1,5 @@
 const VID = require('../../../lib/versioning/VersionID');
 const assert = require('assert');
-const { env } = require('process');
 
 function randkey(length) {
     let key = '';
@@ -34,7 +33,7 @@ describe('test generating versionIds', () => {
         });
     });
     describe('legaxy hex encoding', () => {
-        env.S3_VERSION_ID_ENCODING_TYPE = 'hex';
+        VID.S3_VERSION_ID_ENCODING_TYPE = 'hex';
         const vids = generateRandomVIDs(count);
 
         it('sorted in reversed chronological and alphabetical order', () => {
@@ -69,7 +68,7 @@ describe('test generating versionIds', () => {
 
 
     describe('Short IDs', () => {
-        env.S3_VERSION_ID_ENCODING_TYPE = 'base62';
+        VID.S3_VERSION_ID_ENCODING_TYPE = 'base62';
         const vids = generateRandomVIDs(count);
 
         it('sorted in reversed chronological and alphabetical order', () => {

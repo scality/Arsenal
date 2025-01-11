@@ -21,6 +21,8 @@ const TEMPLATE_TS = new Array(LENGTH_TS + 1).join('0');
 const TEMPLATE_SEQ = new Array(LENGTH_SEQ + 1).join('0');
 const TEMPLATE_RG = new Array(LENGTH_RG + 1).join(' ');
 
+export let S3_VERSION_ID_ENCODING_TYPE = process.env.S3_VERSION_ID_ENCODING_TYPE;
+
 /**
  * Left-pad a string representation of a value with a given template.
  * For example: pad('foo', '00000') gives '00foo'.
@@ -121,7 +123,7 @@ export function generateVersionId(info: string, replicationGroupId: string): str
     lastTimestamp = ts;
 
     // if S3_VERSION_ID_ENCODING_TYPE is "hex", info is used.
-    if (process.env.S3_VERSION_ID_ENCODING_TYPE === 'hex' || !process.env.S3_VERSION_ID_ENCODING_TYPE) {
+    if (S3_VERSION_ID_ENCODING_TYPE === 'hex' || !S3_VERSION_ID_ENCODING_TYPE) {
         // info field stays as is
     } else {
         info = ''; // eslint-disable-line
