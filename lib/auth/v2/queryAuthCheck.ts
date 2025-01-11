@@ -4,6 +4,10 @@ import * as constants from '../../constants';
 import algoCheck from './algoCheck';
 import constructStringToSign from './constructStringToSign';
 
+export let PRE_SIGN_URL_EXPIRY = process.env.PRE_SIGN_URL_EXPIRY ?
+    Number.parseInt(process.env.PRE_SIGN_URL_EXPIRY, 10) :
+    constants.defaultPreSignedURLExpiry * 1000;
+
 export function check(request: any, log: Logger, data: { [key: string]: string }) {
     log.trace('running query auth check');
     if (request.method === 'POST') {
@@ -34,10 +38,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
 
     const currentTime = Date.now();
 
-    const preSignedURLExpiry = process.env.PRE_SIGN_URL_EXPIRY
-        && !Number.isNaN(process.env.PRE_SIGN_URL_EXPIRY)
-        ? Number.parseInt(process.env.PRE_SIGN_URL_EXPIRY, 10)
-        : constants.defaultPreSignedURLExpiry * 1000;
+    const preSignedURLExpiry = PRE_SIGN_URL_EXPIRY;
 
     if (expirationTime > currentTime + preSignedURLExpiry) {
         log.debug('expires parameter too far in future',
