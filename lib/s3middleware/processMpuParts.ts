@@ -3,6 +3,8 @@ import * as crypto from 'crypto';
 import * as constants from '../constants';
 import * as werelogs from 'werelogs';
 
+const MPU_TESTING = process.env.MPU_TESTING;
+
 /**
  * createAggregateETag - creates ETag from concatenated MPU part ETags to
  * mimic AWS
@@ -196,13 +198,12 @@ export function validateAndFilterMpuParts(
                 const storedPartSize =
                     Number.parseInt(storedPart.size, 10);
                 // allow smaller parts for testing
-                if (process.env.MPU_TESTING) {
-                    log.info('MPU_TESTING env variable setting',
-                        { setting: process.env.MPU_TESTING });
+                if (MPU_TESTING) {
+                    log.info('MPU_TESTING env variable setting', { setting: MPU_TESTING });
                 }
-                if (process.env.MPU_TESTING !== 'yes' &&
-                i < jsonList.Part.length - 1 &&
-                storedPartSize < constants.minimumAllowedPartSize) {
+                if (MPU_TESTING !== 'yes' &&
+                    i < jsonList.Part.length - 1 &&
+                    storedPartSize < constants.minimumAllowedPartSize) {
                     log.debug('part too small on complete mpu');
                     filteredPartsObj.error = errors.EntityTooSmall;
                     return filteredPartsObj;

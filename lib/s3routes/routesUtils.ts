@@ -12,6 +12,8 @@ import StatsClient from '../metrics/StatsClient';
 import { objectKeyByteLimit } from '../constants';
 const jsutil = require('../jsutil');
 
+const ALLOW_INVALID_META_HEADERS = !!process.env.ALLOW_INVALID_META_HEADERS;
+
 export type CallApiMethod = (
     methodName: string,
     request: http.IncomingMessage,
@@ -259,7 +261,6 @@ export const JSONResponseBackend = {
     },
 };
 
-
 /**
  * Modify response headers for an objectGet or objectHead request
  * @param overrideParams - parameters in this object override common
@@ -279,7 +280,7 @@ function okContentHeadersResponse(
     log: RequestLogger,
 ) {
     const addHeaders: { [key: string]: string } = {};
-    if (process.env.ALLOW_INVALID_META_HEADERS) {
+    if (ALLOW_INVALID_META_HEADERS) {
         const headersArr = Object.keys(resHeaders);
         const length = headersArr.length;
         for (let i = 0; i < length; i++) {
@@ -1133,7 +1134,7 @@ export function normalizeRequest(
     request.parsedContentLength =
         Number.parseInt(contentLength?.toString() ?? '', 10);
 
-    if (process.env.ALLOW_INVALID_META_HEADERS) {
+    if (ALLOW_INVALID_META_HEADERS) {
         const headersArr = Object.keys(request.headers);
         const length = headersArr.length;
         if (headersArr.indexOf('x-invalid-metadata') > 1) {

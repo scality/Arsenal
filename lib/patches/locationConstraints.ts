@@ -2,6 +2,8 @@ import { URL } from 'url';
 import { decryptSecret } from '../executables/pensieveCreds/utils';
 import { Logger } from 'werelogs';
 
+const CI_CEPH = process.env.CI_CEPH;
+
 export type LocationType =
     | 'location-mem-v1'
     | 'location-file-v1'
@@ -66,7 +68,7 @@ export function patchLocations(
                 legacyAwsBehavior: Boolean(l.legacyAwsBehavior),
             };
             let supportsVersioning = false;
-            let pathStyle = process.env.CI_CEPH !== undefined;
+            let pathStyle = CI_CEPH !== undefined;
 
             switch (l.locationType) {
                 case 'location-mem-v1':
