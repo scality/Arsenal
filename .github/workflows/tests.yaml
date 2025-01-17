@@ -43,8 +43,6 @@ jobs:
         sudo sh -c "echo '127.0.0.1 testrequestbucket.localhost' >> /etc/hosts"
     - name: test and coverage
       run: yarn --silent coverage
-      env:
-        NODE_OPTIONS: "--tls-max-v1.2"
     - name: run functional tests
       run: yarn ft_test
     - uses: codecov/codecov-action@v4
