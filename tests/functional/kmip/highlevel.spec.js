@@ -103,6 +103,8 @@ describe('KMIP High Level Driver', () => {
                     pipelineDepth: 8,
                     tls: {
                         port: 5696,
+                        host: '127.0.0.1',
+                        family: 4,
                     },
                 },
             },

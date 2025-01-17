@@ -10,16 +10,16 @@ import { AuthInfoType, AuthV4Results } from '../../AuthInfo';
 function _formatResponse(userInfo: AuthInfoType): { message: { body: AuthV4Results } } {
     return {
         message: {
-          body: {
-            userInfo,
-            accountQuota: {
-              account: userInfo.canonicalID,
-              quota: 0n,
+            body: {
+                userInfo,
+                accountQuota: {
+                    account: userInfo.canonicalID,
+                    quota: 0n,
+                },
             },
-          },
         },
-      };
     };
+};
 
 /**
  * Class that provides a memory backend for verifying signatures and getting

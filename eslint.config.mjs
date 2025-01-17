@@ -28,6 +28,8 @@ export default tseslint.config(
             'camelcase': 'off',
             'no-param-reassign': 'off',
             'new-cap': 'off',
+            'quotes': 'off',
+            '@typescript-eslint/no-unsafe-function-type':'off'
         }
     }
 );

@@ -1,6 +1,7 @@
 # Arsenal
 
-[![codecov](https://codecov.io/gh/scality/Arsenal/branch/development/8.1/graph/badge.svg?token=X0esXhJSwb)](https://codecov.io/gh/scality/Arsenal)
+[![badgepub]](https://github.com/scality/Arsenal/actions/workflows/tests.yaml)
+[![codecov]](https://codecov.io/gh/scality/Arsenal)
 
 Common utilities for the S3 project components
 
@@ -54,6 +55,14 @@ console.log(errors.AccessDenied);
 //    AccessDenied: true }
 
 ```
+
+## Build Status
+
+![badgepub]
+
+## Codecov Status
+
+![codecov]
 
 ## Clustering
 
@@ -145,6 +154,3 @@ used to let the application release its resources, but if timeout occurs
 before the application has finished it's cleanup, a 'SIGKILL' signal is send
 to the process (which results in an immediate termination, and this signal
 can't be caught).
-
-[badgepub]: https://circleci.com/gh/scality/Arsenal.svg?style=svg
-[badgepriv]: http://ci.ironmann.io/gh/scality/Arsenal.svg?style=svg&circle-token=c3d2570682cba6763a97ea0bc87521941413d75c

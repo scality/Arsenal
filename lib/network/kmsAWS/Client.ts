@@ -175,8 +175,8 @@ export default class Client {
             }
 
             if (!data) {
-                const error = arsenalErrorAWSKMS('failed to generate data key: empty response');
-                logger.error('AWS KMS: failed to generate data key: empty response');
+                const error = arsenalErrorAWSKMS("failed to generate data key: empty response");
+                logger.error("AWS KMS: failed to generate data key: empty response");
                 cb(error);
                 return;
             }
@@ -212,8 +212,8 @@ export default class Client {
             }
 
             if (!data) {
-                const error = arsenalErrorAWSKMS('failed to cipher data key: empty response');
-                logger.error('AWS KMS: failed to cipher data key: empty response');
+                const error = arsenalErrorAWSKMS("failed to cipher data key: empty response");
+                logger.error("AWS KMS: failed to cipher data key: empty response");
                 cb(error);
                 return;
             }
@@ -247,8 +247,8 @@ export default class Client {
             }
 
             if (!data) {
-                const error = arsenalErrorAWSKMS('failed to decipher data key: empty response');
-                logger.error('AWS KMS: failed to decipher data key: empty response');
+                const error = arsenalErrorAWSKMS("failed to decipher data key: empty response");
+                logger.error("AWS KMS: failed to decipher data key: empty response");
                 cb(error);
                 return;
             }

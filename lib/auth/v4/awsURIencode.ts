@@ -42,7 +42,7 @@ export default function awsURIencode(
     if (typeof input !== 'string') {
         return '';
     }
-    let encoded = '';
+    let encoded = "";
     const slash = encodeSlash === undefined || encodeSlash ? '%2F' : '/';
     const star = noEncodeStar !== undefined && noEncodeStar ? '*' : '%2A';
     for (let i = 0; i < input.length; i++) {

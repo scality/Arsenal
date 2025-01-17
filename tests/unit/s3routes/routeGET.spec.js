@@ -128,4 +128,38 @@ describe('routerGET', () => {
             new ArsenalError('InternalError'), statsClient,
         );
     });
+
+    it('should call the appropriate bucket query methods based on query parameters', () => {
+        const queryMethods = {
+            acl: 'bucketGetACL',
+            replication: 'bucketGetReplication',
+            cors: 'bucketGetCors',
+            versioning: 'bucketGetVersioning',
+            website: 'bucketGetWebsite',
+            tagging: 'bucketGetTagging',
+            lifecycle: 'bucketGetLifecycle',
+            uploads: 'listMultipartUploads',
+            location: 'bucketGetLocation',
+            policy: 'bucketGetPolicy',
+            'object-lock': 'bucketGetObjectLock',
+            notification: 'bucketGetNotification',
+            encryption: 'bucketGetEncryption',
+            search: 'metadataSearch',
+        };
+
+        Object.keys(queryMethods).forEach(queryParam => {
+            request.bucketName = 'bucketName';
+            request.objectKey = undefined;
+            request.query = { [queryParam]: true };
+
+            routerGET(request, response, api, log, statsClient, dataRetrievalParams);
+
+            expect(api.callApiMethod).toHaveBeenCalledWith(
+                queryMethods[queryParam], request, response, log, expect.any(Function),
+            );
+
+            api.callApiMethod.mockClear();
+        });
+    });
+
 });

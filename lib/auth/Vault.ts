@@ -37,9 +37,8 @@ function vaultSignatureCb(
             { errorMessage: err });
         return callback(err);
     }
-
-    const { ...userInfoWithoutEmail } = authInfo.message.body.userInfo;
-
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { email: _, ...userInfoWithoutEmail } = authInfo.message.body.userInfo;
     log.debug('received info from Vault', {
         ...authInfo,
         message: {

@@ -4,7 +4,7 @@ import * as constants from '../../constants';
 import algoCheck from './algoCheck';
 import constructStringToSign from './constructStringToSign';
 
-export let PRE_SIGN_URL_EXPIRY = process.env.PRE_SIGN_URL_EXPIRY ?
+export const PRE_SIGN_URL_EXPIRY = process.env.PRE_SIGN_URL_EXPIRY ?
     Number.parseInt(process.env.PRE_SIGN_URL_EXPIRY, 10) :
     constants.defaultPreSignedURLExpiry * 1000;
 

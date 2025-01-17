@@ -363,7 +363,7 @@ export default class Client {
             KMIP.Structure('Template-Attribute', attributes),
         ], (err, response) => {
             if (err) {
-                const error = arsenalErrorKMIP(JSON.stringify(err));
+                const error = arsenalErrorKMIP(err);
                 logger.error('KMIP::createBucketKey',
                     { error,
                         serverInformation: this.serverInformation });

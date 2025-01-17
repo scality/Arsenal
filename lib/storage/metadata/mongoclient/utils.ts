@@ -52,7 +52,6 @@ function unescape(obj: Record<string, string>): Record<string, string> {
 function serialize(objMD: ObjectMetadata): void {
     // Tags require special handling since dot and dollar are accepted
     if (objMD.tags) {
-        // eslint-disable-next-line
         objMD.tags = escape(objMD.tags);
     }
 }
@@ -76,7 +75,6 @@ function _assignCondition(prefix: string, object: Record<string, any>, cond: Con
     if (!validateConditionsObject(cond) || prefix === '') {
         throw errors.InternalError;
     }
-    // eslint-disable-next-line no-param-reassign
     object[prefix] = cond;
 }
 
@@ -226,6 +224,7 @@ function indexFormatObjectToMongoArray(indexObj: Index[]): MongoIndex[] {
         const key = new Map();
         idx.keys.forEach(k => key.set(k.key, k.order));
 
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { keys: _, ...toCopy } = idx;
         return { ...toCopy, name: idx.name, key };
     });

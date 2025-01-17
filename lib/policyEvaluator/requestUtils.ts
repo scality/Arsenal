@@ -1,6 +1,6 @@
-import * as ipCheck from '../ipCheck'
-import { IncomingMessage } from 'http'
-import { TLSSocket } from 'tls'
+import * as ipCheck from '../ipCheck';
+import { IncomingMessage } from 'http';
+import { TLSSocket } from 'tls';
 
 export interface S3Config {
     requests: {

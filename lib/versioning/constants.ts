@@ -1,5 +1,4 @@
 export enum BucketVersioningFormat {
-    CURRENT = 'v1',
     V0 = 'v0',
     V0MIG = 'v0mig',
     V0V1 = 'v0v1',
@@ -17,12 +16,12 @@ export const VersioningConstants = {
         Replay: '\x7fR',
     },
     BucketVersioningKeyFormat: {
-        current: BucketVersioningFormat.CURRENT,
+        current: BucketVersioningFormat.V1,
         v0: BucketVersioningFormat.V0,
         v0mig: BucketVersioningFormat.V0MIG,
         v0v1: BucketVersioningFormat.V0V1,
         v1mig: BucketVersioningFormat.V1MIG,
         v1: BucketVersioningFormat.V1,
     },
-    ExternalNullVersionId: 'null',
+    ExternalNullVersionId: 'null', 
 };

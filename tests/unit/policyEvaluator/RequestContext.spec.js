@@ -172,4 +172,26 @@ describe('RequestContext', () => {
         const ssoRC = new RequestContext(...ssoParams);
         assert.strictEqual(ssoRC.getResource(), 'arn:scality:sso:::general-resource/specific-resource');
     });
+
+    it('should return correct ARN for s3 service without specific resource', () => {
+        const s3Params = [...constructorParams];
+        s3Params[3] = undefined; // specificResource
+        const s3RC = new RequestContext(...s3Params);
+        assert.strictEqual(s3RC.getResource(), 'arn:aws:s3:::general-resource');
+    });
+
+    it('should return correct ARN for s3 service without general and specific resource', () => {
+        const s3Params = [...constructorParams];
+        s3Params[2] = undefined; // generalResource
+        s3Params[3] = undefined; // specificResource
+        const s3RC = new RequestContext(...s3Params);
+        assert.strictEqual(s3RC.getResource(), 'arn:aws:s3:::');
+    });
+
+    it('should return undefined for unknown service', () => {
+        const unknownParams = [...constructorParams];
+        unknownParams[7] = 'unknown';
+        const unknownRC = new RequestContext(...unknownParams);
+        assert.strictEqual(unknownRC.getResource(), undefined);
+    });
 });

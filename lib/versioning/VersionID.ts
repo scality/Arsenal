@@ -21,7 +21,7 @@ const TEMPLATE_TS = new Array(LENGTH_TS + 1).join('0');
 const TEMPLATE_SEQ = new Array(LENGTH_SEQ + 1).join('0');
 const TEMPLATE_RG = new Array(LENGTH_RG + 1).join(' ');
 
-export let S3_VERSION_ID_ENCODING_TYPE = process.env.S3_VERSION_ID_ENCODING_TYPE;
+export const S3_VERSION_ID_ENCODING_TYPE = process.env.S3_VERSION_ID_ENCODING_TYPE;
 
 /**
  * Left-pad a string representation of a value with a given template.

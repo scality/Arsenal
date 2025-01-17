@@ -20,7 +20,9 @@ import BucketInfo, { BucketMetadata, Capabilities } from '../../../models/Bucket
 import ObjectMD, { ObjectMDData } from '../../../models/ObjectMD';
 import * as jsutil from '../../../jsutil';
 
-import { MongoClient, Long, Db, MongoClientOptions, ReadPreferenceMode, WithId, Collection, AnyBulkWriteOperation, UpdateFilter, MongoServerError } from 'mongodb';
+import { MongoClient, Long, Db, MongoClientOptions,
+    ReadPreferenceMode, WithId, Collection, AnyBulkWriteOperation,
+    UpdateFilter, MongoServerError } from 'mongodb';
 import Uuid from 'uuid';
 import diskusage from 'diskusage';
 
@@ -37,7 +39,7 @@ import { Version } from '../../../versioning/Version';
 
 import { formatMasterKey, formatVersionKey } from './utils';
 import { VeeamCapacityInfo, VeeamSOSApiSchema } from '../../../models/Veeam';
-import { BucketVersioningFormat, VersioningConstants } from '../../../versioning/constants';
+import { BucketVersioningFormat } from '../../../versioning/constants';
 
 const VID_NONE = '';
 
@@ -68,7 +70,7 @@ const BUCKET_VERSIONS = require('../../../versioning/constants')
     .VersioningConstants.BucketVersioningKeyFormat;
 const DEFAULT_BUCKET_KEY_FORMAT =
     [<string>BUCKET_VERSIONS.v0, <string>BUCKET_VERSIONS.v1]
-            .includes(process.env.DEFAULT_BUCKET_KEY_FORMAT!) ?
+        .includes(process.env.DEFAULT_BUCKET_KEY_FORMAT!) ?
             <BucketVersioningFormat>process.env.DEFAULT_BUCKET_KEY_FORMAT : BUCKET_VERSIONS.v1;
 
 const DB_PREFIXES = require('../../../versioning/constants')
@@ -255,7 +257,7 @@ class MongoClientInterface {
     private readonly defaultBucketKeyFormat: BucketVersioningFormat;
     private cacheHit: number;
     private cacheMiss: number;
-    private cacheHitMissLoggerInterval: NodeJS.Timer;
+    private cacheHitMissLoggerInterval: NodeJS.Timer | null;
     private adminDb: Db | null;
 
     private isConnected = false;
@@ -289,7 +291,7 @@ class MongoClientInterface {
 
         this.cacheHit = 0;
         this.cacheMiss = 0;
-        this.cacheHitMissLoggerInterval = undefined;
+        this.cacheHitMissLoggerInterval = null;
     }
 
     setup(cb: Function) {
@@ -324,7 +326,7 @@ class MongoClientInterface {
                 this.adminDb = client.db('admin');
                 // log cache hit/miss every 5min
                 this.cacheHitMissLoggerInterval = setInterval(() => {
-                    let hitRatio = (this.cacheHit / (this.cacheHit + this.cacheMiss)) || 0;
+                    const hitRatio = (this.cacheHit / (this.cacheHit + this.cacheMiss)) || 0;
                     this.logger.debug('MongoClientInterface: Bucket vFormat cache hit/miss (5min)',
                         { hits: this.cacheHit, misses: this.cacheMiss, hitRatio: hitRatio.toFixed(3) });
                     this.cacheHit = 0;
@@ -359,7 +361,7 @@ class MongoClientInterface {
                 if (err) {
                     this.logger.fatal('error writing usersBucket ' +
                         'attributes to metastore',
-                        { error: err });
+                    { error: err });
                     throw (errors.InternalError);
                 }
                 return cb();
@@ -369,7 +371,7 @@ class MongoClientInterface {
     close(cb) {
         if (this.client) {
             if (this.cacheHitMissLoggerInterval) {
-                clearInterval(this.cacheHitMissLoggerInterval);
+                clearInterval(this.cacheHitMissLoggerInterval as NodeJS.Timeout);
             }
             return this.client.close(true)
                 .then(() => cb())
@@ -413,7 +415,7 @@ class MongoClientInterface {
             !bucketName.startsWith(constants.mpuBucketPrefix)) {
             payload.$set.vFormat = this.defaultBucketKeyFormat;
         } else {
-            payload.$set.vFormat = BUCKET_VERSIONS.v0;            
+            payload.$set.vFormat = BUCKET_VERSIONS.v0;
         }
 
         // we don't have to test bucket existence here as it is done
@@ -576,7 +578,7 @@ class MongoClientInterface {
         const newBucketMD = JSON.parse(bucketMDStr);
         // Quota must be stored as a Long to account for values larger than
         // Number.MAX_SAFE_INTEGER.
-        // eslint-disable-next-line new-cap
+
         newBucketMD.quotaMax = new Long(newBucketMD.quotaMax || 0);
         const m = this.getCollection<BucketMetastoreDocument>(METASTORE);
         m.updateOne({
@@ -682,8 +684,8 @@ class MongoClientInterface {
         m.findOneAndDelete({
             _id: bucketName,
         } , {
-            includeResultMetadata: true
-        }, {})
+            includeResultMetadata: true,
+        })
             .then(result => {
                 if (result.ok !== 1) {
                     log.error('deleteBucketStep2: failed deleting bucket');
@@ -744,7 +746,8 @@ class MongoClientInterface {
      * @param {Boolean} upsert if upserting is needed
      * @return {Object} mongo operation
      */
-    updateDeleteMaster(isDeleteMarker: boolean, vFormat: string, filter: any, update: any, upsert: boolean): AnyBulkWriteOperation<ObjectMetastoreDocument> {
+    updateDeleteMaster(isDeleteMarker: boolean, vFormat: string, 
+        filter: any, update: any, upsert: boolean): AnyBulkWriteOperation<ObjectMetastoreDocument> {
         // delete master when we are in v1 and the version is a delete
         // marker
         if (isDeleteMarker && vFormat === BUCKET_VERSIONS.v1) {
@@ -800,7 +803,6 @@ class MongoClientInterface {
         isRetry?: boolean,
     ) {
         const versionId = generateVersionId(this.replicationGroupId);
-        // eslint-disable-next-line
         objVal.versionId = versionId;
         const versionKey = formatVersionKey(objName, versionId, params.vFormat);
         const masterKey = formatMasterKey(objName, params.vFormat);
@@ -844,7 +846,7 @@ class MongoClientInterface {
             ordered: true,
         })
             .then(() => cb(null, `{"versionId": "${versionId}"}`))
-            .catch((err) => {
+            .catch(err => {
                 /*
                  * Related to https://jira.mongodb.org/browse/SERVER-14322
                  * It happens when we are pushing two versions "at the same time"
@@ -913,7 +915,6 @@ class MongoClientInterface {
         cb: ArsenalCallback<string>,
     ) {
         const versionId = generateVersionId(this.replicationGroupId);
-        // eslint-disable-next-line
         objVal.versionId = versionId;
         const masterKey = formatMasterKey(objName, params.vFormat);
         c.updateOne({ _id: masterKey },
@@ -921,7 +922,7 @@ class MongoClientInterface {
             { upsert: true },
         )
             .then(() => cb(null, `{"versionId": "${objVal.versionId}"}`))
-            .catch((err) => {
+            .catch(err => {
                 log.error('putObjectVerCase2: error putting object version', { error: err.message });
                 return cb(errors.InternalError);
             });
@@ -956,7 +957,6 @@ class MongoClientInterface {
         log: werelogs.Logger,
         cb: ArsenalCallback<string>,
     ) {
-        // eslint-disable-next-line
         objVal.versionId = params.versionId;
         const versionKey = formatVersionKey(objName, params.versionId, params.vFormat);
         const masterKey = formatMasterKey(objName, params.vFormat);
@@ -1120,7 +1120,7 @@ class MongoClientInterface {
             ops.push(masterOp);
             return c.bulkWrite(ops, {
                 ordered: true,
-            }).then(() => cb(null, `{"versionId": "${objVal.versionId}"}`)).catch((err) => {
+            }).then(() => cb(null, `{"versionId": "${objVal.versionId}"}`)).catch(err => {
                 // we accept that the update fails if
                 // condition is not met, meaning that a more
                 // recent master was already in place
@@ -1231,13 +1231,13 @@ class MongoClientInterface {
             }, {
                 upsert: false,
             }).then(doc => {
-                if (!doc.value) {
+                if (!doc?.value) {
                     log.error('internalPutObject: unable to find target object to update',
                         { bucket: bucketName, object: key });
                     return next(errors.NoSuchKey);
                 }
                 const obj = doc.value;
-                const objMetadata = new ObjectMD(obj.value);
+                const objMetadata = new ObjectMD(obj);
                 objMetadata.setOriginOp(params.originOp);
                 objMetadata.setDeleted(true);
                 return next(null, objMetadata.getValue());
@@ -1268,7 +1268,7 @@ class MongoClientInterface {
                     },
                 },
             ], { ordered: true }).then(() => next(null)).catch(next),
-        ], (err) => {
+        ], err => {
             if (err) {
                 log.error('internalPutObject: error updating object',
                     { bucket: bucketName, object: key, error: err.message });
@@ -1589,7 +1589,6 @@ class MongoClientInterface {
     ) {
         const masterKey = formatMasterKey(objName, vFormat);
         MongoUtils.serialize(objVal);
-        // eslint-disable-next-line
         objVal.originOp = 's3:ObjectRemoved:Delete';
         c.findOneAndReplace({
             '_id': masterKey,
@@ -1687,7 +1686,6 @@ class MongoClientInterface {
                 // a master or re-delete it in between so place an
                 // atomic condition on the PHD flag and the mst
                 // version:
-                // eslint-disable-next-line
                 const filter = {
                     'value.isPHD': true,
                     'value.versionId': mst.versionId,
@@ -2226,11 +2224,9 @@ class MongoClientInterface {
             newParams.gt = undefined;
 
             if (newParams.secondaryStreamParams) {
-                // eslint-disable-next-line no-param-reassign
                 newParams.mainStreamParams.gte = range[0];
                 newParams.secondaryStreamParams.gte = range[1];
             } else {
-                // eslint-disable-next-line no-param-reassign
                 newParams.mainStreamParams.gte = range;
             }
             // then continue listing the next key range
@@ -2382,7 +2378,7 @@ class MongoClientInterface {
         const i = this.getCollection<InfostoreDocument>(INFOSTORE);
         if (!i) {
             log.error('readUUID: error getting infostore collection');
-            return
+            return;
         }
         i.findOne({
             _id: __UUID,
@@ -2404,7 +2400,7 @@ class MongoClientInterface {
             log.error('writeUUIDIfNotExists: error getting infostore collection');
             return cb(errors.InternalError);
         }
-        i.insertOne(<InfostoreDocument>{
+        return i.insertOne(<InfostoreDocument>{
             _id: __UUID,
             value: uuid,
         }, {}).then(() => cb(null)) // FIXME: shoud we check for result.ok === 1 ?
@@ -2445,11 +2441,11 @@ class MongoClientInterface {
         // way for guessing free space.
         diskusage.check(this.path !== undefined ?
             this.path : '/', (err, result) => {
-                if (err) {
-                    return cb(errors.InternalError);
-                }
-                return cb(null, result);
-            });
+            if (err) {
+                return cb(errors.InternalError);
+            }
+            return cb(null, result);
+        });
     }
 
     readCountItems(log: werelogs.Logger, cb: ArsenalCallback<ObjectMDStats | string>) {
@@ -2458,7 +2454,7 @@ class MongoClientInterface {
             log.error('readCountItems: error getting infostore collection');
             return cb(errors.InternalError);
         }
-        i.findOne({
+        return i.findOne({
             _id: __COUNT_ITEMS,
         }, {}).then(doc => {
             if (!doc) {
@@ -2492,12 +2488,12 @@ class MongoClientInterface {
             return cb(errors.InternalError);
         }
 
-        i.updateOne({
+        return i.updateOne({
             _id: __COUNT_ITEMS,
         }, {
             $set: {
                 _id: __COUNT_ITEMS,
-                value: value,
+                value,
             },
         }, {
             upsert: true,
@@ -2590,16 +2586,17 @@ class MongoClientInterface {
                     bucketCount,
                     bucketInfos,
                 });
-            })).catch(err => {
-                log.error('could not get list of collections', {
-                    method: 'getBucketInfos',
-                    error: err,
-                });
-                if (err && err instanceof ArsenalError) {
-                    return cb(err);
-                }
-                return cb(errors.InternalError);
+            })
+        ).catch(err => {
+            log.error('could not get list of collections', {
+                method: 'getBucketInfos',
+                error: err,
             });
+            if (err && err instanceof ArsenalError) {
+                return cb(err);
+            }
+            return cb(errors.InternalError);
+        });
     }
 
     countItems(log: werelogs.Logger, cb: ArsenalCallback<ObjectMDStats>) {
@@ -2636,22 +2633,19 @@ class MongoClientInterface {
                     return cb(err);
                 }
                 if (!results || typeof results === 'string') {
-                    log.error('unable to get any count items document')
+                    log.error('unable to get any count items document');
                     return cb(errors.InternalError);
                 }
                 // overwrite bucket info since we have latest info
-                /* eslint-disable */
                 results.bucketList = retBucketInfos;
                 results.buckets = bucketCount;
                 results.bucketWithQuotaCount = bucketWithQuotaCount;
-                /* eslint-enable */
                 return cb(null, results);
             });
         });
     }
 
     consolidateData(store, dataManaged) {
-        /* eslint-disable */
         if (dataManaged && dataManaged.locations && dataManaged.total) {
             const locations = dataManaged.locations;
             store.dataManaged.total.curr += dataManaged.total.curr;
@@ -2668,7 +2662,6 @@ class MongoClientInterface {
                 }
             });
         }
-        /* eslint-enable */
     }
 
     scanItemCount(log, cb) {
@@ -2965,7 +2958,7 @@ class MongoClientInterface {
                         this._isReplicationEntryStalled(res, cmpDate)) {
                         stalledCount++;
                     }
-                } else if (!!res.value.versionId) {
+                } else if (res.value.versionId) {
                     // master version
                     targetCount = 'masterCount';
                     targetData = 'masterData';
@@ -2982,11 +2975,12 @@ class MongoClientInterface {
                         collRes[targetData][site] = data[site];
                     }
                 });
-            }).then(() => {
+            })
+            .then(() => {
                 const bucketStatus = bucketInfo.getVersioningConfiguration();
                 const isVer = (bucketStatus &&
-                    (bucketStatus.Status === 'Enabled' ||
-                        bucketStatus.Status === 'Suspended'));
+                        (bucketStatus.Status === 'Enabled' ||
+                            bucketStatus.Status === 'Suspended'));
                 const retResult = this._handleResults(collRes, isVer);
                 retResult.stalled = stalledCount;
                 return callback(null, retResult);
@@ -3027,7 +3021,8 @@ class MongoClientInterface {
      * @warning this method only work on master keys, and will thus break
      * when the object is versionned
      */
-    deleteObjectWithCond(bucketName: string, objName: string, params: ObjectMDOperationParams, log: werelogs.Logger, cb: ArsenalCallback<void>) {
+    deleteObjectWithCond(bucketName: string, objName: string, params: ObjectMDOperationParams,
+        log: werelogs.Logger, cb: ArsenalCallback<void>) {
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
         const method = 'deleteObjectWithCond';
         this.getBucketVFormat(bucketName, log, (err, vFormat?) => {
@@ -3097,7 +3092,7 @@ class MongoClientInterface {
             }, {
                 includeResultMetadata: true,
                 upsert: true,
-            },).then(res => {
+            }).then(res => {
                 if (res.ok !== 1) {
                     log.error('failed to update object', {
                         method,
@@ -3158,7 +3153,8 @@ class MongoClientInterface {
      * @param {Function} cb callback
      * @return {undefined}
      */
-    deleteBucketIndexes(bucketName: string, indexSpecs: { name: string }[], log: werelogs.Logger, cb: ArsenalCallback<void>) {
+    deleteBucketIndexes(bucketName: string, indexSpecs: { name: string }[],
+        log: werelogs.Logger, cb: ArsenalCallback<void>) {
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
         async.each(indexSpecs,
             (spec, next) => c.dropIndex(spec.name).then(() => next()).catch(err => next(err)),
