@@ -18,7 +18,10 @@ function vaultSignatureCb(
             body: {
                 userInfo: AuthInfoType,
                 authorizationResults: { [key: string]: any },
-                accountQuota: number,
+                accountQuota: {
+                    account: string,
+                    quota: string,
+                },
             },
         },
     },

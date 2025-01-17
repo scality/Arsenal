@@ -228,7 +228,13 @@ const testBucketCapabilities = {
     },
 };
 
-const testBucketQuota = 100000;
+const testBucketQuota = 100000n;
+
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt#use_within_json
+// eslint-disable-next-line no-extend-native
+BigInt.prototype.toJSON = function toJSON() {
+    return this.toString();
+};
 
 // create a dummy bucket to test getters and setters
 Object.keys(acl).forEach(
@@ -708,7 +714,7 @@ Object.keys(acl).forEach(
             it('setQuota should set bucket quota', () => {
                 dummyBucket.setQuota();
                 assert.deepStrictEqual(
-                    dummyBucket.getQuota(), 0);
+                    dummyBucket.getQuota(), 0n);
             });
         });
     }),
