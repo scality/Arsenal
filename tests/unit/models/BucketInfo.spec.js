@@ -221,9 +221,9 @@ const testBucketCapabilities = {
             },
         },
         CapacityInfo: {
-            Capacity: 1,
-            Available: 1,
-            Used: 0,
+            Capacity: 1n,
+            Available: 1n,
+            Used: 0n,
         },
     },
 };

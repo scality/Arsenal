@@ -60,12 +60,20 @@ export type VeeamSOSApi = {
         LastModified?: string,
     },
     CapacityInfo?: {
-        Capacity: number,
-        Available: number,
-        Used: number,
+        Capacity: bigint,
+        Available: bigint,
+        Used: bigint,
         LastModified?: string,
     },
 };
+
+export type CapacityInfoExported = VeeamSOSApi & {
+    CapacityInfo?: {
+        Capacity: string,
+        Available: string,
+        Used: string,
+    },
+}
 
 // Capabilities contains all specifics from external products supported by
 // our S3 implementation, at bucket level
@@ -257,6 +265,16 @@ export default class BucketInfo {
             assert(routingRules === undefined ||
                 Array.isArray(routingRules));
         }
+        if (capabilities?.VeeamSOSApi?.CapacityInfo) {
+            // assert the values are bigints
+            assert.strictEqual(typeof capabilities.VeeamSOSApi.CapacityInfo.Capacity, 'bigint');
+            assert.strictEqual(typeof capabilities.VeeamSOSApi.CapacityInfo.Available, 'bigint');
+            assert.strictEqual(typeof capabilities.VeeamSOSApi.CapacityInfo.Used, 'bigint');            
+        }
+        if (quotaMax) {
+            assert.strictEqual(typeof quotaMax, 'bigint', 'Quota must be a BigInt');
+            assert(quotaMax >= 0, 'Quota cannot be negative');
+        }
         if (cors) {
             assert(Array.isArray(cors));
         }
@@ -324,7 +342,7 @@ export default class BucketInfo {
         this._notificationConfiguration = notificationConfiguration || null;
         this._tags = tags;
         this._capabilities = capabilities || undefined;
-        this._quotaMax = quotaMax || 0n;
+        this._quotaMax = BigInt(quotaMax || 0n);
         return this;
     }
 
@@ -333,7 +351,7 @@ export default class BucketInfo {
     * @return - stringified object
     */
     serialize() {
-        const bucketInfos = {
+        const bucketInfos: any & CapacityInfoExported = {
             acl: this._acl,
             name: this._name,
             owner: this._owner,
@@ -377,6 +395,15 @@ export default class BucketInfo {
      */
     static deSerialize(stringBucket: string) {
         const obj = JSON.parse(stringBucket);
+        // Convert strings back to BigInts
+        if (obj.capabilities?.VeeamSOSApi?.CapacityInfo) {
+            obj.capabilities.VeeamSOSApi.CapacityInfo.Available = 
+                BigInt(obj.capabilities.VeeamSOSApi.CapacityInfo.Available);
+            obj.capabilities.VeeamSOSApi.CapacityInfo.Capacity = 
+                BigInt(obj.capabilities.VeeamSOSApi.CapacityInfo.Capacity);
+            obj.capabilities.VeeamSOSApi.CapacityInfo.Used = 
+                BigInt(obj.capabilities.VeeamSOSApi.CapacityInfo.Used);
+        }
         const websiteConfig = obj.websiteConfiguration ?
             new WebsiteConfiguration(obj.websiteConfiguration) : null;
         return new BucketInfo(obj.name, obj.owner, obj.ownerDisplayName,
@@ -405,6 +432,14 @@ export default class BucketInfo {
      * @return Return an BucketInfo
      */
     static fromObj(data: any) {
+        if (data._capabilities?.VeeamSOSApi?.CapacityInfo) {
+            data._capabilities.VeeamSOSApi.CapacityInfo.Available = 
+                BigInt(data._capabilities.VeeamSOSApi.CapacityInfo.Available);
+            data._capabilities.VeeamSOSApi.CapacityInfo.Capacity = 
+                BigInt(data._capabilities.VeeamSOSApi.CapacityInfo.Capacity);
+            data._capabilities.VeeamSOSApi.CapacityInfo.Used = 
+                BigInt(data._capabilities.VeeamSOSApi.CapacityInfo.Used);
+        }
         return new BucketInfo(data._name, data._owner, data._ownerDisplayName,
             data._creationDate, data._mdBucketModelVersion, data._acl,
             data._transient, data._deleted, data._serverSideEncryption,
@@ -983,7 +1018,7 @@ export default class BucketInfo {
      * @return - bucket quota info
      */
     setQuota(quota: bigint) {
-        this._quotaMax = quota || 0n;
+        this._quotaMax = BigInt(quota || 0n);
         return this;
     }
 }
