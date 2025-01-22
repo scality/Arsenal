@@ -1,7 +1,6 @@
 import { Logger } from 'werelogs';
 import errors from '../errors';
 import AuthInfo, { AccountInfos, AuthInfoType, AuthorizationResults, AuthV4Results } from './AuthInfo';
-import { AccountInfo } from 'aws-sdk/clients/sso';
 
 /** vaultSignatureCb parses message from Vault and instantiates
  * @param err - error from vault

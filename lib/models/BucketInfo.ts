@@ -196,7 +196,7 @@ export default class BucketInfo {
         notificationConfiguration?: any,
         tags?: Array<BucketTag> | [],
         capabilities?: Capabilities,
-        quotaMax?: bigint,
+        quotaMax?: bigint | number,
     ) {
         assert.strictEqual(typeof name, 'string');
         assert.strictEqual(typeof owner, 'string');
@@ -311,7 +311,7 @@ export default class BucketInfo {
         }
         assert.strictEqual(areTagsValid(tags), true);
         if (quotaMax) {
-            assert.strictEqual(typeof quotaMax, 'bigint', 'Quota must be a BigInt');
+            assert(typeof quotaMax === 'bigint' || typeof quotaMax === 'number');
             assert(quotaMax >= 0, 'Quota cannot be negative');
         }
 
