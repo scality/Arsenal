@@ -224,6 +224,7 @@ const testBucketCapabilities = {
             Capacity: 1n,
             Available: 1n,
             Used: 0n,
+            LastModified: '2021-09-29T14:00:00.000Z',
         },
     },
 };

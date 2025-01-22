@@ -38,7 +38,10 @@ export type VersioningConfiguration = {
     MfaDelete: any;
 };
 
-export type VeeamSOSApi = {
+// The input VeeamSOSAPI type, where the capcity-related
+// field accept numbers, but will be treated as bigints
+// internally.
+export type VeeamSOSApiSchema = {
     SystemInfo?: {
         ProtocolVersion: string,
         ModelName: string,
@@ -60,14 +63,15 @@ export type VeeamSOSApi = {
         LastModified?: string,
     },
     CapacityInfo?: {
-        Capacity: bigint,
-        Available: bigint,
-        Used: bigint,
+        Capacity: bigint | number,
+        Available: bigint | number,
+        Used: bigint | number,
         LastModified?: string,
     },
 };
 
-export type CapacityInfoExported = VeeamSOSApi & {
+// Bigints are exported as strings
+export type CapacityInfoExported = VeeamSOSApiSchema & {
     CapacityInfo?: {
         Capacity: string,
         Available: string,
@@ -75,10 +79,26 @@ export type CapacityInfoExported = VeeamSOSApi & {
     },
 }
 
+// In the BucketInfo class, the values must be bigints
+// for the Veeam-related capacity fields.
+export type VeeamSOSApi = VeeamSOSApiSchema & {
+    CapacityInfo?: {
+        Capacity: bigint,
+        Available: bigint,
+        Used: bigint,
+    },
+}
+
 // Capabilities contains all specifics from external products supported by
 // our S3 implementation, at bucket level
 export type Capabilities = {
     VeeamSOSApi?: VeeamSOSApi,
+};
+
+// CapabilitiesInput is the input type for the Capabilities object
+// where the capacity-related fields can be numbers.
+export type CapabilitiesInput = {
+    VeeamSOSApi?: VeeamSOSApiSchema,
 };
 
 export type ACL = OACL & { WRITE: string[] }
@@ -195,9 +215,10 @@ export default class BucketInfo {
         objectLockConfiguration?: any,
         notificationConfiguration?: any,
         tags?: Array<BucketTag> | [],
-        capabilities?: Capabilities,
+        capabilities?: CapabilitiesInput,
         quotaMax?: bigint | number,
     ) {
+        let convertedCapacityInfo;
         assert.strictEqual(typeof name, 'string');
         assert.strictEqual(typeof owner, 'string');
         assert.strictEqual(typeof ownerDisplayName, 'string');
@@ -266,10 +287,21 @@ export default class BucketInfo {
                 Array.isArray(routingRules));
         }
         if (capabilities?.VeeamSOSApi?.CapacityInfo) {
-            // assert the values are bigints
-            assert.strictEqual(typeof capabilities.VeeamSOSApi.CapacityInfo.Capacity, 'bigint');
-            assert.strictEqual(typeof capabilities.VeeamSOSApi.CapacityInfo.Available, 'bigint');
-            assert.strictEqual(typeof capabilities.VeeamSOSApi.CapacityInfo.Used, 'bigint');            
+            assert(
+                typeof capabilities.VeeamSOSApi.CapacityInfo.Capacity === 'bigint' ||
+                typeof capabilities.VeeamSOSApi.CapacityInfo.Capacity === 'number'
+            );
+            assert(
+                typeof capabilities.VeeamSOSApi.CapacityInfo.Available === 'bigint' ||
+                typeof capabilities.VeeamSOSApi.CapacityInfo.Available === 'number'
+            );
+            assert(
+                typeof capabilities.VeeamSOSApi.CapacityInfo.Used === 'bigint' ||
+                typeof capabilities.VeeamSOSApi.CapacityInfo.Used === 'number'
+            );
+            assert(capabilities.VeeamSOSApi.CapacityInfo.Capacity >= 0);
+            assert(capabilities.VeeamSOSApi.CapacityInfo.Available >= 0);
+            assert(capabilities.VeeamSOSApi.CapacityInfo.Used >= 0);
         }
         if (quotaMax) {
             assert.strictEqual(typeof quotaMax, 'bigint', 'Quota must be a BigInt');
@@ -341,7 +373,16 @@ export default class BucketInfo {
         this._objectLockConfiguration = objectLockConfiguration || null;
         this._notificationConfiguration = notificationConfiguration || null;
         this._tags = tags;
-        this._capabilities = capabilities || undefined;
+
+        convertedCapacityInfo = BucketInfo.convertCapacityToBigInt(capabilities?.VeeamSOSApi?.CapacityInfo);
+        this._capabilities = capabilities ? {
+            ...capabilities,
+            VeeamSOSApi: {
+                ...capabilities?.VeeamSOSApi,
+                CapacityInfo: convertedCapacityInfo,
+            }
+        } : undefined;
+    
         this._quotaMax = BigInt(quotaMax || 0n);
         return this;
     }
@@ -395,15 +436,13 @@ export default class BucketInfo {
      */
     static deSerialize(stringBucket: string) {
         const obj = JSON.parse(stringBucket);
-        // Convert strings back to BigInts
-        if (obj.capabilities?.VeeamSOSApi?.CapacityInfo) {
-            obj.capabilities.VeeamSOSApi.CapacityInfo.Available = 
-                BigInt(obj.capabilities.VeeamSOSApi.CapacityInfo.Available);
-            obj.capabilities.VeeamSOSApi.CapacityInfo.Capacity = 
-                BigInt(obj.capabilities.VeeamSOSApi.CapacityInfo.Capacity);
-            obj.capabilities.VeeamSOSApi.CapacityInfo.Used = 
-                BigInt(obj.capabilities.VeeamSOSApi.CapacityInfo.Used);
-        }
+        const capabilities: CapabilitiesInput = {
+            ...obj.capabilities,
+            VeeamSOSApi: {
+                ...obj.capabilities?.VeeamSOSApi,
+                CapacityInfo: this.convertCapacityToBigInt(obj.capabilities?.VeeamSOSApi?.CapacityInfo),
+            },
+        };
         const websiteConfig = obj.websiteConfiguration ?
             new WebsiteConfiguration(obj.websiteConfiguration) : null;
         return new BucketInfo(obj.name, obj.owner, obj.ownerDisplayName,
@@ -414,7 +453,7 @@ export default class BucketInfo {
             obj.bucketPolicy, obj.uid, obj.readLocationConstraint, obj.isNFS,
             obj.ingestion, obj.azureInfo, obj.objectLockEnabled,
             obj.objectLockConfiguration, obj.notificationConfiguration, obj.tags,
-            obj.capabilities, BigInt(obj.quotaMax || 0n));
+            capabilities, BigInt(obj.quotaMax || 0n));
     }
 
     /**
@@ -432,14 +471,13 @@ export default class BucketInfo {
      * @return Return an BucketInfo
      */
     static fromObj(data: any) {
-        if (data._capabilities?.VeeamSOSApi?.CapacityInfo) {
-            data._capabilities.VeeamSOSApi.CapacityInfo.Available = 
-                BigInt(data._capabilities.VeeamSOSApi.CapacityInfo.Available);
-            data._capabilities.VeeamSOSApi.CapacityInfo.Capacity = 
-                BigInt(data._capabilities.VeeamSOSApi.CapacityInfo.Capacity);
-            data._capabilities.VeeamSOSApi.CapacityInfo.Used = 
-                BigInt(data._capabilities.VeeamSOSApi.CapacityInfo.Used);
-        }
+        const capabilities: CapabilitiesInput = {
+            ...data._capabilities,
+            VeeamSOSApi: {
+                ...data._capabilities?.VeeamSOSApi,
+                CapacityInfo: this.convertCapacityToBigInt(data._capabilities?.VeeamSOSApi?.CapacityInfo),
+            },
+        };
         return new BucketInfo(data._name, data._owner, data._ownerDisplayName,
             data._creationDate, data._mdBucketModelVersion, data._acl,
             data._transient, data._deleted, data._serverSideEncryption,
@@ -449,8 +487,26 @@ export default class BucketInfo {
             data._bucketPolicy, data._uid, data._readLocationConstraint,
             data._isNFS, data._ingestion, data._azureInfo,
             data._objectLockEnabled, data._objectLockConfiguration,
-            data._notificationConfiguration, data._tags, data._capabilities,
+            data._notificationConfiguration, data._tags, capabilities,
             BigInt(data._quotaMax || 0n));
+    }
+
+    /**
+     * Converts the input Veeam capacity info to BigInts
+     * @param capacityInfo - capacity info to convert
+     * @returns - converted capacity info
+     */
+    static convertCapacityToBigInt(capacityInfo: VeeamSOSApiSchema['CapacityInfo']): VeeamSOSApi['CapacityInfo'] | undefined {
+        if (!capacityInfo) {
+            return undefined;
+        }
+        return {
+            ...capacityInfo,
+            Available: BigInt(capacityInfo.Available),
+            Capacity: BigInt(capacityInfo.Capacity),
+            Used: BigInt(capacityInfo.Used),
+            LastModified: capacityInfo.LastModified,
+        };
     }
 
     /**
@@ -1017,7 +1073,7 @@ export default class BucketInfo {
      * @param quota - quota to be set
      * @return - bucket quota info
      */
-    setQuota(quota: bigint) {
+    setQuota(quota: bigint | number) {
         this._quotaMax = BigInt(quota || 0n);
         return this;
     }
