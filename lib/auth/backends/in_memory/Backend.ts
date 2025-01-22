@@ -5,11 +5,20 @@ import { calculateSigningKey, hashSignature } from './vaultUtilities';
 import Indexer from './Indexer';
 import BaseBackend from '../base';
 import { Accounts } from './types';
+import { AccountQuota, AuthInfoType, AuthorizationResults, AuthV4Results } from '../../AuthInfo';
 
-function _formatResponse(userInfoToSend: any) {
+function _formatResponse(
+    userInfoToSend: AuthInfoType,
+    authorizationResults: AuthorizationResults,
+    accountQuota: AccountQuota,
+): { message: { body: AuthV4Results } } {
     return {
         message: {
-            body: { userInfo: userInfoToSend },
+            body: {
+                userInfo: userInfoToSend,
+                authorizationResults,
+                accountQuota,
+            },
         },
     };
 }
@@ -61,7 +70,15 @@ class InMemoryBackend extends BaseBackend {
             // @ts-ignore
             IAMdisplayName: entity.IAMdisplayName,
         };
-        const vaultReturnObject = this.formatResponse(userInfoToSend);
+        const vaultReturnObject = this.formatResponse(
+            userInfoToSend,
+            [],
+            {
+                account: entity.canonicalID,
+                // account quota is not supported in this backend
+                accountQuota: 0,
+            }
+        );
         return callback(null, vaultReturnObject);
     }
 
@@ -92,7 +109,15 @@ class InMemoryBackend extends BaseBackend {
             // @ts-ignore
             IAMdisplayName: entity.IAMdisplayName,
         };
-        const vaultReturnObject = this.formatResponse(userInfoToSend);
+        const vaultReturnObject = this.formatResponse(
+            userInfoToSend,
+            [],
+            {
+                account: entity.canonicalID,
+                // account quota is not supported in this backend
+                accountQuota: 0,
+            }
+        );
         return callback(null, vaultReturnObject);
     }
 
