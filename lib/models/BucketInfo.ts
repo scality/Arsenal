@@ -71,11 +71,12 @@ export type VeeamSOSApiSchema = {
 };
 
 // Bigints are exported as strings
-export type CapacityInfoExported = VeeamSOSApiSchema & {
+export type CapacityInfoExported = Omit<VeeamSOSApiSchema, 'CapacityInfo'> & {
     CapacityInfo?: {
         Capacity: string,
         Available: string,
         Used: string,
+        LastModified?: string,
     },
 }
 
@@ -418,7 +419,15 @@ export default class BucketInfo {
             objectLockConfiguration: this._objectLockConfiguration,
             notificationConfiguration: this._notificationConfiguration,
             tags: this._tags,
-            capabilities: this._capabilities,
+            capabilities: this._capabilities ? {
+                ...this._capabilities,
+                VeeamSOSApi: this._capabilities.VeeamSOSApi ? {
+                    ...this._capabilities.VeeamSOSApi,
+                    CapacityInfo: BucketInfo.serializeCapacityInfo(
+                        this._capabilities.VeeamSOSApi.CapacityInfo
+                    ),
+                } : undefined,
+            } : undefined,
             quotaMax: this._quotaMax.toString(),
         };
         const final = this._websiteConfiguration
@@ -505,6 +514,19 @@ export default class BucketInfo {
             Available: BigInt(capacityInfo.Available),
             Capacity: BigInt(capacityInfo.Capacity),
             Used: BigInt(capacityInfo.Used),
+            LastModified: capacityInfo.LastModified,
+        };
+    }
+
+    static serializeCapacityInfo(capacityInfo: VeeamSOSApi['CapacityInfo']): CapacityInfoExported['CapacityInfo'] | undefined {
+        if (!capacityInfo) {
+            return undefined;
+        }
+        return {
+            ...capacityInfo,
+            Available: capacityInfo.Available.toString(),
+            Capacity: capacityInfo.Capacity.toString(),
+            Used: capacityInfo.Used.toString(),
             LastModified: capacityInfo.LastModified,
         };
     }

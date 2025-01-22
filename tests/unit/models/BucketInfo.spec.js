@@ -231,12 +231,6 @@ const testBucketCapabilities = {
 
 const testBucketQuota = 100000n;
 
-// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt#use_within_json
-// eslint-disable-next-line no-extend-native
-BigInt.prototype.toJSON = function toJSON() {
-    return this.toString();
-};
-
 // create a dummy bucket to test getters and setters
 Object.keys(acl).forEach(
     aclObj => describe(`different acl configurations : ${aclObj}`, () => {
@@ -299,8 +293,16 @@ Object.keys(acl).forEach(
                         dummyBucket._objectLockConfiguration,
                     notificationConfiguration: dummyBucket._notificationConfiguration,
                     tags: dummyBucket._tags,
-                    capabilities: dummyBucket._capabilities,
-                    quotaMax: dummyBucket._quotaMax,
+                    capabilities: dummyBucket._capabilities ? {
+                        ...dummyBucket._capabilities,
+                        VeeamSOSApi: dummyBucket._capabilities.VeeamSOSApi ? {
+                            ...dummyBucket._capabilities.VeeamSOSApi,
+                            CapacityInfo: BucketInfo.serializeCapacityInfo(
+                                dummyBucket._capabilities.VeeamSOSApi.CapacityInfo,
+                            ),
+                        } : undefined,
+                    } : undefined,
+                    quotaMax: dummyBucket._quotaMax.toString(),
                 };
                 assert.strictEqual(serialized, JSON.stringify(bucketInfos));
                 done();
