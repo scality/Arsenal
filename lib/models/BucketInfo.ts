@@ -335,9 +335,9 @@ export default class BucketInfo implements BucketMetadata {
                 typeof capabilities.VeeamSOSApi.CapacityInfo.Used === 'bigint' ||
                 typeof capabilities.VeeamSOSApi.CapacityInfo.Used === 'number'
             );
-            assert(capabilities.VeeamSOSApi.CapacityInfo.Capacity >= 0);
-            assert(capabilities.VeeamSOSApi.CapacityInfo.Available >= 0);
-            assert(capabilities.VeeamSOSApi.CapacityInfo.Used >= 0);
+            assert(capabilities.VeeamSOSApi.CapacityInfo.Capacity >= -1);
+            assert(capabilities.VeeamSOSApi.CapacityInfo.Available >= -1);
+            assert(capabilities.VeeamSOSApi.CapacityInfo.Used >= -1);
         }
         if (quotaMax) {
             assert.strictEqual(typeof quotaMax, 'bigint', 'Quota must be a BigInt');
@@ -546,9 +546,9 @@ export default class BucketInfo implements BucketMetadata {
         }
         return {
             ...capacityInfo,
-            Available: BigInt(capacityInfo.Available),
-            Capacity: BigInt(capacityInfo.Capacity),
-            Used: BigInt(capacityInfo.Used),
+            Available: BigInt(capacityInfo.Available || 0),
+            Capacity: BigInt(capacityInfo.Capacity || 0),
+            Used: BigInt(capacityInfo.Used || 0),
             LastModified: capacityInfo.LastModified,
         };
     }
@@ -978,6 +978,8 @@ export default class BucketInfo implements BucketMetadata {
      * Check if the bucket is an NFS bucket.
      * @return - Wether the bucket is NFS or not
      */
+    // @ts-expect-error the function name is not compatible
+    // with an extension of the BucketMetadata interface
     isNFS() {
         return this._isNFS;
     }
