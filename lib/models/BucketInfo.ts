@@ -104,7 +104,42 @@ export type CapabilitiesInput = {
 
 export type ACL = OACL & { WRITE: string[] }
 
-export default class BucketInfo {
+export type BucketMetadata = {
+    acl: ACL;
+    name: string,
+    owner: string,
+    ownerDisplayName: string,
+    creationDate: string,
+    mdBucketModelVersion: number,
+    transient: boolean,
+    deleted: boolean,
+    serverSideEncryption: SSE | null,
+    versioningConfiguration: VersioningConfiguration | null,
+    locationConstraint: string | null,
+    readLocationConstraint: string | null,
+    websiteConfiguration: WebsiteConfiguration | null,
+    cors: CORS | null,
+    replicationConfiguration: any | null,
+    lifecycleConfiguration: any | null,
+    bucketPolicy: any | null,
+    uid: string,
+    isNFS: boolean | null,
+    ingestion: { status: 'enabled' | 'disabled' } | null,
+    azureInfo: any | null,
+    objectLockEnabled: boolean | null,
+    objectLockConfiguration: any | null,
+    notificationConfiguration: any | null,
+    tags: Array<BucketTag>,
+    capabilities: Capabilities | undefined,
+    quotaMax: bigint | number,
+};
+
+export type ParsableBucketMetadata = Omit<Omit<BucketMetadata, 'quotaMax'>, 'capabilities'> & {
+    quotaMax: string;
+    capabilities: CapabilitiesInput,
+};
+
+export default class BucketInfo implements BucketMetadata {
     _acl: ACL;
     _name: string;
     _owner: string;
@@ -113,8 +148,8 @@ export default class BucketInfo {
     _mdBucketModelVersion: number;
     _transient: boolean;
     _deleted: boolean;
-    _serverSideEncryption: SSE;
-    _versioningConfiguration: VersioningConfiguration;
+    _serverSideEncryption: SSE | null;
+    _versioningConfiguration: VersioningConfiguration | null;
     _locationConstraint: string | null;
     _websiteConfiguration?: WebsiteConfiguration | null;
     _cors: CORS | null;
@@ -196,12 +231,12 @@ export default class BucketInfo {
         ownerDisplayName: string,
         creationDate: string,
         mdBucketModelVersion: number,
-        acl: ACL | undefined,
-        transient: boolean,
-        deleted: boolean,
-        serverSideEncryption: SSE,
-        versioningConfiguration: VersioningConfiguration,
-        locationConstraint: string,
+        acl?: ACL,
+        transient?: boolean,
+        deleted?: boolean,
+        serverSideEncryption?: SSE,
+        versioningConfiguration?: VersioningConfiguration,
+        locationConstraint?: string,
         websiteConfiguration?: WebsiteConfiguration | null,
         cors?: CORS,
         replicationConfiguration?: any,

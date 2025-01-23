@@ -34,7 +34,7 @@ describe('MongoClientInterface:delObject', () => {
     });
 
     it('delObject::should fail when getBucketVFormat fails', done => {
-        sinon.stub(client, 'getCollection').callsFake(() => null);
+        sinon.stub(client, 'getCollection').callsFake(() => ({}));
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(errors.InternalError));
         client.deleteObject('example-bucket', 'example-object', {}, logger, err => {
             assert(err.is.InternalError);
@@ -43,18 +43,18 @@ describe('MongoClientInterface:delObject', () => {
     });
 
     it('delObject::should call deleteObjectNoVer when no versionId', done => {
-        sinon.stub(client, 'getCollection').callsFake(() => null);
+        sinon.stub(client, 'getCollection').callsFake(() => ({}));
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null, 'v0'));
         const deleteObjectNoVerSpy = sinon.spy();
         sinon.stub(client, 'deleteObjectNoVer').callsFake(deleteObjectNoVerSpy);
         client.deleteObject('example-bucket', 'example-object', {}, logger, {});
-        const args = [null, 'example-bucket', 'example-object', { vFormat: 'v0' }, logger, {}];
+        const args = [{}, 'example-bucket', 'example-object', { vFormat: 'v0' }, logger, {}];
         assert(deleteObjectNoVerSpy.calledOnceWith(...args));
         return done();
     });
 
     it('delObject::should call deleteObjectVer when no versionId', done => {
-        sinon.stub(client, 'getCollection').callsFake(() => null);
+        sinon.stub(client, 'getCollection').callsFake(() => ({}));
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null, 'v0'));
         const deleteObjectVerSpy = sinon.spy();
         sinon.stub(client, 'deleteObjectVer').callsFake(deleteObjectVerSpy);
@@ -63,7 +63,7 @@ describe('MongoClientInterface:delObject', () => {
         };
         client.deleteObject('example-bucket', 'example-object', params, logger, {});
         params.vFormat = 'v0';
-        const args = [null, 'example-bucket', 'example-object', params, logger, {}];
+        const args = [{}, 'example-bucket', 'example-object', params, logger, {}];
         assert(deleteObjectVerSpy.calledOnceWith(...args));
         return done();
     });
@@ -201,6 +201,7 @@ describe('MongoClientInterface:delObject', () => {
         const objVal = {
             originOp: 's3:ObjectCreated:Put',
         };
+        sinon.restore();
         client.repair(collection, 'example-bucket', 'example-object', objVal, master, 'v0', logger, () => {
             assert.deepEqual(collection.findOneAndReplace.args[0][1], {
                 _id: 'example-object',
