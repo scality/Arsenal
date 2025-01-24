@@ -203,6 +203,7 @@ const actionMapMetadata = {
 
 const actionMapScuba = {
     GetMetrics: 'scuba:GetMetrics',
+    GetMetricsBatch: 'scuba:GetMetricsBatch',
     AdminStartIngest: 'scuba:AdminStartIngest',
     AdminStopIngest: 'scuba:AdminStopIngest',
     AdminReadRaftCseq: 'scuba:AdminReadRaftCseq',
