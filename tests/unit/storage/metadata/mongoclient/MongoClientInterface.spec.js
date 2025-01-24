@@ -840,7 +840,7 @@ describe('MongoClientInterface, tests', () => {
                     return next(err);
                 }
                 const capabilities = bucketInfo._capabilities || {};
-                assert(!capabilities[capabilityName][capabilityField]);
+                assert(!capabilities[capabilityName]);
                 return next();
             }),
             next => client.deleteBucket(bucketName, logger, err => next(err)),

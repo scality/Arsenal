@@ -1,7 +1,7 @@
 import assert from 'assert';
 import uuid from 'uuid/v4';
 
-import { WebsiteConfiguration } from './WebsiteConfiguration';
+import { WebsiteConfiguration, WebsiteConfigurationParams } from './WebsiteConfiguration';
 import ReplicationConfiguration from './ReplicationConfiguration';
 import LifecycleConfiguration from './LifecycleConfiguration';
 import ObjectLockConfiguration from './ObjectLockConfiguration';
@@ -9,6 +9,7 @@ import BucketPolicy from './BucketPolicy';
 import NotificationConfiguration from './NotificationConfiguration';
 import { ACL as OACL } from './ObjectMD';
 import { areTagsValid, BucketTag } from '../s3middleware/tagging';
+import { VeeamCapability, VeeamSOSApiSchema, VeeamSOSApiSerializable } from './Veeam';
 
 // WHEN UPDATING THIS NUMBER, UPDATE BucketInfoModelVersion.md CHANGELOG
 // BucketInfoModelVersion.md can be found in documentation/ at the root
@@ -38,67 +39,11 @@ export type VersioningConfiguration = {
     MfaDelete: any;
 };
 
-// The input VeeamSOSAPI type, where the capcity-related
-// field accept numbers, but will be treated as bigints
-// internally.
-export type VeeamSOSApiSchema = {
-    SystemInfo?: {
-        ProtocolVersion: string,
-        ModelName: string,
-        ProtocolCapabilities: {
-            CapacityInfo: boolean,
-            UploadSessions: boolean,
-            IAMSTS?: boolean,
-        },
-        APIEndpoints?: {
-            IAMEndpoint: string,
-            STSEndpoint: string,
-        },
-        SystemRecommendations?: {
-            S3ConcurrentTaskLimit: number,
-            S3MultiObjectDelete: number,
-            StorageCurrentTasksLimit: number,
-            KbBlockSize: number,
-        }
-        LastModified?: string,
-    },
-    CapacityInfo?: {
-        Capacity: bigint | number,
-        Available: bigint | number,
-        Used: bigint | number,
-        LastModified?: string,
-    },
-};
-
-// Bigints are exported as strings
-export type CapacityInfoExported = Omit<VeeamSOSApiSchema, 'CapacityInfo'> & {
-    CapacityInfo?: {
-        Capacity: string,
-        Available: string,
-        Used: string,
-        LastModified?: string,
-    },
-}
-
-// In the BucketInfo class, the values must be bigints
-// for the Veeam-related capacity fields.
-export type VeeamSOSApi = VeeamSOSApiSchema & {
-    CapacityInfo?: {
-        Capacity: bigint,
-        Available: bigint,
-        Used: bigint,
-    },
-}
-
-// Capabilities contains all specifics from external products supported by
-// our S3 implementation, at bucket level
+/**
+ * Capabilities is the schema for the Capabilities object, where the
+ * capacity-related fields are bigints. Used by nodejs internally.
+ */
 export type Capabilities = {
-    VeeamSOSApi?: VeeamSOSApi,
-};
-
-// CapabilitiesInput is the input type for the Capabilities object
-// where the capacity-related fields can be numbers.
-export type CapabilitiesInput = {
     VeeamSOSApi?: VeeamSOSApiSchema,
 };
 
@@ -113,30 +58,32 @@ export type BucketMetadata = {
     mdBucketModelVersion: number,
     transient: boolean,
     deleted: boolean,
-    serverSideEncryption: SSE | null,
-    versioningConfiguration: VersioningConfiguration | null,
-    locationConstraint: string | null,
-    readLocationConstraint: string | null,
-    websiteConfiguration: WebsiteConfiguration | null,
-    cors: CORS | null,
-    replicationConfiguration: any | null,
-    lifecycleConfiguration: any | null,
-    bucketPolicy: any | null,
+    serverSideEncryption?: SSE,
+    versioningConfiguration?: VersioningConfiguration,
+    locationConstraint?: string,
+    readLocationConstraint?: string,
+    websiteConfiguration?: WebsiteConfigurationParams,
+    cors?: CORS,
+    replicationConfiguration?: any,
+    lifecycleConfiguration?: any,
+    bucketPolicy?: any,
     uid: string,
-    isNFS: boolean | null,
-    ingestion: { status: 'enabled' | 'disabled' } | null,
-    azureInfo: any | null,
-    objectLockEnabled: boolean | null,
-    objectLockConfiguration: any | null,
-    notificationConfiguration: any | null,
+    isNFS?: boolean,
+    ingestion?: { status: 'enabled' | 'disabled' },
+    azureInfo?: any,
+    objectLockEnabled?: boolean,
+    objectLockConfiguration?: any,
+    notificationConfiguration?: any,
     tags: Array<BucketTag>,
-    capabilities: Capabilities | undefined,
+    capabilities?: Capabilities,
     quotaMax: bigint | number,
 };
 
-export type ParsableBucketMetadata = Omit<Omit<BucketMetadata, 'quotaMax'>, 'capabilities'> & {
+export type BucketMetadataJSON = Omit<Omit<BucketMetadata, 'quotaMax'>, 'capabilities'> & {
     quotaMax: string;
-    capabilities: CapabilitiesInput,
+    capabilities: {
+        VeeamSOSApi?: VeeamSOSApiSchema,
+    };
 };
 
 export default class BucketInfo implements BucketMetadata {
@@ -251,10 +198,9 @@ export default class BucketInfo implements BucketMetadata {
         objectLockConfiguration?: any,
         notificationConfiguration?: any,
         tags?: Array<BucketTag> | [],
-        capabilities?: CapabilitiesInput,
+        capabilities?: Capabilities,
         quotaMax?: bigint | number,
     ) {
-        let convertedCapacityInfo;
         assert.strictEqual(typeof name, 'string');
         assert.strictEqual(typeof owner, 'string');
         assert.strictEqual(typeof ownerDisplayName, 'string');
@@ -340,7 +286,7 @@ export default class BucketInfo implements BucketMetadata {
             assert(capabilities.VeeamSOSApi.CapacityInfo.Used >= -1);
         }
         if (quotaMax) {
-            assert.strictEqual(typeof quotaMax, 'bigint', 'Quota must be a BigInt');
+            assert(typeof quotaMax === 'bigint' || typeof quotaMax === 'number');
             assert(quotaMax >= 0, 'Quota cannot be negative');
         }
         if (cors) {
@@ -378,10 +324,6 @@ export default class BucketInfo implements BucketMetadata {
             tags = [] as BucketTag[];
         }
         assert.strictEqual(areTagsValid(tags), true);
-        if (quotaMax) {
-            assert(typeof quotaMax === 'bigint' || typeof quotaMax === 'number');
-            assert(quotaMax >= 0, 'Quota cannot be negative');
-        }
 
         // IF UPDATING PROPERTIES, INCREMENT MODELVERSION NUMBER ABOVE
         this._acl = aclInstance;
@@ -410,25 +352,22 @@ export default class BucketInfo implements BucketMetadata {
         this._notificationConfiguration = notificationConfiguration || null;
         this._tags = tags;
 
-        convertedCapacityInfo = BucketInfo.convertCapacityToBigInt(capabilities?.VeeamSOSApi?.CapacityInfo);
-        this._capabilities = capabilities ? {
+        this._capabilities = capabilities && {
             ...capabilities,
-            VeeamSOSApi: {
-                ...capabilities?.VeeamSOSApi,
-                CapacityInfo: convertedCapacityInfo,
-            }
-        } : undefined;
+            VeeamSOSApi: capabilities.VeeamSOSApi &&
+                VeeamCapability.toBigInt(capabilities.VeeamSOSApi),
+        };
     
         this._quotaMax = BigInt(quotaMax || 0n);
         return this;
     }
 
     /**
-    * Serialize the object
-    * @return - stringified object
-    */
-    serialize() {
-        const bucketInfos: any & CapacityInfoExported = {
+     * Make the bucket info serializable
+     * @return - serializable object
+     */
+    makeSerializable() {
+        const bucketInfos: any & VeeamSOSApiSerializable = {
             acl: this._acl,
             name: this._name,
             owner: this._owner,
@@ -454,15 +393,11 @@ export default class BucketInfo implements BucketMetadata {
             objectLockConfiguration: this._objectLockConfiguration,
             notificationConfiguration: this._notificationConfiguration,
             tags: this._tags,
-            capabilities: this._capabilities ? {
+            capabilities: this._capabilities && {
                 ...this._capabilities,
-                VeeamSOSApi: this._capabilities.VeeamSOSApi ? {
-                    ...this._capabilities.VeeamSOSApi,
-                    CapacityInfo: BucketInfo.serializeCapacityInfo(
-                        this._capabilities.VeeamSOSApi.CapacityInfo
-                    ),
-                } : undefined,
-            } : undefined,
+                VeeamSOSApi: this._capabilities.VeeamSOSApi &&
+                    VeeamCapability.serialize(this._capabilities.VeeamSOSApi),
+            },
             quotaMax: this._quotaMax.toString(),
         };
         const final = this._websiteConfiguration
@@ -471,21 +406,28 @@ export default class BucketInfo implements BucketMetadata {
                   websiteConfiguration: this._websiteConfiguration.getConfig(),
               }
             : bucketInfos;
-        return JSON.stringify(final);
+        return final;
     }
+
+    /**
+     * Serialize the object
+     * @return - stringified object
+     */
+    serialize() {
+        return JSON.stringify(this.makeSerializable());
+    }
+
     /**
      * deSerialize the JSON string
      * @param stringBucket - the stringified bucket
      * @return - parsed string
      */
     static deSerialize(stringBucket: string) {
-        const obj = JSON.parse(stringBucket);
-        const capabilities: CapabilitiesInput = {
+        const obj: BucketMetadataJSON = JSON.parse(stringBucket);
+        const capabilities: BucketMetadataJSON['capabilities'] = obj.capabilities && {
             ...obj.capabilities,
-            VeeamSOSApi: {
-                ...obj.capabilities?.VeeamSOSApi,
-                CapacityInfo: this.convertCapacityToBigInt(obj.capabilities?.VeeamSOSApi?.CapacityInfo),
-            },
+            VeeamSOSApi: obj.capabilities?.VeeamSOSApi &&
+                VeeamCapability.toBigInt(obj.capabilities?.VeeamSOSApi),
         };
         const websiteConfig = obj.websiteConfiguration ?
             new WebsiteConfiguration(obj.websiteConfiguration) : null;
@@ -515,12 +457,10 @@ export default class BucketInfo implements BucketMetadata {
      * @return Return an BucketInfo
      */
     static fromObj(data: any) {
-        const capabilities: CapabilitiesInput = {
+        const capabilities: BucketMetadataJSON['capabilities'] = data._capabilities && {
             ...data._capabilities,
-            VeeamSOSApi: {
-                ...data._capabilities?.VeeamSOSApi,
-                CapacityInfo: this.convertCapacityToBigInt(data._capabilities?.VeeamSOSApi?.CapacityInfo),
-            },
+            VeeamSOSApi: data._capabilities?.VeeamSOSApi &&
+                VeeamCapability.parse(data._capabilities?.VeeamSOSApi),
         };
         return new BucketInfo(data._name, data._owner, data._ownerDisplayName,
             data._creationDate, data._mdBucketModelVersion, data._acl,
@@ -536,34 +476,23 @@ export default class BucketInfo implements BucketMetadata {
     }
 
     /**
-     * Converts the input Veeam capacity info to BigInts
-     * @param capacityInfo - capacity info to convert
-     * @returns - converted capacity info
+     * Create a BucketInfo from a JSON object
+     *
+     * @param data - object containing data
+     * @return Return an BucketInfo
      */
-    static convertCapacityToBigInt(capacityInfo: VeeamSOSApiSchema['CapacityInfo']): VeeamSOSApi['CapacityInfo'] | undefined {
-        if (!capacityInfo) {
-            return undefined;
-        }
-        return {
-            ...capacityInfo,
-            Available: BigInt(capacityInfo.Available || 0),
-            Capacity: BigInt(capacityInfo.Capacity || 0),
-            Used: BigInt(capacityInfo.Used || 0),
-            LastModified: capacityInfo.LastModified,
-        };
-    }
-
-    static serializeCapacityInfo(capacityInfo: VeeamSOSApi['CapacityInfo']): CapacityInfoExported['CapacityInfo'] | undefined {
-        if (!capacityInfo) {
-            return undefined;
-        }
-        return {
-            ...capacityInfo,
-            Available: capacityInfo.Available.toString(),
-            Capacity: capacityInfo.Capacity.toString(),
-            Used: capacityInfo.Used.toString(),
-            LastModified: capacityInfo.LastModified,
-        };
+    static fromJson(data: BucketMetadataJSON) {
+        return new BucketInfo(data.name, data.owner, data.ownerDisplayName,
+            data.creationDate, data.mdBucketModelVersion, data.acl,
+            data.transient, data.deleted, data.serverSideEncryption,
+            data.versioningConfiguration, data.locationConstraint,
+            data.websiteConfiguration && new WebsiteConfiguration(data.websiteConfiguration),
+            data.cors, data.replicationConfiguration, data.lifecycleConfiguration,
+            data.bucketPolicy, data.uid, data.readLocationConstraint,
+            data.isNFS, data.ingestion, data.azureInfo,
+            data.objectLockEnabled, data.objectLockConfiguration,
+            data.notificationConfiguration, data.tags, data.capabilities,
+            BigInt(data.quotaMax || 0n));
     }
 
     /**
@@ -1103,7 +1032,7 @@ export default class BucketInfo implements BucketMetadata {
      * @param capability? - if provided, will return a specific capacity
      * @return - capability of the bucket
      */
-    getCapability(capability: string) : VeeamSOSApi | undefined {
+    getCapability(capability: string) : Capabilities[keyof Capabilities] | undefined {
         if (capability && this._capabilities && this._capabilities[capability]) {
             return this._capabilities[capability];
         }

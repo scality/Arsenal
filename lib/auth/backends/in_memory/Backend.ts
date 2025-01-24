@@ -5,23 +5,21 @@ import { calculateSigningKey, hashSignature } from './vaultUtilities';
 import Indexer from './Indexer';
 import BaseBackend from '../base';
 import { Accounts } from './types';
-import { AccountQuota, AuthInfoType, AuthorizationResults, AuthV4Results } from '../../AuthInfo';
+import { AuthInfoType, AuthV4Results } from '../../AuthInfo';
 
-function _formatResponse(
-    userInfoToSend: AuthInfoType,
-    authorizationResults: AuthorizationResults,
-    accountQuota: AccountQuota,
-): { message: { body: AuthV4Results } } {
+function _formatResponse(userInfo: AuthInfoType): { message: { body: AuthV4Results } } {
     return {
         message: {
-            body: {
-                userInfo: userInfoToSend,
-                authorizationResults,
-                accountQuota,
+          body: {
+            userInfo,
+            accountQuota: {
+              account: userInfo.canonicalID,
+              quota: 0n,
             },
+          },
         },
+      };
     };
-}
 
 /**
  * Class that provides a memory backend for verifying signatures and getting
@@ -70,15 +68,7 @@ class InMemoryBackend extends BaseBackend {
             // @ts-ignore
             IAMdisplayName: entity.IAMdisplayName,
         };
-        const vaultReturnObject = this.formatResponse(
-            userInfoToSend,
-            [],
-            {
-                account: entity.canonicalID,
-                // account quota is not supported in this backend
-                accountQuota: 0,
-            }
-        );
+        const vaultReturnObject = this.formatResponse(userInfoToSend);
         return callback(null, vaultReturnObject);
     }
 
@@ -109,15 +99,7 @@ class InMemoryBackend extends BaseBackend {
             // @ts-ignore
             IAMdisplayName: entity.IAMdisplayName,
         };
-        const vaultReturnObject = this.formatResponse(
-            userInfoToSend,
-            [],
-            {
-                account: entity.canonicalID,
-                // account quota is not supported in this backend
-                accountQuota: 0,
-            }
-        );
+        const vaultReturnObject = this.formatResponse(userInfoToSend);
         return callback(null, vaultReturnObject);
     }
 

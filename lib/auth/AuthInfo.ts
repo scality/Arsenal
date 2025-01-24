@@ -28,7 +28,7 @@ export type AccountInfos = {
 
 export type AuthV4Results = {
     userInfo: AuthInfoType,
-    authorizationResults: AuthorizationResults,
+    authorizationResults?: AuthorizationResults,
     accountQuota: AccountQuota,
 };
 

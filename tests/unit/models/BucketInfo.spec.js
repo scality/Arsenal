@@ -2,6 +2,7 @@ const assert = require('assert');
 const BucketInfo = require('../../../lib/models/BucketInfo').default;
 const { WebsiteConfiguration } =
     require('../../../lib/models/WebsiteConfiguration');
+const { VeeamCapacityInfo } = require('../../../lib/models/Veeam');
 
 // create variables to populate dummyBucket
 const bucketName = 'nameOfBucket';
@@ -297,7 +298,7 @@ Object.keys(acl).forEach(
                         ...dummyBucket._capabilities,
                         VeeamSOSApi: dummyBucket._capabilities.VeeamSOSApi ? {
                             ...dummyBucket._capabilities.VeeamSOSApi,
-                            CapacityInfo: BucketInfo.serializeCapacityInfo(
+                            CapacityInfo: VeeamCapacityInfo.serialize(
                                 dummyBucket._capabilities.VeeamSOSApi.CapacityInfo,
                             ),
                         } : undefined,

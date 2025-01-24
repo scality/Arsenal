@@ -16,11 +16,11 @@ import * as werelogs from 'werelogs';
 
 import { ErrorLike, reshapeExceptionError } from '../../../errorUtils';
 import errors, { ArsenalError } from '../../../errors';
-import BucketInfo, { BucketMetadata, Capabilities, VeeamSOSApi } from '../../../models/BucketInfo';
+import BucketInfo, { BucketMetadata, Capabilities } from '../../../models/BucketInfo';
 import ObjectMD, { ObjectMDData } from '../../../models/ObjectMD';
 import * as jsutil from '../../../jsutil';
 
-import { MongoClient, Long, Db, MongoClientOptions, ReadPreferenceMode, Filter, WithId, Collection, AnyBulkWriteOperation, UpdateFilter, MongoError, MongoServerError } from 'mongodb';
+import { MongoClient, Long, Db, MongoClientOptions, ReadPreferenceMode, WithId, Collection, AnyBulkWriteOperation, UpdateFilter, MongoServerError } from 'mongodb';
 import Uuid from 'uuid';
 import diskusage from 'diskusage';
 
@@ -29,13 +29,15 @@ import * as listAlgos from '../../../algos/list/exportAlgos';
 import LRUCache from '../../../algos/cache/LRUCache';
 
 import MongoReadStream from './readStream';
-import MongoUtils from './utils';
+import * as MongoUtils from './utils';
 import Skip from '../../../algos/list/skip';
 import MergeStream from '../../../algos/stream/MergeStream';
 import { Transform } from 'stream';
 import { Version } from '../../../versioning/Version';
 
 import { formatMasterKey, formatVersionKey } from './utils';
+import { VeeamCapacityInfo, VeeamSOSApiSchema } from '../../../models/Veeam';
+import { BucketVersioningFormat, VersioningConstants } from '../../../versioning/constants';
 
 const VID_NONE = '';
 
@@ -55,10 +57,8 @@ const initialInstanceID = process.env.INITIAL_INSTANCE_ID;
 
 let uidCounter = 0;
 
-const BUCKET_VERSIONS = require('../../../versioning/constants')
-    .VersioningConstants.BucketVersioningKeyFormat;
-const DB_PREFIXES = require('../../../versioning/constants')
-    .VersioningConstants.DbPrefixes;
+const BUCKET_VERSIONS = VersioningConstants.BucketVersioningKeyFormat;
+const DB_PREFIXES = VersioningConstants.DbPrefixes;
 
 function generateVersionId(replicationGroupId) {
     // generate a unique number for each member of the nodejs cluster
@@ -80,30 +80,17 @@ export type MongoDBClientInterfaceParameters = {
     database: string,
     logger: werelogs.Logger,
     replicationGroupId: string,
-    authCredentials: {
-        username?: string,
-        password?: string,
-    },
+    authCredentials: MongoUtils.AuthCredentials,
     isLocationTransient: Function,
     shardCollections: boolean,
 };
 
 export type CapabilitiesMongoDB = Capabilities & {
-    VeeamSOSApi?: Omit<VeeamSOSApi, 'CapacityInfo'> & {
+    VeeamSOSApi?: Omit<VeeamSOSApiSchema, 'CapacityInfo'> & {
         CapacityInfo?: {
             Capacity: Long,
             Available: Long,
             Used: Long,
-        },
-    },
-}
-
-export type ParsableCapabilitiesMongoDB = Capabilities & {
-    VeeamSOSApi?: Omit<VeeamSOSApi, 'CapacityInfo'> & {
-        CapacityInfo?: {
-            Capacity: string,
-            Available: string,
-            Used: string,
         },
     },
 }
@@ -113,15 +100,10 @@ export type BucketMetadataMongoDB = Omit<Omit<BucketMetadata, 'quotaMax'>, 'capa
     capabilities?: CapabilitiesMongoDB,
 };
 
-export type ParsableBucketMetadata = Omit<Omit<BucketMetadata, 'quotaMax'>, 'capabilities'> & {
-    quotaMax: string,
-    capabilities: ParsableCapabilitiesMongoDB,
-};
-
 export interface BucketMetastoreDocument extends Document {
     _id: string;
     value: BucketMetadataMongoDB;
-    vFormat?: string;
+    vFormat?: BucketVersioningFormat;
 }
 
 export interface ObjectMetastoreDocument extends Document {
@@ -233,8 +215,9 @@ export type ObjectMDStats = {
     stalled: number;
 };
 
-interface NodeCallBack<T> {
-    (err: ArsenalError | Error | null | undefined, result?: T): void;
+interface ArsenalCallback<T> {
+    (err: null, result: T): void;
+    (err: ArsenalError): void;
 };
 
 /**
@@ -254,7 +237,7 @@ class MongoClientInterface {
     private shardCollections: boolean;
     private concurrentCursors: number;
     private bucketVFormatCache: LRUCache;
-    private defaultBucketKeyFormat: string;
+    private readonly defaultBucketKeyFormat: BucketVersioningFormat;
     private cacheHit: number;
     private cacheMiss: number;
     private cacheHitMissLoggerInterval: NodeJS.Timer | null;
@@ -291,8 +274,8 @@ class MongoClientInterface {
 
         this.bucketVFormatCache = new LRUCache(constants.maxCachedBuckets);
         this.defaultBucketKeyFormat = [BUCKET_VERSIONS.v0, BUCKET_VERSIONS.v1]
-            .includes(process.env.DEFAULT_BUCKET_KEY_FORMAT) ? process.env.DEFAULT_BUCKET_KEY_FORMAT
-            : BUCKET_VERSIONS.v1;
+            .includes(<BucketVersioningFormat>process.env.DEFAULT_BUCKET_KEY_FORMAT) ?
+            <BucketVersioningFormat>process.env.DEFAULT_BUCKET_KEY_FORMAT : BUCKET_VERSIONS.v1;
 
         this.cacheHit = 0;
         this.cacheMiss = 0;
@@ -388,11 +371,11 @@ class MongoClientInterface {
         return cb();
     }
 
-    getCollection<T extends Document>(name): Collection<T> | undefined {
+    getCollection<T extends Document>(name): Collection<T> {
         /* mongo has a problem with .. in collection names */
         const newName = (name === constants.usersBucket) ?
             USERSBUCKET : name;
-        return this.db?.collection<T>(newName);
+        return this.db!.collection<T>(newName);
     }
 
     /**
@@ -403,30 +386,27 @@ class MongoClientInterface {
      * @param {Function} cb callback
      * @return {undefined}
      */
-    createBucket(bucketName: string, bucketMD: BucketInfo, log: werelogs.Logger, cb: NodeCallBack<void>) {
+    createBucket(bucketName: string, bucketMD: BucketInfo, log: werelogs.Logger, cb: ArsenalCallback<void>) {
         // FIXME: there should be a version of BucketInfo.serialize()
         // that does not JSON.stringify()
-        const bucketInfo = BucketInfo.fromObj(bucketMD);
-        const bucketMDStr = bucketInfo.serialize();
-        const newBucketMD = JSON.parse(bucketMDStr);
+        const newBucketMD = (
+            bucketMD instanceof BucketInfo ? bucketMD : BucketInfo.fromObj(bucketMD)
+        ).makeSerializable();
         const m = this.getCollection<BucketMetastoreDocument>(METASTORE);
 
         const payload = {
             $set: {
                 _id: bucketName,
                 value: newBucketMD,
-                vFormat: BUCKET_VERSIONS.v0,
+                vFormat: this.defaultBucketKeyFormat,
             },
         };
         if (bucketName !== constants.usersBucket &&
             bucketName !== PENSIEVE &&
             !bucketName.startsWith(constants.mpuBucketPrefix)) {
             payload.$set.vFormat = this.defaultBucketKeyFormat;
-        }
-
-        if (!m) {
-            log.debug('createBucket: error getting collection');
-            return cb(errors.InternalError);
+        } else {
+            payload.$set.vFormat = BUCKET_VERSIONS.v0;            
         }
 
         // we don't have to test bucket existence here as it is done
@@ -443,22 +423,14 @@ class MongoClientInterface {
                 // "constants.usersBucket" and "PENSIEVE" since it has already
                 // been created
                 if (bucketName !== constants.usersBucket && bucketName !== PENSIEVE) {
-                    if (!this.db) {
-                        log.debug('createBucket: error getting database');
-                        return cb(errors.InternalError);
-                    }
-                    return this.db.createCollection(bucketName)
+                    return this.db!.createCollection(bucketName)
                         .then(() => {
                             if (this.shardCollections) {
                                 const cmd = {
                                     shardCollection: `${this.database}.${bucketName}`,
                                     key: { _id: 1 },
                                 };
-                                if (!this.adminDb) {
-                                    log.debug('createBucket: error getting admin database');
-                                    return cb(errors.InternalError);
-                                }
-                                return this.adminDb.command(cmd, {}).then(() => cb(null)).catch(err => {
+                                return this.adminDb!.command(cmd, {}).then(() => cb(null)).catch(err => {
                                     log.error(
                                         'createBucket: enabling sharding',
                                         { error: err });
@@ -483,12 +455,8 @@ class MongoClientInterface {
      * @param {Function} cb callback
      * @return {undefined}
      */
-    getBucketAttributes(bucketName: string, log: werelogs.Logger, cb: NodeCallBack<BucketInfo>) {
+    getBucketAttributes(bucketName: string, log: werelogs.Logger, cb: ArsenalCallback<BucketInfo>) {
         const m = this.getCollection<BucketMetastoreDocument>(METASTORE);
-        if (!m) {
-            log.debug('getBucketAttributes: error getting collection');
-            return cb(errors.InternalError);
-        }
         m.findOne({
             _id: bucketName,
         })
@@ -496,31 +464,20 @@ class MongoClientInterface {
                 if (!doc) {
                     return cb(errors.NoSuchBucket);
                 }
-                // FIXME: there should be a version of BucketInfo.deserialize()
-                // that properly inits w/o JSON.parse()
-                // For "Long" values, convert to a string: the BucketInfo
-                // deSerialize function accepts a string for quotaMax
-                const parsedCapacityInfo = doc.value.capabilities?.VeeamSOSApi?.CapacityInfo ? {
-                    ...doc.value.capabilities.VeeamSOSApi.CapacityInfo,
-                    Capacity: doc.value.capabilities.VeeamSOSApi.CapacityInfo.Capacity.toString(),
-                    Available: doc.value.capabilities.VeeamSOSApi.CapacityInfo.Available.toString(),
-                    Used: doc.value.capabilities.VeeamSOSApi.CapacityInfo.Used.toString(),
-                } : undefined;
-
                 const bucketMetadata = {
                     ...doc.value,
                     quotaMax: doc.value.quotaMax.toString(),
                     capabilities: {
                         ...doc.value.capabilities,
-                        VeeamSOSApi: doc.value.capabilities?.VeeamSOSApi ? {
+                        VeeamSOSApi: doc.value.capabilities?.VeeamSOSApi && {
                             ...doc.value.capabilities.VeeamSOSApi,
-                            CapacityInfo: parsedCapacityInfo,
-                        } : undefined,
+                            // Long values are automatically serialized to strings
+                            CapacityInfo: doc.value.capabilities.VeeamSOSApi.CapacityInfo &&
+                                VeeamCapacityInfo.toBigInt(doc.value.capabilities.VeeamSOSApi.CapacityInfo),
+                        },
                     },
                 };
-                const bucketMDStr = JSON.stringify(bucketMetadata);
-                const bucketMD = BucketInfo.deSerialize(bucketMDStr);
-                return cb(null, bucketMD);
+                return cb(null, BucketInfo.fromJson(bucketMetadata));
             })
             .catch(err => {
                 log.error(
@@ -538,7 +495,7 @@ class MongoClientInterface {
      * @param {Function} cb callback
      * @return {undefined}
      */
-    getBucketVFormat(bucketName: string, log: werelogs.Logger, cb: NodeCallBack<string>) {
+    getBucketVFormat(bucketName: string, log: werelogs.Logger, cb: ArsenalCallback<BucketVersioningFormat>) {
         // retreiving vFormat from cache
         const cachedVFormat = this.bucketVFormatCache.get(bucketName);
         if (cachedVFormat) {
@@ -547,10 +504,6 @@ class MongoClientInterface {
         }
         this.cacheMiss++;
         const m = this.getCollection<BucketMetastoreDocument>(METASTORE);
-        if (!m) {
-            log.debug('getBucketVFormat: error getting collection');
-            return cb(errors.InternalError);
-        }
         m.findOne({
             _id: bucketName,
         })
@@ -577,18 +530,18 @@ class MongoClientInterface {
         objName: string,
         params: ObjectMDOperationParams,
         log: werelogs.Logger,
-        cb: NodeCallBack<{ bucket: string, obj?: string }>,
+        cb: ArsenalCallback<{ bucket: string, obj?: string }>,
     ) {
-        this.getBucketAttributes(bucketName, log, (err, bucket) => {
+        this.getBucketAttributes(bucketName, log, (err, bucket?) => {
             if (err) {
                 log.error(
                     'getBucketAttributes: error getting bucket attributes',
                     { error: err.message });
                 return cb(err);
             }
-            this.getObject(bucketName, objName, params, log, (err, obj) => {
+            this.getObject(bucketName, objName, params, log, (err, obj?) => {
                 if (err) {
-                    if (err instanceof ArsenalError && err.is.NoSuchKey) {
+                    if (err.is.NoSuchKey) {
                         return cb(null,
                             {
                                 bucket:
@@ -608,7 +561,7 @@ class MongoClientInterface {
         });
     }
 
-    putBucketAttributes(bucketName: string, bucketMD: BucketInfo, log: werelogs.Logger, cb: NodeCallBack<void>) {
+    putBucketAttributes(bucketName: string, bucketMD: BucketInfo, log: werelogs.Logger, cb: ArsenalCallback<void>) {
         // FIXME: there should be a version of BucketInfo.serialize()
         // that does not JSON.stringify()
         const bucketInfo = BucketInfo.fromObj(bucketMD);
@@ -619,10 +572,6 @@ class MongoClientInterface {
         // eslint-disable-next-line new-cap
         newBucketMD.quotaMax = new Long(newBucketMD.quotaMax || 0);
         const m = this.getCollection<BucketMetastoreDocument>(METASTORE);
-        if (!m) {
-            log.debug('putBucketAttributes: error getting collection');
-            return cb(errors.InternalError);
-        }
         m.updateOne({
             _id: bucketName,
         }, {
@@ -658,16 +607,12 @@ class MongoClientInterface {
         capabilityField: string | null,
         capability: { [K in keyof Capabilities]: unknown },
         log: werelogs.Logger,
-        cb: NodeCallBack<void>,
+        cb: ArsenalCallback<void>,
     ) {
         const m = this.getCollection<BucketMetastoreDocument>(METASTORE);
         const updateString = capabilityField ?
             `value.capabilities.${capabilityName}.${capabilityField}` :
             `value.capabilities.${capabilityName}`;
-        if (!m) {
-            log.debug('putBucketAttributesCapabilities: error getting collection');
-            return cb(errors.InternalError);
-        }
         m.updateOne({
             _id: bucketName,
         }, {
@@ -699,16 +644,12 @@ class MongoClientInterface {
         capabilityName: string,
         capabilityField: { [K in keyof Capabilities]: unknown },
         log: werelogs.Logger,
-        cb: NodeCallBack<void>,
+        cb: ArsenalCallback<void>,
     ) {
         const m = this.getCollection<BucketMetastoreDocument>(METASTORE);
         const updateString = capabilityField ?
             `value.capabilities.${capabilityName}.${capabilityField}` :
             `value.capabilities.${capabilityName}`;
-        if (!m) {
-            log.debug('deleteBucketAttributesCapability: error getting collection');
-            return cb(errors.InternalError);
-        }
         m.updateOne({
             _id: bucketName,
         }, {
@@ -729,12 +670,8 @@ class MongoClientInterface {
     /*
      * Delete bucket from metastore
      */
-    deleteBucketStep2(bucketName: string, log: werelogs.Logger, cb: NodeCallBack<void>) {
+    deleteBucketStep2(bucketName: string, log: werelogs.Logger, cb: ArsenalCallback<void>) {
         const m = this.getCollection<BucketMetastoreDocument>(METASTORE);
-        if (!m) {
-            log.debug('deleteBucketStep2: error getting collection');
-            return cb(errors.InternalError);
-        }
         m.findOneAndDelete({
             _id: bucketName,
         }, {})
@@ -764,12 +701,8 @@ class MongoClientInterface {
      * by a previous call)
      * 2) the collection may exist.
      */
-    deleteBucket(bucketName: string, log: werelogs.Logger, cb: NodeCallBack<void>) {
+    deleteBucket(bucketName: string, log: werelogs.Logger, cb: ArsenalCallback<void>) {
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
-        if (!c) {
-            log.debug('deleteBucket: error getting collection');
-            return cb(errors.InternalError);
-        }
         c.drop({})
             .then(() => {
                 this.deleteBucketStep2(bucketName, log, err => {
@@ -854,7 +787,7 @@ class MongoClientInterface {
         objVal: ObjectMDData,
         params: ObjectMDOperationParams,
         log: werelogs.Logger,
-        cb: NodeCallBack<string>,
+        cb: ArsenalCallback<string>,
         isRetry?: boolean,
     ) {
         const versionId = generateVersionId(this.replicationGroupId);
@@ -968,7 +901,7 @@ class MongoClientInterface {
         objVal: ObjectMDData,
         params: ObjectMDOperationParams,
         log: werelogs.Logger,
-        cb: NodeCallBack<string>,
+        cb: ArsenalCallback<string>,
     ) {
         const versionId = generateVersionId(this.replicationGroupId);
         // eslint-disable-next-line
@@ -1012,7 +945,7 @@ class MongoClientInterface {
         objVal: ObjectMDData,
         params: ObjectMDOperationParams,
         log: werelogs.Logger,
-        cb: NodeCallBack<string>,
+        cb: ArsenalCallback<string>,
     ) {
         // eslint-disable-next-line
         objVal.versionId = params.versionId;
@@ -1123,7 +1056,7 @@ class MongoClientInterface {
         objVal: ObjectMDData,
         params: ObjectMDOperationParams,
         log: werelogs.Logger,
-        cb: NodeCallBack<string>,
+        cb: ArsenalCallback<string>,
     ) {
         const versionKey = formatVersionKey(objName, params.versionId, params.vFormat);
         const masterKey = formatMasterKey(objName, params.vFormat);
@@ -1136,8 +1069,8 @@ class MongoClientInterface {
             },
         }, {
             upsert: true,
-        }).then(() => this.getLatestVersion(c, objName, params.vFormat, log, (err, mstObjVal) => {
-            if (err instanceof ArsenalError && err.is.NoSuchKey) {
+        }).then(() => this.getLatestVersion(c, objName, params.vFormat, log, (err, mstObjVal?) => {
+            if (err?.is.NoSuchKey) {
                 return cb(err);
             }
 
@@ -1221,7 +1154,7 @@ class MongoClientInterface {
         value: ObjectMDData,
         params: ObjectMDOperationParams,
         log: werelogs.Logger,
-        cb: NodeCallBack<void>,
+        cb: ArsenalCallback<void>,
     ) {
         if (params?.needOplogUpdate) {
             return this.putObjectNoVerWithOplogUpdate(collection, bucketName, objName, value, params, log, cb);
@@ -1265,7 +1198,7 @@ class MongoClientInterface {
         value: ObjectMDData,
         params: ObjectMDOperationParams,
         log: werelogs.Logger,
-        cb: NodeCallBack<void>,
+        cb: ArsenalCallback<void>,
     ) {
         const key = formatMasterKey(objName, params.vFormat);
         const putFilter = { _id: key };
@@ -1371,16 +1304,12 @@ class MongoClientInterface {
         objVal: ObjectMDData,
         params: ObjectMDOperationParams,
         log: werelogs.Logger,
-        cb: NodeCallBack<string | void>,
+        cb: ArsenalCallback<string | void>,
     ): void {
         MongoUtils.serialize(objVal);
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
-        if (!c) {
-            log.debug('putObject: error getting collection');
-            return cb(errors.InternalError);
-        }
         const _params = Object.assign({}, params);
-        return this.getBucketVFormat(bucketName, log, (err, vFormat) => {
+        return this.getBucketVFormat(bucketName, log, (err, vFormat?) => {
             if (err) {
                 return cb(err);
             }
@@ -1411,13 +1340,9 @@ class MongoClientInterface {
         objName: string,
         params: ObjectMDOperationParams | null,
         log: werelogs.Logger,
-        cb: NodeCallBack<ObjectMDData>,
+        cb: ArsenalCallback<ObjectMDData>,
     ) {
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
-        if (!c) {
-            log.debug('getObject: error getting collection');
-            return cb(errors.InternalError);
-        }
         let key;
         async.waterfall([
             next => this.getBucketVFormat(bucketName, log, next),
@@ -1447,8 +1372,8 @@ class MongoClientInterface {
                 // If no master found then object is either non existent
                 // or last version is delete marker
                 if (!doc || doc.value.isPHD) {
-                    this.getLatestVersion(c, objName, vFormat, log, (err, value) => {
-                        if (err instanceof ArsenalError && err.is.NoSuchKey) {
+                    this.getLatestVersion(c, objName, vFormat, log, (err, value?) => {
+                        if (err?.is.NoSuchKey) {
                             return next(err);
                         }
 
@@ -1466,7 +1391,12 @@ class MongoClientInterface {
                 MongoUtils.unserialize(doc.value);
                 return next(null, doc.value);
             },
-        ], cb);
+        ], (err: ArsenalError | null | undefined, result?: ObjectMDData) => {
+            if (err) {
+                return cb(err);
+            }
+            return cb(null, result!);
+        });
     }
 
     /**
@@ -1481,16 +1411,10 @@ class MongoClientInterface {
         bucketName: string,
         objects: { key: string, params: ObjectMDOperationParams }[],
         log: werelogs.Logger,
-        callback: NodeCallBack<unknown[]>,
+        callback: ArsenalCallback<unknown[]>,
     ) {
         let vFormat;
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
-        if (!c) {
-            log.debug('error when getting bucket collection', {
-                bucketName,
-            });
-            return callback(errors.InternalError);
-        }
         if (!Array.isArray(objects)) {
             return callback(errors.InternalError.customizeDescription('objects must be an array'));
         }
@@ -1513,7 +1437,7 @@ class MongoClientInterface {
             // If no master found then object is either non existent or last
             // version is delete marker
             if (!doc || doc.value.isPHD) {
-                return this.getLatestVersion(c!, objName, vFormat, log, (err, _doc) => cb(null, {
+                return this.getLatestVersion(c!, objName, vFormat, log, (err, _doc?) => cb(null, {
                     err,
                     doc: _doc || null,
                     versionId: versionIdValue,
@@ -1528,7 +1452,7 @@ class MongoClientInterface {
                 key,
             });
         };
-        return this.getBucketVFormat(bucketName, log, (err, _vFormat) => {
+        return this.getBucketVFormat(bucketName, log, (err, _vFormat?) => {
             if (err) {
                 return callback(err);
             }
@@ -1559,7 +1483,12 @@ class MongoClientInterface {
                             : formatMasterKey(objName, vFormat);
                         const doc = docByKey.get(key);
                         processDoc(doc, objName, params, key, cb);
-                    }, callback);
+                    }, (err: ArsenalError | null | undefined, result?: unknown[]) => {
+                        if (err) {
+                            return callback(err);
+                        }
+                        return callback(null, result!);
+                    });
             }).catch(err => {
                 callback(err);
             });
@@ -1582,7 +1511,7 @@ class MongoClientInterface {
         objName: string,
         vFormat: string,
         log: werelogs.Logger,
-        cb: NodeCallBack<ObjectMDData>,
+        cb: ArsenalCallback<ObjectMDData>,
     ) {
         // generating the range delimiter keys
         const masterKey = formatMasterKey(objName, vFormat);
@@ -1590,14 +1519,13 @@ class MongoClientInterface {
         // string gives us the last key in the range
         const versionKey = formatVersionKey(objName, VID_NONE, vFormat);
         const lastVersionKey = inc(versionKey);
-        const filter = {
+        const filter = vFormat === BUCKET_VERSIONS.v0 ? {
+            $gt: masterKey,
+            $lt: lastVersionKey,
+        } : {
             $gt: versionKey,
             $lt: lastVersionKey,
         };
-        if (vFormat === BUCKET_VERSIONS.v0) {
-            filter.$gt = masterKey;
-            filter.$lt = lastVersionKey;
-        }
         c.find({
             _id: filter,
             // filtering out objects flagged for deletion
@@ -1648,7 +1576,7 @@ class MongoClientInterface {
         mst: { versionId: string },
         vFormat: string,
         log: werelogs.Logger,
-        cb: NodeCallBack<void>,
+        cb: ArsenalCallback<void>,
     ) {
         const masterKey = formatMasterKey(objName, vFormat);
         MongoUtils.serialize(objVal);
@@ -1696,7 +1624,7 @@ class MongoClientInterface {
         vFormat: string,
         log: werelogs.Logger
     ) {
-        this.getLatestVersion(c, objName, vFormat, log, (err, value) => {
+        this.getLatestVersion(c, objName, vFormat, log, (err, value?) => {
             if (err) {
                 log.error('async-repair: getting latest version',
                     { error: err.message });
@@ -1733,17 +1661,17 @@ class MongoClientInterface {
         mst: { versionId: string },
         vFormat: string,
         log: werelogs.Logger,
-        cb: NodeCallBack<void>,
+        cb: ArsenalCallback<void>,
     ) {
         const masterKey = formatMasterKey(objName, vFormat);
         // Check if there are other versions available
-        this.getLatestVersion(c, objName, vFormat, log, (err, version) => {
-            if (err instanceof ArsenalError && !err.is.NoSuchKey) {
+        this.getLatestVersion(c, objName, vFormat, log, (err, version?) => {
+            if (err && !err.is.NoSuchKey) {
                 log.error('getLatestVersion: error getting latest version',
                     { error: err.message, bucket: bucketName, key: objName });
                 return cb(err);
             }
-            if ((err instanceof ArsenalError && err.is.NoSuchKey) || (version!.isDeleteMarker && vFormat === BUCKET_VERSIONS.v1)) {
+            if ((err?.is.NoSuchKey) || (version!.isDeleteMarker && vFormat === BUCKET_VERSIONS.v1)) {
                 // We try to delete the master. A race condition
                 // is possible here: another process may recreate
                 // a master or re-delete it in between so place an
@@ -1759,7 +1687,7 @@ class MongoClientInterface {
                         // the PHD master might get updated when a PUT is performed
                         // before the repair is done, we don't want to return an error
                         // in this case
-                        if (err instanceof ArsenalError && err.is.NoSuchKey) {
+                        if (err.is.NoSuchKey) {
                             return cb(null);
                         }
                         log.error(
@@ -1804,7 +1732,7 @@ class MongoClientInterface {
         objName: string,
         params: ObjectMDOperationParams,
         log: werelogs.Logger,
-        cb: NodeCallBack<void>,
+        cb: ArsenalCallback<void>,
         originOp = 's3:ObjectRemoved:Delete',
     ) {
         const masterKey = formatMasterKey(objName, params.vFormat);
@@ -1838,7 +1766,7 @@ class MongoClientInterface {
                     // we don't return an error in case we don't find
                     // a version as we expect this case when dealing with
                     // a versioning suspended object.
-                    if (err instanceof ArsenalError && err.is.NoSuchKey) {
+                    if (err?.is.NoSuchKey) {
                         return next(null);
                     }
                     return next(err);
@@ -1874,13 +1802,13 @@ class MongoClientInterface {
         objName: string,
         params: ObjectMDOperationParams,
         log: werelogs.Logger,
-        cb: NodeCallBack<void>,
+        cb: ArsenalCallback<void>,
         originOp = 's3:ObjectRemoved:Delete',
     ) {
         const versionKey = formatVersionKey(objName, params.versionId, params.vFormat);
         this.internalDeleteObject(c, bucketName, versionKey, {}, params, log, err => {
             if (err) {
-                if (err instanceof ArsenalError && err.is.NoSuchKey) {
+                if (err.is.NoSuchKey) {
                     log.error(
                         'deleteObjectVerNotMaster: unable to find target object to delete',
                         { error: err.message, bucket: bucketName, key: objName });
@@ -1917,7 +1845,7 @@ class MongoClientInterface {
         objName: string,
         params: ObjectMDOperationParams,
         log: werelogs.Logger,
-        cb: NodeCallBack<void>,
+        cb: ArsenalCallback<void>,
         originOp = 's3:ObjectRemoved:Delete',
     ) {
         const masterKey = formatMasterKey(objName, params.vFormat);
@@ -1942,7 +1870,7 @@ class MongoClientInterface {
                 // getting the last version if master not found
                 // (either object non existent or last version is a delete marker)
                 if (!mst) {
-                    return this.getLatestVersion(c, objName, params.vFormat, log, (err, version) => {
+                    return this.getLatestVersion(c, objName, params.vFormat, log, (err, version?) => {
                         if (err) {
                             return next(err);
                         }
@@ -1960,7 +1888,12 @@ class MongoClientInterface {
                 return this.deleteObjectVerNotMaster(c, bucketName, objName,
                     params, log, next, originOp);
             },
-        ], cb);
+        ], (err: ArsenalError | null | undefined) => {
+            if (err) {
+                return cb(err);
+            }
+            return cb(null);
+        });
     }
 
     /**
@@ -1981,14 +1914,14 @@ class MongoClientInterface {
         objName: string,
         params: ObjectMDOperationParams,
         log: werelogs.Logger,
-        cb: NodeCallBack<void>,
+        cb: ArsenalCallback<void>,
         originOp = 's3:ObjectRemoved:Delete',
     ) {
         const masterKey = formatMasterKey(objName, params.vFormat);
         this.internalDeleteObject(c, bucketName, masterKey, {}, params, log, err => {
             if (err) {
                 // Should not return an error when no object is found
-                if (err instanceof ArsenalError && err.is.NoSuchKey) {
+                if (err.is.NoSuchKey) {
                     return cb(null);
                 }
                 log.error(
@@ -2022,7 +1955,7 @@ class MongoClientInterface {
         filter: UpdateFilter<ObjectMetastoreDocument>,
         params: ObjectMDOperationParams | null,
         log: werelogs.Logger,
-        cb: NodeCallBack<unknown>,
+        cb: ArsenalCallback<unknown>,
         originOp = 's3:ObjectRemoved:Delete',
     ) {
         // filter used when deleting object
@@ -2033,7 +1966,7 @@ class MongoClientInterface {
         if (params && params.doesNotNeedOpogUpdate) {
             // If flag is true, directly delete object
             return collection.deleteOne(deleteFilter)
-                .then(() => cb(null))
+                .then(() => cb(null, undefined))
                 .catch(err => {
                     log.error('internalDeleteObject: error deleting object',
                         { bucket: bucketName, object: key, error: err.message });
@@ -2126,20 +2059,16 @@ class MongoClientInterface {
         objName: string,
         params: ObjectMDOperationParams,
         log: werelogs.Logger,
-        cb: NodeCallBack<void>,
+        cb: ArsenalCallback<void>,
         originOp = 's3:ObjectRemoved:Delete',
     ) {
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
-        if (!c) {
-            log.debug('deleteObject: error getting collection');
-            return cb(errors.InternalError);
-        }
         const _params = Object.assign({}, params);
-        return this.getBucketVFormat(bucketName, log, (err, vFormat) => {
+        return this.getBucketVFormat(bucketName, log, (err, vFormat?) => {
             if (err) {
                 return cb(err);
             }
-            _params.vFormat = vFormat!;
+            _params.vFormat = vFormat;
             if (_params && _params.versionId) {
                 return this.deleteObjectVer(c, bucketName, objName,
                     _params, log, cb, originOp);
@@ -2170,13 +2099,9 @@ class MongoClientInterface {
         extension: { compareObjects: Function, result: Function },
         vFormat: string,
         log: werelogs.Logger,
-        cb: NodeCallBack<void>,
+        cb: ArsenalCallback<void>,
     ) {
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
-        if (!c) {
-            log.debug('internalListObject: error getting collection');
-            return cb(errors.InternalError);
-        }
         const getLatestVersion = this.getLatestVersion;
         let stream;
         let baseStream;
@@ -2220,12 +2145,12 @@ class MongoClientInterface {
                     transform(obj, encoding, callback) {
                         if (Version.isPHD(obj.value)) {
                             const key = obj.key.slice(DB_PREFIXES.Master.length);
-                            getLatestVersion(c, key, BUCKET_VERSIONS.v1, log, (err, version) => {
+                            getLatestVersion(c, key, BUCKET_VERSIONS.v1, log, (err, version?) => {
                                 if (err) {
                                     // ignoring PHD keys with no versions as all versions
                                     // might get deleted before the PHD key gets resolved by the listing
                                     // function
-                                    if (err instanceof ArsenalError && err.is.NoSuchKey) {
+                                    if (err.is.NoSuchKey) {
                                         return callback(null);
                                     }
                                     log.error(
@@ -2288,10 +2213,10 @@ class MongoClientInterface {
             newParams.start = undefined; // 'start' is deprecated
             newParams.gt = undefined;
 
-            if (params.secondaryStreamParams) {
+            if (newParams.secondaryStreamParams) {
                 // eslint-disable-next-line no-param-reassign
                 newParams.mainStreamParams.gte = range[0];
-                newParams.secondaryStreamParams!.gte = range[1];
+                newParams.secondaryStreamParams.gte = range[1];
             } else {
                 // eslint-disable-next-line no-param-reassign
                 newParams.mainStreamParams.gte = range;
@@ -2337,8 +2262,8 @@ class MongoClientInterface {
         bucketName: string,
         params: InternalListObjectParams,
         log: werelogs.Logger,
-        cb: NodeCallBack<void>) {
-        return this.getBucketVFormat(bucketName, log, (err, vFormat) => {
+        cb: ArsenalCallback<void>) {
+        return this.getBucketVFormat(bucketName, log, (err, vFormat?) => {
             if (err) {
                 return cb(err);
             }
@@ -2357,7 +2282,7 @@ class MongoClientInterface {
                 mongifiedSearch: params.mongifiedSearch,
             };
             return this.internalListObject(bucketName, internalParams, extension,
-                vFormat!, log, cb);
+                vFormat, log, cb);
         });
     }
 
@@ -2376,9 +2301,9 @@ class MongoClientInterface {
         bucketName: string,
         params: InternalListObjectParams,
         log: werelogs.Logger,
-        cb: NodeCallBack<void>,
+        cb: ArsenalCallback<void>,
     ) {
-        return this.getBucketVFormat(bucketName, log, (err, vFormat) => {
+        return this.getBucketVFormat(bucketName, log, (err, vFormat?) => {
             if (err) {
                 return cb(err);
             }
@@ -2393,7 +2318,7 @@ class MongoClientInterface {
                 secondaryStreamParams: Array.isArray(extensionParams) ? extensionParams[1] : null,
             };
 
-            return this.internalListObject(bucketName, internalParams, extension, vFormat!, log, cb);
+            return this.internalListObject(bucketName, internalParams, extension, vFormat, log, cb);
         });
     }
 
@@ -2414,7 +2339,7 @@ class MongoClientInterface {
         bucketName: string,
         params: InternalListObjectParams,
         log: werelogs.Logger,
-        cb: NodeCallBack<void>,
+        cb: ArsenalCallback<void>,
     ) {
         const extName = params.listingType;
         const extension = new listAlgos[extName](params, log);
@@ -2441,7 +2366,7 @@ class MongoClientInterface {
         return cb(null, resp);
     }
 
-    readUUID(log: werelogs.Logger, cb: NodeCallBack<string | ObjectMDStats>) {
+    readUUID(log: werelogs.Logger, cb: ArsenalCallback<string | ObjectMDStats>) {
         const i = this.getCollection<InfostoreDocument>(INFOSTORE);
         if (!i) {
             log.error('readUUID: error getting infostore collection');
@@ -2453,7 +2378,7 @@ class MongoClientInterface {
             if (!doc) {
                 return cb(errors.NoSuchKey);
             }
-            return cb(null, doc.value);
+            return cb(null, doc.value!);
         }).catch(err => {
             log.error('readUUID: error reading UUID',
                 { error: err.message });
@@ -2461,7 +2386,7 @@ class MongoClientInterface {
         });
     }
 
-    writeUUIDIfNotExists(uuid: string, log: werelogs.Logger, cb: NodeCallBack<void>) {
+    writeUUIDIfNotExists(uuid: string, log: werelogs.Logger, cb: ArsenalCallback<void>) {
         const i = this.getCollection<InfostoreDocument>(INFOSTORE);
         if (!i) {
             log.error('writeUUIDIfNotExists: error getting infostore collection');
@@ -2486,11 +2411,11 @@ class MongoClientInterface {
      * we always try to generate a new UUID in order to be atomic in
      * case of concurrency. The write will fail if it already exists.
      */
-    getUUID(log: werelogs.Logger, cb: NodeCallBack<string | ObjectMDStats>) {
+    getUUID(log: werelogs.Logger, cb: ArsenalCallback<string | ObjectMDStats>) {
         const uuid = initialInstanceID || Uuid.v4();
         this.writeUUIDIfNotExists(uuid, log, err => {
             if (err) {
-                if (err instanceof ArsenalError && err.is.InternalError) {
+                if (err.is.InternalError) {
                     log.error('getUUID: error getting UUID',
                         { error: err.message });
                     return cb(err);
@@ -2501,16 +2426,21 @@ class MongoClientInterface {
         });
     }
 
-    getDiskUsage(cb: NodeCallBack<unknown>) {
+    getDiskUsage(cb: ArsenalCallback<unknown>) {
         // FIXME: for basic one server deployment the infrastructure
         // configurator shall set a path to the actual MongoDB volume.
         // For Kub/cluster deployments there should be a more sophisticated
         // way for guessing free space.
         diskusage.check(this.path !== undefined ?
-            this.path : '/', cb);
+            this.path : '/', (err, result) => {
+                if (err) {
+                    return cb(errors.InternalError);
+                }
+                return cb(null, result);
+            });
     }
 
-    readCountItems(log: werelogs.Logger, cb: NodeCallBack<ObjectMDStats | string>) {
+    readCountItems(log: werelogs.Logger, cb: ArsenalCallback<ObjectMDStats | string>) {
         const i = this.getCollection<InfostoreDocument>(INFOSTORE);
         if (!i) {
             log.error('readCountItems: error getting infostore collection');
@@ -2534,7 +2464,7 @@ class MongoClientInterface {
                 };
                 return cb(null, res);
             }
-            return cb(null, doc.value);
+            return cb(null, doc.value!);
         }).catch(err => {
             log.error('readCountItems: error reading count items', {
                 error: err.message,
@@ -2543,7 +2473,7 @@ class MongoClientInterface {
         });
     }
 
-    updateCountItems(value: ObjectMDStats, log: werelogs.Logger, cb: NodeCallBack<void>) {
+    updateCountItems(value: ObjectMDStats, log: werelogs.Logger, cb: ArsenalCallback<void>) {
         const i = this.getCollection<InfostoreDocument>(INFOSTORE);
         if (!i) {
             log.error('updateCountItems: error getting infostore collection');
@@ -2602,11 +2532,11 @@ class MongoClientInterface {
      * @param { function(error, BucketInfos): void } cb - callback
      * @return { undefined }
      */
-    getBucketInfos(log: werelogs.Logger, cb: NodeCallBack<{ bucketCount: number, bucketInfos: BucketInfo[] }>) {
+    getBucketInfos(log: werelogs.Logger, cb: ArsenalCallback<{ bucketCount: number, bucketInfos: BucketInfo[] }>) {
         let bucketCount = 0;
         const bucketInfos: BucketInfo[] = [];
 
-        this.db?.listCollections({ type: 'collection' }).toArray().then(collInfos =>
+        this.db!.listCollections({ type: 'collection' }).toArray().then(collInfos =>
             async.eachLimit(collInfos, 10, (value, next) => {
                 if (this._isSystemCollection(value.name) || this._isSpecialCollection(value.name)) {
                     // skip
@@ -2618,8 +2548,8 @@ class MongoClientInterface {
                 // does not work because there cannot be null bytes
                 // in $regex
                 return this.getBucketAttributes(bucketName, log,
-                    (err, bucketInfo) => {
-                        if (err instanceof ArsenalError && err?.is?.NoSuchBucket) {
+                    (err, bucketInfo?) => {
+                        if (err?.is?.NoSuchBucket) {
                             // Skip bucket if not found: can happen if bucket has just been removed
                             return next();
                         }
@@ -2631,14 +2561,12 @@ class MongoClientInterface {
                             return next(errors.InternalError);
                         }
                         bucketCount++;
-                        if (bucketInfo) {
-                            bucketInfos.push(bucketInfo);
-                        }
+                        bucketInfos!.push(bucketInfo!);
                         return next();
                     });
             }, err => {
                 if (err) {
-                    return cb(err);
+                    return cb(err as ArsenalError);
                 }
                 return cb(null, {
                     bucketCount,
@@ -2653,8 +2581,8 @@ class MongoClientInterface {
             });
     }
 
-    countItems(log: werelogs.Logger, cb: NodeCallBack<ObjectMDStats>) {
-        this.getBucketInfos(log, (err, res) => {
+    countItems(log: werelogs.Logger, cb: ArsenalCallback<ObjectMDStats>) {
+        this.getBucketInfos(log, (err, res?) => {
             if (err) {
                 log.error('error getting bucket info', {
                     method: 'countItems',
@@ -2682,7 +2610,7 @@ class MongoClientInterface {
                 };
             });
 
-            return this.readCountItems(log, (err, results) => {
+            return this.readCountItems(log, (err, results?) => {
                 if (err) {
                     return cb(err);
                 }
@@ -2743,7 +2671,7 @@ class MongoClientInterface {
 
         const consolidateData = dataManaged =>
             this.consolidateData(store, dataManaged);
-        this.getBucketInfos(log, (err, res) => {
+        this.getBucketInfos(log, (err, res?) => {
             if (err) {
                 log.error('error getting bucket info', {
                     method: 'scanItemCount',
@@ -2751,12 +2679,7 @@ class MongoClientInterface {
                 });
                 return cb(err);
             }
-            if (!res) {
-                log.error('scanItemCount: empty bucket infos');
-                return cb(errors.InternalError);
-            }
-
-            const { bucketCount, bucketInfos } = res;
+            const { bucketCount, bucketInfos } = res!;
             const retBucketInfos = bucketInfos.map(bucket => ({
                 name: bucket.getName(),
                 location: bucket.getLocationConstraint(),
@@ -2769,7 +2692,7 @@ class MongoClientInterface {
             store.bucketList = retBucketInfos;
 
             return async.eachLimit(bucketInfos, this.concurrentCursors,
-                (bucketInfo, done) => {
+                (bucketInfo: BucketInfo, done) => {
                     async.waterfall([
                         next => this._getIsTransient(bucketInfo, log, next),
                         (isTransient, next) => {
@@ -2777,19 +2700,15 @@ class MongoClientInterface {
                             this.getObjectMDStats(bucketName, bucketInfo,
                                 isTransient, log, next);
                         },
-                    ], (err, results: any) => {
+                    ], (err, results: ObjectMDStats | undefined) => {
                         if (err) {
                             return done(err);
                         }
-                        if (!results) {
-                            log.error('scanItemCount: no results from getObjectMDStats');
-                            return done(errors.InternalError);
-                        }
-                        if (results.dataManaged) {
-                            store.objects += results.objects;
-                            store.versions += results.versions;
-                            store.stalled += results.stalled;
-                            consolidateData(results.dataManaged);
+                        if (results!.dataManaged) {
+                            store.objects += results!.objects;
+                            store.versions += results!.versions;
+                            store.stalled += results!.stalled;
+                            consolidateData(results!.dataManaged);
                         }
                         return done();
                     });
@@ -2832,7 +2751,7 @@ class MongoClientInterface {
                 const overlayConfigId = `configuration/overlay/${version}`;
                 return this.getObject(PENSIEVE, overlayConfigId, null, log, next);
             },
-        ], (err, res: any) => {
+        ], (err, res: ObjectMDData | undefined) => {
             if (err) {
                 log.error('error getting configuration overlay', {
                     method: '_getIsTransient',
@@ -2841,6 +2760,8 @@ class MongoClientInterface {
                 return cb(err);
             }
             const isTransient =
+                // @ts-expect-error the locations type is not defined
+                // but is the historical check. Is this really needed?
                 Boolean(res.locations[locConstraint].isTransient);
 
             return cb(null, isTransient);
@@ -2976,12 +2897,8 @@ class MongoClientInterface {
         bucketInfo: BucketInfo,
         isTransient: boolean,
         log: werelogs.Logger,
-        callback: NodeCallBack<ObjectMDStats>) {
+        callback: ArsenalCallback<ObjectMDStats>) {
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
-        if (!c) {
-            log.error('getObjectMDStats: failed to get the bucket collection', { bucketName });
-            return callback(errors.InternalError);
-        }
         const cursor = c.find({}, {
             projection: {
                 '_id': 1,
@@ -3060,12 +2977,8 @@ class MongoClientInterface {
             });
     }
 
-    getIngestionBuckets(log: werelogs.Logger, cb: NodeCallBack<BucketInfo[]>) {
+    getIngestionBuckets(log: werelogs.Logger, cb: ArsenalCallback<BucketInfo[]>) {
         const m = this.getCollection<BucketMetastoreDocument>(METASTORE);
-        if (!m) {
-            log.error('getIngestionBuckets: error getting metastore collection');
-            return cb(errors.InternalError);
-        }
         m.find({
             '_id': {
                 $nin: [PENSIEVE, USERSBUCKET],
@@ -3090,18 +3003,14 @@ class MongoClientInterface {
     /*
      * delete an object that matches a given conditions object
      */
-    deleteObjectWithCond(bucketName: string, objName: string, params: ObjectMDOperationParams, log: werelogs.Logger, cb: NodeCallBack<void>) {
+    deleteObjectWithCond(bucketName: string, objName: string, params: ObjectMDOperationParams, log: werelogs.Logger, cb: ArsenalCallback<void>) {
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
-        if (!c) {
-            log.error('deleteObjectWithCond: error getting bucket collection', { bucketName });
-            return cb(errors.InternalError);
-        }
         const method = 'deleteObjectWithCond';
-        this.getBucketVFormat(bucketName, log, (err, vFormat) => {
+        this.getBucketVFormat(bucketName, log, (err, vFormat?) => {
             if (err) {
                 return cb(err);
             }
-            const masterKey = formatMasterKey(objName, vFormat!);
+            const masterKey = formatMasterKey(objName, vFormat);
             const filter = {};
             try {
                 MongoUtils.translateConditions(0, 'value', filter,
@@ -3116,7 +3025,7 @@ class MongoClientInterface {
                 err => {
                     if (err) {
                         // unable to find an object that matches the conditions
-                        if (err instanceof ArsenalError && err.is.NoSuchKey) {
+                        if (err.is.NoSuchKey) {
                             log.error('unable to find target object to delete', {
                                 method,
                                 filter,
@@ -3140,16 +3049,12 @@ class MongoClientInterface {
      */
     putObjectWithCond(bucketName, objName, objVal, params, log, cb) {
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
-        if (!c) {
-            log.error('putObjectWithCond: error getting bucket collection', { bucketName });
-            return cb(errors.InternalError);
-        }
         const method = 'putObjectWithCond';
-        this.getBucketVFormat(bucketName, log, (err, vFormat) => {
+        this.getBucketVFormat(bucketName, log, (err, vFormat?) => {
             if (err) {
                 return cb(err);
             }
-            const masterKey = formatMasterKey(objName, vFormat!);
+            const masterKey = formatMasterKey(objName, vFormat);
             const filter = { _id: masterKey };
             try {
                 MongoUtils.translateConditions(0, 'value', filter,
@@ -3205,12 +3110,8 @@ class MongoClientInterface {
      * @param {Function} cb callback
      * @return {undefined}
      */
-    putBucketIndexes(bucketName: string, indexSpecs, log: werelogs.Logger, cb: NodeCallBack<void>) {
+    putBucketIndexes(bucketName: string, indexSpecs, log: werelogs.Logger, cb: ArsenalCallback<void>) {
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
-        if (!c) {
-            log.error('putBucketIndexes: error getting bucket collection', { bucketName });
-            return cb(errors.InternalError);
-        }
         const indexes = MongoUtils.indexFormatObjectToMongoArray(indexSpecs);
         c.createIndexes(indexes).then(() => cb(null)).catch(err => {
             if (err.codeName === 'NamespaceNotFound') {
@@ -3232,12 +3133,8 @@ class MongoClientInterface {
      * @param {Function} cb callback
      * @return {undefined}
      */
-    deleteBucketIndexes(bucketName: string, indexSpecs: { name: string }[], log: werelogs.Logger, cb: NodeCallBack<void>) {
+    deleteBucketIndexes(bucketName: string, indexSpecs: { name: string }[], log: werelogs.Logger, cb: ArsenalCallback<void>) {
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
-        if (!c) {
-            log.error('deleteBucketIndexes: error getting bucket collection', { bucketName });
-            return cb(errors.InternalError);
-        }
         async.each(indexSpecs,
             (spec, next) => c.dropIndex(spec.name).then(() => next()).catch(err => next(err)),
             err => {
@@ -3262,18 +3159,14 @@ class MongoClientInterface {
      * @param {Function} cb callback
      * @return {undefined}
      */
-    getBucketIndexes(bucketName: string, log: werelogs.Logger, cb: NodeCallBack<{
-        name: any;
+    getBucketIndexes(bucketName: string, log: werelogs.Logger, cb: ArsenalCallback<{
+        name: string;
         keys: {
-            key: any;
-            order: any;
+            key: string;
+            order: number;
         }[];
     }[]>) {
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
-        if (!c) {
-            log.error('getBucketIndexes: error getting bucket collection', { bucketName });
-            return cb(errors.InternalError);
-        }
         c.listIndexes()
             .toArray()
             .then(res => cb(null, MongoUtils.indexFormatMongoArrayToObject(res)))
@@ -3291,7 +3184,7 @@ class MongoClientInterface {
 
     getIndexingJobs(log, cb) {
         // list active createIndexes jobs
-        this.adminDb?.command({
+        this.adminDb!.command({
             currentOp: true,
             $or: [
                 { 'op': 'command', 'command.createIndexes': { $exists: true } },

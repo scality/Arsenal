@@ -75,6 +75,14 @@ export type RedirectAllRequestsTo = {
     hostName: string;
     protocol?: string;
 };
+
+export type WebsiteConfigurationParams = {
+    indexDocument: string;
+    errorDocument: string;
+    redirectAllRequestsTo: RedirectAllRequestsTo;
+    routingRules: RoutingRule[] | any[],
+};
+
 export class WebsiteConfiguration {
     _indexDocument?: string;
     _errorDocument?: string;
@@ -97,12 +105,7 @@ export class WebsiteConfiguration {
     * @param params.routingRules - array of Routing
     *   Rule instances or plain routing rule objects to cast as RoutingRule's
     */
-    constructor(params: {
-        indexDocument: string;
-        errorDocument: string;
-        redirectAllRequestsTo: RedirectAllRequestsTo;
-        routingRules: RoutingRule[] | any[],
-    }) {
+    constructor(params: WebsiteConfigurationParams) {
         if (params) {
             this._indexDocument = params.indexDocument;
             this._errorDocument = params.errorDocument;
