@@ -79,10 +79,10 @@ export type BucketMetadata = {
     quotaMax: bigint | number,
 };
 
-export type BucketMetadataJSON = Omit<Omit<BucketMetadata, 'quotaMax'>, 'capabilities'> & {
+export type BucketMetadataJSON = Omit<BucketMetadata, 'quotaMax' | 'capabilities'> & {
     quotaMax: string;
     capabilities: {
-        VeeamSOSApi?: VeeamSOSApiSchema,
+        VeeamSOSApi?: VeeamSOSApiSerializable,
     };
 };
 
@@ -424,10 +424,10 @@ export default class BucketInfo implements BucketMetadata {
      */
     static deSerialize(stringBucket: string) {
         const obj: BucketMetadataJSON = JSON.parse(stringBucket);
-        const capabilities: BucketMetadataJSON['capabilities'] = obj.capabilities && {
+        const capabilities = obj.capabilities && {
             ...obj.capabilities,
             VeeamSOSApi: obj.capabilities?.VeeamSOSApi &&
-                VeeamCapability.toBigInt(obj.capabilities?.VeeamSOSApi),
+                VeeamCapability.parse(obj.capabilities?.VeeamSOSApi),
         };
         const websiteConfig = obj.websiteConfiguration ?
             new WebsiteConfiguration(obj.websiteConfiguration) : null;
@@ -457,7 +457,7 @@ export default class BucketInfo implements BucketMetadata {
      * @return Return an BucketInfo
      */
     static fromObj(data: any) {
-        const capabilities: BucketMetadataJSON['capabilities'] = data._capabilities && {
+        const capabilities: Capabilities = data._capabilities && {
             ...data._capabilities,
             VeeamSOSApi: data._capabilities?.VeeamSOSApi &&
                 VeeamCapability.parse(data._capabilities?.VeeamSOSApi),
@@ -491,8 +491,11 @@ export default class BucketInfo implements BucketMetadata {
             data.bucketPolicy, data.uid, data.readLocationConstraint,
             data.isNFS, data.ingestion, data.azureInfo,
             data.objectLockEnabled, data.objectLockConfiguration,
-            data.notificationConfiguration, data.tags, data.capabilities,
-            BigInt(data.quotaMax || 0n));
+            data.notificationConfiguration, data.tags, {
+                ...data.capabilities,
+                VeeamSOSApi: data.capabilities?.VeeamSOSApi &&
+                    VeeamCapability.parse(data.capabilities?.VeeamSOSApi),
+            }, BigInt(data.quotaMax || 0n));
     }
 
     /**

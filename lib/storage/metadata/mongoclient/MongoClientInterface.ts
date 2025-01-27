@@ -217,6 +217,7 @@ export type ObjectMDStats = {
 
 interface ArsenalCallback<T> {
     (err: null, result: T): void;
+    (err: void): void;
     (err: ArsenalError): void;
 };
 
@@ -273,8 +274,8 @@ class MongoClientInterface {
             : CONCURRENT_CURSORS;
 
         this.bucketVFormatCache = new LRUCache(constants.maxCachedBuckets);
-        this.defaultBucketKeyFormat = [BUCKET_VERSIONS.v0, BUCKET_VERSIONS.v1]
-            .includes(<BucketVersioningFormat>process.env.DEFAULT_BUCKET_KEY_FORMAT) ?
+        this.defaultBucketKeyFormat = [<string>BUCKET_VERSIONS.v0, <string>BUCKET_VERSIONS.v1]
+            .includes(process.env.DEFAULT_BUCKET_KEY_FORMAT!) ?
             <BucketVersioningFormat>process.env.DEFAULT_BUCKET_KEY_FORMAT : BUCKET_VERSIONS.v1;
 
         this.cacheHit = 0;
@@ -473,7 +474,7 @@ class MongoClientInterface {
                             ...doc.value.capabilities.VeeamSOSApi,
                             // Long values are automatically serialized to strings
                             CapacityInfo: doc.value.capabilities.VeeamSOSApi.CapacityInfo &&
-                                VeeamCapacityInfo.toBigInt(doc.value.capabilities.VeeamSOSApi.CapacityInfo),
+                                VeeamCapacityInfo.serialize(doc.value.capabilities.VeeamSOSApi.CapacityInfo),
                         },
                     },
                 };
@@ -2565,8 +2566,14 @@ class MongoClientInterface {
                         return next();
                     });
             }, err => {
-                if (err) {
-                    return cb(err as ArsenalError);
+                if (err && err instanceof ArsenalError) {
+                    return cb(err);
+                } else if (err) {
+                    log.error('could not get list of collections', {
+                        method: 'getBucketInfos',
+                        error: err,
+                    });
+                    return cb(errors.InternalError);
                 }
                 return cb(null, {
                     bucketCount,
@@ -2574,10 +2581,13 @@ class MongoClientInterface {
                 });
             })).catch(err => {
                 log.error('could not get list of collections', {
-                    method: '_getBucketInfos',
+                    method: 'getBucketInfos',
                     error: err,
                 });
-                return cb(err);
+                if (err && err instanceof ArsenalError) {
+                    return cb(err);
+                }
+                return cb(errors.InternalError);
             });
     }
 
@@ -2760,6 +2770,7 @@ class MongoClientInterface {
                 return cb(err);
             }
             const isTransient =
+                // TODO ARSN-459
                 // @ts-expect-error the locations type is not defined
                 // but is the historical check. Is this really needed?
                 Boolean(res.locations[locConstraint].isTransient);
