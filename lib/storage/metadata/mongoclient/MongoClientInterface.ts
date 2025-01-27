@@ -467,7 +467,7 @@ class MongoClientInterface {
                 }
                 const bucketMetadata = {
                     ...doc.value,
-                    quotaMax: doc.value.quotaMax.toString(),
+                    quotaMax: doc.value.quotaMax?.toString() || '0',
                     capabilities: {
                         ...doc.value.capabilities,
                         VeeamSOSApi: doc.value.capabilities?.VeeamSOSApi && {

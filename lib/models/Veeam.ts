@@ -54,9 +54,9 @@ export type VeeamSOSApiSerializable = Omit<VeeamSOSApiSchema, 'CapacityInfo'> & 
 export class VeeamCapacityInfo {
     static serialize(capacity: VeeamSOSApiSchema['CapacityInfo']): VeeamSOSApiSerializable['CapacityInfo'] {
         return {
-            Capacity: capacity?.Capacity.toString() || '0',
-            Available: capacity?.Available.toString() || '0',
-            Used: capacity?.Used.toString() || '0',
+            Capacity: capacity?.Capacity?.toString() || '0',
+            Available: capacity?.Available?.toString() || '0',
+            Used: capacity?.Used?.toString() || '0',
             LastModified: capacity?.LastModified,
         };
     }
