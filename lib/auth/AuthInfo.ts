@@ -9,6 +9,29 @@ export type AuthInfoType = {
     IAMdisplayName: string;
 };
 
+export type AuthorizationResults = {
+    isAllowed: boolean,
+    isImplicit: boolean,
+    arn: string,
+    action: string,
+    versionId?: string,
+}[];
+
+export type AccountQuota = {
+    account: string,
+    quota: bigint,
+};
+
+export type AccountInfos = {
+    accountQuota?: AccountQuota,
+};
+
+export type AuthV4Results = {
+    userInfo: AuthInfoType,
+    authorizationResults?: AuthorizationResults,
+    accountQuota: AccountQuota,
+};
+
 /**
  * Class containing requester's information received from Vault
  * @param {object} info from Vault including arn, canonicalID,

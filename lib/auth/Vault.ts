@@ -1,6 +1,6 @@
 import { Logger } from 'werelogs';
 import errors from '../errors';
-import AuthInfo, { AuthInfoType } from './AuthInfo';
+import AuthInfo, { AccountInfos, AuthInfoType, AuthorizationResults, AuthV4Results } from './AuthInfo';
 
 /** vaultSignatureCb parses message from Vault and instantiates
  * @param err - error from vault
@@ -15,15 +15,17 @@ function vaultSignatureCb(
     authInfo: {
         message: {
             message: string,
-            body: {
-                userInfo: AuthInfoType,
-                authorizationResults: { [key: string]: any },
-                accountQuota: number,
-            },
+            body: AuthV4Results,
         },
     },
     log: Logger,
-    callback: (err: Error | null, data?: any, results?: any, params?: any, infos?: any) => void,
+    callback: (
+        err: Error | null,
+        data?: AuthInfoType,
+        results?: AuthorizationResults,
+        params?: any,
+        infos?: AccountInfos,
+    ) => void,
     streamingV4Params?: any
 ) {
     // vaultclient API guarantees that it returns:
@@ -49,7 +51,7 @@ function vaultSignatureCb(
         },
     });
 
-    const info = authInfo.message.body;
+    const info = authInfo.message.body as AuthV4Results;
     const userInfo = new AuthInfo(info.userInfo);
     const authorizationResults = info.authorizationResults;
     const auditLog: { accountDisplayName: string, IAMdisplayName?: string } =

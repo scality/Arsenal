@@ -6,6 +6,9 @@ const sinon = require('sinon');
 const MongoClientInterface =
     require('../../../../../lib/storage/metadata/mongoclient/MongoClientInterface');
 const utils = require('../../../../../lib/storage/metadata/mongoclient/utils');
+const DummyRequestLogger = require('../../../helpers').DummyRequestLogger;
+
+const log = new DummyRequestLogger();
 
 describe('MongoClientInterface:putObject', () => {
     let client;
@@ -16,7 +19,7 @@ describe('MongoClientInterface:putObject', () => {
     });
 
     beforeEach(done => {
-        sinon.stub(client, 'getCollection').callsFake(() => null);
+        sinon.stub(client, 'getCollection').callsFake(() => ({}));
         return done();
     });
 
@@ -27,7 +30,7 @@ describe('MongoClientInterface:putObject', () => {
 
     it('Should fail when getBucketVFormat fails', done => {
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(errors.InternalError));
-        client.putObject('example-bucket', 'example-object', {}, {}, {}, err => {
+        client.putObject('example-bucket', 'example-object', {}, {}, log, err => {
             assert.deepStrictEqual(err, errors.InternalError);
             return done();
         });
@@ -39,8 +42,8 @@ describe('MongoClientInterface:putObject', () => {
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null, 'v0'));
         sinon.stub(client, 'putObjectNoVer').callsFake(putObjectNoVerSpy);
         // checking if function called with correct params
-        client.putObject('example-bucket', 'example-object', {}, {}, {}, {});
-        const args = [null, 'example-bucket', 'example-object', {}, { vFormat: 'v0' }, {}, {}];
+        client.putObject('example-bucket', 'example-object', {}, {}, log, {});
+        const args = [{}, 'example-bucket', 'example-object', {}, { vFormat: 'v0' }, log, {}];
         assert(putObjectNoVerSpy.calledOnceWith(...args));
         return done();
     });
@@ -56,9 +59,9 @@ describe('MongoClientInterface:putObject', () => {
             versionId: null,
             repairMaster: null,
         };
-        client.putObject('example-bucket', 'example-object', {}, params, {}, {});
+        client.putObject('example-bucket', 'example-object', {}, params, log, {});
         params.vFormat = 'v0';
-        const args = [null, 'example-bucket', 'example-object', {}, params, {}, {}];
+        const args = [{}, 'example-bucket', 'example-object', {}, params, log, {}];
         assert(putObjectVerCase1Spy.calledOnceWith(...args));
         return done();
     });
@@ -74,9 +77,9 @@ describe('MongoClientInterface:putObject', () => {
             versionId: '',
             repairMaster: null,
         };
-        client.putObject('example-bucket', 'example-object', {}, params, {}, {});
+        client.putObject('example-bucket', 'example-object', {}, params, log, {});
         params.vFormat = 'v0';
-        const args = [null, 'example-bucket', 'example-object', {}, params, {}, {}];
+        const args = [{}, 'example-bucket', 'example-object', {}, params, log, {}];
         assert(putObjectVerCase2Spy.calledOnceWith(...args));
         return done();
     });
@@ -92,9 +95,9 @@ describe('MongoClientInterface:putObject', () => {
             versionId: '1234',
             repairMaster: false,
         };
-        client.putObject('example-bucket', 'example-object', {}, params, {}, {});
+        client.putObject('example-bucket', 'example-object', {}, params, log, {});
         params.vFormat = 'v0';
-        const args = [null, 'example-bucket', 'example-object', {}, params, {}, {}];
+        const args = [{}, 'example-bucket', 'example-object', {}, params, log, {}];
         assert(putObjectVerCase3Spy.calledOnceWith(...args));
         return done();
     });
@@ -110,9 +113,9 @@ describe('MongoClientInterface:putObject', () => {
             versionId: '1234',
             repairMaster: true,
         };
-        client.putObject('example-bucket', 'example-object', {}, params, {}, {});
+        client.putObject('example-bucket', 'example-object', {}, params, log, {});
         params.vFormat = 'v0';
-        const args = [null, 'example-bucket', 'example-object', {}, params, {}, {}];
+        const args = [{}, 'example-bucket', 'example-object', {}, params, log, {}];
         assert(putObjectVerCase4Spy.calledOnceWith(...args));
         return done();
     });
@@ -122,7 +125,7 @@ describe('MongoClientInterface:putObject', () => {
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null, 'v0'));
         sinon.stub(client, 'putObjectNoVer').callsFake((...args) => args[6](errors.InternalError));
         // checking if function called with correct params
-        client.putObject('example-bucket', 'example-object', {}, {}, {}, err => {
+        client.putObject('example-bucket', 'example-object', {}, {}, log, err => {
             assert.deepStrictEqual(err, errors.InternalError);
             return done();
         });
@@ -137,7 +140,7 @@ describe('MongoClientInterface:putObject', () => {
             versionId: null,
             repairMaster: null,
         };
-        client.putObject('example-bucket', 'example-object', {}, params, {}, err => {
+        client.putObject('example-bucket', 'example-object', {}, params, log, err => {
             assert.deepStrictEqual(err, errors.InternalError);
             return done();
         });
@@ -152,7 +155,7 @@ describe('MongoClientInterface:putObject', () => {
             versionId: '',
             repairMaster: null,
         };
-        client.putObject('example-bucket', 'example-object', {}, params, {}, err => {
+        client.putObject('example-bucket', 'example-object', {}, params, log, err => {
             assert.deepStrictEqual(err, errors.InternalError);
             return done();
         });
@@ -167,7 +170,7 @@ describe('MongoClientInterface:putObject', () => {
             versionId: '1234',
             repairMaster: null,
         };
-        client.putObject('example-bucket', 'example-object', {}, params, {}, err => {
+        client.putObject('example-bucket', 'example-object', {}, params, log, err => {
             assert.deepStrictEqual(err, errors.InternalError);
             return done();
         });
@@ -182,7 +185,7 @@ describe('MongoClientInterface:putObject', () => {
             versionId: '1234',
             repairMaster: true,
         };
-        client.putObject('example-bucket', 'example-object', {}, params, {}, err => {
+        client.putObject('example-bucket', 'example-object', {}, params, log, err => {
             assert.deepStrictEqual(err, errors.InternalError);
             return done();
         });
@@ -449,7 +452,7 @@ describe('MongoClientInterface:putObjectNoVer', () => {
             updateOne: () => Promise.resolve({}),
         };
         client.putObjectNoVer(collection, 'example-bucket', 'example-object', {}, {}, logger, err => {
-            assert.deepStrictEqual(err, undefined);
+            assert.deepStrictEqual(err, null);
             return done();
         });
     });

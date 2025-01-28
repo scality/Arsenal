@@ -40,7 +40,9 @@ describe('MongoClientInterface::_handleResults', () => {
         };
         const testResults = mongoTestClient._handleResults(testInput, true);
         const expectedRes = {
-            versions: 0, objects: 0,
+            versions: 0,
+            objects: 0,
+            stalled: 0,
             dataManaged: {
                 total: { curr: 0, prev: 0 },
                 locations: {},
@@ -57,7 +59,9 @@ describe('MongoClientInterface::_handleResults', () => {
         };
         const testResults = mongoTestClient._handleResults(testInput, false);
         const expectedRes = {
-            versions: 0, objects: 4,
+            versions: 0,
+            objects: 4,
+            stalled: 0,
             dataManaged: {
                 total: { curr: 40, prev: 0 },
                 locations: {
@@ -77,7 +81,9 @@ describe('MongoClientInterface::_handleResults', () => {
         };
         const testResults = mongoTestClient._handleResults(testInput, true);
         const expectedRes = {
-            versions: 2, objects: 4,
+            versions: 2,
+            objects: 4,
+            stalled: 0,
             dataManaged: {
                 total: { curr: 40, prev: 20 },
                 locations: {
@@ -776,9 +782,34 @@ describe('MongoClientInterface, tests', () => {
     });
 
     const bucketName = 'test-bucket';
-    const capabilityName = 'testCapability';
-    const capabilityField = 'testField';
-    const capabilityValue = { key: 'value' };
+    const capabilityName = 'VeeamSOSApi';
+    const capabilityField = 'CapacityInfo';
+    const capabilityValue = {
+        Capacity: 1n,
+        Available: 1n,
+        Used: 0n,
+        LastModified: '2021-09-29T14:00:00.000Z',
+    };
+
+    it('should update the bucket with quota', done => {
+        const quotaValue = 1099511627776000n;
+        async.waterfall([
+            next => createBucket(client, bucketName, false, err => next(err)),
+            next => {
+                const bucketMD = new BucketInfo(bucketName, 'testowner',
+                    'testdisplayname', new Date().toJSON(),
+                    BucketInfo.currentModelVersion());
+                bucketMD.setQuota(quotaValue);
+                client.putBucketAttributes(bucketName, bucketMD, logger, err => next(err));
+            },
+            next => client.getBucketAttributes(bucketName, logger, (err, bucketMd) => {
+                assert(!err);
+                assert.strictEqual(bucketMd._quotaMax, quotaValue);
+                return next();
+            }),
+            next => client.deleteBucket(bucketName, logger, err => next(err)),
+        ], done);
+    });
 
     it('should add a capability to a bucket', done => {
         async.waterfall([
@@ -803,13 +834,13 @@ describe('MongoClientInterface, tests', () => {
             next => client.putBucketAttributesCapabilities(
                 bucketName, capabilityName, capabilityField, capabilityValue, logger, err => next(err)),
             next => client.deleteBucketAttributesCapability(
-                bucketName, capabilityName, capabilityField, logger, err => next(err)),
+                bucketName, capabilityName, '', logger, err => next(err)),
             next => client.getBucketAttributes(bucketName, logger, (err, bucketInfo) => {
                 if (err) {
                     return next(err);
                 }
                 const capabilities = bucketInfo._capabilities || {};
-                assert(!capabilities[capabilityName][capabilityField]);
+                assert(!capabilities[capabilityName]);
                 return next();
             }),
             next => client.deleteBucket(bucketName, logger, err => next(err)),

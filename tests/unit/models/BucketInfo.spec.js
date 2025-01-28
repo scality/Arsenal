@@ -2,6 +2,7 @@ const assert = require('assert');
 const BucketInfo = require('../../../lib/models/BucketInfo').default;
 const { WebsiteConfiguration } =
     require('../../../lib/models/WebsiteConfiguration');
+const { VeeamCapacityInfo } = require('../../../lib/models/Veeam');
 
 // create variables to populate dummyBucket
 const bucketName = 'nameOfBucket';
@@ -221,14 +222,15 @@ const testBucketCapabilities = {
             },
         },
         CapacityInfo: {
-            Capacity: 1,
-            Available: 1,
-            Used: 0,
+            Capacity: 1n,
+            Available: 1n,
+            Used: 0n,
+            LastModified: '2021-09-29T14:00:00.000Z',
         },
     },
 };
 
-const testBucketQuota = 100000;
+const testBucketQuota = 100000n;
 
 // create a dummy bucket to test getters and setters
 Object.keys(acl).forEach(
@@ -292,8 +294,16 @@ Object.keys(acl).forEach(
                         dummyBucket._objectLockConfiguration,
                     notificationConfiguration: dummyBucket._notificationConfiguration,
                     tags: dummyBucket._tags,
-                    capabilities: dummyBucket._capabilities,
-                    quotaMax: dummyBucket._quotaMax,
+                    capabilities: dummyBucket._capabilities ? {
+                        ...dummyBucket._capabilities,
+                        VeeamSOSApi: dummyBucket._capabilities.VeeamSOSApi ? {
+                            ...dummyBucket._capabilities.VeeamSOSApi,
+                            CapacityInfo: VeeamCapacityInfo.serialize(
+                                dummyBucket._capabilities.VeeamSOSApi.CapacityInfo,
+                            ),
+                        } : undefined,
+                    } : undefined,
+                    quotaMax: dummyBucket._quotaMax.toString(),
                 };
                 assert.strictEqual(serialized, JSON.stringify(bucketInfos));
                 done();
@@ -708,7 +718,7 @@ Object.keys(acl).forEach(
             it('setQuota should set bucket quota', () => {
                 dummyBucket.setQuota();
                 assert.deepStrictEqual(
-                    dummyBucket.getQuota(), 0);
+                    dummyBucket.getQuota(), 0n);
             });
         });
     }),

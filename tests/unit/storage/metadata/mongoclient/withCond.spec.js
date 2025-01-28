@@ -26,7 +26,7 @@ describe('MongoClientInterface:putObjectWithCond', () => {
     });
 
     it('should fail when getBucketVFormat fails', done => {
-        sinon.stub(client, 'getCollection').callsFake(() => null);
+        sinon.stub(client, 'getCollection').callsFake(() => ({}));
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(errors.InternalError));
         client.putObjectWithCond('example-bucket', 'example-object', {}, {}, logger, err => {
             assert.deepStrictEqual(err, errors.InternalError);
@@ -35,7 +35,7 @@ describe('MongoClientInterface:putObjectWithCond', () => {
     });
 
     it('should fail when getBucketVFormat fails', done => {
-        sinon.stub(client, 'getCollection').callsFake(() => null);
+        sinon.stub(client, 'getCollection').callsFake(() => ({}));
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null));
         sinon.stub(utils, 'translateConditions').callsFake(() => {throw errors.InternalError;});
         client.putObjectWithCond('example-bucket', 'example-object', {}, {}, logger, err => {
@@ -77,7 +77,7 @@ describe('MongoClientInterface:deleteObjectWithCond', () => {
     });
 
     it('should fail when getBucketVFormat fails', done => {
-        sinon.stub(client, 'getCollection').callsFake(() => null);
+        sinon.stub(client, 'getCollection').callsFake(() => ({}));
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(errors.InternalError));
         client.deleteObjectWithCond('example-bucket', 'example-object', {}, logger, err => {
             assert.deepStrictEqual(err, errors.InternalError);
@@ -86,7 +86,7 @@ describe('MongoClientInterface:deleteObjectWithCond', () => {
     });
 
     it('should fail when getBucketVFormat fails', done => {
-        sinon.stub(client, 'getCollection').callsFake(() => null);
+        sinon.stub(client, 'getCollection').callsFake(() => ({}));
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null));
         sinon.stub(utils, 'translateConditions').callsFake(() => {throw errors.InternalError;});
         client.deleteObjectWithCond('example-bucket', 'example-object', {}, logger, err => {
@@ -96,7 +96,7 @@ describe('MongoClientInterface:deleteObjectWithCond', () => {
     });
 
     it('should fail when internalDeleteObject fails', done => {
-        sinon.stub(client, 'getCollection').callsFake(() => {});
+        sinon.stub(client, 'getCollection').callsFake(() => ({}));
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null));
         sinon.stub(utils, 'translateConditions').callsFake(() => null);
         sinon.stub(client, 'internalDeleteObject').callsArgWith(6, errors.InternalError);
