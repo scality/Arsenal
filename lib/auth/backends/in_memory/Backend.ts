@@ -5,14 +5,21 @@ import { calculateSigningKey, hashSignature } from './vaultUtilities';
 import Indexer from './Indexer';
 import BaseBackend from '../base';
 import { Accounts } from './types';
+import { AuthInfoType, AuthV4Results } from '../../AuthInfo';
 
-function _formatResponse(userInfoToSend: any) {
+function _formatResponse(userInfo: AuthInfoType): { message: { body: AuthV4Results } } {
     return {
         message: {
-            body: { userInfo: userInfoToSend },
+          body: {
+            userInfo,
+            accountQuota: {
+              account: userInfo.canonicalID,
+              quota: 0n,
+            },
+          },
         },
+      };
     };
-}
 
 /**
  * Class that provides a memory backend for verifying signatures and getting
