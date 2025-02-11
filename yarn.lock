@@ -2003,6 +2003,13 @@
   resolved "https://registry.yarnpkg.com/@opentelemetry/api/-/api-1.9.0.tgz#d03eba68273dc0f7509e2a3d5cba21eae10379fe"
   integrity sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg==
 
+"@scality/eslint-config-scality@scality/Guidelines#8.3.0":
+  version "8.3.0"
+  resolved "https://codeload.github.com/scality/Guidelines/tar.gz/666b90495dc7e9a401a37ba4d58c7eba89db90ac"
+  dependencies:
+    commander "11.1.0"
+    markdownlint "0.31.1"
+
 "@sideway/address@^4.1.5":
   version "4.1.5"
   resolved "https://registry.yarnpkg.com/@sideway/address/-/address-4.1.5.tgz#4bc149a0076623ced99ca8208ba780d65a99b9d5"
@@ -3924,13 +3931,6 @@ escape-string-regexp@^4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/escape-string-regexp/-/escape-string-regexp-4.0.0.tgz#14ba83a5d373e3d311e5afca29cf5bfad965bf34"
   integrity sha512-TtpcNJ3XAzx3Gq8sWRzJaVajRs0uVxA2YAkdb1jm2YkPz4G6egUFAyA3n5vtEIZefPk5Wa4UXbKuS5fKkJWdgA==
-
-eslint-config-scality@scality/Guidelines#8.3.0:
-  version "8.3.0"
-  resolved "https://codeload.github.com/scality/Guidelines/tar.gz/666b90495dc7e9a401a37ba4d58c7eba89db90ac"
-  dependencies:
-    commander "11.1.0"
-    markdownlint "0.31.1"
 
 eslint-plugin-react@^7.37.1:
   version "7.37.2"

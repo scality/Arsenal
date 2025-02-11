@@ -16,7 +16,7 @@ const compat = new FlatCompat({
 });
 
 export default tseslint.config(
-    ...compat.extends('scality'),
+    ...compat.extends('@scality/scality'),
     ...tseslint.configs.recommended,
     includeIgnoreFile(gitignorePath),
     {

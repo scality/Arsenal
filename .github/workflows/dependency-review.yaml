@@ -4,6 +4,9 @@ name: dependency review
 on:
   pull_request:
     branches: [development/*, stabilization/*, hotfix/*]
+  push:
+    branches-ignore:
+    - 'development/**'
 
 jobs:
   dependency-review:
@@ -14,3 +17,6 @@ jobs:
 
       - name: 'Dependency Review'
         uses: actions/dependency-review-action@v4
+        with:
+          base-ref: development/8.1
+          head-ref: ${{ github.ref_name }}
