@@ -421,6 +421,7 @@ function retrieveData(
                         method: 'retrieveData',
                     });
                     _destroyResponse();
+                    return;
                     return cbOnce(err);
                 }
                 // response.isclosed is set by the S3 server. Might happen if
