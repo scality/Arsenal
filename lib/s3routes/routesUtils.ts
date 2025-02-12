@@ -165,6 +165,7 @@ export const XMLResponseBackend = {
         const xmlStr = xml.join('');
         const bytesSent = Buffer.byteLength(xmlStr);
         log.addDefaultFields({ bytesSent });
+        response.removeAllListeners('finish');
         response.writeHead(error.code, {
             'Content-Type': 'application/xml',
             'Content-Length': bytesSent ,
@@ -277,6 +278,7 @@ function okContentHeadersResponse(
     response: http.ServerResponse,
     range: [number, number] | undefined,
     log: RequestLogger,
+    shouldWriteHttpCode: boolean = true,
 ) {
     const addHeaders: { [key: string]: string } = {};
     if (process.env.ALLOW_INVALID_META_HEADERS) {
@@ -321,9 +323,11 @@ function okContentHeadersResponse(
             overrideParams['response-content-encoding'];
     }
     setCommonResponseHeaders(addHeaders, response, log);
-    const httpCode = range ? 206 : 200;
-    log.debug('response http code', { httpCode });
-    response.writeHead(httpCode);
+    if (shouldWriteHttpCode) {
+        const httpCode = range ? 206 : 200;
+        log.debug('response http code', { httpCode });
+        response.writeHead(httpCode);
+    }
     return response;
 }
 
@@ -369,6 +373,7 @@ function retrieveData(
     locations: any[],
     retrieveDataParams: any,
     response: http.ServerResponse,
+    codeOnSuccess: number | null,
     log: RequestLogger,
 ) {
     if (locations.length === 0) {
@@ -380,11 +385,6 @@ function retrieveData(
     // response is of type http.ServerResponse
     let responseDestroyed = false;
     let currentStream: http.IncomingMessage | null = null; // reference to the stream we are reading from
-    const _destroyResponse = () => {
-        // destroys the socket if available
-        response.destroy();
-        responseDestroyed = true;
-    };
 
     const _destroyReadable = (readable: http.IncomingMessage | null) => {
         // s3-data sends Readable stream only which does not implement destroy
@@ -416,11 +416,10 @@ function retrieveData(
                 const cbOnce = jsutil.once(next);
                 // NB: readable is of IncomingMessage type
                 if (err) {
-                    log.error('failed to get object', {
+                    log.debug('failed to get object', {
                         error: err,
                         method: 'retrieveData',
                     });
-                    _destroyResponse();
                     return cbOnce(err);
                 }
                 // response.isclosed is set by the S3 server. Might happen if
@@ -445,23 +444,33 @@ function retrieveData(
                 });
                 // errors on server side with readable stream
                 readable.on('error', err => {
-                    log.error('error piping data from source');
-                    _destroyResponse();
+                    log.error('error piping data from source', { error: err });
                     return cbOnce(err);
                 });
                 currentStream = readable;
-                return readable.pipe(response, { end: false });
+                return readable.pipe(response, { end: false })
+                    .on('error', pipeErr => {
+                        log.error('error in pipe operation', { error: pipeErr });
+                        return cbOnce(pipeErr);
+                    });
             }), err => {
-            currentStream = null;
-            if (err) {
-                log.debug('abort response due to error', {
-                    // @ts-expect-error
-                    error: err.code, errMsg: err.message });
-            }
-            // call end for all cases (error/success) per node.js docs
-            // recommendation
-            response.end();
-        },
+                currentStream = null;
+                if (err) {
+                    log.error('abort response due to error', {
+                        // @ts-expect-error
+                        error: err.code, errMsg: err.message });
+                    // Only end if we haven't already destroyed the response
+                    if (!responseDestroyed) {
+                        return XMLResponseBackend.errorResponse(errors.ServiceUnavailable, response, log);
+                    }
+                }
+                if (codeOnSuccess && !response.headersSent) {
+                    response.writeHead(codeOnSuccess);
+                }
+                // call end for all cases (error/success) per node.js docs
+                // recommendation
+                response.end();
+            },
     );
 }
 
@@ -652,7 +661,7 @@ export function responseStreamData(
     }
     if (!response.headersSent) {
         okContentHeadersResponse(overrideParams, resHeaders, response,
-            range, log);
+            range, log, false);
     }
     if (dataLocations === null || _computeContentLengthFromLocation(dataLocations) === 0) {
         return response.end(() => {
@@ -666,7 +675,7 @@ export function responseStreamData(
             httpCode: response.statusCode,
         });
     });
-    return retrieveData(dataLocations, retrieveDataParams, response, log);
+    return retrieveData(dataLocations, retrieveDataParams, response, range ? 206 : 200, log);
 }
 
 /**
@@ -702,7 +711,7 @@ export function streamUserErrorPage(
             httpCode: response.statusCode,
         });
     });
-    return retrieveData(dataLocations, retrieveDataParams, response, log);
+    return retrieveData(dataLocations, retrieveDataParams, response, null, log);
 }
 
 /**
