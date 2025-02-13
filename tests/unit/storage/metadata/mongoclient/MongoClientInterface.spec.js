@@ -873,3 +873,37 @@ describe('MongoClientInterface, updateDeleteMaster', () => {
         return done();
     });
 });
+
+describe('MongoClientInterface, getUUID', () => {
+    it('Should return error if writeUUIDIfNotExists fails', done => {
+        const log = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
+        const writeUUIDIfNotExists = mongoTestClient.writeUUIDIfNotExists;
+        mongoTestClient.writeUUIDIfNotExists = (uuid, log, cb) => {
+            return cb({ is: { InternalError: true } });
+        };
+        mongoTestClient.getUUID(log, err => {
+            assert(err);
+            mongoTestClient.writeUUIDIfNotExists = writeUUIDIfNotExists;
+            return done();
+        });
+    });
+
+    it('Should return uuid', done => {
+        const log = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
+        const writeUUIDIfNotExists = mongoTestClient.writeUUIDIfNotExists;
+        mongoTestClient.writeUUIDIfNotExists = (uuid, log, cb) => {
+            return cb();
+        };
+        const readUUID = mongoTestClient.readUUID;
+        mongoTestClient.readUUID = (log, cb) => {
+            return cb(null, 'uuid');
+        };
+        mongoTestClient.getUUID(log, (err, uuid) => {
+            assert.ifError(err);
+            assert.strictEqual(typeof uuid, 'string');
+            mongoTestClient.writeUUIDIfNotExists = writeUUIDIfNotExists;
+            mongoTestClient.readUUID = readUUID;
+            return done();
+        });
+    });
+});

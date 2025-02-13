@@ -23,7 +23,7 @@ import * as jsutil from '../../../jsutil';
 import { MongoClient, Long, Db, MongoClientOptions,
     ReadPreferenceMode, WithId, Collection, AnyBulkWriteOperation,
     UpdateFilter, MongoServerError } from 'mongodb';
-import Uuid from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 import diskusage from 'diskusage';
 
 import { generateVersionId as genVID } from '../../../versioning/VersionID';
@@ -2420,8 +2420,8 @@ class MongoClientInterface {
      * case of concurrency. The write will fail if it already exists.
      */
     getUUID(log: werelogs.Logger, cb: ArsenalCallback<string | ObjectMDStats>) {
-        const uuid = initialInstanceID || Uuid.v4();
-        this.writeUUIDIfNotExists(uuid, log, err => {
+        const _uuid = initialInstanceID || uuidv4();
+        this.writeUUIDIfNotExists(_uuid, log, err => {
             if (err) {
                 if (err.is.InternalError) {
                     log.error('getUUID: error getting UUID',
@@ -2430,7 +2430,7 @@ class MongoClientInterface {
                 }
                 return this.readUUID(log, cb);
             }
-            return cb(null, uuid);
+            return cb(null, _uuid);
         });
     }
 
