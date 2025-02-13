@@ -4164,6 +4164,14 @@ fb-watchman@^2.0.0:
   dependencies:
     bser "2.1.1"
 
+"fcntl@github:scality/node-fcntl#169e2e5df7a24807ee4abde1bb78c304dfc47142":
+  version "0.2.2"
+  resolved "https://codeload.github.com/scality/node-fcntl/tar.gz/169e2e5df7a24807ee4abde1bb78c304dfc47142"
+  dependencies:
+    bindings "^1.1.1"
+    node-addon-api "^8.3.0"
+    node-gyp "^11.1.0"
+
 "fcntl@github:scality/node-fcntl#fead179c11f35c5a435c6057b672311821f08b60":
   version "0.2.1"
   resolved "https://codeload.github.com/scality/node-fcntl/tar.gz/fead179c11f35c5a435c6057b672311821f08b60"
