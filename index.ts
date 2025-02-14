@@ -26,7 +26,7 @@ import * as processMpuParts from './lib/s3middleware/processMpuParts';
 import * as retention from './lib/s3middleware/objectRetention';
 import * as objectRestore from './lib/s3middleware/objectRestore';
 import * as lifecycleHelpers from './lib/s3middleware/lifecycleHelpers';
-export { default as errors } from './lib/errors';
+export { default as errors, ArsenalError } from './lib/errors';
 export { default as Clustering } from './lib/Clustering';
 export * as ClusterRPC from './lib/clustering/ClusterRPC';
 export * as ipCheck from './lib/ipCheck';
