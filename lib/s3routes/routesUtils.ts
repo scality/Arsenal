@@ -365,7 +365,7 @@ function retrieveDataAzure(
     });
 }
 
-function retrieveData(
+export function retrieveData(
     locations: any[],
     retrieveDataParams: any,
     response: http.ServerResponse,
