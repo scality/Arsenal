@@ -24,6 +24,8 @@ describe('responseXMLBody: ', () => {
             // @ts-ignore
             write: () => {},
             // @ts-ignore
+            removeAllListeners: () => {},
+            // @ts-ignore
             end: (xmlStr: string) => {
                 expect(xmlStr.includes('<ArgumentName1>argumentName1</ArgumentName1>'));
                 expect(xmlStr.includes('<ArgumentValue1>argumentValue1</ArgumentValue1>'));
@@ -49,6 +51,8 @@ describe('responseXMLBody: ', () => {
             emit: () => {},
             // @ts-ignore
             write: () => {},
+            // @ts-ignore
+            removeAllListeners: () => {},
             // @ts-ignore
             end: (xmlStr: string) => {
                 expect(xmlStr.includes('<ArgumentName1></ArgumentName1>'));
