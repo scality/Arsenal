@@ -112,7 +112,8 @@ export type CapabilitiesMongoDB = Capabilities & {
 }
 
 export type BucketMetadataMongoDB = Omit<Omit<BucketMetadata, 'quotaMax'>, 'capabilities'> & {
-    quotaMax: Long,
+    // Old buckets might not have a quotaMax
+    quotaMax?: Long,
     capabilities?: CapabilitiesMongoDB,
 };
 
@@ -475,7 +476,7 @@ class MongoClientInterface {
                 }
                 const bucketMetadata = {
                     ...doc.value,
-                    quotaMax: doc.value.quotaMax.toString(),
+                    quotaMax: doc.value.quotaMax?.toString() || '0',
                     capabilities: {
                         ...doc.value.capabilities,
                         VeeamSOSApi: doc.value.capabilities?.VeeamSOSApi && {
