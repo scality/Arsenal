@@ -67,8 +67,7 @@ export function okHeaderResponse(
     log: RequestLogger,
 ) {
     setCommonResponseHeaders(headers, response, log);
-    log.debug('response http code', { httpCode });
-    response.writeHead(httpCode);
+    writeHttpCodeHeaders(response, httpCode, {}, log);
     return response.end(() => {
         log.end().info('responded to request', {
             httpCode: response.statusCode,
@@ -99,7 +98,7 @@ export const XMLResponseBackend = {
             bytesSent,
         });
         setCommonResponseHeaders(additionalHeaders, response, log);
-        response.writeHead(200, { 'Content-type': 'application/xml' });
+        writeHttpCodeHeaders(response, 200, { 'Content-type': 'application/xml' }, log);
         log.trace('xml response', { xml });
         return response.end(xml, 'utf8', () => {
             log.end().info('responded with XML', {
@@ -123,7 +122,7 @@ export const XMLResponseBackend = {
         }
         // early return to avoid extra headers and XML data
         if (error.code === 304) {
-            response.writeHead(error.code);
+            writeHttpCodeHeaders(response, error.code, {}, log);
             return response.end('', 'utf8', () => {
                 log.end().info('responded with empty body', {
                     httpCode: response.statusCode,
@@ -164,10 +163,10 @@ export const XMLResponseBackend = {
         const bytesSent = Buffer.byteLength(xmlStr);
         log.addDefaultFields({ bytesSent });
         response.removeAllListeners('finish');
-        response.writeHead(error.code, {
+        writeHttpCodeHeaders(response, error.code, {
             'Content-Type': 'application/xml',
             'Content-Length': bytesSent ,
-        });
+        }, log);
         return response.end(xmlStr, 'utf8', () => {
             log.end().info('responded with error XML', {
                 httpCode: response.statusCode,
@@ -196,7 +195,7 @@ export const JSONResponseBackend = {
         const bytesSent = Buffer.byteLength(json);
         log.addDefaultFields({ bytesSent });
         setCommonResponseHeaders(additionalHeaders, response, log);
-        response.writeHead(200, { 'Content-type': 'application/json' });
+        writeHttpCodeHeaders(response, 200, { 'Content-type': 'application/json' }, log);
         log.trace('sending success json response', { json });
         return response.end(json, 'utf8', () => {
             log.end().info('responded with JSON', {
@@ -244,10 +243,10 @@ export const JSONResponseBackend = {
         const bytesSent = Buffer.byteLength(data);
         log.addDefaultFields({ bytesSent });
         setCommonResponseHeaders(corsHeaders, response, log);
-        response.writeHead(error.code, {
+        writeHttpCodeHeaders(response, error.code, {
             'Content-Type': 'application/json',
             'Content-Length': bytesSent,
-        });
+        }, log);
         return response.end(data, 'utf8', () => {
             log.end().info('responded with error JSON', {
                 httpCode: response.statusCode,
@@ -258,7 +257,7 @@ export const JSONResponseBackend = {
 
 
 /**
- * Modify response headers for an objectGet or objectHead request
+ * Set response headers for an objectGet or objectHead request
  * @param overrideParams - parameters in this object override common
  * headers. These are extracted from the request's query object
  * @param resHeaders - object with common response headers
@@ -268,13 +267,11 @@ export const JSONResponseBackend = {
  * @param log - Werelogs logger
  * @return response - modified response object
  */
-function okContentHeadersResponse(
+function setOkContentResponseHeaders(
     overrideParams: { [key: string]: string },
     resHeaders: { [key: string]: string },
     response: http.ServerResponse,
-    range: [number, number] | undefined,
     log: RequestLogger,
-    shouldWriteHttpCode: boolean = true,
 ) {
     const addHeaders: { [key: string]: string } = {};
     if (process.env.ALLOW_INVALID_META_HEADERS) {
@@ -319,12 +316,21 @@ function okContentHeadersResponse(
             overrideParams['response-content-encoding'];
     }
     setCommonResponseHeaders(addHeaders, response, log);
-    if (shouldWriteHttpCode) {
-        const httpCode = range ? 206 : 200;
-        log.debug('response http code', { httpCode });
-        response.writeHead(httpCode);
-    }
     return response;
+}
+
+function writeHttpCodeHeaders(
+    response: http.ServerResponse,
+    httpCode: number,
+    headers: http.OutgoingHttpHeaders | http.OutgoingHttpHeader[],
+    log: RequestLogger
+) {
+    if (!response.headersSent) {
+        log.debug('response http code', { httpCode });
+        response.writeHead(httpCode, headers);
+    } else {
+        log.debug('response http code already sent', { httpCode });
+    }
 }
 
 function retrieveDataAzure(
@@ -395,6 +401,11 @@ export function retrieveData(
         _destroyReadable(currentStream);
     });
 
+    response.on('error', err => {
+        log.error('error piping data from source');
+        response.socket?.destroy();
+    });
+
     const {
         client,
         implName,
@@ -444,11 +455,7 @@ export function retrieveData(
                     return cbOnce(err);
                 });
                 currentStream = readable;
-                return readable.pipe(response, { end: false })
-                    .on('error', pipeErr => {
-                        log.error('error in pipe operation', { error: pipeErr });
-                        return cbOnce(pipeErr);
-                    });
+                return readable.pipe(response, { end: false });
             }), err => {
                 currentStream = null;
                 if (err) {
@@ -460,8 +467,8 @@ export function retrieveData(
                         return XMLResponseBackend.errorResponse(errors.ServiceUnavailable, response, log);
                     }
                 }
-                if (codeOnSuccess && !response.headersSent) {
-                    response.writeHead(codeOnSuccess);
+                if (codeOnSuccess) {
+                    writeHttpCodeHeaders(response, codeOnSuccess, {}, log);
                 }
                 // call end for all cases (error/success) per node.js docs
                 // recommendation
@@ -601,8 +608,8 @@ export function responseContentHeaders(
     if (!response.headersSent) {
         // Undefined added as an argument since need to send range to
         // okContentHeadersResponse in responseStreamData
-        okContentHeadersResponse(overrideParams, resHeaders, response,
-            undefined, log);
+        setOkContentResponseHeaders(overrideParams, resHeaders, response, log);
+        writeHttpCodeHeaders(response, 200, {}, log);
     }
     return response.end(() => {
         log.end().info('responded with content headers', {
@@ -656,8 +663,7 @@ export function responseStreamData(
         }
     }
     if (!response.headersSent) {
-        okContentHeadersResponse(overrideParams, resHeaders, response,
-            range, log, false);
+        setOkContentResponseHeaders(overrideParams, resHeaders, response, log);
     }
     if (dataLocations === null || _computeContentLengthFromLocation(dataLocations) === 0) {
         return response.end(() => {
@@ -701,7 +707,7 @@ export function streamUserErrorPage(
     setCommonResponseHeaders(corsHeaders, response, log);
     response.setHeader('x-amz-error-code', error.message);
     response.setHeader('x-amz-error-message', error.description);
-    response.writeHead(error.code, { 'Content-type': 'text/html' });
+    writeHttpCodeHeaders(response, error.code, { 'Content-type': 'text/html' }, log);
     response.on('finish', () => {
         log.end().info('responded with streamed content', {
             httpCode: response.statusCode,
@@ -737,7 +743,7 @@ export function errorHtmlResponse(
     log.trace('sending generic html error page',
         { error });
     setCommonResponseHeaders(corsHeaders, response, log);
-    response.writeHead(error.code, { 'Content-type': 'text/html' });
+    writeHttpCodeHeaders(response, error.code, { 'Content-type': 'text/html' }, log);
     const html: string[] = [];
     // response.statusMessage will provide standard message for status
     // code so much set response status code before creating html
@@ -809,7 +815,7 @@ export function errorHeaderResponse(
     setCommonResponseHeaders(corsHeaders, response, log);
     response.setHeader('x-amz-error-code', error.message);
     response.setHeader('x-amz-error-message', error.description);
-    response.writeHead(error.code);
+    writeHttpCodeHeaders(response, error.code, {}, log);
     return response.end(() => {
         log.end().info('responded with error headers', {
             httpCode: response.statusCode,
@@ -898,9 +904,9 @@ export function redirectRequest(
         httpCode: redirectCode,
         redirectLocation: hostName,
     });
-    response.writeHead(redirectCode, {
+    writeHttpCodeHeaders(response, redirectCode, {
         Location: redirectLocation,
-    });
+    }, log);
     response.end();
     return undefined;
 }

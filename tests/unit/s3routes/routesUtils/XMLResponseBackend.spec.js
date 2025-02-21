@@ -101,7 +101,7 @@ describe('XMLResponseBackend', () => {
 
             XMLResponseBackend.errorResponse(errCode, response, log);
 
-            expect(response.writeHead).toHaveBeenCalledWith(304);
+            expect(response.writeHead).toHaveBeenCalledWith(304, {});
             expect(response.end).toHaveBeenCalledWith('', 'utf8', expect.any(Function));
         });
 

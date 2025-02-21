@@ -28,6 +28,7 @@ describe('routes', () => {
             setHeader: sinon.stub(),
             writeHead: sinon.stub(),
             on: sinon.stub(),
+            removeAllListeners: sinon.stub(),
         };
 
         params = {
