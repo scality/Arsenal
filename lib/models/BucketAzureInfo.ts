@@ -3,32 +3,34 @@ export type DeleteRetentionPolicy = {
     days: number;
 };
 
+export type AzureInfoMetadata = {
+    sku: string;
+    accessTier: string;
+    kind: string;
+    systemKeys: string[];
+    tenantKeys: string[];
+    subscriptionId: string;
+    resourceGroup: string;
+    deleteRetentionPolicy: DeleteRetentionPolicy;
+    managementPolicies: any[];
+    httpsOnly: boolean;
+    tags: any;
+    networkACL: any[];
+    cname: string;
+    azureFilesAADIntegration: boolean;
+    hnsEnabled: boolean;
+    logging: any;
+    hourMetrics: any;
+    minuteMetrics: any;
+    serviceVersion: string;
+};
+
 /**
  * Helper class to ease access to the Azure specific information for
  * storage accounts mapped to buckets.
  */
 export default class BucketAzureInfo {
-    _data: {
-        sku: string;
-        accessTier: string;
-        kind: string;
-        systemKeys: string[];
-        tenantKeys: string[];
-        subscriptionId: string;
-        resourceGroup: string;
-        deleteRetentionPolicy: DeleteRetentionPolicy;
-        managementPolicies: any[];
-        httpsOnly: boolean;
-        tags: any;
-        networkACL: any[];
-        cname: string;
-        azureFilesAADIntegration: boolean;
-        hnsEnabled: boolean;
-        logging: any;
-        hourMetrics: any;
-        minuteMetrics: any;
-        serviceVersion: string;
-    };
+    private data: AzureInfoMetadata;
     /**
      * @constructor
      * @param obj - Raw structure for the Azure info on storage account
@@ -81,7 +83,7 @@ export default class BucketAzureInfo {
         minuteMetrics: any;
         serviceVersion: string;
     }) {
-        this._data = {
+        this.data = {
             sku: obj.sku,
             accessTier: obj.accessTier,
             kind: obj.kind,
@@ -105,177 +107,177 @@ export default class BucketAzureInfo {
     }
 
     getSku() {
-        return this._data.sku;
+        return this.data.sku;
     }
 
     setSku(sku: string) {
-        this._data.sku = sku;
+        this.data.sku = sku;
         return this;
     }
 
     getAccessTier() {
-        return this._data.accessTier;
+        return this.data.accessTier;
     }
 
     setAccessTier(accessTier: string) {
-        this._data.accessTier = accessTier;
+        this.data.accessTier = accessTier;
         return this;
     }
 
     getKind() {
-        return this._data.kind;
+        return this.data.kind;
     }
 
     setKind(kind: string) {
-        this._data.kind = kind;
+        this.data.kind = kind;
         return this;
     }
 
     getSystemKeys() {
-        return this._data.systemKeys;
+        return this.data.systemKeys;
     }
 
     setSystemKeys(systemKeys: string[]) {
-        this._data.systemKeys = systemKeys;
+        this.data.systemKeys = systemKeys;
         return this;
     }
 
     getTenantKeys() {
-        return this._data.tenantKeys;
+        return this.data.tenantKeys;
     }
 
     setTenantKeys(tenantKeys: string[]) {
-        this._data.tenantKeys = tenantKeys;
+        this.data.tenantKeys = tenantKeys;
         return this;
     }
 
     getSubscriptionId() {
-        return this._data.subscriptionId;
+        return this.data.subscriptionId;
     }
 
     setSubscriptionId(subscriptionId: string) {
-        this._data.subscriptionId = subscriptionId;
+        this.data.subscriptionId = subscriptionId;
         return this;
     }
 
     getResourceGroup() {
-        return this._data.resourceGroup;
+        return this.data.resourceGroup;
     }
 
     setResourceGroup(resourceGroup: string) {
-        this._data.resourceGroup = resourceGroup;
+        this.data.resourceGroup = resourceGroup;
         return this;
     }
 
     getDeleteRetentionPolicy() {
-        return this._data.deleteRetentionPolicy;
+        return this.data.deleteRetentionPolicy;
     }
 
     setDeleteRetentionPolicy(deleteRetentionPolicy: DeleteRetentionPolicy) {
-        this._data.deleteRetentionPolicy = deleteRetentionPolicy;
+        this.data.deleteRetentionPolicy = deleteRetentionPolicy;
         return this;
     }
 
     getManagementPolicies() {
-        return this._data.managementPolicies;
+        return this.data.managementPolicies;
     }
 
     setManagementPolicies(managementPolicies: any[]) {
-        this._data.managementPolicies = managementPolicies;
+        this.data.managementPolicies = managementPolicies;
         return this;
     }
 
     getHttpsOnly() {
-        return this._data.httpsOnly;
+        return this.data.httpsOnly;
     }
 
     setHttpsOnly(httpsOnly: boolean) {
-        this._data.httpsOnly = httpsOnly;
+        this.data.httpsOnly = httpsOnly;
         return this;
     }
 
     getTags() {
-        return this._data.tags;
+        return this.data.tags;
     }
 
     setTags(tags: any) {
-        this._data.tags = tags;
+        this.data.tags = tags;
         return this;
     }
 
     getNetworkACL() {
-        return this._data.networkACL;
+        return this.data.networkACL;
     }
 
     setNetworkACL(networkACL: any[]) {
-        this._data.networkACL = networkACL;
+        this.data.networkACL = networkACL;
         return this;
     }
 
     getCname() {
-        return this._data.cname;
+        return this.data.cname;
     }
 
     setCname(cname: string) {
-        this._data.cname = cname;
+        this.data.cname = cname;
         return this;
     }
 
     getAzureFilesAADIntegration() {
-        return this._data.azureFilesAADIntegration;
+        return this.data.azureFilesAADIntegration;
     }
 
     setAzureFilesAADIntegration(azureFilesAADIntegration: boolean) {
-        this._data.azureFilesAADIntegration = azureFilesAADIntegration;
+        this.data.azureFilesAADIntegration = azureFilesAADIntegration;
         return this;
     }
 
     getHnsEnabled() {
-        return this._data.hnsEnabled;
+        return this.data.hnsEnabled;
     }
 
     setHnsEnabled(hnsEnabled: boolean) {
-        this._data.hnsEnabled = hnsEnabled;
+        this.data.hnsEnabled = hnsEnabled;
         return this;
     }
 
     getLogging() {
-        return this._data.logging;
+        return this.data.logging;
     }
 
     setLogging(logging: any) {
-        this._data.logging = logging;
+        this.data.logging = logging;
         return this;
     }
 
     getHourMetrics() {
-        return this._data.hourMetrics;
+        return this.data.hourMetrics;
     }
 
     setHourMetrics(hourMetrics: any) {
-        this._data.hourMetrics = hourMetrics;
+        this.data.hourMetrics = hourMetrics;
         return this;
     }
 
     getMinuteMetrics() {
-        return this._data.minuteMetrics;
+        return this.data.minuteMetrics;
     }
 
     setMinuteMetrics(minuteMetrics: any) {
-        this._data.minuteMetrics = minuteMetrics;
+        this.data.minuteMetrics = minuteMetrics;
         return this;
     }
 
     getServiceVersion() {
-        return this._data.serviceVersion;
+        return this.data.serviceVersion;
     }
 
     setServiceVersion(serviceVersion: any) {
-        this._data.serviceVersion = serviceVersion;
+        this.data.serviceVersion = serviceVersion;
         return this;
     }
 
     getValue() {
-        return this._data;
+        return this.data;
     }
 }

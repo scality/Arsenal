@@ -402,7 +402,11 @@ class MongoClientInterface {
         const payload = {
             $set: {
                 _id: bucketName,
-                value: newBucketMD,
+                value: {
+                    ...newBucketMD,
+                    quotaMax: new Long(newBucketMD.quotaMax || '0'),
+                    capabilities: undefined,
+                },
                 vFormat: this.defaultBucketKeyFormat,
             },
         };

@@ -84,6 +84,9 @@ const MAX_DAYS = 2147483647; // Max 32-bit signed binary integer.
     ]
   };
  */
+export type LifecycleConfigurationMetadata = {
+    rules: Rule[],
+};
 
 export default class LifecycleConfiguration {
     _parsedXML: any;
@@ -1116,7 +1119,7 @@ export default class LifecycleConfiguration {
      * value types
      * @param config - The lifecycle configuration to validate
      */
-    static validateConfig(config: any) {
+    static validateConfig(config: LifecycleConfigurationMetadata) {
         assert.strictEqual(typeof config, 'object');
         const rules = config.rules;
         assert.strictEqual(Array.isArray(rules), true);
@@ -1184,7 +1187,7 @@ export default class LifecycleConfiguration {
      * @param config - Lifecycle configuration object
      * @return - XML representation of config
      */
-    static getConfigXml(config: { rules: Rule[] }) {
+    static getConfigXml(config: LifecycleConfigurationMetadata) {
         const rules = config.rules;
         const rulesXML = rules.map(rule => {
             const { ruleID, ruleStatus, filter, actions, prefix } = rule;

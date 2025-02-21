@@ -3,7 +3,7 @@ import { ArsenalError, errorInstances } from '../errors';
 
 export type Config = any;
 export type LockMode = 'GOVERNANCE' | 'COMPLIANCE';
-export type DefaultRetention = { Days: number } | { Years: number };
+export type DefaultRetention = { Days?: number, Years?: number, Mode?: LockMode[] };
 export type ParsedRetention =
     | { error: ArsenalError }
     | { timeType: 'days' | 'years'; timeValue: number };
@@ -33,18 +33,29 @@ export type ParsedRetention =
   *     }
   * }
   */
+
+export type ObjectLockConfigurationMetadata = {
+    ObjectLockConfiguration: {
+        ObjectLockEnabled: ['Enabled'];
+        Rule: {
+            DefaultRetention: DefaultRetention[];
+            Mode: LockMode[];
+        }[];
+    };
+};
+
 export default class ObjectLockConfiguration {
-    _parsedXml: any;
-    _config: Config;
+    private parsedXml: ObjectLockConfigurationMetadata;
+    private config: Config;
 
     /**
      * Create an Object Lock Configuration instance
      * @param xml - the parsed configuration xml
      * @return - ObjectLockConfiguration instance
      */
-    constructor(xml: any) {
-        this._parsedXml = xml;
-        this._config = {};
+    constructor(xml: ObjectLockConfigurationMetadata) {
+        this.parsedXml = xml;
+        this.config = {};
     }
 
     /**
@@ -52,11 +63,11 @@ export default class ObjectLockConfiguration {
      * @return - contains error if parsing failed
      */
     getValidatedObjectLockConfiguration() {
-        const validConfig = this._parseObjectLockConfig();
+        const validConfig = this.parseObjectLockConfig();
         if (validConfig.error) {
-            this._config.error = validConfig.error;
+            this.config.error = validConfig.error;
         }
-        return this._config;
+        return this.config;
     }
 
     /**
@@ -64,7 +75,7 @@ export default class ObjectLockConfiguration {
      * @param mode - array containing mode value
      * @return - contains error if parsing failed
      */
-    _parseMode(mode: LockMode[]): { error: ArsenalError } | { mode: LockMode } {
+    private parseMode(mode: LockMode[]): { error: ArsenalError } | { mode: LockMode } {
         const expectedModes = ['GOVERNANCE', 'COMPLIANCE'];
         if (!mode || !mode[0]) {
             const msg = 'request xml does not contain Mode';
@@ -89,20 +100,15 @@ export default class ObjectLockConfiguration {
      * @param dr - DefaultRetention object containing days or years
      * @return - contains error if parsing failed
      */
-    _parseTime(dr: DefaultRetention): ParsedRetention {
-        if ('Days' in dr && 'Years' in dr) {
+    private parseTime(dr: DefaultRetention): ParsedRetention {
+        if (dr.Days && dr.Years) {
             const msg = 'request xml contains both Days and Years';
             const error = errorInstances.MalformedXML.customizeDescription(msg);
             return { error };
         }
-        const timeType = 'Days' in dr ? 'Days' : 'Years';
+        const timeType = dr.Days ? 'Days' : 'Years';
         if (!dr[timeType] || !dr[timeType][0]) {
             const msg = 'request xml does not contain Days or Years';
-            const error = errorInstances.MalformedXML.customizeDescription(msg);
-            return { error };
-        }
-        if (dr[timeType].length > 1) {
-            const msg = 'request xml contains more than one retention period';
             const error = errorInstances.MalformedXML.customizeDescription(msg);
             return { error };
         }
@@ -133,15 +139,15 @@ export default class ObjectLockConfiguration {
      * Check that object lock configuration is valid
      * @return - contains error if parsing failed
      */
-    _parseObjectLockConfig() {
+    private parseObjectLockConfig() {
         const validConfig: { error?: ArsenalError } = {};
-        if (!this._parsedXml || this._parsedXml === '') {
+        if (!this.parsedXml) {
             const msg = 'request xml is undefined or empty';
             const error = errorInstances.MalformedXML.customizeDescription(msg);
             return { error };
         }
-        const objectLockConfig = this._parsedXml.ObjectLockConfiguration;
-        if (!objectLockConfig || objectLockConfig === '') {
+        const objectLockConfig = this.parsedXml.ObjectLockConfiguration;
+        if (!objectLockConfig) {
             const msg = 'request xml does not include ObjectLockConfiguration';
             const error = errorInstances.MalformedXML.customizeDescription(msg);
             return { error };
@@ -160,7 +166,7 @@ export default class ObjectLockConfiguration {
                 return { error };
             }
             const drArray = ruleArray[0].DefaultRetention;
-            if (!drArray || !drArray[0] || drArray[0] === '') {
+            if (!drArray || !drArray[0]) {
                 const msg = 'Rule request xml does not contain DefaultRetention';
                 const error = errorInstances.MalformedXML.customizeDescription(msg);
                 return { error };
@@ -172,17 +178,17 @@ export default class ObjectLockConfiguration {
                 const error = errorInstances.MalformedXML.customizeDescription(msg);
                 return { error };
             }
-            const validMode = this._parseMode(drArray[0].Mode);
+            const validMode = this.parseMode(drArray[0].Mode);
             if ('error' in validMode) {
                 return validMode;
             }
-            const validTime = this._parseTime(drArray[0]);
+            const validTime = this.parseTime(drArray[0]);
             if ('error' in validTime) {
                 return validTime;
             }
-            this._config.rule = {};
-            this._config.rule.mode = validMode.mode;
-            this._config.rule[validTime.timeType!] = validTime.timeValue;
+            this.config.rule = {};
+            this.config.rule.mode = validMode.mode;
+            this.config.rule[validTime.timeType!] = validTime.timeValue;
         }
         return validConfig;
     }

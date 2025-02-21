@@ -54,6 +54,13 @@ export type XMLRule = {
     Filter?: string;
 };
 
+export type ReplicationConfigurationMetadata = {
+    role: string,
+    destination: string,
+    rules: Rule[],
+    preferredReadLocation?: string | null,
+};
+
 export default class ReplicationConfiguration {
     _parsedXML: any;
     _log: RequestLogger;
@@ -463,11 +470,7 @@ export default class ReplicationConfiguration {
      * @param config - The bucket replication configuration
      * @return - The XML representation of the configuration
      */
-    static getConfigXML(config: {
-        role: string;
-        destination: string;
-        rules: Rule[];
-    }) {
+    static getConfigXML(config: ReplicationConfigurationMetadata) {
         const { role, destination, rules } = config;
         const Role = `<Role>${escapeForXml(role)}</Role>`;
         const Bucket = `<Bucket>${escapeForXml(destination)}</Bucket>`;
@@ -505,11 +508,7 @@ export default class ReplicationConfiguration {
      * value types
      * @param config - The replication configuration to validate
      */
-    static validateConfig(config: {
-        role: string;
-        destination: string;
-        rules: Rule[];
-    }) {
+    static validateConfig(config: ReplicationConfigurationMetadata) {
         assert.strictEqual(typeof config, 'object');
         const { role, rules, destination } = config;
         assert.strictEqual(typeof role, 'string');

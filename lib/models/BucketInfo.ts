@@ -2,14 +2,15 @@ import assert from 'assert';
 import { v4 as uuid } from 'uuid';
 
 import { WebsiteConfiguration, WebsiteConfigurationParams } from './WebsiteConfiguration';
-import ReplicationConfiguration from './ReplicationConfiguration';
-import LifecycleConfiguration from './LifecycleConfiguration';
-import ObjectLockConfiguration from './ObjectLockConfiguration';
-import BucketPolicy from './BucketPolicy';
-import NotificationConfiguration from './NotificationConfiguration';
+import ReplicationConfiguration, { ReplicationConfigurationMetadata } from './ReplicationConfiguration';
+import LifecycleConfiguration, { LifecycleConfigurationMetadata } from './LifecycleConfiguration';
+import ObjectLockConfiguration, { ObjectLockConfigurationMetadata } from './ObjectLockConfiguration';
+import BucketPolicy, { BucketPolicyMetadata } from './BucketPolicy';
+import NotificationConfiguration, { NotificationConfigurationMetadata } from './NotificationConfiguration';
 import { ACL as OACL } from './ObjectMD';
 import { areTagsValid, BucketTag } from '../s3middleware/tagging';
 import { VeeamCapability, VeeamSOSApiSchema, VeeamSOSApiSerializable } from './Veeam';
+import { AzureInfoMetadata } from './BucketAzureInfo';
 
 // WHEN UPDATING THIS NUMBER, UPDATE BucketInfoModelVersion.md CHANGELOG
 // BucketInfoModelVersion.md can be found in documentation/ at the root
@@ -36,7 +37,7 @@ export type SSE = {
 
 export type VersioningConfiguration = {
     Status: string;
-    MfaDelete: any;
+    MfaDelete: 'Enabled' | 'Disabled';
 };
 
 /**
@@ -64,16 +65,16 @@ export type BucketMetadata = {
     readLocationConstraint?: string,
     websiteConfiguration?: WebsiteConfigurationParams,
     cors?: CORS,
-    replicationConfiguration?: any,
-    lifecycleConfiguration?: any,
-    bucketPolicy?: any,
+    replicationConfiguration?: ReplicationConfigurationMetadata,
+    lifecycleConfiguration?: LifecycleConfigurationMetadata,
+    bucketPolicy?: BucketPolicyMetadata,
     uid: string,
     isNFS?: boolean,
     ingestion?: { status: 'enabled' | 'disabled' },
-    azureInfo?: any,
+    azureInfo?: AzureInfoMetadata,
     objectLockEnabled?: boolean,
-    objectLockConfiguration?: any,
-    notificationConfiguration?: any,
+    objectLockConfiguration?: ObjectLockConfigurationMetadata,
+    notificationConfiguration?: NotificationConfigurationMetadata,
     tags: Array<BucketTag>,
     capabilities?: Capabilities,
     quotaMax: bigint | number,
@@ -87,33 +88,33 @@ export type BucketMetadataJSON = Omit<BucketMetadata, 'quotaMax' | 'capabilities
 };
 
 export default class BucketInfo implements BucketMetadata {
-    _acl: ACL;
-    _name: string;
-    _owner: string;
-    _ownerDisplayName: string;
-    _creationDate: string;
-    _mdBucketModelVersion: number;
-    _transient: boolean;
-    _deleted: boolean;
-    _serverSideEncryption: SSE | null;
-    _versioningConfiguration: VersioningConfiguration | null;
-    _locationConstraint: string | null;
-    _websiteConfiguration?: WebsiteConfiguration | null;
-    _cors: CORS | null;
-    _replicationConfiguration?: any;
-    _lifecycleConfiguration?: any;
-    _bucketPolicy?: any;
-    _uid?: string;
-    _objectLockEnabled?: boolean;
-    _objectLockConfiguration?: any;
-    _notificationConfiguration?: any;
-    _tags?: Array<BucketTag>;
-    _readLocationConstraint: string | null;
-    _isNFS: boolean | null;
-    _azureInfo: any | null;
-    _ingestion: { status: 'enabled' | 'disabled' } | null;
-    _capabilities?: Capabilities;
-    _quotaMax: bigint;
+    private _acl: ACL;
+    private _name: string;
+    private _owner: string;
+    private _ownerDisplayName: string;
+    private _creationDate: string;
+    private _mdBucketModelVersion: number;
+    private _transient: boolean;
+    private _deleted: boolean;
+    private _serverSideEncryption?: SSE;
+    private _versioningConfiguration?: VersioningConfiguration;
+    private _locationConstraint?: string;
+    private _websiteConfiguration?: WebsiteConfiguration;
+    private _cors?: CORS;
+    private _replicationConfiguration?: ReplicationConfigurationMetadata;
+    private _lifecycleConfiguration?: LifecycleConfigurationMetadata;
+    private _bucketPolicy?: BucketPolicyMetadata;
+    private _uid: string;
+    private _objectLockEnabled?: boolean;
+    private _objectLockConfiguration?: ObjectLockConfigurationMetadata;
+    private _notificationConfiguration?: NotificationConfigurationMetadata;
+    private _tags: Array<BucketTag>;
+    private _readLocationConstraint?: string;
+    private _isNFS?: boolean;
+    private _azureInfo?: AzureInfoMetadata;
+    private _ingestion?: { status: 'enabled' | 'disabled' };
+    private _capabilities?: Capabilities;
+    private _quotaMax: bigint;
 
     /**
     * Represents all bucket information.
@@ -184,19 +185,19 @@ export default class BucketInfo implements BucketMetadata {
         serverSideEncryption?: SSE,
         versioningConfiguration?: VersioningConfiguration,
         locationConstraint?: string,
-        websiteConfiguration?: WebsiteConfiguration | null,
+        websiteConfiguration?: WebsiteConfiguration,
         cors?: CORS,
-        replicationConfiguration?: any,
-        lifecycleConfiguration?: any,
-        bucketPolicy?: any,
+        replicationConfiguration?: ReplicationConfigurationMetadata,
+        lifecycleConfiguration?: LifecycleConfigurationMetadata,
+        bucketPolicy?: BucketPolicyMetadata,
         uid?: string,
         readLocationConstraint?: string,
         isNFS?: boolean,
         ingestionConfig?: { status: 'enabled' | 'disabled' },
-        azureInfo?: any,
+        azureInfo?: AzureInfoMetadata,
         objectLockEnabled?: boolean,
-        objectLockConfiguration?: any,
-        notificationConfiguration?: any,
+        objectLockConfiguration?: ObjectLockConfigurationMetadata,
+        notificationConfiguration?: NotificationConfigurationMetadata,
         tags?: Array<BucketTag> | [],
         capabilities?: Capabilities,
         quotaMax?: bigint | number,
@@ -335,22 +336,22 @@ export default class BucketInfo implements BucketMetadata {
         this._mdBucketModelVersion = mdBucketModelVersion || 0;
         this._transient = transient || false;
         this._deleted = deleted || false;
-        this._serverSideEncryption = serverSideEncryption || null;
-        this._versioningConfiguration = versioningConfiguration || null;
-        this._locationConstraint = locationConstraint || null;
-        this._readLocationConstraint = readLocationConstraint || null;
-        this._websiteConfiguration = websiteConfiguration || null;
-        this._replicationConfiguration = replicationConfiguration || null;
-        this._cors = cors || null;
-        this._lifecycleConfiguration = lifecycleConfiguration || null;
-        this._bucketPolicy = bucketPolicy || null;
+        this._serverSideEncryption = serverSideEncryption;
+        this._versioningConfiguration = versioningConfiguration;
+        this._locationConstraint = locationConstraint;
+        this._readLocationConstraint = readLocationConstraint;
+        this._websiteConfiguration = websiteConfiguration;
+        this._replicationConfiguration = replicationConfiguration;
+        this._cors = cors;
+        this._lifecycleConfiguration = lifecycleConfiguration;
+        this._bucketPolicy = bucketPolicy;
         this._uid = uid || uuid();
-        this._isNFS = isNFS || null;
-        this._ingestion = ingestionConfig || null;
-        this._azureInfo = azureInfo || null;
-        this._objectLockEnabled = objectLockEnabled || false;
-        this._objectLockConfiguration = objectLockConfiguration || null;
-        this._notificationConfiguration = notificationConfiguration || null;
+        this._isNFS = isNFS;
+        this._ingestion = ingestionConfig;
+        this._azureInfo = azureInfo;
+        this._objectLockEnabled = objectLockEnabled;
+        this._objectLockConfiguration = objectLockConfiguration;
+        this._notificationConfiguration = notificationConfiguration;
         this._tags = tags;
 
         this._capabilities = capabilities && {
@@ -368,7 +369,7 @@ export default class BucketInfo implements BucketMetadata {
      * @return - serializable object
      */
     makeSerializable() {
-        const bucketInfos: any & VeeamSOSApiSerializable = {
+        const bucketInfos = {
             acl: this._acl,
             name: this._name,
             owner: this._owner,
@@ -431,7 +432,7 @@ export default class BucketInfo implements BucketMetadata {
                 VeeamCapability.parse(obj.capabilities?.VeeamSOSApi),
         };
         const websiteConfig = obj.websiteConfiguration ?
-            new WebsiteConfiguration(obj.websiteConfiguration) : null;
+            new WebsiteConfiguration(obj.websiteConfiguration) : undefined;
         return new BucketInfo(obj.name, obj.owner, obj.ownerDisplayName,
             obj.creationDate, obj.mdBucketModelVersion, obj.acl,
             obj.transient, obj.deleted, obj.serverSideEncryption,
@@ -595,7 +596,7 @@ export default class BucketInfo implements BucketMetadata {
      * @param replicationConfiguration - replication information
      * @return - bucket info instance
      */
-    setReplicationConfiguration(replicationConfiguration: any) {
+    setReplicationConfiguration(replicationConfiguration: ReplicationConfigurationMetadata) {
         this._replicationConfiguration = replicationConfiguration;
         return this;
     }
@@ -620,7 +621,7 @@ export default class BucketInfo implements BucketMetadata {
      * @param lifecycleConfiguration - lifecycle information
      * @return - bucket info instance
      */
-    setLifecycleConfiguration(lifecycleConfiguration: any) {
+    setLifecycleConfiguration(lifecycleConfiguration: LifecycleConfigurationMetadata) {
         this._lifecycleConfiguration = lifecycleConfiguration;
         return this;
     }
@@ -637,7 +638,8 @@ export default class BucketInfo implements BucketMetadata {
      * @param bucketPolicy - bucket policy
      * @return - bucket info instance
      */
-    setBucketPolicy(bucketPolicy: any) {
+    setBucketPolicy(bucketPolicy: BucketPolicyMetadata) {
+        BucketPolicy.validatePolicy(bucketPolicy);
         this._bucketPolicy = bucketPolicy;
         return this;
     }
@@ -654,7 +656,7 @@ export default class BucketInfo implements BucketMetadata {
      * @param objectLockConfiguration - object lock information
      * @return - bucket info instance
      */
-    setObjectLockConfiguration(objectLockConfiguration: any) {
+    setObjectLockConfiguration(objectLockConfiguration: ObjectLockConfigurationMetadata) {
         this._objectLockConfiguration = objectLockConfiguration;
         return this;
     }
@@ -671,7 +673,7 @@ export default class BucketInfo implements BucketMetadata {
      * @param notificationConfiguration - bucket notification information
      * @return - bucket info instance
      */
-    setNotificationConfiguration(notificationConfiguration: any) {
+    setNotificationConfiguration(notificationConfiguration: NotificationConfigurationMetadata) {
         this._notificationConfiguration = notificationConfiguration;
         return this;
     }
@@ -946,7 +948,7 @@ export default class BucketInfo implements BucketMetadata {
      * @return - bucket ingestion configuration: Enabled or Disabled
      */
     getIngestion() {
-        return this._ingestion;
+        return this._ingestion || null;
     }
 
     /**
@@ -984,7 +986,7 @@ export default class BucketInfo implements BucketMetadata {
      *   {@link BucketAzureInfo} construction
      * @return - bucket info instance
      */
-    setAzureInfo(azureInfo: any) {
+    setAzureInfo(azureInfo: AzureInfoMetadata) {
         this._azureInfo = azureInfo;
         return this;
     }

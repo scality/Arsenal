@@ -1,22 +1,24 @@
+export type ObjectMDAzureInfoMetadata = {
+    containerPublicAccess: string;
+    containerStoredAccessPolicies: any[];
+    containerImmutabilityPolicy: any;
+    containerLegalHoldStatus: boolean;
+    containerDeletionInProgress: boolean;
+    blobType: string;
+    blobContentMD5: string;
+    blobIssuedETag: string;
+    blobCopyInfo: any;
+    blobSequenceNumber: number;
+    blobAccessTierChangeTime: Date;
+    blobUncommitted: boolean;
+};
+
 /**
  * Helper class to ease access to the Azure specific information for
  * Blob and Container objects.
  */
 export default class ObjectMDAzureInfo {
-    _data: {
-        containerPublicAccess: string;
-        containerStoredAccessPolicies: any[];
-        containerImmutabilityPolicy: any;
-        containerLegalHoldStatus: boolean;
-        containerDeletionInProgress: boolean;
-        blobType: string;
-        blobContentMD5: string;
-        blobIssuedETag: string;
-        blobCopyInfo: any;
-        blobSequenceNumber: number;
-        blobAccessTierChangeTime: Date;
-        blobUncommitted: boolean;
-    };
+    private data: ObjectMDAzureInfoMetadata;
 
     /**
      * @constructor
@@ -57,7 +59,7 @@ export default class ObjectMDAzureInfo {
         blobAccessTierChangeTime: Date;
         blobUncommitted: boolean;
     }) {
-        this._data = {
+        this.data = {
             containerPublicAccess: obj.containerPublicAccess,
             containerStoredAccessPolicies: obj.containerStoredAccessPolicies,
             containerImmutabilityPolicy: obj.containerImmutabilityPolicy,
@@ -74,115 +76,115 @@ export default class ObjectMDAzureInfo {
     }
 
     getContainerPublicAccess() {
-        return this._data.containerPublicAccess;
+        return this.data.containerPublicAccess;
     }
 
     setContainerPublicAccess(containerPublicAccess: string) {
-        this._data.containerPublicAccess = containerPublicAccess;
+        this.data.containerPublicAccess = containerPublicAccess;
         return this;
     }
 
     getContainerStoredAccessPolicies() {
-        return this._data.containerStoredAccessPolicies;
+        return this.data.containerStoredAccessPolicies;
     }
 
     setContainerStoredAccessPolicies(containerStoredAccessPolicies: any[]) {
-        this._data.containerStoredAccessPolicies =
+        this.data.containerStoredAccessPolicies =
             containerStoredAccessPolicies;
         return this;
     }
 
     getContainerImmutabilityPolicy() {
-        return this._data.containerImmutabilityPolicy;
+        return this.data.containerImmutabilityPolicy;
     }
 
     setContainerImmutabilityPolicy(containerImmutabilityPolicy: any) {
-        this._data.containerImmutabilityPolicy = containerImmutabilityPolicy;
+        this.data.containerImmutabilityPolicy = containerImmutabilityPolicy;
         return this;
     }
 
     getContainerLegalHoldStatus() {
-        return this._data.containerLegalHoldStatus;
+        return this.data.containerLegalHoldStatus;
     }
 
     setContainerLegalHoldStatus(containerLegalHoldStatus: boolean) {
-        this._data.containerLegalHoldStatus = containerLegalHoldStatus;
+        this.data.containerLegalHoldStatus = containerLegalHoldStatus;
         return this;
     }
 
     getContainerDeletionInProgress() {
-        return this._data.containerDeletionInProgress;
+        return this.data.containerDeletionInProgress;
     }
 
     setContainerDeletionInProgress(containerDeletionInProgress: boolean) {
-        this._data.containerDeletionInProgress = containerDeletionInProgress;
+        this.data.containerDeletionInProgress = containerDeletionInProgress;
         return this;
     }
 
     getBlobType() {
-        return this._data.blobType;
+        return this.data.blobType;
     }
 
     setBlobType(blobType: string) {
-        this._data.blobType = blobType;
+        this.data.blobType = blobType;
         return this;
     }
 
     getBlobContentMD5() {
-        return this._data.blobContentMD5;
+        return this.data.blobContentMD5;
     }
 
     setBlobContentMD5(blobContentMD5: string) {
-        this._data.blobContentMD5 = blobContentMD5;
+        this.data.blobContentMD5 = blobContentMD5;
         return this;
     }
 
     getBlobIssuedETag() {
-        return this._data.blobIssuedETag;
+        return this.data.blobIssuedETag;
     }
 
     setBlobIssuedETag(blobIssuedETag: string) {
-        this._data.blobIssuedETag = blobIssuedETag;
+        this.data.blobIssuedETag = blobIssuedETag;
         return this;
     }
 
     getBlobCopyInfo() {
-        return this._data.blobCopyInfo;
+        return this.data.blobCopyInfo;
     }
 
     setBlobCopyInfo(blobCopyInfo: any) {
-        this._data.blobCopyInfo = blobCopyInfo;
+        this.data.blobCopyInfo = blobCopyInfo;
         return this;
     }
 
     getBlobSequenceNumber() {
-        return this._data.blobSequenceNumber;
+        return this.data.blobSequenceNumber;
     }
 
     setBlobSequenceNumber(blobSequenceNumber: number) {
-        this._data.blobSequenceNumber = blobSequenceNumber;
+        this.data.blobSequenceNumber = blobSequenceNumber;
         return this;
     }
 
     getBlobAccessTierChangeTime() {
-        return this._data.blobAccessTierChangeTime;
+        return this.data.blobAccessTierChangeTime;
     }
 
     setBlobAccessTierChangeTime(blobAccessTierChangeTime: Date) {
-        this._data.blobAccessTierChangeTime = blobAccessTierChangeTime;
+        this.data.blobAccessTierChangeTime = blobAccessTierChangeTime;
         return this;
     }
 
     getBlobUncommitted() {
-        return this._data.blobUncommitted;
+        return this.data.blobUncommitted;
     }
 
     setBlobUncommitted(blobUncommitted: boolean) {
-        this._data.blobUncommitted = blobUncommitted;
+        this.data.blobUncommitted = blobUncommitted;
         return this;
     }
 
     getValue() {
-        return this._data;
+        return this.data;
     }
 }

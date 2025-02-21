@@ -48,17 +48,30 @@ const objectActions = [
     's3:PutObjectTagging',
 ];
 
+export type BucketPolicyMetadata = {
+    Id: string;
+    Version: string;
+    Statement: {
+        Sid: string;
+        Effect: string;
+        Principal: string | { AWS: string[] };
+        Action: string | string[];
+        Resource: string | string[];
+        Condition?: { [key: string]: string | string[] };
+    }[],
+};
+
 export default class BucketPolicy {
-    _json: string;
-    _policy: any;
+    private json: string;
+    private policy: BucketPolicyMetadata | null = null;
+
     /**
      * Create a Bucket Policy instance
      * @param json - the json policy
      * @return - BucketPolicy instance
      */
     constructor(json: string) {
-        this._json = json;
-        this._policy = {};
+        this.json = json;
     }
 
     /**
@@ -66,7 +79,7 @@ export default class BucketPolicy {
      * @return - the bucket policy or error
      */
     getBucketPolicy() {
-        const policy = this._getPolicy();
+        const policy = this.getPolicy();
         return policy;
     }
 
@@ -74,29 +87,29 @@ export default class BucketPolicy {
      * Get the bucket policy array
      * @return - contains error if policy validation fails
      */
-    _getPolicy(): { error: ArsenalError } | any {
-        if (!this._json || this._json === '') {
+    private getPolicy(): { error: ArsenalError } | any {
+        if (!this.json || this.json === '') {
             return { error: errorInstances.MalformedPolicy.customizeDescription(
                 'request json is empty or undefined') };
         }
-        const validSchema = validateResourcePolicy(this._json);
+        const validSchema = validateResourcePolicy(this.json);
         if (validSchema.error) {
             return validSchema;
         }
-        this._setStatementArray();
-        const valAcRes = this._validateActionResource();
+        this.setStatementArray();
+        const valAcRes = this.validateActionResource();
         if (valAcRes.error) {
             return valAcRes;
         }
 
-        return this._policy;
+        return this.policy;
     }
 
-    _setStatementArray() {
-        this._policy = JSON.parse(this._json);
-        if (!Array.isArray(this._policy.Statement)) {
-            const statement = this._policy.Statement;
-            this._policy.Statement = [statement];
+    private setStatementArray() {
+        this.policy = <BucketPolicyMetadata>JSON.parse(this.json);
+        if (!Array.isArray(this.policy.Statement)) {
+            const statement = this.policy.Statement;
+            this.policy.Statement = [statement];
         }
     }
 
@@ -104,8 +117,8 @@ export default class BucketPolicy {
      * Validate action and resource are compatible
      * @return - contains error or empty obj
      */
-    _validateActionResource(): { error?: ArsenalError } {
-        const invalid = this._policy.Statement.every((s: any) => {
+    private validateActionResource(): { error?: ArsenalError } {
+        const invalid = this.policy?.Statement.every((s: any) => {
             const actions: string[] = typeof s.Action === 'string' ?
                 [s.Action] : s.Action;
             const resources: string[] = typeof s.Resource === 'string' ?
@@ -132,7 +145,7 @@ export default class BucketPolicy {
      * Call resource policy schema validation function
      * @param policy - the bucket policy object to validate
      */
-    static validatePolicy(policy: any) {
+    static validatePolicy(policy: BucketPolicyMetadata) {
         // only the BucketInfo constructor calls this function
         // and BucketInfo will always be passed an object
         const validated = validateResourcePolicy(JSON.stringify(policy));

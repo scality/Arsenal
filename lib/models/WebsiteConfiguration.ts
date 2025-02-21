@@ -77,10 +77,10 @@ export type RedirectAllRequestsTo = {
 };
 
 export type WebsiteConfigurationParams = {
-    indexDocument: string;
-    errorDocument: string;
-    redirectAllRequestsTo: RedirectAllRequestsTo;
-    routingRules: RoutingRule[] | any[],
+    indexDocument?: string;
+    errorDocument?: string;
+    redirectAllRequestsTo?: RedirectAllRequestsTo;
+    routingRules?: RoutingRule[] | any[],
 };
 
 export class WebsiteConfiguration {

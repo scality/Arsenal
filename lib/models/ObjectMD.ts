@@ -8,6 +8,7 @@ import ObjectMDLocation, {
 } from './ObjectMDLocation';
 import ObjectMDAmzRestore from './ObjectMDAmzRestore';
 import ObjectMDArchive from './ObjectMDArchive';
+import { ObjectMDAzureInfoMetadata } from './ObjectMDAzureInfo';
 
 export type ACL = {
     Canned: string;
@@ -35,6 +36,11 @@ export type ReplicationInfo = {
     isNFS?: boolean;
 };
 
+export type ObjectMDTag = {
+    Key: string;
+    Value: string;
+};
+
 export type ObjectMDData = {
     'owner-display-name': string;
     'owner-id': string;
@@ -59,7 +65,7 @@ export type ObjectMDData = {
     'x-amz-website-redirect-location': string;
     'x-amz-scal-transition-in-progress'?: boolean;
     'x-amz-scal-transition-time'?: string;
-    azureInfo?: any;
+    azureInfo?: ObjectMDAzureInfoMetadata;
     acl: ACL;
     key: string;
     location: null | Location[];
@@ -804,7 +810,7 @@ export default class ObjectMD {
      *   structure
      * @return itself
      */
-    setAzureInfo(azureInfo: any) {
+    setAzureInfo(azureInfo: ObjectMDAzureInfoMetadata) {
         this._data.azureInfo = azureInfo;
         return this;
     }
@@ -1003,7 +1009,7 @@ export default class ObjectMD {
      * @param tags - tags object
      * @return itself
      */
-    setTags(tags: any) {
+    setTags(tags: ObjectMDTag[]) {
         this._data.tags = tags;
         return this;
     }
