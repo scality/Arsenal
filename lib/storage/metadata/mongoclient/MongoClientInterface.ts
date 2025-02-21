@@ -481,6 +481,8 @@ class MongoClientInterface {
                 return cb(null, BucketInfo.fromJson(bucketMetadata));
             })
             .catch(err => {
+                console.error(err);
+                console.trace(err);
                 log.error(
                     'getBucketAttributes: error getting bucket attributes',
                     { error: err.message });
@@ -535,6 +537,8 @@ class MongoClientInterface {
     ) {
         this.getBucketAttributes(bucketName, log, (err, bucket?) => {
             if (err) {
+                console.error(err);
+                console.trace(err);
                 log.error(
                     'getBucketAttributes: error getting bucket attributes',
                     { error: err.message });
