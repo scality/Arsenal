@@ -40,14 +40,6 @@ export default function constructStringToSign(params: {
         service: params.awsService,
     });
 
-    // TODO Why that line?
-    // @ts-ignore
-    if (canonicalReqResult instanceof Error) {
-        if (log) {
-            log.error('error creating canonicalRequest');
-        }
-        return canonicalReqResult;
-    }
     if (log) {
         log.debug('constructed canonicalRequest', { canonicalReqResult });
     }

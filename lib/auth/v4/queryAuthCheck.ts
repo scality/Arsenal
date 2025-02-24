@@ -1,10 +1,11 @@
 import { Logger } from 'werelogs';
 import * as constants from '../../constants';
-import errors, { errorInstances } from '../../errors';
+import errors, { errorInstances, ArsenalError } from '../../errors';
 import constructStringToSign from './constructStringToSign';
 import { checkTimeSkew, convertAmzTimeToMs } from './timeUtils';
 import { validateCredentials, extractQueryParams } from './validateInputs';
 import { areSignedHeadersComplete } from './validateInputs';
+import { AuthV4RequestParams } from '../Vault';
 
 /**
  * V4 query auth check
@@ -12,7 +13,11 @@ import { areSignedHeadersComplete } from './validateInputs';
  * @param log - logging object
  * @param data - Contain authentification params (GET or POST data)
  */
-export function check(request: any, log: Logger, data: { [key: string]: string }) {
+export function check(
+    request: any,
+    log: Logger,
+    data: { [key: string]: string },
+): { err: null | ArsenalError | Error, params?: AuthV4RequestParams } {
     const authParams = extractQueryParams(data, log);
 
     if (Object.keys(authParams).length !== 5) {
@@ -102,6 +107,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
         err: null,
         params: {
             version: 4,
+            log,
             data: {
                 accessKey,
                 signatureFromRequest,

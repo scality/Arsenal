@@ -1,5 +1,5 @@
 import { Logger } from 'werelogs';
-import errors, { errorInstances } from '../../../lib/errors';
+import errors, { errorInstances, ArsenalError } from '../../../lib/errors';
 import * as constants from '../../constants';
 import constructStringToSign from './constructStringToSign';
 import {
@@ -12,6 +12,7 @@ import {
     validateCredentials,
     areSignedHeadersComplete,
 } from './validateInputs';
+import { AuthV4RequestParams } from '../Vault';
 
 /**
  * V4 header auth check
@@ -26,7 +27,7 @@ export function check(
     log: Logger,
     data: { [key: string]: string },
     awsService: string
-) {
+): { err: null | ArsenalError | Error, params?: AuthV4RequestParams } {
     log.trace('running header auth check');
 
     const token = request.headers['x-amz-security-token'];
@@ -110,7 +111,7 @@ export function check(
     const scopeDate = credentialsArr[1];
     const region = credentialsArr[2];
     const service = credentialsArr[3];
-    const accessKey = credentialsArr.shift();
+    const accessKey = credentialsArr.shift()!;
     const credentialScope = credentialsArr.join('/');
 
     // In AWS Signature Version 4, the signing key is valid for up to seven days
@@ -164,6 +165,7 @@ export function check(
         err: null,
         params: {
             version: 4,
+            log,
             data: {
                 accessKey,
                 signatureFromRequest,

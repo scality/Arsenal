@@ -187,6 +187,7 @@ export default class V4Transform extends Transform {
         // lastSignature to current signature
         this.lastSignature = this.currentSignature!;
         const vaultParams: AuthV4RequestParams = {
+            version: 4,
             log: this.log,
             data: {
                 accessKey: this.accessKey,
@@ -194,8 +195,6 @@ export default class V4Transform extends Transform {
                 region: this.region,
                 scopeDate: this.scopeDate,
                 stringToSign,
-                // TODO FIXME This can not work
-                // @ts-expect-errors
                 timestamp: this.timestamp,
                 credentialScope: this.credentialScope,
             },

@@ -1,6 +1,6 @@
 import * as crypto from 'crypto';
 import { Logger } from 'werelogs';
-import errors from '../errors';
+import errors, { ArsenalError } from '../errors';
 import * as queryString from 'querystring';
 import AuthInfo from './AuthInfo';
 import * as v2 from './v2/authV2';
@@ -15,7 +15,7 @@ import baseBackend from './backends/base';
 import chainBackend from './backends/ChainBackend';
 import validateAuthConfig from './backends/in_memory/validateAuthConfig';
 import AuthLoader from './backends/in_memory/AuthLoader';
-import Vault from './Vault';
+import Vault, { AuthV2RequestParams, AuthV4RequestParams } from './Vault';
 
 let vault: Vault | null = null;
 const auth = {};
@@ -61,7 +61,7 @@ function extractParams(
     log: Logger,
     awsService: string,
     data: { [key: string]: string }
-) {
+): { err: null | Error | ArsenalError, params?: AuthV2RequestParams | AuthV4RequestParams | AuthInfo } {
     log.trace('entered', { method: 'Arsenal.auth.server.extractParams' });
     const authHeader = request.headers.authorization;
     let version: 'v2' |'v4' | null = null;
@@ -133,7 +133,7 @@ function doAuth(
     if (requestContexts) {
         requestContexts.forEach(requestContext => {
             const { params } = res;
-            if ('data' in params) {
+            if ('data' in params!) {
                 const { data } = params;
                 requestContext.setAuthType(data.authType);
                 requestContext.setSignatureVersion(data.signatureVersion);
@@ -146,14 +146,11 @@ function doAuth(
     }
 
     // Corner cases managed, we're left with normal auth
-    // TODO What's happening here?
-    // @ts-ignore
-    res.params.log = log;
-    if (res.params.version === 2) {
-        // @ts-ignore
-        return vault!.authenticateV2Request(res.params, requestContexts, cb);
+    res.params!.log = log;
+    if (res.params!.version === 2) {
+        return vault!.authenticateV2Request(res.params!, requestContexts, cb);
     }
-    if (res.params.version === 4) {
+    if (res.params!.version === 4) {
         // @ts-ignore
         return vault!.authenticateV4Request(res.params, requestContexts, options, cb);
     }

@@ -65,24 +65,39 @@ export function vaultSignatureCb(
         accountQuota: info.accountQuota || {},
     });
 }
+export type AuthV2RequestParams = {
+    version: 2;
+    log: RequestLogger;
+    data: {
+        securityToken: string;
+        accessKey: string;
+        signatureFromRequest: string;
+        stringToSign: string;
+        algo: string;
+        authType: 'query' | 'header' | 'REST-HEADER' | 'REST-QUERY-STRING';
+        signatureVersion: string;
+        signatureAge?: number;
+    };
+};
 
 export type AuthV4RequestParams = {
     version: 4;
     log: RequestLogger;
     data: {
         accessKey: string;
-        signatureFromRequest: string;
-        region: string;
-        stringToSign: string;
-        scopeDate: string;
-        authType: 'query' | 'header';
-        signatureVersion: string;
-        signatureAge?: number;
-        timestamp: number;
-        credentialScope: string;
-        securityToken: string;
-        algo: string;
+        algo?: string;
+        authType?: 'query' | 'header' | 'REST-HEADER' | 'REST-QUERY-STRING';
+        credentialScope?: string;
         log: RequestLogger;
+        region: string;
+        scopeDate: string;
+        securityToken?: string;
+        service?: string;
+        signatureVersion?: string;
+        signatureAge?: number;
+        signatureFromRequest: string;
+        stringToSign: string;
+        timestamp: number;
     };
 };
 
@@ -137,21 +152,7 @@ export default class Vault {
      * @param callback - callback with either error or user info
      */
     authenticateV2Request(
-        params: {
-            version: 2;
-            log: RequestLogger;
-            data: {
-                securityToken: string;
-                accessKey: string;
-                signatureFromRequest: string;
-                stringToSign: string;
-                algo: string;
-                authType: 'query' | 'header';
-                signatureVersion: string;
-                signatureAge?: number;
-                log: RequestLogger;
-            };
-        },
+        params: AuthV2RequestParams,
         requestContexts: any[],
         callback: (err: Error | null, data?: any) => void
     ) {
