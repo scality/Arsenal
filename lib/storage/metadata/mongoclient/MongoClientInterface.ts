@@ -1019,13 +1019,13 @@ class MongoClientInterface {
                 ops.push(masterOp);
                 putObjectEntry(ops, cb);
                 return null;
-            }).catch(() => {
-                log.error('putObjectVerCase3: mongoDB error finding object');
+            }).catch(err => {
+                log.error('putObjectVerCase3: mongoDB error finding object', { err });
                 return cb(errors.InternalError);
             });
             return null;
-        }).catch(() => {
-            log.error('putObjectVerCase3: mongoDB error finding object');
+        }).catch(err => {
+            log.error('putObjectVerCase3: mongoDB error finding object', { err });
             return cb(errors.InternalError);
         });
     }

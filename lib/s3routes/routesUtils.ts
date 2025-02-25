@@ -66,7 +66,6 @@ function okHeaderResponse(
     httpCode: number,
     log: RequestLogger,
 ) {
-    log.trace('sending success header response');
     setCommonResponseHeaders(headers, response, log);
     log.debug('response http code', { httpCode });
     response.writeHead(httpCode);
@@ -101,7 +100,6 @@ export const XMLResponseBackend = {
         });
         setCommonResponseHeaders(additionalHeaders, response, log);
         response.writeHead(200, { 'Content-type': 'application/xml' });
-        log.debug('response http code', { httpCode: 200 });
         log.trace('xml response', { xml });
         return response.end(xml, 'utf8', () => {
             log.end().info('responded with XML', {
@@ -195,12 +193,10 @@ export const JSONResponseBackend = {
         additionalHeaders?: { [key: string]: string } | null,
     ) {
         const bytesSent = Buffer.byteLength(json);
-        log.trace('sending success json response');
         log.addDefaultFields({ bytesSent });
         setCommonResponseHeaders(additionalHeaders, response, log);
         response.writeHead(200, { 'Content-type': 'application/json' });
-        log.debug('response http code', { httpCode: 200 });
-        log.trace('json response', { json });
+        log.trace('sending success json response', { json });
         return response.end(json, 'utf8', () => {
             log.end().info('responded with JSON', {
                 httpCode: response.statusCode,
