@@ -60,7 +60,7 @@ export function setCommonResponseHeaders(
  * @param log - Werelogs logger
  * @return response - response object with additional headers
  */
-function okHeaderResponse(
+export function okHeaderResponse(
     headers: { [key: string]: string } | undefined | null,
     response: http.ServerResponse,
     httpCode: number,

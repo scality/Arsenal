@@ -17,7 +17,7 @@ export function prepareStream(
     stream: any,
     streamingV4Params: TransformParams,
     vault: Vault,
-    log: werelogs.Logger,
+    log: werelogs.RequestLogger,
     cb: any,
 ) {
     if (stream.headers['x-amz-content-sha256'] ===

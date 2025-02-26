@@ -1,4 +1,4 @@
-import { Logger } from 'werelogs';
+import { Logger, RequestLogger } from 'werelogs';
 import errors from '../errors';
 import AuthInfo, { AccountInfos, AuthInfoType, AuthorizationResults, AuthV4Results } from './AuthInfo';
 
@@ -18,7 +18,7 @@ function vaultSignatureCb(
             body: AuthV4Results,
         },
     },
-    log: Logger,
+    log: RequestLogger,
     callback: (
         err: Error | null,
         data?: AuthInfoType,
@@ -41,13 +41,10 @@ function vaultSignatureCb(
     const { email, ...userInfoWithoutEmail } = authInfo.message.body.userInfo;
 
     log.debug('received info from Vault', {
-        ...authInfo,
-        message: {
-            message: authInfo.message.message,
-            body: {
-                ...authInfo.message.body,
-                userInfo: userInfoWithoutEmail,
-            },
+        message: authInfo.message.message,
+        body: {
+            ...authInfo.message.body,
+            userInfo: userInfoWithoutEmail,
         },
     });
 
@@ -69,7 +66,7 @@ function vaultSignatureCb(
 
 export type AuthV4RequestParams = {
     version: 4;
-    log: Logger;
+    log: RequestLogger;
     data: {
         accessKey: string;
         signatureFromRequest: string;
@@ -83,7 +80,7 @@ export type AuthV4RequestParams = {
         credentialScope: string;
         securityToken: string;
         algo: string;
-        log: Logger;
+        log: RequestLogger;
     };
 };
 
@@ -131,7 +128,7 @@ export default class Vault {
     authenticateV2Request(
         params: {
             version: 2;
-            log: Logger;
+            log: RequestLogger;
             data: {
                 securityToken: string;
                 accessKey: string;
@@ -141,7 +138,7 @@ export default class Vault {
                 authType: 'query' | 'header';
                 signatureVersion: string;
                 signatureAge?: number;
-                log: Logger;
+                log: RequestLogger;
             };
         },
         requestContexts: any[],
@@ -238,14 +235,13 @@ export default class Vault {
     */
     getCanonicalIds(
         emailAddresses: string[],
-        log: Logger,
+        log: RequestLogger,
         callback: (
             err: Error | null,
             data?: { canonicalID: string; email: string }[]
         ) => void
     ) {
-        log.trace('getting canonicalIDs from Vault based on emailAddresses',
-            { emailAddresses });
+        log.trace('getting canonicalIDs from Vault based on emailAddresses');
         this.client.getCanonicalIds(emailAddresses,
             // @ts-ignore
             { reqUid: log.getSerializedUids() },
@@ -282,7 +278,7 @@ export default class Vault {
     */
     getEmailAddresses(
         canonicalIDs: string[],
-        log: Logger,
+        log: RequestLogger,
         callback: (err: Error | null, data?: { [key: string]: any }) => void
     ) {
         log.trace('getting emailAddresses from Vault based on canonicalIDs',
@@ -320,13 +316,12 @@ export default class Vault {
     */
     getAccountIds(
         canonicalIDs: string[],
-        log: Logger,
+        log: RequestLogger,
         callback: (err: Error | null, data?: { [key: string]: string }) => void
     ) {
         log.trace('getting accountIds from Vault based on canonicalIDs',
             { canonicalIDs });
         this.client.getAccountIds(canonicalIDs,
-            // @ts-expect-error
             { reqUid: log.getSerializedUids() },
             (err: Error | null, info?: any) => {
                 if (err) {
@@ -365,7 +360,7 @@ export default class Vault {
     checkPolicies(
         requestContextParams: any[],
         userArn: string,
-        log: Logger,
+        log: RequestLogger,
         callback: (err: Error | null, data?: any[]) => void
     ) {
         log.trace('sending request context params to vault to evaluate' +
@@ -384,7 +379,7 @@ export default class Vault {
         });
     }
 
-    checkHealth(log: Logger, callback: (err: Error | null, data?: any) => void) {
+    checkHealth(log: RequestLogger, callback: (err: Error | null, data?: any) => void) {
         if (!this.client.healthcheck) {
             const defResp = {};
             defResp[this.implName] = { code: 200, message: 'OK' };
@@ -411,7 +406,7 @@ export default class Vault {
         });
     }
 
-    report(log: Logger, callback: (err: Error | null, data?: any) => void) {
+    report(log: RequestLogger, callback: (err: Error | null, data?: any) => void) {
         // call the report function of the client
         if (!this.client.report) {
             return callback(null, {});
@@ -445,7 +440,7 @@ export default class Vault {
     */
     getOrCreateEncryptionKeyId(
         canonicalID: string,
-        log: Logger,
+        log: RequestLogger,
         callback: (err: Error | null, data?: { 
             canonicalId: string, 
             encryptionKeyId: string, 
