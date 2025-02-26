@@ -10,7 +10,7 @@ import AuthInfo, { AccountInfos, AuthInfoType, AuthorizationResults, AuthV4Resul
  * @param [streamingV4Params] - present if v4 signature;
  * items used to calculate signature on chunks if streaming auth
  */
-function vaultSignatureCb(
+export function vaultSignatureCb(
     err: Error | null,
     authInfo: {
         message: {

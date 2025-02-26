@@ -1,7 +1,7 @@
 const sinon = require('sinon');
-const { routesUtils } = require("../../../../lib/s3routes");
+const { routesUtils } = require('../../../../lib/s3routes');
 const werelogs = require('werelogs');
-const assert = require("assert");
+const assert = require('assert');
 
 const logger = new werelogs.Logger('ErrorHtmlResponse', 'debug', 'debug');
 const log = logger.newRequestLogger();

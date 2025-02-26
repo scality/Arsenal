@@ -846,6 +846,78 @@ describe('MongoClientInterface, tests', () => {
             next => client.deleteBucket(bucketName, logger, err => next(err)),
         ], done);
     });
+
+    describe('MongoClientInterface, putObjectVerCase3 error handling', () => {
+        const bucketName = 'test-bucket-error';
+        let collection;
+
+        beforeEach(done => {
+            createBucket(client, bucketName, true, err => {
+                if (err) {
+                    return done(err);
+                }
+                collection = client.getCollection(bucketName);
+                return done();
+            });
+        });
+
+        afterEach(done => {
+            client.deleteBucket(bucketName, logger, err => {
+                if (err) {
+                    logger.error('Failed to delete bucket in cleanup', { error: err });
+                }
+                done();
+            });
+        });
+
+
+        it('should handle MongoDB find error in putObjectVerCase3 directly', done => {
+            const objName = 'test-object';
+            const versionId = 'test-version-id';
+            const objMD = new ObjectMD()
+                .setKey(objName)
+                .setDataStoreName('us-east-1')
+                .setContentLength(100)
+                .setLastModified(new Date());
+
+            // Mock findOne to throw an error
+            const originalFindOne = collection.findOne;
+            collection.findOne = () => Promise.reject(new Error('Simulated MongoDB error'));
+
+            const params = {
+                vFormat: BucketVersioningKeyFormat.v1,
+                versionId,
+                repairMaster: false,
+                versioning: false,
+                needOplogUpdate: false,
+                originOp: 'test',
+                conditions: {},
+            };
+
+            // Call putObjectVerCase3 directly
+            client.putObjectVerCase3(
+                collection,
+                bucketName,
+                objName,
+                objMD.getValue(),
+                params,
+                logger,
+                (err, result) => {
+                    // Restore original findOne
+                    collection.findOne = originalFindOne;
+
+                    try {
+                        assert(err, 'Expected an error to be returned');
+                        assert.strictEqual(err.code, 500, 'Expected 500');
+                        assert(!result, 'Expected no result on error');
+                        done();
+                    } catch (assertionError) {
+                        done(assertionError);
+                    }
+                },
+            );
+        });
+    });
 });
 
 describe('MongoClientInterface, updateDeleteMaster', () => {

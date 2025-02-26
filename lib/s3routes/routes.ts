@@ -25,6 +25,8 @@ const routeMap = {
     OPTIONS: routeOPTIONS,
 };
 
+const isDevMode = process.env.NODE_ENV !== 'production';
+
 function isValidReqUids(reqUids: string | string[]) {
     // baseline check, to avoid the risk of running into issues if
     // users craft a large x-scal-request-uids header
@@ -85,7 +87,6 @@ function checkBucketAndKey(
     return undefined;
 }
 
-// TODO: ARSN-59 remove assertions or restrict it to dev environment only.
 function checkTypes(
     req: http.IncomingMessage,
     res: http.ServerResponse,
@@ -93,6 +94,13 @@ function checkTypes(
     logger: RequestLogger,
     s3config?: any,
 ) {
+    // In production mode, no need to dynamically assert all types
+    // already enforced by typescript. This is only useful in dev mode
+    // to catch potential issues with the typescript types.
+    // In case of error, any assert would crash the process anyway.
+    if (!isDevMode) {
+        return;
+    }
     assert.strictEqual(typeof req, 'object',
         'bad routes param: req must be an object');
     assert.strictEqual(typeof res, 'object',
