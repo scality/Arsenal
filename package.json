@@ -34,7 +34,7 @@
     "bson": "^6.8.0",
     "debug": "^4.3.7",
     "diskusage": "^1.2.0",
-    "fcntl": "github:scality/node-fcntl#169e2e5df7a24807ee4abde1bb78c304dfc47142",
+    "fcntl": "github:scality/node-fcntl#28a01b62757be8776adba79ce52b7c921b929259",
     "hdclient": "scality/hdclient#1.1.7",
     "httpagent": "scality/httpagent#1.1.0",
     "https-proxy-agent": "^7.0.5",
