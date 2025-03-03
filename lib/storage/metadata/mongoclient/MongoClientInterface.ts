@@ -2030,7 +2030,7 @@ class MongoClientInterface {
                         filter: updateDeleteFilter,
                     },
                 },
-            ], { ordered: true }).then(() => next(null)).catch(() => next()),
+            ], { ordered: true }).then(() => next(null)).catch(err => next(err)),
         ], (err, res) => {
             if (err) {
                 if (err instanceof ArsenalError && err.is.NoSuchKey) {
