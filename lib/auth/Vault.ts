@@ -1,4 +1,4 @@
-import { Logger, RequestLogger } from 'werelogs';
+import { RequestLogger } from 'werelogs';
 import errors from '../errors';
 import AuthInfo, { AccountInfos, AuthInfoType, AuthorizationResults, AuthV4Results } from './AuthInfo';
 
@@ -426,7 +426,7 @@ export default class Vault {
      *
      * @param {string} canonicalID - The canonical id of the account for which 
      * the encryption key id is being retrieved or created.
-     * @param {Logger} log - logger
+     * @param {RequestLogger} log - logger
      * @param {(err: Error | null, data?: { 
      *    canonicalId: string, 
      *    encryptionKeyId: string, 
