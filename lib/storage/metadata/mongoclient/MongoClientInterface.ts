@@ -549,6 +549,7 @@ class MongoClientInterface {
                                     BucketInfo.fromObj(bucket).serialize(),
                             });
                     }
+                    console.error(err);
                     log.error('getObject: error getting object',
                         { error: err.message });
                     return cb(err);
