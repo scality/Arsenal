@@ -1,7 +1,7 @@
 import { Transform } from 'stream';
 import async from 'async';
 import errors from '../../../errors';
-import { Logger } from 'werelogs';
+import { RequestLogger } from 'werelogs';
 import Vault, { AuthV4RequestParams } from '../../Vault';
 import { Callback } from '../../backends/in_memory/types';
 
@@ -21,7 +21,7 @@ export type TransformParams = {
  * v4 Auth request
  */
 export default class V4Transform extends Transform {
-    log: Logger;
+    log: RequestLogger;
     cb: Callback;
     accessKey: string;
     region: string;
@@ -59,7 +59,7 @@ export default class V4Transform extends Transform {
     constructor(
         streamingV4Params: TransformParams,
         vault: Vault,
-        log: Logger,
+        log: RequestLogger,
         cb: Callback,
     ) {
         const { accessKey, signatureFromRequest, region, scopeDate, timestamp,

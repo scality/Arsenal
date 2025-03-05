@@ -25,6 +25,8 @@ const routeMap = {
     OPTIONS: routeOPTIONS,
 };
 
+const isDevMode = process.env.NODE_ENV !== 'production';
+
 function isValidReqUids(reqUids: string | string[]) {
     // baseline check, to avoid the risk of running into issues if
     // users craft a large x-scal-request-uids header
@@ -85,7 +87,6 @@ function checkBucketAndKey(
     return undefined;
 }
 
-// TODO: ARSN-59 remove assertions or restrict it to dev environment only.
 function checkTypes(
     req: http.IncomingMessage,
     res: http.ServerResponse,
@@ -93,6 +94,13 @@ function checkTypes(
     logger: RequestLogger,
     s3config?: any,
 ) {
+    // In production mode, no need to dynamically assert all types
+    // already enforced by typescript. This is only useful in dev mode
+    // to catch potential issues with the typescript types.
+    // In case of error, any assert would crash the process anyway.
+    if (!isDevMode) {
+        return;
+    }
     assert.strictEqual(typeof req, 'object',
         'bad routes param: req must be an object');
     assert.strictEqual(typeof res, 'object',
@@ -204,7 +212,13 @@ export default function routes(
         httpMethod: req.method,
         httpURL: req.url,
         // @ts-ignore
-        endpoint: req.endpoint,
+        bucketName: req.bucketName,
+        // @ts-ignore
+        objectKey: req.objectKey,
+        // @ts-ignore
+        bytesReceived: req.parsedContentLength || 0,
+        // @ts-ignore
+        bodyLength: parseInt(req.headers['content-length'], 10) || 0,
     };
 
     let reqUids = req.headers['x-scal-request-uids'];
@@ -221,10 +235,10 @@ export default function routes(
 
     if (!req.url!.startsWith('/_/healthcheck') &&
         !req.url!.startsWith('/_/report')) {
-        log.info('received request', clientInfo);
+        log.debug('received request', clientInfo);
     }
 
-    log.end().addDefaultFields(clientInfo);
+    log.addDefaultFields(clientInfo);
 
     if (req.url!.startsWith('/_/')) {
         let internalServiceName = req.url!.slice(3);
@@ -232,6 +246,7 @@ export default function routes(
         if (serviceDelim !== -1) {
             internalServiceName = internalServiceName.slice(0, serviceDelim);
         }
+        log.addDefaultFields({ internalServiceName });
         if (internalHandlers[internalServiceName] === undefined) {
             return routesUtils.responseXMLBody(
                 errors.InvalidURI, null, res, log);
@@ -255,17 +270,6 @@ export default function routes(
                 'specified URI. Check your restEndpoints configuration.'),
             null, res, log);
     }
-
-    log.addDefaultFields({
-        // @ts-ignore
-        bucketName: req.bucketName,
-        // @ts-ignore
-        objectKey: req.objectKey,
-        // @ts-ignore
-        bytesReceived: req.parsedContentLength || 0,
-        // @ts-ignore
-        bodyLength: parseInt(req.headers['content-length'], 10) || 0,
-    });
 
     // @ts-ignore
     const { error, method } = checkUnsupportedRoutes(req.method, req.query);

@@ -1028,13 +1028,13 @@ class MongoClientInterface {
                 ops.push(masterOp);
                 putObjectEntry(ops, cb);
                 return null;
-            }).catch(() => {
-                log.error('putObjectVerCase3: mongoDB error finding object');
+            }).catch(err => {
+                log.error('putObjectVerCase3: mongoDB error finding object', { err });
                 return cb(errors.InternalError);
             });
             return null;
-        }).catch(() => {
-            log.error('putObjectVerCase3: mongoDB error finding object');
+        }).catch(err => {
+            log.error('putObjectVerCase3: mongoDB error finding object', { err });
             return cb(errors.InternalError);
         });
     }
@@ -2040,7 +2040,7 @@ class MongoClientInterface {
                         filter: updateDeleteFilter,
                     },
                 },
-            ], { ordered: true }).then(() => next(null)).catch(() => next()),
+            ], { ordered: true }).then(() => next(null)).catch(err => next(err)),
         ], (err, res) => {
             if (err) {
                 if (err instanceof ArsenalError && err.is.NoSuchKey) {

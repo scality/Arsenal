@@ -55,11 +55,15 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
     log.addDefaultFields({ accessKey });
 
     const signatureFromRequest = authInfo.substring(semicolonIndex + 1).trim();
-    log.trace('signature from request', { signatureFromRequest });
     const stringToSign = constructStringToSign(request, data, log);
-    log.trace('constructed string to sign', { stringToSign });
     const algo = algoCheck(signatureFromRequest.length);
-    log.trace('algo for calculating signature', { algo });
+
+    log.trace('signature from request, constructed string to sign, algo for calculating signature', {
+        signatureFromRequest,
+        stringToSign,
+        algo,
+    });
+
     if (algo === undefined) {
         return { err: errors.InvalidArgument };
     }
