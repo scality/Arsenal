@@ -1362,6 +1362,7 @@ class MongoClientInterface {
                         { 'value.deleted': { $eq: false } },
                     ],
                 }, {}).then(doc => next(null, vFormat, doc)).catch(err => {
+                    console.log(err);
                     log.error('findOne: error getting object',
                         { bucket: bucketName, object: objName, error: err.message });
                     return next(errors.InternalError);
