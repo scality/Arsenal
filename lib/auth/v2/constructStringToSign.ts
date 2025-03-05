@@ -1,4 +1,4 @@
-import { Logger } from 'werelogs';
+import { RequestLogger } from 'werelogs';
 import utf8 from 'utf8';
 import getCanonicalizedAmzHeaders from './getCanonicalizedAmzHeaders';
 import getCanonicalizedResource from './getCanonicalizedResource';
@@ -6,8 +6,8 @@ import getCanonicalizedResource from './getCanonicalizedResource';
 export default function constructStringToSign(
     request: any,
     data: { [key: string]: string },
-    log: Logger,
-    clientType?: any
+    log: RequestLogger,
+    clientType?: any,
 ) {
     /*
     Build signature per AWS requirements:

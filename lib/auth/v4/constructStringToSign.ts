@@ -1,5 +1,5 @@
 import * as crypto from 'crypto';
-import { Logger } from 'werelogs';
+import { RequestLogger } from 'werelogs';
 import createCanonicalRequest from './createCanonicalRequest';
 
 /**
@@ -14,7 +14,7 @@ export default function constructStringToSign(params: {
     credentialScope: string;
     timestamp: string;
     query: { [key: string]: string };
-    log?: Logger;
+    log?: RequestLogger;
     proxyPath?: string;
     awsService: string;
 }): string {

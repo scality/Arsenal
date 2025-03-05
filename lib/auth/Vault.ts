@@ -69,14 +69,14 @@ export type AuthV2RequestParams = {
     version: 2;
     log: RequestLogger;
     data: {
-        securityToken: string;
         accessKey: string;
-        signatureFromRequest: string;
-        stringToSign: string;
         algo: string;
         authType: 'query' | 'header' | 'REST-HEADER' | 'REST-QUERY-STRING';
-        signatureVersion: string;
+        securityToken: string;
         signatureAge?: number;
+        signatureFromRequest: string;
+        signatureVersion: string;
+        stringToSign: string;
     };
 };
 
@@ -88,7 +88,6 @@ export type AuthV4RequestParams = {
         algo?: string;
         authType?: 'query' | 'header' | 'REST-HEADER' | 'REST-QUERY-STRING';
         credentialScope?: string;
-        log: RequestLogger;
         region: string;
         scopeDate: string;
         securityToken?: string;
@@ -97,7 +96,7 @@ export type AuthV4RequestParams = {
         signatureAge?: number;
         signatureFromRequest: string;
         stringToSign: string;
-        timestamp: number;
+        timestamp?: string;
     };
 };
 
@@ -153,7 +152,7 @@ export default class Vault {
      */
     authenticateV2Request(
         params: AuthV2RequestParams,
-        requestContexts: any[],
+        requestContexts: any[] | null,
         callback: (err: Error | null, data?: any) => void
     ) {
         params.log.debug('authenticating V2 request');

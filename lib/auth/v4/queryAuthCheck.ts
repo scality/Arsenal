@@ -1,4 +1,4 @@
-import { Logger } from 'werelogs';
+import { RequestLogger } from 'werelogs';
 import * as constants from '../../constants';
 import errors, { errorInstances, ArsenalError } from '../../errors';
 import constructStringToSign from './constructStringToSign';
@@ -16,7 +16,7 @@ import { AuthResult } from '../auth';
  */
 export function check(
     request: any,
-    log: Logger,
+    log: RequestLogger,
     data: { [key: string]: string },
 ): AuthResult<AuthV4RequestParams> {
     const authParams = extractQueryParams(data, log);

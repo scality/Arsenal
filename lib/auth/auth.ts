@@ -1,5 +1,5 @@
 import * as crypto from 'crypto';
-import { Logger } from 'werelogs';
+import { RequestLogger } from 'werelogs';
 import errors, { ArsenalError } from '../errors';
 import * as queryString from 'querystring';
 import AuthInfo from './AuthInfo';
@@ -61,7 +61,7 @@ function setAuthHandler(handler: Vault) {
  */
 function extractParams(
     request: any,
-    log: Logger,
+    log: RequestLogger,
     awsService: string,
     data: { [key: string]: string }
 ): AuthResult<AuthV2RequestParams | AuthV4RequestParams | AuthInfo> {
@@ -121,7 +121,7 @@ function extractParams(
  */
 function doAuth(
     request: any,
-    log: Logger,
+    log: RequestLogger,
     cb: (err: Error | null, data?: any) => void,
     awsService: string,
     requestContexts: any[] | null,

@@ -1,4 +1,4 @@
-import { Logger } from 'werelogs';
+import { RequestLogger } from 'werelogs';
 import errors, { ArsenalError } from '../../../lib/errors';
 
 /**
@@ -12,7 +12,7 @@ import errors, { ArsenalError } from '../../../lib/errors';
 export function validateCredentials(
     credentials: [string, string, string, string, string],
     timestamp: string,
-    log: Logger
+    log: RequestLogger,
 ): ArsenalError | {} {
     if (!Array.isArray(credentials) || credentials.length !== 5) {
         log.warn('credentials in improper format', { credentials });
@@ -66,7 +66,7 @@ export function validateCredentials(
  */
 export function extractQueryParams(
     queryObj: { [key: string]: string | undefined },
-    log: Logger
+    log: RequestLogger,
 ) {
     const authParams: {
         signedHeaders?: string;
@@ -137,7 +137,7 @@ export function extractQueryParams(
  * @param log - logging object
  * @return object containing extracted auth header items for authV4
  */
-export function extractAuthItems(authHeader: string, log: Logger) {
+export function extractAuthItems(authHeader: string, log: RequestLogger) {
     const authItems: {
         credentialsArr?: [string, string, string, string, string];
         signedHeaders?: string;

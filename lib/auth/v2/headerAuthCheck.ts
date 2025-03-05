@@ -1,4 +1,4 @@
-import { Logger } from 'werelogs';
+import { RequestLogger } from 'werelogs';
 import errors, { errorInstances } from '../../errors';
 import * as constants from '../../constants';
 import constructStringToSign from './constructStringToSign';
@@ -9,7 +9,7 @@ import { AuthResult } from '../auth';
 
 export function check(
     request: any,
-    log: Logger,
+    log: RequestLogger,
     data: { [key: string]: string },
 ): AuthResult<AuthV2RequestParams> {
     log.trace('running header auth check');
