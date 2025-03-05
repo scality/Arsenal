@@ -17,7 +17,7 @@ export default function constructStringToSign(params: {
     log?: Logger;
     proxyPath?: string;
     awsService: string;
-}): string | Error {
+}): string {
     const {
         request,
         signedHeaders,

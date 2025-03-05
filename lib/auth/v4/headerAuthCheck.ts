@@ -13,6 +13,7 @@ import {
     areSignedHeadersComplete,
 } from './validateInputs';
 import { AuthV4RequestParams } from '../Vault';
+import { AuthResult } from '../auth';
 
 /**
  * V4 header auth check
@@ -27,7 +28,7 @@ export function check(
     log: Logger,
     data: { [key: string]: string },
     awsService: string
-): { err: null | ArsenalError | Error, params?: AuthV4RequestParams } {
+): AuthResult<AuthV4RequestParams> {
     log.trace('running header auth check');
 
     const token = request.headers['x-amz-security-token'];
@@ -102,7 +103,7 @@ export function check(
 
     const validationResult = validateCredentials(credentialsArr, timestamp,
         log);
-    if (validationResult instanceof Error) {
+    if (validationResult instanceof ArsenalError) {
         log.debug('credentials in improper format', { credentialsArr,
             timestamp, validationResult });
         return { err: validationResult };
@@ -156,10 +157,6 @@ export function check(
         proxyPath,
     });
     log.trace('constructed stringToSign', { stringToSign });
-    if (stringToSign instanceof Error) {
-        return { err: stringToSign };
-    }
-
 
     return {
         err: null,

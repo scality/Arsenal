@@ -22,7 +22,7 @@ export type Condition = {
     httpErrorCodeReturnedEquals?: string;
 };
 
-export type RoutingRuleParams = { redirect: Redirect; condition?: Condition };
+export type RoutingRuleParams = { redirect?: Redirect; condition?: Condition };
 
 export class RoutingRule {
     _redirect?: Redirect;
@@ -35,7 +35,7 @@ export class RoutingRule {
     * @param params.redirect - specifies how to redirect requests
     * @param [params.condition] - specifies conditions for a redirect
     */
-    constructor(params?: RoutingRuleParams) {
+    constructor(params?: { redirect?: Redirect; condition?: Condition }) {
         if (params) {
             this._redirect = params.redirect;
             this._condition = params.condition;
@@ -80,7 +80,7 @@ export type WebsiteConfigurationParams = {
     indexDocument?: string;
     errorDocument?: string;
     redirectAllRequestsTo?: RedirectAllRequestsTo;
-    routingRules?: RoutingRule[] | any[],
+    routingRules?: RoutingRuleParams[],
 };
 
 export class WebsiteConfiguration {
@@ -185,7 +185,7 @@ export class WebsiteConfiguration {
     * Set the whole RoutingRules array
     * @param array - array to set as instance's RoutingRules
     */
-    setRoutingRules(array?: (RoutingRule | RoutingRuleParams)[]) {
+    setRoutingRules(array?: RoutingRuleParams[]) {
         if (array) {
             this._routingRules = array.map(rule => {
                 if (rule instanceof RoutingRule) {
@@ -200,7 +200,7 @@ export class WebsiteConfiguration {
      * Add a RoutingRule instance to routingRules array
      * @param obj - rule to add to array
      */
-    addRoutingRule(obj?: RoutingRule | RoutingRuleParams) {
+    addRoutingRule(obj?: RoutingRule) {
         if (!this._routingRules) {
             this._routingRules = [];
         }
@@ -215,7 +215,7 @@ export class WebsiteConfiguration {
      * Get routing rules
      * @return - array of RoutingRule instances
      */
-    getRoutingRules() {
-        return this._routingRules;
+    getRoutingRules(): RoutingRuleParams[] {
+        return this._routingRules ? this._routingRules.map(r => r.getRuleObject()) : [];
     }
 }

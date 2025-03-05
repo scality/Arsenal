@@ -63,7 +63,7 @@ export type BucketPolicyMetadata = {
 
 export default class BucketPolicy {
     private json: string;
-    private policy: BucketPolicyMetadata | null = null;
+    private policy?: BucketPolicyMetadata;
 
     /**
      * Create a Bucket Policy instance

@@ -1,5 +1,5 @@
 import { Logger } from 'werelogs';
-import errors from '../../../lib/errors';
+import errors, { ArsenalError } from '../../../lib/errors';
 
 /**
  * Validate Credentials
@@ -13,7 +13,7 @@ export function validateCredentials(
     credentials: [string, string, string, string, string],
     timestamp: string,
     log: Logger
-): Error | {} {
+): ArsenalError | {} {
     if (!Array.isArray(credentials) || credentials.length !== 5) {
         log.warn('credentials in improper format', { credentials });
         return errors.InvalidArgument;

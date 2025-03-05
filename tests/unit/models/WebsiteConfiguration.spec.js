@@ -160,9 +160,9 @@ describe('WebsiteConfiguration class', () => {
             const websiteConfig = new WebsiteConfiguration();
             const routingRules = [testRoutingRuleParams];
             websiteConfig.setRoutingRules(routingRules);
-            assert.strictEqual(websiteConfig.getRoutingRules()[0]._condition,
+            assert.strictEqual(websiteConfig.getRoutingRules()[0].condition,
                 routingRules[0].condition);
-            assert.strictEqual(websiteConfig.getRoutingRules()[0]._redirect,
+            assert.strictEqual(websiteConfig.getRoutingRules()[0].redirect,
                 routingRules[0].redirect);
             assert(websiteConfig._routingRules[0] instanceof RoutingRule);
             done();

@@ -1,9 +1,10 @@
 import { Logger } from 'werelogs';
-import errors, { ArsenalError } from '../../errors';
+import errors from '../../errors';
 import * as constants from '../../constants';
 import algoCheck from './algoCheck';
 import constructStringToSign from './constructStringToSign';
 import { AuthV2RequestParams } from '../Vault';
+import { AuthResult } from '../auth';
 
 export const PRE_SIGN_URL_EXPIRY = process.env.PRE_SIGN_URL_EXPIRY ?
     Number.parseInt(process.env.PRE_SIGN_URL_EXPIRY, 10) :
@@ -13,7 +14,7 @@ export function check(
     request: any,
     log: Logger,
     data: { [key: string]: string },
-): { err: null | ArsenalError | Error, params?: AuthV2RequestParams } {
+): AuthResult<AuthV2RequestParams> {
     log.trace('running query auth check');
     if (request.method === 'POST') {
         log.debug('query string auth not supported for post requests');

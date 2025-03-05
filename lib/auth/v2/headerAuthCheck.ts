@@ -1,16 +1,17 @@
 import { Logger } from 'werelogs';
-import errors, { errorInstances, ArsenalError } from '../../errors';
+import errors, { errorInstances } from '../../errors';
 import * as constants from '../../constants';
 import constructStringToSign from './constructStringToSign';
 import checkRequestExpiry from './checkRequestExpiry';
 import algoCheck from './algoCheck';
 import { AuthV2RequestParams } from '../Vault';
+import { AuthResult } from '../auth';
 
 export function check(
     request: any,
     log: Logger,
     data: { [key: string]: string },
-): { err: null | ArsenalError | Error, params?: AuthV2RequestParams } {
+): AuthResult<AuthV2RequestParams> {
     log.trace('running header auth check');
     const headers = request.headers;
 

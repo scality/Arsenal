@@ -6,6 +6,7 @@ import { checkTimeSkew, convertAmzTimeToMs } from './timeUtils';
 import { validateCredentials, extractQueryParams } from './validateInputs';
 import { areSignedHeadersComplete } from './validateInputs';
 import { AuthV4RequestParams } from '../Vault';
+import { AuthResult } from '../auth';
 
 /**
  * V4 query auth check
@@ -17,7 +18,7 @@ export function check(
     request: any,
     log: Logger,
     data: { [key: string]: string },
-): { err: null | ArsenalError | Error, params?: AuthV4RequestParams } {
+): AuthResult<AuthV4RequestParams> {
     const authParams = extractQueryParams(data, log);
 
     if (Object.keys(authParams).length !== 5) {
@@ -45,7 +46,7 @@ export function check(
 
     const validationResult = validateCredentials(credential, timestamp,
         log);
-    if (validationResult instanceof Error) {
+    if (validationResult instanceof ArsenalError) {
         log.debug('credentials in improper format', { credential,
             timestamp, validationResult });
         return { err: validationResult };
@@ -99,9 +100,6 @@ export function check(
         awsService: service,
         proxyPath,
     });
-    if (stringToSign instanceof Error) {
-        return { err: stringToSign };
-    }
     log.trace('constructed stringToSign', { stringToSign });
     return {
         err: null,

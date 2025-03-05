@@ -17,8 +17,11 @@ import validateAuthConfig from './backends/in_memory/validateAuthConfig';
 import AuthLoader from './backends/in_memory/AuthLoader';
 import Vault, { AuthV2RequestParams, AuthV4RequestParams } from './Vault';
 
+export type AuthResult<T> = { err: ArsenalError } | { err: null, params: T };
+
 let vault: Vault | null = null;
 const auth = {};
+
 const checkFunctions = {
     v2: {
         headers: v2.header.check,
@@ -61,7 +64,7 @@ function extractParams(
     log: Logger,
     awsService: string,
     data: { [key: string]: string }
-): { err: null | Error | ArsenalError, params?: AuthV2RequestParams | AuthV4RequestParams | AuthInfo } {
+): AuthResult<AuthV2RequestParams | AuthV4RequestParams | AuthInfo> {
     log.trace('entered', { method: 'Arsenal.auth.server.extractParams' });
     const authHeader = request.headers.authorization;
     let version: 'v2' |'v4' | null = null;
@@ -127,7 +130,8 @@ function doAuth(
     const res = extractParams(request, log, awsService, request.query);
     if (res.err) {
         return cb(res.err);
-    } else if (res.params instanceof AuthInfo) {
+    }
+    if (res.params instanceof AuthInfo) {
         return cb(null, res.params);
     }
     if (requestContexts) {
@@ -146,11 +150,11 @@ function doAuth(
     }
 
     // Corner cases managed, we're left with normal auth
-    res.params!.log = log;
-    if (res.params!.version === 2) {
-        return vault!.authenticateV2Request(res.params!, requestContexts, cb);
+    res.params.log = log;
+    if (res.params.version === 2) {
+        return vault!.authenticateV2Request(res.params, requestContexts, cb);
     }
-    if (res.params!.version === 4) {
+    if (res.params.version === 4) {
         // @ts-ignore
         return vault!.authenticateV4Request(res.params, requestContexts, options, cb);
     }
