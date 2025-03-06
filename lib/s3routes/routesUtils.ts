@@ -40,8 +40,10 @@ export function setCommonResponseHeaders(
                     response.setHeader(key, headers[key]);
                 } catch (e: any) {
                     log.debug('header can not be added ' +
-                      'to the response', { header: headers[key],
-                        error: e.stack, method: 'setCommonResponseHeaders' });
+                        'to the response', {
+                            header: headers[key],
+                        error: e.stack, method: 'setCommonResponseHeaders'
+                    });
                 }
             }
         });
@@ -145,8 +147,8 @@ export const XMLResponseBackend = {
         xml.push(
             '<?xml version="1.0" encoding="UTF-8"?>',
             '<Error>',
-                `<Code>${error.message}</Code>`,
-                `<Message>${error.description}</Message>`,
+            `<Code>${error.message}</Code>`,
+            `<Message>${error.description}</Message>`,
         );
         const invalidArguments = error.metadata.get('invalidArguments') || [];
         invalidArguments.forEach((invalidArgument, index) => {
@@ -156,8 +158,8 @@ export const XMLResponseBackend = {
             xml.push(`<ArgumentValue${counter}>${ArgumentValue}</ArgumentValue${counter}>`);
         });
         xml.push(
-                '<Resource></Resource>',
-                `<RequestId>${log.getSerializedUids()}</RequestId>`,
+            '<Resource></Resource>',
+            `<RequestId>${log.getSerializedUids()}</RequestId>`,
             '</Error>',
         );
         const xmlStr = xml.join('');
@@ -165,7 +167,7 @@ export const XMLResponseBackend = {
         log.addDefaultFields({ bytesSent });
         response.writeHead(error.code, {
             'Content-Type': 'application/xml',
-            'Content-Length': bytesSent ,
+            'Content-Length': bytesSent,
         });
         return response.end(xmlStr, 'utf8', () => {
             log.end().info('responded with error XML', {
@@ -310,16 +312,13 @@ function okContentHeadersResponse(
     }
     if (overrideParams['response-content-disposition']) {
         addHeaders['Content-Disposition'] =
-        overrideParams['response-content-disposition'];
+            overrideParams['response-content-disposition'];
     }
     if (overrideParams['response-content-encoding']) {
         addHeaders['Content-Encoding'] =
             overrideParams['response-content-encoding'];
     }
     setCommonResponseHeaders(addHeaders, response, log);
-    const httpCode = range ? 206 : 200;
-    log.debug('response http code', { httpCode });
-    response.writeHead(httpCode);
     return response;
 }
 
@@ -365,6 +364,12 @@ function retrieveData(
     locations: any[],
     retrieveDataParams: any,
     response: http.ServerResponse,
+    // When data is streamed, we can have errors
+    // when retrieving the data from the storage.
+    // As such, we must send the header as soon as
+    // we confirmed data backend availability for
+    // the requested key.
+    httpCodeOnSucess: number,
     log: RequestLogger,
 ) {
     if (locations.length === 0) {
@@ -408,15 +413,18 @@ function retrieveData(
         client, implName, config, kms, metadata, locStorageCheckFn, vault);
     return eachSeries(locations,
         (current, next) => data.get(current, response, log,
-            (err: any, readable: http.IncomingMessage) => {
+            (err: Error, readable: http.IncomingMessage) => {
                 const cbOnce = jsutil.once(next);
                 // NB: readable is of IncomingMessage type
                 if (err) {
+                    // In this case, we do not destroy the response:
+                    // nothing was sent to the client yet, so we
+                    // can return a proper error.
                     log.error('failed to get object', {
                         error: err,
                         method: 'retrieveData',
                     });
-                    _destroyResponse();
+                    _destroyReadable(readable);
                     return cbOnce(err);
                 }
                 // response.isclosed is set by the S3 server. Might happen if
@@ -441,23 +449,41 @@ function retrieveData(
                 });
                 // errors on server side with readable stream
                 readable.on('error', err => {
-                    log.error('error piping data from source');
+                    log.error('error piping data from source', { error: err });
                     _destroyResponse();
                     return cbOnce(err);
                 });
+                // At this point, we assume that the data backend is available.
+                // We write the http headers before piping the data to the
+                // response object.
+                // Any subsequent error leads to destror deletion.
+                if (!response.headersSent) {
+                    response.writeHead(httpCodeOnSucess);
+                }
+                // TODO ARSN-474: can this be moved above, so we
+                // do not need to call _destroyReadable in the error case
+                // in the callback of data.get()? The 'close' event is not
+                // called if 'end' is.
                 currentStream = readable;
                 return readable.pipe(response, { end: false });
             }), err => {
-            currentStream = null;
-            if (err) {
-                log.debug('abort response due to error', {
-                    // @ts-expect-error
-                    error: err.code, errMsg: err.message });
-            }
-            // call end for all cases (error/success) per node.js docs
-            // recommendation
-            response.end();
-        },
+                currentStream = null;
+                if (err) {
+                    if (!response.headersSent) {
+                        return XMLResponseBackend.errorResponse(errors.ServiceUnavailable, response, log);
+                    }
+                    if (!responseDestroyed) {
+                        _destroyResponse();
+                    }
+                    log.end().error('aborting response due to error', { err });
+                    return;
+                }
+                response.end(() => {
+                    log.end().info('responded with streamed content', {
+                        httpCode: response.statusCode,
+                    });
+                });
+            },
     );
 }
 
@@ -594,6 +620,8 @@ export function responseContentHeaders(
         // okContentHeadersResponse in responseStreamData
         okContentHeadersResponse(overrideParams, resHeaders, response,
             undefined, log);
+        log.debug('response http code', { httpCode: 200 });
+        response.writeHead(200);
     }
     return response.end(() => {
         log.end().info('responded with content headers', {
@@ -639,14 +667,16 @@ export function responseStreamData(
             !_contentLengthMatchesLocations(contentLength,
                 dataLocations)) {
             log.error('logic error: total length of fetched data ' +
-                      'locations does not match returned content-length',
-            { contentLength, dataLocations });
+                'locations does not match returned content-length',
+                { contentLength, dataLocations });
             return XMLResponseBackend.errorResponse(errors.InternalError,
                 response, log,
                 resHeaders);
         }
     }
     if (!response.headersSent) {
+        // Prepare the headers, but do not send them
+        // as errors might still happen when retrieving the data
         okContentHeadersResponse(overrideParams, resHeaders, response,
             range, log);
     }
@@ -657,12 +687,7 @@ export function responseStreamData(
             });
         });
     }
-    response.on('finish', () => {
-        log.end().info('responded with streamed content', {
-            httpCode: response.statusCode,
-        });
-    });
-    return retrieveData(dataLocations, retrieveDataParams, response, log);
+    return retrieveData(dataLocations, retrieveDataParams, response, range ? 206 : 200, log);
 }
 
 /**
@@ -689,16 +714,13 @@ export function streamUserErrorPage(
     } else {
         error = errors.InternalError.customizeDescription(err.message);
     }
+    // Prepare the headers, but do not send them
+    // as errors might still happen when retrieving the data
     setCommonResponseHeaders(corsHeaders, response, log);
     response.setHeader('x-amz-error-code', error.message);
     response.setHeader('x-amz-error-message', error.description);
-    response.writeHead(error.code, { 'Content-type': 'text/html' });
-    response.on('finish', () => {
-        log.end().info('responded with streamed content', {
-            httpCode: response.statusCode,
-        });
-    });
-    return retrieveData(dataLocations, retrieveDataParams, response, log);
+    response.setHeader('Content-type', 'text/html');
+    return retrieveData(dataLocations, retrieveDataParams, response, error.code, log);
 }
 
 /**
@@ -1109,7 +1131,7 @@ export function normalizeRequest(
     // Parse bucket and/or object names from request
     const resources = getResourceNames(request, parsedUrl.pathname!,
         validHosts);
-        // @ts-expect-error
+    // @ts-expect-error
     request.gotBucketNameFromHost = resources.gotBucketNameFromHost;
     // @ts-expect-error
     request.bucketName = resources.bucket;
