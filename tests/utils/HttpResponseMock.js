@@ -1,4 +1,6 @@
 const http = require('http');
+const { EventEmitter } = require('events');
+const { Writable } = require('stream');
 
 /**
  * Basic response mock to catch response values.
@@ -7,12 +9,16 @@ const http = require('http');
  *
  * @see https://nodejs.org/api/http.html#class-httpserverresponse
  */
-class HttpResponseMock {
+class HttpResponseMock extends Writable {
     constructor() {
+        super();
+        EventEmitter.call(this);
         this.statusCode = null;
         this.statusMessage = null;
         this._headers = {};
         this._body = null;
+        this.writable = true;
+        this.destroyed = false;
     }
 
     setHeader(key, val) {
@@ -20,35 +26,23 @@ class HttpResponseMock {
     }
 
     end(data, encoding, callback) {
-        if (!callback && typeof data === 'function') {
-            return data();
-        }
-        return this.write(data, encoding, callback);
-    }
-
-    write(chunk, encoding, callback) {
-        let str = chunk;
-
-        if (Buffer.isBuffer(str)) {
-            str = str.toString();
-        }
-        if (str instanceof Uint8Array) {
-            str = new TextDecoder().decode(str);
-        }
-        if (str) {
-            this._body = (this._body || '') + str;
+        if (!this.writable) {
+            if (typeof data === 'function') data();
+            return;
         }
 
-        let cb = callback;
-        if (!cb && typeof encoding === 'function') {
-            cb = encoding;
+        if (data && typeof data !== 'function') {
+            this.write(data, encoding, () => {
+                this._finalize(callback);
+            });
+        } else {
+            this._finalize(callback || (typeof data === 'function' ? data : null));
         }
-        if (cb) cb();
     }
 
     writeHead(statusCode, statusMessage, headers) {
         this.statusCode = statusCode;
-        this.statusMessage = http.STATUS_CODES[statusCode];
+        this.statusMessage = http.STATUS_CODES[statusCode] || statusMessage;
         let headersObj = headers;
 
         if (!headersObj && typeof statusMessage === 'object') {
@@ -70,6 +64,38 @@ class HttpResponseMock {
 
     on() {}
     once() {}
+
+    _write(chunk, encoding, callback) {
+        if (!this.writable) {
+            return callback(new Error('Response is not writable'));
+        }
+        let str = chunk;
+
+        if (Buffer.isBuffer(str)) {
+            str = str.toString();
+        }
+        if (str instanceof Uint8Array) {
+            str = new TextDecoder().decode(str);
+        }
+        if (str) {
+            this._body = (this._body || '') + str;
+        }
+        return callback();
+    }
+
+    _finalize(callback) {
+        this.writable = false;
+        this.emit('finish');
+        if (callback) {
+            callback();
+        }
+    }
+
+    destroy() {
+        this.destroyed = true;
+        this.writable = false;
+        this.emit('close');
+    }
 }
 
 module.exports = HttpResponseMock;

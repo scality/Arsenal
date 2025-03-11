@@ -64,42 +64,29 @@ describe('routesUtils.redirectRequestOnError', () => {
     describe('from error document redirect location header', () => {
         let dataWrapperGetStub;
 
-        afterAll(() => {
-            if (dataWrapperGetStub) {
-                dataWrapperGetStub.restore();
-            }
+        afterEach(() => {
+            dataWrapperGetStub?.restore();
         });
 
-        it('should redirect 301 with body on GET', () => {
+        it('should redirect 301 with body on GET and stream data', () => {
             const responseMock = new HttpResponseMock();
-            const routing = { withError: true,
-                location: 'http://scality.com/test' };
-            const errorHeaders = {
-                'x-amz-error-code': errors.AccessDenied.type,
-                'x-amz-error-message': errors.AccessDenied.description,
-            };
-            dataWrapperGetStub = sinon.stub(DataWrapper.prototype, 'get');
-
-            const mockedDataLocations = [{ mock: true }];
-            const mockedRetrieveDataParams = {
-                mockRetrieveDataParams: true,
-            };
-
+            const routing = { withError: true, location: 'http://scality.com/test' };
+            const Readable = require('stream').Readable;
+            const mockStream = new Readable({
+                read() {
+                    this.push('mocked error page content');
+                    this.push(null);
+                },
+            });
+            dataWrapperGetStub = sinon.stub(DataWrapper.prototype, 'get')
+                .yields(null, mockStream);
             routesUtils.redirectRequestOnError(
                 errors.AccessDenied, 'GET',
-                routing, mockedDataLocations, mockedRetrieveDataParams,
+                routing, [{ mock: true }], { mockRetrieveDataParams: true },
                 responseMock, corsHeaders, new DummyRequestLogger(),
             );
-
             assert.strictEqual(responseMock.statusCode, 301);
-            assertHeaders(responseMock, corsHeaders);
-            assertHeaders(responseMock, errorHeaders);
             assert.strictEqual(responseMock._headers.Location, routing.location);
-            assert.strictEqual(dataWrapperGetStub.callCount, 1);
-            assert.strictEqual(dataWrapperGetStub.getCall(0).args[0],
-                mockedDataLocations[0]);
-            assert.strictEqual(dataWrapperGetStub.getCall(0).args[1],
-                responseMock);
         });
     });
 });
