@@ -64,10 +64,8 @@ describe('routesUtils.redirectRequestOnError', () => {
     describe('from error document redirect location header', () => {
         let dataWrapperGetStub;
 
-        afterAll(() => {
-            if (dataWrapperGetStub) {
-                dataWrapperGetStub.restore();
-            }
+        afterEach(() => {
+            dataWrapperGetStub?.restore();
         });
 
         it('should redirect 301 with body on GET and stream data', () => {
@@ -80,7 +78,7 @@ describe('routesUtils.redirectRequestOnError', () => {
                     this.push(null);
                 },
             });
-            const dataWrapperGetStub = sinon.stub(DataWrapper.prototype, 'get')
+            dataWrapperGetStub = sinon.stub(DataWrapper.prototype, 'get')
                 .yields(null, mockStream);
             routesUtils.redirectRequestOnError(
                 errors.AccessDenied, 'GET',
@@ -89,7 +87,6 @@ describe('routesUtils.redirectRequestOnError', () => {
             );
             assert.strictEqual(responseMock.statusCode, 301);
             assert.strictEqual(responseMock._headers.Location, routing.location);
-            dataWrapperGetStub.restore();
         });
     });
 });
