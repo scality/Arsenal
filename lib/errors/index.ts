@@ -163,8 +163,32 @@ export class ArsenalError extends Error {
         });
         return errors as Errors
     }
+
+        /**
+         * Like errors but generate singleton instances of errors
+         * To use before .customizeDescription to avoid intermediate instance.
+         * Adds +0.2 MB in heap at start
+         */
+        static errorInstances() {
+            const errors = {}
+            Object.entries(rawErrors).forEach((value) => {
+                const name = value[0] as Name;
+                const error = value[1];
+                const { code, description } = error;
+                const instance = new ArsenalError(name, code, description);
+                Object.defineProperty(errors, name, { value: instance });
+            });
+            return errors as Errors
+        }
 }
 
 /** Mapping of all possible Errors.
  * Use them with errors[error].customizeDescription for any customization. */
 export default ArsenalError.errors();
+
+/**
+ * Same as errors but already instanciated.
+ * To be used like errorInstances[error].customizeDescription or errorInstances.ok.code.
+ * Avoid intermediate instance
+ */
+export const errorInstances = ArsenalError.errorInstances();
