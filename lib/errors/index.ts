@@ -36,6 +36,16 @@ const createIs = (type: Name): Is => {
     return new Proxy(final, { get });
 };
 
+/**
+ * Is helper object for each of the 189 errors.
+ * It makes 189 * 189 = 35721 booleans in heap at startup.
+ * Adds +1.3 MB of js objects but greatly increase speed when using errors
+ * And avoid gc.
+ */
+const isPreCreated = Object.fromEntries(
+    (Object.keys(rawErrors) as Name[]).map(key => [key, createIs(key)])
+) as Record<Name, Is>;
+
 export class ArsenalError extends Error {
     /** HTTP status code. Example: 401, 403, 500, ... */
     #code: number;
@@ -52,7 +62,7 @@ export class ArsenalError extends Error {
         this.#code = code;
         this.#description = description;
         this.#type = type;
-        this.#is = createIs(type);
+        this.#is = isPreCreated[type];
 
         // This restores the old behavior of errors, to make sure they're now
         // backward-compatible. Fortunately it's handled by TS, but it cannot
