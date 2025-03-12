@@ -8,7 +8,7 @@ import ResultsCollector from './ResultsCollector';
 import SubStreamInterface from './SubStreamInterface';
 import * as objectUtils from '../objectUtils';
 import MD5Sum from '../MD5Sum';
-import errors from '../../errors';
+import errors, { errorInstances } from '../../errors';
 
 export const splitter = '|';
 export const overviewMpuKey = 'azure_mpu';
@@ -142,7 +142,7 @@ export const putSinglePart = (
                     if (err.code === 'Md5Mismatch') {
                         return cb(errors.BadDigest);
                     }
-                    return cb(errors.InternalError.customizeDescription(
+                    return cb(errorInstances.InternalError.customizeDescription(
                         `Error returned from Azure: ${err.message}`),
                     );
                 }
@@ -207,7 +207,7 @@ export const putSubParts = (
         if (err.code === 'ContainerNotFound') {
             return cb(errors.NoSuchBucket);
         }
-        return cb(errors.InternalError.customizeDescription(
+        return cb(errorInstances.InternalError.customizeDescription(
             `Error returned from Azure: ${err}`));
     });
 
@@ -218,7 +218,7 @@ export const putSubParts = (
             if (err.code === 'ContainerNotFound') {
                 return cb(errors.NoSuchBucket);
             }
-            return cb(errors.InternalError.customizeDescription(
+            return cb(errorInstances.InternalError.customizeDescription(
                 `Error returned from Azure: ${err}`));
         }
         const numberSubParts = results.length;

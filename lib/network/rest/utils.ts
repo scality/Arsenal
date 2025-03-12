@@ -1,4 +1,4 @@
-import errors from '../../errors';
+import { errorInstances } from '../../errors';
 
 export function explodePath(path: string) {
     const pathMatch = /^(\/[a-zA-Z0-9]+)(\/([0-9a-f]*))?$/.exec(path);
@@ -9,5 +9,5 @@ export function explodePath(path: string) {
                 pathMatch[3] : undefined),
         };
     }
-    throw errors.InvalidURI.customizeDescription('malformed URI');
+    throw errorInstances.InvalidURI.customizeDescription('malformed URI');
 };

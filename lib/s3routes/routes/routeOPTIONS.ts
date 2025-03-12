@@ -1,7 +1,7 @@
 import { RequestLogger } from 'werelogs';
 
 import * as routesUtils from '../routesUtils';
-import errors from '../../errors';
+import { errorInstances } from '../../errors';
 import * as http from 'http';
 import StatsClient from '../../metrics/StatsClient';
 
@@ -18,13 +18,13 @@ export default function routeOPTIONS(
 
     if (!request.headers.origin) {
         const msg = 'Insufficient information. Origin request header needed.';
-        const err = errors.BadRequest.customizeDescription(msg);
+        const err = errorInstances.BadRequest.customizeDescription(msg);
         log.debug('missing origin', { method: 'routeOPTIONS', error: err });
         return routesUtils.responseXMLBody(err, null, response, log);
     }
     if (['GET', 'PUT', 'HEAD', 'POST', 'DELETE'].indexOf(corsMethod ?? '') < 0) {
         const msg = `Invalid Access-Control-Request-Method: ${corsMethod}`;
-        const err = errors.BadRequest.customizeDescription(msg);
+        const err = errorInstances.BadRequest.customizeDescription(msg);
         log.debug('invalid Access-Control-Request-Method',
             { method: 'routeOPTIONS', error: err });
         return routesUtils.responseXMLBody(err, null, response, log);

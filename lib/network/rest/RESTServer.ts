@@ -6,7 +6,7 @@ import httpServer from '../http/server';
 import * as constants from '../../constants';
 import * as utils from './utils';
 import * as httpUtils from '../http/utils';
-import errors, { ArsenalError } from '../../errors';
+import errors, { ArsenalError, errorInstances } from '../../errors';
 
 function setContentLength(response: http.ServerResponse, contentLength: number) {
     response.setHeader('Content-Length', contentLength.toString());
@@ -54,11 +54,11 @@ function parseURL(urlStr: string, expectKey: boolean) {
     const urlObj = url.parse(urlStr);
     const pathInfo = utils.explodePath(urlObj.path!);
     if (pathInfo.service !== constants.dataFileURL) {
-        throw errors.InvalidAction.customizeDescription(
+        throw errorInstances.InvalidAction.customizeDescription(
             `unsupported service '${pathInfo.service}'`);
     }
     if (expectKey && pathInfo.key === undefined) {
-        throw errors.MissingParameter.customizeDescription(
+        throw errorInstances.MissingParameter.customizeDescription(
             'URL is missing key');
     }
     if (!expectKey && pathInfo.key !== undefined) {
@@ -68,7 +68,7 @@ function parseURL(urlStr: string, expectKey: boolean) {
         // atomicity of the update (we would just remove the old
         // object when the new one has been written entirely in this
         // case, saving a request over an equivalent PUT + DELETE).
-        throw errors.InvalidURI.customizeDescription(
+        throw errorInstances.InvalidURI.customizeDescription(
             'PUT url cannot contain a key');
     }
     return pathInfo;
@@ -188,7 +188,7 @@ export default class RESTServer extends httpServer {
             }
             size = Number.parseInt(contentLength, 10);
             if (Number.isNaN(size)) {
-                throw errors.InvalidInput.customizeDescription(
+                throw errorInstances.InvalidInput.customizeDescription(
                     'bad Content-Length');
             }
         } catch (err: any) {

@@ -5,7 +5,7 @@ import * as net from 'net';
 import assert from 'assert';
 import { dhparam } from '../../https/dh2048';
 import { ciphers } from '../../https/ciphers';
-import errors from '../../errors';
+import { errorInstances } from '../../errors';
 import { checkSupportIPv6 } from './utils';
 import { Logger } from 'werelogs';
 
@@ -205,7 +205,7 @@ export default class Server {
      */
     _noHandlerCb(_req: http.IncomingMessage, res: http.ServerResponse) {
         // if no handler on the Server, send back an internal error
-        const err = errors.InternalError;
+        const err = errorInstances.InternalError;
         const msg = `${err.message}: No handler in Server`;
         res.writeHead(err.code, {
             'Content-Type': 'text/plain',

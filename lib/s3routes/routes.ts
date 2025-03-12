@@ -2,7 +2,7 @@ import assert from 'assert';
 
 import { RequestLogger } from 'werelogs';
 
-import errors from '../errors';
+import errors, { errorInstances } from '../errors';
 import routeGET from './routes/routeGET';
 import routePUT from './routes/routePUT';
 import routeDELETE from './routes/routeDELETE';
@@ -51,7 +51,7 @@ function checkBucketAndKey(
     if (!bucketName && !(method === 'GET' && !objectKey)) {
         log.debug('empty bucket name', { method: 'routes' });
         return (method !== 'OPTIONS') ?
-            errors.MethodNotAllowed : errors.AccessForbidden
+            errors.MethodNotAllowed : errorInstances.AccessForbidden
                 .customizeDescription('CORSResponse: Bucket not found');
     }
     if (bucketName !== undefined && routesUtils.isValidBucketName(bucketName,
@@ -67,13 +67,13 @@ function checkBucketAndKey(
             blacklistedPrefixes.object);
         if (!result.isValid) {
             log.debug('invalid object key', { objectKey });
-            return errors.InvalidArgument.customizeDescription('Object key ' +
+            return errorInstances.InvalidArgument.customizeDescription('Object key ' +
             `must not start with "${result.invalidPrefix}".`);
         }
     }
     if ((reqQuery.partNumber || reqQuery.uploadId)
         && objectKey === undefined) {
-        return errors.InvalidRequest
+        return errorInstances.InvalidRequest
             .customizeDescription('A key must be specified');
     }
     return undefined;
@@ -244,7 +244,7 @@ export default function routes(
     } catch (err: any) {
         log.debug('could not normalize request', { error: err.stack });
         return routesUtils.responseXMLBody(
-            errors.InvalidURI.customizeDescription('Could not parse the ' +
+            errorInstances.InvalidURI.customizeDescription('Could not parse the ' +
                 'specified URI. Check your restEndpoints configuration.'),
             null, res, log);
     }
