@@ -149,7 +149,17 @@ export class ArsenalError extends Error {
             const error = value[1];
             const { code, description } = error;
             const get = () => new ArsenalError(name, code, description);
-            Object.defineProperty(errors, name, { get });
+            // Perf improvement for the ok error.
+            // As it's used mainly for HTTP response using the code and message only.
+            // Return the same instance as no stack trace or other property are needed
+            if (name === 'ok') {
+                Object.defineProperty(errors, name, { value: get() });
+            } else {
+                // Ideally for other errors caching the instance outside request handling
+                // would be beneficial if .customizeDescription is used or if
+                // no stack trace or additional field is required
+                Object.defineProperty(errors, name, { get });
+            }
         });
         return errors as Errors
     }
