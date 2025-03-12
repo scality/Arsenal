@@ -41,7 +41,11 @@ export const emptyFileMd5 = 'd41d8cd98f00b204e9800998ecf8427e';
 // any metadata of the object.
 // version 6 also adds the "isPHD" flag that is used to indicate that the master
 // object is a placeholder and is not up to date.
-export const mdModelVersion = 6;
+// Version 7 adds the "bucketOwnerId" attribute to the object metadata.
+// This is set when the owner of the bucket is different from the owner-id of the object.
+// This can happen in cases of cross-account permissions where the object
+// is uploaded by a different account than the one that owns the bucket.
+export const mdModelVersion = 7;
 /*
  * Splitter is used to build the object name for the overview of a
  * multipart upload and to build the object names for each part of a
