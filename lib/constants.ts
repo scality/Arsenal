@@ -31,7 +31,11 @@ export const maximumMetaHeadersSize = 2136;
 export const emptyFileMd5 = 'd41d8cd98f00b204e9800998ecf8427e';
 // Version 2 changes the format of the data location property
 // Version 3 adds the dataStoreName attribute
-export const mdModelVersion = 3;
+// Version 7 adds the "bucketOwnerId" attribute to the object metadata.
+// This is set when the owner of the bucket is different from the owner-id of the object.
+// This can happen in cases of cross-account permissions where the object
+// is uploaded by a different account than the one that owns the bucket.
+export const mdModelVersion = 7;
 /*
  * Splitter is used to build the object name for the overview of a
  * multipart upload and to build the object names for each part of a

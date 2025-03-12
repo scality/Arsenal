@@ -117,6 +117,9 @@ describe('ObjectMD class setters/getters', () => {
         ['RetentionMode', 'GOVERNANCE'],
         ['RetentionDate', retainDate.toISOString()],
         ['OriginOp', null, ''],
+        ['BucketOwnerId', null, undefined],
+        ['BucketOwnerId', 'abcdef'],
+        ['ModelVersion', null, constants.mdModelVersion],
     ].forEach(test => {
         const property = test[0];
         const testValue = test[1];
