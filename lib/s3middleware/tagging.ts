@@ -1,13 +1,13 @@
 import { parseString } from 'xml2js';
 import * as werelogs from 'werelogs';
-import errors, { ArsenalError } from '../errors';
+import errors, { ArsenalError, errorInstances } from '../errors';
 import escapeForXml from './escapeForXml';
 
-const errorInvalidArgument = () => errors.InvalidArgument
+const errorInvalidArgument = () => errorInstances.InvalidArgument
     .customizeDescription('The header \'x-amz-tagging\' shall be ' +
   'encoded as UTF-8 then URLEncoded URL query parameters without ' +
   'tag name duplicates.');
-const errorBadRequestLimit50 = () => errors.BadRequest
+const errorBadRequestLimit50 = () => errorInstances.BadRequest
     .customizeDescription('Object tags cannot be greater than 50');
 
 /*
@@ -47,11 +47,11 @@ export const _validator = {
 
     validateKeyValue: (key: string, value: any) => {
         if (key.length > 128) {
-            return errors.InvalidTag.customizeDescription('The TagKey you ' +
+            return errorInstances.InvalidTag.customizeDescription('The TagKey you ' +
               'have provided is too long, max 128');
         }
         if (value.length > 256) {
-            return errors.InvalidTag.customizeDescription('The TagValue you ' +
+            return errorInstances.InvalidTag.customizeDescription('The TagValue you ' +
               'have provided is too long, max 256');
         }
         return true;
@@ -83,7 +83,7 @@ function _validateTags(tags: Array<{ Key: string[], Value: string[] }>) {
         const value = tag.Value[0];
 
         if (!key) {
-            return errors.InvalidTag.customizeDescription('The TagKey you ' +
+            return errorInstances.InvalidTag.customizeDescription('The TagKey you ' +
             'have provided is invalid');
         }
 
@@ -100,7 +100,7 @@ function _validateTags(tags: Array<{ Key: string[], Value: string[] }>) {
     }
     // not repeating keys
     if (tags.length > Object.keys(tagsResult).length) {
-        return errors.InvalidTag.customizeDescription('Cannot provide ' +
+        return errorInstances.InvalidTag.customizeDescription('Cannot provide ' +
         'multiple Tags with the same key');
     }
     return tagsResult;
