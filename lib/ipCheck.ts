@@ -34,14 +34,21 @@ export function checkIPinRangeOrMatch(
  * @return parsedIp - Object representation of parsed IP
  */
 export function parseIp(ip: string): ipaddr.IPv4 | ipaddr.IPv6 | {} {
-    if (ipaddr.IPv4.isValid(ip)) {
-        return ipaddr.parse(ip);
+    try {
+        return ipaddr.IPv4.parse(ip);
+    } catch {
+        try {
+            const addr = ipaddr.IPv6.parse(ip);
+            // Copy ipaddr.process to bypass a duplicate Ipv6 parsing for isValid
+            if (addr.kind() === 'ipv6' && addr.isIPv4MappedAddress()) {
+                return addr.toIPv4Address();
+              } else {
+                return addr;
+              }
+        } catch {
+            return {}
+        }
     }
-    if (ipaddr.IPv6.isValid(ip)) {
-        // also parses IPv6 mapped IPv4 addresses into IPv4 representation
-        return ipaddr.process(ip);
-    }
-    return {};
 }
 
 /**
