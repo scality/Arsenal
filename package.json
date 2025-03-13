@@ -63,7 +63,7 @@
     "@babel/preset-typescript": "^7.25.7",
     "@eslint/compat": "^1.2.0",
     "@scality/eslint-config-scality": "scality/Guidelines#8.3.0",
-    "@sinonjs/fake-timers": "^13.0.3",
+    "@sinonjs/fake-timers": "^14.0.0",
     "@types/ioredis": "^5.0.0",
     "@types/jest": "^29.5.13",
     "@types/node": "^22.7.6",
