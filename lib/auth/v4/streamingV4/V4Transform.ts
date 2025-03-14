@@ -200,7 +200,7 @@ export default class V4Transform extends Transform {
                 credentialScope: this.credentialScope,
             },
         };
-        return this.vault.authenticateV4Request(vaultParams, null, err => {
+        return this.vault.authenticateV4Request(vaultParams, null, {}, err => {
             if (err) {
                 this.log.trace('err from vault on streaming v4 auth',
                     { error: err, paramsSentToVault: vaultParams.data });

@@ -1,6 +1,7 @@
 import { RequestLogger } from 'werelogs';
 import errors from '../errors';
 import AuthInfo, { AccountInfos, AuthInfoType, AuthorizationResults, AuthV4Results } from './AuthInfo';
+import RequestContext from '../policyEvaluator/RequestContext';
 
 /** vaultSignatureCb parses message from Vault and instantiates
  * @param err - error from vault
@@ -81,6 +82,15 @@ export type AuthV4RequestParams = {
         algo: string;
         log: RequestLogger;
     };
+};
+
+export type AuthenticationOptions = {
+    algo?: 'sha1' | 'sha256'; // for v2 auth
+    reqUid?: string;
+    get?: boolean;
+    logger?: RequestLogger;
+    requestContext?: RequestContext;
+    securityToken?: string;
 };
 
 /**
@@ -187,12 +197,14 @@ export default class Vault {
      * an array of RequestContext or null if authenticaiton of a chunk
      * in streamingv4 auth
      * instances which contain information for policy authorization check
+     * @param options - options for authentication
      * @param callback - callback with either error or user info
     */
     authenticateV4Request(
         params: AuthV4RequestParams,
         requestContexts: any[] | null,
-        callback: (err: Error | null, data?: any) => void
+        options: AuthenticationOptions = {},
+        callback: (err: Error | null, data?: any) => void,
     ) {
         params.log.debug('authenticating V4 request');
         let serializedRCs: any;
@@ -213,6 +225,7 @@ export default class Vault {
             params.data.region,
             params.data.scopeDate,
             {
+                ...options,
                 // @ts-ignore
                 reqUid: params.log.getSerializedUids(),
                 logger: params.log,
