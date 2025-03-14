@@ -32,6 +32,18 @@ export type AuthV4Results = {
     accountQuota: AccountQuota,
 };
 
+export type AccountCanonicalInfo = {
+    accountId: string;
+    canonicalId: string;
+    name: string;
+}
+
+export type AccountCanonicalInfoResults = {
+    message: {
+        body: AccountCanonicalInfo[],
+    },
+};
+
 /**
  * Class containing requester's information received from Vault
  * @param {object} info from Vault including arn, canonicalID,

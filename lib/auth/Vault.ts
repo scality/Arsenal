@@ -1,6 +1,8 @@
 import { RequestLogger } from 'werelogs';
 import errors from '../errors';
-import AuthInfo, { AccountInfos, AuthInfoType, AuthorizationResults, AuthV4Results } from './AuthInfo';
+import AuthInfo, { AccountInfos, AuthInfoType, AuthorizationResults,
+    AuthV4Results, AccountCanonicalInfo } from './AuthInfo';
+import { ArsenalCallback } from '../types';
 import RequestContext from '../policyEvaluator/RequestContext';
 
 /** vaultSignatureCb parses message from Vault and instantiates
@@ -354,6 +356,36 @@ export default class Vault {
                 });
                 return callback(null, result);
             });
+    }
+
+    /**
+     * A getter for account canonical IDs given a list of account IDs
+     * @param accountIds - list of account IDs
+     * @param log - log object
+     * @param callback - callback function
+     * @returns callback with either error or an object from Vault
+     * containing canonicalID and display name for each account ID
+     */
+    getCanonicalIdsByAccountIds(
+        accountIds: string[],
+        log: RequestLogger,
+        callback: ArsenalCallback<AccountCanonicalInfo[]>,
+    ) {
+        log.trace('getting canonicalIDs from Vault based on accountIDs');
+        const options = {
+            reqUid: log.getSerializedUids(),
+            logger: log,
+        };
+        this.client.getCanonicalIdsByAccountIds(accountIds, options, (err, res) => {
+            if (err) {
+                log.debug('received error message from vault', {
+                    error: err,
+                    accountIds,
+                });
+                return callback(err);
+            }
+            return callback(null, res.message.body);
+        });
     }
 
     /** checkPolicies -- call Vault to evaluate policies

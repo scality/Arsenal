@@ -1,4 +1,7 @@
 import errors from '../../errors';
+import { RequestLogger } from 'werelogs';
+import { AccountCanonicalInfoResults } from '../AuthInfo';
+import { ArsenalCallback } from '../../types';
 
 /**
  * Base backend class
@@ -83,6 +86,22 @@ export default class BaseBackend {
      * as each object key and an email address as the value (or "NotFound")
      */
     getEmailAddresses(canonicalIDs: string[], options: any, callback: any) {
+        return callback(errors.AuthMethodNotImplemented);
+    }
+
+    /**
+     * A getter for account canonical IDs given a list of account IDs
+     * @param accountIds - list of account IDs
+     * @param options - additional arguments
+     * @param callback - callback function
+     * @returns callback with either error or an object from Vault
+     * containing canonicalID and display name for each account ID
+     */
+    getCanonicalIdsByAccountIds(
+        accountIds: string[],
+        options: { reqUid: string, logger: RequestLogger },
+        callback: ArsenalCallback<AccountCanonicalInfoResults>,
+    ) {
         return callback(errors.AuthMethodNotImplemented);
     }
 

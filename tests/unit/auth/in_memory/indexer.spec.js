@@ -35,6 +35,13 @@ describe('S3 AuthData Indexer', () => {
         done();
     });
 
+    it('Should return account from shortID', done => {
+        const res = index.getEntityByShortId(obj.accounts[0].shortid);
+        assert.strictEqual(typeof res, 'object');
+        assert.strictEqual(res.arn, obj.accounts[0].arn);
+        done();
+    });
+
     it('should index account without keys', done => {
         should._exec = () => {
             index = new Indexer(obj);

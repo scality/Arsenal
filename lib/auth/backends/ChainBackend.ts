@@ -1,7 +1,10 @@
 import assert from 'assert';
 import async from 'async';
+import { RequestLogger } from 'werelogs';
 import errors from '../../errors';
 import BaseBackend from './base';
+import { AccountCanonicalInfoResults } from '../AuthInfo';
+import { ArsenalCallback } from '../../types';
 
 /**
  * Class that provides an authentication backend that will verify signatures
@@ -91,6 +94,14 @@ export default class ChainBackend extends BaseBackend {
             {});
     }
 
+    static _mergeObjArraysByKey(arrayResponses: any, key: string) {
+        const resultByKey = new Map();
+        arrayResponses.forEach(res => {
+            res.message.body.forEach(item => resultByKey.set(item[key], item));
+        });
+        return Array.from(resultByKey.values());
+    }
+
     getCanonicalIds(emailAddresses: string[], options: any, callback: any) {
         this._forEachClient(
             (client, done) => client.getCanonicalIds(emailAddresses, options, done),
@@ -117,6 +128,33 @@ export default class ChainBackend extends BaseBackend {
                 return callback(null, {
                     message: {
                         body: ChainBackend._mergeObjects(res),
+                    },
+                });
+            });
+    }
+
+    /**
+     * A getter for account canonical IDs given a list of account IDs
+     * @param accountIds - list of account IDs
+     * @param options - additional arguments
+     * @param callback - callback function
+     * @returns callback with either error or an object from Vault
+     * containing canonicalID and display name for each account ID
+     */
+    getCanonicalIdsByAccountIds(
+        accountIds: string[],
+        options: { reqUid: string, logger: RequestLogger },
+        callback: ArsenalCallback<AccountCanonicalInfoResults>,
+    ) {
+        this._forEachClient(
+            (client, done) => client.getCanonicalIdsByAccountIds(accountIds, options, done),
+            (err, res) => {
+                if (err) {
+                    return callback(err);
+                }
+                return callback(null, {
+                    message: {
+                        body: ChainBackend._mergeObjArraysByKey(res, 'accountId'),
                     },
                 });
             });

@@ -9,6 +9,7 @@ import { Accounts, Account, Entity } from './types';
 export default class Indexer {
     accountsBy: {
         canId: { [id: string]: Entity | undefined },
+        shortId: { [id: string]: Entity | undefined },
         accessKey: { [id: string]: Entity | undefined },
         email: { [id: string]: Entity | undefined },
     };
@@ -16,6 +17,7 @@ export default class Indexer {
     constructor(authdata?: Accounts) {
         this.accountsBy = {
             canId: {},
+            shortId: {},
             accessKey: {},
             email: {},
         };
@@ -43,6 +45,7 @@ export default class Indexer {
         };
         this.accountsBy.canId[accountData.canonicalID] = accountData;
         this.accountsBy.email[accountData.email] = accountData;
+        this.accountsBy.shortId[accountData.shortid] = accountData;
         if (account.keys !== undefined) {
             account.keys.forEach(key => {
                 accountData.keys.push(key);
@@ -60,6 +63,11 @@ export default class Indexer {
     /** This method returns the account associated to a canonical ID. */
     getEntityByCanId(canId: string): Entity | undefined {
         return this.accountsBy.canId[canId];
+    }
+
+    /** This method returns the account associated to a short ID. */
+    getEntityByShortId(shortId: string): Entity | undefined {
+        return this.accountsBy.shortId[shortId];
     }
 
     /**

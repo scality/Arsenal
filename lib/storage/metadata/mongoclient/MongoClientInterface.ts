@@ -19,6 +19,7 @@ import errors, { ArsenalError, errorInstances } from '../../../errors';
 import BucketInfo, { BucketMetadata, Capabilities } from '../../../models/BucketInfo';
 import ObjectMD, { ObjectMDData } from '../../../models/ObjectMD';
 import * as jsutil from '../../../jsutil';
+import { ArsenalCallback } from '../../../types';
 
 import { MongoClient, Long, Db, MongoClientOptions,
     ReadPreferenceMode, WithId, Collection, AnyBulkWriteOperation,
@@ -230,12 +231,6 @@ export type ObjectMDStats = {
     buckets?: number;
     bucketWithQuotaCount?: number;
     stalled: number;
-};
-
-interface ArsenalCallback<T> {
-    (err: null, result: T): void;
-    (err: void): void;
-    (err: ArsenalError): void;
 };
 
 /**

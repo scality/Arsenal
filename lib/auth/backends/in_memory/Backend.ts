@@ -5,7 +5,9 @@ import { calculateSigningKey, hashSignature } from './vaultUtilities';
 import Indexer from './Indexer';
 import BaseBackend from '../base';
 import { Accounts } from './types';
-import { AuthInfoType, AuthV4Results } from '../../AuthInfo';
+import { AuthInfoType, AuthV4Results,
+    AccountCanonicalInfo, AccountCanonicalInfoResults } from '../../AuthInfo';
+import { ArsenalCallback } from '../../../types';
 
 function _formatResponse(userInfo: AuthInfoType): { message: { body: AuthV4Results } } {
     return {
@@ -167,6 +169,38 @@ class InMemoryBackend extends BaseBackend {
             },
         };
         return cb(null, vaultReturnObject);
+    }
+
+    /**
+     * A getter for account canonical IDs given a list of account IDs
+     * @param accountIds - list of account IDs
+     * @param options - additional arguments
+     * @param callback - callback function
+     * @returns callback with either error or an object from Vault
+     * containing canonicalID and display name for each account ID
+     */
+    getCanonicalIdsByAccountIds(
+        accountIds: string[],
+        options: {},
+        callback: ArsenalCallback<AccountCanonicalInfoResults>,
+    ) {
+        const results: AccountCanonicalInfo[] = [];
+        accountIds.forEach(accountId => {
+            const foundEntity = this.indexer.getEntityByShortId(accountId);
+            if (foundEntity) {
+                results.push({
+                    accountId,
+                    canonicalId: foundEntity.canonicalID,
+                    name : foundEntity.accountDisplayName,
+                });
+            }
+        });
+        const vaultReturnObject = {
+            message: {
+                body: results,
+            },
+        };
+        return callback(null, vaultReturnObject);
     }
 
     report(log: Logger, callback: any) {

@@ -11,6 +11,7 @@ const backendWithAllMethods = {
     verifySignatureV4: () => {},
     getCanonicalIds: () => {},
     getEmailAddresses: () => {},
+    getCanonicalIdsByAccountIds: () => {},
     checkPolicies: () => {},
     healthcheck: () => {},
 };
@@ -41,6 +42,10 @@ class TestBackend extends BaseBackend {
     }
 
     getEmailAddresses(canonicalIDs, options, callback) {
+        return callback(this._error, this._result);
+    }
+
+    getCanonicalIdsByAccountIds(accountIds, options, callback) {
         return callback(this._error, this._result);
     }
 
@@ -188,6 +193,41 @@ describe('Auth Backend: Chain Backend', () => {
             });
         }));
 
+    describe('::getCanonicalIdsByAccountIds', () => {
+        it('should return an error if any of the clients fails', done => {
+            const backend = new ChainBackend('chain', [
+                new TestBackend('test1', null, { message: { body: { test1: 'aaa' } } }),
+                new TestBackend('test2', testError, null),
+                new TestBackend('test3', null, { message: { body: { test2: 'bbb' } } }),
+            ]);
+
+            backend.getCanonicalIdsByAccountIds(['1234345'], null, err => {
+                assert.deepStrictEqual(err, testError);
+                done();
+            });
+        });
+
+        it('should merge results from clients into a single response object', done => {
+            const backend = new ChainBackend('chain', [
+                new TestBackend('test1', null, { message: { body: [{ accountId: 'aaa' }] } }),
+                new TestBackend('test2', null, { message: { body: [{ accountId: 'bbb' }] } }),
+            ]);
+
+            backend.getCanonicalIdsByAccountIds(['1234345'], null, (err, res) => {
+                assert.ifError(err);
+                assert.deepStrictEqual(res, {
+                    message: {
+                        body: [
+                            { accountId: 'aaa' },
+                            { accountId: 'bbb' },
+                        ],
+                    }, 
+                });
+                done();
+            });
+        });
+    });
+
     describe('::checkPolicies', () => {
         it('should return an error if any of the clients fails', done => {
             const backend = new ChainBackend('chain', [
@@ -257,6 +297,66 @@ describe('Auth Backend: Chain Backend', () => {
                     // id4 should be overwritten
                     id4: 'email5@test.com',
                 },
+            );
+        });
+    });
+
+    describe('::_mergeObjArraysByKey', () => {
+        it('should correctly merge reponses', () => {
+            const arrayResps = [
+                {
+                    message: {
+                        body: [],
+                    },
+                },
+                {
+                    message: {
+                        body: [{
+                            accountId: "820584278927",
+                            canonicalId: "0b7738d4630bba4df490a30f35c94dc1ba01c47a9cb6342c8a50df6a78e11fe9",
+                            name: "account3",
+                        }],
+                        code: 200,
+                        message: "Attributes retrieved",
+                    }
+                },
+                {
+                    message: {
+                        body: [
+                            {
+                                accountId: "988542727028",
+                                canonicalId: "8c9800244adbc7ea8cab0491061befa15f45c3b63db677f3a3cf7094493dd10a",
+                                name: "account1",
+                            }, {
+                                accountId: "809872782425",
+                                canonicalId: "bcf336c310145dab60b3b67c7d4c14a074a07ae2d99eb4c8a4385a809f1ffd90",
+                                name: "account2",
+                            }
+                        ],
+                        code: 200,
+                        message: "Attributes retrieved",
+                    }
+                },
+            ];
+            assert.deepStrictEqual(
+                ChainBackend._mergeObjArraysByKey(arrayResps, 'accountId'),
+                [
+                    {
+                      accountId: '820584278927',
+                      canonicalId: '0b7738d4630bba4df490a30f35c94dc1ba01c47a9cb6342c8a50df6a78e11fe9',
+                      name: 'account3'
+                    },
+                    {
+                      accountId: '988542727028',
+                      canonicalId: '8c9800244adbc7ea8cab0491061befa15f45c3b63db677f3a3cf7094493dd10a',
+                      name: 'account1'
+                    },
+                    {
+                      accountId: '809872782425',
+                      canonicalId: 'bcf336c310145dab60b3b67c7d4c14a074a07ae2d99eb4c8a4385a809f1ffd90',
+                      name: 'account2'
+                    }
+                ],
             );
         });
     });

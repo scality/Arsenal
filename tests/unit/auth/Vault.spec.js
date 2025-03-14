@@ -76,6 +76,7 @@ describe('Vault class', () => {
             getCanonicalIds: sandbox.stub(),
             getEmailAddresses: sandbox.stub(),
             getAccountIds: sandbox.stub(),
+            getCanonicalIdsByAccountIds: sandbox.stub(),
             checkPolicies: sandbox.stub(),
             getOrCreateEncryptionKeyId: sandbox.stub(),
         };
@@ -437,6 +438,33 @@ describe('Vault class', () => {
             vault.getAccountIds(mockIds, log, (err, data) => {
                 assert.strictEqual(err, null);
                 assert.deepStrictEqual(data, {});
+                done();
+            });
+        });
+    });
+
+    describe('getCanonicalIdsByAccountIds', () => {
+        it('should return canonical IDs for valid account IDs', done => {
+            const mockIds = ['account123'];
+            const mockResponse = {
+                message: { body: [{ account123: 'canonical123' }] },
+            };
+            mockClient.getCanonicalIdsByAccountIds.callsFake((_, __, cb) => cb(null, mockResponse));
+
+            vault.getCanonicalIdsByAccountIds(mockIds, log, (err, data) => {
+                assert.strictEqual(err, null);
+                assert.deepStrictEqual(data, [{ account123: 'canonical123' }]);
+                done();
+            });
+        });
+
+        it('should return error when client fails', done => {
+            const mockIds = ['account123'];
+            const mockError = new Error('Client error');
+            mockClient.getCanonicalIdsByAccountIds.callsFake((_, __, cb) => cb(mockError));
+
+            vault.getCanonicalIdsByAccountIds(mockIds, log, (err) => {
+                assert.strictEqual(err, mockError);
                 done();
             });
         });

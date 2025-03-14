@@ -12,6 +12,8 @@ const obj2 = JSON.parse(JSON.stringify(ref2));
 const searchEmail = 'sampleaccount1@sampling.com';
 const expectCanId =
     '79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2be';
+const searchAccountId = '123456789012';
+const expectedName = 'Bart';
 
 const searchEmail2 = 'sampleaccount4@sampling.com';
 const expectCanId2 = 'newCanId';
@@ -65,6 +67,25 @@ describe('S3 in_memory auth backend', () => {
         backend.refreshAuthData(obj2);
         backend.getCanonicalIds([searchEmail2], log, (err, res) => {
             assert.strictEqual(res.message.body[searchEmail2], expectCanId2);
+            done();
+        });
+    });
+
+    it('should return cannonicalId by accountId', done => {
+        const backend = new Backend(JSON.parse(JSON.stringify(ref)));
+        backend.getCanonicalIdsByAccountIds([searchAccountId], log, (err, res) => {
+            assert.strictEqual(res.message.body.length, 1);
+            assert.strictEqual(res.message.body[0].accountId, searchAccountId);
+            assert.strictEqual(res.message.body[0].canonicalId, expectCanId);
+            assert.strictEqual(res.message.body[0].name, expectedName);
+            done();
+        });
+    });
+
+    it('should return empty array if accountId not found', done => {
+        const backend = new Backend(JSON.parse(JSON.stringify(ref)));
+        backend.getCanonicalIdsByAccountIds([invalidAccountId], log, (err, res) => {
+            assert.strictEqual(res.message.body.length, 0);
             done();
         });
     });
