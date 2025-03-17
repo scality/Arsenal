@@ -36,6 +36,33 @@ describe('Errors: ', () => {
             },
         });
     });
+
+    it('errors.AccessDenied.is should be the same instance for perf', () => {
+        const first = errors.AccessDenied;
+        const second = errors.AccessDenied;
+        expect(first).not.toBe(second);
+        expect(first.is).toBe(second.is);
+    })
+
+    it ('errors.ok should return the same instance for perf', () => {
+        const first = errors.ok;
+        const second = errors.ok;
+        expect(first).toBe(second);
+        // don't modify instance, the use case is for errors.ok.[code | message]
+        Error.captureStackTrace(first);
+        // don't use stacktrace of ok error
+        expect(first.stack).toEqual(second.stack);
+    });
+
+    it ('errorInstances should return the same instance for perf', () => {
+        const first = errorInstances.AccessDenied;
+        const second = errorInstances.AccessDenied;
+        expect(first).toBe(second);
+        // don't modify, the use case is for errorInstance.x.[customizeDescription | code | message]
+        Error.captureStackTrace(first);
+        // don't use errorInstances if you need stacktrace
+        expect(first.stack).toEqual(second.stack);
+    });
 });
 
 describe('Backward compatibility flag', () => {
