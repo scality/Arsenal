@@ -4,7 +4,7 @@ const sinon = require('sinon');
 const DummyRequestLogger = require('../../storage/metadata/mongoclient/utils/DummyRequestLogger');
 const HttpResponseMock = require('../../../utils/HttpResponseMock');
 const routesUtils = require('../../../../lib/s3routes/routesUtils');
-const { errors } = require('../../../../index');
+const { errors, errorInstances } = require('../../../../index');
 const DataWrapper = require('../../../../lib/storage/data/DataWrapper');
 
 const corsHeaders = {
@@ -22,8 +22,8 @@ describe('routesUtils.redirectRequestOnError', () => {
     describe('from request on folder containing ' +
     'index without trailing /', () => {
         const errorHeaders = {
-            'x-amz-error-code': errors.Found.type,
-            'x-amz-error-message': errors.Found.description,
+            'x-amz-error-code': errorInstances.Found.type,
+            'x-amz-error-message': errorInstances.Found.description,
         };
 
         it('should redirect 302 with body on GET', () => {
@@ -75,8 +75,8 @@ describe('routesUtils.redirectRequestOnError', () => {
             const routing = { withError: true,
                 location: 'http://scality.com/test' };
             const errorHeaders = {
-                'x-amz-error-code': errors.AccessDenied.type,
-                'x-amz-error-message': errors.AccessDenied.description,
+                'x-amz-error-code': errorInstances.AccessDenied.type,
+                'x-amz-error-message': errorInstances.AccessDenied.description,
             };
             dataWrapperGetStub = sinon.stub(DataWrapper.prototype, 'get');
 

@@ -1,5 +1,5 @@
 import * as rawErrors from '../../lib/errors/arsenalErrors';
-import { errors } from '../../index';
+import { errors, errorInstances } from '../../index';
 import { ArsenalError } from '../../lib/errors';
 
 describe('Errors: ', () => {
@@ -24,13 +24,13 @@ describe('Errors: ', () => {
 
     it('can be used as an http response', () => {
         // @ts-expect-errors
-        errors.NoSuchEntity.writeResponse({
+        errorInstances.NoSuchEntity.writeResponse({
             writeHead(statusCode: number) {
                 expect(statusCode).toEqual(404);
                 return this;
             },
             end(msg: any) {
-                const asStr = errors.NoSuchEntity.toString();
+                const asStr = errorInstances.NoSuchEntity.toString();
                 expect(msg).toEqual(asStr);
                 return this;
             },
