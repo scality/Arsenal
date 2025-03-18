@@ -152,11 +152,11 @@ export default class Vault {
      */
     authenticateV2Request(
         params: AuthV2RequestParams,
-        requestContexts: any[] | null,
+        requestContexts: RequestContext[] | null,
         callback: (err: Error | null, data?: any) => void
     ) {
         params.log.debug('authenticating V2 request');
-        let serializedRCsArr: any;
+        let serializedRCsArr;
         if (requestContexts) {
             serializedRCsArr = requestContexts.map(rc => rc.serialize());
         }
@@ -204,12 +204,12 @@ export default class Vault {
     */
     authenticateV4Request(
         params: AuthV4RequestParams,
-        requestContexts: any[] | null,
+        requestContexts: RequestContext[] | null,
         options: AuthenticationOptions = {},
         callback: (err: Error | null, data?: any) => void,
     ) {
         params.log.debug('authenticating V4 request');
-        let serializedRCs: any;
+        let serializedRCs;
         if (requestContexts) {
             serializedRCs = requestContexts.map(rc => rc.serialize());
         }

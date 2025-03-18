@@ -135,7 +135,7 @@ function _buildArn(
     }
     case 'scuba': {
         return `arn:scality:scuba::${requesterInfo!.accountid}:` +
-            `${generalResource}${specificResource ? `/${  specificResource}` : ''}`;
+            `${generalResource}${specificResource ? `/${specificResource}` : ''}`;
     }
     default:
         return undefined;
@@ -154,7 +154,31 @@ export type RequesterInfo = {
     username: string;
     keycloakGroup: string;
     keycloakRole: string;
-}
+};
+
+export type RequestContextType = {
+    headers: { [key: string]: string | string[] };
+    query: any;
+    requesterIp: string;
+    sslEnabled: boolean;
+    apiMethod: string;
+    awsService: string;
+    generalResource: string;
+    specificResource: string;
+    locationConstraint: string;
+    requesterInfo: RequesterInfo;
+    signatureVersion: string;
+    authType: string;
+    signatureAge: number;
+    securityToken: string;
+    policyArn: string;
+    action?: string;
+    requestObjTags?: string | null;
+    existingObjTag?: string | null;
+    needTagEval?: boolean;
+    objectLockRetentionDays?: number | null;
+    needQuota?: boolean;
+};
 
 /**
  * Class containing RequestContext for policy auth check

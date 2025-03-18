@@ -16,8 +16,18 @@ import chainBackend from './backends/ChainBackend';
 import validateAuthConfig from './backends/in_memory/validateAuthConfig';
 import AuthLoader from './backends/in_memory/AuthLoader';
 import Vault, { AuthV2RequestParams, AuthV4RequestParams } from './Vault';
+import RequestContext, { RequestContextType } from '../policyEvaluator/RequestContext';
 
 export type AuthResult<T> = { err: ArsenalError } | { err: null, params: T };
+
+type AuthenticationOptions = {
+    algo?: 'sha1' | 'sha256'; // for v2 auth
+    reqUid?: string;
+    get?: boolean;
+    logger?: RequestLogger;
+    requestContext?: RequestContextType;
+    securityToken?: string;
+};
 
 let vault: Vault | null = null;
 const auth = {};
@@ -124,8 +134,8 @@ function doAuth(
     log: RequestLogger,
     cb: (err: Error | null, data?: any) => void,
     awsService: string,
-    requestContexts: any[] | null,
-    options: any = {},
+    requestContexts: RequestContext[] | null,
+    options: AuthenticationOptions = {},
 ) {
     const res = extractParams(request, log, awsService, request.query);
     if (res.err) {
@@ -134,17 +144,20 @@ function doAuth(
     if (res.params instanceof AuthInfo) {
         return cb(null, res.params);
     }
+    const data = res.params.data;
     if (requestContexts) {
         requestContexts.forEach(requestContext => {
-            const { params } = res;
-            if ('data' in params!) {
-                const { data } = params;
+            if (data.authType) {
                 requestContext.setAuthType(data.authType);
+            }
+            if (data.signatureVersion) {
                 requestContext.setSignatureVersion(data.signatureVersion);
+            }
+            if (data.securityToken) {
                 requestContext.setSecurityToken(data.securityToken);
-                if ('signatureAge' in data) {
-                    requestContext.setSignatureAge(data.signatureAge);
-                }
+            }
+            if (data.signatureAge) {
+                requestContext.setSignatureAge(data.signatureAge);
             }
         });
     }
