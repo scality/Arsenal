@@ -1,5 +1,6 @@
 import * as http from 'http';
-import errors, { ArsenalError } from '../errors';
+import errors from '../errors';
+import type { ArsenalError } from '../errors';
 
 function _matchesETag(item: string, contentMD5: string) {
     return (item === contentMD5 || item === '*' || item === `"${contentMD5}"`);

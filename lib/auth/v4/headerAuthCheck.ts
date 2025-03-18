@@ -26,7 +26,7 @@ import { AuthResult } from '../auth';
 export function check(
     request: any,
     log: RequestLogger,
-    data: { [key: string]: string },
+    data: Record<string, string>,
     awsService: string
 ): AuthResult<AuthV4RequestParams> {
     log.trace('running header auth check');

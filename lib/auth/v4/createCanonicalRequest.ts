@@ -14,7 +14,7 @@ export default function createCanonicalRequest(
     params: {
         pHttpVerb: string;
         pResource: string;
-        pQuery: { [key: string]: string };
+        pQuery: Record<string, string>;
         pHeaders: any;
         pSignedHeaders: any;
         service: string;

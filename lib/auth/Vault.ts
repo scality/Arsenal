@@ -70,7 +70,7 @@ export type AuthV2RequestParams = {
     log: RequestLogger;
     data: {
         accessKey: string;
-        algo: string;
+        algo: 'sha1' | 'sha256';
         authType: 'query' | 'header' | 'REST-HEADER' | 'REST-QUERY-STRING';
         securityToken: string;
         signatureAge?: number;
@@ -85,7 +85,7 @@ export type AuthV4RequestParams = {
     log: RequestLogger;
     data: {
         accessKey: string;
-        algo?: string;
+        algo?: 'sha1' | 'sha256';
         authType?: 'query' | 'header' | 'REST-HEADER' | 'REST-QUERY-STRING';
         credentialScope?: string;
         region: string;
@@ -293,7 +293,7 @@ export default class Vault {
     getEmailAddresses(
         canonicalIDs: string[],
         log: RequestLogger,
-        callback: (err: Error | null, data?: { [key: string]: any }) => void
+        callback: (err: Error | null, data?: Record<string, any>) => void
     ) {
         log.trace('getting emailAddresses from Vault based on canonicalIDs',
             { canonicalIDs });
@@ -331,7 +331,7 @@ export default class Vault {
     getAccountIds(
         canonicalIDs: string[],
         log: RequestLogger,
-        callback: (err: Error | null, data?: { [key: string]: string }) => void
+        callback: (err: Error | null, data?: Record<string, string>) => void
     ) {
         log.trace('getting accountIds from Vault based on canonicalIDs',
             { canonicalIDs });

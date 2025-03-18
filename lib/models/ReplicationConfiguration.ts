@@ -1,7 +1,7 @@
 import assert from 'assert';
 const { v4: uuid } = require('uuid');
 
-import { RequestLogger } from 'werelogs';
+import type { RequestLogger } from 'werelogs';
 
 import escapeForXml from '../s3middleware/escapeForXml';
 import errors, { errorInstances } from '../errors';

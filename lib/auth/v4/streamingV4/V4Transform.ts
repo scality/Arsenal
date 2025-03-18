@@ -1,7 +1,7 @@
 import { Transform } from 'stream';
 import async from 'async';
 import errors from '../../../errors';
-import { RequestLogger } from 'werelogs';
+import type { RequestLogger } from 'werelogs';
 import Vault, { AuthV4RequestParams } from '../../Vault';
 import { Callback } from '../../backends/in_memory/types';
 

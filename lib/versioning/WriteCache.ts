@@ -1,6 +1,7 @@
-import { RequestLogger } from 'werelogs';
+import type { RequestLogger } from 'werelogs';
 
-import errors, { ArsenalError } from '../errors';
+import errors from '../errors';
+import type { ArsenalError } from '../errors';
 import WriteGatheringManager from './WriteGatheringManager';
 
 function formatCacheKey(db: string, key: string) {

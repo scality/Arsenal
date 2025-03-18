@@ -1,11 +1,11 @@
-import { RequestLogger } from 'werelogs';
+import type { RequestLogger } from 'werelogs';
 import utf8 from 'utf8';
 import getCanonicalizedAmzHeaders from './getCanonicalizedAmzHeaders';
 import getCanonicalizedResource from './getCanonicalizedResource';
 
 export default function constructStringToSign(
     request: any,
-    data: { [key: string]: string },
+    data: Record<string, string>,
     log: RequestLogger,
     clientType?: any,
 ) {

@@ -1,4 +1,4 @@
-import { RequestLogger } from 'werelogs';
+import type { RequestLogger } from 'werelogs';
 
 import { legacyLocations } from '../constants';
 import escapeForXml from '../s3middleware/escapeForXml';

@@ -1,4 +1,4 @@
-import { RequestLogger } from 'werelogs';
+import type { RequestLogger } from 'werelogs';
 
 import * as routesUtils from '../routesUtils';
 import { errorInstances } from '../../errors';

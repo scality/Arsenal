@@ -1,9 +1,10 @@
 import assert from 'assert';
-import { ArsenalError, errorInstances } from '../errors';
+import { errorInstances } from '../errors';
+import type { ArsenalError } from '../errors';
 
 export type Config = any;
 export type LockMode = 'GOVERNANCE' | 'COMPLIANCE';
-export type DefaultRetention = { Days?: number, Years?: number, Mode?: LockMode[] };
+export type DefaultRetention = { Days?: string[], Years?: string[], Mode?: LockMode[] };
 export type ParsedRetention =
     | { error: ArsenalError }
     | { timeType: 'days' | 'years'; timeValue: number };
@@ -106,13 +107,23 @@ export default class ObjectLockConfiguration {
             const error = errorInstances.MalformedXML.customizeDescription(msg);
             return { error };
         }
-        const timeType = dr.Days ? 'Days' : 'Years';
-        if (!dr[timeType] || !dr[timeType][0]) {
+        if (!dr.Days?.[0] && !dr.Years?.[0]) {
             const msg = 'request xml does not contain Days or Years';
             const error = errorInstances.MalformedXML.customizeDescription(msg);
             return { error };
         }
-        const timeValue = Number.parseInt(dr[timeType][0], 10);
+        const { timeRaw, timeMax, timeType } = function () {
+            if (dr.Days) {
+                return { timeRaw: dr.Days!, timeMax: 36500, timeType: 'Days' };
+            }
+            return { timeRaw: dr.Years!, timeMax: 100, timeType: 'Years' };
+        }();
+        if (timeRaw.length > 1) {
+            const msg = 'request xml contains more than one retention period';
+            const error = errorInstances.MalformedXML.customizeDescription(msg);
+            return { error };
+        }
+        const timeValue = Number.parseInt(timeRaw[0], 10);
         if (Number.isNaN(timeValue)) {
             const msg = 'request xml does not contain valid retention period';
             const error = errorInstances.MalformedXML.customizeDescription(msg);
@@ -123,8 +134,7 @@ export default class ObjectLockConfiguration {
             const error = errorInstances.InvalidArgument.customizeDescription(msg);
             return { error };
         }
-        if ((timeType === 'Days' && timeValue > 36500) ||
-        (timeType === 'Years' && timeValue > 100)) {
+        if (timeValue > timeMax) {
             const msg = 'retention period is too large';
             const error = errorInstances.InvalidArgument.customizeDescription(msg);
             return { error };

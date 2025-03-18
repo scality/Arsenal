@@ -1,7 +1,8 @@
 import assert from 'assert';
 const { v4: uuid } = require('uuid');
 
-import errors, { ArsenalError, errorInstances } from '../errors';
+import errors, { errorInstances } from '../errors';
+import type { ArsenalError } from '../errors';
 import LifecycleRule from './LifecycleRule';
 import escapeForXml from '../s3middleware/escapeForXml';
 import type { XMLRule } from './ReplicationConfiguration';

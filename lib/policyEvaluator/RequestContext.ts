@@ -157,7 +157,7 @@ export type RequesterInfo = {
 };
 
 export type RequestContextType = {
-    headers: { [key: string]: string | string[] };
+    headers: Record<string, string | string[]>;
     query: any;
     requesterIp: string;
     sslEnabled: boolean;
@@ -204,7 +204,7 @@ export type RequestContextType = {
  */
 
 export default class RequestContext {
-    _headers: { [key: string]: string | string[] };
+    _headers: Record<string, string | string[]>;
     _query: any;
     _requesterIp: string;
     _sslEnabled: boolean;
@@ -232,7 +232,7 @@ export default class RequestContext {
     _objectLockRetentionDays?: number | null;
 
     constructor(
-        headers: { [key: string]: string | string[] },
+        headers: Record<string, string | string[]>,
         query: any,
         generalResource: string,
         specificResource: string,
@@ -400,7 +400,7 @@ export default class RequestContext {
      * @param headers - request headers
      * @return - RequestContext instance
      */
-    setHeaders(headers: { [key: string]: string | string[] }) {
+    setHeaders(headers: Record<string, string | string[]>) {
         this._headers = headers;
         return this;
     }

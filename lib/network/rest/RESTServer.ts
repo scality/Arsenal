@@ -48,7 +48,7 @@ function sendError(
 export default class RESTServer extends httpServer {
     logging: werelogs.Logger;
     dataStore: any;
-    reqMethods: { [key: string]: any };
+    reqMethods: Record<string, any>;
 
     /**
      * @constructor

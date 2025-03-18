@@ -36,7 +36,7 @@ export type SSE = {
 };
 
 export type VersioningConfiguration = {
-    Status: string;
+    Status: 'Enabled' | 'Suspended';
     MfaDelete: 'Enabled' | 'Disabled';
 };
 

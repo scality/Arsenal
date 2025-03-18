@@ -42,7 +42,7 @@ export type Location = {
         | 'scality';
     name: string;
     objectId: string;
-    details: { [key: string]: any };
+    details: Record<string, any>;
     locationType: string;
     sizeLimitGB: number | null;
     isTransient: boolean;
@@ -55,7 +55,7 @@ export function patchLocations(
     log: Logger
 ) {
     const locs = overlayLocations ?? {};
-    return Object.entries(locs).reduce<{ [key: string]: Location }>(
+    return Object.entries(locs).reduce<Record<string, Location>>(
         (acc, [k, l]) => {
             const location: Location = {
                 type: 'mem',

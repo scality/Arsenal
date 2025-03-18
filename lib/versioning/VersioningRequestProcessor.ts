@@ -1,6 +1,7 @@
-import { RequestLogger } from 'werelogs';
+import type { RequestLogger } from 'werelogs';
 
-import errors, { ArsenalError } from '../errors';
+import errors from '../errors';
+import type { ArsenalError } from '../errors';
 import { Version } from './Version';
 import { generateVersionId as genVID, getInfVid } from './VersionID';
 import WriteCache from './WriteCache';

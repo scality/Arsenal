@@ -11,7 +11,7 @@ function checkStub() {
 
 export default class HealthProbeServer extends httpServer {
     logging: werelogs.Logger;
-    _reqHandlers: { [key: string]: any };
+    _reqHandlers: Record<string, any>;
     _livenessCheck: (log: any) => boolean;
     _readinessCheck: (log: any) => boolean;
 

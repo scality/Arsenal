@@ -1,7 +1,8 @@
 import Ajv from 'ajv';
 import userPolicySchema from './userPolicySchema.json';
 import resourcePolicySchema from './resourcePolicySchema.json';
-import errors, { ArsenalError } from '../errors';
+import errors from '../errors';
+import type { ArsenalError } from '../errors';
 import draft6 from 'ajv/lib/refs/json-schema-draft-06.json';
 const ajValidate = new Ajv({ allErrors: true });
 ajValidate.addMetaSchema(draft6);

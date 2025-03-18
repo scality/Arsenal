@@ -918,6 +918,51 @@ describe('MongoClientInterface, tests', () => {
             );
         });
     });
+
+    it('should create a bucket with a very large quota and retrieve it correctly', done => {
+        const bucketName = 'test-bucket-large-quota';
+        const largeQuota = '9223372036854775807'; // Max signed 64-bit integer (2^63 - 1)
+    
+        async.waterfall([
+            next => {
+                const bucketMD = BucketInfo.fromObj({
+                    _name: bucketName,
+                    _owner: 'testowner',
+                    _ownerDisplayName: 'testdisplayname',
+                    _creationDate: new Date().toJSON(),
+                    _acl: {
+                        Canned: 'private',
+                        FULL_CONTROL: [],
+                        WRITE: [],
+                        WRITE_ACP: [],
+                        READ: [],
+                        READ_ACP: [],
+                    },
+                    _mdBucketModelVersion: 10,
+                    _transient: false,
+                    _deleted: false,
+                    _serverSideEncryption: null,
+                    _versioningConfiguration: null,
+                    _locationConstraint: 'us-east-1',
+                    _quotaMax: largeQuota,
+                });
+                client.createBucket(bucketName, bucketMD, logger, err => next(err));
+            },
+            next => client.getBucketAttributes(bucketName, logger, (err, bucketMd) => {
+                if (err) {
+                    return next(err);
+                }
+                const retrievedQuota = bucketMd._quotaMax;
+                assert.strictEqual(
+                    retrievedQuota.toString(), 
+                    largeQuota, 
+                    'Quota should match the large value set during creation',
+                );
+                return next();
+            }),
+            next => client.deleteBucket(bucketName, logger, err => next(err)),
+        ], done);
+    });
 });
 
 describe('MongoClientInterface, updateDeleteMaster', () => {

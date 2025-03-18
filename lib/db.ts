@@ -29,7 +29,7 @@ export class IndexTransaction {
     operations: { type: 'put' | 'del'; key: string; value?: any }[];
     db: any;
     closed: boolean;
-    conditions: { [key: string]: string }[];
+    conditions: Record<string, string>[];
 
     /**
      * Builds a new transaction
@@ -135,7 +135,7 @@ export class IndexTransaction {
      *                 - missingCondition if the condition is empty
      *
      */
-    addCondition(condition: { [key: string]: string }) {
+    addCondition(condition: Record<string, string>) {
         if (this.closed) {
             throw propError(
                 'pushOnCommittedTransaction',

@@ -22,7 +22,7 @@ export type Condition = {
     httpErrorCodeReturnedEquals?: string;
 };
 
-export type RoutingRuleParams = { redirect?: Redirect; condition?: Condition };
+export type RoutingRuleParams = { redirect: Redirect; condition?: Condition };
 
 export class RoutingRule {
     _redirect?: Redirect;
@@ -35,11 +35,9 @@ export class RoutingRule {
     * @param params.redirect - specifies how to redirect requests
     * @param [params.condition] - specifies conditions for a redirect
     */
-    constructor(params?: { redirect?: Redirect; condition?: Condition }) {
-        if (params) {
-            this._redirect = params.redirect;
-            this._condition = params.condition;
-        }
+    constructor(params: { redirect: Redirect; condition?: Condition }) {
+        this._redirect = params?.redirect;
+        this._condition = params?.condition;
     }
 
     /**
@@ -48,7 +46,7 @@ export class RoutingRule {
     */
     getRuleObject() {
         const rule = {
-            redirect: this._redirect,
+            redirect: this._redirect!,
             condition: this._condition,
         };
         return rule;
@@ -80,14 +78,14 @@ export type WebsiteConfigurationParams = {
     indexDocument?: string;
     errorDocument?: string;
     redirectAllRequestsTo?: RedirectAllRequestsTo;
-    routingRules?: RoutingRuleParams[],
+    routingRules: RoutingRuleParams[],
 };
 
 export class WebsiteConfiguration {
     _indexDocument?: string;
     _errorDocument?: string;
     _redirectAllRequestsTo?: RedirectAllRequestsTo;
-    _routingRules?: RoutingRule[];
+    _routingRules: RoutingRule[] = [];
 
     /**
     * Object that represents website configuration
@@ -118,16 +116,13 @@ export class WebsiteConfiguration {
     * Return plain object with configuration info
     * @return - Object copy of class instance
     */
-    getConfig() {
+    getConfig(): WebsiteConfigurationParams {
         const base = {
             indexDocument: this._indexDocument,
             errorDocument: this._errorDocument,
             redirectAllRequestsTo: this._redirectAllRequestsTo,
+            routingRules: this.getRoutingRules(),
         };
-        if (this._routingRules) {
-            const routingRules = this._routingRules.map(r => r.getRuleObject());
-            return { ...base, routingRules };
-        }
         return { ...base };
     }
 

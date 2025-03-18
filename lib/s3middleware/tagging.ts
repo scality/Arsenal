@@ -1,6 +1,7 @@
 import { parseString } from 'xml2js';
 import * as werelogs from 'werelogs';
-import errors, { ArsenalError, errorInstances } from '../errors';
+import errors, { errorInstances } from '../errors';
+import type { ArsenalError } from '../errors';
 import escapeForXml from './escapeForXml';
 
 export interface BucketTag {

@@ -10,7 +10,7 @@ import { AuthResult } from '../auth';
 export function check(
     request: any,
     log: RequestLogger,
-    data: { [key: string]: string },
+    data: Record<string, string>,
 ): AuthResult<AuthV2RequestParams> {
     log.trace('running header auth check');
     const headers = request.headers;

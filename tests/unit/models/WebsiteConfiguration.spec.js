@@ -56,7 +56,7 @@ describe('WebsiteConfiguration class', () => {
         assert.strictEqual(websiteConfig._indexDocument, undefined);
         assert.strictEqual(websiteConfig._errorDocument, undefined);
         assert.strictEqual(websiteConfig._redirectAllRequestsTo, undefined);
-        assert.strictEqual(websiteConfig._routingRules, undefined);
+        assert.strictEqual(websiteConfig._routingRules.length, 0);
         done();
     });
 

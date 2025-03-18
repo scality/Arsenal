@@ -3,7 +3,7 @@ import * as crypto from 'crypto';
 import * as stream from 'stream';
 import azure from '@azure/storage-blob';
 
-import { RequestLogger } from 'werelogs';
+import type { RequestLogger } from 'werelogs';
 
 import ResultsCollector from './ResultsCollector';
 import SubStreamInterface from './SubStreamInterface';

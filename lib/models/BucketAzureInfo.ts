@@ -30,7 +30,8 @@ export type AzureInfoMetadata = {
  * storage accounts mapped to buckets.
  */
 export default class BucketAzureInfo {
-    private data: AzureInfoMetadata;
+    private readonly data: AzureInfoMetadata;
+
     /**
      * @constructor
      * @param obj - Raw structure for the Azure info on storage account
@@ -62,27 +63,7 @@ export default class BucketAzureInfo {
      * @param obj.minuteMetrics - service properties: minuteMetrics
      * @param obj.serviceVersion - service properties: serviceVersion
      */
-    constructor(obj: {
-        sku: string;
-        accessTier: string;
-        kind: string;
-        systemKeys: string[];
-        tenantKeys: string[];
-        subscriptionId: string;
-        resourceGroup: string;
-        deleteRetentionPolicy: DeleteRetentionPolicy;
-        managementPolicies: any[];
-        httpsOnly: boolean;
-        tags: any;
-        networkACL: any[];
-        cname: string;
-        azureFilesAADIntegration: boolean;
-        hnsEnabled: boolean;
-        logging: any;
-        hourMetrics: any;
-        minuteMetrics: any;
-        serviceVersion: string;
-    }) {
+    constructor(obj: AzureInfoMetadata) {
         this.data = {
             sku: obj.sku,
             accessTier: obj.accessTier,

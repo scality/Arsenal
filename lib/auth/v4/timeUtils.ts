@@ -1,4 +1,4 @@
-import { RequestLogger } from 'werelogs';
+import type { RequestLogger } from 'werelogs';
 
 /**
  * Convert timestamp to milliseconds since Unix Epoch

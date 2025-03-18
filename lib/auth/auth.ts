@@ -1,6 +1,7 @@
 import * as crypto from 'crypto';
-import { RequestLogger } from 'werelogs';
-import errors, { ArsenalError } from '../errors';
+import type { RequestLogger } from 'werelogs';
+import errors from '../errors';
+import type { ArsenalError } from '../errors';
 import * as queryString from 'querystring';
 import AuthInfo from './AuthInfo';
 import * as v2 from './v2/authV2';
@@ -73,7 +74,7 @@ function extractParams(
     request: any,
     log: RequestLogger,
     awsService: string,
-    data: { [key: string]: string }
+    data: Record<string, string>
 ): AuthResult<AuthV2RequestParams | AuthV4RequestParams | AuthInfo> {
     log.trace('entered', { method: 'Arsenal.auth.server.extractParams' });
     const authHeader = request.headers.authorization;
@@ -145,7 +146,7 @@ function doAuth(
         return cb(null, res.params);
     }
     const data = res.params.data;
-    if (requestContexts) {
+    if (data && requestContexts) {
         requestContexts.forEach(requestContext => {
             if (data.authType) {
                 requestContext.setAuthType(data.authType);
@@ -156,9 +157,7 @@ function doAuth(
             if (data.securityToken) {
                 requestContext.setSecurityToken(data.securityToken);
             }
-            if (data.signatureAge) {
-                requestContext.setSignatureAge(data.signatureAge);
-            }
+            requestContext.setSignatureAge(data.signatureAge || 0);
         });
     }
 
@@ -208,7 +207,7 @@ function generateContentMD5Header(
  */
 function generateV4Headers(
     request: any,
-    data: { [key: string]: string },
+    data: Record<string, string>,
     accessKey: string,
     secretKeyValue: string,
     awsService: string,

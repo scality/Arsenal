@@ -1,5 +1,6 @@
 import assert from 'assert';
-import { ArsenalError, errorInstances } from '../errors';
+import { errorInstances } from '../errors';
+import type { ArsenalError } from '../errors';
 import { validateResourcePolicy } from '../policy/policyValidator';
 
 /**
@@ -49,15 +50,15 @@ const objectActions = [
 ];
 
 export type BucketPolicyMetadata = {
-    Id: string;
+    Id?: string;
     Version: string;
     Statement: {
-        Sid: string;
-        Effect: string;
-        Principal: string | { AWS: string[] };
+        Sid?: string;
+        Effect: 'Allow' | 'Deny';
+        Principal: string | { AWS: string | string[] };
         Action: string | string[];
         Resource: string | string[];
-        Condition?: { [key: string]: string | string[] };
+        Condition?: Record<string, Record<string, string | string[] | number>>;
     }[],
 };
 

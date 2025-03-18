@@ -5,7 +5,8 @@ import {
     supportedNotificationEvents,
     notificationArnPrefix,
 } from '../constants';
-import { ArsenalError, errorInstances } from '../errors';
+import { errorInstances } from '../errors';
+import type { ArsenalError } from '../errors';
 
 /**
  * Format of xml request:

@@ -1,4 +1,4 @@
-import { RequestLogger } from 'werelogs';
+import type { RequestLogger } from 'werelogs';
 import errors from '../../errors';
 
 const epochTime = new Date('1970-01-01').getTime();

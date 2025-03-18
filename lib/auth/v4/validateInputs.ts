@@ -1,4 +1,4 @@
-import { RequestLogger } from 'werelogs';
+import type { RequestLogger } from 'werelogs';
 import errors, { ArsenalError } from '../../../lib/errors';
 
 /**
@@ -65,7 +65,7 @@ export function validateCredentials(
  * @return object containing extracted query params for authV4
  */
 export function extractQueryParams(
-    queryObj: { [key: string]: string | undefined },
+    queryObj: Record<string, string | undefined>,
     log: RequestLogger,
 ) {
     const authParams: {

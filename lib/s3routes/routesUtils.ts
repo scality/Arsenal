@@ -2,7 +2,7 @@ import * as url from 'url';
 import * as http from 'http';
 import { eachSeries } from 'async';
 
-import { RequestLogger } from 'werelogs';
+import type { RequestLogger } from 'werelogs';
 
 import * as ipCheck from '../ipCheck';
 import errors, { ArsenalError, errorInstances } from '../errors';
@@ -30,7 +30,7 @@ export type CallApiMethod = (
  * @return response - response object with additional headers
  */
 export function setCommonResponseHeaders(
-    headers: { [key: string]: string } | undefined | null,
+    headers: Record<string, string> | undefined | null,
     response: http.ServerResponse,
     log: RequestLogger,
 ) {
@@ -64,7 +64,7 @@ export function setCommonResponseHeaders(
  * @return response - response object with additional headers
  */
 export function okHeaderResponse(
-    headers: { [key: string]: string } | undefined | null,
+    headers: Record<string, string> | undefined | null,
     response: http.ServerResponse,
     httpCode: number,
     log: RequestLogger,
@@ -94,7 +94,7 @@ export const XMLResponseBackend = {
         xml: string,
         response: http.ServerResponse,
         log: RequestLogger,
-        additionalHeaders?: { [key: string]: string } | null,
+        additionalHeaders?: Record<string, string> | null,
     ) {
         const bytesSent = Buffer.byteLength(xml);
         log.trace('sending success xml response');
@@ -115,7 +115,7 @@ export const XMLResponseBackend = {
         errCode: ArsenalError | Error,
         response: http.ServerResponse,
         log: RequestLogger,
-        corsHeaders?: { [key: string]: string } | null,
+        corsHeaders?: Record<string, string> | null,
     ) {
         setCommonResponseHeaders(corsHeaders, response, log);
         let error: ArsenalError;
@@ -193,7 +193,7 @@ export const JSONResponseBackend = {
         json: string,
         response: http.ServerResponse,
         log: RequestLogger,
-        additionalHeaders?: { [key: string]: string } | null,
+        additionalHeaders?: Record<string, string> | null,
     ) {
         const bytesSent = Buffer.byteLength(json);
         log.addDefaultFields({ bytesSent });
@@ -211,7 +211,7 @@ export const JSONResponseBackend = {
         errCode: ArsenalError | Error,
         response: http.ServerResponse,
         log: RequestLogger,
-        corsHeaders?: { [key: string]: string } | null,
+        corsHeaders?: Record<string, string> | null,
     ) {
         log.trace('sending error json response', { errCode });
         let error: ArsenalError;
@@ -270,13 +270,13 @@ export const JSONResponseBackend = {
  * @return response - modified response object
  */
 function okContentHeadersResponse(
-    overrideParams: { [key: string]: string },
-    resHeaders: { [key: string]: string },
+    overrideParams: Record<string, string>,
+    resHeaders: Record<string, string>,
     response: http.ServerResponse,
     range: [number, number] | undefined,
     log: RequestLogger,
 ) {
-    const addHeaders: { [key: string]: string } = {};
+    const addHeaders: Record<string, string> = {};
     if (ALLOW_INVALID_META_HEADERS) {
         const headersArr = Object.keys(resHeaders);
         const length = headersArr.length;
@@ -493,7 +493,7 @@ function _responseBody(
     payload: string | null,
     response: http.ServerResponse,
     log: RequestLogger,
-    additionalHeaders?: { [key: string]: string } | null,
+    additionalHeaders?: Record<string, string> | null,
 ) {
     if (errCode && !response.headersSent) {
         return responseBackend.errorResponse(errCode, response, log,
@@ -544,7 +544,7 @@ export function responseXMLBody(
     xml: string | null,
     response: http.ServerResponse,
     log: RequestLogger,
-    additionalHeaders?: { [key: string]: string },
+    additionalHeaders?: Record<string, string>,
 ) {
     return _responseBody(XMLResponseBackend, errCode, xml, response,
         log, additionalHeaders);
@@ -564,7 +564,7 @@ export function responseJSONBody(
     json: string | null,
     response: http.ServerResponse,
     log: RequestLogger,
-    additionalHeaders?: { [key: string]: string } | null,
+    additionalHeaders?: Record<string, string> | null,
 ) {
     return _responseBody(JSONResponseBackend, errCode, json, response,
         log, additionalHeaders);
@@ -581,7 +581,7 @@ export function responseJSONBody(
  */
 export function responseNoBody(
     errCode: ArsenalError | Error | null,
-    resHeaders: { [key: string]: string } | null,
+    resHeaders: Record<string, string> | null,
     response: http.ServerResponse,
     httpCode = 200,
     log: RequestLogger,
@@ -607,8 +607,8 @@ export function responseNoBody(
  */
 export function responseContentHeaders(
     errCode: ArsenalError | Error | null,
-    overrideParams: { [key: string]: string },
-    resHeaders: { [key: string]: string },
+    overrideParams: Record<string, string>,
+    resHeaders: Record<string, string>,
     response: http.ServerResponse,
     log: RequestLogger,
 ) {
@@ -648,8 +648,8 @@ export function responseContentHeaders(
  */
 export function responseStreamData(
     errCode: ArsenalError | Error | null,
-    overrideParams: { [key: string]: string },
-    resHeaders: { [key: string]: string },
+    overrideParams: Record<string, string>,
+    resHeaders: Record<string, string>,
     dataLocations: { size: string | number }[],
     retrieveDataParams: any,
     response: http.ServerResponse,
@@ -707,7 +707,7 @@ export function streamUserErrorPage(
     dataLocations: { size: string | number }[],
     retrieveDataParams: any,
     response: http.ServerResponse,
-    corsHeaders: { [key: string]: string },
+    corsHeaders: Record<string, string>,
     log: RequestLogger,
 ) {
     let error: ArsenalError;
@@ -739,7 +739,7 @@ export function errorHtmlResponse(
     userErrorPageFailure: boolean,
     bucketName: string,
     response: http.ServerResponse,
-    corsHeaders: { [key: string]: string } | null,
+    corsHeaders: Record<string, string> | null,
     log: RequestLogger,
 ) {
     let error;
@@ -810,7 +810,7 @@ export function errorHtmlResponse(
 export function errorHeaderResponse(
     err: ArsenalError | Error,
     response: http.ServerResponse,
-    corsHeaders: { [key: string]: string },
+    corsHeaders: Record<string, string>,
     log: RequestLogger,
 ) {
     let error: ArsenalError;
@@ -872,7 +872,7 @@ export function redirectRequest(
     encrypted: boolean,
     response: http.ServerResponse,
     hostHeader: string,
-    corsHeaders: { [key: string]: string },
+    corsHeaders: Record<string, string>,
     log: RequestLogger,
 ) {
     const { justPath, redirectLocationHeader, hostName, protocol,
@@ -945,7 +945,7 @@ export function redirectRequestOnError(
     dataLocations: { size: string | number }[] | null,
     retrieveDataParams: any,
     response: http.ServerResponse,
-    corsHeaders: { [key: string]: string },
+    corsHeaders: Record<string, string>,
     log: RequestLogger,
 ) {
     response.setHeader('Location', routingInfo.location);

@@ -1,6 +1,6 @@
 import assert from 'assert';
 
-import { RequestLogger } from 'werelogs';
+import type { RequestLogger } from 'werelogs';
 
 import errors, { errorInstances } from '../errors';
 import routeGET from './routes/routeGET';

@@ -1,4 +1,4 @@
-import { RequestLogger } from 'werelogs';
+import type { RequestLogger } from 'werelogs';
 import errors from '../../errors';
 import * as constants from '../../constants';
 import algoCheck from './algoCheck';
@@ -13,7 +13,7 @@ export const PRE_SIGN_URL_EXPIRY = process.env.PRE_SIGN_URL_EXPIRY ?
 export function check(
     request: any,
     log: RequestLogger,
-    data: { [key: string]: string },
+    data: Record<string, string>,
 ): AuthResult<AuthV2RequestParams> {
     log.trace('running query auth check');
     if (request.method === 'POST') {

@@ -1,5 +1,6 @@
 import { parseString } from 'xml2js';
-import errors, { ArsenalError, errorInstances } from '../errors';
+import errors, { errorInstances } from '../errors';
+import type { ArsenalError } from '../errors';
 import * as werelogs from 'werelogs';
 
 /*
