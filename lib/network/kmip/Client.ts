@@ -145,7 +145,7 @@ function _queryServerInformation(client: any, logger: werelogs.Logger, cb: any) 
         client._setVendorIdentification(
             response.lookup(searchFilter.vendorIdentification)[0]);
         client._setServerInformation(
-            JSON.stringify(response.lookup(searchFilter.serverInformation)[0]));
+            response.lookup(searchFilter.serverInformation)[0]);
 
         logger.info('KMIP Server identified',
             { vendorIdentification: client.vendorIdentification,
