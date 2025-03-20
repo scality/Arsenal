@@ -37,6 +37,23 @@ describe('Errors: ', () => {
         });
     });
 
+    it('should use the original stack trace with customizeDescription', () => {
+        const err = errors.AccessDenied;
+        function thisShouldNotAppearInStackTrace() {
+            return err.customizeDescription('custom');
+        }
+        const errCustom = thisShouldNotAppearInStackTrace();
+        expect(errCustom.stack).toBe(err.stack);
+    });
+
+    it('should not use the original stack trace of pre instanciated errors', () => {
+        function makeErr() {
+            return errorInstances.AccessDenied.customizeDescription('custom');
+        }
+        const errCustom = makeErr();
+        expect(errCustom.stack).toMatch(/makeErr/);
+    });
+
     it('errors.AccessDenied.is should be the same instance for perf', () => {
         const first = errors.AccessDenied;
         const second = errors.AccessDenied;

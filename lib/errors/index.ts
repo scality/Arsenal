@@ -116,7 +116,11 @@ export class ArsenalError extends Error {
     customizeDescription(description: string): ArsenalError {
         const type = this.#type;
         const code = this.#code;
-        return new ArsenalError(type, code, description);
+        const err = new ArsenalError(type, code, description);
+        if (this.stack) {
+            err.stack = this.stack;
+        }
+        return err;
     }
 
     /** Used to determine the error type. Example: error.is.InternalError */
@@ -176,6 +180,8 @@ export class ArsenalError extends Error {
                 const error = value[1];
                 const { code, description } = error;
                 const instance = new ArsenalError(name, code, description);
+                // stack trace created at startup instead of call time, not useful
+                delete instance.stack;
                 Object.defineProperty(errors, name, { value: instance });
             });
             return errors as Errors;
