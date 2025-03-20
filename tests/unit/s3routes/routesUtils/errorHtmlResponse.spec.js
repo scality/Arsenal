@@ -1,6 +1,6 @@
 const http = require('http');
 const werelogs = require('werelogs');
-const { default: errors } = require('../../../../lib/errors');
+const { default: errors, errorInstances } = require('../../../../lib/errors');
 const { errorHtmlResponse } = require('../../../../lib/s3routes/routesUtils');
 const logger = new werelogs.Logger('ErrorHtmlResponse', 'debug', 'debug');
 const log = logger.newRequestLogger();
@@ -57,7 +57,7 @@ describe('errorHtmlResponse', () => {
 
         errorHtmlResponse(err, userErrorPageFailure, bucketName, response, corsHeaders, log);
 
-        const internalError = errors.InternalError.customizeDescription('Some error occurred');
+        const internalError = errorInstances.InternalError.customizeDescription('Some error occurred');
 
         const expectedHtml = [
             '<html>',

@@ -2,7 +2,7 @@ const http = require('http');
 const werelogs = require('werelogs');
 const { StatsClient } = require('../../../lib/metrics');
 const { routesUtils } = require('../../../lib/s3routes');
-const { ArsenalError, default: errors } = require('../../../lib/errors');
+const { ArsenalError, errorInstances } = require('../../../lib/errors');
 const { default: routeDELETE } = require('../../../lib/s3routes/routes/routeDELETE');
 
 const logger = new werelogs.Logger('routeDelete', 'debug', 'debug');
@@ -30,7 +30,7 @@ describe('routeDELETE', () => {
 
         routeDELETE(request, response, api, log, statsClient);
 
-        const err = errors.InvalidRequest.customizeDescription('A key must be specified');
+        const err = errorInstances.InvalidRequest.customizeDescription('A key must be specified');
         expect(routesUtils.responseNoBody).toHaveBeenCalledWith(
             err, null, response, 200, log,
         );

@@ -1,6 +1,6 @@
 const http = require('http');
 const werelogs = require('werelogs');
-const { default: errors } = require('../../../../lib/errors');
+const { default: errors, errorInstances } = require('../../../../lib/errors');
 const { JSONResponseBackend } = require('../../../../lib/s3routes/routesUtils');
 const logger = new werelogs.Logger('JSONResponseBackend', 'debug', 'debug');
 const log = logger.newRequestLogger();
@@ -71,7 +71,7 @@ describe('JSONResponseBackend', () => {
 
             JSONResponseBackend.errorResponse(errCode, response, log);
 
-            const internalError = errors.InternalError.customizeDescription('Some error occurred');
+            const internalError = errorInstances.InternalError.customizeDescription('Some error occurred');
 
             const expectedJSON = JSON.stringify({
                 code: internalError.message,

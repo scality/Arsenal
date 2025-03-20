@@ -295,7 +295,7 @@ describe('v4 headerAuthCheck', () => {
             const res = headerAuthCheck(alteredRequest, log);
             clock.uninstall();
             assert.deepStrictEqual(res.err,
-                errors.InvalidArgument.customizeDescription(
+                errorInstances.InvalidArgument.customizeDescription(
                     'invalid proxy_path header'));
             done();
         });

@@ -4,6 +4,7 @@ const assert = require('assert');
 const fakeTimers = require('@sinonjs/fake-timers');
 
 const errors = require('../../../../lib/errors').default;
+const errorInstances = require('../../../../lib/errors').errorInstances;
 
 const createAlteredRequest = require('../../helpers').createAlteredRequest;
 const queryAuthCheck = require('../../../../lib/auth/v4/queryAuthCheck').check;
@@ -251,7 +252,7 @@ describe('v4 queryAuthCheck', () => {
             const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
             clock.uninstall();
             assert.deepStrictEqual(res.err,
-                errors.InvalidArgument.customizeDescription(
+                errorInstances.InvalidArgument.customizeDescription(
                     'invalid proxy_path header'));
             done();
         });
