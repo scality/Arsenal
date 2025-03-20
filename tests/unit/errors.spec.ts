@@ -75,7 +75,7 @@ describe('Errors: ', () => {
         const second = errors.AccessDenied;
         expect(first).not.toBe(second);
         expect(first.is).toBe(second.is);
-    })
+    });
 
     it ('errors.ok should return the same instance for perf', () => {
         const first = errors.ok;
