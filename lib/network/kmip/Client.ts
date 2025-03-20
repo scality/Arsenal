@@ -7,6 +7,7 @@ import TlsTransport from './transport/tls';
 import KMIP from '.';
 import * as werelogs from 'werelogs';
 import { arsenalErrorKMIP } from '../utils'
+import { KMSInterface } from '../KMSInterface';
 
 const CRYPTOGRAPHIC_OBJECT_TYPE = 'Symmetric Key';
 const CRYPTOGRAPHIC_ALGORITHM = 'AES';
@@ -213,8 +214,7 @@ function _queryOperationsAndObjects(client: any, logger: werelogs.Logger, cb: an
     });
 }
 
-
-export default class Client {
+export default class Client implements KMSInterface {
     options: any;
     vendorIdentification: string;
     serverInformation: any[];
