@@ -1,4 +1,4 @@
-import errors from '../errors';
+import { errorInstances } from '../errors';
 
 /**
  * Normalize errors according to arsenal definitions with a custom prefix
@@ -8,7 +8,7 @@ import errors from '../errors';
  */
 function _normalizeArsenalError(err: string | Error, messagePrefix: string) {
     if (typeof err === 'string') {
-        return errors.InternalError
+        return errorInstances.InternalError
             .customizeDescription(`${messagePrefix} ${err}`);
     } else if (
         err instanceof Error ||
@@ -17,10 +17,10 @@ function _normalizeArsenalError(err: string | Error, messagePrefix: string) {
         // @ts-expect-error
         (err && typeof err.message === 'string')
     ) {
-        return errors.InternalError
+        return errorInstances.InternalError
             .customizeDescription(`${messagePrefix} ${err.message}`);
     }
-    return errors.InternalError
+    return errorInstances.InternalError
         .customizeDescription(`${messagePrefix} Unspecified error`);
 }
 

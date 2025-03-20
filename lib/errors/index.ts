@@ -36,6 +36,16 @@ const createIs = (type: Name): Is => {
     return new Proxy(final, { get });
 };
 
+/**
+ * Is helper object for each of the 189 errors.
+ * It makes 189 * 189 = 35721 booleans in heap at startup.
+ * Adds +1.3 MB of js objects but greatly increase speed when using errors
+ * And avoid gc.
+ */
+const isPreCreated = Object.fromEntries(
+    (Object.keys(rawErrors) as Name[]).map(key => [key, createIs(key)])
+) as Record<Name, Is>;
+
 export class ArsenalError extends Error {
     /** HTTP status code. Example: 401, 403, 500, ... */
     #code: number;
@@ -52,7 +62,7 @@ export class ArsenalError extends Error {
         this.#code = code;
         this.#description = description;
         this.#type = type;
-        this.#is = createIs(type);
+        this.#is = isPreCreated[type];
 
         // This restores the old behavior of errors, to make sure they're now
         // backward-compatible. Fortunately it's handled by TS, but it cannot
@@ -106,7 +116,11 @@ export class ArsenalError extends Error {
     customizeDescription(description: string): ArsenalError {
         const type = this.#type;
         const code = this.#code;
-        return new ArsenalError(type, code, description);
+        const err = new ArsenalError(type, code, description);
+        if (this.stack) {
+            err.stack = this.stack;
+        }
+        return err;
     }
 
     /** Used to determine the error type. Example: error.is.InternalError */
@@ -139,12 +153,48 @@ export class ArsenalError extends Error {
             const error = value[1];
             const { code, description } = error;
             const get = () => new ArsenalError(name, code, description);
-            Object.defineProperty(errors, name, { get });
+            // Perf improvement for the ok error.
+            // As it's used mainly for HTTP response using the code and message only.
+            // Return the same instance as no stack trace or other property are needed
+            if (name === 'ok') {
+                Object.defineProperty(errors, name, { value: get() });
+            } else {
+                // Ideally for other errors caching the instance outside request handling
+                // would be beneficial if .customizeDescription is used or if
+                // no stack trace or additional field is required
+                Object.defineProperty(errors, name, { get });
+            }
         });
-        return errors as Errors
+        return errors as Errors;
     }
+
+        /**
+         * Like errors but generate singleton instances of errors
+         * To use before .customizeDescription to avoid intermediate instance.
+         * Adds +0.2 MB in heap at start
+         */
+        static errorInstances() {
+            const errors = {}
+            Object.entries(rawErrors).forEach((value) => {
+                const name = value[0] as Name;
+                const error = value[1];
+                const { code, description } = error;
+                const instance = new ArsenalError(name, code, description);
+                // stack trace created at startup instead of call time, not useful
+                delete instance.stack;
+                Object.defineProperty(errors, name, { value: instance });
+            });
+            return errors as Errors;
+        }
 }
 
 /** Mapping of all possible Errors.
  * Use them with errors[error].customizeDescription for any customization. */
 export default ArsenalError.errors();
+
+/**
+ * Same as errors but already instanciated.
+ * To be used like errorInstances[error].customizeDescription or errorInstances.ok.code.
+ * Avoid intermediate instance
+ */
+export const errorInstances = ArsenalError.errorInstances();

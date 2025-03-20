@@ -1,5 +1,5 @@
 import { Logger } from 'werelogs';
-import errors from '../../errors';
+import errors, { errorInstances } from '../../errors';
 import * as constants from '../../constants';
 import constructStringToSign from './constructStringToSign';
 import checkRequestExpiry from './checkRequestExpiry';
@@ -22,7 +22,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
     if (!timestamp) {
         log.debug('missing or invalid date header',
         { method: 'auth/v2/headerAuthCheck.check' });
-        return { err: errors.AccessDenied.
+        return { err: errorInstances.AccessDenied.
           customizeDescription('Authentication requires a valid Date or ' +
           'x-amz-date header') };
     }
