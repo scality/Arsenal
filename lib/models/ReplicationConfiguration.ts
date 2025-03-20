@@ -4,7 +4,7 @@ import UUID from 'uuid';
 import { RequestLogger } from 'werelogs';
 
 import escapeForXml from '../s3middleware/escapeForXml';
-import errors from '../errors';
+import errors, { errorInstances } from '../errors';
 import { isValidBucketName } from '../s3routes/routesUtils';
 import { Status } from './LifecycleRule';
 
@@ -196,20 +196,20 @@ export default class ReplicationConfiguration {
         const role: string = parsedRole[0];
         const rolesArr = role.split(',');
         if (this._hasScalityDestination && rolesArr.length !== 2) {
-            return errors.InvalidArgument.customizeDescription(
+            return errorInstances.InvalidArgument.customizeDescription(
                 'Invalid Role specified in replication configuration: ' +
                     'Role must be a comma-separated list of two IAM roles'
             );
         }
         if (!this._hasScalityDestination && rolesArr.length > 1) {
-            return errors.InvalidArgument.customizeDescription(
+            return errorInstances.InvalidArgument.customizeDescription(
                 'Invalid Role specified in replication configuration: ' +
                     'Role may not contain a comma separator'
             );
         }
         const invalidRole = rolesArr.find((r) => !this._isValidRoleARN(r));
         if (invalidRole !== undefined) {
-            return errors.InvalidArgument.customizeDescription(
+            return errorInstances.InvalidArgument.customizeDescription(
                 'Invalid Role specified in replication configuration: ' +
                     `'${invalidRole}'`
             );
@@ -228,7 +228,7 @@ export default class ReplicationConfiguration {
             return errors.MalformedXML;
         }
         if (Rule.length > MAX_RULES) {
-            return errors.InvalidRequest.customizeDescription(
+            return errorInstances.InvalidRequest.customizeDescription(
                 'Number of defined replication rules cannot exceed 1000'
             );
         }
@@ -283,7 +283,7 @@ export default class ReplicationConfiguration {
             return errors.MalformedXML;
         }
         if (prefix.length > 1024) {
-            return errors.InvalidArgument.customizeDescription(
+            return errorInstances.InvalidArgument.customizeDescription(
                 'Rule prefix ' +
                     'cannot be longer than maximum allowed key length of 1024'
             );
@@ -294,7 +294,7 @@ export default class ReplicationConfiguration {
         for (let i = 0; i < this._configPrefixes.length; i++) {
             const used = this._configPrefixes[i];
             if (prefix.startsWith(used) || used.startsWith(prefix)) {
-                return errors.InvalidRequest.customizeDescription(
+                return errorInstances.InvalidRequest.customizeDescription(
                     'Found ' + `overlapping prefixes '${used}' and '${prefix}'`
                 );
             }
@@ -310,13 +310,13 @@ export default class ReplicationConfiguration {
     _parseID(rule: XMLRule) {
         const id = rule.ID && rule.ID[0];
         if (id && id.length > RULE_ID_LIMIT) {
-            return errors.InvalidArgument.customizeDescription(
+            return errorInstances.InvalidArgument.customizeDescription(
                 'Rule Id cannot be greater than 255'
             );
         }
         // Each ID in a list of rules must be unique.
         if (id && this._configIDs.includes(id)) {
-            return errors.InvalidRequest.customizeDescription(
+            return errorInstances.InvalidRequest.customizeDescription(
                 'Rule Id must be unique'
             );
         }
@@ -400,7 +400,7 @@ export default class ReplicationConfiguration {
         }
         const bucketARN = parsedBucketARN[0];
         if (!bucketARN) {
-            return errors.InvalidArgument.customizeDescription(
+            return errorInstances.InvalidArgument.customizeDescription(
                 'Destination bucket cannot be null or empty'
             );
         }
@@ -412,18 +412,18 @@ export default class ReplicationConfiguration {
             arr[3] === '' &&
             arr[4] === '';
         if (!isValidARN) {
-            return errors.InvalidArgument.customizeDescription(
+            return errorInstances.InvalidArgument.customizeDescription(
                 'Invalid bucket ARN'
             );
         }
         if (!isValidBucketName(arr[5], [])) {
-            return errors.InvalidArgument.customizeDescription(
+            return errorInstances.InvalidArgument.customizeDescription(
                 'The specified bucket is not valid'
             );
         }
         // We can replicate objects only to one destination bucket.
         if (this._destination && this._destination !== bucketARN) {
-            return errors.InvalidRequest.customizeDescription(
+            return errorInstances.InvalidRequest.customizeDescription(
                 'The destination bucket must be same for all rules'
             );
         }

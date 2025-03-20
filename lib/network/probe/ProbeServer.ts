@@ -1,7 +1,7 @@
 import * as http from 'http';
 import httpServer from '../http/server';
 import * as werelogs from 'werelogs';
-import errors from '../../errors';
+import { errorInstances } from '../../errors';
 
 export const DEFAULT_LIVE_ROUTE = '/_/live';
 export const DEFAULT_READY_ROUTE = '/_/ready';
@@ -78,12 +78,12 @@ export class ProbeServer extends httpServer {
         log.debug('request received', { method: req.method, url: req.url });
 
         if (req.method !== 'GET') {
-            errors.MethodNotAllowed.writeResponse(res);
+            errorInstances.MethodNotAllowed.writeResponse(res);
             return;
         }
 
         if (!this._handlers.has(req.url!)) {
-            errors.InvalidURI.writeResponse(res);
+            errorInstances.InvalidURI.writeResponse(res);
             return;
         }
 

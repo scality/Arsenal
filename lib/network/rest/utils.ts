@@ -1,4 +1,4 @@
-import errors from '../../errors';
+import { errorInstances } from '../../errors';
 import * as constants from '../../constants';
 import * as url from 'url';
 const passthroughPrefixLength = constants.passthroughFileURL.length;
@@ -19,7 +19,7 @@ export function explodePath(path: string) {
                 pathMatch[3] : undefined),
         };
     }
-    throw errors.InvalidURI.customizeDescription('malformed URI');
+    throw errorInstances.InvalidURI.customizeDescription('malformed URI');
 }
 
 /**
@@ -39,11 +39,11 @@ export function parseURL(urlStr: string, expectKey: boolean) {
     const pathInfo = explodePath(decodeURI(urlObj.path!));
     if ((pathInfo.service !== constants.dataFileURL)
         && (pathInfo.service !== constants.passthroughFileURL)) {
-        throw errors.InvalidAction.customizeDescription(
+        throw errorInstances.InvalidAction.customizeDescription(
             `unsupported service '${pathInfo.service}'`);
     }
     if (expectKey && pathInfo.key === undefined) {
-        throw errors.MissingParameter.customizeDescription(
+        throw errorInstances.MissingParameter.customizeDescription(
             'URL is missing key');
     }
     if (!expectKey && pathInfo.key !== undefined) {
@@ -53,7 +53,7 @@ export function parseURL(urlStr: string, expectKey: boolean) {
         // atomicity of the update (we would just remove the old
         // object when the new one has been written entirely in this
         // case, saving a request over an equivalent PUT + DELETE).
-        throw errors.InvalidURI.customizeDescription(
+        throw errorInstances.InvalidURI.customizeDescription(
             'PUT url cannot contain a key');
     }
     return pathInfo;

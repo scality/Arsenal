@@ -1,5 +1,5 @@
 import * as rawErrors from '../../lib/errors/arsenalErrors';
-import { errors } from '../../index';
+import { errors, errorInstances } from '../../index';
 import { ArsenalError } from '../../lib/errors';
 
 describe('Errors: ', () => {
@@ -40,17 +40,61 @@ describe('Errors: ', () => {
 
     it('can be used as an http response', () => {
         // @ts-expect-errors
-        errors.NoSuchEntity.writeResponse({
+        errorInstances.NoSuchEntity.writeResponse({
             writeHead(statusCode: number) {
                 expect(statusCode).toEqual(404);
                 return this;
             },
             end(msg: any) {
-                const asStr = errors.NoSuchEntity.toString();
+                const asStr = errorInstances.NoSuchEntity.toString();
                 expect(msg).toEqual(asStr);
                 return this;
             },
         });
+    });
+
+    it('should use the original stack trace with customizeDescription', () => {
+        const err = errors.AccessDenied;
+        function thisShouldNotAppearInStackTrace() {
+            return err.customizeDescription('custom');
+        }
+        const errCustom = thisShouldNotAppearInStackTrace();
+        expect(errCustom.stack).toBe(err.stack);
+    });
+
+    it('should not use the original stack trace of pre instanciated errors', () => {
+        function makeErr() {
+            return errorInstances.AccessDenied.customizeDescription('custom');
+        }
+        const errCustom = makeErr();
+        expect(errCustom.stack).toMatch(/makeErr/);
+    });
+
+    it('errors.AccessDenied.is should be the same instance for perf', () => {
+        const first = errors.AccessDenied;
+        const second = errors.AccessDenied;
+        expect(first).not.toBe(second);
+        expect(first.is).toBe(second.is);
+    })
+
+    it ('errors.ok should return the same instance for perf', () => {
+        const first = errors.ok;
+        const second = errors.ok;
+        expect(first).toBe(second);
+        // don't modify instance, the use case is for errors.ok.[code | message]
+        Error.captureStackTrace(first);
+        // don't use stacktrace of ok error
+        expect(first.stack).toEqual(second.stack);
+    });
+
+    it ('errorInstances should return the same instance for perf', () => {
+        const first = errorInstances.AccessDenied;
+        const second = errorInstances.AccessDenied;
+        expect(first).toBe(second);
+        // don't modify, the use case is for errorInstance.x.[customizeDescription | code | message]
+        Error.captureStackTrace(first);
+        // don't use errorInstances if you need stacktrace
+        expect(first.stack).toEqual(second.stack);
     });
 });
 

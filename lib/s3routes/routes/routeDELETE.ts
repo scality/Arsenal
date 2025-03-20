@@ -1,7 +1,7 @@
 import { RequestLogger } from 'werelogs';
 
 import * as routesUtils from '../routesUtils';
-import errors, { ArsenalError } from '../../errors';
+import { ArsenalError, errorInstances } from '../../errors';
 import StatsClient from '../../metrics/StatsClient';
 import * as http from 'http';
 
@@ -24,7 +24,7 @@ export default function routeDELETE(
     if (query?.uploadId) {
         if (objectKey === undefined) {
             const message = 'A key must be specified';
-            const err = errors.InvalidRequest.customizeDescription(message);
+            const err = errorInstances.InvalidRequest.customizeDescription(message);
             return routesUtils.responseNoBody(err, null, response, 200, log);
         }
         return call('multipartDelete');
