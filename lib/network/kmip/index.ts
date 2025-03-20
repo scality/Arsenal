@@ -303,12 +303,18 @@ export default class KMIP {
                     KMIP.Structure('Request Payload', payload),
                 ])])]);
         const encodedMessage = this._encodeMessage(message);
+        const startDate = Date.now();
         this.transport.send(
             logger, encodedMessage,
             (err, conversation, rawResponse) => {
+                const kmipLog = {
+                    host: this.options.transport.tls.host,
+                    latencyMs: Date.now() - startDate,
+                    op: operation,
+                };
                 if (err) {
                     logger.error('KMIP::request: Failed to send message',
-                        { error: err });
+                        { error: err, kmip: kmipLog });
                     return cb(err);
                 }
                 const response = this._decodeMessage(logger, rawResponse);
@@ -327,7 +333,7 @@ export default class KMIP {
                     this.transport.abortPipeline(conversation);
                     const error = Error('Invalid batch item ID returned');
                     logger.error('KMIP::request: failed',
-                        { resultUniqueBatchItemID, uuid, error });
+                        { resultUniqueBatchItemID, uuid, error, kmip: kmipLog });
                     return cb(error);
                 }
                 if (performedOperation !== operation) {
@@ -338,7 +344,7 @@ export default class KMIP {
                         { got: performedOperation,
                             expected: operation });
                     logger.error('KMIP::request: Operation mismatch',
-                        { error });
+                        { error, kmip: kmipLog });
                     return cb(error);
                 }
                 if (resultStatus !== 'Success') {
@@ -356,9 +362,10 @@ export default class KMIP {
                             resultMessage });
                     logger.error('KMIP::request: request failed',
                         { error, resultStatus,
-                            resultReason, resultMessage });
+                            resultReason, resultMessage, kmip: kmipLog });
                     return cb(error);
                 }
+                logger.info('KMIP::success', { kmip: kmipLog });
                 return cb(null, response);
             });
     }

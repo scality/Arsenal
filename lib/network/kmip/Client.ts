@@ -78,6 +78,7 @@ function _arsenalError(err: string | Error) {
  * @param cb - The callback triggered after the negotiation.
  */
 function _negotiateProtocolVersion(client: any, logger: werelogs.Logger, cb: any) {
+    const startDate = Date.now();
     return client.kmip.request(logger, 'Discover Versions', [
         KMIP.Structure('Protocol Version', [
             KMIP.Integer('Protocol Version Major', 1),
@@ -92,10 +93,14 @@ function _negotiateProtocolVersion(client: any, logger: werelogs.Logger, cb: any
             KMIP.Integer('Protocol Version Minor', 2),
         ]),
     ], (err, response) => {
+        const kmipLog = {
+            host: client.host,
+            latencyMs: Date.now() - startDate
+        };
         if (err) {
             const error = _arsenalError(err);
             logger.error('KMIP::negotiateProtocolVersion',
-                { error,
+                { error, kmip: kmipLog,
                     vendorIdentification: client.vendorIdentification });
             return cb(error);
         }
@@ -107,7 +112,7 @@ function _negotiateProtocolVersion(client: any, logger: werelogs.Logger, cb: any
             majorVersions.length !== minorVersions.length) {
             const error = _arsenalError('No suitable protocol version');
             logger.error('KMIP::negotiateProtocolVersion',
-                { error,
+                { error, kmip: kmipLog,
                     vendorIdentification: client.vendorIdentification });
             return cb(error);
         }
@@ -124,13 +129,18 @@ function _negotiateProtocolVersion(client: any, logger: werelogs.Logger, cb: any
  * @param cb - The callback triggered after the extension mapping
  */
 function _mapExtensions(client: any, logger: werelogs.Logger, cb: any) {
+    const startDate = Date.now();
     return client.kmip.request(logger, 'Query', [
         KMIP.Enumeration('Query Function', 'Query Extension Map'),
     ], (err, response) => {
+        const kmipLog = {
+            host: client.host,
+            latencyMs: Date.now() - startDate
+        };
         if (err) {
             const error = _arsenalError(err);
             logger.error('KMIP::mapExtensions',
-                { error,
+                { error, kmip: kmipLog,
                     vendorIdentification: client.vendorIdentification });
             return cb(error);
         }
@@ -139,7 +149,7 @@ function _mapExtensions(client: any, logger: werelogs.Logger, cb: any) {
         if (extensionNames.length !== extensionTags.length) {
             const error = _arsenalError('Inconsistent extension list');
             logger.error('KMIP::mapExtensions',
-                { error,
+                { error, kmip: kmipLog,
                     vendorIdentification: client.vendorIdentification });
             return cb(error);
         }
@@ -157,13 +167,18 @@ function _mapExtensions(client: any, logger: werelogs.Logger, cb: any) {
  * @param cb - The callback triggered after the information discovery
  */
 function _queryServerInformation(client: any, logger: werelogs.Logger, cb: any) {
+    const startDate = Date.now();
     client.kmip.request(logger, 'Query', [
         KMIP.Enumeration('Query Function', 'Query Server Information'),
     ], (err, response) => {
+        const kmipLog = {
+            host: client.host,
+            latencyMs: Date.now() - startDate
+        };
         if (err) {
             const error = _arsenalError(err);
             logger.warn('KMIP::queryServerInformation',
-                { error });
+                { error, kmip: kmipLog });
             /* no error returned, caller can keep going */
             return cb();
         }
@@ -175,7 +190,8 @@ function _queryServerInformation(client: any, logger: werelogs.Logger, cb: any) 
         logger.info('KMIP Server identified',
             { vendorIdentification: client.vendorIdentification,
                 serverInformation: client.serverInformation,
-                negotiatedProtocolVersion: client.kmip.protocolVersion });
+                negotiatedProtocolVersion: client.kmip.protocolVersion,
+                kmip: kmipLog });
         return cb();
     });
 }
@@ -191,14 +207,19 @@ function _queryServerInformation(client: any, logger: werelogs.Logger, cb: any) 
  * @param cb - The callback triggered after the information discovery
  */
 function _queryOperationsAndObjects(client: any, logger: werelogs.Logger, cb: any) {
+    const startDate = Date.now();
     return client.kmip.request(logger, 'Query', [
         KMIP.Enumeration('Query Function', 'Query Operations'),
         KMIP.Enumeration('Query Function', 'Query Objects'),
     ], (err, response) => {
+        const kmipLog = {
+            host: client.host,
+            latencyMs: Date.now() - startDate
+        };
         if (err) {
             const error = _arsenalError(err);
             logger.error('KMIP::queryOperationsAndObjects',
-                { error,
+                { error, kmip: kmipLog,
                     vendorIdentification: client.vendorIdentification });
             return cb(error);
         }
@@ -229,10 +250,12 @@ function _queryOperationsAndObjects(client: any, logger: werelogs.Logger, cb: an
                 supportsEncrypt, supportsDecrypt,
                 supportsActivate, supportsRevoke,
                 supportsCreate, supportsDestroy,
-                supportsQuery, supportsSymmetricKeys });
+                supportsQuery, supportsSymmetricKeys,
+                kmip: kmipLog });
         } else {
             logger.info('KMIP Server provides the necessary feature set',
-                { vendorIdentification: client.vendorIdentification });
+                { vendorIdentification: client.vendorIdentification,
+                    kmip: kmipLog });
         }
         return cb();
     });
@@ -244,6 +267,7 @@ export default class Client {
     vendorIdentification: string;
     serverInformation: any[];
     kmip: KMIP;
+    host: string;
 
     /**
      * Construct a high level KMIP driver suitable for cloudserver
@@ -280,6 +304,7 @@ export default class Client {
         CodecClass: any,
         TransportClass: any,
     ) {
+        this.host = options.kmip.transport.tls.host;
         this.options = options.kmip.client || {};
         this.vendorIdentification = '';
         this.serverInformation = [];
@@ -592,20 +617,23 @@ export default class Client {
     }
 
     healthcheck(logger, cb) {
+        const kmipLog = { host: this.host };
         // the bucket does not have to exist, just passing a common bucket name here
         this.createBucketKey('kmip-healthcheck-test-bucket', logger, (err, bucketKeyId) => {
             if (err) {
                 logger.error('KMIP::healthcheck: failure to create a test bucket key', {
-                    error: err,
+                    error: err, kmip: kmipLog,
                 });
                 return cb(err);
             }
-            logger.debug('KMIP::healthcheck: success creating a test bucket key');
+            logger.debug('KMIP::healthcheck: success creating a test bucket key',
+                { kmip: kmipLog });
             this.destroyBucketKey(bucketKeyId, logger, err => {
                 if (err) {
                     logger.error('KMIP::healthcheck: failure to remove the test bucket key', {
                         bucketKeyId,
                         error: err,
+                        kmip: kmipLog,
                     });
                 }
             });
