@@ -1,6 +1,6 @@
 import { Logger } from 'werelogs';
 import * as constants from '../../constants';
-import errors from '../../errors';
+import errors, { errorInstances } from '../../errors';
 import constructStringToSign from './constructStringToSign';
 import { checkTimeSkew, convertAmzTimeToMs } from './timeUtils';
 import { validateCredentials, extractQueryParams } from './validateInputs';
@@ -62,7 +62,7 @@ export function check(request: any, log: Logger, data: { [key: string]: string }
             proxyPath = decodeURIComponent(request.headers.proxy_path);
         } catch (err) {
             log.debug('invalid proxy_path header', { proxyPath });
-            return { err: errors.InvalidArgument.customizeDescription(
+            return { err: errorInstances.InvalidArgument.customizeDescription(
                 'invalid proxy_path header') };
         }
     }

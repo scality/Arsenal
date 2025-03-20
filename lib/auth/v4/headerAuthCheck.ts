@@ -138,7 +138,7 @@ export function check(
             proxyPath = decodeURIComponent(request.headers.proxy_path);
         } catch (err) {
             log.debug('invalid proxy_path header', { proxyPath, err });
-            return { err: errors.InvalidArgument.customizeDescription(
+            return { err: errorInstances.InvalidArgument.customizeDescription(
                 'invalid proxy_path header') };
         }
     }

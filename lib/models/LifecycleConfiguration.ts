@@ -540,10 +540,10 @@ export default class LifecycleConfiguration {
         const { days, field, ancestor } = params;
         if (days < 0) {
             const msg = `'${field}' in ${ancestor} action must be nonnegative`;
-            return errors.InvalidArgument.customizeDescription(msg);
+            return errorInstances.InvalidArgument.customizeDescription(msg);
         }
         if (days > MAX_DAYS) {
-            return errors.MalformedXML.customizeDescription(
+            return errorInstances.MalformedXML.customizeDescription(
                 `'${field}' in ${ancestor} action must not exceed ${MAX_DAYS}`);
         }
         return null;
@@ -572,12 +572,12 @@ export default class LifecycleConfiguration {
             // the StorageClass does not conform to AWS specs.
             const list = `'${this._storageClasses.join("', '")}'`;
             const msg = `'StorageClass' must be one of ${list}`;
-            return errors.MalformedXML.customizeDescription(msg);
+            return errorInstances.MalformedXML.customizeDescription(msg);
         }
         if (usedStorageClasses.includes(storageClass)) {
             const msg = `'StorageClass' must be different for '${ancestor}' ` +
                 `actions in same 'Rule' with ${this._getRuleFilterDesc(rule)}`;
-            return errors.InvalidRequest.customizeDescription(msg);
+            return errorInstances.InvalidRequest.customizeDescription(msg);
         }
         return null;
     }
@@ -621,7 +621,7 @@ export default class LifecycleConfiguration {
                 `StorageClass '${storageClass}' for ${filterMsg} must be at ` +
                 `least one day apart from ${filterMsg} in the 'Transition' ` +
                 `action for StorageClass '${compareStorageClass}'`;
-            return errors.InvalidArgument.customizeDescription(msg);
+            return errorInstances.InvalidArgument.customizeDescription(msg);
         }
         return null;
     }
@@ -647,7 +647,7 @@ export default class LifecycleConfiguration {
             const msg = "Found mixed 'Date' and 'Days' based Transition " +
                 'actions in lifecycle rule for ' +
                 `${this._getRuleFilterDesc(rule)}`;
-            return errors.InvalidRequest.customizeDescription(msg);
+            return errorInstances.InvalidRequest.customizeDescription(msg);
         }
         // Transition time type cannot differ from the expiration, if provided.
         if (rule.Expiration &&
@@ -655,7 +655,7 @@ export default class LifecycleConfiguration {
             const msg = "Found mixed 'Date' and 'Days' based Expiration and " +
                 'Transition actions in lifecycle rule for ' +
                 `${this._getRuleFilterDesc(rule)}`;
-            return errors.InvalidRequest.customizeDescription(msg);
+            return errorInstances.InvalidRequest.customizeDescription(msg);
         }
         return null;
     }
