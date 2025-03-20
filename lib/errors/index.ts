@@ -137,7 +137,9 @@ export class ArsenalError extends Error {
         const metadata = new Map(this.#metadata);
         metadata.set(key, value);
         const err = new ArsenalError(type, code, description, metadata);
-        err.stack = this.stack;
+        if (this.stack) {
+            err.stack = this.stack;
+        }
         return err;
     }
 
