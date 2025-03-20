@@ -6,7 +6,7 @@ import async from 'async';
 import assert from 'assert';
 import { EventEmitter } from 'events';
 import { flattenError, reconstructError } from './utils';
-import errors, { ArsenalError } from '../../errors';
+import errors, { ArsenalError, errorInstances } from '../../errors';
 import * as jsutil from '../../jsutil';
 import { Logger } from 'werelogs';
 
@@ -438,7 +438,7 @@ export class BaseService {
                 return cb(flattenError(err));
             }
         } else {
-            return cb(errors.InvalidArgument.customizeDescription(
+            return cb(errorInstances.InvalidArgument.customizeDescription(
                 `Unknown remote call ${remoteCall} ` +
                     `in namespace ${this.namespace}`));
         }
@@ -697,7 +697,7 @@ export function RESTServer(params: { logger: Logger }) {
     const httpServer = http.createServer((req, res) => {
         if (req.method !== 'POST') {
             return sendHTTPError(
-                res, errors.MethodNotAllowed.customizeDescription(
+                res, errorInstances.MethodNotAllowed.customizeDescription(
                     'only POST requests are supported for RPC calls'));
         }
         // @ts-expect-errors
@@ -706,7 +706,7 @@ export function RESTServer(params: { logger: Logger }) {
             service => req.url === service.namespace);
         if (!matchingService) {
             return sendHTTPError(
-                res, errors.InvalidArgument.customizeDescription(
+                res, errorInstances.InvalidArgument.customizeDescription(
                     `unknown service in URL ${req.url}`));
         }
         const reqBody: any = [];
@@ -720,7 +720,7 @@ export function RESTServer(params: { logger: Logger }) {
             try {
                 const jsonReq = JSON.parse(reqBody);
                 if (!jsonReq.call) {
-                    throw errors.InvalidArgument.customizeDescription(
+                    throw errorInstances.InvalidArgument.customizeDescription(
                         'missing "call" JSON attribute');
                 }
                 const args = jsonReq.args || {};

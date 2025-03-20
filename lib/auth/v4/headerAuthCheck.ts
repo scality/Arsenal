@@ -1,5 +1,5 @@
 import { Logger } from 'werelogs';
-import errors from '../../../lib/errors';
+import errors, { errorInstances } from '../../../lib/errors';
 import * as constants from '../../constants';
 import constructStringToSign from './constructStringToSign';
 import {
@@ -94,7 +94,7 @@ export function check(
     if (!timestamp) {
         log.debug('missing or invalid date header',
             { method: 'auth/v4/headerAuthCheck.check' });
-        return { err: errors.AccessDenied.
+        return { err: errorInstances.AccessDenied.
             customizeDescription('Authentication requires a valid Date or ' +
           'x-amz-date header') };
     }
@@ -138,7 +138,7 @@ export function check(
             proxyPath = decodeURIComponent(request.headers.proxy_path);
         } catch (err) {
             log.debug('invalid proxy_path header', { proxyPath, err });
-            return { err: errors.InvalidArgument.customizeDescription(
+            return { err: errorInstances.InvalidArgument.customizeDescription(
                 'invalid proxy_path header') };
         }
     }

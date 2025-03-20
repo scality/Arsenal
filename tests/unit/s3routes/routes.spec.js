@@ -2,7 +2,7 @@ const werelogs = require('werelogs');
 const assert = require('assert');
 const sinon = require('sinon');
 const { routesUtils, routes } = require('../../../lib/s3routes');
-const { default: errors } = require('../../../lib/errors');
+const { errorInstances } = require('../../../lib/errors');
 
 const logger = new werelogs.Logger('routePut', 'debug', 'debug');
 
@@ -61,7 +61,7 @@ describe('routes', () => {
         routes(req, res, params, logger, s3config);
 
         expect(res.end.calledOnce).toBe(true);
-        expect(res.end.firstCall.args[0]).toContain(errors.MethodNotAllowed.message);
+        expect(res.end.firstCall.args[0]).toContain(errorInstances.MethodNotAllowed.message);
     });
 
     it('should return InvalidURI error for invalid URI', () => {
@@ -71,7 +71,7 @@ describe('routes', () => {
         routes(req, res, params, logger, s3config);
 
         expect(res.end.calledOnce).toBe(true);
-        expect(res.end.firstCall.args[0]).toContain(errors.InvalidURI.message);
+        expect(res.end.firstCall.args[0]).toContain(errorInstances.InvalidURI.message);
 
         routesUtils.normalizeRequest.restore();
     });
@@ -84,7 +84,7 @@ describe('routes', () => {
         routes(req, res, params, logger, s3config);
 
         expect(res.end.calledOnce).toBe(true);
-        expect(res.end.firstCall.args[0]).toContain(errors.InvalidBucketName.message);
+        expect(res.end.firstCall.args[0]).toContain(errorInstances.InvalidBucketName.message);
 
         routesUtils.isValidBucketName.restore();
     });

@@ -1,5 +1,5 @@
 import {parseStringPromise} from 'xml2js';
-import errors, {ArsenalError} from '../errors';
+import errors, {ArsenalError,errorInstances} from '../errors';
 import * as werelogs from 'werelogs';
 import {validRestoreObjectTiers} from '../constants';
 
@@ -19,29 +19,29 @@ import {validRestoreObjectTiers} from '../constants';
 function validateRestoreRequest(restoreRequest?: any) {
     if (!restoreRequest) {
         const desc = 'request xml does not contain RestoreRequest';
-        return errors.MalformedXML.customizeDescription(desc);
+        return errorInstances.MalformedXML.customizeDescription(desc);
     }
     if (!restoreRequest.Days || !restoreRequest.Days[0]) {
         const desc = 'request xml does not contain RestoreRequest.Days';
-        return errors.MalformedXML.customizeDescription(desc);
+        return errorInstances.MalformedXML.customizeDescription(desc);
     }
     // RestoreRequest.Days must be greater than or equal to 1
     const daysValue = Number.parseInt(restoreRequest.Days[0], 10);
     if (Number.isNaN(daysValue)) {
         const desc = `RestoreRequest.Days is invalid type. [${restoreRequest.Days[0]}]`;
-        return errors.MalformedXML.customizeDescription(desc);
+        return errorInstances.MalformedXML.customizeDescription(desc);
     }
     if (daysValue < 1) {
         const desc = `RestoreRequest.Days must be greater than 0. [${restoreRequest.Days[0]}]`;
-        return errors.MalformedXML.customizeDescription(desc);
+        return errorInstances.MalformedXML.customizeDescription(desc);
     }
     if (daysValue > 2147483647) {
         const desc = `RestoreRequest.Days must be less than 2147483648. [${restoreRequest.Days[0]}]`;
-        return errors.MalformedXML.customizeDescription(desc);
+        return errorInstances.MalformedXML.customizeDescription(desc);
     }
     if (restoreRequest.Tier && restoreRequest.Tier[0] && !validRestoreObjectTiers.has(restoreRequest.Tier[0])) {
         const desc = `RestoreRequest.Tier is invalid value. [${restoreRequest.Tier[0]}]`;
-        return errors.MalformedXML.customizeDescription(desc);
+        return errorInstances.MalformedXML.customizeDescription(desc);
     }
     return undefined;
 }
@@ -72,7 +72,7 @@ export async function parseRestoreRequestXml(
     }
     if (!result) {
         const desc = 'request xml is undefined or empty';
-        return cb(errors.MalformedXML.customizeDescription(desc));
+        return cb(errorInstances.MalformedXML.customizeDescription(desc));
     }
     const restoreRequest = result.RestoreRequest;
     const restoreReqError = validateRestoreRequest(restoreRequest);

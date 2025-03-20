@@ -1,7 +1,7 @@
 import assert from 'assert';
 const { v4: uuid } = require('uuid');
 
-import errors, { ArsenalError } from '../errors';
+import errors, { ArsenalError, errorInstances } from '../errors';
 import LifecycleRule from './LifecycleRule';
 import escapeForXml from '../s3middleware/escapeForXml';
 import type { XMLRule } from './ReplicationConfiguration';
@@ -131,25 +131,25 @@ export default class LifecycleConfiguration {
         this._config.rules = [];
         if (!this._parsedXML || this._parsedXML === '') {
             const msg = 'request xml is undefined or empty';
-            const error = errors.MalformedXML.customizeDescription(msg);
+            const error = errorInstances.MalformedXML.customizeDescription(msg);
             return { error };
         }
         if (!this._parsedXML.LifecycleConfiguration &&
             this._parsedXML.LifecycleConfiguration !== '') {
             const msg = 'request xml does not include LifecycleConfiguration';
-            const error = errors.MalformedXML.customizeDescription(msg);
+            const error = errorInstances.MalformedXML.customizeDescription(msg);
             return { error };
         }
         const lifecycleConf = this._parsedXML.LifecycleConfiguration;
         const rulesArray: any[] = lifecycleConf.Rule;
         if (!rulesArray || !Array.isArray(rulesArray) || rulesArray.length === 0) {
             const msg = 'missing required key \'Rules\' in LifecycleConfiguration';
-            const error = errors.MissingRequiredParameter.customizeDescription(msg);
+            const error = errorInstances.MissingRequiredParameter.customizeDescription(msg);
             return { error };
         }
         if (rulesArray.length > 1000) {
             const msg = 'request xml includes over max limit of 1000 rules';
-            const error = errors.MalformedXML.customizeDescription(msg);
+            const error = errorInstances.MalformedXML.customizeDescription(msg);
             return { error };
         }
         const rules: any = {};
@@ -173,7 +173,7 @@ export default class LifecycleConfiguration {
     _checkPrefix(prefix: string) {
         if (prefix.length > 1024) {
             const msg = 'The maximum size of a prefix is 1024';
-            return errors.InvalidRequest.customizeDescription(msg);
+            return errorInstances.InvalidRequest.customizeDescription(msg);
         }
         return null;
     }
@@ -229,17 +229,17 @@ export default class LifecycleConfiguration {
         if ((!rule.Filter && rule.Filter !== '') &&
         (!rule.Prefix && rule.Prefix !== '')) {
             const msg = 'Rule xml does not include valid Filter or Prefix';
-            const error = errors.MalformedXML.customizeDescription(msg);
+            const error = errorInstances.MalformedXML.customizeDescription(msg);
             return { error };
         }
         if (rule.Filter && rule.Prefix) {
             const msg = 'Rule xml should not include both Filter and Prefix';
-            const error = errors.MalformedXML.customizeDescription(msg);
+            const error = errorInstances.MalformedXML.customizeDescription(msg);
             return { error };
         }
         if (!rule.Status) {
             const msg = 'Rule xml does not include Status';
-            const error = errors.MissingRequiredParameter.customizeDescription(msg);
+            const error = errorInstances.MissingRequiredParameter.customizeDescription(msg);
             return { error };
         }
         const id = this._parseID(rule.ID!);
@@ -319,7 +319,7 @@ export default class LifecycleConfiguration {
         if (filter.And && (filter.Prefix || filter.Tag) ||
         (filter.Prefix && filter.Tag)) {
             const msg = 'Filter should only include one of And, Prefix, or Tag key';
-            const error = errors.MalformedXML.customizeDescription(msg);
+            const error = errorInstances.MalformedXML.customizeDescription(msg);
             filterObj.error = error;
             return filterObj;
         }
@@ -343,7 +343,7 @@ export default class LifecycleConfiguration {
         if (filter.And) {
             const andF = filter.And[0];
             if (!andF.Tag || (!andF.Prefix && andF.Tag.length < 2)) {
-                filterObj.error = errors.MalformedXML.customizeDescription(
+                filterObj.error = errorInstances.MalformedXML.customizeDescription(
                     'And should include Prefix and Tags or more than one Tag');
                 return filterObj;
             }
@@ -396,25 +396,25 @@ export default class LifecycleConfiguration {
         for (const tag of tags) {
             if (!tag.Key || !tag.Value) {
                 const msg = 'Tag XML does not contain both Key and Value';
-                const err = errors.MissingRequiredParameter.customizeDescription(msg);
+                const err = errorInstances.MissingRequiredParameter.customizeDescription(msg);
                 tagObj.error = err;
                 break;
             }
 
             if (tag.Key[0].length < 1 || tag.Key[0].length > 128) {
-                tagObj.error = errors.InvalidRequest.customizeDescription(
+                tagObj.error = errorInstances.InvalidRequest.customizeDescription(
                     "A Tag's Key must be a length between 1 and 128"
                 );
                 break;
             }
             if (tag.Value[0].length < 0 || tag.Value[0].length > 256) {
-                tagObj.error = errors.InvalidRequest.customizeDescription(
+                tagObj.error = errorInstances.InvalidRequest.customizeDescription(
                     "A Tag's Value must be a length between 0 and 256"
                 );
                 break;
             }
             if (this._tagKeys.includes(tag.Key[0])) {
-                tagObj.error = errors.InvalidRequest.customizeDescription(
+                tagObj.error = errorInstances.InvalidRequest.customizeDescription(
                     'Tag Keys must be unique'
                 );
                 break;
@@ -448,7 +448,7 @@ export default class LifecycleConfiguration {
             | { propName: 'ruleID', ruleID: any } = { propName: 'ruleID' };
         if (id && id[0].length > 255) {
             const msg = 'Rule ID is greater than 255 characters long';
-            const error = errors.InvalidArgument.customizeDescription(msg);
+            const error = errorInstances.InvalidArgument.customizeDescription(msg);
             return { ...idObj, error };
         }
         if (!id || !id[0] || id[0] === '') {
@@ -461,7 +461,7 @@ export default class LifecycleConfiguration {
         // Each ID in a list of rules must be unique.
         if (this._ruleIDs.includes(idObj.ruleID)) {
             const msg = 'Rule ID must be unique';
-            const error = errors.InvalidRequest.customizeDescription(msg);
+            const error = errorInstances.InvalidRequest.customizeDescription(msg);
             return { ...idObj, error };
         }
         this._ruleIDs.push(idObj.ruleID);
@@ -486,7 +486,7 @@ export default class LifecycleConfiguration {
         const validStatuses = ['Enabled', 'Disabled'];
         if (!validStatuses.includes(status)) {
             const msg = 'Status is not valid';
-            const error = errors.MalformedXML.customizeDescription(msg);
+            const error = errorInstances.MalformedXML.customizeDescription(msg);
             return { ...base, error };
         }
         return { ...base, ruleStatus: status };
@@ -539,10 +539,10 @@ export default class LifecycleConfiguration {
         const { days, field, ancestor } = params;
         if (days < 0) {
             const msg = `'${field}' in ${ancestor} action must be nonnegative`;
-            return errors.InvalidArgument.customizeDescription(msg);
+            return errorInstances.InvalidArgument.customizeDescription(msg);
         }
         if (days > MAX_DAYS) {
-            return errors.MalformedXML.customizeDescription(
+            return errorInstances.MalformedXML.customizeDescription(
                 `'${field}' in ${ancestor} action must not exceed ${MAX_DAYS}`);
         }
         return null;
@@ -571,12 +571,12 @@ export default class LifecycleConfiguration {
             // the StorageClass does not conform to AWS specs.
             const list = `'${this._storageClasses.join("', '")}'`;
             const msg = `'StorageClass' must be one of ${list}`;
-            return errors.MalformedXML.customizeDescription(msg);
+            return errorInstances.MalformedXML.customizeDescription(msg);
         }
         if (usedStorageClasses.includes(storageClass)) {
             const msg = `'StorageClass' must be different for '${ancestor}' ` +
                 `actions in same 'Rule' with ${this._getRuleFilterDesc(rule)}`;
-            return errors.InvalidRequest.customizeDescription(msg);
+            return errorInstances.InvalidRequest.customizeDescription(msg);
         }
         return null;
     }
@@ -620,7 +620,7 @@ export default class LifecycleConfiguration {
                 `StorageClass '${storageClass}' for ${filterMsg} must be at ` +
                 `least one day apart from ${filterMsg} in the 'Transition' ` +
                 `action for StorageClass '${compareStorageClass}'`;
-            return errors.InvalidArgument.customizeDescription(msg);
+            return errorInstances.InvalidArgument.customizeDescription(msg);
         }
         return null;
     }
@@ -646,7 +646,7 @@ export default class LifecycleConfiguration {
             const msg = "Found mixed 'Date' and 'Days' based Transition " +
                 'actions in lifecycle rule for ' +
                 `${this._getRuleFilterDesc(rule)}`;
-            return errors.InvalidRequest.customizeDescription(msg);
+            return errorInstances.InvalidRequest.customizeDescription(msg);
         }
         // Transition time type cannot differ from the expiration, if provided.
         if (rule.Expiration &&
@@ -654,7 +654,7 @@ export default class LifecycleConfiguration {
             const msg = "Found mixed 'Date' and 'Days' based Expiration and " +
                 'Transition actions in lifecycle rule for ' +
                 `${this._getRuleFilterDesc(rule)}`;
-            return errors.InvalidRequest.customizeDescription(msg);
+            return errorInstances.InvalidRequest.customizeDescription(msg);
         }
         return null;
     }
@@ -679,7 +679,7 @@ export default class LifecycleConfiguration {
         const matches = [...date.matchAll(isoRegex)];
         if (matches.length !== 1) {
             const msg = 'Date must be in ISO 8601 format';
-            return errors.InvalidArgument.customizeDescription(msg);
+            return errorInstances.InvalidArgument.customizeDescription(msg);
         }
         // Check for a timezone in the last match group. If none, add a Z to indicate UTC.
         if (!matches[0][matches[0].length-1]) {
@@ -688,14 +688,14 @@ export default class LifecycleConfiguration {
         const dateObj = new Date(date);
         if (Number.isNaN(dateObj.getTime())) {
             const msg = 'Date is not a valid date';
-            return errors.InvalidArgument.customizeDescription(msg);
+            return errorInstances.InvalidArgument.customizeDescription(msg);
         }
         if (dateObj.getUTCHours() !== 0
             || dateObj.getUTCMinutes() !== 0
             || dateObj.getUTCSeconds() !== 0
             || dateObj.getUTCMilliseconds() !== 0) {
             const msg = '\'Date\' must be at midnight GMT';
-            return errors.InvalidArgument.customizeDescription(msg);
+            return errorInstances.InvalidArgument.customizeDescription(msg);
         }
         return null;
     }
@@ -902,7 +902,7 @@ export default class LifecycleConfiguration {
         });
         if (actionsObj.actions.length === 0) {
             const msg = 'Rule does not include valid action';
-            const error = errors.InvalidRequest.customizeDescription(msg);
+            const error = errorInstances.InvalidRequest.customizeDescription(msg);
             return { ...actionsObj, error };
         }
         actionsObj.actions.forEach(a => {
@@ -952,7 +952,7 @@ export default class LifecycleConfiguration {
             }
         }
         if (filter && filter.Tag) {
-            abortObj.error = errors.InvalidRequest.customizeDescription(
+            abortObj.error = errorInstances.InvalidRequest.customizeDescription(
                 'Tag-based filter cannot be used with ' +
                 'AbortIncompleteMultipartUpload action',
             );
@@ -960,14 +960,14 @@ export default class LifecycleConfiguration {
         }
         const subAbort = rule.AbortIncompleteMultipartUpload[0];
         if (!subAbort.DaysAfterInitiation) {
-            abortObj.error = errors.MalformedXML.customizeDescription(
+            abortObj.error = errorInstances.MalformedXML.customizeDescription(
                 'AbortIncompleteMultipartUpload action does not ' +
                 'include DaysAfterInitiation');
             return abortObj;
         }
         const daysInt = parseInt(subAbort.DaysAfterInitiation[0], 10);
         if (daysInt < 1) {
-            abortObj.error = errors.InvalidArgument.customizeDescription(
+            abortObj.error = errorInstances.InvalidArgument.customizeDescription(
                 'DaysAfterInitiation is not a positive integer');
             return abortObj;
         }
@@ -999,7 +999,7 @@ export default class LifecycleConfiguration {
         const subExp = rule.Expiration[0];
         if (!subExp.Date && !subExp.Days && !subExp.ExpiredObjectDeleteMarker) {
             const msg = 'Expiration action does not include an action time';
-            const error = errors.MalformedXML.customizeDescription(msg);
+            const error = errorInstances.MalformedXML.customizeDescription(msg);
             return { error };
         }
         const eodm = 'ExpiredObjectDeleteMarker';
@@ -1007,7 +1007,7 @@ export default class LifecycleConfiguration {
             (subExp.Days || subExp[eodm]) ||
             (subExp.Days && subExp[eodm])) {
             const msg = 'Expiration action includes more than one time';
-            const error = errors.MalformedXML.customizeDescription(msg);
+            const error = errorInstances.MalformedXML.customizeDescription(msg);
             return { error };
         }
         if (subExp.Date) {
@@ -1021,7 +1021,7 @@ export default class LifecycleConfiguration {
         if (subExp.Days) {
             const daysInt = parseInt(subExp.Days[0], 10);
             if (daysInt < 1) {
-                expObj.error = errors.InvalidArgument.customizeDescription(
+                expObj.error = errorInstances.InvalidArgument.customizeDescription(
                     'Expiration days is not a positive integer');
             } else {
                 expObj.days = daysInt;
@@ -1037,14 +1037,14 @@ export default class LifecycleConfiguration {
                 }
             }
             if (filter && filter.Tag) {
-                expObj.error = errors.InvalidRequest.customizeDescription(
+                expObj.error = errorInstances.InvalidRequest.customizeDescription(
                     'Tag-based filter cannot be used with ' +
                     'ExpiredObjectDeleteMarker action');
                 return expObj;
             }
             const validValues = ['true', 'false'];
             if (!validValues.includes(subExp.ExpiredObjectDeleteMarker[0])) {
-                expObj.error = errors.MalformedXML.customizeDescription(
+                expObj.error = errorInstances.MalformedXML.customizeDescription(
                     'ExpiredObjDeleteMarker is not true or false');
             } else {
                 expObj.deleteMarker = subExp.ExpiredObjectDeleteMarker[0];
@@ -1069,7 +1069,7 @@ export default class LifecycleConfiguration {
     _parseNoncurrentVersionExpiration(rule: any) {
         const subNVExp = rule.NoncurrentVersionExpiration[0];
         if (!subNVExp.NoncurrentDays) {
-            const error = errors.MalformedXML.customizeDescription(
+            const error = errorInstances.MalformedXML.customizeDescription(
                 'NoncurrentVersionExpiration action does not include ' +
                 'NoncurrentDays');
             return { error };
@@ -1087,7 +1087,7 @@ export default class LifecycleConfiguration {
         const daysInt = parseInt(subNVExp.NoncurrentDays[0], 10);
         if (daysInt < 1) {
             const msg = 'NoncurrentDays is not a positive integer';
-            const error = errors.InvalidArgument.customizeDescription(msg);
+            const error = errorInstances.InvalidArgument.customizeDescription(msg);
             return { error };
         } else {
             actionParams.days = daysInt;
@@ -1098,7 +1098,7 @@ export default class LifecycleConfiguration {
 
             if (Number.isNaN(newerVersionsInt) || newerVersionsInt < 1) {
                 const msg = 'NewerNoncurrentVersions is not a positive integer';
-                const error = errors.InvalidArgument.customizeDescription(msg);
+                const error = errorInstances.InvalidArgument.customizeDescription(msg);
                 return { error };
             }
 

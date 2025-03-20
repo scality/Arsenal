@@ -15,7 +15,7 @@ import * as constants from '../../../constants';
 import * as werelogs from 'werelogs';
 
 import { ErrorLike, reshapeExceptionError } from '../../../errorUtils';
-import errors, { ArsenalError } from '../../../errors';
+import errors, { ArsenalError, errorInstances } from '../../../errors';
 import BucketInfo, { BucketMetadata, Capabilities } from '../../../models/BucketInfo';
 import ObjectMD, { ObjectMDData } from '../../../models/ObjectMD';
 import * as jsutil from '../../../jsutil';
@@ -1426,11 +1426,11 @@ class MongoClientInterface {
         let vFormat;
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
         if (!Array.isArray(objects)) {
-            return callback(errors.InternalError.customizeDescription('objects must be an array'));
+            return callback(errorInstances.InternalError.customizeDescription('objects must be an array'));
         }
         // We do not accept more than 1000 keys in a single request
         if (objects.length > 1000) {
-            return callback(errors.InternalError.customizeDescription('cannot get more than 1000 objects'));
+            return callback(errorInstances.InternalError.customizeDescription('cannot get more than 1000 objects'));
         }
         // Function to process each document
         const processDoc = (doc, objName, params, key, cb) => {
@@ -2370,7 +2370,7 @@ class MongoClientInterface {
         log.error('disconnected from mongodb');
         resp[implName] = {
             error: errors.ServiceUnavailable,
-            code: errors.ServiceUnavailable.code,
+            code: errorInstances.ServiceUnavailable.code,
         };
         return cb(null, resp);
     }

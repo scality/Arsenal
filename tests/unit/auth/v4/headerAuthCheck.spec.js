@@ -4,6 +4,7 @@ const assert = require('assert');
 const fakeTimers = require('@sinonjs/fake-timers');
 
 const errors = require('../../../../index').errors;
+const errorInstances = require('../../../../index').errorInstances;
 
 const createAlteredRequest = require('../../helpers').createAlteredRequest;
 const headerAuthCheck =
@@ -142,7 +143,7 @@ describe('v4 headerAuthCheck', () => {
         const alteredRequest = createAlteredRequest({
             'x-amz-date': undefined }, 'headers', request, headers);
         const res = headerAuthCheck(alteredRequest, log);
-        assert.deepStrictEqual(res.err, errors.AccessDenied.
+        assert.deepStrictEqual(res.err, errorInstances.AccessDenied.
             customizeDescription('Authentication requires a valid Date or ' +
           'x-amz-date header'));
         done();
@@ -170,7 +171,7 @@ describe('v4 headerAuthCheck', () => {
                 '0064d22eacd6ccb85c06befa15f' +
                 '4a789b0bae19307bc' }, 'headers', request, headers);
         const res = headerAuthCheck(alteredRequest, log);
-        assert.deepStrictEqual(res.err, errors.AccessDenied.
+        assert.deepStrictEqual(res.err, errorInstances.AccessDenied.
             customizeDescription('Authentication requires a valid Date or ' +
         'x-amz-date header'));
         done();
@@ -294,7 +295,7 @@ describe('v4 headerAuthCheck', () => {
             const res = headerAuthCheck(alteredRequest, log);
             clock.uninstall();
             assert.deepStrictEqual(res.err,
-                errors.InvalidArgument.customizeDescription(
+                errorInstances.InvalidArgument.customizeDescription(
                     'invalid proxy_path header'));
             done();
         });

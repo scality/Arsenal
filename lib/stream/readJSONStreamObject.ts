@@ -1,4 +1,4 @@
-import errors from '../errors';
+import { errorInstances } from '../errors';
 import * as stream from 'stream';
 import joi from 'joi';
 
@@ -31,7 +31,7 @@ export default async function readJSONStreamObject<Data = any>(
                 return resolve(parsedContents);
             } catch (err: any) {
                 return reject(
-                    errors.InvalidArgument.customizeDescription(
+                    errorInstances.InvalidArgument.customizeDescription(
                         `invalid input: ${err.message}`
                     )
                 );

@@ -1,5 +1,5 @@
 import { parseString } from 'xml2js';
-import errors, { ArsenalError } from '../errors';
+import errors, { ArsenalError, errorInstances } from '../errors';
 import * as werelogs from 'werelogs';
 
 /*
@@ -19,17 +19,17 @@ function validateMode(mode?: string[]) {
     const expectedModes = new Set(['GOVERNANCE', 'COMPLIANCE']);
     if (!mode || !mode[0]) {
         const desc = 'request xml does not contain Mode';
-        const error = errors.MalformedXML.customizeDescription(desc);
+        const error = errorInstances.MalformedXML.customizeDescription(desc);
         return { error };
     }
     if (mode.length > 1) {
         const desc = 'request xml contains more than one Mode';
-        const error = errors.MalformedXML.customizeDescription(desc);
+        const error = errorInstances.MalformedXML.customizeDescription(desc);
         return { error };
     }
     if (!expectedModes.has(mode[0])) {
         const desc = 'Mode request xml must be one of "GOVERNANCE", "COMPLIANCE"';
-        const error = errors.MalformedXML.customizeDescription(desc);
+        const error = errorInstances.MalformedXML.customizeDescription(desc);
         return { error };
     }
     return { mode: mode[0] as 'GOVERNANCE' | 'COMPLIANCE' };
@@ -43,19 +43,19 @@ function validateMode(mode?: string[]) {
 function validateRetainDate(retainDate?: string[]) {
     if (!retainDate || !retainDate[0]) {
         const desc = 'request xml does not contain RetainUntilDate';
-        const error = errors.MalformedXML.customizeDescription(desc);
+        const error = errorInstances.MalformedXML.customizeDescription(desc);
         return { error };
     }
     const retentionDate = Date.parse(retainDate[0]);
     if (isNaN(retentionDate)) {
         const desc = 'RetainUntilDate is not a valid timestamp';
-        const error = errors.InvalidRequest.customizeDescription(desc);
+        const error = errorInstances.InvalidRequest.customizeDescription(desc);
         return { error };
     }
     const date = new Date(retentionDate);
     if (date < new Date()) {
         const desc = 'RetainUntilDate must be in the future';
-        const error = errors.InvalidRequest.customizeDescription(desc);
+        const error = errorInstances.InvalidRequest.customizeDescription(desc);
         return { error };
     }
     return { date: retainDate[0] };
@@ -70,13 +70,13 @@ function validateRetainDate(retainDate?: string[]) {
 function validateRetention(parsedXml?: any) {
     if (!parsedXml) {
         const desc = 'request xml is undefined or empty';
-        const error = errors.MalformedXML.customizeDescription(desc);
+        const error = errorInstances.MalformedXML.customizeDescription(desc);
         return { error };
     }
     const retention = parsedXml.Retention;
     if (!retention) {
         const desc = 'request xml does not contain Retention';
-        const error = errors.MalformedXML.customizeDescription(desc);
+        const error = errorInstances.MalformedXML.customizeDescription(desc);
         return { error };
     }
     const modeObj = validateMode(retention.Mode);

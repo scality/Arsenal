@@ -1,5 +1,5 @@
 import { parseString } from 'xml2js';
-import errors, { ArsenalError } from '../errors';
+import errors, { ArsenalError, errorInstances } from '../errors';
 import * as werelogs from 'werelogs';
 
 /*
@@ -17,17 +17,17 @@ function _validateStatus(status?: string[]) {
     const expectedValues = new Set(['OFF', 'ON']);
     if (!status || status[0] === '') {
         const desc = 'request xml does not contain Status';
-        const error = errors.MalformedXML.customizeDescription(desc);
+        const error = errorInstances.MalformedXML.customizeDescription(desc);
         return { error };
     }
     if (status.length > 1) {
         const desc = 'request xml contains more than one Status';
-        const error = errors.MalformedXML.customizeDescription(desc);
+        const error = errorInstances.MalformedXML.customizeDescription(desc);
         return { error };
     }
     if (!expectedValues.has(status[0])) {
         const desc = 'Status request xml must be one of "ON", "OFF"';
-        const error = errors.MalformedXML.customizeDescription(desc);
+        const error = errorInstances.MalformedXML.customizeDescription(desc);
         return { error };
     }
     return { status: status[0] as 'OFF' | 'ON' };
@@ -41,12 +41,12 @@ function _validateStatus(status?: string[]) {
 function _validateLegalHold(parsedXml?: { LegalHold: { Status: string[] } }) {
     if (!parsedXml) {
         const desc = 'request xml is undefined or empty';
-        const error = errors.MalformedXML.customizeDescription(desc);
+        const error = errorInstances.MalformedXML.customizeDescription(desc);
         return { error };
     }
     if (!parsedXml.LegalHold) {
         const desc = 'request xml does not contain LegalHold';
-        const error = errors.MalformedXML.customizeDescription(desc);
+        const error = errorInstances.MalformedXML.customizeDescription(desc);
         return { error };
     }
     const validatedStatus = _validateStatus(parsedXml.LegalHold.Status);

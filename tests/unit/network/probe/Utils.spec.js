@@ -1,5 +1,6 @@
 const assert = require('assert');
 const errors = require('../../../../lib/errors').default;
+const errorInstances = require('../../../../lib/errors').default;
 const { sendError, sendSuccess } = require('../../../../lib/network/probe/Utils');
 const sinon = require('sinon');
 
@@ -46,7 +47,7 @@ describe('network.probe.Utils', () => {
                     JSON.parse(msg),
                     {
                         errorType: 'MethodNotAllowed',
-                        errorMessage: errors.MethodNotAllowed.description,
+                        errorMessage: errorInstances.MethodNotAllowed.description,
                     },
                 );
                 done();

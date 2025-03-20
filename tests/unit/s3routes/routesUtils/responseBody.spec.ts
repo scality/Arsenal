@@ -1,4 +1,4 @@
-import { errors } from '../../../../index';
+import { errors, errorInstances } from '../../../../index';
 import { responseXMLBody, responseJSONBody } from '../../../../lib/s3routes/routesUtils';
 
 import * as werelogs from 'werelogs';
@@ -8,7 +8,7 @@ describe('responseXMLBody: ', () => {
     it('Should include invalid arguments in reponse body', done => {
         const invalidArgument1 = { ArgumentName: 'argumentName1', ArgumentValue: 'argumentValue1' };
         const invalidArgument2 = { ArgumentName: 'argumentName2', ArgumentValue: 'argumentValue2' };
-        const error = errors.InvalidArgument.addMetadataEntry('invalidArguments',
+        const error = errorInstances.InvalidArgument.addMetadataEntry('invalidArguments',
             [invalidArgument1, invalidArgument2]);
         responseXMLBody(error, '', {
             // @ts-ignore
@@ -63,7 +63,7 @@ describe('JSONResponseBackend: ', () => {
     it('Should include invalid arguments in reponse body', done => {
         const invalidArgument1 = { ArgumentName: 'argumentName1', ArgumentValue: 'argumentValue1' };
         const invalidArgument2 = { ArgumentName: 'argumentName2', ArgumentValue: 'argumentValue2' };
-        const error = errors.InvalidArgument.addMetadataEntry('invalidArguments',
+        const error = errorInstances.InvalidArgument.addMetadataEntry('invalidArguments',
             [invalidArgument1, invalidArgument2]);
         responseJSONBody(error, '', {
             // @ts-ignore

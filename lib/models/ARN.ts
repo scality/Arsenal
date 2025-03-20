@@ -1,4 +1,4 @@
-import errors from '../errors';
+import { errorInstances }  from '../errors';
 
 const validServices = {
     aws: ['s3', 'iam', 'sts', 'ring'],
@@ -42,30 +42,30 @@ export default class ARN {
             resourceType, resource] = arnStr.split(':');
 
         if (arn !== 'arn') {
-            return { error: errors.InvalidArgument.customizeDescription(
+            return { error: errorInstances.InvalidArgument.customizeDescription(
                 'bad ARN: must start with "arn:"') };
         }
         if (!partition) {
-            return { error: errors.InvalidArgument.customizeDescription(
+            return { error: errorInstances.InvalidArgument.customizeDescription(
                 'bad ARN: must include a partition name, like "aws" in ' +
                     '"arn:aws:..."') };
         }
         if (!service) {
-            return { error: errors.InvalidArgument.customizeDescription(
+            return { error: errorInstances.InvalidArgument.customizeDescription(
                 'bad ARN: must include a service name, like "s3" in ' +
                     '"arn:aws:s3:..."') };
         }
         if (validServices[partition] === undefined) {
-            return { error: errors.InvalidArgument.customizeDescription(
+            return { error: errorInstances.InvalidArgument.customizeDescription(
                 `bad ARN: unknown partition "${partition}", should be a ` +
                     'valid partition name like "aws" in "arn:aws:..."') };
         }
         if (!validServices[partition].includes(service)) {
-            return { error: errors.InvalidArgument.customizeDescription(
+            return { error: errorInstances.InvalidArgument.customizeDescription(
                 `bad ARN: unsupported ${partition} service "${service}"`) };
         }
         if (accountId && !/^([0-9]{12}|[*])$/.test(accountId)) {
-            return { error: errors.InvalidArgument.customizeDescription(
+            return { error: errorInstances.InvalidArgument.customizeDescription(
                 `bad ARN: bad account ID "${accountId}": ` +
                     'must be a 12-digit number or "*"') };
         }

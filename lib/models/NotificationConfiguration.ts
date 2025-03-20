@@ -5,7 +5,7 @@ import {
     supportedNotificationEvents,
     notificationArnPrefix,
 } from '../constants';
-import errors, { ArsenalError } from '../errors';
+import { ArsenalError, errorInstances } from '../errors';
 
 /**
  * Format of xml request:
@@ -87,12 +87,12 @@ export default class NotificationConfiguration {
      */
     _parseNotificationConfig() {
         if (!this._parsedXml || this._parsedXml === '') {
-            return errors.MalformedXML.customizeDescription(
+            return errorInstances.MalformedXML.customizeDescription(
                 'request xml is undefined or empty');
         }
         const notificationConfig = this._parsedXml.NotificationConfiguration;
         if (!notificationConfig || notificationConfig === '') {
-            return errors.MalformedXML.customizeDescription(
+            return errorInstances.MalformedXML.customizeDescription(
                 'request xml does not include NotificationConfiguration');
         }
         const queueConfig = notificationConfig.QueueConfiguration;
@@ -146,7 +146,7 @@ export default class NotificationConfiguration {
     _parseEvents(events: any[]) {
         if (!events || !events[0]) {
             const msg = 'each queue configuration must contain an event';
-            const error = errors.MalformedXML.customizeDescription(msg);
+            const error = errorInstances.MalformedXML.customizeDescription(msg);
             return { error };
         }
         const eventsObj: { error?: ArsenalError, events: any[] } = {
@@ -155,7 +155,7 @@ export default class NotificationConfiguration {
         for (const e of events) {
             if (!supportedNotificationEvents.has(e)) {
                 const msg = 'event array contains invalid or unsupported event';
-                const error = errors.MalformedXML.customizeDescription(msg);
+                const error = errorInstances.MalformedXML.customizeDescription(msg);
                 return { error };
             } else {
                 eventsObj.events.push(e);
@@ -174,12 +174,12 @@ export default class NotificationConfiguration {
             return { filterRules: undefined };
         }
         if (!filter[0].S3Key || !filter[0].S3Key[0]) {
-            return { error: errors.MalformedXML.customizeDescription(
+            return { error: errorInstances.MalformedXML.customizeDescription(
                 'if included, queue configuration filter must contain S3Key') };
         }
         const filterRules = filter[0].S3Key[0];
         if (!filterRules.FilterRule || !filterRules.FilterRule[0]) {
-            return { error: errors.MalformedXML.customizeDescription(
+            return { error: errorInstances.MalformedXML.customizeDescription(
                 'if included, queue configuration filter must contain a rule') };
         }
         const filterObj: { filterRules: { name: string; value: string }[] } = {
@@ -191,11 +191,11 @@ export default class NotificationConfiguration {
                 || !ruleArray[i].Name[0]
                 || !ruleArray[i].Value
                 || !ruleArray[i].Value[0]) {
-                return { error: errors.MalformedXML.customizeDescription(
+                return { error: errorInstances.MalformedXML.customizeDescription(
                     'each included filter must contain a name and value') };
             }
             if (!['Prefix', 'Suffix'].includes(ruleArray[i].Name[0])) {
-                return { error: errors.MalformedXML.customizeDescription(
+                return { error: errorInstances.MalformedXML.customizeDescription(
                     'filter Name must be one of Prefix or Suffix') };
             }
             filterObj.filterRules.push({
@@ -213,7 +213,7 @@ export default class NotificationConfiguration {
      */
     _parseId(id: string) {
         if (id && id[0].length > 255) {
-            return { error: errors.InvalidArgument.customizeDescription(
+            return { error: errorInstances.InvalidArgument.customizeDescription(
                 'queue configuration ID is greater than 255 characters long') };
         }
         let validId: string;
@@ -226,7 +226,7 @@ export default class NotificationConfiguration {
         }
         // Each ID in a list of rules must be unique.
         if (this._ids.has(validId)) {
-            return { error: errors.InvalidRequest.customizeDescription(
+            return { error: errorInstances.InvalidRequest.customizeDescription(
                 'queue configuration ID must be unique') };
         }
         this._ids.add(validId);
@@ -240,14 +240,14 @@ export default class NotificationConfiguration {
      */
     _parseArn(arn: string) {
         if (!arn || !arn[0]) {
-            return { error: errors.MalformedXML.customizeDescription(
+            return { error: errorInstances.MalformedXML.customizeDescription(
                 'each queue configuration must contain a queue arn'),
             };
         }
         const splitArn = arn[0].split(':');
         const slicedArn = arn[0].slice(0, 23);
         if (splitArn.length !== 6 || slicedArn !== notificationArnPrefix) {
-            return { error: errors.MalformedXML.customizeDescription(
+            return { error: errorInstances.MalformedXML.customizeDescription(
                 'queue arn is invalid') };
         }
         // remaining 3 parts of arn are evaluated in cloudserver

@@ -5,7 +5,7 @@ import { eachSeries } from 'async';
 import { RequestLogger } from 'werelogs';
 
 import * as ipCheck from '../ipCheck';
-import errors, { ArsenalError } from '../errors';
+import errors, { ArsenalError, errorInstances } from '../errors';
 import * as constants from '../constants';
 import DataWrapper from '../storage/data/DataWrapper';
 import StatsClient from '../metrics/StatsClient';
@@ -122,7 +122,7 @@ export const XMLResponseBackend = {
         if (errCode instanceof ArsenalError) {
             error = errCode;
         } else {
-            error = errors.InternalError.customizeDescription(errCode.message);
+            error = errorInstances.InternalError.customizeDescription(errCode.message);
         }
         // early return to avoid extra headers and XML data
         if (error.code === 304) {
@@ -218,7 +218,7 @@ export const JSONResponseBackend = {
         if (errCode instanceof ArsenalError) {
             error = errCode;
         } else {
-            error = errors.InternalError.customizeDescription(errCode.message);
+            error = errorInstances.InternalError.customizeDescription(errCode.message);
         }
         /*
         {
@@ -714,7 +714,7 @@ export function streamUserErrorPage(
     if (err instanceof ArsenalError) {
         error = err;
     } else {
-        error = errors.InternalError.customizeDescription(err.message);
+        error = errorInstances.InternalError.customizeDescription(err.message);
     }
     // Prepare the headers, but do not send them
     // as errors might still happen when retrieving the data
@@ -746,7 +746,7 @@ export function errorHtmlResponse(
     if (err instanceof ArsenalError) {
         error = err;
     } else {
-        error = errors.InternalError.customizeDescription(err.message);
+        error = errorInstances.InternalError.customizeDescription(err.message);
     }
 
     log.trace('sending generic html error page',
@@ -817,7 +817,7 @@ export function errorHeaderResponse(
     if (err instanceof ArsenalError) {
         error = err;
     } else {
-        error = errors.InternalError.customizeDescription(err.message);
+        error = errorInstances.InternalError.customizeDescription(err.message);
     }
     log.trace('sending error header response',
         { error });
@@ -954,7 +954,7 @@ export function redirectRequestOnError(
     if (err instanceof ArsenalError) {
         error = err;
     } else {
-        error = errors.InternalError.customizeDescription(err.message);
+        error = errorInstances.InternalError.customizeDescription(err.message);
     }
 
     if (!dataLocations && error.is.Found) {

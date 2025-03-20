@@ -2,7 +2,7 @@ const { backend, ds, resetCount } = require('../../../../../lib/storage/data/in_
 const stream = require('stream');
 const sinon = require('sinon');
 const assert = require('assert');
-const { default: errors } = require('../../../../../lib/errors');
+const { errorInstances } = require('../../../../../lib/errors');
 
 jest.mock('werelogs', () => ({
     Logger: jest.fn().mockImplementation(() => ({
@@ -55,7 +55,7 @@ describe('MemDataBackend', () => {
             const request = new stream.Readable();
 
             const callback = sinon.spy(err => {
-                assert.strictEqual(err.code, errors.InternalError.code);
+                assert.strictEqual(err.code, errorInstances.InternalError.code);
                 done();
             });
 
@@ -108,7 +108,7 @@ describe('MemDataBackend', () => {
 
         it('should return error if key not found', done => {
             backend.get(999, null, null, err => {
-                assert.strictEqual(err.code, errors.NoSuchKey.code);
+                assert.strictEqual(err.code, errorInstances.NoSuchKey.code);
                 done();
             });
         });
@@ -207,7 +207,7 @@ describe('MemDataBackend', () => {
 
         it('should return error if key not found', done => {
             backend.head([999], null, err => {
-                assert.strictEqual(err.code, errors.NoSuchKey.code);
+                assert.strictEqual(err.code, errorInstances.NoSuchKey.code);
                 done();
             });
         });

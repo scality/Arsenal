@@ -1,5 +1,5 @@
 import assert from 'assert';
-import errors, { ArsenalError } from '../errors';
+import { ArsenalError, errorInstances } from '../errors';
 
 export type Config = any;
 export type LockMode = 'GOVERNANCE' | 'COMPLIANCE';
@@ -68,17 +68,17 @@ export default class ObjectLockConfiguration {
         const expectedModes = ['GOVERNANCE', 'COMPLIANCE'];
         if (!mode || !mode[0]) {
             const msg = 'request xml does not contain Mode';
-            const error = errors.MalformedXML.customizeDescription(msg);
+            const error = errorInstances.MalformedXML.customizeDescription(msg);
             return { error };
         }
         if (mode.length > 1) {
             const msg = 'request xml contains more than one Mode';
-            const error = errors.MalformedXML.customizeDescription(msg);
+            const error = errorInstances.MalformedXML.customizeDescription(msg);
             return { error };
         }
         if (!expectedModes.includes(mode[0])) {
             const msg = 'Mode request xml must be one of "GOVERNANCE", "COMPLIANCE"';
-            const error = errors.MalformedXML.customizeDescription(msg);
+            const error = errorInstances.MalformedXML.customizeDescription(msg);
             return { error };
         }
         return { mode: mode[0] };
@@ -92,35 +92,35 @@ export default class ObjectLockConfiguration {
     _parseTime(dr: DefaultRetention): ParsedRetention {
         if ('Days' in dr && 'Years' in dr) {
             const msg = 'request xml contains both Days and Years';
-            const error = errors.MalformedXML.customizeDescription(msg);
+            const error = errorInstances.MalformedXML.customizeDescription(msg);
             return { error };
         }
         const timeType = 'Days' in dr ? 'Days' : 'Years';
         if (!dr[timeType] || !dr[timeType][0]) {
             const msg = 'request xml does not contain Days or Years';
-            const error = errors.MalformedXML.customizeDescription(msg);
+            const error = errorInstances.MalformedXML.customizeDescription(msg);
             return { error };
         }
         if (dr[timeType].length > 1) {
             const msg = 'request xml contains more than one retention period';
-            const error = errors.MalformedXML.customizeDescription(msg);
+            const error = errorInstances.MalformedXML.customizeDescription(msg);
             return { error };
         }
         const timeValue = Number.parseInt(dr[timeType][0], 10);
         if (Number.isNaN(timeValue)) {
             const msg = 'request xml does not contain valid retention period';
-            const error = errors.MalformedXML.customizeDescription(msg);
+            const error = errorInstances.MalformedXML.customizeDescription(msg);
             return { error };
         }
         if (timeValue < 1) {
             const msg = 'retention period must be a positive integer';
-            const error = errors.InvalidArgument.customizeDescription(msg);
+            const error = errorInstances.InvalidArgument.customizeDescription(msg);
             return { error };
         }
         if ((timeType === 'Days' && timeValue > 36500) ||
         (timeType === 'Years' && timeValue > 100)) {
             const msg = 'retention period is too large';
-            const error = errors.InvalidArgument.customizeDescription(msg);
+            const error = errorInstances.InvalidArgument.customizeDescription(msg);
             return { error };
         }
         return {
@@ -137,39 +137,39 @@ export default class ObjectLockConfiguration {
         const validConfig: { error?: ArsenalError } = {};
         if (!this._parsedXml || this._parsedXml === '') {
             const msg = 'request xml is undefined or empty';
-            const error = errors.MalformedXML.customizeDescription(msg);
+            const error = errorInstances.MalformedXML.customizeDescription(msg);
             return { error };
         }
         const objectLockConfig = this._parsedXml.ObjectLockConfiguration;
         if (!objectLockConfig || objectLockConfig === '') {
             const msg = 'request xml does not include ObjectLockConfiguration';
-            const error = errors.MalformedXML.customizeDescription(msg);
+            const error = errorInstances.MalformedXML.customizeDescription(msg);
             return { error };
         }
         const objectLockEnabled = objectLockConfig.ObjectLockEnabled;
         if (!objectLockEnabled || objectLockEnabled[0] !== 'Enabled') {
             const msg = 'request xml does not include valid ObjectLockEnabled';
-            const error = errors.MalformedXML.customizeDescription(msg);
+            const error = errorInstances.MalformedXML.customizeDescription(msg);
             return { error };
         }
         const ruleArray = objectLockConfig.Rule;
         if (ruleArray) {
             if (ruleArray.length > 1) {
                 const msg = 'request xml contains more than one rule';
-                const error = errors.MalformedXML.customizeDescription(msg);
+                const error = errorInstances.MalformedXML.customizeDescription(msg);
                 return { error };
             }
             const drArray = ruleArray[0].DefaultRetention;
             if (!drArray || !drArray[0] || drArray[0] === '') {
                 const msg = 'Rule request xml does not contain DefaultRetention';
-                const error = errors.MalformedXML.customizeDescription(msg);
+                const error = errorInstances.MalformedXML.customizeDescription(msg);
                 return { error };
             }
             if (!drArray[0].Mode || (!drArray[0].Days && !drArray[0].Years)) {
                 const msg =
                     'DefaultRetention request xml does not contain Mode or ' +
                     'retention period (Days or Years)';
-                const error = errors.MalformedXML.customizeDescription(msg);
+                const error = errorInstances.MalformedXML.customizeDescription(msg);
                 return { error };
             }
             const validMode = this._parseMode(drArray[0].Mode);

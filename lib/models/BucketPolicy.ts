@@ -1,5 +1,5 @@
 import assert from 'assert';
-import errors, { ArsenalError } from '../errors';
+import { ArsenalError, errorInstances } from '../errors';
 import { validateResourcePolicy } from '../policy/policyValidator';
 
 /**
@@ -76,7 +76,7 @@ export default class BucketPolicy {
      */
     _getPolicy(): { error: ArsenalError } | any {
         if (!this._json || this._json === '') {
-            return { error: errors.MalformedPolicy.customizeDescription(
+            return { error: errorInstances.MalformedPolicy.customizeDescription(
                 'request json is empty or undefined') };
         }
         const validSchema = validateResourcePolicy(this._json);
@@ -122,7 +122,7 @@ export default class BucketPolicy {
                 (objectResource && !objectAction && !wildcardObjectAction));
         });
         if (invalid) {
-            return { error: errors.MalformedPolicy.customizeDescription(
+            return { error: errorInstances.MalformedPolicy.customizeDescription(
                 'Action does not apply to any resource(s) in statement') };
         }
         return {};

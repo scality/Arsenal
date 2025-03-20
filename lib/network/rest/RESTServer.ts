@@ -6,7 +6,7 @@ import httpServer from '../http/server';
 import * as constants from '../../constants';
 import { parseURL } from './utils';
 import * as httpUtils from '../http/utils';
-import errors, { ArsenalError } from '../../errors';
+import errors, { ArsenalError, errorInstances } from '../../errors';
 
 function setContentLength(response: http.ServerResponse, contentLength: number) {
     response.setHeader('Content-Length', contentLength.toString());
@@ -152,7 +152,7 @@ export default class RESTServer extends httpServer {
             }
             size = Number.parseInt(contentLength, 10);
             if (Number.isNaN(size)) {
-                throw errors.InvalidInput.customizeDescription(
+                throw errorInstances.InvalidInput.customizeDescription(
                     'bad Content-Length');
             }
         } catch (err: any) {
