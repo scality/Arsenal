@@ -6,6 +6,7 @@ import { Agent as HttpsAgent } from 'https';
 import { KMS, AWSError } from 'aws-sdk';
 import * as werelogs from 'werelogs';
 import assert from 'assert';
+import { KMSInterface } from '../KMSInterface';
 
 type TLSVersion = 'TLSv1.3' | 'TLSv1.2' | 'TLSv1.1' | 'TLSv1';
 
@@ -28,7 +29,7 @@ interface ClientOptions {
     kmsAWS: KMSOptions;
 }
 
-export default class Client {
+export default class Client implements KMSInterface {
     private _supportsDefaultKeyPerAccount: boolean;
     private client: KMS;
 

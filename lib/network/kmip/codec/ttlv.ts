@@ -25,6 +25,7 @@ function _throwError(logger: werelogs.Logger, msg: string, data?: LogDictionary)
     throw Error(msg);
 }
 
+/** TTLV = Tag, Type, Length, Value */
 export default function TTLVCodec() {
     if (!new.target) {
         // @ts-ignore
