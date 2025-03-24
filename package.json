@@ -37,7 +37,7 @@
     "diskusage": "^1.2.0",
     "fcntl": "github:scality/node-fcntl#0.3.0",
     "httpagent": "scality/httpagent#1.1.0",
-    "https-proxy-agent": "^7.0.5",
+    "https-proxy-agent": "^7.0.6",
     "ioredis": "^5.4.1",
     "ipaddr.js": "^2.2.0",
     "joi": "^17.13.3",
