@@ -38,7 +38,7 @@
     "fcntl": "github:scality/node-fcntl#0.3.0",
     "httpagent": "scality/httpagent#1.1.0",
     "https-proxy-agent": "^7.0.6",
-    "ioredis": "^5.4.1",
+    "ioredis": "^5.6.0",
     "ipaddr.js": "^2.2.0",
     "joi": "^17.13.3",
     "level": "~5.0.1",
