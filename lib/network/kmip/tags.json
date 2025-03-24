@@ -128,6 +128,9 @@
     "420050": {
         "name": "Maximum Response Size"
     },
+    "420053": {
+        "name": "Name"
+    },
     "420054": {
         "name": "Name Type",
         "enumeration": {
@@ -575,5 +578,11 @@
     },
     "420106": {
         "name": "Server Correlation Value"
+    },
+    "541000": {
+        "name": "Extension Thales: model"
+    },
+    "541001": {
+        "name": "Extension Thales: version"
     }
 }

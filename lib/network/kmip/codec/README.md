@@ -354,7 +354,7 @@ class MyCodec {
 
 ## Encoding specification links
 
-### TTLV Encoding Baseline Profile
+### TTLV (Tag, Type, Length, Value) Encoding Baseline Profile
 
 [TTLV Encoding Specification](http://docs.oasis-open.org/kmip/spec/v1.4/os/kmip-spec-v1.4-os.html#_Toc490660911)
 
