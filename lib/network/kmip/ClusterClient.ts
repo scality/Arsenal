@@ -1,5 +1,6 @@
-'use strict'; // eslint-disable-line
+'use strict';
 /* eslint new-cap: "off" */
+/* eslint prefer-spread: "off" */
 
 import TTLVCodec from './codec/ttlv';
 import TlsTransport from './transport/tls';
@@ -85,11 +86,11 @@ export default class ClusterClient implements KMSInterface {
 
     clusterHealthcheck(logger: Logger, cb: (err: Error | null) => void) {
         async.parallel<any, Error>(
-            this.clients.map(c => (next) => c.healthcheck(logger, next)),
-            (err, results) => {
+            this.clients.map(c => next => c.healthcheck(logger, next)),
+            err => {
                 cb(err ?? null);
-            }
-        )
+            },
+        );
     }
 
     healthcheck(...args: Parameters<Required<KMSInterface>['healthcheck']>) {

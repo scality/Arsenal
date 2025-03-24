@@ -5,7 +5,7 @@ import TTLVCodec from './codec/ttlv';
 import TlsTransport from './transport/tls';
 import KMIP from '.';
 import * as werelogs from 'werelogs';
-import { arsenalErrorKMIP } from '../utils'
+import { arsenalErrorKMIP } from '../utils';
 import { KMSInterface } from '../KMSInterface';
 
 const CRYPTOGRAPHIC_OBJECT_TYPE = 'Symmetric Key';
