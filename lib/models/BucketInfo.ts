@@ -638,8 +638,7 @@ export default class BucketInfo implements BucketMetadata {
      * @param bucketPolicy - bucket policy
      * @return - bucket info instance
      */
-    setBucketPolicy(bucketPolicy: BucketPolicyMetadata) {
-        BucketPolicy.validatePolicy(bucketPolicy);
+    setBucketPolicy(bucketPolicy?: BucketPolicyMetadata) {
         this._bucketPolicy = bucketPolicy;
         return this;
     }
