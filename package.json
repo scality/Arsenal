@@ -61,7 +61,7 @@
   "devDependencies": {
     "@babel/preset-env": "^7.26.9",
     "@babel/preset-typescript": "^7.25.7",
-    "@eslint/compat": "^1.2.0",
+    "@eslint/compat": "^1.2.7",
     "@scality/eslint-config-scality": "scality/Guidelines#8.3.0",
     "@sinonjs/fake-timers": "^14.0.0",
     "@types/ioredis": "^5.0.0",
