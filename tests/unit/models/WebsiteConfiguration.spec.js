@@ -56,7 +56,7 @@ describe('WebsiteConfiguration class', () => {
         assert.strictEqual(websiteConfig._indexDocument, undefined);
         assert.strictEqual(websiteConfig._errorDocument, undefined);
         assert.strictEqual(websiteConfig._redirectAllRequestsTo, undefined);
-        assert.strictEqual(websiteConfig._routingRules.length, 0);
+        assert.strictEqual(websiteConfig._routingRules, undefined);
         done();
     });
 
@@ -160,9 +160,9 @@ describe('WebsiteConfiguration class', () => {
             const websiteConfig = new WebsiteConfiguration();
             const routingRules = [testRoutingRuleParams];
             websiteConfig.setRoutingRules(routingRules);
-            assert.strictEqual(websiteConfig.getRoutingRules()[0].condition,
+            assert.strictEqual(websiteConfig.getRoutingRules()[0]._condition,
                 routingRules[0].condition);
-            assert.strictEqual(websiteConfig.getRoutingRules()[0].redirect,
+            assert.strictEqual(websiteConfig.getRoutingRules()[0]._redirect,
                 routingRules[0].redirect);
             assert(websiteConfig._routingRules[0] instanceof RoutingRule);
             done();

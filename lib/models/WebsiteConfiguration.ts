@@ -78,14 +78,14 @@ export type WebsiteConfigurationParams = {
     indexDocument?: string;
     errorDocument?: string;
     redirectAllRequestsTo?: RedirectAllRequestsTo;
-    routingRules: RoutingRuleParams[],
+    routingRules?: RoutingRuleParams[],
 };
 
 export class WebsiteConfiguration {
     _indexDocument?: string;
     _errorDocument?: string;
     _redirectAllRequestsTo?: RedirectAllRequestsTo;
-    _routingRules: RoutingRule[] = [];
+    _routingRules?: RoutingRule[];
 
     /**
     * Object that represents website configuration
@@ -121,8 +121,13 @@ export class WebsiteConfiguration {
             indexDocument: this._indexDocument,
             errorDocument: this._errorDocument,
             redirectAllRequestsTo: this._redirectAllRequestsTo,
-            routingRules: this.getRoutingRules(),
         };
+        if (this._routingRules) {
+            return {
+                ...base,
+                routingRules: this._routingRules.map(rule => rule.getRuleObject()),
+            };
+        }
         return { ...base };
     }
 
@@ -210,7 +215,7 @@ export class WebsiteConfiguration {
      * Get routing rules
      * @return - array of RoutingRule instances
      */
-    getRoutingRules(): RoutingRuleParams[] {
-        return this._routingRules ? this._routingRules.map(r => r.getRuleObject()) : [];
+    getRoutingRules(): RoutingRule[] | undefined {
+        return this._routingRules;
     }
 }
