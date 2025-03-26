@@ -333,25 +333,24 @@ export default class KMIP {
                 const resultUniqueBatchItemID =
                       response.lookup('Response Message/' +
                                       'Batch Item/Unique Batch Item ID')[0];
-
+                /** Collect all possible error from the response */
+                const errorList: { msg: string, got: any, expected: any }[] = [];
                 if (!resultUniqueBatchItemID ||
                     resultUniqueBatchItemID.compare(uuid) !== 0) {
                     this.transport.abortPipeline(conversation);
-                    const error = Error('Invalid batch item ID returned');
-                    logger.error('KMIP::request: failed',
-                        { resultUniqueBatchItemID, uuid, error, kmip: kmipLog });
-                    return cb(error);
+                    errorList.push({
+                        msg: 'Invalid batch item ID returned',
+                        got: resultUniqueBatchItemID?.toString('hex'),
+                        expected: uuid.toString('hex'),
+                    });
                 }
                 if (performedOperation !== operation) {
                     this.transport.abortPipeline(conversation);
-                    const error = Error('Operation mismatch',
-                        // TODO
-                        // @ts-ignore
-                        { got: performedOperation,
-                            expected: operation });
-                    logger.error('KMIP::request: Operation mismatch',
-                        { error, kmip: kmipLog });
-                    return cb(error);
+                    errorList.push({
+                        msg: 'Operation mismatch',
+                        got: performedOperation,
+                        expected: operation,
+                    });
                 }
                 if (resultStatus !== 'Success') {
                     const resultReason =
@@ -360,16 +359,15 @@ export default class KMIP {
                     const resultMessage =
                           response.lookup(
                               'Response Message/Batch Item/Result Message')[0];
-                    const error = Error('KMIP request failure',
-                        // TODO
-                        // @ts-ignore
-                        { resultStatus,
-                            resultReason,
-                            resultMessage });
-                    logger.error('KMIP::request: request failed',
-                        { error, resultStatus,
-                            resultReason, resultMessage, kmip: kmipLog });
-                    return cb(error);
+                    errorList.push({
+                        msg: 'error reponse',
+                        got: { resultStatus, resultReason, resultMessage },
+                        expected: undefined,
+                    });
+                }
+                if (errorList.length) {
+                    logger.error('KMIP::request error', { errorList, kmip: kmipLog });
+                    return cb(new Error('KMIP::request error'))
                 }
                 logger.info('KMIP::success', { kmip: kmipLog });
                 return cb(null, response);
