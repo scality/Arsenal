@@ -1,0 +1,155 @@
+// File to compare error behavior between KMS and KMIP thales
+// For KMIP resultMessage is not enforced by spec and could change between providers
+// Meaning we should use the resultReason (and action) to map to a KMS error
+// resultMessage can be written into the error description to provide enough details
+// Note: on AWS some error message can be cached
+{
+    "No access granted": {
+        "AWS": {
+            "PutBucketEncryption": null, // no validation
+            "PutObject": {
+                "code": "AccessDenied",
+                "message": [
+                    // Explicit Deny
+                    "User: $userArn is not authorized to perform: kms:GenerateDataKey on resource: $keyArn with an explicit deny in a resource-based policy", // or identity-based for IAM
+                    // No explicit Allow
+                    "User: $userArn is not authorized to perform: kms:GenerateDataKey on resource: $keyArn because no resource-based policy allows the kms:GenerateDataKey action"
+                ]
+            },
+            "GetObject": {
+                "code": "AccessDenied",
+                "message": [
+                    // Explicit Deny
+                    "User: $userArn is not authorized to perform: kms:Decrypt on resource: $keyArn with an explicit deny in a resource-based policy", // or identity-based for IAM
+                    // No explicit Allow
+                    "User: $userArn is not authorized to perform: kms:Decrypt on resource: $keyArn because no resource-based policy allows the kms:Decrypt action",
+                    "Access Denied"
+                ]
+            }
+        },
+        "KMIP Thales": {
+            // Even PutBucketEncryption as it needs to create Bucket key
+            "*": {
+                "resultReason": "General Failure",
+                "resultMessage": [
+                    "[NCERRInsufficientPermissions]: ",
+                    // TLS session idle timeout (24h) - needs a new connection or no idle
+                    "[NCERRUnauthorizedAccess]: Token has been revoked"
+                ]
+            }
+        }
+    },
+    "Key disabled": {
+        "AWS": {
+            "PutBucketEncryption": null, // no validation
+            "PutObject/GetObject": {
+                "code": "KMS.DisabledException",
+                "message": "$keyArn is disabled"
+            }
+        },
+        "KMIP Thales": {
+            "Encrypt/Decrypt": {
+                // state Pre-Active or revoked
+                "resultReason": "Permission Denied",
+                "resultMessage": "Key is not active"
+            },
+            "Activate": {
+                "resultReason":"Permission Denied",
+                "resultMessage":"[NCERRInvalidParamValue]: Can not change activation date unless key is in Pre-Active state."
+            },
+            "Revoke": {
+                "resultReason":"General Failure",
+                "resultMessage":"[NCERRConflict: Failed due to a conflict with the current state of the target resource]: Key cannot be revoked: invalid state: Deactivated"
+            },
+            "Destroy": {
+                "resultReason":"Permission Denied",
+                "resultMessage":"Attempt to Destroy a 'Destroyed' object"
+            }
+        }
+    },
+    "Key pending deletion or import": {
+        "AWS": {
+            "PutBucketEncryption": null, // no validation
+            "PutObject/GetObject": {
+                "code": "KMS.KMSInvalidStateException",
+                "message": ["$keyArn is pending deletion.", "$keyArn is pending import."]
+            }
+        },
+        "KMIP Thales": null // No pending import, deactivated in future works fine
+    },
+    "Key invalid format": {
+        "AWS": {
+            "PutBucketEncryption": null, // allow
+            "PutObject": {
+                "code": "KMS.NotFoundException",
+                "message": ["Invalid keyId '$keyId'", "Invalid arn $keyArn"]
+            },
+            "GetObject": null // not possible
+        },
+        "KMIP Thales": null // ignored, see Key not existing
+    },
+    "Key deleted or not existing": {
+        "AWS": {
+            "PutBucketEncryption": null, // allow
+            "PutObject": {
+                "code": "KMS.NotFoundException", // probably due to the need of DescribeKey to convert alias into keyArn
+                "message": ["Key '$keyArn' does not exist", "Alias $aliasArn is not found"]
+            },
+            "GetObject": {
+                "code": "AccessDenied",
+                "message": "User: $userArn is not authorized to perform: kms:Decrypt on the resource associated with this ciphertext because the resource does not exist in this Region, no resource-based policies allow access, or a resource-based policy explicitly denies access"
+            }
+        },
+        "KMIP Thales": {
+            "Encrypt/Decrypt/Activate/Revoke": {
+                "resultReason": "Item Not Found",
+                "resultMessage": [
+                    // Key dos not exists
+                    "[NCERRResourceNotFound: Resource not found]: ",
+                    // If key exists but is in destroyed state
+                    "[NCERRDestroyedKeyIsNotExportable: a destroyed key can not be exported]: Cannot export key in Destroyed state."
+                ]
+            },
+            "Destroy": {
+                "resultReason":"Item Not Found",
+                "resultMessage":"404 Not Found"
+            }
+        }
+    },
+    "Key invalid type or action like HMAC": {
+        "AWS": {
+            "PutBucketEncryption": null, // allow
+            "PutObject": {
+                "code": "KMS.InvalidKeyUsageException",
+                "message": [
+                    "$keyArn key usage is GENERATE_VERIFY_MAC which is not valid for GenerateDataKey.",
+                    "You cannot generate a data key with an asymmetric CMK"
+                ]
+            },
+            "GetObject": null // not possible
+        },
+        "KMIP Thales": {
+            "Encrypt/Decrypt": [{
+                "resultReason": "Permission Denied",
+                "resultMessage": [
+                    "Object specified is not able to be used for encryption",
+                    // GetObject: possible in KMIP to change key actions after creation
+                    "Object specified is not able to be used for decryption"
+                ]
+            },
+            {
+                "resultReason":"Cryptographic Failure",
+                "resultMessage":"Invalid algorithm"
+            }]
+        }
+    },
+    "Key invalid material (imported)": {
+        "AWS": null, // not possible to import invalid key material
+        "KMIP Thales": {
+            "Encrypt/Decrypt": {
+                "resultReason":"Cryptographic Failure",
+                "resultMessage": "Invalid padding: Invalid padding"
+            }
+        }
+    }
+}
