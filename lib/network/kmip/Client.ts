@@ -8,6 +8,7 @@ import KMIP from '.';
 import * as werelogs from 'werelogs';
 import { arsenalErrorKMIP } from '../utils'
 import { KMSInterface } from '../KMSInterface';
+import { kmipMsg } from './errorMapping';
 
 const CRYPTOGRAPHIC_OBJECT_TYPE = 'Symmetric Key';
 const CRYPTOGRAPHIC_ALGORITHM = 'AES';
@@ -352,7 +353,7 @@ export default class Client implements KMSInterface {
                 return cb(error);
             }
             return cb(null, keyIdentifier);
-        });
+        }, keyIdentifier);
     }
 
     /**
@@ -410,7 +411,7 @@ export default class Client implements KMSInterface {
                 return this._activateBucketKey(uniqueIdentifier, logger, cb);
             }
             return cb(null, uniqueIdentifier);
-        });
+        }, bucketName);
     }
 
     /**
@@ -449,7 +450,7 @@ export default class Client implements KMSInterface {
                 return cb(error);
             }
             return cb();
-        });
+        }, bucketKeyId);
     }
 
     /**
@@ -487,7 +488,7 @@ export default class Client implements KMSInterface {
                     return cb(error);
                 }
                 return cb();
-            });
+            }, bucketKeyId);
         });
     }
 
@@ -538,7 +539,7 @@ export default class Client implements KMSInterface {
                 return cb(error);
             }
             return cb(null, data);
-        });
+        }, masterKeyId);
     }
 
     /**
@@ -588,7 +589,7 @@ export default class Client implements KMSInterface {
                 return cb(error);
             }
             return cb(null, data);
-        });
+        }, masterKeyId);
     }
 
     healthcheck(logger, cb) {

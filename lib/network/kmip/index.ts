@@ -1,6 +1,8 @@
 import uuid from 'uuid/v4';
 import Message from './Message';
 import * as werelogs from 'werelogs';
+import { errorMapping, kmipMsg } from './errorMapping';
+import { errorInstances } from '../../errors';
 
 type UUIDOptions = { random?: number[]; rng?: () => number[]; } | null;
 function uuidv4(options: UUIDOptions, buffer: Buffer, offset?: number): Buffer;
@@ -282,9 +284,11 @@ export default class KMIP {
      *                           the content of the Request Payload as defined
      *                           by the KMIP protocol specification.
      * @param {Function} cb - The callback(error: Object, response: Object)
+     * @param {String} [resource] - KeyId or BucketName to identify in error message
      * @returns {undefined}
      */
-    request(logger: werelogs.Logger, operation: string, payload: any, cb: (error: Error | null, response?: any) => void) {
+    request(logger: werelogs.Logger, operation: string, payload: any,
+        cb: (error: Error | null, response?: any) => void, resource?: string) {
         const uuid = _uniqueBatchItemID();
         const message = KMIP.Message([
             KMIP.Structure('Request Message', [
@@ -319,9 +323,12 @@ export default class KMIP {
                     queues,
                 };
                 if (err) {
+                    // Retryable most likely network related
+                    const error = errorInstances.InternalError
+                        .customizeDescription(kmipMsg(operation, resource, err.toString()));
                     logger.error('KMIP::request: Failed to send message',
                         { error: err, kmip: kmipLog });
-                    return cb(err);
+                    return cb(error);
                 }
                 const response = this._decodeMessage(logger, rawResponse);
                 const performedOperation =
@@ -364,10 +371,21 @@ export default class KMIP {
                         got: { resultStatus, resultReason, resultMessage },
                         expected: undefined,
                     });
+                    // Use AccessDenied as default to avoid retryable error
+                    // Error message does not match AWS, generic message for KMIP provide every details
+                    const kmsErr = (errorMapping[resultStatus]?.[resultReason] ?? errorInstances.AccessDenied)
+                        .customizeDescription(
+                            kmipMsg(operation, resource, `${resultReason}: ${resultMessage}`)
+                        );
+                    logger.error('KMIP::request error', { errorList, kmip: kmipLog, error: kmsErr });
+                    return cb(kmsErr);
                 }
                 if (errorList.length) {
                     logger.error('KMIP::request error', { errorList, kmip: kmipLog });
-                    return cb(new Error('KMIP::request error'))
+                    // Retryable as connection is closed and all messages errored
+                    return cb(errorInstances.InternalError.customizeDescription(
+                        kmipMsg(operation, resource, `Internal ${errorList.map(e => e.msg)}`)
+                    ));
                 }
                 logger.info('KMIP::success', { kmip: kmipLog });
                 return cb(null, response);
