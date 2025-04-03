@@ -306,7 +306,7 @@ export default class KMIP {
         const startDate = Date.now();
         this.transport.send(
             logger, encodedMessage,
-            (err, conversation, rawResponse, latencies) => {
+            (err, conversation, rawResponse, latencies, queues) => {
                 const now = Date.now();
                 const kmipLog = {
                     host: this.options.transport.tls.host,
@@ -316,6 +316,7 @@ export default class KMIP {
                         deferred: (latencies.req ?? now) - latencies.defered,
                         req: now - latencies.req,
                     },
+                    queues,
                 };
                 if (err) {
                     logger.error('KMIP::request: Failed to send message',

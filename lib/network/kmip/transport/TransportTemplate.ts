@@ -18,11 +18,18 @@ interface KmipLatencies {
     /** Timestamp when request was sent. Missing if defered queue is drained with error */
     req?: number;
 };
+interface QueueSizes {
+    /** Number of messages in the defered queue */
+    deferred: number;
+    /** Number of messages sent waiting for response */
+    req: number;
+};
 type KmipCallback = (
     error: Error | null,
     socket: tls.TLSSocket | undefined,
     data: Buffer | undefined,
     latencies: KmipLatencies,
+    queues: QueueSizes,
 ) => void;
 
 export default class TransportTemplate {
@@ -66,11 +73,16 @@ export default class TransportTemplate {
      * @param error - the error to call the callback function with.
      */
     _drainQueuesWithError(error: Error) {
+        // On log the same queue size for each message for simplicity
+        const queueSizes = {
+            req: this.callbackPipeline.length,
+            deferred: this.deferedRequests.length,
+        };
         this.callbackPipeline.forEach(({ cb, latencies }) => {
-            cb(error, undefined, undefined, latencies);
+            cb(error, undefined, undefined, latencies, queueSizes);
         });
         this.deferedRequests.forEach(({ cb, timestamp }) => {
-            cb(error, undefined, undefined, { defered: timestamp });
+            cb(error, undefined, undefined, { defered: timestamp }, queueSizes);
         });
         this.callbackPipeline = [];
         this.deferedRequests = [];
@@ -117,7 +129,10 @@ export default class TransportTemplate {
             socket.on('data', data => {
                 const queuedCallback = this.callbackPipeline.shift();
                 if (queuedCallback) {
-                    queuedCallback.cb(null, socket, data, queuedCallback.latencies);
+                    queuedCallback.cb(null, socket, data, queuedCallback.latencies, {
+                        deferred: this.deferedRequests.length,
+                        req: this.callbackPipeline.length,
+                    });
                 }
 
                 if (this.callbackPipeline.length <
