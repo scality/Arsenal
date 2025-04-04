@@ -1,6 +1,8 @@
 import uuid from 'uuid/v4';
 import Message from './Message';
 import * as werelogs from 'werelogs';
+import { errorMapping, kmipMsg } from './errorMapping';
+import { errorInstances } from '../../errors';
 
 type UUIDOptions = { random?: number[]; rng?: () => number[]; } | null;
 function uuidv4(options: UUIDOptions, buffer: Buffer, offset?: number): Buffer;
@@ -282,9 +284,11 @@ export default class KMIP {
      *                           the content of the Request Payload as defined
      *                           by the KMIP protocol specification.
      * @param {Function} cb - The callback(error: Object, response: Object)
+     * @param {String} [resource] - KeyId or BucketName to identify in error message
      * @returns {undefined}
      */
-    request(logger: werelogs.Logger, operation: string, payload: any, cb: (error: Error | null, response?: any) => void) {
+    request(logger: werelogs.Logger, operation: string, payload: any,
+        cb: (error: Error | null, response?: any) => void, resource?: string) {
         const uuid = _uniqueBatchItemID();
         const message = KMIP.Message([
             KMIP.Structure('Request Message', [
@@ -306,16 +310,25 @@ export default class KMIP {
         const startDate = Date.now();
         this.transport.send(
             logger, encodedMessage,
-            (err, conversation, rawResponse) => {
+            (err, conversation, rawResponse, latencies, queues) => {
+                const now = Date.now();
                 const kmipLog = {
                     host: this.options.transport.tls.host,
-                    latencyMs: Date.now() - startDate,
                     op: operation,
+                    latencyMs: {
+                        total: now - startDate,
+                        deferred: (latencies.req ?? now) - latencies.defered,
+                        req: now - latencies.req,
+                    },
+                    queues,
                 };
                 if (err) {
+                    // Retryable most likely network related
+                    const error = errorInstances.InternalError
+                        .customizeDescription(kmipMsg(operation, resource, err.toString()));
                     logger.error('KMIP::request: Failed to send message',
                         { error: err, kmip: kmipLog });
-                    return cb(err);
+                    return cb(error);
                 }
                 const response = this._decodeMessage(logger, rawResponse);
                 const performedOperation =
@@ -327,25 +340,24 @@ export default class KMIP {
                 const resultUniqueBatchItemID =
                       response.lookup('Response Message/' +
                                       'Batch Item/Unique Batch Item ID')[0];
-
+                /** Collect all possible error from the response */
+                const errorList: { msg: string, got: any, expected: any }[] = [];
                 if (!resultUniqueBatchItemID ||
                     resultUniqueBatchItemID.compare(uuid) !== 0) {
                     this.transport.abortPipeline(conversation);
-                    const error = Error('Invalid batch item ID returned');
-                    logger.error('KMIP::request: failed',
-                        { resultUniqueBatchItemID, uuid, error, kmip: kmipLog });
-                    return cb(error);
+                    errorList.push({
+                        msg: 'Invalid batch item ID returned',
+                        got: resultUniqueBatchItemID?.toString('hex'),
+                        expected: uuid.toString('hex'),
+                    });
                 }
                 if (performedOperation !== operation) {
                     this.transport.abortPipeline(conversation);
-                    const error = Error('Operation mismatch',
-                        // TODO
-                        // @ts-ignore
-                        { got: performedOperation,
-                            expected: operation });
-                    logger.error('KMIP::request: Operation mismatch',
-                        { error, kmip: kmipLog });
-                    return cb(error);
+                    errorList.push({
+                        msg: 'Operation mismatch',
+                        got: performedOperation,
+                        expected: operation,
+                    });
                 }
                 if (resultStatus !== 'Success') {
                     const resultReason =
@@ -354,16 +366,26 @@ export default class KMIP {
                     const resultMessage =
                           response.lookup(
                               'Response Message/Batch Item/Result Message')[0];
-                    const error = Error('KMIP request failure',
-                        // TODO
-                        // @ts-ignore
-                        { resultStatus,
-                            resultReason,
-                            resultMessage });
-                    logger.error('KMIP::request: request failed',
-                        { error, resultStatus,
-                            resultReason, resultMessage, kmip: kmipLog });
-                    return cb(error);
+                    errorList.push({
+                        msg: 'error reponse',
+                        got: { resultStatus, resultReason, resultMessage },
+                        expected: undefined,
+                    });
+                    // Use AccessDenied as default to avoid retryable error
+                    // Error message does not match AWS, generic message for KMIP provide every details
+                    const kmsErr = (errorMapping[resultStatus]?.[resultReason] ?? errorInstances.AccessDenied)
+                        .customizeDescription(
+                            kmipMsg(operation, resource, `${resultReason}: ${resultMessage}`)
+                        );
+                    logger.error('KMIP::request error', { errorList, kmip: kmipLog, error: kmsErr });
+                    return cb(kmsErr);
+                }
+                if (errorList.length) {
+                    logger.error('KMIP::request error', { errorList, kmip: kmipLog });
+                    // Retryable as connection is closed and all messages errored
+                    return cb(errorInstances.InternalError.customizeDescription(
+                        kmipMsg(operation, resource, `Internal ${errorList.map(e => e.msg)}`)
+                    ));
                 }
                 logger.info('KMIP::success', { kmip: kmipLog });
                 return cb(null, response);
