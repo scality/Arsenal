@@ -12,14 +12,35 @@ export type Options = {
     };
 }
 
+interface KmipLatencies {
+    /** Timestamp when request was defered */
+    defered?: number;
+    /** Timestamp when request was sent. Missing if defered queue is drained with error */
+    req?: number;
+};
+interface QueueSizes {
+    /** Number of messages in the defered queue */
+    deferred: number;
+    /** Number of messages sent waiting for response */
+    req: number;
+};
+type KmipCallback = (
+    error: Error | null,
+    socket: tls.TLSSocket | undefined,
+    data: Buffer | undefined,
+    latencies: KmipLatencies,
+    queues: QueueSizes,
+) => void;
+
 export default class TransportTemplate {
     channel: typeof tls;
     options: Options;
     pipelineDepth: number;
-    callbackPipeline: ((error: Error | null, socket?: any, data?: any) => void)[];
+    callbackPipeline: { cb: KmipCallback, latencies: KmipLatencies }[];
     deferedRequests: Array<{
         encodedMessage: Buffer;
-        cb: ((error: Error | null, data?: any) => void)
+        timestamp: number;
+        cb: KmipCallback;
     }>;
     pipelineDrainedCallback: any | null;
     handshakeFunction: any | null;
@@ -52,11 +73,16 @@ export default class TransportTemplate {
      * @param error - the error to call the callback function with.
      */
     _drainQueuesWithError(error: Error) {
-        this.callbackPipeline.forEach(queuedCallback => {
-            queuedCallback(error);
+        // On log the same queue size for each message for simplicity
+        const queueSizes = {
+            req: this.callbackPipeline.length,
+            deferred: this.deferedRequests.length,
+        };
+        this.callbackPipeline.forEach(({ cb, latencies }) => {
+            cb(error, undefined, undefined, latencies, queueSizes);
         });
-        this.deferedRequests.forEach(deferedRequest => {
-            deferedRequest.cb(error);
+        this.deferedRequests.forEach(({ cb, timestamp }) => {
+            cb(error, undefined, undefined, { defered: timestamp }, queueSizes);
         });
         this.callbackPipeline = [];
         this.deferedRequests = [];
@@ -102,7 +128,12 @@ export default class TransportTemplate {
                 });
             socket.on('data', data => {
                 const queuedCallback = this.callbackPipeline.shift();
-                queuedCallback?.(null, socket, data);
+                if (queuedCallback) {
+                    queuedCallback.cb(null, socket, data, queuedCallback.latencies, {
+                        deferred: this.deferedRequests.length,
+                        req: this.callbackPipeline.length,
+                    });
+                }
 
                 if (this.callbackPipeline.length <
                     this.pipelineDepth &&
@@ -110,9 +141,10 @@ export default class TransportTemplate {
                     const deferedRequest = this.deferedRequests.shift();
                     process.nextTick(() => {
                         if (deferedRequest) {
-                            this.send(logger,
+                            this._doSend(logger,
                                 deferedRequest.encodedMessage,
-                                deferedRequest.cb);
+                                deferedRequest.cb,
+                                deferedRequest.timestamp);
                         }
                     });
                 } else if (this.callbackPipeline.length === 0 &&
@@ -141,9 +173,11 @@ export default class TransportTemplate {
     _doSend(
         logger: werelogs.Logger,
         encodedMessage: Buffer,
-        cb: (error: Error | null, socket?: any, data?: any) => void,
+        cb: KmipCallback,
+        deferedTimestamp?: number,
     ) {
-        this.callbackPipeline.push(cb);
+        this.callbackPipeline.push({ cb,
+            latencies: { req: Date.now(), defered: deferedTimestamp } });
         if (this.socket === null || this.socket.destroyed) {
             this._createConversation(logger, () => {});
         }
@@ -166,12 +200,12 @@ export default class TransportTemplate {
     send(
         logger: werelogs.Logger,
         encodedMessage: Buffer,
-        cb: (error: Error | null, conversation?: any, rawResponse?: any) => void,
+        cb: KmipCallback
     ) {
-        if (this.callbackPipeline.length >= this.pipelineDepth) {
-            return this.deferedRequests.push({ encodedMessage, cb });
-        }
         assert(encodedMessage.length !== 0);
+        if (this.callbackPipeline.length >= this.pipelineDepth) {
+            return this.deferedRequests.push({ encodedMessage, cb, timestamp: Date.now() });
+        }
         return this._doSend(logger, encodedMessage, cb);
     }
 

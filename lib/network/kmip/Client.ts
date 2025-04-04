@@ -7,6 +7,8 @@ import KMIP from '.';
 import * as werelogs from 'werelogs';
 import { arsenalErrorKMIP } from '../utils';
 import { KMSInterface } from '../KMSInterface';
+import { errorInstances } from '../../errors';
+import { kmipMsg } from './errorMapping';
 
 const CRYPTOGRAPHIC_OBJECT_TYPE = 'Symmetric Key';
 const CRYPTOGRAPHIC_ALGORITHM = 'AES';
@@ -67,13 +69,12 @@ function _negotiateProtocolVersion(client: any, logger: werelogs.Logger, cb: any
             KMIP.Integer('Protocol Version Major', 1),
             KMIP.Integer('Protocol Version Minor', 2),
         ]),
-    ], (err, response) => {
+    ], (error, response) => {
         const kmipLog = {
             host: client.host,
             latencyMs: Date.now() - startDate
         };
-        if (err) {
-            const error = arsenalErrorKMIP(err);
+        if (error) {
             logger.error('KMIP::negotiateProtocolVersion',
                 { error, kmip: kmipLog,
                     vendorIdentification: client.vendorIdentification });
@@ -107,13 +108,12 @@ function _mapExtensions(client: any, logger: werelogs.Logger, cb: any) {
     const startDate = Date.now();
     return client.kmip.request(logger, 'Query', [
         KMIP.Enumeration('Query Function', 'Query Extension Map'),
-    ], (err, response) => {
+    ], (error, response) => {
         const kmipLog = {
             host: client.host,
             latencyMs: Date.now() - startDate
         };
-        if (err) {
-            const error = arsenalErrorKMIP(err);
+        if (error) {
             logger.error('KMIP::mapExtensions',
                 { error, kmip: kmipLog,
                     vendorIdentification: client.vendorIdentification });
@@ -145,13 +145,12 @@ function _queryServerInformation(client: any, logger: werelogs.Logger, cb: any) 
     const startDate = Date.now();
     client.kmip.request(logger, 'Query', [
         KMIP.Enumeration('Query Function', 'Query Server Information'),
-    ], (err, response) => {
+    ], (error, response) => {
         const kmipLog = {
             host: client.host,
             latencyMs: Date.now() - startDate
         };
-        if (err) {
-            const error = arsenalErrorKMIP(err);
+        if (error) {
             logger.warn('KMIP::queryServerInformation',
                 { error, kmip: kmipLog });
             /* no error returned, caller can keep going */
@@ -186,13 +185,12 @@ function _queryOperationsAndObjects(client: any, logger: werelogs.Logger, cb: an
     return client.kmip.request(logger, 'Query', [
         KMIP.Enumeration('Query Function', 'Query Operations'),
         KMIP.Enumeration('Query Function', 'Query Objects'),
-    ], (err, response) => {
+    ], (error, response) => {
         const kmipLog = {
             host: client.host,
             latencyMs: Date.now() - startDate
         };
-        if (err) {
-            const error = arsenalErrorKMIP(err);
+        if (error) {
             logger.error('KMIP::queryOperationsAndObjects',
                 { error, kmip: kmipLog,
                     vendorIdentification: client.vendorIdentification });
@@ -322,6 +320,21 @@ export default class Client implements KMSInterface {
     }
 
 
+    _checkUniqueIdentifier(keyIdentifier: string, response: any, operation: string, logger: werelogs.Logger) {
+        const uniqueIdentifier = response.lookup(searchFilter.uniqueIdentifier)[0];
+        if (uniqueIdentifier !== keyIdentifier) {
+            // Retryable
+            const error = errorInstances.InternalError.customizeDescription(
+                kmipMsg(operation, keyIdentifier,
+                    'Server did not return the expected identifier')
+            );
+            logger.error(`KMIP::${operation}`,
+                { error, uniqueIdentifier, keyIdentifier });
+            return error;
+        }
+        return null;
+    }
+
     /**
      * Activate a cryptographic key managed by the server,
      * for a specific bucket. This is a required action to perform after
@@ -333,25 +346,16 @@ export default class Client implements KMSInterface {
     _activateBucketKey(keyIdentifier: string, logger: werelogs.Logger, cb: any) {
         return this.kmip.request(logger, 'Activate', [
             KMIP.TextString('Unique Identifier', keyIdentifier),
-        ], (err, response) => {
-            if (err) {
-                const error = arsenalErrorKMIP(err);
+        ], (error, response) => {
+            if (error) {
                 logger.error('KMIP::_activateBucketKey',
                     { error,
                         serverInformation: this.serverInformation });
                 return cb(error);
             }
-            const uniqueIdentifier =
-                  response.lookup(searchFilter.uniqueIdentifier)[0];
-            if (uniqueIdentifier !== keyIdentifier) {
-                const error = arsenalErrorKMIP(
-                    'Server did not return the expected identifier');
-                logger.error('KMIP::cipherDataKey',
-                    { error, uniqueIdentifier });
-                return cb(error);
-            }
-            return cb(null, keyIdentifier);
-        });
+            const keyErr = this._checkUniqueIdentifier(keyIdentifier, response, 'Activate', logger);
+            return cb(keyErr, keyIdentifier);
+        }, keyIdentifier);
     }
 
     /**
@@ -386,9 +390,8 @@ export default class Client implements KMSInterface {
         return this.kmip.request(logger, 'Create', [
             KMIP.Enumeration('Object Type', CRYPTOGRAPHIC_OBJECT_TYPE),
             KMIP.Structure('Template-Attribute', attributes),
-        ], (err, response) => {
-            if (err) {
-                const error = arsenalErrorKMIP(err);
+        ], (error, response) => {
+            if (error) {
                 logger.error('KMIP::createBucketKey',
                     { error,
                         serverInformation: this.serverInformation });
@@ -399,8 +402,11 @@ export default class Client implements KMSInterface {
             const uniqueIdentifier =
                   response.lookup(searchFilter.uniqueIdentifier)[0];
             if (createdObjectType !== CRYPTOGRAPHIC_OBJECT_TYPE) {
-                const error = arsenalErrorKMIP(
-                    'Server created an object of wrong type');
+                // Retryable
+                const error = errorInstances.InternalError.customizeDescription(
+                    kmipMsg('Create', bucketName,
+                        'Server created an object of wrong type')
+                );
                 logger.error('KMIP::createBucketKey',
                     { error, createdObjectType });
                 return cb(error);
@@ -409,7 +415,7 @@ export default class Client implements KMSInterface {
                 return this._activateBucketKey(uniqueIdentifier, logger, cb);
             }
             return cb(null, uniqueIdentifier);
-        });
+        }, bucketName);
     }
 
     /**
@@ -430,25 +436,16 @@ export default class Client implements KMSInterface {
                 KMIP.TextString('Revocation Message',
                     'About to be deleted'),
             ]),
-        ], (err, response) => {
-            if (err) {
-                const error = arsenalErrorKMIP(err);
+        ], (error, response) => {
+            if (error) {
                 logger.error('KMIP::_revokeBucketKey',
                     { error,
                         serverInformation: this.serverInformation });
                 return cb(error);
             }
-            const uniqueIdentifier =
-                  response.lookup(searchFilter.uniqueIdentifier)[0];
-            if (uniqueIdentifier !== bucketKeyId) {
-                const error = arsenalErrorKMIP(
-                    'Server did not return the expected identifier');
-                logger.error('KMIP::_revokeBucketKey',
-                    { error, uniqueIdentifier });
-                return cb(error);
-            }
-            return cb();
-        });
+            const keyErr = this._checkUniqueIdentifier(bucketKeyId, response, 'Revoke', logger);
+            return cb(keyErr);
+        }, bucketKeyId);
     }
 
     /**
@@ -476,17 +473,9 @@ export default class Client implements KMSInterface {
                             serverInformation: this.serverInformation });
                     return cb(error);
                 }
-                const uniqueIdentifier =
-                      response.lookup(searchFilter.uniqueIdentifier)[0];
-                if (uniqueIdentifier !== bucketKeyId) {
-                    const error = arsenalErrorKMIP(
-                        'Server did not return the expected identifier');
-                    logger.error('KMIP::destroyBucketKey',
-                        { error, uniqueIdentifier });
-                    return cb(error);
-                }
-                return cb();
-            });
+                const keyErr = this._checkUniqueIdentifier(bucketKeyId, response, 'Destroy', logger);
+                return cb(keyErr);
+            }, bucketKeyId);
         });
     }
 
@@ -518,26 +507,17 @@ export default class Client implements KMSInterface {
             ]),
             KMIP.ByteString('Data', plainTextDataKey),
             KMIP.ByteString('IV/Counter/Nonce', CRYPTOGRAPHIC_DEFAULT_IV),
-        ], (err, response) => {
-            if (err) {
-                const error = arsenalErrorKMIP(err);
+        ], (error, response) => {
+            if (error) {
                 logger.error('KMIP::cipherDataKey',
                     { error,
                         serverInformation: this.serverInformation });
                 return cb(error);
             }
-            const uniqueIdentifier =
-                  response.lookup(searchFilter.uniqueIdentifier)[0];
+            const keyErr = this._checkUniqueIdentifier(masterKeyId, response, 'Encrypt', logger);
             const data = response.lookup(searchFilter.data)[0];
-            if (uniqueIdentifier !== masterKeyId) {
-                const error = arsenalErrorKMIP(
-                    'Server did not return the expected identifier');
-                logger.error('KMIP::cipherDataKey',
-                    { error, uniqueIdentifier });
-                return cb(error);
-            }
-            return cb(null, data);
-        });
+            return cb(keyErr, data);
+        }, masterKeyId);
     }
 
     /**
@@ -568,26 +548,17 @@ export default class Client implements KMSInterface {
             ]),
             KMIP.ByteString('Data', cipheredDataKey),
             KMIP.ByteString('IV/Counter/Nonce', CRYPTOGRAPHIC_DEFAULT_IV),
-        ], (err, response) => {
-            if (err) {
-                const error = arsenalErrorKMIP(err);
+        ], (error, response) => {
+            if (error) {
                 logger.error('KMIP::decipherDataKey',
                     { error,
                         serverInformation: this.serverInformation });
                 return cb(error);
             }
-            const uniqueIdentifier =
-                  response.lookup(searchFilter.uniqueIdentifier)[0];
+            const keyErr = this._checkUniqueIdentifier(masterKeyId, response, 'Decrypt', logger);
             const data = response.lookup(searchFilter.data)[0];
-            if (uniqueIdentifier !== masterKeyId) {
-                const error = arsenalErrorKMIP(
-                    'Server did not return the right identifier');
-                logger.error('KMIP::decipherDataKey',
-                    { error, uniqueIdentifier });
-                return cb(error);
-            }
-            return cb(null, data);
-        });
+            return cb(keyErr, data);
+        }, masterKeyId);
     }
 
     healthcheck(logger, cb) {
