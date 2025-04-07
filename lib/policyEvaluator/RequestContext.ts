@@ -12,7 +12,7 @@ import {
     actionMapSSO,
     actionMapSTS,
     actionMapMetadata,
-    actionMapScuba,
+    actionMapSUR,
 } from './utils/actionMaps';
 
 export const actionNeedQuotaCheck = {
@@ -62,8 +62,8 @@ function _findAction(service: string, method: string) {
         return actionMapSTS[method];
     case 'metadata':
         return actionMapMetadata[method];
-    case 'scuba':
-        return actionMapScuba[method];
+    case 'sur':
+        return actionMapSUR[method];
     default:
         return undefined;
     }
@@ -133,8 +133,8 @@ function _buildArn(
         return `arn:scality:metadata::${requesterInfo!.accountid}:` +
             `${generalResource}/`;
     }
-    case 'scuba': {
-        return `arn:scality:scuba::${requesterInfo!.accountid}:` +
+    case 'sur': {
+        return `arn:scality:sur::${requesterInfo!.accountid}:` +
             `${generalResource}${specificResource ? `/${specificResource}` : ''}`;
     }
     default:

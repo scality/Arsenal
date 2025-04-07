@@ -227,7 +227,7 @@ const actionMapMetadata = {
     default: 'metadata:bucketd',
 };
 
-const actionMapScuba = {
+const actionMapSUR = {
     GetMetrics: 'sur:GetMetrics',
     GetMetricsBatch: 'sur:GetMetricsBatch',
     AdminStartIngest: 'sur:AdminStartIngest',
@@ -248,5 +248,5 @@ export {
     actionMapSSO,
     actionMapSTS,
     actionMapMetadata,
-    actionMapScuba,
+    actionMapSUR,
 };

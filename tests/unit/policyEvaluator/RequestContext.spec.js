@@ -152,11 +152,11 @@ describe('RequestContext', () => {
         assert.strictEqual(metadataRC.getResource(), 'arn:scality:metadata::JOHNACCOUNT:general-resource/specific-resource');
     });
 
-    it('should return correct ARN for scuba service', () => {
-        const scubaParams = [...constructorParams];
-        scubaParams[7] = 'scuba';
-        const scubaRC = new RequestContext(...scubaParams);
-        assert.strictEqual(scubaRC.getResource(), 'arn:scality:scuba::JOHNACCOUNT:general-resource/specific-resource');
+    it('should return correct ARN for SUR service', () => {
+        const surParams = [...constructorParams];
+        surParams[7] = 'sur';
+        const surRC = new RequestContext(...surParams);
+        assert.strictEqual(surRC.getResource(), 'arn:scality:sur::JOHNACCOUNT:general-resource/specific-resource');
     });
 
     it('should return correct ARN for ring service', () => {
