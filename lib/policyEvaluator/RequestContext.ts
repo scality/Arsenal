@@ -12,7 +12,7 @@ import {
     actionMapSSO,
     actionMapSTS,
     actionMapMetadata,
-    actionMapScuba,
+    actionMapSUR,
 } from './utils/actionMaps';
 
 const _actionNeedQuotaCheck = {
@@ -22,25 +22,25 @@ const _actionNeedQuotaCheck = {
 
 function _findAction(service: string, method: string) {
     switch (service) {
-        case 's3':
-            return actionMapRQ[method];
-        case 'iam':
-            return actionMapIAM[method];
-        case 'sso':
-            return actionMapSSO[method];
-        case 'ring':
-            return `ring:${method}`;
-        case 'utapi':
-            // currently only method is ListMetrics
-            return `utapi:${method}`;
-        case 'sts':
-            return actionMapSTS[method];
-        case 'metadata':
-            return actionMapMetadata[method];
-        case 'scuba':
-            return actionMapScuba[method];
-        default:
-            return undefined;
+    case 's3':
+        return actionMapRQ[method];
+    case 'iam':
+        return actionMapIAM[method];
+    case 'sso':
+        return actionMapSSO[method];
+    case 'ring':
+        return `ring:${method}`;
+    case 'utapi':
+        // currently only method is ListMetrics
+        return `utapi:${method}`;
+    case 'sts':
+        return actionMapSTS[method];
+    case 'metadata':
+        return actionMapMetadata[method];
+    case 'sur':
+        return actionMapSUR[method];
+    default:
+        return undefined;
     }
 }
 
@@ -107,13 +107,13 @@ function _buildArn(
             }
             return `arn:scality:metadata::${requesterInfo!.accountid}:` +
             `${generalResource}/`;
-        }
-        case 'scuba': {
-            return `arn:scality:scuba::${requesterInfo!.accountid}:` +
-            `${generalResource}${specificResource ? '/' + specificResource : ''}`;
-        }
-        default:
-            return undefined;
+    }
+    case 'sur': {
+        return `arn:scality:sur::${requesterInfo!.accountid}:` +
+            `${generalResource}${specificResource ? `/${specificResource}` : ''}`;
+    }
+    default:
+        return undefined;
     }
 }
 
@@ -714,7 +714,7 @@ export default class RequestContext {
     /**
      * Get object lock retention days
      *
-     * @returns objectLockRetentionDays - object lock retention days 
+     * @returns objectLockRetentionDays - object lock retention days
      */
     getObjectLockRetentionDays() {
         return this._objectLockRetentionDays;

@@ -15,7 +15,7 @@ describe('RequestContext', () => {
         'us-east-1', // locationConstraint
         { // requesterInfo
             arn: 'arn:aws:iam::user/johndoe',
-            accountId: 'JOHNACCOUNT',
+            accountid: 'JOHNACCOUNT',
             username: 'John Doe',
             principalType: 'user',
         },
@@ -39,14 +39,14 @@ describe('RequestContext', () => {
         {
             name: 'getRequesterInfo',
             expectedValue: {
-                accountId: 'JOHNACCOUNT',
+                accountid: 'JOHNACCOUNT',
                 arn: 'arn:aws:iam::user/johndoe',
                 username: 'John Doe',
                 principalType: 'user',
             },
         },
         { name: 'getRequesterIp', expectedValueToString: '127.0.0.1' },
-        { name: 'getRequesterAccountId', expectedValue: undefined },
+        { name: 'getRequesterAccountId', expectedValue: 'JOHNACCOUNT' },
         { name: 'getRequesterEndArn', expectedValue: 'arn:aws:iam::user/johndoe' },
         { name: 'getRequesterExternalId', expectedValue: undefined },
         { name: 'getRequesterPrincipalArn', expectedValue: 'arn:aws:iam::user/johndoe' },
@@ -98,7 +98,7 @@ describe('RequestContext', () => {
             q2: 'v2',
         },
         requesterInfo: {
-            accountId: 'JOHNACCOUNT',
+            accountid: 'JOHNACCOUNT',
             arn: 'arn:aws:iam::user/johndoe',
             principalType: 'user',
             username: 'John Doe',
@@ -125,5 +125,72 @@ describe('RequestContext', () => {
         const deserializedRC = RequestContext.deSerialize(serialized);
         const newSerialized = JSON.parse(deserializedRC.serialize());
         assert.deepStrictEqual(newSerialized, SerializedFields);
+    });
+
+    it('should return correct ARN for utapi service', () => {
+        const utapiParams = [...constructorParams];
+        utapiParams[7] = 'utapi';
+        const utapiRC = new RequestContext(...utapiParams);
+        assert.strictEqual(utapiRC.getResource(), 'arn:scality:utapi::JOHNACCOUNT:general-resource/specific-resource');
+    });
+
+    it('should return correct ARN for sts service', () => {
+        const stsParams = [...constructorParams];
+        stsParams[7] = 'sts';
+        const stsRC = new RequestContext(...stsParams);
+        assert.strictEqual(stsRC.getResource(), 'arn:aws:iam::undefined:general-resourcespecific-resource');
+    });
+
+    it('should return correct ARN for metadata service', () => {
+        const metadataParams = [...constructorParams];
+        metadataParams[7] = 'metadata';
+        const metadataRC = new RequestContext(...metadataParams);
+        assert.strictEqual(
+            metadataRC.getResource(),
+            'arn:scality:metadata::JOHNACCOUNT:general-resource/specific-resource',
+        );
+    });
+
+    it('should return correct ARN for SUR service', () => {
+        const surParams = [...constructorParams];
+        surParams[7] = 'sur';
+        const surRC = new RequestContext(...surParams);
+        assert.strictEqual(surRC.getResource(), 'arn:scality:sur::JOHNACCOUNT:general-resource/specific-resource');
+    });
+
+    it('should return correct ARN for ring service', () => {
+        const ringParams = [...constructorParams];
+        ringParams[7] = 'ring';
+        const ringRC = new RequestContext(...ringParams);
+        assert.strictEqual(ringRC.getResource(), 'arn:aws:ring::JOHNACCOUNT:general-resource/specific-resource');
+    });
+
+    it('should return correct ARN for sso service', () => {
+        const ssoParams = [...constructorParams];
+        ssoParams[7] = 'sso';
+        const ssoRC = new RequestContext(...ssoParams);
+        assert.strictEqual(ssoRC.getResource(), 'arn:scality:sso:::general-resource/specific-resource');
+    });
+
+    it('should return correct ARN for s3 service without specific resource', () => {
+        const s3Params = [...constructorParams];
+        s3Params[3] = undefined; // specificResource
+        const s3RC = new RequestContext(...s3Params);
+        assert.strictEqual(s3RC.getResource(), 'arn:aws:s3:::general-resource');
+    });
+
+    it('should return correct ARN for s3 service without general and specific resource', () => {
+        const s3Params = [...constructorParams];
+        s3Params[2] = undefined; // generalResource
+        s3Params[3] = undefined; // specificResource
+        const s3RC = new RequestContext(...s3Params);
+        assert.strictEqual(s3RC.getResource(), 'arn:aws:s3:::');
+    });
+
+    it('should return undefined for unknown service', () => {
+        const unknownParams = [...constructorParams];
+        unknownParams[7] = 'unknown';
+        const unknownRC = new RequestContext(...unknownParams);
+        assert.strictEqual(unknownRC.getResource(), undefined);
     });
 });
