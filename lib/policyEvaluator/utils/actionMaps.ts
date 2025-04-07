@@ -202,12 +202,15 @@ const actionMapMetadata = {
 };
 
 const actionMapScuba = {
-    GetMetrics: 'scuba:GetMetrics',
-    GetMetricsBatch: 'scuba:GetMetricsBatch',
-    AdminStartIngest: 'scuba:AdminStartIngest',
-    AdminStopIngest: 'scuba:AdminStopIngest',
-    AdminReadRaftCseq: 'scuba:AdminReadRaftCseq',
-    AdminTriggerRepair: 'scuba:AdminTriggerRepair',
+    GetMetrics: 'sur:GetMetrics',
+    GetMetricsBatch: 'sur:GetMetricsBatch',
+    AdminStartIngest: 'sur:AdminStartIngest',
+    AdminStopIngest: 'sur:AdminStopIngest',
+    AdminReadRaftCseq: 'sur:AdminReadRaftCseq',
+    AdminTriggerRepair: 'sur:AdminTriggerRepair',
+    AdminStartDownsample: 'sur:AdminStartDownsample',
+    AdminStopDownsample: 'sur:AdminStopDownsample',
+    AdminTriggerDownsample: 'sur:AdminTriggerDownsample',
 };
 
 export {
