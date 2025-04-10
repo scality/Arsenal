@@ -7,9 +7,9 @@ import TlsTransport from './transport/tls';
 import KMIP from '.';
 import * as werelogs from 'werelogs';
 import { arsenalErrorKMIP } from '../utils'
-import { KMSInterface } from '../KMSInterface';
 import { errorInstances } from '../../errors';
 import { kmipMsg } from './errorMapping';
+import { KMSInterface, getKeyIdFromArn, KmsBackend, KmsProtocol, KmsType, makeBackend } from '../KMSInterface';
 
 const CRYPTOGRAPHIC_OBJECT_TYPE = 'Symmetric Key';
 const CRYPTOGRAPHIC_ALGORITHM = 'AES';
@@ -241,11 +241,13 @@ export default class Client implements KMSInterface {
     serverInformation: any[];
     kmip: KMIP;
     host: string;
+    public readonly backend: KmsBackend<KmsType.ext>;
 
     /**
      * Construct a high level KMIP driver suitable for cloudserver
      * @param options - Instance options
      * @param options.kmip - Low level driver options
+     * @param options.kmip.providerName - Name of kmip provider
      * @param options.kmip.client - This high level driver options
      * @param options.kmip.client.compoundCreateActivate -
      *                 Depends on the server's ability. False offers the best
@@ -266,6 +268,7 @@ export default class Client implements KMSInterface {
     constructor(
         options: {
             kmip: {
+                providerName: string;
                 codec: any;
                 transport: any;
                 client: {
@@ -287,6 +290,8 @@ export default class Client implements KMSInterface {
         this.kmip.registerHandshakeFunction((logger, cb) => {
             this._kmipHandshake(logger, cb);
         });
+
+        this.backend = makeBackend(KmsType.ext, KmsProtocol.kmip, options.kmip.providerName);
     }
 
     /**
@@ -340,11 +345,12 @@ export default class Client implements KMSInterface {
      * Activate a cryptographic key managed by the server,
      * for a specific bucket. This is a required action to perform after
      * the key creation.
-     * @param keyIdentifier - The bucket key Id
+     * @param keyIdentifierOrArn - The bucket key Id
      * @param logger - Werelog logger object
-     * @param cb - The callback(err: Error)
+     * @param cb - The callback(err: Error, bucketKeyId: String, bucketKeyArn: String)
      */
-    _activateBucketKey(keyIdentifier: string, logger: werelogs.Logger, cb: any) {
+    _activateBucketKey(keyIdentifierOrArn: string, logger: werelogs.Logger, cb: any) {
+        const keyIdentifier = getKeyIdFromArn(keyIdentifierOrArn);
         return this.kmip.request(logger, 'Activate', [
             KMIP.TextString('Unique Identifier', keyIdentifier),
         ], (error, response) => {
@@ -355,7 +361,7 @@ export default class Client implements KMSInterface {
                 return cb(error);
             }
             const keyErr = this._checkUniqueIdentifier(keyIdentifier, response, 'Activate', logger);
-            return cb(keyErr, keyIdentifier);
+            return cb(keyErr, keyIdentifier, `${this.backend.arnPrefix}${keyIdentifier}`);
         }, keyIdentifier);
     }
 
@@ -364,7 +370,7 @@ export default class Client implements KMSInterface {
      * for a specific bucket
      * @param bucketName - The bucket name
      * @param logger - Werelog logger object
-     * @param cb - The callback(err: Error, bucketKeyId: String)
+     * @param cb - The callback(err: Error, bucketKeyId: String, bucketKeyArn: String)
      */
     createBucketKey(bucketName: string, logger: werelogs.Logger, cb: any) {
         const attributes: any = [];
@@ -415,7 +421,7 @@ export default class Client implements KMSInterface {
             if (!this.options.compoundCreateActivate) {
                 return this._activateBucketKey(uniqueIdentifier, logger, cb);
             }
-            return cb(null, uniqueIdentifier);
+            return cb(null, uniqueIdentifier, `${this.backend.arnPrefix}${uniqueIdentifier}`);
         }, bucketName);
     }
 
@@ -423,11 +429,12 @@ export default class Client implements KMSInterface {
      * Revoke a cryptographic key managed by the server, for a specific bucket.
      * This is a required action to perform before being able to destroy the
      * managed key.
-     * @param bucketKeyId - The bucket key Id
+     * @param bucketKeyIdOrArn - The bucket key Id
      * @param logger - Werelog logger object
      * @param cb - The callback(err: Error)
      */
-    _revokeBucketKey(bucketKeyId: string, logger: werelogs.Logger, cb: any) {
+    _revokeBucketKey(bucketKeyIdOrArn: string, logger: werelogs.Logger, cb: any) {
+        const bucketKeyId = getKeyIdFromArn(bucketKeyIdOrArn);
         // maybe revoke first
         return this.kmip.request(logger, 'Revoke', [
             KMIP.TextString('Unique Identifier', bucketKeyId),
@@ -451,11 +458,12 @@ export default class Client implements KMSInterface {
 
     /**
      * Destroy a cryptographic key managed by the server, for a specific bucket.
-     * @param bucketKeyId - The bucket key Id
+     * @param bucketKeyIdOrArn - The bucket key Id
      * @param logger - Werelog logger object
      * @param cb - The callback(err: Error)
      */
-    destroyBucketKey(bucketKeyId: string, logger: werelogs.Logger, cb: any) {
+    destroyBucketKey(bucketKeyIdOrArn: string, logger: werelogs.Logger, cb: any) {
+        const bucketKeyId = getKeyIdFromArn(bucketKeyIdOrArn);
         return this._revokeBucketKey(bucketKeyId, logger, err => {
             if (err) {
                 const error = arsenalErrorKMIP(err);
@@ -483,7 +491,7 @@ export default class Client implements KMSInterface {
     /**
      *
      * @param cryptoScheme - crypto scheme version number
-     * @param masterKeyId - key to retrieve master key
+     * @param masterKeyIdOrArn - key to retrieve master key
      * @param plainTextDataKey - data key
      * @param logger - werelog logger object
      * @param cb - callback
@@ -491,11 +499,12 @@ export default class Client implements KMSInterface {
      */
     cipherDataKey(
         cryptoScheme: number,
-        masterKeyId: string,
+        masterKeyIdOrArn: string,
         plainTextDataKey: Buffer,
         logger: werelogs.Logger,
         cb: any,
     ) {
+        const masterKeyId = getKeyIdFromArn(masterKeyIdOrArn);
         return this.kmip.request(logger, 'Encrypt', [
             KMIP.TextString('Unique Identifier', masterKeyId),
             KMIP.Structure('Cryptographic Parameters', [
@@ -524,7 +533,7 @@ export default class Client implements KMSInterface {
     /**
      *
      * @param cryptoScheme - crypto scheme version number
-     * @param masterKeyId - key to retrieve master key
+     * @param masterKeyIdOrArn - key to retrieve master key
      * @param cipheredDataKey - data key
      * @param logger - werelog logger object
      * @param cb - callback
@@ -532,11 +541,12 @@ export default class Client implements KMSInterface {
      */
     decipherDataKey(
         cryptoScheme: number,
-        masterKeyId: string,
+        masterKeyIdOrArn: string,
         cipheredDataKey: Buffer,
         logger: werelogs.Logger,
         cb: any,
     ) {
+        const masterKeyId = getKeyIdFromArn(masterKeyIdOrArn);
         return this.kmip.request(logger, 'Decrypt', [
             KMIP.TextString('Unique Identifier', masterKeyId),
             KMIP.Structure('Cryptographic Parameters', [
