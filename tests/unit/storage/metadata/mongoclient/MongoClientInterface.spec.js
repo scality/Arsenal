@@ -2,6 +2,7 @@ const async = require('async');
 const assert = require('assert');
 const werelogs = require('werelogs');
 const { MongoMemoryReplSet } = require('mongodb-memory-server');
+const sinon = require('sinon');
 
 const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
 const BucketInfo = require('../../../../../lib/models/BucketInfo').default;
@@ -146,6 +147,136 @@ describe('MongoClientInterface::_isReplicationEntryStalled', () => {
             expected,
         );
     }));
+});
+
+describe('MongoClientInterface::getDiskUsage', () => {
+    it('should return error if database is not connected', done => {
+        // Create a client with no db/client initialized
+        const testClient = new MongoClientInterface({});
+        
+        testClient.getDiskUsage((err, result) => {
+            assert.strictEqual(result, undefined);
+            assert(err);
+            assert(err.is.InternalError);
+            assert.strictEqual(
+                err.description,
+                'Cannot get disk usage: database not connected'
+            );
+            done();
+        });
+    });
+
+    it('should handle MongoDB command error', done => {
+        // Setup a client with mock db
+        const testClient = new MongoClientInterface({
+            logger,
+            replicaSetHosts: 'localhost:27017',
+            writeConcern: 'majority',
+            replicaSet: 'test',
+            readPreference: 'primary',
+            database: 'test',
+            replicationGroupId: 'test',
+            authCredentials: {},
+            isLocationTransient: () => false,
+            shardCollections: false,
+        });
+        
+        // Mock the database and command
+        testClient.db = {
+            command: sinon.stub().rejects(new Error('DB command error'))
+        };
+        testClient.client = {}; // Just to pass the initial check
+        
+        testClient.getDiskUsage((err, result) => {
+            assert.strictEqual(result, undefined);
+            assert(err);
+            assert(err.is.InternalError);
+            assert(testClient.db.command.calledOnce);
+            assert(testClient.db.command.calledWith({ dbStats: 1, scale: 1 }));
+            done();
+        });
+    });
+
+    it('should return disk usage stats successfully', done => {
+        // Setup a client with mock db
+        const testClient = new MongoClientInterface({
+            logger,
+            replicaSetHosts: 'localhost:27017',
+            writeConcern: 'majority',
+            replicaSet: 'test',
+            readPreference: 'primary',
+            database: 'test',
+            replicationGroupId: 'test',
+            authCredentials: {},
+            isLocationTransient: () => false,
+            shardCollections: false,
+        });
+        
+        // Mock MongoDB stats response
+        const mockStats = {
+            fsFreeSize: 1000000,
+            fsTotalSize: 5000000
+        };
+        
+        // Mock the database and command
+        testClient.db = {
+            command: sinon.stub().resolves(mockStats)
+        };
+        testClient.client = {}; // Just to pass the initial check
+        
+        testClient.getDiskUsage((err, result) => {
+            assert.strictEqual(err, null);
+            assert.deepStrictEqual(result, {
+                available: mockStats.fsFreeSize,
+                free: mockStats.fsFreeSize,
+                total: mockStats.fsTotalSize
+            });
+            assert(testClient.db.command.calledOnce);
+            assert(testClient.db.command.calledWith({ dbStats: 1, scale: 1 }));
+            done();
+        });
+    });
+
+    it('should handle missing stats properties gracefully', done => {
+        // Setup a client with mock db
+        const testClient = new MongoClientInterface({
+            logger,
+            replicaSetHosts: 'localhost:27017',
+            writeConcern: 'majority',
+            replicaSet: 'test',
+            readPreference: 'primary',
+            database: 'test',
+            replicationGroupId: 'test',
+            authCredentials: {},
+            isLocationTransient: () => false,
+            shardCollections: false,
+        });
+        
+        // Mock MongoDB stats response with missing properties
+        const mockStats = {
+            // No fsFreeSize or fsTotalSize
+            db: 'test',
+            collections: 5
+        };
+        
+        // Mock the database and command
+        testClient.db = {
+            command: sinon.stub().resolves(mockStats)
+        };
+        testClient.client = {}; // Just to pass the initial check
+        
+        testClient.getDiskUsage((err, result) => {
+            assert.strictEqual(err, null);
+            assert.deepStrictEqual(result, {
+                available: 0,
+                free: 0,
+                total: 0
+            });
+            assert(testClient.db.command.calledOnce);
+            assert(testClient.db.command.calledWith({ dbStats: 1, scale: 1 }));
+            done();
+        });
+    });
 });
 
 function createBucket(client, bucketName, isVersioned, callback) {
