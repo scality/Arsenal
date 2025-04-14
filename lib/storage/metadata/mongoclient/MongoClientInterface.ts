@@ -25,7 +25,6 @@ import { MongoClient, Long, Db, MongoClientOptions,
     ReadPreferenceMode, WithId, Collection, AnyBulkWriteOperation,
     UpdateFilter, MongoServerError } from 'mongodb';
 import { v4 as uuidv4 } from 'uuid';
-import diskusage from 'diskusage';
 
 import { generateVersionId as genVID } from '../../../versioning/VersionID';
 import * as listAlgos from '../../../algos/list/exportAlgos';
@@ -2434,18 +2433,32 @@ class MongoClientInterface {
         });
     }
 
-    getDiskUsage(cb: ArsenalCallback<unknown>) {
-        // FIXME: for basic one server deployment the infrastructure
-        // configurator shall set a path to the actual MongoDB volume.
-        // For Kub/cluster deployments there should be a more sophisticated
-        // way for guessing free space.
-        diskusage.check(this.path !== undefined ?
-            this.path : '/', (err, result) => {
-            if (err) {
+    /**
+     * Get disk usage information from MongoDB
+     * @param {Function} cb - Callback
+     * @return {undefined}
+     */
+    getDiskUsage(cb: ArsenalCallback<{ available: number; free: number; total: number }>) {
+        if (!this.db || !this.client) {
+            return cb(errors.InternalError.customizeDescription(
+                'Cannot get disk usage: database not connected'));
+        }
+
+        this.db.command({ dbStats: 1, scale: 1 })
+            .then(stats => {
+                const result = {
+                    available: stats.fsFreeSize || 0,
+                    // Same as available in MongoDB context
+                    free: stats.fsFreeSize || 0,
+                    total: stats.fsTotalSize || 0
+                };
+                return cb(null, result);
+            })
+            .catch(err => {
+                this.logger.error('Error getting MongoDB disk stats', 
+                    { error: err.message });
                 return cb(errors.InternalError);
-            }
-            return cb(null, result);
-        });
+            });
     }
 
     readCountItems(log: werelogs.Logger, cb: ArsenalCallback<ObjectMDStats | string>) {
