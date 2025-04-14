@@ -15,6 +15,42 @@ import {
     actionMapSUR,
 } from './utils/actionMaps';
 
+// For efficient binary serialization
+import { Packr } from 'msgpackr';
+
+// Check environment variable for optimization setting
+const USE_OPTIMIZED_SERIALIZATION = process.env.OPTIM_REQUEST_CONTEXT !== 'false';
+
+// Creating a singleton packer to optimize performance - only if enabled
+const packer = USE_OPTIMIZED_SERIALIZATION ? new Packr({
+    structuredClone: true,
+    useRecords: true,
+}) : null;
+
+// Define fields that should be skipped during serialization (null or computed values)
+const SKIP_SERIALIZATION_FIELDS = [
+    '_foundAction',
+    '_foundResource',
+];
+
+// Define fields that are essential for serialization
+// Omitting fields that can be recomputed, are null, or not important for most use cases
+const ESSENTIAL_FIELDS = [
+    '_apiMethod',
+    '_awsService',
+    '_generalResource',
+    '_specificResource',
+    '_requesterInfo',
+    '_requesterIp',
+    '_sslEnabled',
+    '_signatureVersion',
+    '_authType',
+    '_signatureAge',
+    '_securityToken',
+    '_action',
+    '_needQuota',
+];
+
 export const actionNeedQuotaCheck = {
     objectPut: true,
     objectPutVersion: true,
@@ -231,6 +267,13 @@ export default class RequestContext {
     _foundResource?: string;
     _objectLockRetentionDays?: number | null;
 
+    // Cache for serialized values
+    private _cachedSerializedJSON: string | null = null;
+    private _cachedSerializedBinary: Uint8Array | null = null;
+    
+    // Flag to track if object has been modified since last serialization
+    private _isDirty = true;
+
     constructor(
         headers: Record<string, string | string[]>,
         query: any,
@@ -287,82 +330,139 @@ export default class RequestContext {
         this._existingObjTag = existingObjTag || null;
         this._needTagEval = needTagEval || false;
         this._objectLockRetentionDays = objectLockRetentionDays || null;
+
+        // Mark as dirty initially
+        this._isDirty = true;
         return this;
     }
 
     /**
-    * Serialize the object
-    * @return - stringified object
-    */
-    serialize(): string {
-        const requestInfo = {
-            apiMethod: this._apiMethod,
-            headers: this._headers,
-            query: this._query,
-            requesterInfo: this._requesterInfo,
-            requesterIp: this._requesterIp,
-            sslEnabled: this._sslEnabled,
-            awsService: this._awsService,
-            generalResource: this._generalResource,
-            specificResource: this._specificResource,
-            multiFactorAuthPresent: this._multiFactorAuthPresent,
-            multiFactorAuthAge: this._multiFactorAuthAge,
-            signatureVersion: this._signatureVersion,
-            authType: this._authType,
-            signatureAge: this._signatureAge,
-            locationConstraint: this._locationConstraint,
-            tokenIssueTime: this._tokenIssueTime,
-            securityToken: this._securityToken,
-            policyArn: this._policyArn,
-            action: this._action,
-            requestObjTags: this._requestObjTags,
-            existingObjTag: this._existingObjTag,
-            needTagEval: this._needTagEval,
-            objectLockRetentionDays: this._objectLockRetentionDays,
-            needQuota: this._needQuota,
-        };
-        return JSON.stringify(requestInfo);
+     * Mark the context as modified, invalidating serialization caches
+     * @private
+     */
+    private _markDirty() {
+        this._isDirty = true;
+        this._cachedSerializedJSON = null;
+        this._cachedSerializedBinary = null;
     }
 
     /**
-     * deSerialize the JSON string
-     * @param stringRequest - the stringified requestContext
-     * @param resource - individual specificResource
-     * @return - parsed string
+    * Serialize the object
+    * @param {Object} options - Serialization options
+    * @param {boolean} options.binary - Use binary serialization (msgpack)
+    * @param {boolean} options.minimal - Only serialize essential fields
+    * @return - serialized object (string or Uint8Array)
+    */
+    serialize(options: { binary?: boolean, minimal?: boolean } = {}): string | Uint8Array {
+        // Use cached value if available and not modified
+        if (!this._isDirty) {
+            if (options.binary && this._cachedSerializedBinary) {
+                return this._cachedSerializedBinary;
+            } else if (!options.binary && this._cachedSerializedJSON) {
+                return this._cachedSerializedJSON;
+            }
+        }
+        
+        // Determine which fields to include
+        const fieldsToSerialize = options.minimal ? ESSENTIAL_FIELDS : 
+            Object.getOwnPropertyNames(this).filter(key => 
+                !SKIP_SERIALIZATION_FIELDS.includes(key));
+        
+        // Create a minimal object with only necessary fields
+        const requestInfo: Record<string, any> = {};
+        
+        // Copy only the needed fields
+        for (const field of fieldsToSerialize) {
+            // Strip leading underscore for cleaner serialized output
+            const fieldName = field.startsWith('_') ? field.substring(1) : field;
+            requestInfo[fieldName] = this[field as keyof this];
+        }
+        
+        // Use binary serialization if requested (much faster) and packer is available
+        if (options.binary && packer) {
+            const binaryData = packer.pack(requestInfo);
+            this._cachedSerializedBinary = binaryData;
+            this._isDirty = false;
+            return binaryData;
+        } 
+        
+        // Otherwise use JSON
+        const jsonData = JSON.stringify(requestInfo);
+        this._cachedSerializedJSON = jsonData;
+        this._isDirty = false;
+        return jsonData;
+    }
+
+    /**
+     * Deserialize the serialized data
+     * @param serializedData - the stringified or binary requestContext
+     * @param options - deserialization options
+     * @param options.resource - individual specificResource to override
+     * @param options.binary - whether the input is binary serialized
+     * @return - RequestContext instance or Error
      */
-    static deSerialize(stringRequest: string, resource?: string) {
+    static deSerialize(
+        serializedData: string | Uint8Array, 
+        options: { resource?: string, binary?: boolean } = {}
+    ): RequestContext | Error {
         let obj: any;
+        
         try {
-            obj = JSON.parse(stringRequest);
+            // Handle binary or JSON deserialization
+            if ((options.binary || serializedData instanceof Uint8Array) && packer) {
+                obj = packer.unpack(serializedData as Uint8Array);
+            } else {
+                // Fall back to JSON if binary requested but packer not available
+                obj = JSON.parse(typeof serializedData === 'string' ? 
+                    serializedData : 
+                    new TextDecoder().decode(serializedData as Uint8Array));
+            }
         } catch (err: any) {
             return new Error(err);
         }
-        if (resource) {
-            obj.specificResource = resource;
+        
+        // Override specific resource if provided
+        if (options.resource) {
+            obj.specificResource = options.resource;
         }
-        return new RequestContext(
-            obj.headers,
-            obj.query,
-            obj.generalResource,
-            obj.specificResource,
-            obj.requesterIp,
-            obj.sslEnabled,
-            obj.apiMethod,
-            obj.awsService,
-            obj.locationConstraint,
-            obj.requesterInfo,
-            obj.signatureVersion,
-            obj.authType,
-            obj.signatureAge,
-            obj.securityToken,
-            obj.policyArn,
+        
+        // Create instance with minimal required fields
+        const context = new RequestContext(
+            obj.headers || {},
+            obj.query || {},
+            obj.generalResource || '',
+            obj.specificResource || '',
+            obj.requesterIp || '',
+            obj.sslEnabled || false,
+            obj.apiMethod || '',
+            obj.awsService || '',
+            obj.locationConstraint || '',
+            obj.requesterInfo || {},
+            obj.signatureVersion || '',
+            obj.authType || '',
+            obj.signatureAge || 0,
+            obj.securityToken || '',
+            obj.policyArn || '',
             obj.action,
             obj.requestObjTags,
             obj.existingObjTag,
             obj.needTagEval,
             obj.objectLockRetentionDays,
-            obj.needQuota,
+            obj.needQuota
         );
+        
+        // Set any additional fields that were serialized but not in constructor
+        for (const key of Object.keys(obj)) {
+            const privateKey = `_${key}`;
+            if (privateKey in context && !ESSENTIAL_FIELDS.includes(privateKey)) {
+                (context as any)[privateKey] = obj[key];
+            }
+        }
+        
+        // Mark as clean since we just deserialized
+        context._isDirty = false;
+        
+        return context;
     }
 
     /**
@@ -402,6 +502,7 @@ export default class RequestContext {
      */
     setHeaders(headers: Record<string, string | string[]>) {
         this._headers = headers;
+        this._markDirty();
         return this;
     }
     /**
@@ -419,6 +520,7 @@ export default class RequestContext {
      */
     setQuery(query: any) {
         this._query = query;
+        this._markDirty();
         return this;
     }
     /**
@@ -436,6 +538,7 @@ export default class RequestContext {
      */
     setRequesterInfo(requesterInfo: any) {
         this._requesterInfo = requesterInfo;
+        this._markDirty();
         return this;
     }
     /**
@@ -453,6 +556,7 @@ export default class RequestContext {
      */
     setRequesterIp(requesterIp: string) {
         this._requesterIp = requesterIp;
+        this._markDirty();
         return this;
     }
     /**
@@ -490,6 +594,7 @@ export default class RequestContext {
      */
     setSslEnabled(sslEnabled: boolean) {
         this._sslEnabled = sslEnabled;
+        this._markDirty();
         return this;
     }
 
@@ -509,6 +614,7 @@ export default class RequestContext {
      */
     setSignatureVersion(signatureVersion: string) {
         this._signatureVersion = signatureVersion;
+        this._markDirty();
         return this;
     }
 
@@ -530,6 +636,7 @@ export default class RequestContext {
      */
     setAuthType(authType: string) {
         this._authType = authType;
+        this._markDirty();
         return this;
     }
 
@@ -552,6 +659,7 @@ export default class RequestContext {
      */
     setSignatureAge(signatureAge: number) {
         this._signatureAge = signatureAge;
+        this._markDirty();
         return this;
     }
     /**
@@ -572,6 +680,7 @@ export default class RequestContext {
      */
     setLocationConstraint(locationConstraint: string) {
         this._locationConstraint = locationConstraint;
+        this._markDirty();
         return this;
     }
     /**
@@ -589,6 +698,7 @@ export default class RequestContext {
      */
     setAwsService(awsService: string) {
         this._awsService = awsService;
+        this._markDirty();
         return this;
     }
     /**
@@ -609,6 +719,7 @@ export default class RequestContext {
      */
     setTokenIssueTime(tokenIssueTime: string) {
         this._tokenIssueTime = tokenIssueTime;
+        this._markDirty();
         return this;
     }
     /**
@@ -628,6 +739,7 @@ export default class RequestContext {
      */
     setMultiFactorAuthPresent(multiFactorAuthPresent: boolean) {
         this._multiFactorAuthPresent = multiFactorAuthPresent;
+        this._markDirty();
         return this;
     }
     /**
@@ -646,6 +758,7 @@ export default class RequestContext {
      */
     setMultiFactorAuthAge(multiFactorAuthAge: number) {
         this._multiFactorAuthAge = multiFactorAuthAge;
+        this._markDirty();
         return this;
     }
     /**
@@ -674,6 +787,7 @@ export default class RequestContext {
      */
     setSecurityToken(token: string) {
         this._securityToken = token;
+        this._markDirty();
         return this;
     }
 
@@ -694,6 +808,7 @@ export default class RequestContext {
      */
     setPolicyArn(policyArn: string) {
         this._policyArn = policyArn;
+        this._markDirty();
         return this;
     }
 
@@ -714,6 +829,7 @@ export default class RequestContext {
      */
     setRequestObjTags(requestObjTags: string) {
         this._requestObjTags = requestObjTags;
+        this._markDirty();
         return this;
     }
 
@@ -734,6 +850,7 @@ export default class RequestContext {
      */
     setExistingObjTag(existingObjTag: string) {
         this._existingObjTag = existingObjTag;
+        this._markDirty();
         return this;
     }
 
@@ -754,6 +871,7 @@ export default class RequestContext {
      */
     setNeedTagEval(needTagEval: boolean) {
         this._needTagEval = needTagEval;
+        this._markDirty();
         return this;
     }
 
@@ -783,6 +901,108 @@ export default class RequestContext {
      */
     setObjectLockRetentionDays(objectLockRetentionDays: number) {
         this._objectLockRetentionDays = objectLockRetentionDays;
+        this._markDirty();
         return this;
+    }
+
+    // Backwards compatibility methods for simple JSON serialization
+    toJSON(): string {
+        return this.serialize() as string;
+    }
+    
+    static fromJSON(json: string, resource?: string): RequestContext | Error {
+        return RequestContext.deSerialize(json, { resource });
+    }
+    
+    // New benchmark method for testing serialization performance
+    static benchmark(iterations: number = 1000): { 
+        jsonSerialize: number,
+        jsonDeserialize: number, 
+        binarySerialize: number | null, 
+        binaryDeserialize: number | null,
+        minimalSerialize: number
+    } {
+        const testContext = new RequestContext(
+            { 'host': 'example.com' },
+            { query: 'test' },
+            'testBucket',
+            'testObject',
+            '127.0.0.1',
+            true,
+            'objectGet',
+            's3',
+            'us-east-1',
+            {
+                arn: 'arn:aws:iam::123456789012:user/test',
+                accountid: '123456789012',
+                targetAccountId: '123456789012',
+                externalId: '',
+                parentArn: '',
+                principalType: 'User',
+                principaltype: 'User',
+                userid: 'test',
+                username: 'test',
+                keycloakGroup: '',
+                keycloakRole: '',
+            },
+            'AWS4-HMAC-SHA256',
+            'REST-HEADER',
+            1000,
+            '',
+            '',
+        );
+        
+        // Benchmark JSON serialization
+        const jsonStart = Date.now();
+        let jsonStr = '';
+        for (let i = 0; i < iterations; i++) {
+            jsonStr = testContext.serialize() as string;
+        }
+        const jsonTime = Date.now() - jsonStart;
+        
+        // Benchmark Binary serialization - only if packer is available
+        let binaryTime: number | null = null;
+        let binaryData: string | Uint8Array | null = null;
+        
+        if (packer) {
+            const binaryStart = Date.now();
+            for (let i = 0; i < iterations; i++) {
+                binaryData = testContext.serialize({ binary: true });
+            }
+            binaryTime = Date.now() - binaryStart;
+        }
+        
+        // Benchmark minimal serialization
+        const minimalStart = Date.now();
+        for (let i = 0; i < iterations; i++) {
+            testContext.serialize({ minimal: true });
+        }
+        const minimalTime = Date.now() - minimalStart;
+        
+        // Benchmark JSON deserialization
+        const deserStart = Date.now();
+        for (let i = 0; i < iterations; i++) {
+            RequestContext.deSerialize(jsonStr);
+        }
+        const deserTime = Date.now() - deserStart;
+        
+        // Benchmark Binary deserialization - only if packer is available
+        let binDeserTime: number | null = null;
+        
+        if (packer && binaryData) {
+            const binDeserStart = Date.now();
+            for (let i = 0; i < iterations; i++) {
+                RequestContext.deSerialize(binaryData, { binary: true });
+            }
+            binDeserTime = Date.now() - binDeserStart;
+        }
+        
+        return {
+            jsonSerialize: jsonTime,
+            jsonDeserialize: deserTime,
+            binarySerialize: binaryTime,
+            binaryDeserialize: binDeserTime,
+            minimalSerialize: minimalTime,
+        };
     }
 }
