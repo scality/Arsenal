@@ -1,5 +1,5 @@
 const assert = require('assert');
-const { Timestamp } = require('bson');
+const { Timestamp } = require('mongodb');
 
 const ListRecordStream = require(
     '../../../../../lib/storage/metadata/mongoclient/ListRecordStream');
