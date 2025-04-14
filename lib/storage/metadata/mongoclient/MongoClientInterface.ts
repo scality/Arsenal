@@ -29,6 +29,7 @@ import type {
     WithId,
     Collection,
     AnyBulkWriteOperation,
+    BulkWriteResult,
 } from 'mongodb';
 
 import { v4 as uuidv4 } from 'uuid';
@@ -66,8 +67,6 @@ const CONNECT_TIMEOUT_MS = MONGO_CONNECT_TIMEOUT_MS ?
     Number.parseInt(MONGO_CONNECT_TIMEOUT_MS, 10) : 5000;
 const SOCKET_TIMEOUT_MS = MONGO_SOCKET_TIMEOUT_MS ?
     Number.parseInt(MONGO_SOCKET_TIMEOUT_MS, 10) : 360000;
-const CONCURRENT_CURSORS = process.env.CONCURRENT_CURSORS ?
-    Number.parseInt(process.env.CONCURRENT_CURSORS, 10) : 10;
 
 const initialInstanceID = process.env.INITIAL_INSTANCE_ID;
 
@@ -99,12 +98,10 @@ export type MongoDBClientInterfaceParameters = {
     writeConcern: string,
     replicaSet: string,
     readPreference: ReadPreferenceMode,
-    path: string,
     database: string,
     logger: werelogs.Logger,
     replicationGroupId: string,
     authCredentials: MongoUtils.AuthCredentials,
-    isLocationTransient: Function,
     shardCollections: boolean,
 };
 
@@ -249,12 +246,9 @@ class MongoClientInterface {
     private logger: werelogs.Logger;
     private client: MongoClient | null;
     private db: Db | null;
-    private path: string;
     private replicationGroupId: string;
     private database: string;
-    private isLocationTransient: Function;
     private shardCollections: boolean;
-    private concurrentCursors: number;
     private bucketVFormatCache: LRUCache;
     private readonly defaultBucketKeyFormat: BucketVersioningFormat;
     private cacheHit: number;
@@ -264,10 +258,24 @@ class MongoClientInterface {
 
     private isConnected = false;
 
+    // Optimization configuration
+    private readonly OPTIM_BATCH = process.env.OPTIM_BATCH === 'true';
+    private readonly BATCH_SIZE = parseInt(process.env.BATCH_SIZE || '100', 10);
+
+    // Batch operation handling
+    private batchOperations: Map<string, { 
+        operations: AnyBulkWriteOperation<ObjectMetastoreDocument>[], 
+        callbacks: Array<{
+            cb: ArsenalCallback<any>,
+            params: any
+        }> 
+    }> = new Map();
+    private batchTimeouts: Map<string, NodeJS.Timeout> = new Map();
+
     constructor(params: MongoDBClientInterfaceParameters) {
-        const { replicaSetHosts, writeConcern, replicaSet, readPreference, path,
+        const { replicaSetHosts, writeConcern, replicaSet, readPreference,
             database, logger, replicationGroupId, authCredentials,
-            isLocationTransient, shardCollections } = params;
+            shardCollections } = params;
         const cred = MongoUtils.credPrefix(authCredentials);
         this.mongoUrl = `mongodb://${cred}${replicaSetHosts}/` +
             `?w=${writeConcern}&readPreference=${readPreference}`;
@@ -280,13 +288,9 @@ class MongoClientInterface {
         this.db = null;
         this.adminDb = null;
         this.logger = logger;
-        this.path = path;
         this.replicationGroupId = replicationGroupId;
         this.database = database;
-        this.isLocationTransient = isLocationTransient;
         this.shardCollections = shardCollections;
-
-        this.concurrentCursors = CONCURRENT_CURSORS;
 
         this.bucketVFormatCache = new LRUCache(constants.maxCachedBuckets);
         this.defaultBucketKeyFormat = DEFAULT_BUCKET_KEY_FORMAT;
@@ -375,6 +379,10 @@ class MongoClientInterface {
             if (this.cacheHitMissLoggerInterval) {
                 clearInterval(this.cacheHitMissLoggerInterval as NodeJS.Timeout);
             }
+            
+            // Execute any pending batches before closing
+            this.executeAllBatches();
+            
             return this.client.close(true)
                 .then(() => cb())
                 .catch(() => cb());
@@ -1176,6 +1184,29 @@ class MongoClientInterface {
         }
         const key = formatMasterKey(objName, params.vFormat);
         const putFilter = { _id: key };
+        
+        // Use batching if enabled
+        if (this.OPTIM_BATCH) {
+            const operation = {
+                updateOne: {
+                    filter: putFilter,
+                    update: {
+                        $set: {
+                            _id: key,
+                            value,
+                        },
+                    },
+                    upsert: true,
+                }
+            };
+            
+            const added = this.addToBatch(bucketName, operation, cb, null);
+            if (added) {
+                return;
+            }
+        }
+        
+        // If not using batching, proceed with the regular operation
         return collection.updateOne(putFilter, {
             $set: {
                 _id: key,
@@ -1979,6 +2010,20 @@ class MongoClientInterface {
 
         if (params && params.doesNotNeedOpogUpdate) {
             // If flag is true, directly delete object
+            // Use batching if enabled
+            if (this.OPTIM_BATCH) {
+                const deleteOperation = { 
+                    deleteOne: { 
+                        filter: deleteFilter 
+                    } 
+                };
+                
+                const added = this.addToBatch(bucketName, deleteOperation, cb, { deletedCount: 1 });
+                if (added) {
+                    return;
+                }
+            }
+
             return collection.deleteOne(deleteFilter)
                 .then(() => cb(null, undefined))
                 .catch(err => {
@@ -2299,7 +2344,6 @@ class MongoClientInterface {
                 vFormat, log, cb);
         });
     }
-
     /**
      * lists current version, non-current version and orphan delete markers in a bucket
      * @param {String} bucketName bucket name
@@ -2907,6 +2951,95 @@ class MongoClientInterface {
                 return cb(err);
             });
     }
+
+    // --- Begin batch operations management ---
+    
+    /**
+     * Add an operation to a batch queue for later execution
+     */
+    private addToBatch(collectionName: string, operation: AnyBulkWriteOperation<ObjectMetastoreDocument>, 
+        callback: ArsenalCallback<any>, callbackParams: any) {
+        if (!this.OPTIM_BATCH) {
+            return false;
+        }
+
+        if (!this.batchOperations.has(collectionName)) {
+            this.batchOperations.set(collectionName, {
+                operations: [],
+                callbacks: []
+            });
+        }
+
+        const batchInfo = this.batchOperations.get(collectionName)!;
+        batchInfo.operations.push(operation);
+        batchInfo.callbacks.push({ cb: callback, params: callbackParams });
+
+        // Set timeout to execute batch if it's the first operation
+        if (batchInfo.operations.length === 1) {
+            const timeout = setTimeout(() => {
+                this.executeBatch(collectionName);
+            }, 50); // Small timeout to batch operations
+            this.batchTimeouts.set(collectionName, timeout);
+        }
+
+        // Execute immediately if we reached batch size
+        if (batchInfo.operations.length >= this.BATCH_SIZE) {
+            this.executeBatch(collectionName);
+        }
+
+        return true;
+    }
+
+    /**
+     * Execute a batch of operations for a collection
+     */
+    private executeBatch(collectionName: string) {
+        if (!this.batchOperations.has(collectionName)) {
+            return;
+        }
+
+        // Clear any pending timeout
+        if (this.batchTimeouts.has(collectionName)) {
+            clearTimeout(this.batchTimeouts.get(collectionName)!);
+            this.batchTimeouts.delete(collectionName);
+        }
+
+        const batchInfo = this.batchOperations.get(collectionName)!;
+        this.batchOperations.delete(collectionName);
+
+        if (batchInfo.operations.length === 0) {
+            return;
+        }
+
+        // Execute the batch operation
+        const collection = this.getCollection<ObjectMetastoreDocument>(collectionName);
+        collection.bulkWrite(batchInfo.operations, { ordered: false })
+            .then((result: BulkWriteResult) => {
+                // Call all callbacks with success
+                batchInfo.callbacks.forEach(({ cb, params }) => {
+                    cb(null, params);
+                });
+            })
+            .catch(err => {
+                // Call all callbacks with the error
+                batchInfo.callbacks.forEach(({ cb }) => {
+                    cb(err);
+                });
+            });
+    }
+
+    /**
+     * Execute all pending batches
+     */
+    private executeAllBatches() {
+        // Execute all pending batches
+        for (const collectionName of this.batchOperations.keys()) {
+            this.executeBatch(collectionName);
+        }
+    }
+    
+    // --- End batch operations management ---
 }
 
 module.exports = MongoClientInterface;
+
