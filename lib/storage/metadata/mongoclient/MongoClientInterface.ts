@@ -21,9 +21,16 @@ import ObjectMD, { ObjectMDData } from '../../../models/ObjectMD';
 import * as jsutil from '../../../jsutil';
 import { ArsenalCallback } from '../../../types';
 
-import { MongoClient, Long, Db, MongoClientOptions,
-    ReadPreferenceMode, WithId, Collection, AnyBulkWriteOperation,
-    UpdateFilter, MongoServerError } from 'mongodb';
+import { MongoClient, UpdateFilter, Long, MongoServerError } from 'mongodb';
+import type {
+    Db,
+    MongoClientOptions,
+    ReadPreferenceMode,
+    WithId,
+    Collection,
+    AnyBulkWriteOperation,
+} from 'mongodb';
+
 import { v4 as uuidv4 } from 'uuid';
 
 import { generateVersionId as genVID } from '../../../versioning/VersionID';
