@@ -21,7 +21,7 @@ const mongoserver = new MongoMemoryReplSet({
         name: 'customSetName',
         count: 1,
         dbName,
-        storageEngine: 'ephemeralForTest',
+        storageEngine: 'wiredTiger',
     },
 });
 
