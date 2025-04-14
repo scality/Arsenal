@@ -2451,7 +2451,7 @@ class MongoClientInterface {
                 'Cannot get disk usage: database not connected'));
         }
 
-        this.db.command({ dbStats: 1, scale: 1 })
+        return this.db.command({ dbStats: 1, scale: 1 })
             .then(stats => {
                 const result = {
                     available: stats.fsFreeSize || 0,
