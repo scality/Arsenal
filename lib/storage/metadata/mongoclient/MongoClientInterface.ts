@@ -68,10 +68,6 @@ const CONNECT_TIMEOUT_MS = MONGO_CONNECT_TIMEOUT_MS ?
 const SOCKET_TIMEOUT_MS = MONGO_SOCKET_TIMEOUT_MS ?
     Number.parseInt(MONGO_SOCKET_TIMEOUT_MS, 10) : 360000;
 
-// Dual client configuration
-const DUAL_CLIENT_ENABLED = process.env.DUAL_CLIENT_ENABLED === 'true';
-const SECONDARY_MAX_STALENESS = parseInt(process.env.SECONDARY_MAX_STALENESS || '2', 10);
-
 const initialInstanceID = process.env.INITIAL_INSTANCE_ID;
 
 let uidCounter = 0;
@@ -259,20 +255,13 @@ class MongoClientInterface {
     private cacheMiss: number;
     private cacheHitMissLoggerInterval: NodeJS.Timer | null;
     private adminDb: Db | null;
-    
-    // Secondary client for read operations
-    private secondaryUrl: string = '';
-    private secondaryClient: MongoClient | null = null;
-    private secondaryDb: Db | null = null;
-    private secondaryAdminDb: Db | null = null;
-    private isSecondaryConnected: boolean = false;
 
     private isConnected = false;
 
     // Optimization configuration
     private readonly OPTIM_BATCH = process.env.OPTIM_BATCH === 'true';
     private readonly BATCH_SIZE = parseInt(process.env.BATCH_SIZE || '100', 10);
-    private readonly DUAL_CLIENT_ENABLED = DUAL_CLIENT_ENABLED;
+    private readonly OPTIM_METADATA = process.env.OPTIM_METADATA === 'true';
 
     // Batch operation handling
     private batchOperations: Map<string, { 
@@ -289,28 +278,11 @@ class MongoClientInterface {
             database, logger, replicationGroupId, authCredentials,
             shardCollections } = params;
         const cred = MongoUtils.credPrefix(authCredentials);
-        
-        // Primary client URL (using the configured readPreference)
         this.mongoUrl = `mongodb://${cred}${replicaSetHosts}/` +
             `?w=${writeConcern}&readPreference=${readPreference}`;
 
         if (!shardCollections) {
             this.mongoUrl += `&replicaSet=${replicaSet}`;
-        }
-        
-        // Create secondary client URL with secondaryPreferred readPreference
-        if (this.DUAL_CLIENT_ENABLED) {
-            this.secondaryUrl = `mongodb://${cred}${replicaSetHosts}/` +
-                `?w=${writeConcern}&readPreference=secondaryPreferred` +
-                `&maxStalenessSeconds=${SECONDARY_MAX_STALENESS}`;
-                
-            if (!shardCollections) {
-                this.secondaryUrl += `&replicaSet=${replicaSet}`;
-            }
-            
-            logger.info('Dual MongoDB client enabled', { 
-                maxStalenessSeconds: SECONDARY_MAX_STALENESS 
-            });
         }
 
         this.client = null;
@@ -338,18 +310,6 @@ class MongoClientInterface {
             this.logger.error('MongoDB connect and socket timeouts must be a ' +
                 'number. Using default value(s).');
         }
-        
-        // Log configuration
-        if (this.DUAL_CLIENT_ENABLED) {
-            this.logger.info('MongoDB dual client mode ENABLED', {
-                primaryUrl: this.mongoUrl.replace(/\/\/[^:]+:[^@]+@/, '//***:***@'),
-                secondaryUrl: this.secondaryUrl.replace(/\/\/[^:]+:[^@]+@/, '//***:***@'),
-                maxStaleness: SECONDARY_MAX_STALENESS
-            });
-        } else {
-            this.logger.info('MongoDB dual client mode DISABLED - using single client');
-        }
-        
         const connectTimeoutMS = CONNECT_TIMEOUT_MS;
         const socketTimeoutMS = SOCKET_TIMEOUT_MS;
         const options: MongoClientOptions = {
@@ -360,21 +320,18 @@ class MongoClientInterface {
             options.minPoolSize = Number.parseInt(MONGO_POOL_SIZE, 10);
             options.maxPoolSize = Number.parseInt(MONGO_POOL_SIZE, 10);
         }
-        
-        // Connect to primary MongoDB
-        const primaryClient = new MongoClient(this.mongoUrl, options);
-        
-        return primaryClient.connect()
-            .then(() => {
-                this.logger.info('connected to primary mongodb');
-                this.client = primaryClient;
+        const client = new MongoClient(this.mongoUrl, options);
+
+        return client.connect()
+            .then(client => {
+                this.logger.info('connected to mongodb');
+                this.client = client;
                 this.isConnected = true;
-                this.db = primaryClient.db(this.database, {
+                this.db = client.db(this.database, {
                     ignoreUndefined: true,
                 });
-                this.adminDb = primaryClient.db('admin');
-                
-                // Set up cache hit/miss logging
+                this.adminDb = client.db('admin');
+                // log cache hit/miss every 5min
                 this.cacheHitMissLoggerInterval = setInterval(() => {
                     const hitRatio = (this.cacheHit / (this.cacheHit + this.cacheMiss)) || 0;
                     this.logger.debug('MongoClientInterface: Bucket vFormat cache hit/miss (5min)',
@@ -383,48 +340,14 @@ class MongoClientInterface {
                     this.cacheMiss = 0;
                 }, 300000);
 
-                // Set up client event handlers
                 this.client.on('close', reason => {
-                    this.logger.error('disconnected from primary MongoDB', { reason });
+                    this.logger.error('disconnected from MongoDB', { reason });
                     this.isConnected = false;
                 });
-                
-                // If dual client is enabled, connect to secondary MongoDB
-                if (this.DUAL_CLIENT_ENABLED && this.secondaryUrl) {
-                    const secondaryClient = new MongoClient(this.secondaryUrl, options);
-                    
-                    return secondaryClient.connect()
-                        .then(() => {
-                            this.logger.info('connected to secondary mongodb');
-                            this.secondaryClient = secondaryClient;
-                            this.isSecondaryConnected = true;
-                            this.secondaryDb = secondaryClient.db(this.database, {
-                                ignoreUndefined: true,
-                            });
-                            this.secondaryAdminDb = secondaryClient.db('admin');
-                            
-                            this.secondaryClient.on('close', reason => {
-                                this.logger.error('disconnected from secondary MongoDB', { reason });
-                                this.isSecondaryConnected = false;
-                            });
-                            
-                            return this.usersBucketHack(cb);
-                        })
-                        .catch(err => {
-                            // Continue even if secondary connection fails
-                            this.logger.error('error connecting to secondary mongodb', { 
-                                error: err.message,
-                                secondaryUrl: this.secondaryUrl.replace(/\/\/[^:]+:[^@]+@/, '//***:***@') // Hide credentials
-                            });
-                            
-                            return this.usersBucketHack(cb);
-                        });
-                }
-                
                 return this.usersBucketHack(cb);
             })
             .catch(err => {
-                this.logger.error('error connecting to primary mongodb', { error: err.message });
+                this.logger.error('error connecting to mongodb', { error: err.message });
                 return cb(errors.InternalError);
             });
     }
@@ -453,44 +376,18 @@ class MongoClientInterface {
     }
 
     close(cb) {
-        // Clear any intervals
-        if (this.cacheHitMissLoggerInterval) {
-            clearInterval(this.cacheHitMissLoggerInterval as NodeJS.Timeout);
-        }
-        
-        // Execute any pending batches before closing
-        this.executeAllBatches();
-        
-        // Close primary client first, then secondary client
         if (this.client) {
-            this.client.close()
-                .finally(() => {
-                    // Then close secondary client if it exists
-                    if (this.secondaryClient) {
-                        this.secondaryClient.close()
-                            .finally(() => {
-                                this.logger.info('All MongoDB connections closed');
-                                cb();
-                            });
-                    } else {
-                        this.logger.info('Primary MongoDB connection closed');
-                        cb();
-                    }
-                });
-            return;
+            if (this.cacheHitMissLoggerInterval) {
+                clearInterval(this.cacheHitMissLoggerInterval as NodeJS.Timeout);
+            }
+            
+            // Execute any pending batches before closing
+            this.executeAllBatches();
+            
+            return this.client.close(true)
+                .then(() => cb())
+                .catch(() => cb());
         }
-        
-        // If no primary client, check for secondary client
-        if (this.secondaryClient) {
-            this.secondaryClient.close()
-                .finally(() => {
-                    this.logger.info('Secondary MongoDB connection closed');
-                    cb();
-                });
-            return;
-        }
-        
-        // No clients to close
         return cb();
     }
 
@@ -498,24 +395,6 @@ class MongoClientInterface {
         /* mongo has a problem with .. in collection names */
         const newName = (name === constants.usersBucket) ?
             USERSBUCKET : name;
-        return this.db!.collection<T>(newName);
-    }
-    
-    /**
-     * Get a collection for read operations, using the secondary client if available
-     * @param {string} name - Collection name
-     * @return {Collection} MongoDB collection from the secondary if available, primary otherwise
-     */
-    getReadCollection<T extends Document>(name): Collection<T> {
-        const newName = (name === constants.usersBucket) ?
-            USERSBUCKET : name;
-            
-        // Use secondary client for reads if enabled and connected
-        if (this.DUAL_CLIENT_ENABLED && this.isSecondaryConnected && this.secondaryDb) {
-            return this.secondaryDb.collection<T>(newName);
-        }
-        
-        // Fall back to primary
         return this.db!.collection<T>(newName);
     }
 
@@ -601,8 +480,7 @@ class MongoClientInterface {
      * @return {undefined}
      */
     getBucketAttributes(bucketName: string, log: werelogs.Logger, cb: ArsenalCallback<BucketInfo>) {
-        // Use read collection to leverage secondaries when available
-        const m = this.getReadCollection<BucketMetastoreDocument>(METASTORE);
+        const m = this.getCollection<BucketMetastoreDocument>(METASTORE);
         m.findOne({
             _id: bucketName,
         })
@@ -649,7 +527,7 @@ class MongoClientInterface {
             return cb(null, cachedVFormat);
         }
         this.cacheMiss++;
-        const m = this.getReadCollection<BucketMetastoreDocument>(METASTORE);
+        const m = this.getCollection<BucketMetastoreDocument>(METASTORE);
         m.findOne({
             _id: bucketName,
         })
@@ -1511,8 +1389,7 @@ class MongoClientInterface {
         log: werelogs.Logger,
         cb: ArsenalCallback<ObjectMDData>,
     ) {
-        // Use secondary client for reads when possible
-        const c = this.getReadCollection<ObjectMetastoreDocument>(bucketName);
+        const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
         let key;
         async.waterfall([
             next => this.getBucketVFormat(bucketName, log, next),
@@ -2286,8 +2163,7 @@ class MongoClientInterface {
         log: werelogs.Logger,
         cb: ArsenalCallback<void>,
     ) {
-        // Use read collection (from secondary if available) to improve read performance
-        const c = this.getReadCollection<ObjectMetastoreDocument>(bucketName);
+        const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
         const getLatestVersion = this.getLatestVersion;
         let stream;
         let baseStream;
@@ -2537,30 +2413,15 @@ class MongoClientInterface {
 
     checkHealth(implName, log, cb) {
         const resp = {};
-        
-        // Check primary connection
-        if (!this.isConnected) {
-            log.error('disconnected from primary mongodb');
-            resp[implName] = {
-                error: errors.ServiceUnavailable,
-                code: errorInstances.ServiceUnavailable.code,
-            };
+        if (this.isConnected) {
+            resp[implName] = errors.ok;
             return cb(null, resp);
         }
-        
-        // If dual client is enabled, also check secondary connection
-        if (this.DUAL_CLIENT_ENABLED && !this.isSecondaryConnected) {
-            log.warn('connected to primary mongodb, but secondary connection is down');
-            resp[implName] = {
-                error: errors.ok,
-                code: errorInstances.ok.code,
-                details: 'Primary connection ok, secondary connection down'
-            };
-            return cb(null, resp);
-        }
-        
-        // All connections are good
-        resp[implName] = errors.ok;
+        log.error('disconnected from mongodb');
+        resp[implName] = {
+            error: errors.ServiceUnavailable,
+            code: errorInstances.ServiceUnavailable.code,
+        };
         return cb(null, resp);
     }
 

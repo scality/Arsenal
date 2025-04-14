@@ -12,6 +12,100 @@ import { areTagsValid, BucketTag } from '../s3middleware/tagging';
 import { VeeamCapability, VeeamSOSApiSchema, VeeamSOSApiSerializable } from './Veeam';
 import { AzureInfoMetadata } from './BucketAzureInfo';
 
+// Field mapping dictionary for optimized storage of bucket metadata
+// Maps long field names to single-character or shortened names
+export const BUCKET_FIELD_MAP = {
+    'acl': 'a',
+    'name': 'n',
+    'owner': 'o',
+    'ownerDisplayName': 'od',
+    'creationDate': 'cd',
+    'mdBucketModelVersion': 'mv',
+    'transient': 't',
+    'deleted': 'd',
+    'serverSideEncryption': 'sse',
+    'versioningConfiguration': 'vc',
+    'locationConstraint': 'lc',
+    'readLocationConstraint': 'rlc',
+    'websiteConfiguration': 'wc',
+    'cors': 'c',
+    'replicationConfiguration': 'rc',
+    'lifecycleConfiguration': 'lfc',
+    'bucketPolicy': 'bp',
+    'uid': 'u',
+    'isNFS': 'nfs',
+    'ingestion': 'i',
+    'azureInfo': 'az',
+    'objectLockEnabled': 'ole',
+    'objectLockConfiguration': 'olc',
+    'notificationConfiguration': 'nc',
+    'tags': 'tg',
+    'capabilities': 'cap',
+    'quotaMax': 'qm',
+};
+
+// Reverse mapping for deserialization
+export const REVERSE_BUCKET_FIELD_MAP = Object.entries(BUCKET_FIELD_MAP).reduce(
+    (acc, [key, value]) => {
+        acc[value] = key;
+        return acc;
+    },
+    {} as Record<string, string>
+);
+
+// Mapping for ACL fields within bucket metadata
+export const BUCKET_ACL_FIELD_MAP = {
+    'Canned': 'c',
+    'FULL_CONTROL': 'fc',
+    'WRITE': 'w',
+    'WRITE_ACP': 'wa',
+    'READ': 'r',
+    'READ_ACP': 'ra',
+};
+
+// Reverse mapping for ACL
+export const REVERSE_BUCKET_ACL_FIELD_MAP = Object.entries(BUCKET_ACL_FIELD_MAP).reduce(
+    (acc, [key, value]) => {
+        acc[value] = key;
+        return acc;
+    },
+    {} as Record<string, string>
+);
+
+// Mapping for SSE fields
+export const BUCKET_SSE_FIELD_MAP = {
+    'cryptoScheme': 'cs',
+    'algorithm': 'a',
+    'masterKeyId': 'mk',
+    'configuredMasterKeyId': 'cmk',
+    'mandatory': 'm',
+    'isAccountEncryptionEnabled': 'ae',
+};
+
+// Reverse mapping for SSE
+export const REVERSE_BUCKET_SSE_FIELD_MAP = Object.entries(BUCKET_SSE_FIELD_MAP).reduce(
+    (acc, [key, value]) => {
+        acc[value] = key;
+        return acc;
+    },
+    {} as Record<string, string>
+);
+
+// Mapping for versioning configuration
+export const VERSIONING_FIELD_MAP = {
+    'Status': 's',
+    'MfaDelete': 'm',
+};
+
+// Reverse mapping for versioning
+export const REVERSE_VERSIONING_FIELD_MAP = Object.entries(VERSIONING_FIELD_MAP).reduce(
+    (acc, [key, value]) => {
+        acc[value] = key;
+        return acc;
+    },
+    {} as Record<string, string>
+);
+
 // WHEN UPDATING THIS NUMBER, UPDATE BucketInfoModelVersion.md CHANGELOG
 // BucketInfoModelVersion.md can be found in documentation/ at the root
 // of this repository
@@ -416,7 +510,14 @@ export default class BucketInfo implements BucketMetadata {
      * @return - stringified object
      */
     serialize() {
-        return JSON.stringify(this.makeSerializable());
+        const useOptimizedFormat = process.env.OPTIM_METADATA === 'true';
+        const serializable = this.makeSerializable();
+        
+        if (useOptimizedFormat) {
+            const optimized = optimizeBucketMD(serializable);
+            return JSON.stringify(optimized);
+        }
+        return JSON.stringify(serializable);
     }
 
     /**
@@ -425,7 +526,23 @@ export default class BucketInfo implements BucketMetadata {
      * @return - parsed string
      */
     static deSerialize(stringBucket: string) {
-        const obj: BucketMetadataJSON = JSON.parse(stringBucket);
+        const useOptimizedFormat = process.env.OPTIM_METADATA === 'true';
+        const parsed = JSON.parse(stringBucket);
+        let obj: BucketMetadataJSON;
+        
+        if (useOptimizedFormat) {
+            // Check if this is an optimized object (has short field names)
+            const isOptimized = Object.keys(parsed).some(key => REVERSE_BUCKET_FIELD_MAP[key]);
+            
+            if (isOptimized) {
+                obj = deoptimizeBucketMD(parsed);
+            } else {
+                obj = parsed;
+            }
+        } else {
+            obj = parsed;
+        }
+        
         const capabilities = obj.capabilities && {
             ...obj.capabilities,
             VeeamSOSApi: obj.capabilities?.VeeamSOSApi &&
@@ -1070,4 +1187,127 @@ export default class BucketInfo implements BucketMetadata {
         this._quotaMax = BigInt(quota || 0n);
         return this;
     }
+}
+
+/**
+ * Optimizes bucket metadata for storage by converting field names to shorter versions
+ * @param data - The original bucket metadata object
+ * @returns The optimized object with shortened field names
+ */
+export function optimizeBucketMD(data: any): any {
+    if (!data || typeof data !== 'object') {
+        return data;
+    }
+    
+    const optimized: any = {};
+    
+    // Process each field in the object
+    Object.entries(data).forEach(([key, value]) => {
+        const shortKey = BUCKET_FIELD_MAP[key] || key;
+        
+        if (key === 'acl' && value && typeof value === 'object') {
+            // Handle ACL fields
+            const aclOptimized: any = {};
+            Object.entries(value).forEach(([aclKey, aclValue]) => {
+                const shortAclKey = BUCKET_ACL_FIELD_MAP[aclKey] || aclKey;
+                aclOptimized[shortAclKey] = aclValue;
+            });
+            optimized[shortKey] = aclOptimized;
+        } else if (key === 'serverSideEncryption' && value && typeof value === 'object') {
+            // Handle SSE fields
+            const sseOptimized: any = {};
+            Object.entries(value).forEach(([sseKey, sseValue]) => {
+                const shortSseKey = BUCKET_SSE_FIELD_MAP[sseKey] || sseKey;
+                sseOptimized[shortSseKey] = sseValue;
+            });
+            optimized[shortKey] = sseOptimized;
+        } else if (key === 'versioningConfiguration' && value && typeof value === 'object') {
+            // Handle versioning configuration
+            const versioningOptimized: any = {};
+            Object.entries(value).forEach(([vcKey, vcValue]) => {
+                const shortVcKey = VERSIONING_FIELD_MAP[vcKey] || vcKey;
+                versioningOptimized[shortVcKey] = vcValue;
+            });
+            optimized[shortKey] = versioningOptimized;
+        } else if (value && typeof value === 'object' && !Array.isArray(value) && 
+                  !(value instanceof Date)) {
+            // Recursively optimize nested objects that aren't instances of special classes
+            if (key === 'websiteConfiguration' || 
+                key === 'replicationConfiguration' || 
+                key === 'lifecycleConfiguration' || 
+                key === 'bucketPolicy' ||
+                key === 'objectLockConfiguration' ||
+                key === 'notificationConfiguration') {
+                // Special handling for complex objects managed by their own classes
+                optimized[shortKey] = value;
+            } else {
+                // Regular nested objects
+                optimized[shortKey] = optimizeBucketMD(value);
+            }
+        } else {
+            // Regular values
+            optimized[shortKey] = value;
+        }
+    });
+    
+    return optimized;
+}
+
+/**
+ * Reverses the optimization by converting shortened field names back to original names
+ * @param data - The optimized bucket metadata object
+ * @returns The original object with full field names
+ */
+export function deoptimizeBucketMD(data: any): any {
+    if (!data || typeof data !== 'object') {
+        return data;
+    }
+    
+    const deoptimized: any = {};
+    
+    // Process each field in the object
+    Object.entries(data).forEach(([key, value]) => {
+        const fullKey = REVERSE_BUCKET_FIELD_MAP[key] || key;
+        
+        if (key === 'a' && value && typeof value === 'object') {
+            // Handle ACL fields
+            const aclDeoptimized: any = {};
+            Object.entries(value).forEach(([aclKey, aclValue]) => {
+                const fullAclKey = REVERSE_BUCKET_ACL_FIELD_MAP[aclKey] || aclKey;
+                aclDeoptimized[fullAclKey] = aclValue;
+            });
+            deoptimized[fullKey] = aclDeoptimized;
+        } else if (key === 'sse' && value && typeof value === 'object') {
+            // Handle SSE fields
+            const sseDeoptimized: any = {};
+            Object.entries(value).forEach(([sseKey, sseValue]) => {
+                const fullSseKey = REVERSE_BUCKET_SSE_FIELD_MAP[sseKey] || sseKey;
+                sseDeoptimized[fullSseKey] = sseValue;
+            });
+            deoptimized[fullKey] = sseDeoptimized;
+        } else if (key === 'vc' && value && typeof value === 'object') {
+            // Handle versioning configuration
+            const versioningDeoptimized: any = {};
+            Object.entries(value).forEach(([vcKey, vcValue]) => {
+                const fullVcKey = REVERSE_VERSIONING_FIELD_MAP[vcKey] || vcKey;
+                versioningDeoptimized[fullVcKey] = vcValue;
+            });
+            deoptimized[fullKey] = versioningDeoptimized;
+        } else if (value && typeof value === 'object' && !Array.isArray(value) && 
+                  !(value instanceof Date)) {
+            // Special class instances are kept as is
+            if (key === 'wc' || key === 'rc' || key === 'lfc' || 
+                key === 'bp' || key === 'olc' || key === 'nc') {
+                deoptimized[fullKey] = value;
+            } else {
+                // Regular nested objects
+                deoptimized[fullKey] = deoptimizeBucketMD(value);
+            }
+        } else {
+            // Regular values
+            deoptimized[fullKey] = value;
+        }
+    });
+    
+    return deoptimized;
 }

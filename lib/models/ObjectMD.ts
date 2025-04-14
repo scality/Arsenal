@@ -10,6 +10,257 @@ import ObjectMDAmzRestore from './ObjectMDAmzRestore';
 import ObjectMDArchive from './ObjectMDArchive';
 import { ObjectMDAzureInfoMetadata } from './ObjectMDAzureInfo';
 
+// Field mapping dictionary for optimized storage
+// Maps long field names to single-character or shortened names
+export const FIELD_MAP = {
+    // Owner/metadata fields
+    'owner-display-name': 'o',
+    'owner-id': 'oi',
+    'cache-control': 'cc',
+    'content-disposition': 'cd',
+    'content-language': 'cl', 
+    'content-encoding': 'ce',
+    'creation-time': 'ct',
+    'last-modified': 'lm',
+    'expires': 'e',
+    'content-length': 'sz',
+    'content-type': 'ct',
+    'content-md5': 'md',
+    'md-model-version': 'mv',
+    
+    // AWS specific fields
+    'x-amz-version-id': 'vi',
+    'x-amz-server-version-id': 'svi',
+    'x-amz-restore': 'r',
+    'archive': 'ar',
+    'x-amz-storage-class': 'sc',
+    'x-amz-server-side-encryption': 'sse',
+    'x-amz-server-side-encryption-aws-kms-key-id': 'sseK',
+    'x-amz-server-side-encryption-customer-algorithm': 'sseA',
+    'x-amz-website-redirect-location': 'redir',
+    'x-amz-scal-transition-in-progress': 'tip',
+    'x-amz-scal-transition-time': 'tt',
+    
+    // Core object properties
+    'azureInfo': 'az',
+    'acl': 'a',
+    'key': 'k',
+    'location': 'l',
+    'isNull': 'n',
+    'isNull2': 'n2',
+    'nullVersionId': 'nv',
+    'nullUploadId': 'nu',
+    'isDeleteMarker': 'dm',
+    'versionId': 'v',
+    'uploadId': 'u',
+    'legalHold': 'lh',
+    'retentionMode': 'rm',
+    'retentionDate': 'rd',
+    'tags': 'tg',
+    'replicationInfo': 'ri',
+    'dataStoreName': 'ds',
+    'originOp': 'op',
+    'microVersionId': 'mv',
+    'deleted': 'd',
+    'isPHD': 'p',
+    'bucketOwnerId': 'bo',
+};
+
+// Reverse mapping for deserialization
+export const REVERSE_FIELD_MAP = Object.entries(FIELD_MAP).reduce(
+    (acc, [key, value]) => {
+        acc[value] = key;
+        return acc;
+    },
+    {} as Record<string, string>
+);
+
+// Mapping for replicationInfo fields
+export const REPLICATION_FIELD_MAP = {
+    'status': 's',
+    'backends': 'b',
+    'content': 'c',
+    'destination': 'd',
+    'storageClass': 'sc',
+    'role': 'r',
+    'storageType': 'st',
+    'dataStoreVersionId': 'dv',
+    'isNFS': 'n',
+};
+
+// Reverse mapping for replicationInfo
+export const REVERSE_REPLICATION_FIELD_MAP = Object.entries(REPLICATION_FIELD_MAP).reduce(
+    (acc, [key, value]) => {
+        acc[value] = key;
+        return acc;
+    },
+    {} as Record<string, string>
+);
+
+// Mapping for backend fields within replicationInfo
+export const BACKEND_FIELD_MAP = {
+    'site': 's',
+    'status': 't',
+    'dataStoreVersionId': 'd',
+};
+
+// Reverse mapping for backend fields
+export const REVERSE_BACKEND_FIELD_MAP = Object.entries(BACKEND_FIELD_MAP).reduce(
+    (acc, [key, value]) => {
+        acc[value] = key;
+        return acc;
+    },
+    {} as Record<string, string>
+);
+
+// ACL field mapping
+export const ACL_FIELD_MAP = {
+    'Canned': 'c',
+    'FULL_CONTROL': 'fc',
+    'WRITE_ACP': 'wa',
+    'READ': 'r',
+    'READ_ACP': 'ra',
+};
+
+// Reverse mapping for ACL
+export const REVERSE_ACL_FIELD_MAP = Object.entries(ACL_FIELD_MAP).reduce(
+    (acc, [key, value]) => {
+        acc[value] = key;
+        return acc;
+    },
+    {} as Record<string, string>
+);
+
+/**
+ * Optimizes object metadata for storage by converting field names to shorter versions
+ * @param data - The original metadata object
+ * @returns The optimized object with shortened field names
+ */
+export function optimizeObjectMD(data: any): any {
+    if (!data || typeof data !== 'object') {
+        return data;
+    }
+    
+    const optimized: any = {};
+    
+    // Process each field in the object
+    Object.entries(data).forEach(([key, value]) => {
+        const shortKey = FIELD_MAP[key] || key;
+        
+        if (key === 'acl' && value && typeof value === 'object') {
+            // Handle ACL fields
+            const aclOptimized: any = {};
+            Object.entries(value).forEach(([aclKey, aclValue]) => {
+                const shortAclKey = ACL_FIELD_MAP[aclKey] || aclKey;
+                aclOptimized[shortAclKey] = aclValue;
+            });
+            optimized[shortKey] = aclOptimized;
+        } else if (key === 'replicationInfo' && value && typeof value === 'object') {
+            // Handle replicationInfo fields
+            const replicationOptimized: any = {};
+            Object.entries(value).forEach(([repKey, repValue]) => {
+                const shortRepKey = REPLICATION_FIELD_MAP[repKey] || repKey;
+                
+                if (repKey === 'backends' && Array.isArray(repValue)) {
+                    // Process backends array
+                    replicationOptimized[shortRepKey] = (repValue as any[]).map(backend => {
+                        if (backend && typeof backend === 'object') {
+                            const backendOptimized: any = {};
+                            Object.entries(backend).forEach(([backendKey, backendValue]) => {
+                                const shortBackendKey = BACKEND_FIELD_MAP[backendKey] || backendKey;
+                                backendOptimized[shortBackendKey] = backendValue;
+                            });
+                            return backendOptimized;
+                        }
+                        return backend;
+                    });
+                } else {
+                    replicationOptimized[shortRepKey] = repValue;
+                }
+            });
+            optimized[shortKey] = replicationOptimized;
+        } else if (key === 'location' && Array.isArray(value)) {
+            // Process location array - keep as is, will be handled by ObjectMDLocation
+            optimized[shortKey] = value;
+        } else if (value && typeof value === 'object' && !Array.isArray(value) && 
+                  !(value instanceof Date) && 
+                  !(value instanceof ObjectMDAmzRestore) && 
+                  !(value instanceof ObjectMDArchive)) {
+            // Recursively optimize nested objects, but not specific instances
+            optimized[shortKey] = optimizeObjectMD(value);
+        } else {
+            // Regular values
+            optimized[shortKey] = value;
+        }
+    });
+    
+    return optimized;
+}
+
+/**
+ * Reverses the optimization by converting shortened field names back to original names
+ * @param data - The optimized metadata object
+ * @returns The original object with full field names
+ */
+export function deoptimizeObjectMD(data: any): any {
+    if (!data || typeof data !== 'object') {
+        return data;
+    }
+    
+    const deoptimized: any = {};
+    
+    // Process each field in the object
+    Object.entries(data).forEach(([key, value]) => {
+        const fullKey = REVERSE_FIELD_MAP[key] || key;
+        
+        if (key === 'a' && value && typeof value === 'object') {
+            // Handle ACL fields
+            const aclDeoptimized: any = {};
+            Object.entries(value).forEach(([aclKey, aclValue]) => {
+                const fullAclKey = REVERSE_ACL_FIELD_MAP[aclKey] || aclKey;
+                aclDeoptimized[fullAclKey] = aclValue;
+            });
+            deoptimized[fullKey] = aclDeoptimized;
+        } else if (key === 'ri' && value && typeof value === 'object') {
+            // Handle replicationInfo fields
+            const replicationDeoptimized: any = {};
+            Object.entries(value).forEach(([repKey, repValue]) => {
+                const fullRepKey = REVERSE_REPLICATION_FIELD_MAP[repKey] || repKey;
+                
+                if (repKey === 'b' && Array.isArray(repValue)) {
+                    // Process backends array
+                    replicationDeoptimized[fullRepKey] = (repValue as any[]).map(backend => {
+                        if (backend && typeof backend === 'object') {
+                            const backendDeoptimized: any = {};
+                            Object.entries(backend).forEach(([backendKey, backendValue]) => {
+                                const fullBackendKey = REVERSE_BACKEND_FIELD_MAP[backendKey] || backendKey;
+                                backendDeoptimized[fullBackendKey] = backendValue;
+                            });
+                            return backendDeoptimized;
+                        }
+                        return backend;
+                    });
+                } else {
+                    replicationDeoptimized[fullRepKey] = repValue;
+                }
+            });
+            deoptimized[fullKey] = replicationDeoptimized;
+        } else if (key === 'l' && Array.isArray(value)) {
+            // Process location array - keep as is
+            deoptimized[fullKey] = value;
+        } else if (value && typeof value === 'object' && !Array.isArray(value) && 
+                  !(value instanceof Date)) {
+            // Recursively deoptimize nested objects
+            deoptimized[fullKey] = deoptimizeObjectMD(value);
+        } else {
+            // Regular values
+            deoptimized[fullKey] = value;
+        }
+    });
+    
+    return deoptimized;
+}
+
 export type ACL = {
     Canned: string;
     FULL_CONTROL: string[];
@@ -148,23 +399,6 @@ export default class ObjectMD {
     }
 
     /**
-     * create an ObjectMD instance from stored metadata
-     *
-     * @param storedBlob - serialized metadata blob
-     * @return a result object containing either a 'result'
-     *   property which value is a new ObjectMD instance on success, or
-     *   an 'error' property on error
-     */
-    static createFromBlob(storedBlob: string | Buffer) {
-        try {
-            const objMd = JSON.parse(storedBlob.toString());
-            return { result: new ObjectMD(objMd) };
-        } catch (err) {
-            return { error: err };
-        }
-    }
-
-    /**
      * Returns metadata attributes for the current model
      *
      * @return object with keys of existing attributes
@@ -180,7 +414,42 @@ export default class ObjectMD {
     }
 
     getSerialized() {
+        // Optimize the object metadata by using short field names before serializing
+        const useOptimizedFormat = process.env.OPTIM_METADATA === 'true';
+        if (useOptimizedFormat) {
+            const optimized = optimizeObjectMD(this.getValue());
+            return JSON.stringify(optimized);
+        }
         return JSON.stringify(this.getValue());
+    }
+
+    /**
+     * create an ObjectMD instance from stored metadata
+     *
+     * @param storedBlob - serialized metadata blob
+     * @return a result object containing either a 'result'
+     *   property which value is a new ObjectMD instance on success, or
+     *   an 'error' property on error
+     */
+    static createFromBlob(storedBlob: string | Buffer) {
+        try {
+            const useOptimizedFormat = process.env.OPTIM_METADATA === 'true';
+            const parsed = JSON.parse(storedBlob.toString());
+            
+            if (useOptimizedFormat) {
+                // Check if this is an optimized object (has short field names)
+                const isOptimized = Object.keys(parsed).some(key => REVERSE_FIELD_MAP[key]);
+                
+                if (isOptimized) {
+                    const deoptimized = deoptimizeObjectMD(parsed);
+                    return { result: new ObjectMD(deoptimized) };
+                }
+            }
+            
+            return { result: new ObjectMD(parsed) };
+        } catch (err) {
+            return { error: err };
+        }
     }
 
     _initMd(): ObjectMDData {
