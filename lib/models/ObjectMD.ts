@@ -77,15 +77,15 @@ export const REVERSE_FIELD_MAP = Object.entries(FIELD_MAP).reduce(
 
 // Mapping for replicationInfo fields
 export const REPLICATION_FIELD_MAP = {
-    'status': 's',
-    'backends': 'b',
-    'content': 'c',
-    'destination': 'd',
-    'storageClass': 'sc',
-    'role': 'r',
-    'storageType': 'st',
-    'dataStoreVersionId': 'dv',
-    'isNFS': 'n',
+    status: 's',
+    backends: 'b',
+    content: 'c',
+    destination: 'd',
+    storageClass: 'sc',
+    role: 'r',
+    storageType: 'st',
+    dataStoreVersionId: 'dv',
+    isNFS: 'n',
 };
 
 // Reverse mapping for replicationInfo
@@ -99,9 +99,9 @@ export const REVERSE_REPLICATION_FIELD_MAP = Object.entries(REPLICATION_FIELD_MA
 
 // Mapping for backend fields within replicationInfo
 export const BACKEND_FIELD_MAP = {
-    'site': 's',
-    'status': 't',
-    'dataStoreVersionId': 'd',
+    site: 's',
+    status: 't',
+    dataStoreVersionId: 'd',
 };
 
 // Reverse mapping for backend fields
@@ -115,11 +115,11 @@ export const REVERSE_BACKEND_FIELD_MAP = Object.entries(BACKEND_FIELD_MAP).reduc
 
 // ACL field mapping
 export const ACL_FIELD_MAP = {
-    'Canned': 'c',
-    'FULL_CONTROL': 'fc',
-    'WRITE_ACP': 'wa',
-    'READ': 'r',
-    'READ_ACP': 'ra',
+    Canned: 'c',
+    FULL_CONTROL: 'fc',
+    WRITE_ACP: 'wa',
+    READ: 'r',
+    READ_ACP: 'ra',
 };
 
 // Reverse mapping for ACL

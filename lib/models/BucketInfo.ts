@@ -15,33 +15,33 @@ import { AzureInfoMetadata } from './BucketAzureInfo';
 // Field mapping dictionary for optimized storage of bucket metadata
 // Maps long field names to single-character or shortened names
 export const BUCKET_FIELD_MAP = {
-    'acl': 'a',
-    'name': 'n',
-    'owner': 'o',
-    'ownerDisplayName': 'od',
-    'creationDate': 'cd',
-    'mdBucketModelVersion': 'mv',
-    'transient': 't',
-    'deleted': 'd',
-    'serverSideEncryption': 'sse',
-    'versioningConfiguration': 'vc',
-    'locationConstraint': 'lc',
-    'readLocationConstraint': 'rlc',
-    'websiteConfiguration': 'wc',
-    'cors': 'c',
-    'replicationConfiguration': 'rc',
-    'lifecycleConfiguration': 'lfc',
-    'bucketPolicy': 'bp',
-    'uid': 'u',
-    'isNFS': 'nfs',
-    'ingestion': 'i',
-    'azureInfo': 'az',
-    'objectLockEnabled': 'ole',
-    'objectLockConfiguration': 'olc',
-    'notificationConfiguration': 'nc',
-    'tags': 'tg',
-    'capabilities': 'cap',
-    'quotaMax': 'qm',
+    acl: 'a',
+    name: 'n',
+    owner: 'o',
+    ownerDisplayName: 'od',
+    creationDate: 'cd',
+    mdBucketModelVersion: 'mv',
+    transient: 't',
+    deleted: 'd',
+    serverSideEncryption: 'sse',
+    versioningConfiguration: 'vc',
+    locationConstraint: 'lc',
+    readLocationConstraint: 'rlc',
+    websiteConfiguration: 'wc',
+    cors: 'c',
+    replicationConfiguration: 'rc',
+    lifecycleConfiguration: 'lfc',
+    bucketPolicy: 'bp',
+    uid: 'u',
+    isNFS: 'nfs',
+    ingestion: 'i',
+    azureInfo: 'az',
+    objectLockEnabled: 'ole',
+    objectLockConfiguration: 'olc',
+    notificationConfiguration: 'nc',
+    tags: 'tg',
+    capabilities: 'cap',
+    quotaMax: 'qm',
 };
 
 const hasMetadataOptim = process.env.HAS_METADATA_OPTIM === 'true';
@@ -57,12 +57,12 @@ export const REVERSE_BUCKET_FIELD_MAP = Object.entries(BUCKET_FIELD_MAP).reduce(
 
 // Mapping for ACL fields within bucket metadata
 export const BUCKET_ACL_FIELD_MAP = {
-    'Canned': 'c',
-    'FULL_CONTROL': 'fc',
-    'WRITE': 'w',
-    'WRITE_ACP': 'wa',
-    'READ': 'r',
-    'READ_ACP': 'ra',
+    Canned: 'c',
+    FULL_CONTROL: 'fc',
+    WRITE: 'w',
+    WRITE_ACP: 'wa',
+    READ: 'r',
+    READ_ACP: 'ra',
 };
 
 // Reverse mapping for ACL
@@ -76,12 +76,12 @@ export const REVERSE_BUCKET_ACL_FIELD_MAP = Object.entries(BUCKET_ACL_FIELD_MAP)
 
 // Mapping for SSE fields
 export const BUCKET_SSE_FIELD_MAP = {
-    'cryptoScheme': 'cs',
-    'algorithm': 'a',
-    'masterKeyId': 'mk',
-    'configuredMasterKeyId': 'cmk',
-    'mandatory': 'm',
-    'isAccountEncryptionEnabled': 'ae',
+    cryptoScheme: 'cs',
+    algorithm: 'a',
+    masterKeyId: 'mk',
+    configuredMasterKeyId: 'cmk',
+    mandatory: 'm',
+    isAccountEncryptionEnabled: 'ae',
 };
 
 // Reverse mapping for SSE
@@ -95,8 +95,8 @@ export const REVERSE_BUCKET_SSE_FIELD_MAP = Object.entries(BUCKET_SSE_FIELD_MAP)
 
 // Mapping for versioning configuration
 export const VERSIONING_FIELD_MAP = {
-    'Status': 's',
-    'MfaDelete': 'm',
+    Status: 's',
+    MfaDelete: 'm',
 };
 
 // Reverse mapping for versioning

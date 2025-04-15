@@ -923,7 +923,7 @@ export default class RequestContext {
         minimalSerialize: number
     } {
         const testContext = new RequestContext(
-            { 'host': 'example.com' },
+            { host: 'example.com' },
             { query: 'test' },
             'testBucket',
             'testObject',

@@ -29,7 +29,6 @@ import type {
     WithId,
     Collection,
     AnyBulkWriteOperation,
-    BulkWriteResult,
 } from 'mongodb';
 
 import { v4 as uuidv4 } from 'uuid';
@@ -1278,7 +1277,7 @@ class MongoClientInterface {
             
             const added = this.addToBatch(bucketName, operation, cb, null);
             if (added) {
-                return;
+                return undefined;
             }
         }
         
@@ -2096,7 +2095,7 @@ class MongoClientInterface {
                 
                 const added = this.addToBatch(bucketName, deleteOperation, cb, { deletedCount: 1 });
                 if (added) {
-                    return;
+                    return undefined;
                 }
             }
 
@@ -3090,7 +3089,7 @@ class MongoClientInterface {
         // Execute the batch operation
         const collection = this.getCollection<ObjectMetastoreDocument>(collectionName);
         collection.bulkWrite(batchInfo.operations, { ordered: false })
-            .then((result: BulkWriteResult) => {
+            .then(() => {
                 // Call all callbacks with success
                 batchInfo.callbacks.forEach(({ cb, params }) => {
                     cb(null, params);
