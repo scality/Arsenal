@@ -195,20 +195,23 @@ class MongoCursorMock {
         this.errorAtPos = errorAtPos;
     }
 
-    next(cb) {
+    async next() {
         // if there's no more item, just hang out there waiting for
         // items that will never come (this is how the real mongo
         // tailable cursor would behave)
         if (this.pos === this.errorAtPos) {
-            return process.nextTick(() => cb(new Error('boo')));
+            throw new Error('boo');
         }
         if (!this.hasSentAllItems()) {
             const pos = this.pos;
             this.pos += 1;
-            return process.nextTick(() => cb(null, this.itemsToYield[pos]));
+            return this.itemsToYield[pos];
         }
-        return undefined;
+        return new Promise(resolve => {
+            // Leave the Promise unresolved to simulate waiting for more data
+        });
     }
+    
     hasSentAllItems() {
         return this.pos === this.itemsToYield.length;
     }
