@@ -44,6 +44,8 @@ export const BUCKET_FIELD_MAP = {
     'quotaMax': 'qm',
 };
 
+const hasMetadataOptim = process.env.HAS_METADATA_OPTIM === 'true';
+
 // Reverse mapping for deserialization
 export const REVERSE_BUCKET_FIELD_MAP = Object.entries(BUCKET_FIELD_MAP).reduce(
     (acc, [key, value]) => {
@@ -510,7 +512,7 @@ export default class BucketInfo implements BucketMetadata {
      * @return - stringified object
      */
     serialize() {
-        const useOptimizedFormat = process.env.OPTIM_METADATA === 'true';
+        const useOptimizedFormat = hasMetadataOptim;
         const serializable = this.makeSerializable();
         
         if (useOptimizedFormat) {
@@ -526,7 +528,7 @@ export default class BucketInfo implements BucketMetadata {
      * @return - parsed string
      */
     static deSerialize(stringBucket: string) {
-        const useOptimizedFormat = process.env.OPTIM_METADATA === 'true';
+        const useOptimizedFormat = hasMetadataOptim;
         const parsed = JSON.parse(stringBucket);
         let obj: BucketMetadataJSON;
         

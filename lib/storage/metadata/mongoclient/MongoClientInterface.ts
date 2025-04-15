@@ -253,6 +253,8 @@ class MongoClientInterface {
     private readonly defaultBucketKeyFormat: BucketVersioningFormat;
     private cacheHit: number;
     private cacheMiss: number;
+    private bucketCacheHit: number = 0;
+    private bucketCacheMiss: number = 0;
     private cacheHitMissLoggerInterval: NodeJS.Timer | null;
     private adminDb: Db | null;
 
@@ -261,7 +263,7 @@ class MongoClientInterface {
     // Optimization configuration
     private readonly OPTIM_BATCH = process.env.OPTIM_BATCH === 'true';
     private readonly BATCH_SIZE = parseInt(process.env.BATCH_SIZE || '100', 10);
-    private readonly OPTIM_METADATA = process.env.OPTIM_METADATA === 'true';
+    private readonly OPTIM_CACHE_BUCKET = process.env.OPTIM_CACHE_BUCKET === 'true';
 
     // Batch operation handling
     private batchOperations: Map<string, { 
@@ -272,6 +274,13 @@ class MongoClientInterface {
         }> 
     }> = new Map();
     private batchTimeouts: Map<string, NodeJS.Timeout> = new Map();
+
+    // Bucket metadata cache
+    private bucketMetadataCache: Map<string, { 
+        data: BucketInfo,
+        timestamp: number
+    }> = new Map();
+    private readonly BUCKET_CACHE_TTL = 2000; // 2 seconds TTL
 
     constructor(params: MongoDBClientInterfaceParameters) {
         const { replicaSetHosts, writeConcern, replicaSet, readPreference,
@@ -338,6 +347,20 @@ class MongoClientInterface {
                         { hits: this.cacheHit, misses: this.cacheMiss, hitRatio: hitRatio.toFixed(3) });
                     this.cacheHit = 0;
                     this.cacheMiss = 0;
+                    
+                    if (this.OPTIM_CACHE_BUCKET) {
+                        const bucketCacheHitRatio = 
+                            (this.bucketCacheHit / (this.bucketCacheHit + this.bucketCacheMiss)) || 0;
+                        this.logger.debug('MongoClientInterface: Bucket metadata cache hit/miss (5min)',
+                            { 
+                                hits: this.bucketCacheHit, 
+                                misses: this.bucketCacheMiss, 
+                                hitRatio: bucketCacheHitRatio.toFixed(3),
+                                cacheSize: this.bucketMetadataCache.size,
+                            });
+                        this.bucketCacheHit = 0;
+                        this.bucketCacheMiss = 0;
+                    }
                 }, 300000);
 
                 this.client.on('close', reason => {
@@ -379,6 +402,11 @@ class MongoClientInterface {
         if (this.client) {
             if (this.cacheHitMissLoggerInterval) {
                 clearInterval(this.cacheHitMissLoggerInterval as NodeJS.Timeout);
+            }
+            
+            // Clear the bucket metadata cache
+            if (this.OPTIM_CACHE_BUCKET) {
+                this.bucketMetadataCache.clear();
             }
             
             // Execute any pending batches before closing
@@ -480,6 +508,22 @@ class MongoClientInterface {
      * @return {undefined}
      */
     getBucketAttributes(bucketName: string, log: werelogs.Logger, cb: ArsenalCallback<BucketInfo>) {
+        // Check cache if optimized bucket caching is enabled
+        if (this.OPTIM_CACHE_BUCKET) {
+            const cachedEntry = this.bucketMetadataCache.get(bucketName);
+            const now = Date.now();
+            
+            if (cachedEntry && (now - cachedEntry.timestamp) < this.BUCKET_CACHE_TTL) {
+                this.bucketCacheHit++;
+                log.debug('getBucketAttributes: using cached bucket metadata', {
+                    bucket: bucketName,
+                    cached: true,
+                });
+                return cb(null, cachedEntry.data);
+            }
+            this.bucketCacheMiss++;
+        }
+
         const m = this.getCollection<BucketMetastoreDocument>(METASTORE);
         m.findOne({
             _id: bucketName,
@@ -501,7 +545,17 @@ class MongoClientInterface {
                         },
                     },
                 };
-                return cb(null, BucketInfo.fromJson(bucketMetadata));
+                const bucketInfo = BucketInfo.fromJson(bucketMetadata);
+                
+                // Cache the bucket info if caching is enabled
+                if (this.OPTIM_CACHE_BUCKET) {
+                    this.bucketMetadataCache.set(bucketName, {
+                        data: bucketInfo,
+                        timestamp: Date.now(),
+                    });
+                }
+                
+                return cb(null, bucketInfo);
             })
             .catch(err => {
                 log.error(
@@ -586,6 +640,11 @@ class MongoClientInterface {
     }
 
     putBucketAttributes(bucketName: string, bucketMD: BucketInfo, log: werelogs.Logger, cb: ArsenalCallback<void>) {
+        // Invalidate cache entry if caching is enabled
+        if (this.OPTIM_CACHE_BUCKET) {
+            this.bucketMetadataCache.delete(bucketName);
+        }
+        
         // FIXME: there should be a version of BucketInfo.serialize()
         // that does not JSON.stringify()
         const bucketInfo = BucketInfo.fromObj(bucketMD);
@@ -633,6 +692,11 @@ class MongoClientInterface {
         log: werelogs.Logger,
         cb: ArsenalCallback<void>,
     ) {
+        // Invalidate cache entry if caching is enabled
+        if (this.OPTIM_CACHE_BUCKET) {
+            this.bucketMetadataCache.delete(bucketName);
+        }
+        
         const m = this.getCollection<BucketMetastoreDocument>(METASTORE);
         const updateString = capabilityField ?
             `value.capabilities.${capabilityName}.${capabilityField}` :
@@ -670,6 +734,11 @@ class MongoClientInterface {
         log: werelogs.Logger,
         cb: ArsenalCallback<void>,
     ) {
+        // Invalidate cache entry if caching is enabled
+        if (this.OPTIM_CACHE_BUCKET) {
+            this.bucketMetadataCache.delete(bucketName);
+        }
+        
         const m = this.getCollection<BucketMetastoreDocument>(METASTORE);
         const updateString = capabilityField ?
             `value.capabilities.${capabilityName}.${capabilityField}` :
@@ -708,6 +777,12 @@ class MongoClientInterface {
                 }
                 // removing cached bucket metadata
                 this.bucketVFormatCache.remove(bucketName);
+                
+                // remove from bucket metadata cache if enabled
+                if (this.OPTIM_CACHE_BUCKET) {
+                    this.bucketMetadataCache.delete(bucketName);
+                }
+                
                 return cb(null);
             })
             .catch(err => {
