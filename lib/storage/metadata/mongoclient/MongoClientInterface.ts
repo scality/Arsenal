@@ -362,6 +362,11 @@ class MongoClientInterface {
                     }
                 }, 300000);
 
+                // flush the cache every 2s
+                setInterval(() => {
+                    this.bucketMetadataCache.clear();
+                }, 2000);
+
                 this.client.on('close', reason => {
                     this.logger.error('disconnected from MongoDB', { reason });
                     this.isConnected = false;
