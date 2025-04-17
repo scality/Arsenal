@@ -769,7 +769,7 @@ export default class RequestContext {
     /**
      * Get object lock retention days
      *
-     * @returns objectLockRetentionDays - object lock retention days 
+     * @returns objectLockRetentionDays - object lock retention days
      */
     getObjectLockRetentionDays() {
         return this._objectLockRetentionDays;
