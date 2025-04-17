@@ -69,7 +69,7 @@ const SOCKET_TIMEOUT_MS = MONGO_SOCKET_TIMEOUT_MS ?
 
 // Dual client configuration
 const DUAL_CLIENT_ENABLED = process.env.DUAL_CLIENT_ENABLED === 'true';
-const SECONDARY_MAX_STALENESS = parseInt(process.env.SECONDARY_MAX_STALENESS || '2', 10);
+const SECONDARY_MAX_STALENESS = parseInt(process.env.SECONDARY_MAX_STALENESS || '90', 10);
 
 const initialInstanceID = process.env.INITIAL_INSTANCE_ID;
 
@@ -311,6 +311,8 @@ class MongoClientInterface {
         if (this.DUAL_CLIENT_ENABLED) {
             this.secondaryUrl = `mongodb://${cred}${replicaSetHosts}/` +
                 `?w=${writeConcern}&readPreference=secondaryPreferred` +
+                // add read concern as majority
+                `&readConcernLevel=majority` +
                 `&maxStalenessSeconds=${SECONDARY_MAX_STALENESS}`;
                 
             if (!shardCollections) {
@@ -419,7 +421,7 @@ class MongoClientInterface {
                 // If dual client is enabled, connect to secondary MongoDB
                 if (this.DUAL_CLIENT_ENABLED && this.secondaryUrl) {
                     const secondaryClient = new MongoClient(this.secondaryUrl, options);
-                    
+                    this.logger.info('trying to connect to secondary mongodb');
                     return secondaryClient.connect()
                         .then(() => {
                             this.logger.info('connected to secondary mongodb');
@@ -2626,7 +2628,7 @@ class MongoClientInterface {
         }
         
         // If dual client is enabled, also check secondary connection
-        if (this.DUAL_CLIENT_ENABLED && !this.isSecondaryConnected) {
+        /*if (this.DUAL_CLIENT_ENABLED && !this.isSecondaryConnected) {
             log.warn('connected to primary mongodb, but secondary connection is down');
             resp[implName] = {
                 error: errors.ok,
@@ -2634,7 +2636,7 @@ class MongoClientInterface {
                 details: 'Primary connection ok, secondary connection down'
             };
             return cb(null, resp);
-        }
+        }*/
         
         // All connections are good
         resp[implName] = errors.ok;
