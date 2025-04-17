@@ -38,7 +38,7 @@ export default function checkArnMatch(
         const requestSegment = caseSensitive ? requestArnArr[j] :
             requestArnArr[j].toLowerCase();
         const policyArnArr = policyArn.split(':');
-        // We want to allow an empty account ID for utapi and scuba service ARNs to not
+        // We want to allow an empty account ID for utapi and SUR service ARNs to not
         // break compatibility.
         if (j === 4 && policyArnAllowedEmptyAccountId.includes(policyArnArr[2])
             && policyArnArr[4] === '') {
