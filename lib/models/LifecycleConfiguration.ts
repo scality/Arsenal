@@ -94,6 +94,7 @@ export default class LifecycleConfiguration {
     _ruleIDs: string[];
     _tagKeys: string[];
     _storageClasses: string[];
+    _supportedLifecycleRules: string[];
     _config: {
         error?: ArsenalError;
         rules?: any[];
@@ -105,13 +106,23 @@ export default class LifecycleConfiguration {
      * @param config - the CloudServer config
      * @return - LifecycleConfiguration instance
      */
-    constructor(xml: any, config: { replicationEndpoints: { site: string }[] }) {
+    constructor(xml: any, config: { replicationEndpoints: { site: string }[], supportedLifecycleRules: string[] }) {
         this._parsedXML = xml;
         this._storageClasses =
             config.replicationEndpoints.map(endpoint => endpoint.site);
+        this._supportedLifecycleRules = this._buildSupportedLifecycleRules(config.supportedLifecycleRules);
         this._ruleIDs = [];
         this._tagKeys = [];
         this._config = {};
+    }
+
+    _buildSupportedLifecycleRules(ruleNames) {
+        return ruleNames.map(rule => {
+            if (rule === 'noncurrentVersionTransition') {
+                return 'NoncurrentVersionTransitions';
+            }
+            return rule.charAt(0).toUpperCase() + rule.slice(1);
+        });
     }
 
     /**
@@ -229,6 +240,13 @@ export default class LifecycleConfiguration {
      * }
      */
     _parseRule(rule: XMLRule) {
+        const isRuleSupported = Object.keys(rule)
+            .some(key => this._supportedLifecycleRules.includes(key));
+        if (!isRuleSupported) {
+            const msg = 'lifecycle action not implemented';
+            const error = errorInstances.NotImplemented.customizeDescription(msg);
+            return { error };
+        }
         // Either Prefix or Filter must be included, but can be empty string
         if ((!rule.Filter && rule.Filter !== '') &&
         (!rule.Prefix && rule.Prefix !== '')) {
