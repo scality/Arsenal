@@ -121,6 +121,8 @@ export const XMLResponseBackend = {
         let error: ArsenalError;
         if (errCode instanceof ArsenalError) {
             error = errCode;
+        } else if (errorInstances[errCode.message]) {
+            error = errorInstances[errCode.message];
         } else {
             error = errorInstances.InternalError.customizeDescription(errCode.message);
         }
@@ -217,6 +219,8 @@ export const JSONResponseBackend = {
         let error: ArsenalError;
         if (errCode instanceof ArsenalError) {
             error = errCode;
+        } else if (errorInstances[errCode.message]) {
+            error = errorInstances[errCode.message];
         } else {
             error = errorInstances.InternalError.customizeDescription(errCode.message);
         }
@@ -713,6 +717,8 @@ export function streamUserErrorPage(
     let error: ArsenalError;
     if (err instanceof ArsenalError) {
         error = err;
+    } else if (errorInstances[err.message]) {
+        error = errorInstances[err.message];
     } else {
         error = errorInstances.InternalError.customizeDescription(err.message);
     }
@@ -745,6 +751,8 @@ export function errorHtmlResponse(
     let error;
     if (err instanceof ArsenalError) {
         error = err;
+    } else if (errorInstances[err.message]) {
+        error = errorInstances[err.message];
     } else {
         error = errorInstances.InternalError.customizeDescription(err.message);
     }
@@ -816,6 +824,8 @@ export function errorHeaderResponse(
     let error: ArsenalError;
     if (err instanceof ArsenalError) {
         error = err;
+    } else if (errorInstances[err.message]) {
+        error = errorInstances[err.message];
     } else {
         error = errorInstances.InternalError.customizeDescription(err.message);
     }
@@ -953,6 +963,8 @@ export function redirectRequestOnError(
     let error: ArsenalError;
     if (err instanceof ArsenalError) {
         error = err;
+    } else if (errorInstances[err.message]) {
+        error = errorInstances[err.message];
     } else {
         error = errorInstances.InternalError.customizeDescription(err.message);
     }
