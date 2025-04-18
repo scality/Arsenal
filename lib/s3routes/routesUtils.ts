@@ -21,6 +21,22 @@ export type CallApiMethod = (
 ) => void;
 
 /**
+ * Convert an error to an ArsenalError instance
+ * @param err - Error to convert
+ * @returns ArsenalError instance
+ */
+export function toArsenalError(err: ArsenalError | Error): ArsenalError {
+    if (err instanceof ArsenalError) {
+        return err;
+    }
+
+    // If it's a known error type, use the error instance, otherwise wrap
+    // it in an InternalError
+    return errorInstances[err.message] ||
+        errorInstances.InternalError.customizeDescription(err.message);
+}
+
+/**
  * setCommonResponseHeaders - Set HTTP response headers
  * @param headers - key and value of new headers to add
  * @param response - http response object
@@ -116,13 +132,9 @@ export const XMLResponseBackend = {
         log: RequestLogger,
         corsHeaders?: { [key: string]: string } | null,
     ) {
+        const error = toArsenalError(errCode);
         setCommonResponseHeaders(corsHeaders, response, log);
-        let error: ArsenalError;
-        if (errCode instanceof ArsenalError) {
-            error = errCode;
-        } else {
-            error = errorInstances.InternalError.customizeDescription(errCode.message);
-        }
+
         // early return to avoid extra headers and XML data
         if (error.code === 304) {
             response.writeHead(error.code);
@@ -212,13 +224,9 @@ export const JSONResponseBackend = {
         log: RequestLogger,
         corsHeaders?: { [key: string]: string } | null,
     ) {
+        const error = toArsenalError(errCode);
         log.trace('sending error json response', { errCode });
-        let error: ArsenalError;
-        if (errCode instanceof ArsenalError) {
-            error = errCode;
-        } else {
-            error = errorInstances.InternalError.customizeDescription(errCode.message);
-        }
+
         /*
         {
             "code": "NoSuchKey",
@@ -708,12 +716,7 @@ export function streamUserErrorPage(
     corsHeaders: { [key: string]: string },
     log: RequestLogger,
 ) {
-    let error: ArsenalError;
-    if (err instanceof ArsenalError) {
-        error = err;
-    } else {
-        error = errorInstances.InternalError.customizeDescription(err.message);
-    }
+    const error = toArsenalError(err);
     // Prepare the headers, but do not send them
     // as errors might still happen when retrieving the data
     setCommonResponseHeaders(corsHeaders, response, log);
@@ -740,15 +743,8 @@ export function errorHtmlResponse(
     corsHeaders: { [key: string]: string } | null,
     log: RequestLogger,
 ) {
-    let error;
-    if (err instanceof ArsenalError) {
-        error = err;
-    } else {
-        error = errorInstances.InternalError.customizeDescription(err.message);
-    }
-
-    log.trace('sending generic html error page',
-        { error });
+    const error = toArsenalError(err);
+    log.trace('sending generic html error page', { error });
     setCommonResponseHeaders(corsHeaders, response, log);
     response.writeHead(error.code, { 'Content-type': 'text/html' });
     const html: string[] = [];
@@ -811,14 +807,8 @@ export function errorHeaderResponse(
     corsHeaders: { [key: string]: string },
     log: RequestLogger,
 ) {
-    let error: ArsenalError;
-    if (err instanceof ArsenalError) {
-        error = err;
-    } else {
-        error = errorInstances.InternalError.customizeDescription(err.message);
-    }
-    log.trace('sending error header response',
-        { error });
+    const error = toArsenalError(err);
+    log.trace('sending error header response', { error });
     setCommonResponseHeaders(corsHeaders, response, log);
     response.setHeader('x-amz-error-code', error.message);
     response.setHeader('x-amz-error-message', error.description);
@@ -946,14 +936,8 @@ export function redirectRequestOnError(
     corsHeaders: { [key: string]: string },
     log: RequestLogger,
 ) {
+    const error = toArsenalError(err);
     response.setHeader('Location', routingInfo.location);
-
-    let error: ArsenalError;
-    if (err instanceof ArsenalError) {
-        error = err;
-    } else {
-        error = errorInstances.InternalError.customizeDescription(err.message);
-    }
 
     if (!dataLocations && error.is.Found) {
         if (method === 'HEAD') {
