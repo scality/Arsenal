@@ -310,7 +310,7 @@ class MongoClientInterface {
         // Create secondary client URL with secondaryPreferred readPreference
         if (this.DUAL_CLIENT_ENABLED) {
             this.secondaryUrl = `mongodb://${cred}${replicaSetHosts}/` +
-                `?w=${writeConcern}&readPreference=secondaryPreferred` +
+                `?w=${writeConcern}&readPreference=secondary` +
                 // add read concern as majority
                 `&readConcernLevel=majority` +
                 `&maxStalenessSeconds=${SECONDARY_MAX_STALENESS}`;
@@ -545,7 +545,7 @@ class MongoClientInterface {
             USERSBUCKET : name;
             
         // Use secondary client for reads if enabled and connected
-        if (this.DUAL_CLIENT_ENABLED && this.isSecondaryConnected && this.secondaryDb) {
+        if (this.DUAL_CLIENT_ENABLED && this.secondaryDb) {
             return this.secondaryDb.collection<T>(newName);
         }
         
