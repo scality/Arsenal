@@ -11,6 +11,8 @@ const {
     indexFormatMongoArrayToObject,
 } = require('../../../../../lib/storage/metadata/mongoclient/utils');
 
+const MongoUtils = require('../../../../../lib/storage/metadata/mongoclient/utils');
+
 describe('auth credentials', () => {
     it('should return an empty string if missing creds', () => {
         assert.strictEqual(credPrefix(null), '');
@@ -370,5 +372,44 @@ describe('Index object transforms', () => {
     it('should convert mongo index object to index object', done => {
         assert.deepStrictEqual(indexFormatMongoArrayToObject(mongoIndexObjIn), indexObjOut);
         return done();
+    });
+});
+
+describe('MongoUtils', () => {
+    describe('indexFormatObjectToMongoArray', () => {
+        it('should handle null input', () => {
+            const result = MongoUtils.indexFormatObjectToMongoArray(null);
+            assert.deepStrictEqual(result, []);
+        });
+
+        it('should handle undefined input', () => {
+            const result = MongoUtils.indexFormatObjectToMongoArray(undefined);
+            assert.deepStrictEqual(result, []);
+        });
+
+        it('should handle non-array input', () => {
+            const result = MongoUtils.indexFormatObjectToMongoArray({});
+            assert.deepStrictEqual(result, []);
+        });
+
+        it('should convert array of index objects to mongo array format', () => {
+            const input = [
+                {
+                    name: 'testIndex',
+                    keys: [
+                        { key: 'field1', order: 1 },
+                        { key: 'field2', order: -1 },
+                    ],
+                },
+            ];
+
+            const result = MongoUtils.indexFormatObjectToMongoArray(input);
+
+            assert.strictEqual(result.length, 1);
+            assert.strictEqual(result[0].name, 'testIndex');
+            assert(result[0].key instanceof Map);
+            assert.strictEqual(result[0].key.get('field1'), 1);
+            assert.strictEqual(result[0].key.get('field2'), -1);
+        });
     });
 });

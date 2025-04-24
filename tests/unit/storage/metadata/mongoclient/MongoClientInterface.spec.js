@@ -2,7 +2,12 @@ const async = require('async');
 const assert = require('assert');
 const werelogs = require('werelogs');
 const { MongoMemoryReplSet } = require('mongodb-memory-server');
+const sinon = require('sinon');
+const errors = require('../../../../../lib/errors').default;
 
+const MongoClientInterface = require(
+    '../../../../../lib/storage/metadata/mongoclient/MongoClientInterface');
+const DummyConfigObject = require('./utils/DummyConfigObject');
 const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
 const BucketInfo = require('../../../../../lib/models/BucketInfo').default;
 const MongoUtils = require('../../../../../lib/storage/metadata/mongoclient/utils');
@@ -11,23 +16,111 @@ const { BucketVersioningKeyFormat } = require('../../../../../lib/versioning/con
 const { formatMasterKey } = require('../../../../../lib/storage/metadata/mongoclient/utils');
 
 const dbName = 'metadata';
-
-const mongoserver = new MongoMemoryReplSet({
-    debug: false,
-    instanceOpts: [
-        { port: 27021 },
-    ],
-    replSet: {
-        name: 'customSetName',
-        count: 1,
-        dbName,
-        storageEngine: 'ephemeralForTest',
+const baseBucket = BucketInfo.fromObj({
+    _name: 'test-bucket-createbucket',
+    _owner: 'testowner',
+    _ownerDisplayName: 'testdisplayname',
+    _creationDate: new Date().toJSON(),
+    _acl: {
+        Canned: 'private',
+        FULL_CONTROL: [],
+        WRITE: [],
+        WRITE_ACP: [],
+        READ: [],
+        READ_ACP: [],
     },
+    _mdBucketModelVersion: 10,
+    _transient: false,
+    _deleted: false,
+    _serverSideEncryption: null,
+    _versioningConfiguration: null,
+    _locationConstraint: 'us-east-1',
+    _readLocationConstraint: null,
+    _cors: null,
+    _replicationConfiguration: null,
+    _lifecycleConfiguration: null,
+    _uid: '',
+    _isNFS: null,
+    ingestion: null,
 });
 
-const MongoClientInterface = require(
-    '../../../../../lib/storage/metadata/mongoclient/MongoClientInterface');
-const DummyConfigObject = require('./utils/DummyConfigObject');
+// Setup MongoDB once for all tests
+let _mongoServer;
+
+/**
+ * Setup MongoDB server
+ * @param {Function} done - callback
+ * @returns {void}
+ */
+function setupMongoDB(done) {
+    if (_mongoServer && _mongoServer.state === 'running') {
+        done();
+        return;
+    }
+
+    _mongoServer = new MongoMemoryReplSet({
+        debug: false,
+        instanceOpts: [
+            { port: 27021 },
+        ],
+        replSet: {
+            name: 'customSetName',
+            count: 1,
+            dbName,
+            storageEngine: 'wiredTiger',
+        },
+    });
+
+    _mongoServer.start()
+        .then(() => _mongoServer.waitUntilRunning())
+        .then(() => {
+            done();
+        })
+        .catch(done);
+}
+
+/**
+ * Create a MongoDB client with default test options
+ * @returns {MongoClientInterface} client instance
+ */
+function createClient() {
+    const opts = {
+        replicaSetHosts: 'localhost:27021',
+        writeConcern: 'majority',
+        replicaSet: 'customSetName',
+        readPreference: 'primary',
+        database: dbName,
+        replicationGroupId: 'GR001',
+        logger,
+        authCredentials: {},
+        isLocationTransient: () => false,
+        shardCollections: false,
+    };
+    return new MongoClientInterface(opts);
+}
+
+/**
+ * Teardown MongoDB server and client
+ * @param {Function} done - callback
+ * @returns {void}
+ */
+function teardownMongoDB(done) {
+    if (_mongoServer) {
+        _mongoServer.stop()
+            .then(() => done())
+            .catch(done);
+    } else {
+        done();
+    }
+}
+
+beforeAll(done => {
+    setupMongoDB(done);
+});
+
+afterAll(done => {
+    teardownMongoDB(done);
+});
 
 const mongoTestClient = new MongoClientInterface({});
 
@@ -565,31 +658,18 @@ function uploadObjects(client, bucketName, objectList, callback) {
 describe('MongoClientInterface, tests', () => {
     const hr = 1000 * 60 * 60;
     let client;
-    beforeAll(done => {
-        mongoserver.start().then(() => {
-            mongoserver.waitUntilRunning().then(() => {
-                const opts = {
-                    replicaSetHosts: 'localhost:27021',
-                    writeConcern: 'majority',
-                    replicaSet: 'customSetName',
-                    readPreference: 'primary',
-                    database: dbName,
-                    replicationGroupId: 'GR001',
-                    logger,
-                };
-                client = new MongoClientInterface(opts);
-                client.setup(() => done());
-            });
-        });
+
+    beforeEach(done => {
+        client = createClient();
+        client.setup(done);
     });
 
-    afterAll(done => {
-        async.series([
-            next => client.close(next),
-            next => mongoserver.stop()
-                .then(() => next())
-                .catch(next),
-        ], done);
+    afterEach(done => {
+        if (client) {
+            client.close(done);
+        } else {
+            done();
+        }
     });
 
     const tests = [
@@ -943,5 +1023,2031 @@ describe('MongoClientInterface, updateDeleteMaster', () => {
         const op = mongoTestClient.updateDeleteMaster(false, 'v0', {}, {}, true);
         assert(op.updateOne);
         return done();
+    });
+});
+
+describe('MongoClientInterface, getUUID', () => {
+    let sandbox;
+
+    beforeEach(() => {
+        sandbox = sinon.createSandbox();
+    });
+
+    afterEach(() => {
+        sandbox.restore();
+    });
+
+    it('Should return error if writeUUIDIfNotExists fails', done => {
+        sandbox.stub(mongoTestClient, 'writeUUIDIfNotExists').callsFake((uuid, log, cb) => {
+            cb({ is: { InternalError: true } });
+        });
+
+        mongoTestClient.getUUID(logger, err => {
+            assert(err);
+            done();
+        });
+    });
+
+    it('Should return error if writeUUIDIfNotExists result is not acknowledged', done => {
+        sandbox.stub(mongoTestClient, 'writeUUIDIfNotExists').callsFake((uuid, log, cb) => {
+            cb(errors.InternalError);
+        });
+
+        mongoTestClient.getUUID(logger, err => {
+            assert(err);
+            assert(err.is.InternalError);
+            done();
+        });
+    });
+
+    it('Should return uuid', done => {
+        sandbox.stub(mongoTestClient, 'writeUUIDIfNotExists').callsFake((uuid, log, cb) => {
+            cb();
+        });
+
+        sandbox.stub(mongoTestClient, 'readUUID').callsFake((log, cb) => {
+            cb(null, 'uuid');
+        });
+
+        mongoTestClient.getUUID(logger, (err, uuid) => {
+            assert.ifError(err);
+            assert.strictEqual(typeof uuid, 'string');
+            done();
+        });
+    });
+});
+
+describe('MongoClientInterface, putObjectVerCase2', () => {
+    const bucketName = 'test-bucket-putvercase2';
+    let client;
+    let collection;
+    let sandbox;
+
+    beforeEach(done => {
+        sandbox = sinon.createSandbox();
+        client = createClient();
+        client.setup(err => {
+            if (err) {
+                return done(err);
+            }
+            return createBucket(client, bucketName, true, err => {
+                if (err) {
+                    return done(err);
+                }
+                collection = client.getCollection(bucketName);
+                return done();
+            });
+        });
+    });
+
+    afterEach(done => {
+        sandbox.restore();
+        if (client) {
+            client.deleteBucket(bucketName, logger, () => {
+                client.close(done);
+            });
+        } else {
+            done();
+        }
+    });
+
+    it('should handle MongoDB updateOne error in putObjectVerCase2', done => {
+        const objName = 'test-object';
+        const objMD = new ObjectMD()
+            .setKey(objName)
+            .setDataStoreName('us-east-1')
+            .setContentLength(100)
+            .setLastModified(new Date());
+
+        sandbox.stub(collection, 'updateOne').rejects(new Error('Simulated MongoDB error'));
+
+        const params = {
+            vFormat: BucketVersioningKeyFormat.v1,
+            versionId: '',
+            repairMaster: false,
+            versioning: false,
+            needOplogUpdate: false,
+            originOp: 'test',
+            conditions: {},
+        };
+
+        client.putObjectVerCase2(
+            collection,
+            bucketName,
+            objName,
+            objMD.getValue(),
+            params,
+            logger,
+            (err, result) => {
+                try {
+                    assert(err, 'Expected an error to be returned');
+                    assert.strictEqual(err.code, 500, 'Expected 500 error code');
+                    assert(!result, 'Expected no result on error');
+                    done();
+                } catch (assertionError) {
+                    done(assertionError);
+                }
+            },
+        );
+    });
+});
+
+describe('MongoClientInterface, putObjectVerCase4', () => {
+    const bucketName = 'test-bucket-putvercase4';
+    let client;
+    let collection;
+    let sandbox;
+
+    beforeEach(done => {
+        sandbox = sinon.createSandbox();
+        client = createClient();
+        client.setup(err => {
+            if (err) {
+                return done(err);
+            }
+            return createBucket(client, bucketName, true, err => {
+                if (err) {
+                    return done(err);
+                }
+                collection = client.getCollection(bucketName);
+                return done();
+            });
+        });
+    });
+
+    afterEach(done => {
+        sandbox.restore();
+        if (client) {
+            client.deleteBucket(bucketName, logger, () => {
+                client.close(done);
+            });
+        } else {
+            done();
+        }
+    });
+
+    it('should handle updateOne error in putObjectVerCase4', done => {
+        const objName = 'test-object';
+        const versionId = 'test-version-id';
+        const objMD = new ObjectMD()
+            .setKey(objName)
+            .setDataStoreName('us-east-1')
+            .setContentLength(100)
+            .setLastModified(new Date());
+
+        sandbox.stub(collection, 'updateOne').rejects(new Error('Simulated MongoDB error'));
+
+        const params = {
+            vFormat: BucketVersioningKeyFormat.v1,
+            versionId,
+            repairMaster: true,
+            versioning: true,
+            needOplogUpdate: false,
+            originOp: 'test',
+            conditions: {},
+        };
+
+        client.putObjectVerCase4(
+            collection,
+            bucketName,
+            objName,
+            objMD.getValue(),
+            params,
+            logger,
+            (err, result) => {
+                try {
+                    assert(err, 'Expected an error to be returned');
+                    assert.strictEqual(err.code, 500, 'Expected 500 error code');
+                    assert(!result, 'Expected no result on error');
+                    done();
+                } catch (assertionError) {
+                    done(assertionError);
+                }
+            },
+        );
+    });
+
+    it('should handle getLatestVersion error in putObjectVerCase4', done => {
+        const objName = 'test-object';
+        const versionId = 'test-version-id';
+        const objMD = new ObjectMD()
+            .setKey(objName)
+            .setDataStoreName('us-east-1')
+            .setContentLength(100)
+            .setLastModified(new Date());
+
+        sandbox.stub(client, 'getLatestVersion').callsFake((c, objName, vFormat, log, cb) => {
+            cb(errors.InternalError);
+        });
+
+        const params = {
+            vFormat: BucketVersioningKeyFormat.v1,
+            versionId,
+            repairMaster: true,
+            versioning: true,
+            needOplogUpdate: false,
+            originOp: 'test',
+            conditions: {},
+        };
+
+        client.putObjectVerCase4(
+            collection,
+            bucketName,
+            objName,
+            objMD.getValue(),
+            params,
+            logger,
+            (err, result) => {
+                try {
+                    assert(err, 'Expected an error to be returned');
+                    assert.strictEqual(err.code, 500, 'Expected 500 error code');
+                    assert(!result, 'Expected no result on error');
+                    done();
+                } catch (assertionError) {
+                    done(assertionError);
+                }
+            },
+        );
+    });
+
+    it('should handle bulkWrite error in putObjectVerCase4', done => {
+        const objName = 'test-object';
+        const versionId = 'test-version-id';
+        const objMD = new ObjectMD()
+            .setKey(objName)
+            .setDataStoreName('us-east-1')
+            .setContentLength(100)
+            .setLastModified(new Date());
+
+        const updateOneStub = sandbox.stub(collection, 'updateOne').resolves({ modifiedCount: 1 });
+
+        sandbox.stub(client, 'getLatestVersion').callsFake((c, objName, vFormat, log, cb) => {
+            cb(null, objMD.getValue());
+        });
+
+        sandbox.stub(collection, 'bulkWrite').rejects(new Error('Simulated bulkWrite error'));
+
+        const params = {
+            vFormat: BucketVersioningKeyFormat.v1,
+            versionId,
+            repairMaster: true,
+            versioning: true,
+            needOplogUpdate: false,
+            originOp: 'test',
+            conditions: {},
+        };
+
+        client.putObjectVerCase4(
+            collection,
+            bucketName,
+            objName,
+            objMD.getValue(),
+            params,
+            logger,
+            (err, result) => {
+                try {
+                    assert(err, 'Expected an error to be returned');
+                    assert.strictEqual(err.code, 500, 'Expected 500 error code');
+                    assert(!result, 'Expected no result on error');
+                    assert(updateOneStub.calledOnce, 'Expected updateOne to be called');
+                    done();
+                } catch (assertionError) {
+                    done(assertionError);
+                }
+            },
+        );
+    });
+
+    it('should handle duplicate key error in putObjectVerCase4 bulkWrite gracefully', done => {
+        const objName = 'test-object';
+        const versionId = 'test-version-id';
+        const objMD = new ObjectMD()
+            .setKey(objName)
+            .setDataStoreName('us-east-1')
+            .setContentLength(100)
+            .setLastModified(new Date());
+
+        sandbox.stub(collection, 'updateOne').resolves({ modifiedCount: 1 });
+
+        const objVal = objMD.getValue();
+        objVal.versionId = versionId;
+        sandbox.stub(client, 'getLatestVersion').callsFake((c, objName, vFormat, log, cb) => {
+            cb(null, objVal);
+        });
+
+        const duplicateKeyError = new Error('Duplicate key error');
+        duplicateKeyError.code = 11000;
+        sandbox.stub(collection, 'bulkWrite').rejects(duplicateKeyError);
+
+        const params = {
+            vFormat: BucketVersioningKeyFormat.v1,
+            versionId,
+            repairMaster: true,
+            versioning: true,
+            needOplogUpdate: false,
+            originOp: 'test',
+            conditions: {},
+        };
+
+        client.putObjectVerCase4(
+            collection,
+            bucketName,
+            objName,
+            objMD.getValue(),
+            params,
+            logger,
+            (err, result) => {
+                try {
+                    assert(!err, 'Expected no error for duplicate key');
+                    assert(result, 'Expected result for duplicate key');
+                    assert.strictEqual(
+                        result,
+                        `{"versionId": "${versionId}"}`,
+                        'Expected versionId in result',
+                    );
+                    done();
+                } catch (assertionError) {
+                    done(assertionError);
+                }
+            },
+        );
+    });
+});
+
+describe('MongoClientInterface, putObjectNoVer', () => {
+    const bucketName = 'test-bucket-putnover';
+    let client;
+    let collection;
+    let sandbox;
+
+    beforeEach(done => {
+        sandbox = sinon.createSandbox();
+        client = createClient();
+        client.setup(err => {
+            if (err) {
+                return done(err);
+            }
+            return createBucket(client, bucketName, false, err => {
+                if (err) {
+                    return done(err);
+                }
+                collection = client.getCollection(bucketName);
+                return done();
+            });
+        });
+    });
+
+    afterEach(done => {
+        sandbox.restore();
+        if (client) {
+            client.deleteBucket(bucketName, logger, () => {
+                client.close(done);
+            });
+        } else {
+            done();
+        }
+    });
+
+    it('should handle MongoDB updateOne error in putObjectNoVer', done => {
+        const objName = 'test-object';
+        const objMD = new ObjectMD()
+            .setKey(objName)
+            .setDataStoreName('us-east-1')
+            .setContentLength(100)
+            .setLastModified(new Date());
+
+        sandbox.stub(collection, 'updateOne').rejects(new Error('Simulated MongoDB error'));
+
+        const params = {
+            vFormat: BucketVersioningKeyFormat.v0,
+            needOplogUpdate: false,
+            conditions: {},
+        };
+
+        client.putObjectNoVer(
+            collection,
+            bucketName,
+            objName,
+            objMD.getValue(),
+            params,
+            logger,
+            err => {
+                try {
+                    assert(err, 'Expected an error to be returned');
+                    assert.strictEqual(err.code, 500, 'Expected 500 error code');
+                    done();
+                } catch (assertionError) {
+                    done(assertionError);
+                }
+            },
+        );
+    });
+});
+
+describe('MongoClientInterface, putObjectNoVerWithOplogUpdate', () => {
+    const bucketName = 'test-bucket-putnover-oplog';
+    let client;
+    let collection;
+    let sandbox;
+
+    beforeEach(done => {
+        sandbox = sinon.createSandbox();
+        client = createClient();
+        client.setup(err => {
+            if (err) {
+                return done(err);
+            }
+            return createBucket(client, bucketName, false, err => {
+                if (err) {
+                    return done(err);
+                }
+                collection = client.getCollection(bucketName);
+                return done();
+            });
+        });
+    });
+
+    afterEach(done => {
+        sandbox.restore();
+        if (client) {
+            client.deleteBucket(bucketName, logger, () => {
+                client.close(done);
+            });
+        } else {
+            done();
+        }
+    });
+
+    it('should handle findOneAndUpdate error in putObjectNoVerWithOplogUpdate', done => {
+        const objName = 'test-object-oplog';
+        const objMD = new ObjectMD()
+            .setKey(objName)
+            .setDataStoreName('us-east-1')
+            .setContentLength(100)
+            .setLastModified(new Date());
+
+        client.putObject(
+            bucketName,
+            objName,
+            objMD.getValue(),
+            {
+                vFormat: BucketVersioningKeyFormat.v0,
+                versioning: false,
+                versionId: '',
+                repairMaster: false,
+                needOplogUpdate: false,
+                originOp: 'test',
+                conditions: {},
+            },
+            logger,
+            err => {
+                if (err) {
+                    return done(err);
+                }
+
+                sandbox.stub(collection, 'findOneAndUpdate').rejects(new Error('Simulated MongoDB error'));
+
+                const params = {
+                    vFormat: BucketVersioningKeyFormat.v0,
+                    needOplogUpdate: true,
+                    originOp: 'test',
+                    conditions: {},
+                };
+
+                return client.putObjectNoVerWithOplogUpdate(
+                    collection,
+                    bucketName,
+                    objName,
+                    objMD.getValue(),
+                    params,
+                    logger,
+                    err => {
+                        try {
+                            assert(err, 'Expected an error to be returned');
+                            assert.strictEqual(err.code, 500, 'Expected 500 error code');
+                            done();
+                        } catch (assertionError) {
+                            done(assertionError);
+                        }
+                    },
+                );
+            },
+        );
+    });
+
+    it('should handle bulkWrite error in putObjectNoVerWithOplogUpdate', done => {
+        const objName = 'test-object-oplog-bulkwrite';
+        const objMD = new ObjectMD()
+            .setKey(objName)
+            .setDataStoreName('us-east-1')
+            .setContentLength(100)
+            .setLastModified(new Date());
+
+        client.putObject(
+            bucketName,
+            objName,
+            objMD.getValue(),
+            {
+                vFormat: BucketVersioningKeyFormat.v0,
+                versioning: false,
+                versionId: '',
+                repairMaster: false,
+                needOplogUpdate: false,
+                originOp: 'test',
+                conditions: {},
+            },
+            logger,
+            err => {
+                if (err) {
+                    return done(err);
+                }
+
+                sandbox.stub(collection, 'findOneAndUpdate').resolves({
+                    value: {
+                        value: objMD.getValue(),
+                    },
+                });
+
+                sandbox.stub(collection, 'bulkWrite').rejects(new Error('Simulated bulkWrite error'));
+
+                const params = {
+                    vFormat: BucketVersioningKeyFormat.v0,
+                    needOplogUpdate: true,
+                    originOp: 'test',
+                    conditions: {},
+                };
+
+                return client.putObjectNoVerWithOplogUpdate(
+                    collection,
+                    bucketName,
+                    objName,
+                    objMD.getValue(),
+                    params,
+                    logger,
+                    err => {
+                        try {
+                            assert(err, 'Expected an error to be returned');
+                            assert.strictEqual(err.code, 500, 'Expected 500 error code');
+                            done();
+                        } catch (assertionError) {
+                            done(assertionError);
+                        }
+                    },
+                );
+            },
+        );
+    });
+
+    it('should handle NoSuchKey error in putObjectNoVerWithOplogUpdate', done => {
+        const objName = 'test-object-oplog-nosuchkey';
+        const objMD = new ObjectMD()
+            .setKey(objName)
+            .setDataStoreName('us-east-1')
+            .setContentLength(100)
+            .setLastModified(new Date());
+
+        sandbox.stub(collection, 'findOneAndUpdate').resolves({ value: null });
+
+        const params = {
+            vFormat: BucketVersioningKeyFormat.v0,
+            needOplogUpdate: true,
+            originOp: 'test',
+            conditions: {},
+        };
+
+        client.putObjectNoVerWithOplogUpdate(
+            collection,
+            bucketName,
+            objName,
+            objMD.getValue(),
+            params,
+            logger,
+            err => {
+                try {
+                    assert(err, 'Expected an error to be returned');
+                    assert.strictEqual(err.code, 500, 'Expected error code to be 500');
+                    done();
+                } catch (assertionError) {
+                    done(assertionError);
+                }
+            },
+        );
+    });
+});
+
+describe('MongoClientInterface, getBucketVFormat', () => {
+    let client;
+    let sandbox;
+
+    beforeEach(done => {
+        sandbox = sinon.createSandbox();
+        client = createClient();
+        client.setup(done);
+    });
+
+    afterEach(done => {
+        sandbox.restore();
+        if (client) {
+            client.close(done);
+        } else {
+            done();
+        }
+    });
+
+    it('should handle MongoDB findOne error in getBucketVFormat', done => {
+        const bucketName = 'test-bucket-vformat-error';
+        const mockCollection = {
+            findOne: sandbox.stub().rejects(new Error('Simulated MongoDB error')),
+        };
+
+        sandbox.stub(client, 'getCollection').returns(mockCollection);
+
+        client.getBucketVFormat(bucketName, logger, (err, vFormat) => {
+            try {
+                assert(err, 'Expected an error to be returned');
+                assert.strictEqual(err.code, 500, 'Expected 500 error code');
+                assert(!vFormat, 'Expected no vFormat on error');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
+    });
+});
+
+describe('MongoClientInterface, readUUID', () => {
+    let client;
+    let sandbox;
+
+    beforeEach(done => {
+        sandbox = sinon.createSandbox();
+        client = createClient();
+        client.setup(done);
+    });
+
+    afterEach(done => {
+        sandbox.restore();
+        if (client) {
+            client.close(done);
+        } else {
+            done();
+        }
+    });
+
+    it('should handle MongoDB findOne error in readUUID', done => {
+        const mockCollection = {
+            findOne: sandbox.stub().rejects(new Error('Simulated MongoDB error')),
+        };
+
+        sandbox.stub(client, 'getCollection').returns(mockCollection);
+
+        client.readUUID(logger, (err, uuid) => {
+            try {
+                assert(err, 'Expected an error to be returned');
+                assert.strictEqual(err.code, 500, 'Expected 500 error code');
+                assert(!uuid, 'Expected no UUID on error');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
+    });
+});
+
+describe('MongoClientInterface, writeUUIDIfNotExists', () => {
+    let client;
+    let sandbox;
+
+    beforeEach(done => {
+        sandbox = sinon.createSandbox();
+        client = createClient();
+        client.setup(done);
+    });
+
+    afterEach(done => {
+        sandbox.restore();
+        if (client) {
+            client.close(done);
+        } else {
+            done();
+        }
+    });
+
+    it('should handle MongoDB insertOne error in writeUUIDIfNotExists', done => {
+        const mockCollection = {
+            insertOne: sandbox.stub().rejects(new Error('Simulated MongoDB error')),
+        };
+
+        sandbox.stub(client, 'getCollection').returns(mockCollection);
+
+        client.writeUUIDIfNotExists('test-uuid', logger, (err) => {
+            try {
+                assert(err, 'Expected an error to be returned');
+                assert.strictEqual(err.code, 500, 'Expected 500 error code');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
+    });
+
+    it('should handle duplicate key error in writeUUIDIfNotExists correctly', done => {
+        const duplicateKeyError = new Error('Duplicate key error');
+        duplicateKeyError.code = 11000;
+
+        const mockCollection = {
+            insertOne: sandbox.stub().rejects(duplicateKeyError),
+        };
+
+        sandbox.stub(client, 'getCollection').returns(mockCollection);
+
+        client.writeUUIDIfNotExists('test-uuid', logger, (err) => {
+            try {
+                assert(err, 'Expected an error to be returned');
+                assert.strictEqual(err.code, 409, 'Expected KeyAlreadyExists error');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
+    });
+
+    it('should handle unacknowledged response in writeUUIDIfNotExists', done => {
+        const mockCollection = {
+            insertOne: sandbox.stub().resolves({
+                acknowledged: false,
+            }),
+        };
+
+        sandbox.stub(client, 'getCollection').returns(mockCollection);
+
+        client.writeUUIDIfNotExists('test-uuid', logger, err => {
+            try {
+                assert(err, 'Expected an error to be returned');
+                assert(err.is && err.is.InternalError, 'Expected InternalError');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
+    });
+
+    it('should handle null response in writeUUIDIfNotExists', done => {
+        const mockCollection = {
+            insertOne: sandbox.stub().resolves(null),
+        };
+
+        sandbox.stub(client, 'getCollection').returns(mockCollection);
+
+        client.writeUUIDIfNotExists('test-uuid', logger, err => {
+            try {
+                assert(err, 'Expected an error to be returned');
+                assert(err.is && err.is.InternalError, 'Expected InternalError');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
+    });
+
+    it('should succeed with acknowledged response in writeUUIDIfNotExists', done => {
+        const mockCollection = {
+            insertOne: sandbox.stub().resolves({
+                acknowledged: true,
+            }),
+        };
+
+        sandbox.stub(client, 'getCollection').returns(mockCollection);
+
+        client.writeUUIDIfNotExists('test-uuid', logger, err => {
+            try {
+                assert.ifError(err, 'Expected no error to be returned');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
+    });
+});
+
+describe('MongoClientInterface, getObject', () => {
+    let client;
+    let sandbox;
+    const bucketName = 'test-bucket-getobject';
+    const objName = 'test-object';
+
+    beforeEach(done => {
+        sandbox = sinon.createSandbox();
+        client = createClient();
+        client.setup(err => {
+            if (err) {
+                return done(err);
+            }
+            return createBucket(client, bucketName, true, done);
+        });
+    });
+
+    afterEach(done => {
+        sandbox.restore();
+        if (client) {
+            client.deleteBucket(bucketName, logger, () => {
+                client.close(done);
+            });
+        } else {
+            done();
+        }
+    });
+
+    it('should handle getBucketVFormat error in getObject', done => {
+        const originalGetBucketVFormat = client.getBucketVFormat;
+        client.getBucketVFormat = (bucketName, log, cb) => {
+            cb(errors.InternalError);
+        };
+
+        client.getObject(bucketName, objName, null, logger, err => {
+            client.getBucketVFormat = originalGetBucketVFormat;
+
+            try {
+                assert(err, 'Expected an error to be returned');
+                assert(err.is.InternalError, 'Expected InternalError');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
+    });
+
+    it('should handle MongoDB findOne error in getObject', done => {
+        const originalGetCollection = client.getCollection;
+        client.getCollection = name => {
+            const collection = originalGetCollection.call(client, name);
+            collection.findOne = () => Promise.reject(new Error('Simulated MongoDB error'));
+            return collection;
+        };
+
+        client.getObject(bucketName, objName, null, logger, err => {
+            client.getCollection = originalGetCollection;
+
+            try {
+                assert(err, 'Expected an error to be returned');
+                assert(err.is.InternalError, 'Expected InternalError');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
+    });
+});
+
+describe('MongoClientInterface, repair', () => {
+    let client;
+    const bucketName = 'test-bucket-repair';
+    const objName = 'test-object';
+
+    beforeEach(done => {
+        client = createClient();
+        client.setup(err => {
+            if (err) {
+                return done(err);
+            }
+            return createBucket(client, bucketName, true, done);
+        });
+    });
+
+    afterEach(done => {
+        if (client) {
+            client.deleteBucket(bucketName, logger, () => {
+                client.close(done);
+            });
+        } else {
+            done();
+        }
+    });
+
+    it('should handle findOneAndReplace error in repair', done => {
+        const objMD = new ObjectMD()
+            .setKey(objName)
+            .setDataStoreName('us-east-1')
+            .setContentLength(100)
+            .setLastModified(new Date());
+
+        const collection = client.getCollection(bucketName);
+
+        const originalFindOneAndReplace = collection.findOneAndReplace;
+        collection.findOneAndReplace = () => Promise.reject(new Error('Simulated MongoDB error'));
+
+        client.repair(
+            collection,
+            bucketName,
+            objName,
+            objMD.getValue(),
+            { versionId: 'test-version-id' },
+            BucketVersioningKeyFormat.v1,
+            logger,
+            err => {
+                collection.findOneAndReplace = originalFindOneAndReplace;
+
+                try {
+                    assert(err, 'Expected an error to be returned');
+                    assert(err.is.InternalError, 'Expected InternalError');
+                    done();
+                } catch (assertionError) {
+                    done(assertionError);
+                }
+            },
+        );
+    });
+});
+
+describe('MongoClientInterface, getBucketInfos errors', () => {
+    let client;
+
+    beforeEach(done => {
+        client = createClient();
+        client.setup(done);
+    });
+
+    afterEach(done => {
+        if (client) {
+            client.close(done);
+        } else {
+            done();
+        }
+    });
+
+    it('should handle MongoDB find error in getBucketInfos', done => {
+        const originalDb = client.db;
+        client.db = {
+            listCollections: () => ({
+                toArray: () => Promise.reject(new Error('Simulated MongoDB error')),
+            }),
+            collection: () => ({
+                find: () => ({
+                    toArray: () => Promise.reject(new Error('Simulated MongoDB error')),
+                }),
+            }),
+        };
+
+        client.getBucketInfos(logger, (err, result) => {
+            client.db = originalDb;
+
+            try {
+                assert(err, 'Expected an error to be returned');
+                assert(err.is && err.is.InternalError, 'Expected InternalError');
+                assert(!result, 'Expected no result on error');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
+    });
+});
+
+describe('MongoClientInterface, getBucketInfos', () => {
+    let client;
+    const testBuckets = [
+        'test-bucket-info-1',
+        'test-bucket-info-2',
+        'test-bucket-info-3',
+    ];
+
+    beforeEach(done => {
+        client = createClient();
+        client.setup(err => {
+            if (err) {
+                return done(err);
+            }
+
+            return async.eachSeries(testBuckets, (bucketName, next) => {
+                createBucket(client, bucketName, bucketName.endsWith('3'), next);
+            }, done);
+        });
+    });
+
+    afterEach(done => {
+        if (client) {
+            async.eachSeries(testBuckets, (bucketName, next) => {
+                client.deleteBucket(bucketName, logger, next);
+            }, err => {
+                client.close(() => done(err));
+            });
+        } else {
+            done();
+        }
+    });
+
+    it('should successfully retrieve bucket infos', done => {
+        client.getBucketInfos(logger, (err, result) => {
+            try {
+                assert.ifError(err);
+                assert(result, 'Expected result to be returned');
+                assert(result.bucketCount >= testBuckets.length,
+                    `Expected at least ${testBuckets.length} buckets, got ${result.bucketCount}`);
+                assert(Array.isArray(result.bucketInfos), 'Expected bucketInfos to be an array');
+
+                const foundBuckets = result.bucketInfos
+                    .filter(info => testBuckets.includes(info.getName()))
+                    .map(info => info.getName());
+
+                assert.strictEqual(
+                    foundBuckets.length,
+                    testBuckets.length,
+                    `Expected all ${testBuckets.length} test buckets to be found`,
+                );
+                const versionedBucket = result.bucketInfos.find(
+                    info => info.getName() === 'test-bucket-info-3',
+                );
+                assert(versionedBucket, 'Expected to find the versioned bucket');
+                assert(versionedBucket.isVersioningOn(), 'Expected versioning to be enabled');
+
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
+    });
+});
+
+describe('MongoClientInterface, createBucket', () => {
+    let client;
+    let sandbox;
+
+    beforeEach(done => {
+        sandbox = sinon.createSandbox();
+        client = createClient();
+        client.setup(done);
+    });
+
+    afterEach(done => {
+        sandbox.restore();
+        client.close(done);
+    });
+
+    it('should handle MongoDB createCollection error in createBucket', done => {
+        const bucketName = 'test-bucket-createbucket';
+        const originalCreateCollection = client.db.createCollection;
+        client.db.createCollection = () => Promise.reject(new Error('Simulated MongoDB error'));
+
+        client.createBucket(bucketName, baseBucket, logger, err => {
+            client.db.createCollection = originalCreateCollection;
+
+            try {
+                assert(err, 'Expected an error to be returned');
+                assert(err.is && err.is.InternalError, 'Expected InternalError');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
+    });
+
+    it('should handle modifiedCount 0 and upsertedCount 0 in createBucket', done => {
+        const bucketName = 'test-bucket-createbucket';
+
+        const mockCollection = {
+            updateOne: sandbox.stub().resolves({
+                modifiedCount: 0,
+                upsertedCount: 0,
+                matchedCount: 0,
+            }),
+        };
+
+        sandbox.stub(client, 'getCollection').returns(mockCollection);
+
+        client.createBucket(bucketName, baseBucket, logger, err => {
+            try {
+                assert(err, 'Expected an error to be returned');
+                assert(err.is && err.is.InternalError, 'Expected InternalError');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
+    });
+
+    it('should successfully create a bucket', done => {
+        const bucketName = 'test-bucket-createbucket-success';
+
+        client.createBucket(bucketName, baseBucket, logger, err => {
+            if (err) {
+                done(err);
+            } else {
+                client.deleteBucket(bucketName, logger, deleteErr => {
+                    done(deleteErr);
+                });
+            }
+        });
+    });
+});
+
+describe('MongoClientInterface, putBucketAttributes', () => {
+    let client;
+    let sandbox;
+
+    beforeEach(done => {
+        sandbox = sinon.createSandbox();
+        client = createClient();
+        client.setup(done);
+    });
+
+    afterEach(done => {
+        sandbox.restore();
+        client.close(done);
+    });
+
+    it('should handle MongoDB updateOne error in putBucketAttributes', done => {
+        const bucketName = 'test-bucket-putbucketattributes';
+
+        const mockCollection = {
+            updateOne: sandbox.stub().rejects(new Error('Simulated MongoDB error')),
+        };
+
+        sandbox.stub(client, 'getCollection').returns(mockCollection);
+
+        client.putBucketAttributes(bucketName, baseBucket, logger, err => {
+            try {
+                assert(err, 'Expected an error to be returned');
+                assert(err.is && err.is.InternalError, 'Expected InternalError');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
+    });
+
+
+    it('should handle MongoDB modifiedCount === 0 and upsertedCount === 0 in putBucketAttributes', done => {
+        const bucketName = 'test-bucket-putbucketattributes';
+
+        const mockCollection = {
+            updateOne: sandbox.stub().resolves({
+                modifiedCount: 0,
+                upsertedCount: 0,
+                matchedCount: 0,
+            }),
+        };
+
+        sandbox.stub(client, 'getCollection').returns(mockCollection);
+
+        client.putBucketAttributes(bucketName, baseBucket, logger, err => {
+            try {
+                assert(err, 'Expected an error to be returned');
+                assert(err.is.NoSuchBucket, 'Expected NoSuchBucket');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
+    });
+});
+
+describe('MongoClientInterface, bucket capabilities', () => {
+    let client;
+    let sandbox;
+
+    beforeEach(done => {
+        sandbox = sinon.createSandbox();
+        client = createClient();
+        client.setup(done);
+    });
+
+    afterEach(done => {
+        sandbox.restore();
+        client.close(done);
+    });
+
+    it('should handle MongoDB updateOne error in putBucketAttributesCapabilities', done => {
+        const bucketName = 'test-bucket-putbucketattributescapabilities';
+        const capabilityName = 'VeeamSOSApi';
+        const capabilityField = 'CapacityInfo';
+        const capabilityValue = {
+            Capacity: 1n,
+            Available: 1n,
+            Used: 0n,
+            LastModified: '2021-09-29T14:00:00.000Z',
+        };
+
+        const mockCollection = {
+            updateOne: sandbox.stub().rejects(new Error('Simulated MongoDB error')),
+        };
+
+        sandbox.stub(client, 'getCollection').returns(mockCollection);
+
+        client.putBucketAttributesCapabilities(
+            bucketName,
+            capabilityName,
+            capabilityField,
+            capabilityValue,
+            logger,
+            err => {
+                try {
+                    assert(err, 'Expected an error to be returned');
+                    assert(err.is && err.is.InternalError, 'Expected InternalError');
+                    done();
+                } catch (assertionError) {
+                    done(assertionError);
+                }
+            },
+        );
+    });
+
+    it('should handle MongoDB modifiedCount === 0 & upsertedCount === 0 in putBucketAttributesCapabilities', done => {
+        const bucketName = 'test-bucket-putbucketattributescapabilities';
+        const capabilityName = 'VeeamSOSApi';
+        const capabilityField = 'CapacityInfo';
+        const capabilityValue = {
+            Capacity: 1n,
+            Available: 1n,
+            Used: 0n,
+            LastModified: '2021-09-29T14:00:00.000Z',
+        };
+
+        const mockCollection = {
+            updateOne: sandbox.stub().resolves({
+                modifiedCount: 0,
+                upsertedCount: 0,
+                matchedCount: 0,
+            }),
+        };
+
+        sandbox.stub(client, 'getCollection').returns(mockCollection);
+
+        client.putBucketAttributesCapabilities(
+            bucketName,
+            capabilityName,
+            capabilityField,
+            capabilityValue,
+            logger,
+            err => {
+                try {
+                    assert(err, 'Expected an error to be returned');
+                    assert(err.is && err.is.InternalError, 'Expected InternalError');
+                    done();
+                } catch (assertionError) {
+                    done(assertionError);
+                }
+            },
+        );
+    });
+
+    it('should handle MongoDB error in deleteBucketAttributesCapability', done => {
+        const bucketName = 'test-bucket-deletebucketattributescapability';
+        const capabilityName = 'VeeamSOSApi';
+        const capabilityField = '';
+
+        const mockCollection = {
+            updateOne: sandbox.stub().rejects(new Error('Simulated MongoDB error')),
+        };
+
+        sandbox.stub(client, 'getCollection').returns(mockCollection);
+
+        client.deleteBucketAttributesCapability(
+            bucketName,
+            capabilityName,
+            capabilityField,
+            logger,
+            err => {
+                try {
+                    assert(err, 'Expected an error to be returned');
+                    assert(err.is && err.is.InternalError, 'Expected InternalError');
+                    done();
+                } catch (assertionError) {
+                    done(assertionError);
+                }
+            },
+        );
+    });
+
+    it('should handle MongoDB modifiedCount === 0 & upsertedCount === 0 in deleteBucketAttributesCapability', done => {
+        const bucketName = 'test-bucket-deletebucketattributescapability';
+        const capabilityName = 'VeeamSOSApi';
+        const capabilityField = '';
+
+        const mockCollection = {
+            updateOne: sandbox.stub().resolves({
+                modifiedCount: 0,
+                upsertedCount: 0,
+                matchedCount: 0,
+            }),
+        };
+
+        sandbox.stub(client, 'getCollection').returns(mockCollection);
+
+        client.deleteBucketAttributesCapability(
+            bucketName,
+            capabilityName,
+            capabilityField,
+            logger,
+            err => {
+                try {
+                    assert(err, 'Expected an error to be returned');
+                    assert(err.is && err.is.NoSuchBucket, 'Expected NoSuchBucket');
+                    done();
+                } catch (assertionError) {
+                    done(assertionError);
+                }
+            },
+        );
+    });
+
+    // happy case for deleteBucketAttributesCapability
+    it('should handle happy case for deleteBucketAttributesCapability', done => {
+        const bucketName = 'test-bucket-deletebucketattributescapability';
+        const capabilityName = 'VeeamSOSApi';
+        const capabilityField = '';
+
+        const mockCollection = {
+            updateOne: sandbox.stub().resolves({
+                modifiedCount: 1,
+                upsertedCount: 0,
+            }),
+        };
+
+        sandbox.stub(client, 'getCollection').returns(mockCollection);
+
+        client.deleteBucketAttributesCapability(
+            bucketName,
+            capabilityName,
+            capabilityField,
+            logger,
+            err => {
+                try {
+                    assert.ifError(err, 'Expected no error to be returned');
+                    done();
+                } catch (assertionError) {
+                    done(assertionError);
+                }
+            },
+        );
+    });
+});
+
+describe('MongoClientInterface, internalDeleteObject', () => {
+    const bucketName = 'test-bucket-internal-delete';
+    let client;
+    let collection;
+    let sandbox;
+
+    beforeEach(done => {
+        sandbox = sinon.createSandbox();
+        client = createClient();
+        client.setup(err => {
+            if (err) {
+                return done(err);
+            }
+            return createBucket(client, bucketName, true, err => {
+                if (err) {
+                    return done(err);
+                }
+                collection = client.getCollection(bucketName);
+                return done();
+            });
+        });
+    });
+
+    afterEach(done => {
+        sandbox.restore();
+        if (client) {
+            client.deleteBucket(bucketName, logger, () => {
+                client.close(done);
+            });
+        } else {
+            done();
+        }
+    });
+
+    it('should handle zero deletedCount in bulkWrite operation', done => {
+        const key = 'test-delete-object';
+        const objMD = new ObjectMD()
+            .setKey(key)
+            .setDataStoreName('us-east-1')
+            .setContentLength(100)
+            .setLastModified(new Date());
+
+        sandbox.stub(collection, 'findOneAndUpdate').resolves({
+            value: {
+                value: objMD.getValue(),
+            },
+        });
+
+        sandbox.stub(collection, 'bulkWrite').resolves({
+            ok: 1,
+            deletedCount: 0,
+            matchedCount: 1,
+            modifiedCount: 1,
+        });
+
+        const params = {
+            vFormat: BucketVersioningKeyFormat.v1,
+            versionId: '',
+            repairMaster: false,
+            versioning: true,
+            needOplogUpdate: true,
+            originOp: 'test',
+            conditions: {},
+        };
+
+        client.internalDeleteObject(
+            collection,
+            bucketName,
+            key,
+            {},
+            params,
+            logger,
+            err => {
+                try {
+                    assert(err, 'Expected an error to be returned');
+                    assert(err.is.DeleteConflict, 'Expected DeleteConflict error');
+                    done();
+                } catch (assertionError) {
+                    done(assertionError);
+                }
+            },
+        );
+    });
+
+    it('should handle failures in bulkWrite operation', done => {
+        const key = 'test-delete-object';
+        const objMD = new ObjectMD()
+            .setKey(key)
+            .setDataStoreName('us-east-1')
+            .setContentLength(100)
+            .setLastModified(new Date());
+
+        sandbox.stub(collection, 'findOneAndUpdate').resolves({
+            value: {
+                value: objMD.getValue(),
+            },
+        });
+
+        sandbox.stub(collection, 'bulkWrite').resolves({
+            ok: 0,
+            deletedCount: 0,
+            matchedCount: 0,
+            modifiedCount: 0,
+        });
+
+        const params = {
+            vFormat: BucketVersioningKeyFormat.v1,
+            versionId: '',
+            repairMaster: false,
+            versioning: true,
+            needOplogUpdate: true,
+            originOp: 'test',
+            conditions: {},
+        };
+
+        client.internalDeleteObject(
+            collection,
+            bucketName,
+            key,
+            {},
+            params,
+            logger,
+            err => {
+                try {
+                    assert(err, 'Expected an error to be returned');
+                    assert(err.is.DeleteConflict, 'Expected DeleteConflict error');
+                    done();
+                } catch (assertionError) {
+                    done(assertionError);
+                }
+            },
+        );
+    });
+
+    it('should handle error in bulkWrite operation', done => {
+        const key = 'test-delete-object';
+        const objMD = new ObjectMD()
+            .setKey(key)
+            .setDataStoreName('us-east-1')
+            .setContentLength(100)
+            .setLastModified(new Date());
+
+        sandbox.stub(collection, 'findOneAndUpdate').resolves({
+            value: {
+                value: objMD.getValue(),
+            },
+        });
+
+        sandbox.stub(collection, 'bulkWrite').rejects(new Error('Simulated bulkWrite error'));
+
+        const params = {
+            vFormat: BucketVersioningKeyFormat.v1,
+            versionId: '',
+            repairMaster: false,
+            versioning: true,
+            needOplogUpdate: true,
+            originOp: 'test',
+            conditions: {},
+        };
+
+        client.internalDeleteObject(
+            collection,
+            bucketName,
+            key,
+            {},
+            params,
+            logger,
+            err => {
+                try {
+                    assert(err, 'Expected an error to be returned');
+                    assert(err.is.InternalError, 'Expected InternalError');
+                    done();
+                } catch (assertionError) {
+                    done(assertionError);
+                }
+            },
+        );
+    });
+
+    it('should handle findOneAndUpdate returning no object', done => {
+        const key = 'test-delete-object';
+
+        sandbox.stub(collection, 'findOneAndUpdate').resolves({
+            value: null,
+        });
+
+        const params = {
+            vFormat: BucketVersioningKeyFormat.v1,
+            versionId: '',
+            repairMaster: false,
+            versioning: true,
+            needOplogUpdate: true,
+            originOp: 'test',
+            conditions: {},
+        };
+
+        client.internalDeleteObject(
+            collection,
+            bucketName,
+            key,
+            {},
+            params,
+            logger,
+            err => {
+                try {
+                    assert(err, 'Expected an error to be returned');
+                    assert(err.is.NoSuchKey, 'Expected NoSuchKey error');
+                    done();
+                } catch (assertionError) {
+                    done(assertionError);
+                }
+            },
+        );
+    });
+
+    it('should handle findOneAndUpdate error', done => {
+        const key = 'test-delete-object';
+
+        sandbox.stub(collection, 'findOneAndUpdate').rejects(new Error('Simulated findOneAndUpdate error'));
+
+        const params = {
+            vFormat: BucketVersioningKeyFormat.v1,
+            versionId: '',
+            repairMaster: false,
+            versioning: true,
+            needOplogUpdate: true,
+            originOp: 'test',
+            conditions: {},
+        };
+
+        client.internalDeleteObject(
+            collection,
+            bucketName,
+            key,
+            {},
+            params,
+            logger,
+            err => {
+                try {
+                    assert(err, 'Expected an error to be returned');
+                    assert(err.is.InternalError, 'Expected InternalError');
+                    done();
+                } catch (assertionError) {
+                    done(assertionError);
+                }
+            },
+        );
+    });
+
+    it('should handle deleteOne with deletedCount=0 when doesNotNeedOpogUpdate is true', done => {
+        const key = 'test-delete-object';
+
+        sandbox.stub(collection, 'deleteOne').resolves({
+            deletedCount: 0,
+        });
+
+        const params = {
+            vFormat: BucketVersioningKeyFormat.v1,
+            versionId: '',
+            repairMaster: false,
+            versioning: true,
+            needOplogUpdate: false,
+            doesNotNeedOpogUpdate: true,
+            originOp: 'test',
+            conditions: {},
+        };
+
+        client.internalDeleteObject(
+            collection,
+            bucketName,
+            key,
+            {},
+            params,
+            logger,
+            err => {
+                try {
+                    assert(err, 'Expected an error to be returned');
+                    assert(err.is.NoSuchKey, 'Expected NoSuchKey error');
+                    done();
+                } catch (assertionError) {
+                    done(assertionError);
+                }
+            },
+        );
+    });
+
+    it('should handle error in deleteOne when doesNotNeedOpogUpdate is true', done => {
+        const key = 'test-delete-object';
+
+        sandbox.stub(collection, 'deleteOne').rejects(new Error('Simulated deleteOne error'));
+
+        const params = {
+            vFormat: BucketVersioningKeyFormat.v1,
+            versionId: '',
+            repairMaster: false,
+            versioning: true,
+            needOplogUpdate: false,
+            doesNotNeedOpogUpdate: true,
+            originOp: 'test',
+            conditions: {},
+        };
+
+        client.internalDeleteObject(
+            collection,
+            bucketName,
+            key,
+            {},
+            params,
+            logger,
+            err => {
+                try {
+                    assert(err, 'Expected an error to be returned');
+                    assert(err.is.InternalError, 'Expected InternalError');
+                    done();
+                } catch (assertionError) {
+                    done(assertionError);
+                }
+            },
+        );
+    });
+
+    it('should successfully delete object when bulkWrite returns proper values', done => {
+        const key = 'test-delete-object';
+        const objMD = new ObjectMD()
+            .setKey(key)
+            .setDataStoreName('us-east-1')
+            .setContentLength(100)
+            .setLastModified(new Date());
+
+        sandbox.stub(collection, 'findOneAndUpdate').resolves({
+            value: {
+                value: objMD.getValue(),
+            },
+        });
+
+        sandbox.stub(collection, 'bulkWrite').resolves({
+            ok: 1,
+            deletedCount: 1,
+            matchedCount: 1,
+            modifiedCount: 1,
+        });
+
+        const params = {
+            vFormat: BucketVersioningKeyFormat.v1,
+            versionId: '',
+            repairMaster: false,
+            versioning: true,
+            needOplogUpdate: true,
+            originOp: 'test',
+            conditions: {},
+        };
+
+        client.internalDeleteObject(
+            collection,
+            bucketName,
+            key,
+            {},
+            params,
+            logger,
+            (err, result) => {
+                try {
+                    assert.ifError(err);
+                    assert.strictEqual(result, undefined, 'Expected  result');
+                    done();
+                } catch (assertionError) {
+                    done(assertionError);
+                }
+            },
+        );
+    });
+
+    it('should successfully delete object when doesNotNeedOpogUpdate is true', done => {
+        const key = 'test-delete-object';
+
+        sandbox.stub(collection, 'deleteOne').resolves({
+            deletedCount: 1,
+        });
+
+        const params = {
+            vFormat: BucketVersioningKeyFormat.v1,
+            versionId: '',
+            repairMaster: false,
+            versioning: true,
+            needOplogUpdate: false,
+            doesNotNeedOpogUpdate: true,
+            originOp: 'test',
+            conditions: {},
+        };
+
+        client.internalDeleteObject(
+            collection,
+            bucketName,
+            key,
+            {},
+            params,
+            logger,
+            (err, result) => {
+                try {
+                    assert.ifError(err);
+                    assert.strictEqual(result, undefined, 'Expected undefined result');
+                    done();
+                } catch (assertionError) {
+                    done(assertionError);
+                }
+            },
+        );
+    });
+});
+
+describe('MongoClientInterface, indexes', () => {
+    let client;
+    let sandbox;
+
+    beforeEach(done => {
+        sandbox = sinon.createSandbox();
+        client = createClient();
+        client.setup(done);
+    });
+
+    afterEach(done => {
+        sandbox.restore();
+        client.close(done);
+    });
+
+    it('should handle MongoDB updateOne error in putBucketIndexes', done => {
+        const bucketName = 'test-bucket-putbucketindexes';
+        const mockCollection = {
+            createIndexes: sandbox.stub().rejects(new Error('Simulated MongoDB error')),
+        };
+
+        sandbox.stub(client, 'getCollection').returns(mockCollection);
+
+        const indexSpecs = [
+            {
+                name: 'testIndex',
+                keys: [{ key: 'testKey', order: 1 }],
+            },
+        ];
+
+        client.putBucketIndexes(bucketName, indexSpecs, logger, err => {
+            try {
+                assert(err, 'Expected an error to be returned');
+                assert(err.is && err.is.InternalError, 'Expected InternalError');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
+    });
+
+    it('should handle empty result in putBucketIndexes', done => {
+        const bucketName = 'test-bucket-putbucketindexes';
+        const mockCollection = {
+            createIndexes: sandbox.stub().resolves({}),
+        };
+
+        sandbox.stub(client, 'getCollection').returns(mockCollection);
+
+        client.putBucketIndexes(bucketName, [], logger, err => {
+            try {
+                // For empty index specs, we should still resolve properly, just no indexes were created
+                assert.ifError(err, 'Expected no error when empty index specs are provided');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
+    });
+
+    it('should handle MongoDB dropIndex error in deleteBucketIndexes', done => {
+        const bucketName = 'test-bucket-deletebucketindexes';
+        const mockCollection = {
+            dropIndex: sandbox.stub().rejects(new Error('Simulated MongoDB error')),
+        };
+
+        sandbox.stub(client, 'getCollection').returns(mockCollection);
+
+        client.deleteBucketIndexes(bucketName, [{ name: 'testIndex' }], logger, err => {
+            try {
+                assert(err, 'Expected an error to be returned');
+                assert(err.is && err.is.InternalError, 'Expected InternalError');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
+    });
+
+    it('should handle empty result in deleteBucketIndexes', done => {
+        const bucketName = 'test-bucket-deletebucketindexes';
+        const mockCollection = {
+            dropIndex: sandbox.stub().resolves({}),
+        };
+
+        sandbox.stub(client, 'getCollection').returns(mockCollection);
+
+        client.deleteBucketIndexes(bucketName, [], logger, err => {
+            try {
+                // No indexes to delete, should resolve without error
+                assert.ifError(err, 'Expected no error when empty index specs are provided');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
+    });
+});
+
+describe('MongoClientInterface, putBucketIndexes', () => {
+    let client;
+    let sandbox;
+
+    beforeEach(done => {
+        sandbox = sinon.createSandbox();
+        client = createClient();
+        client.setup(done);
+    });
+
+    afterEach(done => {
+        sandbox.restore();
+        if (client) {
+            client.close(done);
+        } else {
+            done();
+        }
+    });
+
+    it('should handle null result in putBucketIndexes', done => {
+        const bucketName = 'test-bucket-putbucketindexes-null';
+        const mockCollection = {
+            createIndexes: sandbox.stub().resolves(null),
+        };
+
+        sandbox.stub(client, 'getCollection').returns(mockCollection);
+
+        const indexSpecs = [
+            {
+                name: 'testIndex',
+                keys: [{ key: 'testKey', order: 1 }],
+            },
+        ];
+
+        client.putBucketIndexes(bucketName, indexSpecs, logger, err => {
+            try {
+                assert.strictEqual(err, null);
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
+    });
+
+    it('should succeed with valid result in putBucketIndexes', done => {
+        const bucketName = 'test-bucket-putbucketindexes-success';
+        const mockCollection = {
+            createIndexes: sandbox.stub().resolves({
+                createdCollectionAutomatically: false,
+                numIndexesBefore: 1,
+                numIndexesAfter: 2,
+            }),
+        };
+
+        sandbox.stub(client, 'getCollection').returns(mockCollection);
+
+        const indexSpecs = [
+            {
+                name: 'testIndex',
+                keys: [{ key: 'testKey', order: 1 }],
+            },
+        ];
+
+        client.putBucketIndexes(bucketName, indexSpecs, logger, err => {
+            try {
+                assert.ifError(err, 'Expected no error');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
+    });
+});
+
+describe('MongoClientInterface, deleteBucketIndexes', () => {
+    let client;
+    let sandbox;
+
+    beforeEach(done => {
+        sandbox = sinon.createSandbox();
+        client = createClient();
+        client.setup(done);
+    });
+
+    afterEach(done => {
+        sandbox.restore();
+        if (client) {
+            client.close(done);
+        } else {
+            done();
+        }
+    });
+
+    it('should handle null result in dropIndex', done => {
+        const bucketName = 'test-bucket-deletebucketindexes-null';
+        const mockCollection = {
+            dropIndex: sandbox.stub().resolves(null),
+        };
+
+        sandbox.stub(client, 'getCollection').returns(mockCollection);
+
+        const indexSpecs = [
+            { name: 'testIndex' },
+        ];
+
+        client.deleteBucketIndexes(bucketName, indexSpecs, logger, err => {
+            try {
+                assert(err, 'Expected an error to be returned');
+                assert.strictEqual(err.is.InternalError, true, 'Expected InternalError');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
+    });
+
+    it('should handle result with ok=0 in dropIndex', done => {
+        const bucketName = 'test-bucket-deletebucketindexes-notok';
+        const mockCollection = {
+            dropIndex: sandbox.stub().resolves({ ok: 0 }),
+        };
+
+        sandbox.stub(client, 'getCollection').returns(mockCollection);
+
+        const indexSpecs = [
+            { name: 'testIndex' },
+        ];
+
+        client.deleteBucketIndexes(bucketName, indexSpecs, logger, err => {
+            try {
+                assert(err, 'Expected an error to be returned');
+                assert.strictEqual(err.is.InternalError, true, 'Expected InternalError');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
+    });
+
+    it('should succeed with valid result in dropIndex', done => {
+        const bucketName = 'test-bucket-deletebucketindexes-success';
+        const mockCollection = {
+            dropIndex: sandbox.stub().resolves({ ok: 1 }),
+        };
+
+        sandbox.stub(client, 'getCollection').returns(mockCollection);
+
+        const indexSpecs = [
+            { name: 'testIndex' },
+        ];
+
+        client.deleteBucketIndexes(bucketName, indexSpecs, logger, err => {
+            try {
+                assert.ifError(err, 'Expected no error');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
     });
 });

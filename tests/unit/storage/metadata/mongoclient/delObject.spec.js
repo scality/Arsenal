@@ -238,7 +238,7 @@ describe('MongoClientInterface:delObject', () => {
 
     it('internalDeleteObject:: should directly delete object if params.doesNotNeedOpogUpdate is true', done => {
         const collection = {
-            deleteOne: sinon.stub().returns(Promise.resolve()),
+            deleteOne: sinon.stub().returns(Promise.resolve({ deletedCount: 1 })),
         };
         const params = {
             doesNotNeedOpogUpdate: true,
@@ -269,7 +269,7 @@ describe('MongoClientInterface:delObject', () => {
         const findOneAndUpdate = sinon.stub().resolves({ value: { value: objMD } });
         const collection = {
             findOneAndUpdate,
-            bulkWrite: () => Promise.resolve(),
+            bulkWrite: () => Promise.resolve({ ok: 1 }),
         };
         const filter = {
             'value.isPHD': true,
