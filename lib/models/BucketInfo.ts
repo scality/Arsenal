@@ -322,7 +322,7 @@ export default class BucketInfo implements BucketMetadata {
             READ_ACP: [],
         };
 
-        if (tags === undefined) {
+        if (!tags) {
             tags = [] as BucketTag[];
         }
         assert.strictEqual(areTagsValid(tags), true);

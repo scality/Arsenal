@@ -747,6 +747,62 @@ describe('uid default', () => {
     });
 });
 
+describe('tags validation', () => {
+    it('should set empty array if tags is undefined', () => {
+        const dummyBucket = new BucketInfo(
+            bucketName, owner, ownerDisplayName, testDate,
+            BucketInfo.currentModelVersion(), acl[emptyAcl],
+            false, false, {
+                cryptoScheme: 1,
+                algorithm: 'sha1',
+                masterKeyId: 'somekey',
+                mandatory: true,
+            },
+        );
+        assert.deepStrictEqual(dummyBucket._tags, []);
+    });
+
+    it('should set empty array if tags is null', () => {
+        const dummyBucket = new BucketInfo(
+            bucketName, owner, ownerDisplayName, testDate,
+            BucketInfo.currentModelVersion(), acl[emptyAcl],
+            false, false, {
+                cryptoScheme: 1,
+                algorithm: 'sha1',
+                masterKeyId: 'somekey',
+                mandatory: true,
+            },
+            undefined, undefined, undefined, undefined,
+            undefined, undefined, undefined, undefined,
+            undefined, undefined, undefined, undefined,
+            undefined, undefined, undefined, null);
+        assert.deepStrictEqual(dummyBucket._tags, []);
+    });
+
+    it('should throw assertion error if tags are invalid', () => {
+        const invalidTags = [
+            { Key: 'key1' }, // missing Value
+            { Value: 'value1' }, // missing Key
+            { Key: '', Value: 'value1' }, // empty Key
+        ];
+        assert.throws(() => {
+            new BucketInfo(
+                bucketName, owner, ownerDisplayName, testDate,
+                BucketInfo.currentModelVersion(), acl[emptyAcl],
+                false, false, {
+                    cryptoScheme: 1,
+                    algorithm: 'sha1',
+                    masterKeyId: 'somekey',
+                    mandatory: true,
+                },
+                undefined, undefined, undefined, undefined,
+                undefined, undefined, undefined, undefined,
+                undefined, undefined, undefined, undefined,
+                undefined, undefined, undefined, invalidTags);
+        }, /AssertionError/);
+    });
+});
+
 describe('ingest', () => {
     it('should enable ingestion if ingestion param sent on bucket creation',
         () => {
