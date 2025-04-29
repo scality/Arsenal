@@ -19,6 +19,13 @@ const mockConfig = {
             site: 'b',
         },
     ],
+    supportedLifecycleRules: [
+        'expiration',
+        'noncurrentVersionExpiration',
+        'abortIncompleteMultipartUpload',
+        'transition',
+        'noncurrentVersionTransition',
+    ],
 };
 
 const MAX_DAYS = 2147483647; // Max 32-bit signed binary integer.
@@ -385,6 +392,57 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
                 getLifecycleConfiguration();
             assert.strictEqual(expectedPrefix,
                 lcConfig.rules[0].filter.rulePrefix);
+            done();
+        });
+    });
+
+    it('should return NotImplemented error when rule action is not supported', done => {
+        mockConfig.supportedLifecycleRules = ['expiration']; // Only support expiration
+        const xml = `
+            <LifecycleConfiguration>
+                <Rule>
+                    <ID>test-rule</ID>
+                    <Status>Enabled</Status>
+                    <Filter></Filter>
+                    <Transition>
+                        <Days>1</Days>
+                        <StorageClass>a</StorageClass>
+                    </Transition>
+                </Rule>
+            </LifecycleConfiguration>`;
+        parseString(xml, (err, parsedXml) => {
+            assert.equal(err, null, 'Error parsing xml');
+            const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig)
+                .getLifecycleConfiguration();
+            assert.strictEqual(lcConfig.error.is.NotImplemented, true);
+            assert.strictEqual(lcConfig.error.description, 'Transition lifecycle action not implemented');
+            done();
+        });
+    });
+
+    it('should return NotImplemented error when some rule action are not supported', done => {
+        mockConfig.supportedLifecycleRules = ['expiration']; // Only support expiration
+        const xml = `
+            <LifecycleConfiguration>
+                <Rule>
+                    <ID>test-rule</ID>
+                    <Status>Enabled</Status>
+                    <Filter></Filter>
+                    <Expiration>
+                        <Days>2</Days>
+                    </Expiration>
+                    <Transition>
+                        <Days>1</Days>
+                        <StorageClass>a</StorageClass>
+                    </Transition>
+                </Rule>
+            </LifecycleConfiguration>`;
+        parseString(xml, (err, parsedXml) => {
+            assert.equal(err, null, 'Error parsing xml');
+            const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig)
+                .getLifecycleConfiguration();
+            assert.strictEqual(lcConfig.error.is.NotImplemented, true);
+            assert.strictEqual(lcConfig.error.description, 'Transition lifecycle action not implemented');
             done();
         });
     });
@@ -1288,4 +1346,56 @@ describe('LifecycleConfiguration::getConfigJson', () => {
                 expected,
             );
         }));
+});
+
+describe('::_buildSupportedLifecycleRules', () => {
+    beforeEach(() => {
+        LifecycleConfiguration._cachedSupportedLifecycleRules = {
+            names: undefined,
+            rules: undefined,
+        };
+    });
+
+    it('should capitalize first letter of each rule name', () => {
+        const names = ['expiration', 'transition'];
+        const result = LifecycleConfiguration._buildSupportedLifecycleRules(names);
+        assert.deepStrictEqual(result, ['Expiration', 'Transition']);
+    });
+
+    it('should handle special case for noncurrentVersionTransition', () => {
+        const names = ['noncurrentVersionTransition'];
+        const result = LifecycleConfiguration._buildSupportedLifecycleRules(names);
+        assert.deepStrictEqual(result, ['NoncurrentVersionTransitions']);
+    });
+
+    it('should memoize results for subsequent calls with same input', () => {
+        const names = ['expiration', 'transition'];
+        const result1 = LifecycleConfiguration._buildSupportedLifecycleRules(names);
+        const result2 = LifecycleConfiguration._buildSupportedLifecycleRules(names);
+
+        assert.deepStrictEqual(result1, ['Expiration', 'Transition']);
+        assert.strictEqual(result1, result2); // Should be same instance
+    });
+
+    it('should recalculate for different input', () => {
+        const names1 = ['expiration'];
+        const names2 = ['transition'];
+
+        const result1 = LifecycleConfiguration._buildSupportedLifecycleRules(names1);
+        const result2 = LifecycleConfiguration._buildSupportedLifecycleRules(names2);
+
+        assert.deepStrictEqual(result1, ['Expiration']);
+        assert.deepStrictEqual(result2, ['Transition']);
+        assert.notStrictEqual(result1, result2); // Should be different instances
+    });
+
+    it('should handle mixed rule names including special cases', () => {
+        const names = ['expiration', 'noncurrentVersionTransition', 'transition'];
+        const result = LifecycleConfiguration._buildSupportedLifecycleRules(names);
+        assert.deepStrictEqual(result, [
+            'Expiration',
+            'NoncurrentVersionTransitions',
+            'Transition',
+        ]);
+    });
 });

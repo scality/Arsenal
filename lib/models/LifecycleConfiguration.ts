@@ -5,7 +5,6 @@ import errors, { errorInstances } from '../errors';
 import type { ArsenalError } from '../errors';
 import LifecycleRule from './LifecycleRule';
 import escapeForXml from '../s3middleware/escapeForXml';
-import type { XMLRule } from './ReplicationConfiguration';
 import { Status } from './LifecycleRule';
 
 const MAX_DAYS = 2147483647; // Max 32-bit signed binary integer.
@@ -89,6 +88,18 @@ export type LifecycleConfigurationMetadata = {
     rules: Rule[],
 };
 
+export type LifecycleXMLRule = {
+    Prefix: string[];
+    Status: Status[];
+    ID?: string[];
+    Filter?: string;
+    Transition?: any[];
+    NoncurrentVersionTransition?: any[];
+    Expiration?: any[];
+    NoncurrentVersionExpiration?: any[];
+    AbortIncompleteMultipartUploads?: any[];
+};
+
 export default class LifecycleConfiguration {
     _parsedXML: any;
     _ruleIDs: string[];
@@ -110,19 +121,36 @@ export default class LifecycleConfiguration {
         this._parsedXML = xml;
         this._storageClasses =
             config.replicationEndpoints.map(endpoint => endpoint.site);
-        this._supportedLifecycleRules = this._buildSupportedLifecycleRules(config.supportedLifecycleRules);
+        this._supportedLifecycleRules = LifecycleConfiguration._buildSupportedLifecycleRules(
+            config.supportedLifecycleRules,
+        );
         this._ruleIDs = [];
         this._tagKeys = [];
         this._config = {};
     }
 
-    _buildSupportedLifecycleRules(ruleNames) {
-        return ruleNames.map(rule => {
+    // Memoize the supported lifecycle rules to avoid recalculating them
+    // We expect a single set of supported lifecycle rules to ever be used (typically from config),
+    // so a length of 1 is enough.
+    static _cachedSupportedLifecycleRules = {
+        names: [] as string[],
+        rules: [] as string[],
+    };
+
+    static _buildSupportedLifecycleRules(names) {
+        if (LifecycleConfiguration._cachedSupportedLifecycleRules.names === names) {
+            return LifecycleConfiguration._cachedSupportedLifecycleRules.rules;
+        }
+
+        const rules = names.map(rule => {
             if (rule === 'noncurrentVersionTransition') {
                 return 'NoncurrentVersionTransitions';
             }
             return rule.charAt(0).toUpperCase() + rule.slice(1);
         });
+
+        LifecycleConfiguration._cachedSupportedLifecycleRules = { names, rules };
+        return rules;
     }
 
     /**
@@ -239,17 +267,9 @@ export default class LifecycleConfiguration {
      *      ]
      * }
      */
-    _parseRule(rule: XMLRule) {
-        const isRuleSupported = Object.keys(rule)
-            .some(key => this._supportedLifecycleRules.includes(key));
-        if (!isRuleSupported) {
-            const msg = 'lifecycle action not implemented';
-            const error = errorInstances.NotImplemented.customizeDescription(msg);
-            return { error };
-        }
+    _parseRule(rule: LifecycleXMLRule) {
         // Either Prefix or Filter must be included, but can be empty string
-        if ((!rule.Filter && rule.Filter !== '') &&
-        (!rule.Prefix && rule.Prefix !== '')) {
+        if ((!rule.Filter && rule.Filter !== '') && (!rule.Prefix && rule.Prefix !== '')) {
             const msg = 'Rule xml does not include valid Filter or Prefix';
             const error = errorInstances.MalformedXML.customizeDescription(msg);
             return { error };
@@ -917,11 +937,20 @@ export default class LifecycleConfiguration {
             'NoncurrentVersionTransition',
             'Transition',
         ];
-        validActions.forEach(a => {
-            if (rule[a]) {
-                actionsObj.actions.push({ actionName: `${a}` });
+        for (const action of validActions) {
+            if (!rule[action]) {
+                continue;
             }
-        });
+
+            const isRuleSupported = this._supportedLifecycleRules.includes(action);
+            if (!isRuleSupported) {
+                const msg = `${action} lifecycle action not implemented`;
+                const error = errorInstances.NotImplemented.customizeDescription(msg);
+                return { ...actionsObj, error };
+            }
+
+            actionsObj.actions.push({ actionName: action });
+        }
         if (actionsObj.actions.length === 0) {
             const msg = 'Rule does not include valid action';
             const error = errorInstances.InvalidRequest.customizeDescription(msg);
