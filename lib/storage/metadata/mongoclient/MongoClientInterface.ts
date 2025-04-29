@@ -479,6 +479,12 @@ class MongoClientInterface {
                 if (!doc) {
                     return cb(errors.NoSuchBucket);
                 }
+                log.info('getBucketAttributes: bucket found', {
+                    bucketName,
+                    bucketMD: doc.value,
+                    VeeamSOSApi: doc.value.capabilities?.VeeamSOSApi,
+                    VeeamSOSApiCapacityInfo: doc.value.capabilities?.VeeamSOSApi?.CapacityInfo,
+                });
                 const bucketMetadata = {
                     ...doc.value,
                     quotaMax: doc.value.quotaMax?.toString() || '0',
@@ -487,8 +493,8 @@ class MongoClientInterface {
                         VeeamSOSApi: doc.value.capabilities?.VeeamSOSApi && {
                             ...doc.value.capabilities.VeeamSOSApi,
                             // Long values are automatically serialized to strings
-                            CapacityInfo: doc.value.capabilities.VeeamSOSApi.CapacityInfo &&
-                                VeeamCapacityInfo.serialize(doc.value.capabilities.VeeamSOSApi.CapacityInfo),
+                            CapacityInfo: doc.value.capabilities?.VeeamSOSApi?.CapacityInfo &&
+                                VeeamCapacityInfo.serialize(doc.value.capabilities?.VeeamSOSApi?.CapacityInfo),
                         },
                     },
                 };
