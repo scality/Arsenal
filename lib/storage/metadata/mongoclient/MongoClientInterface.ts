@@ -480,11 +480,13 @@ class MongoClientInterface {
                     return cb(errors.NoSuchBucket);
                 }
                 log.info('getBucketAttributes: bucket found', {
-                    bucketName,
-                    bucketMD: doc.value,
-                    capabilities: doc.value.capabilities,
-                    VeeamSOSApi: doc.value.capabilities?.VeeamSOSApi,
-                    VeeamSOSApiCapacityInfo: doc.value.capabilities?.VeeamSOSApi?.CapacityInfo,
+                    ...(doc.value.capabilities || {}),
+                    VeeamSOSApi: doc.value.capabilities?.VeeamSOSApi && {
+                        ...doc.value.capabilities?.VeeamSOSApi,
+                        // Long values are automatically serialized to strings
+                        CapacityInfo: doc.value.capabilities?.VeeamSOSApi?.CapacityInfo &&
+                            VeeamCapacityInfo.serialize(doc.value.capabilities?.VeeamSOSApi?.CapacityInfo),
+                    }
                 });
                 const bucketMetadata = {
                     ...doc.value,
@@ -499,6 +501,9 @@ class MongoClientInterface {
                         },
                     },
                 };
+                log.info('getBucketAttributes: bucket metadata', {
+                    bucketMetadata,
+                });
                 return cb(null, BucketInfo.fromJson(bucketMetadata));
             })
             .catch(err => {
