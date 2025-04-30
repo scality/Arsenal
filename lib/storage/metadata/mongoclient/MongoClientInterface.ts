@@ -411,7 +411,7 @@ class MongoClientInterface {
                 value: {
                     ...newBucketMD,
                     quotaMax: new Long(newBucketMD.quotaMax || '0'),
-                    capabilities: newBucketMD.capabilities || undefined,
+                    capabilities: newBucketMD.capabilities as  CapabilitiesMongoDB|| undefined,
                 },
                 vFormat: this.defaultBucketKeyFormat,
             },
