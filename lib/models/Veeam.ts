@@ -92,8 +92,8 @@ export class VeeamCapability {
     static parse(veeamCapability: VeeamSOSApiSerializable): VeeamSOSApiSchema {
         return {
             ...veeamCapability,
-            CapacityInfo: veeamCapability.CapacityInfo &&
-                VeeamCapacityInfo.parse(veeamCapability.CapacityInfo),
+            CapacityInfo: veeamCapability?.CapacityInfo &&
+                VeeamCapacityInfo.parse(veeamCapability?.CapacityInfo),
         };
     }
 
