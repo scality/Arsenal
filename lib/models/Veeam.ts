@@ -84,8 +84,8 @@ export class VeeamCapability {
     static serialize(veeamCapability: VeeamSOSApiSchema): VeeamSOSApiSerializable {
         return {
             ...veeamCapability,
-            CapacityInfo: veeamCapability.CapacityInfo &&
-                VeeamCapacityInfo.serialize(veeamCapability.CapacityInfo),
+            CapacityInfo: veeamCapability?.CapacityInfo &&
+                VeeamCapacityInfo.serialize(veeamCapability?.CapacityInfo),
         };
     }
 
@@ -100,8 +100,8 @@ export class VeeamCapability {
     static toBigInt(veeamCapability: VeeamSOSApiSchema): VeeamSOSApiSchema {
         return {
             ...veeamCapability,
-            CapacityInfo: veeamCapability.CapacityInfo &&
-                VeeamCapacityInfo.toBigInt(veeamCapability.CapacityInfo),
+            CapacityInfo: veeamCapability?.CapacityInfo &&
+                VeeamCapacityInfo.toBigInt(veeamCapability?.CapacityInfo),
         };
     }
 }
