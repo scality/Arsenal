@@ -525,7 +525,7 @@ function _computeContentLengthFromLocation(
                 return sum + parseInt(location.size, 10);
             }
         }
-        return sum;
+        return undefined;
     }, 0);
 }
 

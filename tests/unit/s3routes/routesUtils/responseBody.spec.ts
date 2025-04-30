@@ -5,7 +5,7 @@ import * as werelogs from 'werelogs';
 const logger = new werelogs.Logger('test:routesUtils.responseStreamData');
 
 describe('responseXMLBody: ', () => {
-    it('Should include invalid arguments in reponse body', done => {
+    it('Should include invalid arguments in response body', done => {
         const invalidArgument1 = { ArgumentName: 'argumentName1', ArgumentValue: 'argumentValue1' };
         const invalidArgument2 = { ArgumentName: 'argumentName2', ArgumentValue: 'argumentValue2' };
         const error = errorInstances.InvalidArgument.addMetadataEntry('invalidArguments',
@@ -34,7 +34,7 @@ describe('responseXMLBody: ', () => {
         }, logger.newRequestLogger());
     });
 
-    it('Should not include invalid arguments in reponse body', done => {
+    it('Should not include invalid arguments in response body', done => {
         const error = errors.InvalidArgument;
         responseXMLBody(error, '', {
             // @ts-ignore
@@ -60,7 +60,7 @@ describe('responseXMLBody: ', () => {
 });
 
 describe('JSONResponseBackend: ', () => {
-    it('Should include invalid arguments in reponse body', done => {
+    it('Should include invalid arguments in response body', done => {
         const invalidArgument1 = { ArgumentName: 'argumentName1', ArgumentValue: 'argumentValue1' };
         const invalidArgument2 = { ArgumentName: 'argumentName2', ArgumentValue: 'argumentValue2' };
         const error = errorInstances.InvalidArgument.addMetadataEntry('invalidArguments',
@@ -90,7 +90,7 @@ describe('JSONResponseBackend: ', () => {
         }, logger.newRequestLogger());
     });
 
-    it('Should not include invalid arguments in reponse body', done => {
+    it('Should not include invalid arguments in response body', done => {
         const error = errors.InvalidArgument;
         responseJSONBody(error, '', {
             // @ts-ignore

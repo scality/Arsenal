@@ -1,5 +1,6 @@
 const assert = require('assert');
 const http = require('http');
+const sinon = require('sinon');
 
 const werelogs = require('werelogs');
 const logger = new werelogs.Logger('test:routesUtils.responseStreamData');
@@ -14,6 +15,118 @@ werelogs.configure({
 });
 
 describe('routesUtils.responseStreamData', () => {
+    describe('content length validation', () => {
+        let response;
+        let log;
+        let sandbox;
+        const mockClient = {
+            get: (info, range, uid, cb) => cb(null, new DummyObjectStream(0, 15)),
+        };
+
+        beforeEach(() => {
+            sandbox = sinon.createSandbox();
+            response = {
+                setHeader: sandbox.stub(),
+                writeHead: sandbox.stub(),
+                on: sandbox.stub(),
+                once: sandbox.stub(),
+                emit: sandbox.stub(),
+                write: sandbox.stub().returns(true),
+                end: sandbox.stub(),
+                socket: { destroy: sandbox.stub() },
+            };
+            log = logger.newRequestLogger();
+        });
+
+        afterEach(() => {
+            sandbox.restore();
+        });
+
+        it('should succeed when content length matches data locations total size', () => {
+            const resHeaders = { 'Content-Length': '15' };
+            const dataLocations = [
+                { size: 10, key: 'value1' },
+                { size: 5, key: 'value2' },
+            ];
+
+            responseStreamData(
+                null,
+                {},
+                resHeaders,
+                dataLocations,
+                { client: mockClient },
+                response,
+                undefined,
+                log,
+            );
+
+            sinon.assert.calledWith(response.writeHead, 200);
+        });
+
+        it('should fail when content length does not match total size', () => {
+            const resHeaders = { 'Content-Length': '20' };
+            const dataLocations = [
+                { size: 10, key: 'value1' },
+                { size: 5, key: 'value2' },
+            ];
+
+            responseStreamData(
+                null,
+                {},
+                resHeaders,
+                dataLocations,
+                { client: mockClient },
+                response,
+                undefined,
+                log,
+            );
+
+            sinon.assert.calledWith(response.writeHead, 500);
+        });
+
+        it('should succeed when data locations do not specify size', () => {
+            const resHeaders = { 'Content-Length': '15' };
+            const dataLocations = [
+                { key: 'value1' },
+                { key: 'value2' },
+            ];
+
+            responseStreamData(
+                null,
+                {},
+                resHeaders,
+                dataLocations,
+                { client: mockClient },
+                response,
+                undefined,
+                log,
+            );
+
+            sinon.assert.calledWith(response.writeHead, 200);
+        });
+
+        it('should succeed when Content-Length header is not set', () => {
+            const resHeaders = {}; // No Content-Length header
+            const dataLocations = [
+                { size: 10, key: 'key1' },
+                { size: 5, key: 'key2' },
+            ];
+
+            responseStreamData(
+                null,
+                {},
+                resHeaders,
+                dataLocations,
+                { client: mockClient },
+                response,
+                undefined,
+                log,
+            );
+
+            sinon.assert.calledWith(response.writeHead, 200);
+        });
+    });
+
     const awsAgent = new http.Agent({
         keepAlive: true,
     });
