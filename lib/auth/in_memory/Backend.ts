@@ -3,6 +3,7 @@ import errors from '../../errors';
 import { calculateSigningKey, hashSignature } from './vaultUtilities';
 import Indexer from './Indexer';
 import { Accounts } from './types';
+import { KmsType, KmsProtocol, makeScalityArnPrefix } from '../../network/KMSInterface';
 
 function _formatResponse(userInfoToSend: any) {
     return {
@@ -201,11 +202,13 @@ class Backend {
             _options: any, 
             cb: (err: null, data: { message: { body: { canonicalId: string, encryptionKeyId: string, action: string } } }) => void
         ): void {
+            const kmsProtocol = process.env.S3KMS === 'file' ? KmsProtocol.file : KmsProtocol.mem;
+            const arnPrefix = makeScalityArnPrefix(KmsType.int, kmsProtocol, 'scality');
             return cb(null, {
                 message: {
                     body: {
                         canonicalId,
-                        encryptionKeyId: 'account-level-master-encryption-key',
+                        encryptionKeyId: `${arnPrefix}account-level-master-encryption-key`,
                         action: 'retrieved',
                     }
                 }

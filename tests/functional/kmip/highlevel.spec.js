@@ -27,6 +27,7 @@ describe('KMIP High Level Driver', () => {
         [false, true].forEach(compoundCreateActivate => {
             const options = {
                 kmip: {
+                    providerName: 'tests',
                     client: {
                         bucketNameAttributeName,
                         compoundCreateActivate,
@@ -49,11 +50,13 @@ describe('KMIP High Level Driver', () => {
                 const plaintext = Buffer.from(crypto.randomBytes(32));
                 async.waterfall([
                     next => kmipClient.createBucketKey('plop', logger, next),
-                    (id, next) =>
+                    (id, arn, next) => {
+                        assert.match(arn, /arn:scality:kms:ext:kmip:tests:key\//);
                         kmipClient.cipherDataKey(1, id, plaintext,
                             logger, (err, ciphered) => {
                                 next(err, id, ciphered);
-                            }),
+                            });
+                    },
                     (id, ciphered, next) =>
                         kmipClient.decipherDataKey(
                             1, id, ciphered, logger, (err, deciphered) => {
@@ -70,6 +73,7 @@ describe('KMIP High Level Driver', () => {
     it('should succeed healthcheck with working KMIP client and server', done => {
         const options = {
             kmip: {
+                providerName: 'tests',
                 client: {
                     bucketNameAttributeName: null,
                     compoundCreateActivate: false,
@@ -94,6 +98,7 @@ describe('KMIP High Level Driver', () => {
     it('should fail healthcheck with KMIP server not running', done => {
         const options = {
             kmip: {
+                providerName: 'tests',
                 client: {
                     bucketNameAttributeName: null,
                     compoundCreateActivate: false,
