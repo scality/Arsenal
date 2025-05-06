@@ -4,6 +4,7 @@
  * The capcity-related field accept numbers, but will be treated as
  * bigints internally.
  */
+import { Long } from 'mongodb';
 export type VeeamSOSApiSchema = {
     SystemInfo?: {
         ProtocolVersion: string,
@@ -26,9 +27,9 @@ export type VeeamSOSApiSchema = {
         LastModified?: string,
     },
     CapacityInfo?: {
-        Capacity: bigint | number,
-        Available: bigint | number,
-        Used: bigint | number,
+        Capacity: bigint,
+        Available: bigint,
+        Used: bigint,
         LastModified?: string,
     },
 };
@@ -52,7 +53,12 @@ export type VeeamSOSApiSerializable = Omit<VeeamSOSApiSchema, 'CapacityInfo'> & 
  * ability to use the proprietary SOSAPI feature.
  */
 export class VeeamCapacityInfo {
-    static serialize(capacity: VeeamSOSApiSchema['CapacityInfo']): VeeamSOSApiSerializable['CapacityInfo'] {
+    static serialize(capacity: {
+        Capacity: bigint | number | Long,
+        Available: bigint | number | Long,
+        Used: bigint | number | Long,
+        LastModified?: string,
+    }): VeeamSOSApiSerializable['CapacityInfo'] {
         return {
             Capacity: capacity?.Capacity?.toString() || '0',
             Available: capacity?.Available?.toString() || '0',
