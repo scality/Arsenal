@@ -7,9 +7,9 @@ export const SCAL_KMS_ARN = 'arn:scality:kms:';
 
 export enum KmsType {
     /** Internal scality provider */
-    int = 'int',
+    internal = 'internal',
     /** External provider */
-    ext = 'ext',
+    external = 'external',
 };
 
 export enum KmsProtocol {
@@ -24,22 +24,22 @@ export enum KmsProtocol {
 };
 
 const kmsTypeProtocolMapping = {
-    [KmsType.int]: [KmsProtocol.mem, KmsProtocol.file] as const,
-    [KmsType.ext]: [KmsProtocol.scality, KmsProtocol.aws_kms, KmsProtocol.kmip] as const,
+    [KmsType.internal]: [KmsProtocol.mem, KmsProtocol.file] as const,
+    [KmsType.external]: [KmsProtocol.scality, KmsProtocol.aws_kms, KmsProtocol.kmip] as const,
 } as const;
 export type KmsProtocolByType<T extends KmsType> = typeof kmsTypeProtocolMapping[T][number];
 
 /**
  * Possible arn are:
  *
- * - `arn:scality:kms:int:mem:scality:key/$keyId` (tests & dev)
- * - `arn:scality:kms:int:file:scality:key/$keyId` (default if no provider)
- * - `arn:scality:kms:ext:scality:safenet:key/$keyId` (deprecated provider)
- * - `arn:scality:kms:ext:aws_kms:aws:key/$keyIdOrArn`
- * - `arn:scality:kms:ext:aws_kms:custom:alias/$keyIdOrArn`
- * - `arn:scality:kms:ext:kmip:thales:key/$keyId`
- * - `arn:scality:kms:ext:kmip:hashicorp:key/$keyId`
- * - `arn:scality:kms:ext:kmip:hytrust:key/$keyId`
+ * - `arn:scality:kms:internal:mem:scality:key/$keyId` (tests & dev)
+ * - `arn:scality:kms:internal:file:scality:key/$keyId` (default if no provider)
+ * - `arn:scality:kms:external:scality:safenet:key/$keyId` (deprecated provider)
+ * - `arn:scality:kms:external:aws_kms:aws:key/$keyIdOrArn`
+ * - `arn:scality:kms:external:aws_kms:custom:alias/$keyIdOrArn`
+ * - `arn:scality:kms:external:kmip:thales:key/$keyId`
+ * - `arn:scality:kms:external:kmip:hashicorp:key/$keyId`
+ * - `arn:scality:kms:external:kmip:hytrust:key/$keyId`
  */
 export type AwsLikeKmsArnPrefix<T extends KmsType = KmsType> =
     `${typeof SCAL_KMS_ARN}${T}:${KmsProtocolByType<T>}:${string}:${'key' | 'alias'}/`;

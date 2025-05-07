@@ -203,7 +203,7 @@ class Backend {
             cb: (err: null, data: { message: { body: { canonicalId: string, encryptionKeyId: string, action: string } } }) => void
         ): void {
             const kmsProtocol = process.env.S3KMS === 'file' ? KmsProtocol.file : KmsProtocol.mem;
-            const arnPrefix = makeScalityArnPrefix(KmsType.int, kmsProtocol, 'scality');
+            const arnPrefix = makeScalityArnPrefix(KmsType.internal, kmsProtocol, 'scality');
             return cb(null, {
                 message: {
                     body: {
