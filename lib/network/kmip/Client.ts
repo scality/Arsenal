@@ -220,7 +220,7 @@ export default class Client {
     vendorIdentification: string;
     serverInformation: any[];
     kmip: KMIP;
-    public readonly backend: KmsBackend<KmsType.ext>;
+    public readonly backend: KmsBackend<KmsType.external>;
 
     /**
      * Construct a high level KMIP driver suitable for cloudserver
@@ -269,7 +269,7 @@ export default class Client {
             this._kmipHandshake(logger, cb);
         });
 
-        this.backend = makeBackend(KmsType.ext, KmsProtocol.kmip, options.kmip.providerName);
+        this.backend = makeBackend(KmsType.external, KmsProtocol.kmip, options.kmip.providerName);
     }
 
     /**

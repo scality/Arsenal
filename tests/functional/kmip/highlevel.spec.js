@@ -51,7 +51,7 @@ describe('KMIP High Level Driver', () => {
                 async.waterfall([
                     next => kmipClient.createBucketKey('plop', logger, next),
                     (id, arn, next) => {
-                        assert.match(arn, /arn:scality:kms:ext:kmip:tests:key\//);
+                        assert.match(arn, /arn:scality:kms:external:kmip:tests:key\//);
                         kmipClient.cipherDataKey(1, id, plaintext,
                             logger, (err, ciphered) => {
                                 next(err, id, ciphered);
