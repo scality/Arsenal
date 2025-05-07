@@ -3,7 +3,7 @@
   "engines": {
     "node": ">=16"
   },
-  "version": "7.10.46-4-outscale-vaultwq",
+  "version": "7.10.46-5-outscale-vault",
   "description": "Common utilities for the S3 project components",
   "main": "build/index.js",
   "repository": {
