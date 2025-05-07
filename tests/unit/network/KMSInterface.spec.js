@@ -18,12 +18,12 @@ const awsArn = 'arn:aws:kms:us-west-2:111122223333:key/1234abcd-12ab-34cd-56ef-1
 
 describe('KMSInterface', () => {
     const backends = [
-        { type: KmsType.int, protocol: KmsProtocol.mem, provider: 'mtests' },
-        { type: KmsType.int, protocol: KmsProtocol.file, provider: 'ftests' },
-        { type: KmsType.ext, protocol: KmsProtocol.scality, provider: 'safenet' },
-        { type: KmsType.ext, protocol: KmsProtocol.kmip, provider: 'ktests' },
-        { type: KmsType.ext, protocol: KmsProtocol.aws_kms, provider: 'atests' },
-        { type: KmsType.ext, protocol: KmsProtocol.aws_kms, provider: 'aws', key: awsArn },
+        { type: KmsType.internal, protocol: KmsProtocol.mem, provider: 'mtests' },
+        { type: KmsType.internal, protocol: KmsProtocol.file, provider: 'ftests' },
+        { type: KmsType.external, protocol: KmsProtocol.scality, provider: 'safenet' },
+        { type: KmsType.external, protocol: KmsProtocol.kmip, provider: 'ktests' },
+        { type: KmsType.external, protocol: KmsProtocol.aws_kms, provider: 'atests' },
+        { type: KmsType.external, protocol: KmsProtocol.aws_kms, provider: 'aws', key: awsArn },
     ];
 
     describe('makeScalityArnPrefix', () => {
@@ -78,8 +78,8 @@ describe('KMSInterface', () => {
     });
 
     describe('isValidType', () => {
-        it('should return true for int', () => assert.strictEqual(isValidType(KmsType.int), true));
-        it('should return true for ext', () => assert.strictEqual(isValidType(KmsType.ext), true));
+        it('should return true for internal', () => assert.strictEqual(isValidType(KmsType.internal), true));
+        it('should return true for external', () => assert.strictEqual(isValidType(KmsType.external), true));
         it('should return false for anything', () => assert.strictEqual(isValidType('nope'), false));
     });
 
@@ -90,10 +90,10 @@ describe('KMSInterface', () => {
             }));
 
         it('should return false for mismatching type and protocol', () => {
-            assert.strictEqual(isValidProtocol(KmsType.int, KmsProtocol.kmip), false);
+            assert.strictEqual(isValidProtocol(KmsType.internal, KmsProtocol.kmip), false);
         });
         it('should return false for bad protocol', () => {
-            assert.strictEqual(isValidProtocol(KmsType.int, 'bad protocol'), false);
+            assert.strictEqual(isValidProtocol(KmsType.internal, 'bad protocol'), false);
         });
         it('should return false for bad type', () => {
             assert.strictEqual(isValidProtocol('bad type', KmsProtocol.file), false);
