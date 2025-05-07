@@ -64,7 +64,7 @@ describe('KmsAWSClient', () => {
         client.createMasterKey(logger, (err, keyId, keyArn) => {
             assert.ifError(err);
             assert.strictEqual(keyId, 'mock-key-id');
-            assert.strictEqual(keyArn, 'arn:scality:kms:ext:aws_kms:tests:key/mock-key-id');
+            assert.strictEqual(keyArn, 'arn:scality:kms:external:aws_kms:tests:key/mock-key-id');
             assert(createKeyStub.calledOnce);
             done();
         });
@@ -91,7 +91,7 @@ describe('KmsAWSClient', () => {
         client.createMasterKey(logger, (err, keyId, keyArn) => {
             assert.ifError(err);
             assert.strictEqual(keyId, 'mock-key-id');
-            assert.strictEqual(keyArn, 'arn:scality:kms:ext:aws_kms:tests:key/mock-key-id');
+            assert.strictEqual(keyArn, 'arn:scality:kms:external:aws_kms:tests:key/mock-key-id');
             assert(createKeyStub.calledOnce);
             done();
         });
@@ -110,7 +110,7 @@ describe('KmsAWSClient', () => {
             assert.ifError(err);
             assert.strictEqual(keyId, 'arn:aws:kms:region:accountId:key/mock-key-id');
             assert.strictEqual(keyArn,
-                'arn:scality:kms:ext:aws_kms:tests:key/arn:aws:kms:region:accountId:key/mock-key-id');
+                'arn:scality:kms:external:aws_kms:tests:key/arn:aws:kms:region:accountId:key/mock-key-id');
             assert(createKeyStub.calledOnce);
             done();
         });
@@ -139,7 +139,7 @@ describe('KmsAWSClient', () => {
             assert.ifError(err);
             assert.strictEqual(keyId, 'mock-key-id');
             assert.strictEqual(keyArn,
-                'arn:scality:kms:ext:aws_kms:tests:key/mock-key-id');
+                'arn:scality:kms:external:aws_kms:tests:key/mock-key-id');
             assert(createKeyStub.calledOnce);
             done();
         });
@@ -167,7 +167,7 @@ describe('KmsAWSClient', () => {
         client.createBucketKey('bucketName', logger, (err, keyId, keyArn) => {
             assert.ifError(err);
             assert.strictEqual(keyId, 'mock-bucket-key-id');
-            assert.strictEqual(keyArn, 'arn:scality:kms:ext:aws_kms:tests:key/mock-bucket-key-id');
+            assert.strictEqual(keyArn, 'arn:scality:kms:external:aws_kms:tests:key/mock-bucket-key-id');
             assert(createKeyStub.calledOnce);
             done();
         });
@@ -292,7 +292,7 @@ describe('KmsAWSClient', () => {
     });
 
     it('should extract key from arn input to call generate a data key', done => {
-        const arnPrefix = 'arn:scality:kms:ext:aws_kms:tests:key/';
+        const arnPrefix = 'arn:scality:kms:external:aws_kms:tests:key/';
         const awsArn = 'arn:aws:kms:region:accountId:key/mock-key-id';
         const key = `${arnPrefix}${awsArn}`;
         const mockResponse = {
