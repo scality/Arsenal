@@ -11,10 +11,12 @@ Supported parameters:
 
 | Config File        | Description                                             |
 |--------------------|---------------------------------------------------------|
+| kmsAWS.providerName| Friendly name to identify the KMS key provider in MD    |
 | kmsAWS.region      | AWS region to use                                       |
 | kmsAWS.endpoint    | Endpoint URL                                            |
 | kmsAWS.ak          | Credentials, Access Key                                 |
 | kmsAWS.sk          | Credentials, Secret Key                                 |
+| kmsAWS.noAwsArn    | Optional (default false): use KeyId instead of KeyArn   |
 | kmsAWS.tls         | TLS configuration (Object, see below)                   |
 
 TLS configuration attributes:
@@ -41,10 +43,12 @@ and
 ```json
 {
     "kmsAWS": {
+        "providerName": "aws",
         "region": "us-east-1",
         "endpoint": "https://kms.us-east-1.amazonaws.com",
         "ak": "xxxxxxx",
-        "sk": "xxxxxxx"
+        "sk": "xxxxxxx",
+        "noAwsArn": true
     }
 }
 ```
@@ -53,6 +57,7 @@ With TLS configuration:
 
 ```json
     "kmsAWS": {
+        "providerName": "aws",
         "region": "us-east-1",
         "endpoint": "https://kms.us-east-1.amazonaws.com",
         "ak": "xxxxxxx",
