@@ -306,4 +306,39 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
         const result = instance.parseConfiguration();
         expect(result).toEqual(errors.InvalidRequest);
     });
+
+    it('should return InvalidRequest if StorageClass not provided and cloudserver config has no replication endpoint', () => {
+        const repConfig = {
+            Role: [TEST_ROLE],
+            Rule: [{
+                Prefix: [''],
+                Status: ['Enabled'],
+                Destination: [{
+                    Bucket: ['arn:aws:s3:::crr-dest'],
+                }],
+            }],
+        };
+        const instance = new ReplicationConfiguration({ ReplicationConfiguration: repConfig },
+            null, { replicationEndpoints: [] });
+        const result = instance.parseConfiguration();
+        expect(result).toEqual(errors.InvalidRequest);
+    });
+
+    it('should return InvalidRequest if StorageClass provided and cloudserver config has no replication endpoint', () => {
+        const repConfig = {
+            Role: [TEST_ROLE],
+            Rule: [{
+                Prefix: [''],
+                Status: ['Enabled'],
+                Destination: [{
+                    Bucket: ['arn:aws:s3:::crr-dest'],
+                    StorageClass: ['STANDARD'],
+                }],
+            }],
+        };
+        const instance = new ReplicationConfiguration({ ReplicationConfiguration: repConfig },
+            null, { replicationEndpoints: [] });
+        const result = instance.parseConfiguration();
+        expect(result).toEqual(errors.InvalidRequest);
+    });
 });

@@ -322,14 +322,13 @@ export default class ReplicationConfiguration {
             replicationEndpoints[0];
         // StorageClass is optional.
         if (destination.StorageClass === undefined) {
-            this._hasScalityDestination = defaultEndpoint.type === undefined;
+            this._hasScalityDestination = (defaultEndpoint && defaultEndpoint.type === undefined);
             return undefined;
         }
         const storageClasses = destination.StorageClass[0].split(',');
         const isValidStorageClass = storageClasses.every((storageClass) => {
             if (validStorageClasses.includes(storageClass)) {
-                this._hasScalityDestination =
-                    defaultEndpoint.type === undefined;
+                this._hasScalityDestination = (defaultEndpoint && defaultEndpoint.type === undefined);
                 return true;
             }
             const endpoint = replicationEndpoints.find(
@@ -342,7 +341,7 @@ export default class ReplicationConfiguration {
                 if (!this._hasScalityDestination) {
                     // If any endpoint does not have a type, then we know it is
                     // a Scality destination.
-                    this._hasScalityDestination = endpoint.type === undefined;
+                    this._hasScalityDestination = (endpoint.type === undefined);
                 }
                 return true;
             }
@@ -424,6 +423,11 @@ export default class ReplicationConfiguration {
         const err = this._parseRules();
         if (err) {
             return err;
+        }
+        const { replicationEndpoints } = this._config;
+        if (replicationEndpoints.length === 0) {
+            return errors.InvalidRequest.customizeDescription(
+                'No configured replication endpoint');
         }
         return this._parseRole();
     }
