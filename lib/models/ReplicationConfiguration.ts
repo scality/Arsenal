@@ -195,8 +195,7 @@ export default class ReplicationConfiguration {
         const invalidRole = rolesArr.find((r) => !this._isValidRoleARN(r));
         if (invalidRole !== undefined) {
             return errors.InvalidArgument.customizeDescription(
-                'Invalid Role specified in replication configuration: ' +
-                    `'${invalidRole}'`
+                `Invalid Role specified in replication configuration: '${invalidRole}'`
             );
         }
         this._role = role;
@@ -269,8 +268,7 @@ export default class ReplicationConfiguration {
         }
         if (prefix.length > 1024) {
             return errors.InvalidArgument.customizeDescription(
-                'Rule prefix ' +
-                    'cannot be longer than maximum allowed key length of 1024'
+                'Rule prefix cannot be longer than maximum allowed key length of 1024'
             );
         }
         // Each Prefix in a list of rules must not overlap. For example, two
@@ -280,7 +278,7 @@ export default class ReplicationConfiguration {
             const used = this._configPrefixes[i];
             if (prefix.startsWith(used) || used.startsWith(prefix)) {
                 return errors.InvalidRequest.customizeDescription(
-                    'Found ' + `overlapping prefixes '${used}' and '${prefix}'`
+                    `Found overlapping prefixes '${used}' and '${prefix}'`
                 );
             }
         }
@@ -296,13 +294,13 @@ export default class ReplicationConfiguration {
         const id = rule.ID && rule.ID[0];
         if (id && id.length > RULE_ID_LIMIT) {
             return errors.InvalidArgument.customizeDescription(
-                'Rule Id cannot be greater than 255'
+                'Rule ID length cannot be greater than 255'
             );
         }
         // Each ID in a list of rules must be unique.
         if (id && this._configIDs.includes(id)) {
             return errors.InvalidRequest.customizeDescription(
-                'Rule Id must be unique'
+                'Duplicate Rule ID'
             );
         }
         if (id !== undefined) {
@@ -396,7 +394,7 @@ export default class ReplicationConfiguration {
         // We can replicate objects only to one destination bucket.
         if (this._destination && this._destination !== bucketARN) {
             return errors.InvalidRequest.customizeDescription(
-                'The destination bucket must be same for all rules'
+                'The destination bucket must be the same for all rules'
             );
         }
         this._destination = bucketARN;
