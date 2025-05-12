@@ -217,8 +217,7 @@ export default class ReplicationConfiguration {
         const invalidRole = rolesArr.find(r => !this._isValidRoleARN(r));
         if (invalidRole !== undefined) {
             return errorInstances.InvalidArgument.customizeDescription(
-                'Invalid Role specified in replication configuration: ' +
-                    `'${invalidRole}'`
+                `Invalid Role specified in replication configuration: '${invalidRole}'`
             );
         }
         this._role = role;
@@ -291,8 +290,7 @@ export default class ReplicationConfiguration {
         }
         if (prefix.length > 1024) {
             return errorInstances.InvalidArgument.customizeDescription(
-                'Rule prefix ' +
-                    'cannot be longer than maximum allowed key length of 1024'
+                'Rule prefix cannot be longer than maximum allowed key length of 1024'
             );
         }
         // Each Prefix in a list of rules must not overlap. For example, two
@@ -302,7 +300,7 @@ export default class ReplicationConfiguration {
             const used = this._configPrefixes[i];
             if (prefix.startsWith(used) || used.startsWith(prefix)) {
                 return errorInstances.InvalidRequest.customizeDescription(
-                    'Found ' + `overlapping prefixes '${used}' and '${prefix}'`
+                    `Found overlapping prefixes '${used}' and '${prefix}'`
                 );
             }
         }
@@ -318,13 +316,13 @@ export default class ReplicationConfiguration {
         const id = rule.ID && rule.ID[0];
         if (id && id.length > RULE_ID_LIMIT) {
             return errorInstances.InvalidArgument.customizeDescription(
-                'Rule Id cannot be greater than 255'
+                'Rule ID length cannot be greater than 255'
             );
         }
         // Each ID in a list of rules must be unique.
         if (id && this._configIDs.includes(id)) {
             return errorInstances.InvalidRequest.customizeDescription(
-                'Rule Id must be unique'
+                'Duplicate Rule ID'
             );
         }
         if (id !== undefined) {
@@ -346,7 +344,7 @@ export default class ReplicationConfiguration {
             replicationEndpoints[0];
         // StorageClass is optional.
         if (destination.StorageClass === undefined) {
-            this._hasScalityDestination = defaultEndpoint.type === undefined;
+            this._hasScalityDestination = (defaultEndpoint && defaultEndpoint.type === undefined);
             return undefined;
         }
         const storageClasses = destination.StorageClass[0].split(',');
@@ -360,8 +358,7 @@ export default class ReplicationConfiguration {
         }
         const isValidStorageClass = storageClasses.every(storageClass => {
             if (validStorageClasses.includes(storageClass)) {
-                this._hasScalityDestination =
-                    defaultEndpoint.type === undefined;
+                this._hasScalityDestination = (defaultEndpoint && defaultEndpoint.type === undefined);
                 return true;
             }
             const endpoint = replicationEndpoints.find(
@@ -379,7 +376,7 @@ export default class ReplicationConfiguration {
                 if (!this._hasScalityDestination) {
                     // If any endpoint does not have a type, then we know it is
                     // a Scality destination.
-                    this._hasScalityDestination = endpoint.type === undefined;
+                    this._hasScalityDestination = (endpoint.type === undefined);
                 }
                 return true;
             }
@@ -431,7 +428,7 @@ export default class ReplicationConfiguration {
         // We can replicate objects only to one destination bucket.
         if (this._destination && this._destination !== bucketARN) {
             return errorInstances.InvalidRequest.customizeDescription(
-                'The destination bucket must be same for all rules'
+                'The destination bucket must be the same for all rules'
             );
         }
         this._destination = bucketARN;
@@ -461,6 +458,11 @@ export default class ReplicationConfiguration {
         const err = this._parseRules();
         if (err) {
             return err;
+        }
+        const { replicationEndpoints } = this._config;
+        if (replicationEndpoints.length === 0) {
+            return errors.InvalidRequest.customizeDescription(
+                'No configured replication endpoint');
         }
         return this._parseRole();
     }
