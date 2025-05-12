@@ -1,17 +1,71 @@
 import { errors } from '../../../index';
+import { parseString } from 'xml2js';
 
 const { default: ReplicationConfiguration } = require('../../../lib/models/ReplicationConfiguration');
 
 const mockS3ServerConfig = {
+    locationConstraints: {
+        'ring': {
+            type: 'scality',
+            objectId: 'ring',
+        },
+        'awsbackend': {
+            type: 'aws_s3',
+            objectId: 'awsbackend',
+        },
+        'gcpbackend': {
+            type: 'gcp',
+            objectId: 'gcpbackend',
+        },
+        'azurebackend': {
+            type: 'azure',
+            objectId: 'azurebackend',
+        },
+        'dmf-1': {
+            type: 'dmf',
+            objectId: 'dmf-1',
+            isCold: true,
+        },
+    },
     replicationEndpoints: [{
-        site: 'zenko',
-        servers: ['127.0.0.1:8000'],
+        site: 'ring',
         default: true,
+    }, {
+        type: 'aws_s3',
+        site: 'awsbackend',
+    }, {
+        type: 'gcp',
+        site: 'gcpbackend',
+    }, {
+        type: 'azure',
+        site: 'azurebackend',
+    }, {
+        type: 'dmf',
+        site: 'dmf-1',
     }],
 };
 
 const TEST_ROLE =
       'arn:aws:iam::942839175607:role/crr-trust-role,arn:aws:iam::989181102323:role/crr-trust-role';
+
+function getPreferredReadXMLConfig(hasPreferredRead) {
+    return `
+    <ReplicationConfiguration>
+        <Role>arn:aws:iam::root:role/s3-replication-role</Role>
+        <Rule>
+            <ID>Replication-Rule-1</ID>
+            <Status>Enabled</Status>
+            <Prefix>someprefix/</Prefix>
+            <Destination>
+                <Bucket>arn:aws:s3:::destbucket</Bucket>
+                <StorageClass>awsbackend,` +
+        `gcpbackend${hasPreferredRead ? ':preferred_read' : ''},azurebackend` +
+        `</StorageClass>
+            </Destination>
+        </Rule>
+    </ReplicationConfiguration>
+`;
+}
 
 describe('ReplicationConfiguration.parseConfiguration()', () => {
     // --- Valid Configurations ---
@@ -340,5 +394,56 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
             null, { replicationEndpoints: [] });
         const result = instance.parseConfiguration();
         expect(result).toEqual(errors.InvalidRequest);
+    });
+
+    it('should parse replication config XML without preferred read', done => {
+        const repConfigXML = getPreferredReadXMLConfig(false);
+        parseString(repConfigXML, (err, parsedXml) => {
+            expect(err).toBeNull();
+            const repConf = new ReplicationConfiguration(
+                parsedXml, null, mockS3ServerConfig);
+            const repConfErr = repConf.parseConfiguration();
+            expect(repConfErr).toBeUndefined();
+            expect(repConf.getPreferredReadLocation()).toBeNull();
+            done();
+        });
+    });
+    it('should parse replication config XML with preferred read', done => {
+        const repConfigXML = getPreferredReadXMLConfig(true);
+        parseString(repConfigXML, (err, parsedXml) => {
+            expect(err).toBeNull();
+            const repConf = new ReplicationConfiguration(
+                parsedXml, null, mockS3ServerConfig);
+            const repConfErr = repConf.parseConfiguration();
+            expect(repConfErr).toBeUndefined();
+            expect(repConf.getPreferredReadLocation()).toEqual('gcpbackend');
+            done();
+        });
+    });
+
+    it('should fail if replication to dmf location', done => {
+        const repConfigXML = `
+            <ReplicationConfiguration>
+                <Role>arn:aws:iam::root:role/s3-replication-role</Role>
+                <Rule>
+                    <ID>Replication-Rule-1</ID>
+                    <Status>Enabled</Status>
+                    <Prefix>someprefix/</Prefix>
+                    <Destination>
+                        <Bucket>arn:aws:s3:::destbucket</Bucket>
+                        <StorageClass>dmf-1</StorageClass>
+                    </Destination>
+                </Rule>
+            </ReplicationConfiguration>
+        `;
+
+        parseString(repConfigXML, (err, parsedXml) => {
+            expect(err).toBeNull();
+            const repConf = new ReplicationConfiguration(
+                parsedXml, null, mockS3ServerConfig);
+            const repConfErr = repConf.parseConfiguration();
+            expect(repConfErr).toEqual(errors.MalformedXML);
+            done();
+        });
     });
 });
