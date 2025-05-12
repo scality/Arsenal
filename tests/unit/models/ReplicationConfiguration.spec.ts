@@ -361,6 +361,7 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
         expect(result).toEqual(errors.InvalidRequest);
     });
 
+    // eslint-disable-next-line max-len
     it('should return InvalidRequest if StorageClass not provided and cloudserver config has no replication endpoint', () => {
         const repConfig = {
             Role: [TEST_ROLE],
@@ -378,6 +379,7 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
         expect(result).toEqual(errors.InvalidRequest);
     });
 
+    // eslint-disable-next-line max-len
     it('should return InvalidRequest if StorageClass provided and cloudserver config has no replication endpoint', () => {
         const repConfig = {
             Role: [TEST_ROLE],
