@@ -170,28 +170,30 @@ export function validateKeyDetail(keyDetail: NotValidatedKmsArnDetail, backends:
 }
 
 export interface KMSInterface {
+    readonly backend: KmsBackend<KmsType>;
+
     createBucketKey(
         bucketName: string,
         logger: werelogs.Logger,
-        cb: (err?: Error | null, keyId?: string) => void,
+        cb: (err?: Error | null, keyId?: string, keyArn?: string) => void,
     ): void
 
     destroyBucketKey(
-        bucketKeyId: string,
+        bucketKeyIdOrArn: string,
         logger: werelogs.Logger,
         cb: (err?: Error | null) => void,
     ): void
 
     generateDataKey?(
         cryptoScheme: number,
-        masterKeyId: string,
+        masterKeyIdOrArn: string,
         logger: werelogs.Logger,
         cb: (err: Error | null, plainTextDataKey?: Buffer, cipheredDataKey?: Buffer) => void,
     ): void
 
     cipherDataKey(
         cryptoScheme: number,
-        masterKeyId: string,
+        masterKeyIdOrArn: string,
         plainTextDataKey: Buffer,
         logger: werelogs.Logger,
         cb: (err: Error | null, cipheredDataKey?: Buffer) => void,
@@ -199,7 +201,7 @@ export interface KMSInterface {
 
     decipherDataKey(
         cryptoScheme: number,
-        masterKeyId: string,
+        masterKeyIdOrArn: string,
         cipheredDataKey: Buffer,
         logger: werelogs.Logger,
         cb: (err: Error | null, plainTextDataKey?: Buffer) => void,

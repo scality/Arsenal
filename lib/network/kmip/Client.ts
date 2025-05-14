@@ -235,6 +235,18 @@ function _queryOperationsAndObjects(client: any, logger: werelogs.Logger, cb: an
     });
 }
 
+export interface KmipClientOptions {
+    kmip: {
+        providerName: string;
+        codec: any;
+        transport: any;
+        client: {
+            compoundCreateActivate: any;
+            bucketNameAttributeName: any;
+        };
+    }
+}
+
 export default class Client implements KMSInterface {
     options: any;
     vendorIdentification: string;
@@ -266,17 +278,7 @@ export default class Client implements KMSInterface {
      *                                 defaults to TlsTransport
      */
     constructor(
-        options: {
-            kmip: {
-                providerName: string;
-                codec: any;
-                transport: any;
-                client: {
-                    compoundCreateActivate: any;
-                    bucketNameAttributeName: any;
-                };
-            }
-        },
+        options: KmipClientOptions,
         CodecClass: any,
         TransportClass: any,
     ) {
