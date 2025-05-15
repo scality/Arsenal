@@ -270,15 +270,14 @@ describe('DataWrapper', () => {
 
     describe('uploadPartCopy', () => {
         let mockBucketMD;
+        const sse = null;
 
         beforeEach(() => {
-            mockBucketMD = {
-                getServerSideEncryption: sandbox.stub().returns(null),
-            };
+            mockBucketMD = {};
         });
 
         it('should handle zero byte object', done => {
-            dataWrapper.uploadPartCopy({}, log, mockBucketMD, 'source', 'dest', [], {}, null,
+            dataWrapper.uploadPartCopy({}, log, mockBucketMD, 'source', 'dest', [], {}, null, sse,
                 (err, eTag, lastModified) => {
                     assert.strictEqual(err, null);
                     assert.strictEqual(eTag, 'd41d8cd98f00b204e9800998ecf8427e');
@@ -294,7 +293,7 @@ describe('DataWrapper', () => {
                 process.nextTick(() => cb(null, 'test-etag')));
 
             dataWrapper.uploadPartCopy({}, log, mockBucketMD, 'source', 'dest',
-                [{ key: 'source-key' }], {}, null, (err, eTag) => {
+                [{ key: 'source-key' }], {}, null, sse, (err, eTag) => {
                     assert.strictEqual(err, null);
                     assert.strictEqual(eTag, 'test-etag');
                     done();
