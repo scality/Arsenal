@@ -6,11 +6,13 @@ import { Agent as HttpsAgent } from 'https';
 import { KMS, AWSError } from 'aws-sdk';
 import * as werelogs from 'werelogs';
 import assert from 'assert';
-import { KMSInterface } from '../KMSInterface';
+import { KMSInterface, KmsBackend, getKeyIdFromArn, KmsProtocol, KmsType, makeBackend } from '../KMSInterface';
 
 type TLSVersion = 'TLSv1.3' | 'TLSv1.2' | 'TLSv1.1' | 'TLSv1';
 
 interface KMSOptions {
+    /** To be included in KMS key arn */
+    providerName: string;
     region?: string;
     endpoint?: string;
     ak?: string;
@@ -23,6 +25,18 @@ interface KMSOptions {
         maxVersion?: TLSVersion;
         key?: Buffer | Buffer[];
     };
+    /**
+     * Do not use AWS KMS Key arn but id (to keep backward compatibility).
+     *
+     * Some providers (okms) might not have accountId in their arn and don't need cross-account.
+     *
+     * Not set or false by default to use arn to be future-proof (multi account, region).
+     *
+     * Difference in kms key returned:
+     *  - `arn:scality:kms:external:aws_kms:custom:key/arn:aws:kms:region:accountId:key/cbd69d33-ba8e-4b56-8cfe-ae0844f69966`
+     *  - `arn:scality:kms:external:aws_kms:custom:key/cbd69d33-ba8e-4b56-8cfe-ae0844f69966`
+     */
+    noAwsArn?: boolean;
 }
 
 interface ClientOptions {
@@ -32,10 +46,12 @@ interface ClientOptions {
 export default class Client implements KMSInterface {
     private _supportsDefaultKeyPerAccount: boolean;
     private client: KMS;
+    public readonly backend: KmsBackend<KmsType.external>;
+    public readonly noAwsArn?: boolean;
 
     constructor(options: ClientOptions) {
         this._supportsDefaultKeyPerAccount = true;
-        const { tls, ak, sk, region, endpoint } = options.kmsAWS;
+        const { providerName, tls, ak, sk, region, endpoint, noAwsArn } = options.kmsAWS;
 
         const httpOptions = tls ? {
             agent: new HttpsAgent({
@@ -66,6 +82,8 @@ export default class Client implements KMSInterface {
             httpOptions,
             ...credentials,
         });
+        this.backend = makeBackend(KmsType.external, KmsProtocol.aws_kms, providerName);
+        this.noAwsArn = noAwsArn;
     }
 
     get supportsDefaultKeyPerAccount(): boolean {
@@ -91,14 +109,14 @@ export default class Client implements KMSInterface {
     // createBucketKey is a method used by CloudServer to create a default master encryption key per bucket.
     // New KMS backends like AWS KMS now allow the customer to use the default master encryption key per account.
     // To achieve this, Vault will call createMasterKey and store the master encryption ID in the account metadata.
-    createBucketKey(bucketName: string, logger: werelogs.Logger, cb: (err: Error | null, keyId?: string) => void):
-        void {
+    createBucketKey(bucketName: string, logger: werelogs.Logger,
+        cb: (err: Error | null, keyId?: string, keyArn?: string) => void): void {
         logger.debug('AWS KMS: creating encryption key managed at the bucket level',
             { bucketName });
         this.createMasterKey(logger, cb);
     }
 
-    createMasterKey(logger: werelogs.Logger, cb: (err: Error | null, keyId?: string) => void): void {
+    createMasterKey(logger: werelogs.Logger, cb: (err: Error | null, keyId?: string, keyArn?: string) => void): void {
         logger.debug('AWS KMS: creating master encryption key');
         this.client.createKey({}, (err: AWSError, data) => {
             if (err) {
@@ -107,21 +125,38 @@ export default class Client implements KMSInterface {
                 cb(error);
                 return;
             }
-            logger.debug('AWS KMS: master encryption key created', { KeyMetadata: data?.KeyMetadata });
-            cb(null, data?.KeyMetadata?.KeyId);
+            const keyMetadata = data?.KeyMetadata;
+            logger.debug("AWS KMS: master encryption key created", { KeyMetadata: keyMetadata });
+            let keyId: string;
+            if (this.noAwsArn) {
+                // Use KeyId when ARN is not wanted
+                keyId = keyMetadata?.KeyId!;
+            } else {
+                // Prefer ARN, but fall back to KeyId if ARN is missing
+                keyId = keyMetadata?.Arn ?? keyMetadata?.KeyId!;
+            }
+            // May produce double arn prefix: scality arn + aws arn
+            // arn:scality:kms:external:aws_kms:custom:key/arn:aws:kms:region:accountId:key/cbd69d33-ba8e-4b56-8cfe-ae0844f69966
+            // If this is a problem, a config flag should be used to hide the scality arn when returning the KMS KeyId
+            // or aws arn when creating the KMS Key
+            const arn = `${this.backend.arnPrefix}${keyId}`;
+            cb(null, keyId, arn);
         });
     }
 
     // destroyBucketKey is a method used by CloudServer to remove the default master encryption key for a bucket.
     // New KMS backends like AWS KMS allow customers to delete the default master encryption key at the account level.
     // To achieve this, Vault will call deleteMasterKey before deleting the account.
-    destroyBucketKey(bucketKeyId: string, logger: werelogs.Logger, cb: (err: Error | null) => void): void {
-        logger.debug('AWS KMS: deleting encryption key managed at the bucket level', { bucketKeyId });
+    destroyBucketKey(bucketKeyIdOrArn: string, logger: werelogs.Logger, cb: (err: Error | null) => void): void {
+        const bucketKeyId = getKeyIdFromArn(bucketKeyIdOrArn);
+        logger.debug("AWS KMS: deleting encryption key managed at the bucket level",
+            { bucketKeyId, bucketKeyIdOrArn });
         this.deleteMasterKey(bucketKeyId, logger, cb);
     }
 
-    deleteMasterKey(masterKeyId: string, logger: werelogs.Logger, cb: (err: Error | null) => void): void {
-        logger.debug('AWS KMS: deleting master encryption key', { masterKeyId });
+    deleteMasterKey(masterKeyIdOrArn: string, logger: werelogs.Logger, cb: (err: Error | null) => void): void {
+        const masterKeyId = getKeyIdFromArn(masterKeyIdOrArn);
+        logger.debug("AWS KMS: deleting master encryption key", { masterKeyId, masterKeyIdOrArn });
         const params = {
             KeyId: masterKeyId,
             PendingWindowInDays: 7,
@@ -155,11 +190,12 @@ export default class Client implements KMSInterface {
 
     generateDataKey(
         cryptoScheme: number,
-        masterKeyId: string,
+        masterKeyIdOrArn: string,
         logger: werelogs.Logger,
         cb: (err: Error | null, plainTextDataKey?: Buffer, cipheredDataKey?: Buffer) => void
     ): void {
-        logger.debug('AWS KMS: generating data key', { cryptoScheme, masterKeyId });
+        const masterKeyId = getKeyIdFromArn(masterKeyIdOrArn);
+        logger.debug("AWS KMS: generating data key", { cryptoScheme, masterKeyId, masterKeyIdOrArn });
         assert.strictEqual(cryptoScheme, 1);
 
         const params = {
@@ -191,12 +227,14 @@ export default class Client implements KMSInterface {
 
     cipherDataKey(
         cryptoScheme: number,
-        masterKeyId: string,
+        masterKeyIdOrArn: string,
         plainTextDataKey: Buffer,
         logger: werelogs.Logger,
         cb: (err: Error | null, cipheredDataKey?: Buffer) => void
     ): void {
-        logger.debug('AWS KMS: ciphering data key', { cryptoScheme, masterKeyId });
+        const masterKeyId = getKeyIdFromArn(masterKeyIdOrArn);
+
+        logger.debug("AWS KMS: ciphering data key", { cryptoScheme, masterKeyId, masterKeyIdOrArn });
         assert.strictEqual(cryptoScheme, 1);
 
         const params = {
@@ -227,12 +265,14 @@ export default class Client implements KMSInterface {
 
     decipherDataKey(
         cryptoScheme: number,
-        masterKeyId: string,
+        masterKeyIdOrArn: string,
         cipheredDataKey: Buffer,
         logger: werelogs.Logger,
         cb: (err: Error | null, plainTextDataKey?: Buffer) => void
     ): void {
-        logger.debug('AWS KMS: deciphering data key', { cryptoScheme, masterKeyId });
+        const masterKeyId = getKeyIdFromArn(masterKeyIdOrArn);
+
+        logger.debug("AWS KMS: deciphering data key", { cryptoScheme, masterKeyId, masterKeyIdOrArn });
         assert.strictEqual(cryptoScheme, 1);
 
         const params = {

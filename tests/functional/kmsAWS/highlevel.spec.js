@@ -20,6 +20,7 @@ describe('KmsAWSClient', () => {
     beforeEach(() => {
         client = new Client({
             kmsAWS: {
+                providerName: 'tests',
                 region: 'us-east-1',
                 ak: 'ak',
                 sk: 'sk',
@@ -48,6 +49,10 @@ describe('KmsAWSClient', () => {
         assert.strictEqual(client.supportsDefaultKeyPerAccount, true);
     });
 
+    it('should be configured with noAwsArn falsy (undefined) by default', () => {
+        assert.strictEqual(client.noAwsArn, undefined);
+    });
+
     it('should create a new master encryption key', done => {
         const mockResponse = {
             KeyMetadata: {
@@ -56,9 +61,85 @@ describe('KmsAWSClient', () => {
         };
         createKeyStub.yields(null, mockResponse);
 
-        client.createMasterKey(logger, (err, keyId) => {
+        client.createMasterKey(logger, (err, keyId, keyArn) => {
             assert.ifError(err);
             assert.strictEqual(keyId, 'mock-key-id');
+            assert.strictEqual(keyArn, 'arn:scality:kms:external:aws_kms:tests:key/mock-key-id');
+            assert(createKeyStub.calledOnce);
+            done();
+        });
+    });
+
+    it('should create a new master encryption key when configured to use Arn but fallback to KeyId', done => {
+        client = new Client({
+            kmsAWS: {
+                providerName: 'tests',
+                region: 'us-east-1',
+                ak: 'ak',
+                sk: 'sk',
+                noAwsArn: false, // ignore default enforce using aws arn
+            },
+        });
+        createKeyStub = sinon.stub(client.client, 'createKey');
+        const mockResponse = {
+            KeyMetadata: {
+                KeyId: 'mock-key-id',
+            },
+        };
+        createKeyStub.yields(null, mockResponse);
+
+        client.createMasterKey(logger, (err, keyId, keyArn) => {
+            assert.ifError(err);
+            assert.strictEqual(keyId, 'mock-key-id');
+            assert.strictEqual(keyArn, 'arn:scality:kms:external:aws_kms:tests:key/mock-key-id');
+            assert(createKeyStub.calledOnce);
+            done();
+        });
+    });
+
+    it('should create a new master encryption key with aws arn', done => {
+        const mockResponse = {
+            KeyMetadata: {
+                KeyId: 'mock-key-id',
+                Arn: 'arn:aws:kms:region:accountId:key/mock-key-id',
+            },
+        };
+        createKeyStub.yields(null, mockResponse);
+
+        client.createMasterKey(logger, (err, keyId, keyArn) => {
+            assert.ifError(err);
+            assert.strictEqual(keyId, 'arn:aws:kms:region:accountId:key/mock-key-id');
+            assert.strictEqual(keyArn,
+                'arn:scality:kms:external:aws_kms:tests:key/arn:aws:kms:region:accountId:key/mock-key-id');
+            assert(createKeyStub.calledOnce);
+            done();
+        });
+    });
+
+    it('should create a new master encryption key without aws arn', done => {
+        client = new Client({
+            kmsAWS: {
+                providerName: 'tests',
+                region: 'us-east-1',
+                ak: 'ak',
+                sk: 'sk',
+                noAwsArn: true,
+            },
+        });
+        createKeyStub = sinon.stub(client.client, 'createKey');
+        const mockResponse = {
+            KeyMetadata: {
+                KeyId: 'mock-key-id',
+                Arn: 'arn:aws:kms:region:accountId:key/mock-key-id',
+            },
+        };
+        createKeyStub.yields(null, mockResponse);
+
+        client.createMasterKey(logger, (err, keyId, keyArn) => {
+            assert.ifError(err);
+            assert.strictEqual(keyId, 'mock-key-id');
+            assert.strictEqual(keyArn,
+                'arn:scality:kms:external:aws_kms:tests:key/mock-key-id');
             assert(createKeyStub.calledOnce);
             done();
         });
@@ -83,9 +164,10 @@ describe('KmsAWSClient', () => {
         };
         createKeyStub.yields(null, mockResponse);
 
-        client.createBucketKey('bucketName', logger, (err, keyId) => {
+        client.createBucketKey('bucketName', logger, (err, keyId, keyArn) => {
             assert.ifError(err);
             assert.strictEqual(keyId, 'mock-bucket-key-id');
+            assert.strictEqual(keyArn, 'arn:scality:kms:external:aws_kms:tests:key/mock-bucket-key-id');
             assert(createKeyStub.calledOnce);
             done();
         });
@@ -205,6 +287,25 @@ describe('KmsAWSClient', () => {
             assert.strictEqual(plainText.toString(), 'plaintext');
             assert.strictEqual(cipherText.toString(), 'ciphertext');
             assert(generateDataKeyStub.calledOnce);
+            done();
+        });
+    });
+
+    it('should extract key from arn input to call generate a data key', done => {
+        const arnPrefix = 'arn:scality:kms:external:aws_kms:tests:key/';
+        const awsArn = 'arn:aws:kms:region:accountId:key/mock-key-id';
+        const key = `${arnPrefix}${awsArn}`;
+        const mockResponse = {
+            Plaintext: Buffer.from('plaintext'),
+            CiphertextBlob: Buffer.from('ciphertext'),
+            KeyId: 'mocked-kms-key-id',
+        };
+        generateDataKeyStub.yields(null, mockResponse);
+
+        client.generateDataKey(1, key, logger, (err) => {
+            assert.ifError(err);
+            assert(generateDataKeyStub.calledOnce);
+            assert.strictEqual(generateDataKeyStub.getCall(0).firstArg.KeyId, awsArn);
             done();
         });
     });

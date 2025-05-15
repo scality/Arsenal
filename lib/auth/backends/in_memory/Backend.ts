@@ -8,6 +8,7 @@ import { Accounts } from './types';
 import { AuthInfoType, AuthV4Results,
     AccountCanonicalInfo, AccountCanonicalInfoResults } from '../../AuthInfo';
 import { ArsenalCallback } from '../../../types';
+import { KmsType, KmsProtocol, makeScalityArnPrefix } from '../../../network/KMSInterface';
 
 function _formatResponse(userInfo: AuthInfoType): { message: { body: AuthV4Results } } {
     return {
@@ -229,11 +230,13 @@ class InMemoryBackend extends BaseBackend {
         cb: (err: null, data: { message: { 
             body: { canonicalId: string, encryptionKeyId: string, action: string } } }) => void
     ): void {
+        const kmsProtocol = process.env.S3KMS === 'file' ? KmsProtocol.file : KmsProtocol.mem;
+        const arnPrefix = makeScalityArnPrefix(KmsType.internal, kmsProtocol, 'scality');
         return cb(null, {
             message: {
                 body: {
                     canonicalId,
-                    encryptionKeyId: 'account-level-master-encryption-key',
+                    encryptionKeyId: `${arnPrefix}account-level-master-encryption-key`,
                     action: 'retrieved',
                 }
             }

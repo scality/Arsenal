@@ -4,19 +4,21 @@
 
 import TTLVCodec from './codec/ttlv';
 import TlsTransport from './transport/tls';
-import KMIPClient from './Client';
-import { KMSInterface } from '../KMSInterface';
+import KMIPClient, { KmipClientOptions } from './Client';
+import { KmsBackend, KMSInterface, KmsType } from '../KMSInterface';
 import type { Logger } from 'werelogs';
 import async from 'async';
 
 export default class ClusterClient implements KMSInterface {
     private readonly clients: KMIPClient[];
     private roundRobinIndex = 0;
+    public readonly backend: KmsBackend<KmsType.external>;
 
     /**
      * Construct a high level cluster of KMIP drivers suitable for cloudserver
      * @param options - Instance options
      * @param options.kmip - Low level driver options
+     * @param options.kmip.providerName - Name of kmip provider
      * @param options.kmip.client - This high level driver options
      * @param options.kmip.client.compoundCreateActivate -
      *                 Depends on the server's ability. False offers the best
@@ -35,25 +37,17 @@ export default class ClusterClient implements KMSInterface {
      *                                 defaults to TlsTransport
      */
     constructor(
-        options: {
-            kmip: {
-                codec: any;
-                transport: any[];
-                client: {
-                    compoundCreateActivate: any;
-                    bucketNameAttributeName: any;
-                };
-            }
-        },
+        options: KmipClientOptions,
         CodecClass: any,
         TransportClass: any,
     ) {
-        const { codec, client } = options.kmip;
+        const { codec, client, providerName } = options.kmip;
         this.clients = options.kmip.transport.map(transport => new KMIPClient(
-            { kmip: { codec, transport, client } },
+            { kmip: { codec, transport, client, providerName } },
             CodecClass || TTLVCodec,
             TransportClass || TlsTransport,
         ));
+        this.backend = this.clients[0].backend;
     }
 
     next() {
