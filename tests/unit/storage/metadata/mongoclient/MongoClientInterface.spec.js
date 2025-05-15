@@ -639,3 +639,313 @@ describe('MongoClientInterface, getUUID', () => {
         });
     });
 });
+
+describe('MongoClientInterface, putObjectVerCase1', () => {
+    const bucketName = 'test-bucket-putvercase1';
+    let client;
+    let collection;
+    let sandbox;
+
+    beforeEach(done => {
+        sandbox = sinon.createSandbox();
+        client = createClient();
+        client.setup(err => {
+            if (err) {
+                return done(err);
+            }
+            return createBucket(client, bucketName, true, err => {
+                if (err) {
+                    return done(err);
+                }
+                collection = client.getCollection(bucketName);
+                return done();
+            });
+        });
+    });
+
+    afterEach(done => {
+        sandbox.restore();
+        if (client) {
+            client.deleteBucket(bucketName, logger, () => {
+                client.close(done);
+            });
+        } else {
+            done();
+        }
+    });
+
+    it('should handle MongoDB error on version operation (first operation)', done => {
+        const objName = 'test-object';
+        const objMD = new ObjectMD()
+            .setKey(objName)
+            .setDataStoreName('us-east-1')
+            .setContentLength(100)
+            .setLastModified(new Date());
+
+        // Create error with writeErrors indicating failure on first operation (index 0)
+        const versionError = new Error('Duplicate key error');
+        versionError.code = 11000;
+        // Simulate MongoDB's error structure with writeErrors
+        versionError.writeErrors = [{
+            index: 0, // First operation (version creation)
+            code: 11000,
+            errmsg: 'E11000 duplicate key error',
+        }];
+
+        // Create a spy to track if putObjectVerCase1 is called with isRetry=true
+        // This is a more reliable way to check the retry mechanism
+        const putObjectVerCase1Spy = sandbox.spy(client, 'putObjectVerCase1');
+
+        // Stub bulkWrite to simulate failure on first operation
+        const bulkWriteStub = sandbox.stub(collection, 'bulkWrite');
+        bulkWriteStub.onFirstCall().rejects(versionError);
+        bulkWriteStub.onSecondCall().resolves({});
+
+        const params = {
+            vFormat: BucketVersioningKeyFormat.v1,
+            versioning: true,
+            needOplogUpdate: false,
+            originOp: 'test',
+            conditions: {},
+        };
+
+        // Call the method directly to avoid race conditions with the stub
+        client.putObjectVerCase1(
+            collection,
+            bucketName,
+            objName,
+            objMD.getValue(),
+            params,
+            logger,
+            () => {
+                try {
+                    // Check that bulkWrite was called twice (original + retry)
+                    assert.strictEqual(bulkWriteStub.callCount, 2, 'Expected bulkWrite to be called twice');
+
+                    // Verify putObjectVerCase1 was called with isRetry=true for the retry
+                    assert(putObjectVerCase1Spy.calledTwice, 'Expected putObjectVerCase1 to be called twice');
+                    assert(putObjectVerCase1Spy.secondCall.args[7], 'Expected second call to have isRetry=true');
+
+                    done();
+                } catch (assertionError) {
+                    done(assertionError);
+                }
+            },
+        );
+    });
+
+    it('should handle MongoDB error on master operation (second operation)', done => {
+        const objName = 'test-object';
+        const objMD = new ObjectMD()
+            .setKey(objName)
+            .setDataStoreName('us-east-1')
+            .setContentLength(100)
+            .setLastModified(new Date());
+
+        // Create error with writeErrors indicating failure on second operation (index 1)
+        const masterError = new Error('Duplicate key error');
+        masterError.code = 11000;
+        // Simulate MongoDB's error structure with writeErrors
+        masterError.writeErrors = [{
+            index: 1, // Second operation (master update)
+            code: 11000,
+            errmsg: 'E11000 duplicate key error',
+        }];
+
+        // Add result info showing one operation succeeded
+        masterError.result = {
+            upsertedCount: 1, // The version was successfully upserted
+            ok: 1,
+        };
+
+        // Stub bulkWrite to simulate failure on second operation
+        const bulkWriteStub = sandbox.stub(collection, 'bulkWrite').rejects(masterError);
+
+        const params = {
+            vFormat: BucketVersioningKeyFormat.v1,
+            versioning: true,
+            needOplogUpdate: false,
+            originOp: 'test',
+            conditions: {},
+        };
+
+        client.putObjectVerCase1(
+            collection,
+            bucketName,
+            objName,
+            objMD.getValue(),
+            params,
+            logger,
+            (err, result) => {
+                try {
+                    assert.ifError(err, 'Expected no error when master operation fails but version succeeds');
+                    assert(result, 'Expected a result to be returned');
+                    assert(result.includes('versionId'), 'Expected versionId in result');
+                    assert(bulkWriteStub.calledOnce, 'Expected bulkWrite to be called once');
+                    done();
+                } catch (assertionError) {
+                    done(assertionError);
+                }
+            },
+        );
+    });
+
+    it('should handle MongoDB error without writeErrors but with upsertedCount=1', done => {
+        const objName = 'test-object';
+        const objMD = new ObjectMD()
+            .setKey(objName)
+            .setDataStoreName('us-east-1')
+            .setContentLength(100)
+            .setLastModified(new Date());
+
+        // Create error without writeErrors but with result indicating one success
+        const bulkError = new Error('Bulk write error');
+        bulkError.code = 11000;
+        // No writeErrors, but result shows one successful upsert
+        bulkError.result = {
+            upsertedCount: 1,
+            ok: 0,
+        };
+
+        // Stub bulkWrite to simulate the error
+        const bulkWriteStub = sandbox.stub(collection, 'bulkWrite').rejects(bulkError);
+
+        const params = {
+            vFormat: BucketVersioningKeyFormat.v1,
+            versioning: true,
+            needOplogUpdate: false,
+            originOp: 'test',
+            conditions: {},
+        };
+
+        client.putObjectVerCase1(
+            collection,
+            bucketName,
+            objName,
+            objMD.getValue(),
+            params,
+            logger,
+            (err, result) => {
+                try {
+                    assert.ifError(err, 'Expected no error when upsertedCount=1');
+                    assert(result, 'Expected a result to be returned');
+                    assert(result.includes('versionId'), 'Expected versionId in result');
+                    assert(bulkWriteStub.calledOnce, 'Expected bulkWrite to be called once');
+                    done();
+                } catch (assertionError) {
+                    done(assertionError);
+                }
+            },
+        );
+    });
+
+    it('should handle MongoDB error without writeErrors and with upsertedCount=0', done => {
+        const objName = 'test-object';
+        const objMD = new ObjectMD()
+            .setKey(objName)
+            .setDataStoreName('us-east-1')
+            .setContentLength(100)
+            .setLastModified(new Date());
+
+        // Create error without writeErrors and with result indicating no successes
+        const bulkError = new Error('Bulk write error');
+        bulkError.code = 11000;
+        // No writeErrors, and result shows no successful upsert
+        bulkError.result = {
+            upsertedCount: 0,
+            ok: 0,
+        };
+
+        // Create a spy to track if putObjectVerCase1 is called with isRetry=true
+        const putObjectVerCase1Spy = sandbox.spy(client, 'putObjectVerCase1');
+
+        // Stub bulkWrite to simulate initial failure and then success
+        const bulkWriteStub = sandbox.stub(collection, 'bulkWrite');
+        bulkWriteStub.onFirstCall().rejects(bulkError);
+        bulkWriteStub.onSecondCall().resolves({});
+
+        const params = {
+            vFormat: BucketVersioningKeyFormat.v1,
+            versioning: true,
+            needOplogUpdate: false,
+            originOp: 'test',
+            conditions: {},
+        };
+
+        client.putObjectVerCase1(
+            collection,
+            bucketName,
+            objName,
+            objMD.getValue(),
+            params,
+            logger,
+            () => {
+                try {
+                    // Check that bulkWrite was called twice (original + retry)
+                    assert.strictEqual(bulkWriteStub.callCount, 2, 'Expected bulkWrite to be called twice');
+
+                    // Verify putObjectVerCase1 was called with isRetry=true for the retry
+                    assert(putObjectVerCase1Spy.calledTwice, 'Expected putObjectVerCase1 to be called twice');
+                    assert(putObjectVerCase1Spy.secondCall.args[7], 'Expected second call to have isRetry=true');
+
+                    done();
+                } catch (assertionError) {
+                    done(assertionError);
+                }
+            },
+        );
+    });
+
+    it('should handle retry failure when version operation fails twice', done => {
+        const objName = 'test-object-retry-fails';
+        const objMD = new ObjectMD()
+            .setKey(objName)
+            .setDataStoreName('us-east-1')
+            .setContentLength(100)
+            .setLastModified(new Date());
+
+        const versionError = new Error('Duplicate key error');
+        versionError.code = 11000;
+        versionError.writeErrors = [{
+            index: 0,
+            code: 11000,
+            errmsg: 'E11000 duplicate key error',
+        }];
+
+        const putObjectVerCase1Spy = sandbox.spy(client, 'putObjectVerCase1');
+
+        // Stub bulkWrite to always fail with the same error
+        // This simulates both the first attempt and the retry failing with the same error
+        const bulkWriteStub = sandbox.stub(collection, 'bulkWrite').rejects(versionError);
+
+        const params = {
+            vFormat: BucketVersioningKeyFormat.v1,
+            versioning: true,
+            needOplogUpdate: false,
+            originOp: 'test',
+            conditions: {},
+        };
+
+        client.putObjectVerCase1(
+            collection,
+            bucketName,
+            objName,
+            objMD.getValue(),
+            params,
+            logger,
+            (err, result) => {
+                try {
+                    assert(err, 'Expected an error to be returned after retry failure');
+                    assert.strictEqual(err.is.InternalError, true, 'Expected InternalError after retry failure');
+                    assert(!result, 'Expected no result on error');
+                    assert.strictEqual(bulkWriteStub.callCount, 2, 'Expected bulkWrite to be called twice');
+                    assert(putObjectVerCase1Spy.calledTwice, 'Expected putObjectVerCase1 to be called twice');
+                    assert(putObjectVerCase1Spy.secondCall.args[7], 'Expected second call to have isRetry=true');
+                    done();
+                } catch (assertionError) {
+                    done(assertionError);
+                }
+            },
+        );
+    });
+});
