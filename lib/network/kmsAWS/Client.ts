@@ -33,8 +33,8 @@ interface KMSOptions {
      * Not set or false by default to use arn to be future-proof (multi account, region).
      *
      * Difference in kms key returned:
-     *  - `arn:scality:kms:external:aws_kms:custom:key/arn:aws:kms:region:accountId:key/cbd69d33-ba8e-4b56-8cfe-ae0844f69966`
-     *  - `arn:scality:kms:external:aws_kms:custom:key/cbd69d33-ba8e-4b56-8cfe-ae0844f69966`
+     *  - `arn:scality:kms:external:aws_kms:custom:key/arn:aws:kms:region:accountId:key/cbd69d33-ba8e-4b56-8cfe`
+     *  - `arn:scality:kms:external:aws_kms:custom:key/cbd69d33-ba8e-4b56-8cfe`
      */
     noAwsArn?: boolean;
 }
@@ -130,13 +130,15 @@ export default class Client implements KMSInterface {
             let keyId: string;
             if (this.noAwsArn) {
                 // Use KeyId when ARN is not wanted
+                // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
                 keyId = keyMetadata?.KeyId!;
             } else {
                 // Prefer ARN, but fall back to KeyId if ARN is missing
+                // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
                 keyId = keyMetadata?.Arn ?? keyMetadata?.KeyId!;
             }
             // May produce double arn prefix: scality arn + aws arn
-            // arn:scality:kms:external:aws_kms:custom:key/arn:aws:kms:region:accountId:key/cbd69d33-ba8e-4b56-8cfe-ae0844f69966
+            // arn:scality:kms:external:aws_kms:custom:key/arn:aws:kms:region:accountId:key/cbd69d33-ba8e-4b56-8cfe
             // If this is a problem, a config flag should be used to hide the scality arn when returning the KMS KeyId
             // or aws arn when creating the KMS Key
             const arn = `${this.backend.arnPrefix}${keyId}`;

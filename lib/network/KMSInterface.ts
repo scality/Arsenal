@@ -67,7 +67,7 @@ export function makeBackend<T extends KmsType>(
         protocol,
         provider,
         arnPrefix: makeScalityArnPrefix(type, protocol, provider),
-    }
+    };
 }
 
 export function isScalityKmsArn(kmsKey: string) {
@@ -86,7 +86,7 @@ export function isScalityKmsArn(kmsKey: string) {
 export function getKeyIdFromArn(kmsKeyIdOrArn: AwsLikeKmsArn | string) {
     if (isScalityKmsArn(kmsKeyIdOrArn)) {
         // Do not use full arnPrefix to allow for different providerName
-        return kmsKeyIdOrArn.substring(kmsKeyIdOrArn.indexOf('/') + 1)
+        return kmsKeyIdOrArn.substring(kmsKeyIdOrArn.indexOf('/') + 1);
     }
     return kmsKeyIdOrArn;
 }
@@ -136,7 +136,7 @@ export function extractDetailFromArn(keyArn: AwsLikeKmsArn): NotValidatedKmsArnD
         provider,
         arnType,
         id: keyIdOrArn?.join('/')
-    }
+    };
 }
 
 /**
@@ -150,13 +150,13 @@ export function validateKeyDetail(keyDetail: NotValidatedKmsArnDetail, backends:
         keyDetail.type === backend.type
         && keyDetail.protocol === backend.protocol
         && keyDetail.provider === backend.provider
-    )
+    );
     // Produce error description to end user with detail of backend configuration for troubleshooting
     if (!isValidBackend) {
         return errors.InvalidArgument.customizeDescription(
             `KMS Scality KeyArn doesn't match any configured providers. Possible arn are: "${
                 backends.map(b => b.arnPrefix).join('", "')}"`
-        )
+        );
     }
     if (keyDetail.arnType !== 'key') {
         return errors.InvalidArgument.customizeDescription(
