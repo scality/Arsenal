@@ -32,7 +32,8 @@ import {
     UpdateFilter,
     MongoServerError,
     MongoBulkWriteError,
-    WriteError } from 'mongodb';
+    WriteError
+} from 'mongodb';
 import Uuid from 'uuid';
 import diskusage from 'diskusage';
 
@@ -419,7 +420,7 @@ class MongoClientInterface {
             !bucketName.startsWith(constants.mpuBucketPrefix)) {
             payload.$set.vFormat = this.defaultBucketKeyFormat;
         } else {
-            payload.$set.vFormat = BUCKET_VERSIONS.v0;            
+            payload.$set.vFormat = BUCKET_VERSIONS.v0;
         }
 
         // we don't have to test bucket existence here as it is done
@@ -873,69 +874,58 @@ class MongoClientInterface {
             .then(() => cb(null, `{"versionId": "${versionId}"}`))
             .catch((err: MongoBulkWriteError) => {
                 /*
-                 * Related to https://jira.mongodb.org/browse/SERVER-14322
+                 * Previously related to https://jira.mongodb.org/browse/SERVER-14322
+                 * the issue has been fixed in MongoDB v5.0+.
                  * It happens when we are pushing two versions "at the same time"
                  * and the master one does not exist. In MongoDB, two threads are
                  * trying to create the same key, the master version, and one of
                  * them, the one with the highest versionID (less recent one),
                  * fails.
+                 *
+                 * The conflict error may still happen if the version IDs generated
+                 * are the same (affecting the first operation), or if the master
+                 * version is updated concurrently.
                  */
                 if (err.code === 11000) {
                     log.debug('putObjectVerCase1: error putting object version', {
                         code: err.code,
                         error: err.errmsg,
-                        isRetry: isRetry ? true : false,
+                        isRetry: !!isRetry,
                     });
-                    
-                    const writeErrors = err.writeErrors || [];
-                    const firstError: WriteError = writeErrors[0];
-                    
-                    if (firstError) {
-                        // Check index of the operation that failed (0 = version, 1 = master)
-                        const isVersionOpError = firstError.index === 0;
-                        const isMasterOpError = firstError.index === 1;
-                        
-                        // Version operation failed, retry with a new version ID
-                        if (isVersionOpError) {
-                            if (!isRetry) {
-                                return process.nextTick(() =>
-                                    this.putObjectVerCase1(c, bucketName, objName, objVal, params, log, cb, true));
-                            }
-                            log.error('putObjectVerCase1: race condition upserting versionId', {
-                                error: err.errmsg,
-                            });
-                            return cb(errors.InternalError);
-                        }
-                        
-                        // Master operation failed but version succeeded - this is OK
-                        if (isMasterOpError) {
-                            return cb(null, `{"versionId": "${versionId}"}`);
-                        }
-                    }
-                    
-                    // If we can't determine which operation failed from writeErrors,
-                    // fall back to checking result counts
-                    const upsertedCount = err.result?.upsertedCount || err.result?.nUpserted || 0;
-                    
-                    // If we successfully upserted one document (the version), but had an error on master,
-                    // consider this a success
-                    if (upsertedCount === 1) {
+
+                    // When entering this catch, we are guaranteed to have at least one
+                    // error ("OneOrMore<WriteError"). As the operation os ordered, we
+                    // also have one more guarantee: the operation stops at the first error
+                    // encountered, and thus won't execute any pending operation.
+                    // As a result, checking for the [0] error is enough to know, after checking
+                    // its index, what operation failed.
+                    const bulkError: WriteError = err.writeErrors[0];
+                    // Check index of the operation that failed (0 = version, 1 = master)
+                    const isMasterOpError = bulkError.index === 1;
+
+                    // Master operation failed but version succeeded.
+                    // This error is expected, it means that two differents version were
+                    // put at the same time.
+                    if (isMasterOpError) {
                         return cb(null, `{"versionId": "${versionId}"}`);
                     }
-                    
+
                     // If no upserts succeeded and this is not a retry yet, try again with a new version ID
                     if (!isRetry) {
-                        // retrying with a new version id
+                        log.error('putObjectVerCase1: race condition upserting versionId', {
+                            error: err.errmsg,
+                        });
                         return process.nextTick(() =>
                             this.putObjectVerCase1(c, bucketName, objName, objVal, params, log, cb, true));
                     }
-                    
-                    log.error('putObjectVerCase1: race condition upserting versionId', {
+
+                    // Version operation failed twice, reject the operation.
+                    log.error('putObjectVerCase1: version operation failed twice', {
                         error: err.errmsg,
                     });
                     return cb(errors.InternalError);
                 }
-                
+
                 log.error('putObjectVerCase1: error putting object version', {
                     error: err.errmsg,
                 });
