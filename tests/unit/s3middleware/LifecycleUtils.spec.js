@@ -2,6 +2,7 @@ const assert = require('assert');
 
 const LifecycleRule = require('../../../lib/models/LifecycleRule').default;
 const { LifecycleUtils } = require('../../../lib/s3middleware/lifecycleHelpers');
+const { ValidLifecycleRules: supportedLifecycleRules } = require('../../../lib/models/LifecycleConfiguration');
 
 // 5 days prior to CURRENT
 const PAST = new Date(2018, 1, 5);
@@ -30,14 +31,6 @@ function getMetadataObject(lastModified, storageClass) {
 function getRuleIDs(rules) {
     return rules.map(rule => rule.ID).sort();
 }
-
-const supportedLifecycleRules = [
-    'expiration',
-    'noncurrentVersionExpiration',
-    'abortIncompleteMultipartUpload',
-    'transitions',
-    'noncurrentVersionTransition',
-];
 
 describe('LifecycleUtils::constructor', () => {
     it('should throw when not given supported lifecycle rules', () => {

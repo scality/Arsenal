@@ -251,7 +251,7 @@ export default class LifecycleUtils {
         const currentDate = new Date();
         const applicableRules = rules.reduce((store: any, rule) => {
             // filter and find earliest dates
-            if (rule.Expiration && this._supportedRules.includes('expiration')) {
+            if (rule.Expiration && this._supportedRules.includes('Expiration')) {
                 if (!store.Expiration) {
                     store.Expiration = {};
                 }
@@ -277,7 +277,7 @@ export default class LifecycleUtils {
                 }
             }
             const ncvExpiration = rule.NoncurrentVersionExpiration;
-            if (ncvExpiration && this._supportedRules.includes('noncurrentVersionExpiration')) {
+            if (ncvExpiration && this._supportedRules.includes('NoncurrentVersionExpiration')) {
                 // Names are long, so obscuring a bit
                 const ncve = 'NoncurrentVersionExpiration';
                 const ncd = 'NoncurrentDays';
@@ -295,7 +295,7 @@ export default class LifecycleUtils {
                 }
             }
             if (rule.AbortIncompleteMultipartUpload
-            && this._supportedRules.includes('abortIncompleteMultipartUpload')) {
+            && this._supportedRules.includes('AbortIncompleteMultipartUpload')) {
                 // Names are long, so obscuring a bit
                 const aimu = 'AbortIncompleteMultipartUpload';
                 const dai = 'DaysAfterInitiation';
@@ -309,7 +309,7 @@ export default class LifecycleUtils {
                 }
             }
             const transitions = rule.Transitions;
-            if (transitions && transitions.length > 0 && this._supportedRules.includes('transitions')) {
+            if (transitions && transitions.length > 0 && this._supportedRules.includes('Transition')) {
                 store.Transition = this.getApplicableTransition({
                     transitions,
                     lastModified: metadata.LastModified,
@@ -318,7 +318,7 @@ export default class LifecycleUtils {
                 });
             }
             const ncvt = rule.NoncurrentVersionTransitions;
-            if (ncvt && ncvt.length > 0 && this._supportedRules.includes('noncurrentVersionTransition')) {
+            if (ncvt && ncvt.length > 0 && this._supportedRules.includes('NoncurrentVersionTransition')) {
                 store.NoncurrentVersionTransition = this.getApplicableNCVTransition({
                     transitions: ncvt,
                     lastModified: metadata.LastModified,

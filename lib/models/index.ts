@@ -3,7 +3,7 @@ export { default as BackendInfo } from './BackendInfo';
 export { default as BucketAzureInfo } from './BucketAzureInfo';
 export { default as BucketInfo } from './BucketInfo';
 export { default as BucketPolicy } from './BucketPolicy';
-export { default as LifecycleConfiguration } from './LifecycleConfiguration';
+export { default as LifecycleConfiguration, ValidLifecycleRules } from './LifecycleConfiguration';
 export { default as LifecycleRule } from './LifecycleRule';
 export { default as NotificationConfiguration } from './NotificationConfiguration';
 export { default as ObjectLockConfiguration } from './ObjectLockConfiguration';

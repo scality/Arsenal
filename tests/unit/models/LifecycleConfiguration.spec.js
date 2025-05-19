@@ -1,5 +1,6 @@
 const assert = require('assert');
 const { parseString } = require('xml2js');
+const { ValidLifecycleRules } = require('../../../lib/models/LifecycleConfiguration');
 
 const LifecycleConfiguration =
     require('../../../lib/models/LifecycleConfiguration').default;
@@ -19,13 +20,7 @@ const mockConfig = {
             site: 'b',
         },
     ],
-    supportedLifecycleRules: [
-        'expiration',
-        'noncurrentVersionExpiration',
-        'abortIncompleteMultipartUpload',
-        'transitions',
-        'noncurrentVersionTransition',
-    ],
+    supportedLifecycleRules: ValidLifecycleRules,
 };
 
 const MAX_DAYS = 2147483647; // Max 32-bit signed binary integer.
@@ -298,6 +293,7 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
     let tagObj;
     beforeEach(() => {
         tagObj = {};
+        mockConfig.supportedLifecycleRules = ValidLifecycleRules;
     });
 
     it('should return MalformedXML error if request xml is empty', done => {
@@ -397,7 +393,7 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
     });
 
     it('should return NotImplemented error when rule action is not supported', done => {
-        mockConfig.supportedLifecycleRules = ['expiration']; // Only support expiration
+        mockConfig.supportedLifecycleRules = ['Expiration']; // Only support expiration
         const xml = `
             <LifecycleConfiguration>
                 <Rule>
@@ -421,7 +417,7 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
     });
 
     it('should return NotImplemented error when some rule action are not supported', done => {
-        mockConfig.supportedLifecycleRules = ['expiration']; // Only support expiration
+        mockConfig.supportedLifecycleRules = ['Expiration']; // Only support expiration
         const xml = `
             <LifecycleConfiguration>
                 <Rule>
@@ -448,7 +444,7 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
     });
 
     it('should succeed when all rule actions are supported', done => {
-        mockConfig.supportedLifecycleRules = ['expiration', 'transitions'];
+        mockConfig.supportedLifecycleRules = ['Expiration', 'Transition'];
         const xml = `
             <LifecycleConfiguration>
                 <Rule>
@@ -1372,56 +1368,4 @@ describe('LifecycleConfiguration::getConfigJson', () => {
                 expected,
             );
         }));
-});
-
-describe('::_buildSupportedLifecycleRules', () => {
-    beforeEach(() => {
-        LifecycleConfiguration._cachedSupportedLifecycleRules = {
-            names: undefined,
-            rules: undefined,
-        };
-    });
-
-    it('should capitalize first letter of each rule name', () => {
-        const names = ['expiration', 'transitions'];
-        const result = LifecycleConfiguration._buildSupportedLifecycleRules(names);
-        assert.deepStrictEqual(result, ['Expiration', 'Transition']);
-    });
-
-    it('should handle special case for noncurrentVersionTransition', () => {
-        const names = ['noncurrentVersionTransition'];
-        const result = LifecycleConfiguration._buildSupportedLifecycleRules(names);
-        assert.deepStrictEqual(result, ['NoncurrentVersionTransition']);
-    });
-
-    it('should memoize results for subsequent calls with same input', () => {
-        const names = ['expiration', 'transitions'];
-        const result1 = LifecycleConfiguration._buildSupportedLifecycleRules(names);
-        const result2 = LifecycleConfiguration._buildSupportedLifecycleRules(names);
-
-        assert.deepStrictEqual(result1, ['Expiration', 'Transition']);
-        assert.strictEqual(result1, result2); // Should be same instance
-    });
-
-    it('should recalculate for different input', () => {
-        const names1 = ['expiration'];
-        const names2 = ['transitions'];
-
-        const result1 = LifecycleConfiguration._buildSupportedLifecycleRules(names1);
-        const result2 = LifecycleConfiguration._buildSupportedLifecycleRules(names2);
-
-        assert.deepStrictEqual(result1, ['Expiration']);
-        assert.deepStrictEqual(result2, ['Transition']);
-        assert.notStrictEqual(result1, result2); // Should be different instances
-    });
-
-    it('should handle mixed rule names including special cases', () => {
-        const names = ['expiration', 'noncurrentVersionTransition', 'transitions'];
-        const result = LifecycleConfiguration._buildSupportedLifecycleRules(names);
-        assert.deepStrictEqual(result, [
-            'Expiration',
-            'NoncurrentVersionTransition',
-            'Transition',
-        ]);
-    });
 });

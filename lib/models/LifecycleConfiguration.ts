@@ -9,6 +9,16 @@ import { Status } from './LifecycleRule';
 
 const MAX_DAYS = 2147483647; // Max 32-bit signed binary integer.
 
+// Possible lifecycle actions/rules that can be used esp. in supportedLifecycleRules
+export const ValidLifecycleRules = [
+    'Expiration',
+    'NoncurrentVersionExpiration',
+    'AbortIncompleteMultipartUpload',
+    'Transition',
+    'NoncurrentVersionTransition',
+] as const;
+type LifecycleAction = typeof ValidLifecycleRules[number];
+
 /**
  * Format of xml request:
 
@@ -123,36 +133,10 @@ export default class LifecycleConfiguration {
         this._parsedXML = xml;
         this._storageClasses =
             config.replicationEndpoints.map(endpoint => endpoint.site);
-        this._supportedLifecycleRules = LifecycleConfiguration._buildSupportedLifecycleRules(
-            config.supportedLifecycleRules,
-        );
+        this._supportedLifecycleRules = config.supportedLifecycleRules;
         this._ruleIDs = [];
         this._tagKeys = [];
         this._config = {};
-    }
-
-    // Memoize the supported lifecycle rules to avoid recalculating them
-    // We expect a single set of supported lifecycle rules to ever be used (typically from config),
-    // so a length of 1 is enough.
-    static _cachedSupportedLifecycleRules = {
-        names: [] as string[],
-        rules: [] as string[],
-    };
-
-    static _buildSupportedLifecycleRules(names) {
-        if (LifecycleConfiguration._cachedSupportedLifecycleRules.names === names) {
-            return LifecycleConfiguration._cachedSupportedLifecycleRules.rules;
-        }
-
-        const rules = names.map(rule => {
-            if (rule === 'transitions') {
-                return 'Transition';
-            }
-            return rule.charAt(0).toUpperCase() + rule.slice(1);
-        });
-
-        LifecycleConfiguration._cachedSupportedLifecycleRules = { names, rules };
-        return rules;
     }
 
     /**
@@ -932,14 +916,7 @@ export default class LifecycleConfiguration {
             propName: 'actions',
             actions: [],
         };
-        const validActions = [
-            'AbortIncompleteMultipartUpload',
-            'Expiration',
-            'NoncurrentVersionExpiration',
-            'NoncurrentVersionTransition',
-            'Transition',
-        ];
-        for (const action of validActions) {
+        for (const action of ValidLifecycleRules) {
             if (!rule[action]) {
                 continue;
             }
@@ -1415,7 +1392,7 @@ export type Rule = {
     prefix?: string;
     ruleStatus: Status;
     actions: {
-        actionName: string;
+        actionName: LifecycleAction;
         days?: number;
         date?: number;
         deleteMarker?: boolean;
