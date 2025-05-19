@@ -33,8 +33,12 @@
                 "resultReason": "General Failure",
                 "resultMessage": [
                     "[NCERRInsufficientPermissions]: ",
+                    // 24h idle token revoke is undocumented, but thales described us this behavior
+                    // we asked them a tweaked lab to test with a 10m session.
                     // TLS session idle timeout (24h) - needs a new connection or no idle
-                    "[NCERRUnauthorizedAccess]: Token has been revoked"
+                    "[NCERRUnauthorizedAccess]: Token has been revoked",
+                    // write after receiving above token revoked error
+                    "[NCERRUnauthorizedAccess]: Invalid token"
                 ]
             }
         }

@@ -28,6 +28,26 @@ function _PrimitiveType(tagName: string, type: string, value: any) {
     return { [tagName]: { type, value } };
 }
 
+/**
+ * Thales has a 24h idle tls session error. We can close and reopen new connection.
+ * This is not part of KMIP spec and it is not documented.
+ * We asked for a tweaked lab with a 10m timeout to test this behavior.
+ */
+const thalesInternalTokenError = {
+    status: 'Operation Failed',
+    reason: 'General Failure',
+    messages: [
+        '[NCERRUnauthorizedAccess]: Token has been revoked',
+        '[NCERRUnauthorizedAccess]: Invalid token'
+    ],
+};
+
+function isThalesInternalTokenError(status, reason, message) {
+    return status === thalesInternalTokenError.status
+        && reason === thalesInternalTokenError.reason
+        && thalesInternalTokenError.messages.includes(message);
+}
+
 export type Options = { codec: any; transport: any; };
 export default class KMIP {
     protocolVersion: {
@@ -38,6 +58,7 @@ export default class KMIP {
     options: Options;
     codec: any;
     transport: any;
+    handshakeDone: boolean;
 
     /**
      * Construct a new KMIP Object
@@ -54,6 +75,7 @@ export default class KMIP {
         this.options = options.kmip;
         this.codec = new Codec(options.kmip.codec);
         this.transport = new Transport(options.kmip.transport);
+        this.handshakeDone = false;
     }
 
     /* Static class methods */
@@ -307,6 +329,18 @@ export default class KMIP {
                     KMIP.Structure('Request Payload', payload),
                 ])])]);
         const encodedMessage = this._encodeMessage(message);
+        this._sendEncodedMessage(logger, operation, encodedMessage, uuid, false, cb, resource);
+    }
+
+    _sendEncodedMessage(
+        logger: werelogs.Logger,
+        operation: string,
+        encodedMessage: Message,
+        uuid: Buffer,
+        isRetry: boolean,
+        cb: (error: Error | null, response?: any) => void,
+        resource?: string
+    ) {
         const startDate = Date.now();
         this.transport.send(
             logger, encodedMessage,
@@ -371,6 +405,20 @@ export default class KMIP {
                         got: { resultStatus, resultReason, resultMessage },
                         expected: undefined,
                     });
+
+                    if (!isRetry && isThalesInternalTokenError(resultStatus, resultReason, resultMessage)) {
+                        logger.info('KMIP::reconnecting', { errorList, kmipLog, handshakeDone: this.handshakeDone });
+                        // Close TLS channel socket
+                        this.transport.abortPipeline(conversation, () => {
+                            // Once completely closed and all callbacks are drained,
+                            // reopen the TLS channel connection and skip KMIP handshake if it was already done
+                            // as we already have kmip details
+                            this.transport._createConversation(logger, () => {}, this.handshakeDone);
+                            this._sendEncodedMessage(logger, operation, encodedMessage, uuid, true, cb, resource);
+                        });
+                        return undefined;
+                    }
+
                     // Use AccessDenied as default to avoid retryable error
                     // Error message does not match AWS, generic message for KMIP provide every details
                     const kmsErr = (errorMapping[resultStatus]?.[resultReason] ?? errorInstances.AccessDenied)

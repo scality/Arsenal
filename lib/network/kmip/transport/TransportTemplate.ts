@@ -43,6 +43,7 @@ export default class TransportTemplate {
         cb: KmipCallback;
     }>;
     pipelineDrainedCallback: any | null;
+    onEndCallback: any | null;
     handshakeFunction: any | null;
     socket: any;
 
@@ -63,6 +64,7 @@ export default class TransportTemplate {
         this.callbackPipeline = [];
         this.deferedRequests = [];
         this.pipelineDrainedCallback = null;
+        this.onEndCallback = null;
         this.handshakeFunction = null;
         this.socket = null;
     }
@@ -114,13 +116,14 @@ export default class TransportTemplate {
     _createConversation(
         logger: werelogs.Logger,
         readyCallback: (error: Error | null) => void,
+        skipHandshake: boolean = false,
     ) {
         try {
             const socket = this.channel.connect(
                 this.options.tls.port || DEFAULT_KMIP_PORT,
                 this.options.tls,
                 () => {
-                    if (this.handshakeFunction) {
+                    if (!skipHandshake && this.handshakeFunction) {
                         this.handshakeFunction(logger, readyCallback);
                     } else {
                         readyCallback(null);
@@ -158,6 +161,11 @@ export default class TransportTemplate {
                 const error = Error('Conversation interrupted');
                 this.socket = null;
                 this._drainQueuesWithError(error);
+                const onEnd = this.onEndCallback;
+                if (onEnd) {
+                    this.onEndCallback = null;
+                    onEnd();
+                }
             });
             socket.on('error', err => {
                 this._drainQueuesWithError(err);
@@ -230,8 +238,10 @@ export default class TransportTemplate {
      * Abruptly interrupt the conversation and cancel the outstanding and
      * defered requests
      * @param conversation - the conversation to abort
+     * @param onEndCallback - callback called once the socket is ended and pipelines are drained
      */
-    abortPipeline(conversation: any) {
+    abortPipeline(conversation: any, onEndCallback: any) {
+        this.onEndCallback = onEndCallback;
         conversation.end();
     }
 }

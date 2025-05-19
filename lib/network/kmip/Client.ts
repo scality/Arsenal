@@ -231,6 +231,9 @@ function _queryOperationsAndObjects(client: any, logger: werelogs.Logger, cb: an
                 { vendorIdentification: client.vendorIdentification,
                     kmip: kmipLog });
         }
+        // flag handshake as done, so if the connection is closed and reconnected
+        // another handshake won't be done as we already have the server's info
+        client.kmip.handshakeDone = true;
         return cb();
     });
 }
