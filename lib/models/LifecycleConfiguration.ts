@@ -145,8 +145,8 @@ export default class LifecycleConfiguration {
         }
 
         const rules = names.map(rule => {
-            if (rule === 'noncurrentVersionTransition') {
-                return 'NoncurrentVersionTransitions';
+            if (rule === 'transitions') {
+                return 'Transition';
             }
             return rule.charAt(0).toUpperCase() + rule.slice(1);
         });

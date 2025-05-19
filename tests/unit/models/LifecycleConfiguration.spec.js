@@ -23,7 +23,7 @@ const mockConfig = {
         'expiration',
         'noncurrentVersionExpiration',
         'abortIncompleteMultipartUpload',
-        'transition',
+        'transitions',
         'noncurrentVersionTransition',
     ],
 };
@@ -443,6 +443,32 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
                 .getLifecycleConfiguration();
             assert.strictEqual(lcConfig.error.is.NotImplemented, true);
             assert.strictEqual(lcConfig.error.description, 'Transition lifecycle action not implemented');
+            done();
+        });
+    });
+
+    it('should succeed when all rule actions are supported', done => {
+        mockConfig.supportedLifecycleRules = ['expiration', 'transitions'];
+        const xml = `
+            <LifecycleConfiguration>
+                <Rule>
+                    <ID>test-rule</ID>
+                    <Status>Enabled</Status>
+                    <Filter></Filter>
+                    <Expiration>
+                        <Days>2</Days>
+                    </Expiration>
+                    <Transition>
+                        <Days>1</Days>
+                        <StorageClass>a</StorageClass>
+                    </Transition>
+                </Rule>
+            </LifecycleConfiguration>`;
+        parseString(xml, (err, parsedXml) => {
+            assert.equal(err, null, 'Error parsing xml');
+            const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig)
+                .getLifecycleConfiguration();
+            assert.strictEqual(lcConfig.error, undefined);
             done();
         });
     });
@@ -1357,7 +1383,7 @@ describe('::_buildSupportedLifecycleRules', () => {
     });
 
     it('should capitalize first letter of each rule name', () => {
-        const names = ['expiration', 'transition'];
+        const names = ['expiration', 'transitions'];
         const result = LifecycleConfiguration._buildSupportedLifecycleRules(names);
         assert.deepStrictEqual(result, ['Expiration', 'Transition']);
     });
@@ -1365,11 +1391,11 @@ describe('::_buildSupportedLifecycleRules', () => {
     it('should handle special case for noncurrentVersionTransition', () => {
         const names = ['noncurrentVersionTransition'];
         const result = LifecycleConfiguration._buildSupportedLifecycleRules(names);
-        assert.deepStrictEqual(result, ['NoncurrentVersionTransitions']);
+        assert.deepStrictEqual(result, ['NoncurrentVersionTransition']);
     });
 
     it('should memoize results for subsequent calls with same input', () => {
-        const names = ['expiration', 'transition'];
+        const names = ['expiration', 'transitions'];
         const result1 = LifecycleConfiguration._buildSupportedLifecycleRules(names);
         const result2 = LifecycleConfiguration._buildSupportedLifecycleRules(names);
 
@@ -1379,7 +1405,7 @@ describe('::_buildSupportedLifecycleRules', () => {
 
     it('should recalculate for different input', () => {
         const names1 = ['expiration'];
-        const names2 = ['transition'];
+        const names2 = ['transitions'];
 
         const result1 = LifecycleConfiguration._buildSupportedLifecycleRules(names1);
         const result2 = LifecycleConfiguration._buildSupportedLifecycleRules(names2);
@@ -1390,11 +1416,11 @@ describe('::_buildSupportedLifecycleRules', () => {
     });
 
     it('should handle mixed rule names including special cases', () => {
-        const names = ['expiration', 'noncurrentVersionTransition', 'transition'];
+        const names = ['expiration', 'noncurrentVersionTransition', 'transitions'];
         const result = LifecycleConfiguration._buildSupportedLifecycleRules(names);
         assert.deepStrictEqual(result, [
             'Expiration',
-            'NoncurrentVersionTransitions',
+            'NoncurrentVersionTransition',
             'Transition',
         ]);
     });
