@@ -5,6 +5,7 @@ export type Tag = { Key: string; Value: string };
 export type Tags = Tag[];
 export type And = { Prefix?: string; Tags: Tags };
 export type Filter = { Prefix?: string; Tag?: Tag } | { And: And };
+
 export type Expiration = {
     ExpiredObjectDeleteMarker?: number | boolean;
     Date?: number | boolean;
@@ -13,6 +14,31 @@ export type Expiration = {
 export type NoncurrentExpiration = {
     NoncurrentDays: number | null;
     NewerNoncurrentVersions: number | null;
+};
+export type AbortIncompleteMultipartUpload = {
+    DaysAfterInitiation: number;
+};
+export type Transition = {
+    Date: number;
+    Days: number;
+    StorageClass: string;
+};
+export type NoncurrentVersionTransition = {
+    NoncurrentDays: number | null;
+    NewerNoncurrentVersions: number | null;
+    StorageClass: string;
+};
+
+export type LifecycleRuleData = {
+    ID: string;
+    Status: Status;
+    Expiration?: Expiration;
+    NoncurrentVersionExpiration?: NoncurrentExpiration;
+    AbortIncompleteMultipartUpload?: AbortIncompleteMultipartUpload;
+    Transitions?: Transition[];
+    NoncurrentVersionTransitions?: NoncurrentVersionTransition[];
+    Filter?: Filter;
+    Prefix?: '';
 };
 
 /**
@@ -26,9 +52,9 @@ export default class LifecycleRule {
     tags: Tags;
     expiration?: Expiration;
     ncvExpiration?: NoncurrentExpiration;
-    abortMPU?: { DaysAfterInitiation: number };
-    transitions?: any[];
-    ncvTransitions?: any[];
+    abortMPU?: AbortIncompleteMultipartUpload;
+    transitions?: Transition[];
+    ncvTransitions?: NoncurrentVersionTransition[];
     prefix?: string;
 
     constructor(id: string, status: Status) {
@@ -39,17 +65,7 @@ export default class LifecycleRule {
     }
 
     build() {
-        const rule: {
-            ID: string;
-            Status: Status;
-            Expiration?: Expiration;
-            NoncurrentVersionExpiration?: NoncurrentExpiration;
-            AbortIncompleteMultipartUpload?: { DaysAfterInitiation: number };
-            Transitions?: any[];
-            NoncurrentVersionTransitions?: any[];
-            Filter?: Filter;
-            Prefix?: '';
-        } = { ID: this.id, Status: this.status };
+        const rule: LifecycleRuleData = { ID: this.id, Status: this.status };
 
         if (this.expiration) {
             rule.Expiration = this.expiration;
@@ -174,7 +190,7 @@ export default class LifecycleRule {
      * Transitions
      * @param transitions - transitions
      */
-    addTransitions(transitions: any[]) {
+    addTransitions(transitions: Transition[]) {
         this.transitions = transitions;
         return this;
     }
@@ -183,7 +199,7 @@ export default class LifecycleRule {
      * NonCurrentVersionTransitions
      * @param nvcTransitions - NonCurrentVersionTransitions 
      */
-    addNCVTransitions(nvcTransitions) {
+    addNCVTransitions(nvcTransitions: NoncurrentVersionTransition[]) {
         this.ncvTransitions = nvcTransitions;
         return this;
     }

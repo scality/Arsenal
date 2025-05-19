@@ -1,6 +1,7 @@
 import assert from 'assert';
 
 import LifecycleDateTime from './LifecycleDateTime';
+import { LifecycleRuleData } from '../../models/LifecycleRule';
 
 export default class LifecycleUtils {
     _supportedRules: string[];
@@ -244,11 +245,11 @@ export default class LifecycleUtils {
     *  i.e. { Expiration: { Date: <DateObject>, Days: 10 },
     *         NoncurrentVersionExpiration: { NoncurrentDays: 5 } }
     */
-    getApplicableRules(rules: any[], metadata: any) {
+    getApplicableRules(rules: LifecycleRuleData[], metadata: any) {
         // Declare the current date before the reducing function so that all
         // rule comparisons use the same date.
         const currentDate = new Date();
-        const applicableRules = rules.reduce((store, rule) => {
+        const applicableRules = rules.reduce((store: any, rule) => {
             // filter and find earliest dates
             if (rule.Expiration && this._supportedRules.includes('expiration')) {
                 if (!store.Expiration) {
@@ -275,8 +276,8 @@ export default class LifecycleUtils {
                     store.Expiration.ExpiredObjectDeleteMarker = eodm;
                 }
             }
-            if (rule.NoncurrentVersionExpiration
-            && this._supportedRules.includes('noncurrentVersionExpiration')) {
+            const ncvExpiration = rule.NoncurrentVersionExpiration;
+            if (ncvExpiration && this._supportedRules.includes('noncurrentVersionExpiration')) {
                 // Names are long, so obscuring a bit
                 const ncve = 'NoncurrentVersionExpiration';
                 const ncd = 'NoncurrentDays';
@@ -285,10 +286,12 @@ export default class LifecycleUtils {
                 if (!store[ncve]) {
                     store[ncve] = {};
                 }
-                if (!store[ncve][ncd] || rule[ncve][ncd] < store[ncve][ncd]) {
-                    store[ncve].ID = rule.ID;
-                    store[ncve][ncd] = rule[ncve][ncd];
-                    store[ncve][nncv] = rule[ncve][nncv];
+                if (ncvExpiration[ncd]) {
+                    if (!store[ncve][ncd] || ncvExpiration[ncd] < store[ncve][ncd]) {
+                        store[ncve].ID = rule.ID;
+                        store[ncve][ncd] = ncvExpiration[ncd];
+                        store[ncve][nncv] = ncvExpiration[nncv];
+                    }
                 }
             }
             if (rule.AbortIncompleteMultipartUpload
@@ -305,21 +308,19 @@ export default class LifecycleUtils {
                     store[aimu][dai] = rule[aimu][dai];
                 }
             }
-            const hasTransitions = Array.isArray(rule.Transitions) && rule.Transitions.length > 0;
-            if (hasTransitions && this._supportedRules.includes('transitions')) {
+            const transitions = rule.Transitions;
+            if (transitions && transitions.length > 0 && this._supportedRules.includes('transitions')) {
                 store.Transition = this.getApplicableTransition({
-                    transitions: rule.Transitions,
+                    transitions,
                     lastModified: metadata.LastModified,
                     store,
                     currentDate,
                 });
             }
-
-            const ncvt = 'NoncurrentVersionTransitions';
-            const hasNoncurrentVersionTransitions = Array.isArray(rule[ncvt]) && rule[ncvt].length > 0;
-            if (hasNoncurrentVersionTransitions && this._supportedRules.includes('noncurrentVersionTransition')) {
+            const ncvt = rule.NoncurrentVersionTransitions;
+            if (ncvt && ncvt.length > 0 && this._supportedRules.includes('noncurrentVersionTransition')) {
                 store.NoncurrentVersionTransition = this.getApplicableNCVTransition({
-                    transitions: rule.NoncurrentVersionTransitions,
+                    transitions: ncvt,
                     lastModified: metadata.LastModified,
                     store,
                     currentDate,
