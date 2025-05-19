@@ -360,7 +360,8 @@ export default class KMIP {
                     // Retryable most likely network related
                     const error = errorInstances.InternalError
                         .customizeDescription(kmipMsg(operation, resource, err.toString()));
-                    logger.error('KMIP::request: Failed to send message',
+                    // warn level to avoid dumping debug and trace logs on retryable errors
+                    logger.warn('KMIP::request: Failed to send message',
                         { error: err, kmip: kmipLog });
                     return cb(error);
                 }
@@ -425,11 +426,13 @@ export default class KMIP {
                         .customizeDescription(
                             kmipMsg(operation, resource, `${resultReason}: ${resultMessage}`)
                         );
-                    logger.error('KMIP::request error', { errorList, kmip: kmipLog, error: kmsErr });
+                    // warn level to avoid dumping debug and trace logs on retryable errors
+                    logger.warn('KMIP::request error', { errorList, kmip: kmipLog, error: kmsErr });
                     return cb(kmsErr);
                 }
                 if (errorList.length) {
-                    logger.error('KMIP::request error', { errorList, kmip: kmipLog });
+                    // warn level to avoid dumping debug and trace logs on retryable errors
+                    logger.warn('KMIP::request error', { errorList, kmip: kmipLog });
                     // Retryable as connection is closed and all messages errored
                     return cb(errorInstances.InternalError.customizeDescription(
                         kmipMsg(operation, resource, `Internal ${errorList.map(e => e.msg)}`)
