@@ -2,6 +2,21 @@ import assert from 'assert';
 
 import LifecycleDateTime from './LifecycleDateTime';
 import { LifecycleRuleData } from '../../models/LifecycleRule';
+import type {
+    AbortIncompleteMultipartUpload,
+    Expiration,
+    NoncurrentVersionExpiration,
+    NoncurrentVersionTransition,
+    Transition,
+} from '../../models/LifecycleRule';
+
+type Store = {
+    Expiration?: { ID: string } & Expiration;
+    NoncurrentVersionExpiration?: { ID: string } & NoncurrentVersionExpiration;
+    AbortIncompleteMultipartUpload?: { ID: string } & AbortIncompleteMultipartUpload;
+    Transition?: Transition;
+    NoncurrentVersionTransition?: NoncurrentVersionTransition;
+};
 
 export default class LifecycleUtils {
     _supportedRules: string[];
@@ -29,23 +44,18 @@ export default class LifecycleUtils {
     */
     compareTransitions(params: {
         lastModified: string;
-        transition1: any;
-        transition2?: any;
-    }): number | undefined;
+        transition1: Transition;
+        transition2?: Transition;
+    }): Transition;
     compareTransitions(params: {
         lastModified: string;
-        transition1?: any;
-        transition2: any;
-    }): number | undefined;
+        transition1?: Transition;
+        transition2: Transition;
+    }): Transition;
     compareTransitions(params: {
         lastModified: string;
-        transition1: any;
-        transition2: any;
-    }): number | undefined;
-    compareTransitions(params: {
-        lastModified: string;
-        transition1?: any;
-        transition2?: any;
+        transition1?: Transition;
+        transition2?: Transition;
     }) {
         const { transition1, transition2, lastModified } = params;
         if (transition1 === undefined) {
@@ -70,23 +80,18 @@ export default class LifecycleUtils {
     */
     compareNCVTransitions(params: {
         lastModified: string;
-        transition1: any;
-        transition2?: any;
-    }): number | undefined;
+        transition1?: NoncurrentVersionTransition;
+        transition2: NoncurrentVersionTransition;
+    }): NoncurrentVersionTransition;
     compareNCVTransitions(params: {
         lastModified: string;
-        transition1?: any;
-        transition2: any;
-    }): number | undefined;
+        transition1: NoncurrentVersionTransition;
+        transition2?: NoncurrentVersionTransition;
+    }): NoncurrentVersionTransition;
     compareNCVTransitions(params: {
         lastModified: string;
-        transition1: any;
-        transition2: any;
-    }): number | undefined;
-    compareNCVTransitions(params: {
-        lastModified: string;
-        transition1?: any;
-        transition2?: any;
+        transition1?: NoncurrentVersionTransition;
+        transition2?: NoncurrentVersionTransition;
     }) {
         const { transition1, transition2, lastModified } = params;
         if (transition1 === undefined) {
@@ -111,7 +116,7 @@ export default class LifecycleUtils {
     * @return The most applicable transition rule
     */
     getApplicableTransition(params: {
-        store: any;
+        store: Store;
         currentDate: Date;
         transitions: any[];
         lastModified: string;
@@ -147,7 +152,7 @@ export default class LifecycleUtils {
     * @return The most applicable non-current version transition rule
     */
     getApplicableNCVTransition(params: {
-        store: any;
+        store: Store;
         currentDate: Date;
         transitions: any[];
         lastModified: string;
@@ -249,33 +254,38 @@ export default class LifecycleUtils {
         // Declare the current date before the reducing function so that all
         // rule comparisons use the same date.
         const currentDate = new Date();
-        const applicableRules = rules.reduce((store: any, rule) => {
+        const applicableRules = rules.reduce((store: Store, rule) => {
             // filter and find earliest dates
             if (rule.Expiration && this._supportedRules.includes('Expiration')) {
-                if (!store.Expiration) {
-                    store.Expiration = {};
-                }
                 if (rule.Expiration.Days) {
-                    if (!store.Expiration.Days || rule.Expiration.Days
-                    < store.Expiration.Days) {
-                        store.Expiration.ID = rule.ID;
-                        store.Expiration.Days = rule.Expiration.Days;
+                    if (!store.Expiration?.Days || rule.Expiration.Days < store.Expiration.Days) {
+                        store.Expiration = {
+                            ...store.Expiration,
+                            ID: rule.ID,
+                            Days: rule.Expiration.Days,
+                        };
                     }
                 }
                 if (rule.Expiration.Date) {
-                    if (!store.Expiration.Date || rule.Expiration.Date
-                    < store.Expiration.Date) {
-                        store.Expiration.ID = rule.ID;
-                        store.Expiration.Date = rule.Expiration.Date;
+                    if (!store.Expiration?.Date || rule.Expiration.Date < store.Expiration.Date) {
+                        store.Expiration = {
+                            ...store.Expiration,
+                            ID: rule.ID,
+                            Date: rule.Expiration.Date,
+                        };
                     }
                 }
                 const eodm = rule.Expiration.ExpiredObjectDeleteMarker;
                 if (eodm !== undefined) {
                     // preference for later rules in list of rules
-                    store.Expiration.ID = rule.ID;
-                    store.Expiration.ExpiredObjectDeleteMarker = eodm;
+                    store.Expiration = {
+                        ...store.Expiration,
+                        ID: rule.ID,
+                        ExpiredObjectDeleteMarker: eodm,
+                    };
                 }
             }
+
             const ncvExpiration = rule.NoncurrentVersionExpiration;
             if (ncvExpiration && this._supportedRules.includes('NoncurrentVersionExpiration')) {
                 // Names are long, so obscuring a bit
@@ -283,33 +293,36 @@ export default class LifecycleUtils {
                 const ncd = 'NoncurrentDays';
                 const nncv = 'NewerNoncurrentVersions';
 
-                if (!store[ncve]) {
-                    store[ncve] = {};
-                }
                 if (ncvExpiration[ncd]) {
-                    if (!store[ncve][ncd] || ncvExpiration[ncd] < store[ncve][ncd]) {
-                        store[ncve].ID = rule.ID;
-                        store[ncve][ncd] = ncvExpiration[ncd];
-                        store[ncve][nncv] = ncvExpiration[nncv];
+                    if (!store[ncve]?.[ncd] || ncvExpiration[ncd] < store[ncve][ncd]) {
+                        store[ncve] = {
+                            ...store[ncve],
+                            ID: rule.ID,
+                            [ncd]: ncvExpiration[ncd],
+                            [nncv]: ncvExpiration[nncv],
+                        };
                     }
                 }
             }
+
             if (rule.AbortIncompleteMultipartUpload
             && this._supportedRules.includes('AbortIncompleteMultipartUpload')) {
                 // Names are long, so obscuring a bit
                 const aimu = 'AbortIncompleteMultipartUpload';
                 const dai = 'DaysAfterInitiation';
 
-                if (!store[aimu]) {
-                    store[aimu] = {};
-                }
-                if (!store[aimu][dai] || rule[aimu][dai] < store[aimu][dai]) {
-                    store[aimu].ID = rule.ID;
-                    store[aimu][dai] = rule[aimu][dai];
+                if (!store[aimu]?.[dai] || rule[aimu][dai] < store[aimu][dai]) {
+                    store[aimu] = {
+                        ...store[aimu],
+                        ID: rule.ID,
+                        [dai]: rule[aimu][dai],
+                    };
                 }
             }
+
             const transitions = rule.Transitions;
-            if (transitions && transitions.length > 0 && this._supportedRules.includes('Transition')) {
+            const hasTransitions = Array.isArray(transitions) && transitions.length > 0;
+            if (hasTransitions && this._supportedRules.includes('Transition')) {
                 store.Transition = this.getApplicableTransition({
                     transitions,
                     lastModified: metadata.LastModified,
@@ -317,8 +330,10 @@ export default class LifecycleUtils {
                     currentDate,
                 });
             }
+
             const ncvt = rule.NoncurrentVersionTransitions;
-            if (ncvt && ncvt.length > 0 && this._supportedRules.includes('NoncurrentVersionTransition')) {
+            const hasNoncurrentVersionTransitions = Array.isArray(ncvt) && ncvt.length > 0;
+            if (hasNoncurrentVersionTransitions && this._supportedRules.includes('NoncurrentVersionTransition')) {
                 store.NoncurrentVersionTransition = this.getApplicableNCVTransition({
                     transitions: ncvt,
                     lastModified: metadata.LastModified,
@@ -328,6 +343,7 @@ export default class LifecycleUtils {
             }
             return store;
         }, {});
+
         // Do not transition to a location where the object is already stored.
         if (applicableRules.Transition
             && applicableRules.Transition.StorageClass === metadata.StorageClass) {

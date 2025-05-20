@@ -7,25 +7,29 @@ export type And = { Prefix?: string; Tags: Tags };
 export type Filter = { Prefix?: string; Tag?: Tag } | { And: And };
 
 export type Expiration = {
-    ExpiredObjectDeleteMarker?: number | boolean;
-    Date?: number | boolean;
-    Days?: number | boolean;
+    ExpiredObjectDeleteMarker?: boolean;
+    Date?: number;
+    Days?: number;
 };
-export type NoncurrentExpiration = {
+
+export type NoncurrentVersionExpiration = {
     NoncurrentDays: number | null;
     NewerNoncurrentVersions: number | null;
 };
+
 export type AbortIncompleteMultipartUpload = {
     DaysAfterInitiation: number;
 };
+
 export type Transition = {
-    Date: number;
-    Days: number;
+    Date?: number;
+    Days?: number;
     StorageClass: string;
 };
+
 export type NoncurrentVersionTransition = {
-    NoncurrentDays: number | null;
-    NewerNoncurrentVersions: number | null;
+    NoncurrentDays?: number;
+    NewerNoncurrentVersions?: number;
     StorageClass: string;
 };
 
@@ -33,7 +37,7 @@ export type LifecycleRuleData = {
     ID: string;
     Status: Status;
     Expiration?: Expiration;
-    NoncurrentVersionExpiration?: NoncurrentExpiration;
+    NoncurrentVersionExpiration?: NoncurrentVersionExpiration;
     AbortIncompleteMultipartUpload?: AbortIncompleteMultipartUpload;
     Transitions?: Transition[];
     NoncurrentVersionTransitions?: NoncurrentVersionTransition[];
@@ -51,7 +55,7 @@ export default class LifecycleRule {
     status: Status;
     tags: Tags;
     expiration?: Expiration;
-    ncvExpiration?: NoncurrentExpiration;
+    ncvExpiration?: NoncurrentVersionExpiration;
     abortMPU?: AbortIncompleteMultipartUpload;
     transitions?: Transition[];
     ncvTransitions?: NoncurrentVersionTransition[];

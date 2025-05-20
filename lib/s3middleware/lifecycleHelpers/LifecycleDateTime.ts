@@ -39,7 +39,7 @@ export default class LifecycleDateTime {
      * @param date - The date string to convert to a Unix timestamp
      * @return - The Unix timestamp
      */
-    getTimestamp(date: string | Date) {
+    getTimestamp(date: string | number | Date) {
         return new Date(date).getTime();
     }
 
@@ -50,7 +50,7 @@ export default class LifecycleDateTime {
      * @return - The normalized transition timestamp
      */
     getTransitionTimestamp(
-        transition: { Date?: string; Days?: number },
+        transition: { Date?: string | number; Days?: number },
         lastModified: string,
     ) {
         if (transition.Date !== undefined) {

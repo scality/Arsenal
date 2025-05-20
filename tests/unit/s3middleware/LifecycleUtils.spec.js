@@ -96,7 +96,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
             res.NoncurrentVersionExpiration.NoncurrentDays, 3);
     });
 
-    it('should return earliest applicable rules', () => {
+    it('should return earliest applicable rules with NewerNoncurrentVersions', () => {
         const filteredRules = [
             new LifecycleRule().addID('task-1').addExpiration('Date', FUTURE)
                 .build(),
