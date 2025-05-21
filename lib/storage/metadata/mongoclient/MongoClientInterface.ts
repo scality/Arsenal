@@ -431,7 +431,11 @@ class MongoClientInterface {
         }, payload, {
             upsert: true,
         })
-            .then(() => {
+            .then(result => {
+                if (result.matchedCount === 0 && result.modifiedCount === 0 && result.upsertedCount === 0) {
+                    log.debug('createBucket: failed to create bucket', { bucketName, result });
+                    return cb(errors.InternalError);
+                }
                 // caching bucket vFormat
                 this.bucketVFormatCache.add(bucketName, payload.$set.vFormat);
                 // NOTE: We do not need to create a collection for
@@ -597,7 +601,13 @@ class MongoClientInterface {
         }, {
             upsert: true,
         })
-            .then(() => cb(null))
+            .then(result => {
+                if (result.matchedCount === 0 && result.modifiedCount === 0 && result.upsertedCount === 0) {
+                    log.debug('putBucketAttributes: failed to update bucket', { bucketName });
+                    return cb(errors.InternalError);
+                }
+                return cb(null);
+            })
             .catch(err => {
                 log.error(
                     'putBucketAttributes: error putting bucket attributes',
@@ -637,7 +647,13 @@ class MongoClientInterface {
             },
         }, {
             upsert: true,
-        }).then(() => cb(null)).catch(err => {
+        }).then(result => {
+            if (result.matchedCount === 0 && result.modifiedCount === 0 && result.upsertedCount === 0) {
+                log.error('putBucketAttributesCapabilities: failed to update bucket', { bucketName });
+                return cb(errors.InternalError);
+            }
+            return cb(null);
+        }).catch(err => {
             log.error(
                 'putBucketAttributesCapabilities: error putting bucket attributes',
                 { error: err.message });
@@ -671,7 +687,14 @@ class MongoClientInterface {
             $unset: {
                 [updateString]: '',
             },
-        }).then(() => cb(null)).catch(err => {
+        }).then(result => {
+            if (result.matchedCount === 0 && result.modifiedCount === 0) {
+                log.debug('deleteBucketAttributesCapability: bucket not found or capability not present',
+                    { bucketName });
+                return cb(errors.NoSuchBucket);
+            }
+            return cb(null);
+        }).catch(err => {
             if (err) {
                 log.error(
                     'deleteBucketAttributesCapability: error deleting bucket attributes',
@@ -1980,7 +2003,19 @@ class MongoClientInterface {
         if (params && params.doesNotNeedOpogUpdate) {
             // If flag is true, directly delete object
             return collection.deleteOne(deleteFilter)
-                .then(() => cb(null, undefined))
+                .then(result => {
+                    // In case of race conditions (e.g. two concurrent deletes), or invalid state
+                    // (e.g. object is already deleted), the result.deletedCount will be 0
+                    // without error, and we need to catch it because the API might continue and
+                    // delete the actual data, leading to an invalid state, where MongoDB references
+                    // and object not in the data layers anymore.
+                    if (!result || result?.deletedCount != 1) {
+                        log.debug('internalDeleteObject: object not found or already deleted',
+                            { bucket: bucketName, object: key });
+                        return cb(errors.NoSuchKey);
+                    }
+                    return cb(null, undefined);
+                })
                 .catch(err => {
                     log.error('internalDeleteObject: error deleting object',
                         { bucket: bucketName, object: key, error: err.message });
@@ -2045,10 +2080,24 @@ class MongoClientInterface {
                         filter: updateDeleteFilter,
                     },
                 },
-            ], { ordered: true }).then(() => next(null)).catch(err => next(err)),
+            ], { ordered: true }).then(result => {
+                // in case of race conditions, the bulk operation might fail
+                // in this case we return a DeleteConflict error
+                if (!result || !result.ok) {
+                    log.debug('internalDeleteObject: bulk operation failed', 
+                        { bucket: bucketName, object: key });
+                    return next(errors.DeleteConflict);
+                }
+                if (result.deletedCount === 0) {
+                    log.debug('internalDeleteObject: object not found or already deleted', 
+                        { bucket: bucketName, object: key });
+                    return next(errors.DeleteConflict);
+                }
+                return next(null);
+            }).catch(err => next(err)),
         ], (err, res) => {
             if (err) {
-                if (err instanceof ArsenalError && err.is.NoSuchKey) {
+                if (err instanceof ArsenalError) {
                     return cb(err);
                 }
                 log.error('internalDeleteObject: error deleting object',
@@ -2409,7 +2458,13 @@ class MongoClientInterface {
         return i.insertOne(<InfostoreDocument>{
             _id: __UUID,
             value: uuid,
-        }, {}).then(() => cb(null)) // FIXME: shoud we check for result.ok === 1 ?
+        }, {}).then(result => {
+            if (!result || !result.acknowledged) {
+                log.debug('writeUUIDIfNotExists: insertion failed');
+                return cb(errors.InternalError);
+            }
+            return cb(null);
+        })
             .catch(err => {
                 if (err.code === 11000) {
                     // duplicate key error
@@ -2826,7 +2881,13 @@ class MongoClientInterface {
         log: werelogs.Logger, cb: ArsenalCallback<void>) {
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
         async.each(indexSpecs,
-            (spec, next) => c.dropIndex(spec.name).then(() => next()).catch(err => next(err)),
+            (spec, next) => c.dropIndex(spec.name).then(result => {
+                if (!result || !result.ok) {
+                    log.debug('deleteBucketIndexes: failed to drop index', { indexName: spec.name });
+                    return next(errors.DeleteConflict);
+                }
+                return next();
+            }).catch(err => next(err)),
             err => {
                 if (err) {
                     if (err instanceof MongoServerError && err.codeName === 'NamespaceNotFound') {

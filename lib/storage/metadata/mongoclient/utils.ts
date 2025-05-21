@@ -220,6 +220,10 @@ function indexFormatMongoArrayToObject(mongoIndexArray: MongoIndex[]): Index[] {
 }
 
 function indexFormatObjectToMongoArray(indexObj: Index[]): MongoIndex[] {
+    if (!indexObj || !Array.isArray(indexObj)) {
+        return [];
+    }
+    
     return indexObj.map(idx => {
         const key = new Map();
         idx.keys.forEach(k => key.set(k.key, k.order));
