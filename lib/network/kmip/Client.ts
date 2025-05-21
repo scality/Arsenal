@@ -231,6 +231,9 @@ function _queryOperationsAndObjects(client: any, logger: werelogs.Logger, cb: an
                 { vendorIdentification: client.vendorIdentification,
                     kmip: kmipLog });
         }
+        // flag handshake as done, so if the connection is closed and reconnected
+        // another handshake won't be done as we already have the server's info
+        client.kmip.handshakeDone = true;
         return cb();
     });
 }
@@ -336,7 +339,8 @@ export default class Client implements KMSInterface {
                 kmipMsg(operation, keyIdentifier,
                     'Server did not return the expected identifier')
             );
-            logger.error(`KMIP::${operation}`,
+            // warn level to avoid dumping debug and trace logs on retryable errors
+            logger.warn(`KMIP::${operation}`,
                 { error, uniqueIdentifier, keyIdentifier });
             return error;
         }
@@ -357,7 +361,8 @@ export default class Client implements KMSInterface {
             KMIP.TextString('Unique Identifier', keyIdentifier),
         ], (error, response) => {
             if (error) {
-                logger.error('KMIP::_activateBucketKey',
+                // warn level to avoid dumping debug and trace logs on retryable errors
+                logger.warn('KMIP::_activateBucketKey',
                     { error,
                         serverInformation: this.serverInformation });
                 return cb(error);
@@ -401,7 +406,8 @@ export default class Client implements KMSInterface {
             KMIP.Structure('Template-Attribute', attributes),
         ], (error, response) => {
             if (error) {
-                logger.error('KMIP::createBucketKey',
+                // warn level to avoid dumping debug and trace logs on retryable errors
+                logger.warn('KMIP::createBucketKey',
                     { error,
                         serverInformation: this.serverInformation });
                 return cb(error);
@@ -416,7 +422,8 @@ export default class Client implements KMSInterface {
                     kmipMsg('Create', bucketName,
                         'Server created an object of wrong type')
                 );
-                logger.error('KMIP::createBucketKey',
+                // warn level to avoid dumping debug and trace logs on retryable errors
+                logger.warn('KMIP::createBucketKey',
                     { error, createdObjectType });
                 return cb(error);
             }
@@ -448,7 +455,8 @@ export default class Client implements KMSInterface {
             ]),
         ], (error, response) => {
             if (error) {
-                logger.error('KMIP::_revokeBucketKey',
+                // warn level to avoid dumping debug and trace logs on retryable errors
+                logger.warn('KMIP::_revokeBucketKey',
                     { error,
                         serverInformation: this.serverInformation });
                 return cb(error);
@@ -469,7 +477,8 @@ export default class Client implements KMSInterface {
         return this._revokeBucketKey(bucketKeyId, logger, err => {
             if (err) {
                 const error = arsenalErrorKMIP(err);
-                logger.error('KMIP::destroyBucketKey: revocation failed',
+                // warn level to avoid dumping debug and trace logs on retryable errors
+                logger.warn('KMIP::destroyBucketKey: revocation failed',
                     { error,
                         serverInformation: this.serverInformation });
                 return cb(error);
@@ -479,7 +488,8 @@ export default class Client implements KMSInterface {
             ], (err, response) => {
                 if (err) {
                     const error = arsenalErrorKMIP(err);
-                    logger.error('KMIP::destroyBucketKey',
+                    // warn level to avoid dumping debug and trace logs on retryable errors
+                    logger.warn('KMIP::destroyBucketKey',
                         { error,
                             serverInformation: this.serverInformation });
                     return cb(error);
@@ -521,7 +531,8 @@ export default class Client implements KMSInterface {
             KMIP.ByteString('IV/Counter/Nonce', CRYPTOGRAPHIC_DEFAULT_IV),
         ], (error, response) => {
             if (error) {
-                logger.error('KMIP::cipherDataKey',
+                // warn level to avoid dumping debug and trace logs on retryable errors
+                logger.warn('KMIP::cipherDataKey',
                     { error,
                         serverInformation: this.serverInformation });
                 return cb(error);
@@ -563,7 +574,8 @@ export default class Client implements KMSInterface {
             KMIP.ByteString('IV/Counter/Nonce', CRYPTOGRAPHIC_DEFAULT_IV),
         ], (error, response) => {
             if (error) {
-                logger.error('KMIP::decipherDataKey',
+                // warn level to avoid dumping debug and trace logs on retryable errors
+                logger.warn('KMIP::decipherDataKey',
                     { error,
                         serverInformation: this.serverInformation });
                 return cb(error);
@@ -579,7 +591,7 @@ export default class Client implements KMSInterface {
         // the bucket does not have to exist, just passing a common bucket name here
         this.createBucketKey('kmip-healthcheck-test-bucket', logger, (err, bucketKeyId) => {
             if (err) {
-                logger.error('KMIP::healthcheck: failure to create a test bucket key', {
+                logger.warn('KMIP::healthcheck: failure to create a test bucket key', {
                     error: err, kmip: kmipLog,
                 });
                 return cb(err);
@@ -588,7 +600,7 @@ export default class Client implements KMSInterface {
                 { kmip: kmipLog });
             this.destroyBucketKey(bucketKeyId, logger, err => {
                 if (err) {
-                    logger.error('KMIP::healthcheck: failure to remove the test bucket key', {
+                    logger.warn('KMIP::healthcheck: failure to remove the test bucket key', {
                         bucketKeyId,
                         error: err,
                         kmip: kmipLog,
