@@ -234,7 +234,8 @@ function generateV4Headers(
     }
     const payloadChecksum = crypto.createHash('sha256')
         .update(payload, 'binary').digest('hex');
-    request.setHeader('host', request._headers.host);
+    const currentHeaders = request.getHeaders ? request.getHeaders() : request._headers || {};
+    request.setHeader('host', currentHeaders.host);
     request.setHeader('x-amz-date', amzDate);
     request.setHeader('x-amz-content-sha256', payloadChecksum);
     request.setHeader('content-md5', generateContentMD5Header(request.path, payload));
@@ -243,8 +244,8 @@ function generateV4Headers(
         request.setHeader('x-amz-security-token', sessionToken);
     }
 
-    Object.assign(request.headers, request._headers);
-    const signedHeaders = Object.keys(request._headers)
+    Object.assign(request.headers, request.getHeaders ? request.getHeaders() : request._headers || {});
+    const signedHeaders = Object.keys(request.getHeaders ? request.getHeaders() : request._headers || {})
         .filter(headerName =>
             headerName.startsWith('x-amz-')
             || headerName.startsWith('x-scal-')
