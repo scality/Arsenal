@@ -590,7 +590,7 @@ class MongoClientInterface {
             .then(result => {
                 if (result.matchedCount === 0 && result.modifiedCount === 0 && result.upsertedCount === 0) {
                     log.debug('putBucketAttributes: failed to update bucket', { bucketName });
-                    return cb(errors.NoSuchBucket);
+                    return cb(errors.InternalError);
                 }
                 return cb(null);
             })

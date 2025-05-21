@@ -2192,7 +2192,7 @@ describe('MongoClientInterface, putBucketAttributes', () => {
         client.putBucketAttributes(bucketName, baseBucket, logger, err => {
             try {
                 assert(err, 'Expected an error to be returned');
-                assert(err.is.NoSuchBucket, 'Expected NoSuchBucket');
+                assert(err.is.InternalError, 'Expected InternalError');
                 done();
             } catch (assertionError) {
                 done(assertionError);
