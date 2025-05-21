@@ -657,6 +657,77 @@ describe('MongoClientInterface, tests', () => {
             next => client.deleteBucket(bucketName, logger, err => next(err)),
         ], done);
     });
+
+    it('should create a bucket with VeeamSOSApi CapacityInfo and retrieve it correctly', done => {
+        const bucketName = 'test-bucket-veeam-capacity';
+        const veeamCapacity = {
+            Capacity: '1000000000000000000',
+            Available: '500000000000000000',
+            Used: '500000000000000000',
+            LastModified: new Date().toISOString(),
+        };
+        const expectedACL = {
+            Canned: 'private',
+            FULL_CONTROL: [],
+            WRITE: [],
+            WRITE_ACP: [],
+            READ: [],
+            READ_ACP: [],
+        };
+
+        async.waterfall([
+            next => {
+                const bucketMD = BucketInfo.fromObj({
+                    _name: bucketName,
+                    _owner: 'testowner',
+                    _ownerDisplayName: 'testdisplayname',
+                    _creationDate: new Date().toJSON(),
+                    _acl: expectedACL,
+                    _mdBucketModelVersion: 10,
+                    _transient: false,
+                    _deleted: false,
+                    _serverSideEncryption: null,
+                    _versioningConfiguration: null,
+                    _locationConstraint: 'us-east-1',
+                    _capabilities: {
+                        VeeamSOSApi: {
+                            SOSApiMode: 'enabled',
+                            CapacityInfo: veeamCapacity,
+                        },
+                    },
+                    _quotaMax: '0',
+                });
+                client.createBucket(bucketName, bucketMD, logger, err => next(err));
+            },
+            next => {
+                client.getBucketAttributes(bucketName, logger, (err, bucketInfo) => {
+                    next(err, bucketInfo);
+                });
+            },
+        ], (err, bucketInfo) => {
+            assert.ifError(err);
+            assert.ok(bucketInfo, 'BucketInfo should be retrieved');
+
+            const retrievedCapabilities = bucketInfo.getCapabilities();
+            assert.ok(retrievedCapabilities, 'Capabilities should exist');
+            assert.ok(retrievedCapabilities.VeeamSOSApi, 'VeeamSOSApi capabilities should exist');
+
+            const retrievedCapacityInfo = retrievedCapabilities.VeeamSOSApi.CapacityInfo;
+            assert.ok(retrievedCapacityInfo, 'VeeamSOSApi.CapacityInfo should exist');
+
+            assert.strictEqual(typeof retrievedCapacityInfo.Capacity, 'bigint', 'Capacity should be a bigint');
+            assert.strictEqual(retrievedCapacityInfo.Capacity.toString(), veeamCapacity.Capacity, 'Capacity value mismatch');
+
+            assert.strictEqual(typeof retrievedCapacityInfo.Available, 'bigint', 'Available should be a bigint');
+            assert.strictEqual(retrievedCapacityInfo.Available.toString(), veeamCapacity.Available, 'Available value mismatch');
+
+            assert.strictEqual(typeof retrievedCapacityInfo.Used, 'bigint', 'Used should be a bigint');
+            assert.strictEqual(retrievedCapacityInfo.Used.toString(), veeamCapacity.Used, 'Used value mismatch');
+
+            assert.strictEqual(retrievedCapacityInfo.LastModified, veeamCapacity.LastModified, 'LastModified value mismatch');
+            done();
+        });
+    });
 });
 
 describe('MongoClientInterface, updateDeleteMaster', () => {

@@ -19,7 +19,7 @@ import errors, { ArsenalError, errorInstances } from '../../../errors';
 import BucketInfo, { BucketMetadata, Capabilities } from '../../../models/BucketInfo';
 import ObjectMD, { ObjectMDData } from '../../../models/ObjectMD';
 import * as jsutil from '../../../jsutil';
-import { ArsenalCallback } from '../../../types';
+import { ArsenalCallback, NestedOmit } from '../../../types';
 
 import {
     MongoClient,
@@ -49,7 +49,7 @@ import { Transform } from 'stream';
 import { Version } from '../../../versioning/Version';
 
 import { formatMasterKey, formatVersionKey } from './utils';
-import { VeeamCapacityInfo, VeeamSOSApiSchema } from '../../../models/Veeam';
+import { VeeamCapacityInfo } from '../../../models/Veeam';
 import { BucketVersioningFormat } from '../../../versioning/constants';
 
 const VID_NONE = '';
@@ -112,20 +112,19 @@ export type MongoDBClientInterfaceParameters = {
     shardCollections: boolean,
 };
 
-export type CapabilitiesMongoDB = Capabilities & {
-    VeeamSOSApi?: Omit<VeeamSOSApiSchema, 'CapacityInfo'> & {
-        CapacityInfo?: {
-            Capacity: Long,
-            Available: Long,
-            Used: Long,
-        },
-    },
-}
-
 export type BucketMetadataMongoDB = Omit<Omit<BucketMetadata, 'quotaMax'>, 'capabilities'> & {
-    // Old buckets might not have a quotaMax
-    quotaMax?: Long,
-    capabilities?: CapabilitiesMongoDB,
+    // Old buckets might not have a quotaMax 
+    quotaMax?: Long;
+    capabilities?: NestedOmit<Capabilities, 'VeeamSOSApi.CapacityInfo'> & {
+        VeeamSOSApi?: {
+            CapacityInfo?: {
+                Capacity: Long;
+                Available: Long;
+                Used: Long;
+                LastModified?: string;
+            };
+        };
+    };
 };
 
 export interface BucketMetastoreDocument extends Document {
@@ -415,7 +414,18 @@ class MongoClientInterface {
                 value: {
                     ...newBucketMD,
                     quotaMax: new Long(newBucketMD.quotaMax || '0'),
-                    capabilities: undefined,
+                    capabilities: newBucketMD.capabilities && {
+                        ...newBucketMD.capabilities,
+                        VeeamSOSApi: newBucketMD.capabilities.VeeamSOSApi && {
+                            ...newBucketMD.capabilities.VeeamSOSApi,
+                            CapacityInfo: newBucketMD.capabilities.VeeamSOSApi.CapacityInfo && {
+                                Capacity: new Long(newBucketMD.capabilities.VeeamSOSApi.CapacityInfo.Capacity || '0'),
+                                Available: new Long(newBucketMD.capabilities.VeeamSOSApi.CapacityInfo.Available || '0'),
+                                Used: new Long(newBucketMD.capabilities.VeeamSOSApi.CapacityInfo.Used || '0'),
+                                LastModified: (newBucketMD.capabilities.VeeamSOSApi.CapacityInfo as any).LastModified,
+                            },
+                        },
+                    },
                 },
                 vFormat: this.defaultBucketKeyFormat,
             },
