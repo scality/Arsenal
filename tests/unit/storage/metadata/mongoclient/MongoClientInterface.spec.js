@@ -2710,3 +2710,8 @@ describe('MongoClientInterface, deleteBucketIndexes', () => {
         });
     });
 });
+
+module.exports = {
+    createClient,
+    createBucket,
+};

@@ -21,16 +21,20 @@ import ObjectMD, { ObjectMDData } from '../../../models/ObjectMD';
 import * as jsutil from '../../../jsutil';
 import { ArsenalCallback } from '../../../types';
 
-import { MongoClient, UpdateFilter, Long, MongoServerError } from 'mongodb';
-import type {
+import {
+    MongoClient,
+    Long,
     Db,
     MongoClientOptions,
     ReadPreferenceMode,
     WithId,
     Collection,
     AnyBulkWriteOperation,
+    UpdateFilter,
+    MongoServerError,
+    MongoBulkWriteError,
+    WriteError
 } from 'mongodb';
-
 import { v4 as uuidv4 } from 'uuid';
 
 import { generateVersionId as genVID } from '../../../versioning/VersionID';
@@ -875,45 +879,60 @@ class MongoClientInterface {
             ordered: true,
         })
             .then(() => cb(null, `{"versionId": "${versionId}"}`))
-            .catch(err => {
+            .catch((err: MongoBulkWriteError) => {
                 /*
-                 * Related to https://jira.mongodb.org/browse/SERVER-14322
+                 * Previously related to https://jira.mongodb.org/browse/SERVER-14322
+                 * the issue has been fixed in MongoDB v5.0+.
                  * It happens when we are pushing two versions "at the same time"
                  * and the master one does not exist. In MongoDB, two threads are
                  * trying to create the same key, the master version, and one of
                  * them, the one with the highest versionID (less recent one),
                  * fails.
-                 * We check here than than the MongoDB error is related to the
-                 * second operation, the master version update and than the error
-                 * code is the one related to mentionned issue.
+                 *
+                 * The conflict error may still happen if the version IDs generated
+                 * are the same (affecting the first operation), or if the master
+                 * version is updated concurrently.
                  */
                 if (err.code === 11000) {
                     log.debug('putObjectVerCase1: error putting object version', {
                         code: err.code,
                         error: err.errmsg,
-                        isRetry: isRetry ? true : false, // eslint-disable-line no-unneeded-ternary
+                        isRetry: !!isRetry,
                     });
-                    let count = err.result.upsertedCount;
-                    if (typeof count !== 'number') {
-                        count = err.result.nUpserted;
+
+                    // When entering this catch, we are guaranteed to have at least one
+                    // error ("OneOrMore<WriteError"). As the operation os ordered, we
+                    // also have one more guarantee: the operation stops at the first error
+                    // encountered, and thus won't execute any pending operation.
+                    // As a result, checking for the [0] error is enough to know, after checking
+                    // its index, what operation failed.
+                    const bulkError: WriteError = err.writeErrors[0];
+                    // Check index of the operation that failed (0 = version, 1 = master)
+                    const isMasterOpError = bulkError.index === 1;
+
+                    // Master operation failed but version succeeded.
+                    // This error is expected, it means that two differents version were
+                    // put at the same time.
+                    if (isMasterOpError) {
+                        return cb(null, `{"versionId": "${versionId}"}`);
                     }
-                    if (typeof count === 'number' && count !== 1) {
-                        // This may be a race condition, when two different S3 Connector try to put the same
-                        // version id
-                        if (!isRetry) {
-                            // retrying with a new version id
-                            return process.nextTick(() =>
-                                this.putObjectVerCase1(c, bucketName, objName, objVal, params, log, cb, true));
-                        }
+
+                    // If no upserts succeeded and this is not a retry yet, try again with a new version ID
+                    if (!isRetry) {
                         log.error('putObjectVerCase1: race condition upserting versionId', {
                             error: err.errmsg,
                         });
-                        return cb(errors.InternalError);
+                        return process.nextTick(() =>
+                            this.putObjectVerCase1(c, bucketName, objName, objVal, params, log, cb, true));
                     }
-                    // Otherwise this error is expected, it means that two differents version was put at the
-                    // same time
-                    return cb(null, `{"versionId": "${versionId}"}`);
+
+                    // Version operation failed twice, reject the operation.
+                    log.error('putObjectVerCase1: version operation failed twice', {
+                        error: err.errmsg,
+                    });
+                    return cb(errors.InternalError);
                 }
+
                 log.error('putObjectVerCase1: error putting object version', {
                     error: err.errmsg,
                 });
