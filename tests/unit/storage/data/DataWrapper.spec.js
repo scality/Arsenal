@@ -3,6 +3,7 @@ const sinon = require('sinon');
 const { default: MD5Sum } = require('../../../../lib/s3middleware/MD5Sum');
 const { default: NullStream } = require('../../../../lib/s3middleware/nullStream');
 const DataWrapper = require('../../../../lib/storage/data/DataWrapper');
+const BucketInfo = require('../../../../lib/models/BucketInfo').default;
 const PassThrough = require('stream').PassThrough;
 
 describe('DataWrapper', () => {
@@ -50,6 +51,7 @@ describe('DataWrapper', () => {
                 awsLocation: { type: 'aws_s3' },
             },
             getLocationConstraintType: sandbox.stub().returns('scality'),
+            isSameAzureAccount: sandbox.stub().returns(false),
         };
 
         mockMetadata = {};
@@ -387,6 +389,190 @@ describe('DataWrapper', () => {
                 assert(mockClient.delete.calledThrice);
                 done();
             });
+        });
+    });
+
+    describe('copyObject', () => {
+        const request = {};
+        const storeMetadataParams = {
+            dataStoreName: 'destBackend',
+            size: 100,
+        };
+        const dataLocator = [{
+            key: 'sourceKey',
+            dataStoreETag: 'etag',
+            start: 0,
+            size: 100,
+        }];
+        const dataStoreContext = {
+            bucketName: 'destBucket',
+            owner: 'owner',
+            namespace: 'namespace',
+            objectKey: 'destKey',
+        };
+        const destBackendInfo = {
+            getControllingLocationConstraint: () => 'destBackend',
+        };
+        const sourceBucketMD = new BucketInfo('sourceBucket', 'owner',
+            'source-display-name', new Date().toJSON(),
+            null, null, null, null, null, null,
+            '');
+        const destBucketMD = new BucketInfo('destBucket', 'owner',
+            'dest-display-name', new Date().toJSON(),
+            null, null, null, null, null, null,
+            'location-constraint');
+        const _ = sinon.match.any;
+
+        beforeEach(() => {
+            mockLocStorageCheckFn.yields(null);
+        });
+
+        it('should call client.copyObject for external backend copy', done => {
+            mockConfig.getLocationConstraintType.returns('aws_s3');
+            mockClient.copyObject.yields(null, {
+                key: 'copiedKey',
+                dataStoreName: 'destBackend',
+                dataStoreType: 'aws_s3',
+                dataStoreVersionId: 'versionId',
+            });
+
+            dataWrapper.copyObject(request, 'sourceBackend', storeMetadataParams,
+                dataLocator, dataStoreContext, destBackendInfo, sourceBucketMD,
+                destBucketMD, null, log, (err, result) => {
+                    assert.strictEqual(err, null);
+                    assert.strictEqual(result[0].key, 'copiedKey');
+                    assert.strictEqual(result[0].dataStoreVersionId, 'versionId');
+                    assert(mockClient.copyObject.calledWith(
+                        request, 'destBackend', 'sourceKey', 'sourceBackend',
+                        storeMetadataParams, mockConfig, log));
+                    done();
+                });
+        });
+
+        it('should handle client copy error', done => {
+            const copyErr = new Error('Copy failed');
+
+            mockConfig.getLocationConstraintType.returns('aws_s3');
+            mockClient.copyObject.yields(copyErr);
+
+            dataWrapper.copyObject(request, 'sourceBackend', storeMetadataParams,
+                dataLocator, dataStoreContext, destBackendInfo, sourceBucketMD,
+                destBucketMD, undefined, log, err => {
+                    assert(err instanceof Error);
+                    assert.strictEqual(err, copyErr);
+                    done();
+                });
+        });
+
+        it('should handle regular copy through get/put', done => {
+            mockClient.get.withArgs(dataLocator[0]).yields(null); // Successful get, but no stream (empty object)
+            mockClient.put.withArgs(_, 100, dataStoreContext, destBackendInfo)
+                .yields(null, { key: 'copiedKey', dataStoreName: 'destBackend' });
+
+            dataWrapper.copyObject(request, 'sourceBackend', storeMetadataParams,
+                dataLocator, dataStoreContext, destBackendInfo, sourceBucketMD,
+                destBucketMD, null, log, (err, results) => {
+                    assert.strictEqual(err, null);
+                    assert.strictEqual(results[0].key, 'copiedKey');
+                    assert(!mockClient.copyObject.called);
+                    assert(mockClient.get.calledOnce);
+                    assert(mockClient.put.calledOnce);
+                    done();
+                });
+        });
+
+        it('should not use client.copyObject with different location constraint types', done => {
+            mockConfig.getLocationConstraintType.withArgs('sourceBackend').returns('aws_s3');
+            mockConfig.getLocationConstraintType.withArgs('destBackend').returns('gcp');
+
+            mockClient.get.withArgs(dataLocator[0]).yields(null); // Successful get, but no stream (empty object)
+            mockClient.put.withArgs(_, 100, dataStoreContext, destBackendInfo)
+                .yields(null, { key: 'copiedKey', dataStoreName: 'destBackend' });
+
+            dataWrapper.copyObject(request, 'sourceBackend', storeMetadataParams,
+                dataLocator, dataStoreContext, destBackendInfo, sourceBucketMD,
+                destBucketMD, null, log, (err, results) => {
+                    assert.strictEqual(err, null);
+                    assert.strictEqual(results[0].key, 'copiedKey');
+                    assert(!mockClient.copyObject.called);
+                    assert(mockClient.get.calledOnce);
+                    assert(mockClient.put.calledOnce);
+                    done();
+                });
+        });
+
+        it('should not use client.copyObject with encryption', done => {
+            mockConfig.getLocationConstraintType.returns('aws_s3');
+
+            const serverSideEncryption = { algorithm: 'AES256' };
+            mockKms.createCipherBundle.yields(null, { cipher: new PassThrough() });
+
+            mockClient.get.withArgs(dataLocator[0]).yields(null); // Successful get, but no stream (empty object)
+            mockLocStorageCheckFn.yields(null);
+            mockClient.put.withArgs(_, 100, dataStoreContext, destBackendInfo)
+                .yields(null, { key: 'copiedKey', dataStoreName: 'destBackend' });
+
+            dataWrapper.copyObject(request, 'sourceBackend', storeMetadataParams,
+                dataLocator, dataStoreContext, destBackendInfo, sourceBucketMD,
+                destBucketMD, serverSideEncryption, log, err => {
+                    assert.strictEqual(err, null);
+                    assert(!mockClient.copyObject.called);
+                    assert(mockClient.get.calledOnce);
+                    assert(mockClient.put.calledOnce);
+                    done();
+                });
+        });
+
+        it('shoud handle get error', done => {
+            const copyErr = new Error('Copy failed');
+
+            mockClient.get.withArgs(dataLocator[0]).yields(copyErr);
+
+            dataWrapper.copyObject(request, 'sourceBackend', storeMetadataParams,
+                dataLocator, dataStoreContext, destBackendInfo, sourceBucketMD,
+                destBucketMD, null, log, err => {
+                    assert(err instanceof Error);
+                    assert(err.is.ServiceUnavailable);
+                    done();
+                });
+        });
+
+        it('shoud handle put error', done => {
+            const copyErr = new Error('Copy failed');
+
+            mockClient.get.withArgs(dataLocator[0]).yields(null); // Successful get, but no stream (empty object)
+            mockClient.put.withArgs(_, 100, dataStoreContext, destBackendInfo).yields(copyErr);
+
+            dataWrapper.copyObject(request, 'sourceBackend', storeMetadataParams,
+                dataLocator, dataStoreContext, destBackendInfo, sourceBucketMD,
+                destBucketMD, null, log, err => {
+                    assert(err instanceof Error);
+                    assert(err.is.ServiceUnavailable);
+                    done();
+                });
+        });
+
+        it('should handle Azure copy with parallel get/put', done => {
+            const azureDataLocator = [{
+                ...dataLocator[0],
+                dataStoreType: 'azure',
+            }];
+
+            mockClient.get.withArgs(azureDataLocator[0]).yields(null); // Successful get, but no stream (empty object)
+            mockClient.put.withArgs(_, 100, dataStoreContext, destBackendInfo)
+                .callsFake((stream, size, ctx, info, uid, cb) =>
+                    stream._flush(() => cb(null, { key: 'azureKey', dataStoreName: 'destBackend' }))
+                );
+
+            dataWrapper.copyObject(request, 'sourceBackend', storeMetadataParams,
+                azureDataLocator, dataStoreContext, destBackendInfo, sourceBucketMD,
+                destBucketMD, null, log, (err, results) => {
+                    assert.strictEqual(err, null);
+                    assert.strictEqual(results[0].key, 'azureKey');
+                    assert(mockClient.get.calledOnce);
+                    assert(mockClient.put.calledOnce);
+                    done();
+                });
         });
     });
 });
