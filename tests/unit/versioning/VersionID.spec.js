@@ -23,6 +23,29 @@ function generateRandomVIDs(count) {
 const count = 1000000;
 
 describe('test generating versionIds', () => {
+    describe('getVersionIdSeed', () => {
+        it('should return the correct versionIdSeed', () => {
+            const versionIdSeed = VID.getVersionIdSeed();
+            assert.strictEqual(versionIdSeed, process.pid.toString());
+        });
+
+        it('should return the correct versionIdSeed when HOSTNAME is set', () => {
+            process.env.HOSTNAME = 'test-pod-123';
+            const versionIdSeed = VID.getVersionIdSeed();
+            assert.strictEqual(versionIdSeed.startsWith('123'), true);
+        });
+    });
+
+    describe('generateUniqueVersionId', () => {
+        it('should increase the uidCounter', () => {
+            const versionId1 = VID.generateUniqueVersionId('somestring');
+            const versionId2 = VID.generateUniqueVersionId('somestring');
+            assert.notStrictEqual(versionId1, versionId2);
+            assert(VID.uidCounter > 0);
+            assert(VID.versionIdSeed);
+        });
+    });
+
     describe('invalid IDs', () => {
         // A client can use the CLI to send requests with arbitrary version IDs.
         // These IDs may contain invalid characters and should be handled gracefully.

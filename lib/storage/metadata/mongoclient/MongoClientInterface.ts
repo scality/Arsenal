@@ -37,7 +37,7 @@ import {
 import Uuid from 'uuid';
 import diskusage from 'diskusage';
 
-import { generateVersionId as genVID } from '../../../versioning/VersionID';
+import { generateUniqueVersionId, getVersionIdSeed } from '../../../versioning/VersionID';
 import * as listAlgos from '../../../algos/list/exportAlgos';
 import LRUCache from '../../../algos/cache/LRUCache';
 
@@ -68,16 +68,8 @@ const CONCURRENT_CURSORS = 10;
 
 const initialInstanceID = process.env.INITIAL_INSTANCE_ID;
 
-let uidCounter = 0;
-
 const BUCKET_VERSIONS = VersioningConstants.BucketVersioningKeyFormat;
 const DB_PREFIXES = VersioningConstants.DbPrefixes;
-
-function generateVersionId(replicationGroupId) {
-    // generate a unique number for each member of the nodejs cluster
-    return genVID(`${process.pid}.${uidCounter++}`,
-        replicationGroupId);
-}
 
 function inc(str) {
     return str ? (str.slice(0, str.length - 1) +
@@ -827,7 +819,7 @@ class MongoClientInterface {
         cb: ArsenalCallback<string>,
         isRetry?: boolean,
     ) {
-        const versionId = generateVersionId(this.replicationGroupId);
+        const versionId = generateUniqueVersionId(this.replicationGroupId);
         // eslint-disable-next-line
         objVal.versionId = versionId;
         const versionKey = formatVersionKey(objName, versionId, params.vFormat);
@@ -955,7 +947,7 @@ class MongoClientInterface {
         log: werelogs.Logger,
         cb: ArsenalCallback<string>,
     ) {
-        const versionId = generateVersionId(this.replicationGroupId);
+        const versionId = generateUniqueVersionId(this.replicationGroupId);
         // eslint-disable-next-line
         objVal.versionId = versionId;
         const masterKey = formatMasterKey(objName, params.vFormat);
@@ -1789,7 +1781,7 @@ class MongoClientInterface {
     ) {
         const masterKey = formatMasterKey(objName, params.vFormat);
         const versionKey = formatVersionKey(objName, params.versionId, params.vFormat);
-        const _vid = generateVersionId(this.replicationGroupId);
+        const _vid = generateUniqueVersionId(this.replicationGroupId);
         async.series([
             next => c.updateOne(
                 {

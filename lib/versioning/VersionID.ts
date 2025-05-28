@@ -21,6 +21,10 @@ const TEMPLATE_TS = new Array(LENGTH_TS + 1).join('0');
 const TEMPLATE_SEQ = new Array(LENGTH_SEQ + 1).join('0');
 const TEMPLATE_RG = new Array(LENGTH_RG + 1).join(' ');
 
+// Counter that is increased after each call to generateUniqueVersionId
+export let uidCounter = 0;
+export const versionIdSeed = getVersionIdSeed();
+
 /**
  * Left-pad a string representation of a value with a given template.
  * For example: pad('foo', '00000') gives '00foo'.
@@ -83,6 +87,23 @@ function wait(span: number) {
     while (getspan(process.hrtime(start)) < span) {
         // do nothing
     }
+}
+
+export function getVersionIdSeed(): string {
+    // The HOSTNAME environment variable is set by default by Kubernetes
+    // and populated with the pod name, containing a suffix with a unique id
+    // as a string.
+    // By default, we rely on the pid, to account for multiple workers in
+    // cluster mode. As a result, the unique id is either <pod-suffix>.<pid>
+    // or <pid>.
+    // If unique vID are needed in a multi cluster mode architecture (i.e.,
+    // multiple server instances, each with multiple workers), the
+    // HOSTNAME environment variable can be set.
+    return `${process.env.HOSTNAME?.split('-').pop() || ''}${process.pid}`;
+}
+
+export function generateUniqueVersionId(replicationGroupId: string): string {
+    return generateVersionId(`${versionIdSeed}.${uidCounter++}`, replicationGroupId);
 }
 
 /**
