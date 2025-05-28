@@ -157,7 +157,9 @@ export default class TransportTemplate {
                     this.pipelineDrainedCallback = null;
                 }
             });
-            socket.on('end', () => {
+            // prefer close event from end event as it also trigger when tls session
+            // is not established, like failure to connect, invalid cert
+            socket.on('close', () => {
                 const error = Error('Conversation interrupted');
                 this.socket = null;
                 this._drainQueuesWithError(error);
@@ -221,10 +223,15 @@ export default class TransportTemplate {
      * Gracefuly interrupt the conversation. If the caller keeps sending
      * message after calling this function, the conversation won't
      * converge to its end.
+     * @param onEndCallback - callback called once the socket is ended and pipelines are drained
      */
-    end() {
+    end(onEndCallback?: any) {
         if (!this.socket) {
+            onEndCallback?.();
             return;
+        }
+        if (onEndCallback) {
+            this.onEndCallback = onEndCallback;
         }
         if (this.callbackPipeline.length !== 0 ||
             this.deferedRequests.length !== 0) {

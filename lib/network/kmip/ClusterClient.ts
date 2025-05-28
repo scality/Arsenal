@@ -262,8 +262,8 @@ export default class ClusterClient implements KMSInterface {
 
     clusterHealthcheck(logger: Logger, cb: (err: Error | null) => void) {
         async.parallel<any, Error>(
-            this.clients.map(c => (next) => c.healthcheck(logger, next)),
-            (err, results) => {
+            this.clients.map(c => next => c.healthcheck(logger, next)),
+            err => {
                 cb(err ?? null);
             }
         )
@@ -272,5 +272,22 @@ export default class ClusterClient implements KMSInterface {
     healthcheck(...args: Parameters<Required<KMSInterface>['healthcheck']>) {
         // for now check health of every member
         this.clusterHealthcheck.apply(this, args);
+    }
+
+    stop(cb?: Function) {
+        async.parallel<any, Error>(
+            this.unhealthyClients.map(unhealthy => next => {
+                clearTimeout(unhealthy.healthcheckTimeout);
+                unhealthy.client.stop(next);
+            }),
+            errUnhealthy => {
+                async.parallel<any, Error>(
+                    this.clients.map(c => next => c.stop(next)),
+                    errHealthy => {
+                        cb?.(errHealthy ?? errUnhealthy ?? null);
+                    }
+                );
+            }
+        );
     }
 }
