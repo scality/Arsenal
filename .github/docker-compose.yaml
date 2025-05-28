@@ -2,8 +2,11 @@ services:
   pykmip:
     network_mode: "host"
     profiles: ['pykmip']
-    image: ${PYKMIP_IMAGE:-ghcr.io/scality/cloudserver/pykmip}
     build:
       context: ./pykmip
     volumes:
       - /tmp/artifacts/:/artifacts
+      # Allow override certs or config without rebuild
+      - ./pykmip/certs:/ssl
+      - ./pykmip/policy.json:/etc/pykmip/policies/policy.json
+      - ./pykmip/server.conf:/etc/pykmip/server.conf
