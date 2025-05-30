@@ -37,7 +37,7 @@ import {
 } from 'mongodb';
 import { v4 as uuidv4 } from 'uuid';
 
-import { generateVersionId as genVID } from '../../../versioning/VersionID';
+import { generateUniqueVersionId } from '../../../versioning/VersionID';
 import * as listAlgos from '../../../algos/list/exportAlgos';
 import LRUCache from '../../../algos/cache/LRUCache';
 
@@ -75,8 +75,6 @@ const CONCURRENT_CURSORS = process.env.CONCURRENT_CURSORS ?
 
 const initialInstanceID = process.env.INITIAL_INSTANCE_ID;
 
-let uidCounter = 0;
-
 const BUCKET_VERSIONS = require('../../../versioning/constants')
     .VersioningConstants.BucketVersioningKeyFormat;
 const DEFAULT_BUCKET_KEY_FORMAT =
@@ -86,12 +84,6 @@ const DEFAULT_BUCKET_KEY_FORMAT =
 
 const DB_PREFIXES = require('../../../versioning/constants')
     .VersioningConstants.DbPrefixes;
-
-function generateVersionId(replicationGroupId) {
-    // generate a unique number for each member of the nodejs cluster
-    return genVID(`${process.pid}.${uidCounter++}`,
-        replicationGroupId);
-}
 
 function inc(str) {
     return str ? (str.slice(0, str.length - 1) +
@@ -845,7 +837,7 @@ class MongoClientInterface {
         cb: ArsenalCallback<string>,
         isRetry?: boolean,
     ) {
-        const versionId = generateVersionId(this.replicationGroupId);
+        const versionId = generateUniqueVersionId(this.replicationGroupId);
         objVal.versionId = versionId;
         const versionKey = formatVersionKey(objName, versionId, params.vFormat);
         const masterKey = formatMasterKey(objName, params.vFormat);
@@ -972,7 +964,7 @@ class MongoClientInterface {
         log: werelogs.Logger,
         cb: ArsenalCallback<string>,
     ) {
-        const versionId = generateVersionId(this.replicationGroupId);
+        const versionId = generateUniqueVersionId(this.replicationGroupId);
         objVal.versionId = versionId;
         const masterKey = formatMasterKey(objName, params.vFormat);
         c.updateOne({ _id: masterKey },
@@ -1803,7 +1795,7 @@ class MongoClientInterface {
     ) {
         const masterKey = formatMasterKey(objName, params.vFormat);
         const versionKey = formatVersionKey(objName, params.versionId, params.vFormat);
-        const _vid = generateVersionId(this.replicationGroupId);
+        const _vid = generateUniqueVersionId(this.replicationGroupId);
         async.series([
             next => c.updateOne(
                 {
