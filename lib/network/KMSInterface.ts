@@ -70,8 +70,8 @@ export function makeBackend<T extends KmsType>(
     }
 }
 
-export function isScalityKmsArn(kmsKey: string) {
-    return kmsKey.startsWith(SCAL_KMS_ARN);
+export function isScalityKmsArn(kmsKey?: string | null) {
+    return kmsKey?.startsWith(SCAL_KMS_ARN) ?? false;
 }
 
 /**
