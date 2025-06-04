@@ -188,7 +188,7 @@ export default class ClusterClient implements KMSInterface {
         if (this.clients.length === 0) {
             logger.warn('kmip cluster has no healthy hosts');
             return originalCallback(errorInstances.InternalError.customizeDescription(
-                kmipMsg('Create', args[0], `no healthy host in the cluster`)));
+                kmipMsg('Create', args[0], 'kmip cluster has no healthy hosts')));
         }
 
         const client = this.next();
@@ -208,7 +208,7 @@ export default class ClusterClient implements KMSInterface {
         if (this.clients.length === 0) {
             logger.warn('kmip cluster has no healthy hosts');
             return originalCallback(errorInstances.InternalError.customizeDescription(
-                kmipMsg('Destroy', args[0], `no healthy host in the cluster`)));
+                kmipMsg('Destroy', args[0], 'kmip cluster has no healthy hosts')));
         }
 
         const client = this.next();
@@ -228,7 +228,7 @@ export default class ClusterClient implements KMSInterface {
         if (this.clients.length === 0) {
             logger.warn('kmip cluster has no healthy hosts');
             return originalCallback(errorInstances.InternalError.customizeDescription(
-                kmipMsg('Encrypt', args[1], `no healthy host in the cluster`)));
+                kmipMsg('Encrypt', args[1], 'kmip cluster has no healthy hosts')));
         }
 
         const client = this.next();
@@ -248,7 +248,7 @@ export default class ClusterClient implements KMSInterface {
         if (this.clients.length === 0) {
             logger.warn('kmip cluster has no healthy hosts');
             return originalCallback(errorInstances.InternalError.customizeDescription(
-                kmipMsg('Decrypt', args[1], `no healthy host in the cluster`)));
+                kmipMsg('Decrypt', args[1], 'kmip cluster has no healthy hosts')));
         }
 
         const client = this.next();
@@ -278,7 +278,7 @@ export default class ClusterClient implements KMSInterface {
         if (this.clients.length === 0) {
             logger.warn('kmip cluster has no healthy hosts');
             return originalCallback(errorInstances.InternalError.customizeDescription(
-                kmipMsg('Healthcheck', '', `no healthy host in the cluster`)));
+                kmipMsg('Healthcheck', '', 'kmip cluster has no healthy hosts')));
         }
 
         const client = this.next();
