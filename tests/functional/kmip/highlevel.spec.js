@@ -22,30 +22,49 @@ class LoopbackServerTransport extends TransportTemplate {
     }
 }
 
+const defaultOptions = {
+    kmip: {
+        providerName: 'tests',
+        client: {
+            bucketNameAttributeName: null,
+            compoundCreateActivate: false,
+        },
+        codec: {},
+        transport: {
+            pipelineDepth: 8,
+            tls: {
+                port: 5696,
+            },
+        },
+    },
+};
+
 describe('KMIP High Level Driver', () => {
+    let kmipClient;
+
+    afterEach(async () => {
+        sinon.restore();
+        await util.promisify(kmipClient.stop.bind(kmipClient))();
+    });
+
     [null, 'dummyAttributeName'].forEach(bucketNameAttributeName => {
         [false, true].forEach(compoundCreateActivate => {
             const options = {
                 kmip: {
-                    providerName: 'tests',
+                    providerName: defaultOptions.kmip.providerName,
                     client: {
                         bucketNameAttributeName,
                         compoundCreateActivate,
                     },
-                    codec: {},
-                    transport: {
-                        pipelineDepth: 8,
-                        tls: {
-                            port: 5696,
-                        },
-                    },
+                    codec: defaultOptions.kmip.codec,
+                    transport: defaultOptions.kmip.transport,
                 },
             };
             it('should work with' +
                ` x-name attribute: ${!!bucketNameAttributeName},` +
                ` compound creation: ${compoundCreateActivate}`,
             done => {
-                const kmipClient = new KMIPClient(options, TTLVCodec,
+                kmipClient = new KMIPClient(options, TTLVCodec,
                     LoopbackServerTransport);
                 const plaintext = Buffer.from(crypto.randomBytes(32));
                 async.waterfall([
@@ -71,23 +90,7 @@ describe('KMIP High Level Driver', () => {
         });
     });
     it('should succeed healthcheck with working KMIP client and server', done => {
-        const options = {
-            kmip: {
-                providerName: 'tests',
-                client: {
-                    bucketNameAttributeName: null,
-                    compoundCreateActivate: false,
-                },
-                codec: {},
-                transport: {
-                    pipelineDepth: 8,
-                    tls: {
-                        port: 5696,
-                    },
-                },
-            },
-        };
-        const kmipClient = new KMIPClient(options, TTLVCodec,
+        kmipClient = new KMIPClient(defaultOptions, TTLVCodec,
             LoopbackServerTransport);
         kmipClient.healthcheck(logger, err => {
             assert.ifError(err);
@@ -96,23 +99,7 @@ describe('KMIP High Level Driver', () => {
     });
 
     it('should fail healthcheck with KMIP server not running', done => {
-        const options = {
-            kmip: {
-                providerName: 'tests',
-                client: {
-                    bucketNameAttributeName: null,
-                    compoundCreateActivate: false,
-                },
-                codec: {},
-                transport: {
-                    pipelineDepth: 8,
-                    tls: {
-                        port: 5696,
-                    },
-                },
-            },
-        };
-        const kmipClient = new KMIPClient(options, TTLVCodec, TlsTransport);
+        kmipClient = new KMIPClient(defaultOptions, TTLVCodec, TlsTransport);
         kmipClient.healthcheck(logger, err => {
             assert(err);
             assert(err.is.InternalError);
