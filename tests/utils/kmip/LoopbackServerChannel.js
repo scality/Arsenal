@@ -94,7 +94,9 @@ class LoopbackServerChannel extends EchoChannel {
                     logger.error('Request processing failed', { error: err });
                     result = err;
                 } else {
-                    result = [
+                    // if the result is stubbed and should be used as is, set
+                    // kmipClient.kmip.transport.channel.stubbedResult = true;
+                    result = this.stubbedResult ? responsePayload : [
                         this.KMIP.Enumeration('Result Status', 'Success'),
                         this.KMIP.Structure('Response Payload',
                             responsePayload),
@@ -131,7 +133,7 @@ class LoopbackServerChannel extends EchoChannel {
         return [
             this.KMIP.Enumeration('Result Status', 'Operation Failed'),
             this.KMIP.Enumeration('Result Reason', reason),
-            this.KMIP.Enumeration('Result Message', message),
+            this.KMIP.TextString('Result Message', message),
         ];
     }
 

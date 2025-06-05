@@ -86,8 +86,9 @@
     "test": "export NODE_OPTIONS=\"--tls-max-v1.2\" && jest tests/unit --detectOpenHandles",
     "build": "tsc",
     "prepare": "yarn build",
-    "ft_test": "jest tests/functional --testTimeout=120000 --forceExit",
-    "coverage": "export NODE_OPTIONS=\"--tls-max-v1.2\" && nyc --clean jest tests --coverage --testTimeout=120000 --forceExit",
+    "ft_test": "jest tests/functional --testTimeout=120000 --forceExit --testPathIgnorePatterns tests/functional/pykmip",
+    "ft_pykmip_test": "jest tests/functional/pykmip",
+    "coverage": "export NODE_OPTIONS=\"--tls-max-v1.2\" && nyc --clean jest tests --coverage --testTimeout=120000 --forceExit --testPathIgnorePatterns tests/functional/pykmip",
     "build_doc": "cd documentation/listingAlgos/pics; dot -Tsvg delimiterStateChart.dot > delimiterStateChart.svg; dot -Tsvg delimiterMasterV0StateChart.dot > delimiterMasterV0StateChart.svg; dot -Tsvg delimiterVersionsStateChart.dot > delimiterVersionsStateChart.svg"
   },
   "private": true,

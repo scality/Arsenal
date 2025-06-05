@@ -612,4 +612,8 @@ export default class Client implements KMSInterface {
             return cb();
         });
     }
+
+    stop(cb?: Function) {
+        this.kmip.stop(cb);
+    }
 }
