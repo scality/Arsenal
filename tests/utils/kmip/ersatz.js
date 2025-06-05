@@ -41,7 +41,8 @@ class EchoChannel extends EventEmitter {
     }
 
     end() {
-        return this.emit('end');
+        this.emit('end');
+        return this.emit('close');
     }
 
     /* Instrumentation member functions */

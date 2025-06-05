@@ -1,0 +1,60 @@
+---
+name: tests-kmip
+
+on:
+  pull_request:
+    branches:
+    - development/*
+    - hotfix/*
+    paths:
+    - .github/workflows/tests-kmip.yaml
+    - .github/docker-compose.yaml
+    - .github/pykmip/**
+    - lib/network/kmip/**
+    - tests/functional/kmip/**
+  push:
+    branches:
+    - q/*
+    - w/**
+    paths:
+    - .github/workflows/tests-kmip.yaml
+    - .github/docker-compose.yaml
+    - .github/pykmip/**
+    - lib/network/kmip/**
+    - tests/functional/kmip/**
+
+jobs:
+  test-kmip:
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '16'
+        cache: 'yarn'
+
+    - name: Install socat (tunnel to help create disconnect and reconnect to pykmip)
+      run: sudo apt-get install -y socat
+
+    - name: Setup pykmip.local in etc/hosts
+      shell: bash
+      run: |
+        sudo echo "127.0.0.1 pykmip.local" | sudo tee -a /etc/hosts
+        for i in `seq 1 50`; do sudo echo "127.0.0.$i $i.pykmip.local" | sudo tee -a /etc/hosts ; done
+
+    - name: Start docker pykmip
+      run: docker compose --profile pykmip up -d
+      working-directory: .github
+
+    - name: install dependencies
+      run: yarn install --frozen-lockfile --prefer-offline
+      continue-on-error: true # TODO ARSN-97 Remove it when no errors in TS
+
+    - name: run kmip ClusterClient functional tests on pykmip
+      run: yarn ft_pykmip_test
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: pykmip_logs
+        path: /tmp/artifacts/

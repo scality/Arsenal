@@ -442,4 +442,8 @@ export default class KMIP {
                 return cb(null, response);
             });
     }
+
+    stop(cb?: Function) {
+        this.transport.end(cb);
+    }
 }
