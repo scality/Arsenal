@@ -100,13 +100,13 @@ describe('KMIP High Level Driver', () => {
         });
     });
 
-    it('should fail healthcheck with KMIP server not running', done => {
+    it('should fail healthcheck with KMIP server not running', async () => {
         kmipClient = new KMIPClient(defaultOptions, TTLVCodec, TlsTransport);
-        kmipClient.healthcheck(logger, err => {
+        await assert.rejects(util.promisify(kmipClient.healthcheck.bind(kmipClient))(logger), err => {
             assert(err);
-            assert(err.is.InternalError);
-            assert(err.description.includes('ECONNREFUSED'));
-            done();
+            assert(err.type, 'InternalError');
+            assert.match(err.description, /ECONNREFUSED/);
+            return true;
         });
     });
 

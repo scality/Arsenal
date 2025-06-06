@@ -170,6 +170,15 @@ export default class TransportTemplate {
                 }
             });
             socket.on('error', err => {
+                // Since node v17 dns.lookup (and other network calls) will prioritize ipv6
+                // and fallback to ipv4 for errors on dual-stack.
+                // (You can test by adding both ipv4 & ipv6 for localhost in your /etc/hosts)
+                // An error (ECONNREFUSED) can be AggregateError having both ipv6 & ipv4 errors
+                // but message can be empty, so set it to all aggregated error's message.
+                // (weird but in jest@29 err is not an instance of AggregateError)
+                if (err.name === AggregateError.name && !err.message && err.errors) {
+                    err.message = (err as AggregateError).errors.map(e => e.toString()).join(', ');
+                }
                 this._drainQueuesWithError(err);
             });
             this.socket = socket;
