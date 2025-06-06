@@ -111,6 +111,27 @@ class DummyConfig extends EventEmitter {
                     supportsVersioning: true,
                 },
             },
+            'crr': {
+                type: "crr",
+                locationType: "location-scality-crr-v1",
+                objectId: "5899fb52-42da-11f0-a734-7e333cd8c777",
+                legacyAwsBehavior: false,
+                isTransient: false,
+                isCold: false,
+                isCRR: true,
+                details: {
+                    servers: [
+                        "s3.workloadplane.scality.local:80"
+                    ],
+                    sts: {
+                        accessKey: "VNZGSEHBFKZYN57GB8WT",
+                        host: "sts.workloadplane.scality.local",
+                        port: "80",
+                        secretKey: "7YYFe2bYMVa7r/IsiAfqnSwvvDsz8PrcwHpQcmwX"
+                    },
+                    transport: "http"
+                },
+            },
         };
         if (this._isLegacy) {
             this.locationConstraints.legacy = {

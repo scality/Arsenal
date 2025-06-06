@@ -117,6 +117,20 @@ describe('BackendInfo class', () => {
                 memLocation, fileLocation, '127.0.0.1', log);
             assert.equal(res.isValid, true);
         });
+
+        it('should return invalid if objectLocationConstraint is crr', () => {
+            const res = BackendInfo.controllingBackendParam(dummyConfig,
+                'crr', 'us-east-1', '127.0.0.1', log);
+            assert.equal(res.isValid, false);
+            assert((res.description).indexOf('Object Location Error') > -1);
+        });
+
+        it('should return invalid if bucketLocationConstraint is crr', () => {
+            const res = BackendInfo.controllingBackendParam(dummyConfig,
+                null, 'crr', '127.0.0.1', log);
+            assert.equal(res.isValid, false);
+            assert((res.description).indexOf('Bucket Location Error') > -1);
+        });
     });
 
     describe('getControllingLocationConstraint', () => {

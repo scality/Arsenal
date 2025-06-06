@@ -52,7 +52,8 @@ export default class BackendInfo {
         locationConstraint: string | undefined,
         log: RequestLogger,
     ) {
-        if (!locationConstraint || !(locationConstraint in config.locationConstraints)) {
+        if (!locationConstraint || !(locationConstraint in config.locationConstraints) ||
+            config.locationConstraints[locationConstraint].isCRR) {
             log.trace('proposed locationConstraint is invalid',
                 { locationConstraint });
             return false;
