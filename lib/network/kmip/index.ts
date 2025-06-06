@@ -359,10 +359,12 @@ export default class KMIP {
                 if (err) {
                     // Retryable most likely network related
                     const error = errorInstances.InternalError
-                        .customizeDescription(kmipMsg(operation, resource, err.toString()));
+                        // For internal errors like ECONNREFUSED the message can contain
+                        // sensitive information like hostname port we don't want to leak
+                        .customizeDescription(kmipMsg(operation, resource, err.code));
                     // warn level to avoid dumping debug and trace logs on retryable errors
                     logger.warn('KMIP::request: Failed to send message',
-                        { error: err, msg: err?.toString?.(), kmip: kmipLog });
+                        { error: err, msg: err.toString?.(), kmip: kmipLog });
                     return cb(error);
                 }
                 const response = this._decodeMessage(logger, rawResponse);
