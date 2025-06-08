@@ -20,20 +20,29 @@ export type CallApiMethod = (
     callback: (err: ArsenalError | Error | null, ...data: any[]) => void,
 ) => void;
 
+interface VaultClientError {
+    code: string | number;
+    description: string;
+}
+
 /**
  * Convert an error to an ArsenalError instance
  * @param err - Error to convert
  * @returns ArsenalError instance
  */
-export function toArsenalError(err: ArsenalError | Error): ArsenalError {
+export function toArsenalError(err: ArsenalError | VaultClientError | Error): ArsenalError {
     if (err instanceof ArsenalError) {
         return err;
     }
-
-    // If it's a known error type, use the error instance, otherwise wrap
-    // it in an InternalError
-    return errorInstances[err.message] ||
-        errorInstances.InternalError.customizeDescription(err.message);
+    // For known error types, return the error instance as-is; otherwise, wrap it in an InternalError.
+    // - VaultClient errors identify their type via the `code` property.
+    // - ArsenalErrors received from external services (e.g., Metadata) use the `message` property for the error type.
+    return errorInstances[(err as Error).message || (err as VaultClientError).code] ||
+        errorInstances.InternalError.customizeDescription(
+            (err as Error).message ||
+            (err as VaultClientError).description ||
+            errorInstances.InternalError.description,
+        );
 }
 
 /**
