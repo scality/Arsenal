@@ -100,13 +100,17 @@ describe('KMIP High Level Driver', () => {
         });
     });
 
-    it('should fail healthcheck with KMIP server not running', done => {
+    it('should fail healthcheck with KMIP server not running', async () => {
         kmipClient = new KMIPClient(defaultOptions, TTLVCodec, TlsTransport);
-        kmipClient.healthcheck(logger, err => {
+        await assert.rejects(util.promisify(kmipClient.healthcheck.bind(kmipClient))(logger), err => {
             assert(err);
-            assert(err.is.InternalError);
-            assert(err.description.includes('ECONNREFUSED'));
-            done();
+            assert(err.type, 'InternalError');
+            assert.match(err.description, /ECONNREFUSED/);
+            // ensure no sensitive information like host:port is leaked
+            assert.doesNotMatch(err.description, /::1/); // ipv6
+            assert.doesNotMatch(err.description, /127.0.0.1/); // ipv4
+            assert.doesNotMatch(err.description, /5696/); // port
+            return true;
         });
     });
 

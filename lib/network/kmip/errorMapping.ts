@@ -32,5 +32,5 @@ export const errorMapping = {
  * @returns msg to use in error.customizeDescription
  */
 export function kmipMsg(operation: string, resource: string | null | undefined, detail: string) {
-    return `KMS (KMIP) error for ${operation}${resource ? ` on ${resource}` : ''}. ${detail}`;
+    return `KMS (KMIP) error for ${operation}${resource ? ` on ${resource}` : ''}. ${detail || ''}`;
 }
