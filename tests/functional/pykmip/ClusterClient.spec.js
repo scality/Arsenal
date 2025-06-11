@@ -52,6 +52,7 @@ const dataKey = Buffer.from('a'.repeat(16));
 function promisify(client) {
     return {
         healthcheck: util.promisify(client.healthcheck.bind(client)),
+        clusterHealthcheck: client.clusterHealthcheck && util.promisify(client.clusterHealthcheck.bind(client)),
         createBucketKey: util.promisify(client.createBucketKey.bind(client)),
         destroyBucketKey: util.promisify(client.destroyBucketKey.bind(client)),
         cipherDataKey: util.promisify(client.cipherDataKey.bind(client)),
@@ -82,12 +83,29 @@ function showArsenalErr(err) {
     }
 }
 
-function assertHealthcheck(healthy, unhealthy, spysHealthchecks) {
+function assertClusterHealthcheck(healthy, unhealthy, spysHealthchecks) {
     assert.strictEqual(healthy.actual, healthy.expected);
     assert.strictEqual(unhealthy.actual, unhealthy.expected);
     assert.ok(spysHealthchecks.every(spy => spy.callCount === 1),
         `All ${spysHealthchecks.length} hosts should be healthchecked. Instead got ${
             spysHealthchecks.map(spy => spy.callCount)}`);
+}
+
+function assertHealthcheck(healthy, unhealthy, spysHealthchecks) {
+    // healthy and unhealthy depends on round robin
+    const maxHealthy = healthy.expected + unhealthy.expected;
+    assert.ok(healthy.actual >= healthy.expected && healthy.actual <= spysHealthchecks.length,
+        `There can be between ${healthy.expected} and ${maxHealthy} healthy hosts. Got ${healthy.actual}`);
+    assert.ok(unhealthy.actual <= unhealthy.expected,
+        `There can be up to ${unhealthy.expected} unhealthy. Instead got ${unhealthy.actual}`);
+
+    const callCount = spysHealthchecks.map(spy => spy.callCount);
+    const called = callCount.filter(x => x === 1).length;
+    const expectedCalled = unhealthy.actual + (healthy.actual ? 1 : 0);
+
+    assert.strictEqual(called, expectedCalled,
+        `With round robin and ${unhealthy.actual} unhealthy and ${healthy.actual} healthy.
+        Instead got calls ${callCount}.`);
 }
 
 /** Authorize a approximation of +- 2 executions */
@@ -233,9 +251,18 @@ describe('KMIP ClusterClient with pykmip', () => {
             spys = clusterSpys(client.clients);
         });
 
-        it(`should connect and healthcheck each ${nb} hosts`, async () => {
+        it(`should connect and healthcheck in round robin on ${nb} hosts`, async () => {
             await assert.doesNotReject(promises.healthcheck(logger), showArsenalErr);
             assertHealthcheck(
+                { actual: healthyClients.length, expected: nb },
+                { actual: unhealthyClients.length, expected: 0 },
+                spys.healthchecks,
+            );
+        });
+
+        it(`should connect and clusterHealthcheck each ${nb} hosts`, async () => {
+            await assert.doesNotReject(promises.clusterHealthcheck(logger), showArsenalErr);
+            assertClusterHealthcheck(
                 { actual: healthyClients.length, expected: nb },
                 { actual: unhealthyClients.length, expected: 0 },
                 spys.healthchecks,
@@ -279,9 +306,18 @@ describe('KMIP ClusterClient with pykmip', () => {
             spys = clusterSpys(client.clients);
         });
 
-        it('should fail healthcheck', async () => {
-            await assert.rejects(promises.healthcheck(logger));
+        it('should succeed round robin healthcheck', async () => {
+            await assert.doesNotReject(promises.healthcheck(logger));
             assertHealthcheck(
+                { actual: healthyClients.length, expected: nb },
+                { actual: unhealthyClients.length, expected: 1 },
+                spys.healthchecks,
+            );
+        });
+
+        it('should fail clusterHealthcheck', async () => {
+            await assert.rejects(promises.clusterHealthcheck(logger));
+            assertClusterHealthcheck(
                 // TODO S3C-9763 healthcheck should mark hosts unhealthy
                 { actual: healthyClients.length, expected: nb + 1 },
                 { actual: unhealthyClients.length, expected: 0 },
