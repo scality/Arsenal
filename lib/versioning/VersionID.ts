@@ -25,7 +25,8 @@ export const S3_VERSION_ID_ENCODING_TYPE = process.env.S3_VERSION_ID_ENCODING_TY
 
 // Counter that is increased after each call to generateUniqueVersionId
 export let uidCounter = 0;
-export const versionIdSeed = getVersionIdSeed();
+export let maxUidCounter = Number.MAX_SAFE_INTEGER;
+let maxUidCounterInitialized = false;
 
 /**
  * Left-pad a string representation of a value with a given template.
@@ -91,21 +92,22 @@ function wait(span: number) {
     }
 }
 
-export function getVersionIdSeed(): string {
-    // The HOSTNAME environment variable is set by default by Kubernetes
-    // and populated with the pod name, containing a suffix with a unique id
-    // as a string.
-    // By default, we rely on the pid, to account for multiple workers in
-    // cluster mode. As a result, the unique id is either <pod-suffix>.<pid>
-    // or <pid>.
-    // If unique vID are needed in a multi cluster mode architecture (i.e.,
-    // multiple server instances, each with multiple workers), the
-    // HOSTNAME environment variable can be set.
-    return `${process.env.HOSTNAME?.split('-').pop() || ''}${process.pid}`;
-}
-
 export function generateUniqueVersionId(replicationGroupId: string): string {
-    return generateVersionId(`${versionIdSeed}.${uidCounter++}`, replicationGroupId);
+    uidCounter += 1;
+    // Ensure uidCounter is unique for the replication group
+    // if the replicationGroupId is shorter than LENGTH_RG, we need to
+    // ensure that uidCounter does not exceed the maximum value
+    // that can be represented by the remaining characters in the replicationGroupId
+    // otherwise we might end up with the same value of the uid counter in the versionId
+    if (!maxUidCounterInitialized && replicationGroupId.length < LENGTH_RG) {
+        const maxdigits = LENGTH_RG - replicationGroupId.length;
+        maxUidCounter = Math.pow(10, maxdigits);
+        maxUidCounterInitialized = true;
+    }
+    // Only a single replication group is used in any instance of Cloudserver
+    // so it's safe to wrap the global uid counter
+    uidCounter %= maxUidCounter;
+    return generateVersionId('', `${replicationGroupId}${uidCounter}`);
 }
 
 /**

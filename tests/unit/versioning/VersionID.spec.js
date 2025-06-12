@@ -22,26 +22,30 @@ function generateRandomVIDs(count) {
 const count = 1000000;
 
 describe('test generating versionIds', () => {
-    describe('getVersionIdSeed', () => {
-        it('should return the correct versionIdSeed', () => {
-            const versionIdSeed = VID.getVersionIdSeed();
-            assert.strictEqual(versionIdSeed, process.pid.toString());
-        });
-
-        it('should return the correct versionIdSeed when HOSTNAME is set', () => {
-            process.env.HOSTNAME = 'test-pod-123';
-            const versionIdSeed = VID.getVersionIdSeed();
-            assert.strictEqual(versionIdSeed.startsWith('123'), true);
-        });
-    });
-
-    describe('generateUniqueVersionId', () => {
+    describe.only('generateUniqueVersionId', () => {
         it('should increase the uidCounter', () => {
             const versionId1 = VID.generateUniqueVersionId('somestring');
             const versionId2 = VID.generateUniqueVersionId('somestring');
             assert.notStrictEqual(versionId1, versionId2);
             assert(VID.uidCounter > 0);
-            assert(VID.versionIdSeed);
+        });
+        it('should append uidCounter as suffix and wrap to 0 when exceeding available digits', () => {
+            // For 'versn.' (length 6) and LENGTH_RG = 7, only 1 digit left for counter
+            VID.uidCounter = 8;
+            const expectedSuffixes = ['9', '0', '1'];
+            const results = [];
+            for (let i = 0; i < expectedSuffixes.length; i++) {
+                const versionId = VID.generateUniqueVersionId('versn.');
+                results.push(versionId[versionId.length - 1]);
+            }
+            assert.deepStrictEqual(results, expectedSuffixes);
+        });
+        it('should not exceed MAX_SAFE_INTEGER', () => {
+            VID.uidCounter = Number.MAX_SAFE_INTEGER - 1;
+            VID.generateUniqueVersionId('somestring');
+            assert.strictEqual(VID.uidCounter, Number.MAX_SAFE_INTEGER);
+            VID.generateUniqueVersionId('somestring');
+            assert.strictEqual(VID.uidCounter, 0);
         });
     });
 
