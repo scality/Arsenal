@@ -32,6 +32,7 @@ export const maximumMetaHeadersSize = 2136;
 export const emptyFileMd5 = 'd41d8cd98f00b204e9800998ecf8427e';
 // Version 2 changes the format of the data location property
 // Version 3 adds the dataStoreName attribute
+// Version 3.1 backport of Version 7 on top of 3
 // Version 4 add the Creation-Time and Content-Language attributes,
 //     and add support for x-ms-meta-* headers in UserMetadata
 // Version 5 adds the azureInfo structure
