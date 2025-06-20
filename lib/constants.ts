@@ -32,6 +32,7 @@ export const maximumMetaHeadersSize = 2136;
 export const emptyFileMd5 = 'd41d8cd98f00b204e9800998ecf8427e';
 // Version 2 changes the format of the data location property
 // Version 3 adds the dataStoreName attribute
+// Version 3.1 backport of Version 7 on top of 3
 // Version 4 add the Creation-Time and Content-Language attributes,
 //     and add support for x-ms-meta-* headers in UserMetadata
 // Version 5 adds the azureInfo structure
@@ -41,7 +42,11 @@ export const emptyFileMd5 = 'd41d8cd98f00b204e9800998ecf8427e';
 // any metadata of the object.
 // version 6 also adds the "isPHD" flag that is used to indicate that the master
 // object is a placeholder and is not up to date.
-export const mdModelVersion = 6;
+// Version 7 adds the "bucketOwnerId" attribute to the object metadata.
+// This is set when the owner of the bucket is different from the owner-id of the object.
+// This can happen in cases of cross-account permissions where the object
+// is uploaded by a different account than the one that owns the bucket.
+export const mdModelVersion = 7;
 /*
  * Splitter is used to build the object name for the overview of a
  * multipart upload and to build the object names for each part of a

@@ -37,6 +37,9 @@ export type ReplicationInfo = {
 
 export type ObjectMDData = {
     'owner-display-name': string;
+    // The canonical Id of the account used to create the object.
+    // This can be different than the bucket owner if cross-account
+    // permissions are used to create the object.
     'owner-id': string;
     'cache-control': string;
     'content-disposition': string;
@@ -90,6 +93,9 @@ export type ObjectMDData = {
     // the master is set as a placeholder and gets updated with the new latest
     // version data after a certain amount of time.
     isPHD: boolean;
+    // This is the canonical Id for the bucket owner.
+    // This is only set when it differs from `owner-id`.
+    bucketOwnerId?: string;
 };
 
 /**
@@ -1480,5 +1486,31 @@ export default class ObjectMD {
     */
     getIsPHD() {
         return this._data.isPHD;
+    }
+
+    /**
+     * Set bucket owner id
+     * @param canonicalId - bucket owner id
+     * @return itself
+     */
+    setBucketOwnerId(canonicalId: string) {
+        this._data.bucketOwnerId = canonicalId;
+        return this;
+    }
+
+    /**
+     * Returns bucket owner id
+     * @return bucket owner id
+     */
+    getBucketOwnerId() {
+        return this._data.bucketOwnerId;
+    }
+
+    /**
+     * Returns the model version of the object metadata
+     * @return {number|undefined}
+     */
+    getModelVersion(): number | undefined {
+        return this._data['md-model-version'];
     }
 }

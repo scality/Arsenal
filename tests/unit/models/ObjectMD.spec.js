@@ -139,6 +139,9 @@ describe('ObjectMD class setters/getters', () => {
         ['OriginOp', null, ''],
         ['Deleted', null, false],
         ['IsPHD', null, false],
+        ['BucketOwnerId', null, undefined],
+        ['BucketOwnerId', 'abcdef'],
+        ['ModelVersion', null, constants.mdModelVersion],
     ].forEach(test => {
         const property = test[0];
         const testValue = test[1];
