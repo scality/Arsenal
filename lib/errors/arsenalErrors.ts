@@ -1,3 +1,5 @@
+import { allowedKmsErrors } from './kmsErrors';
+
 export type ErrorFormat = {
     code: number,
     description: string,
@@ -1056,13 +1058,13 @@ export const QuotaExceeded: ErrorFormat = {
 };
 
 // -------------------- KMS --------------------
-// Most other KMS Exception can't be converted to from KMIP
-const NotFoundException: ErrorFormat = {
-    code: 400, // Not 404 because it's the KMS (Encrypt/Decrypt) that fails, not the object API
-    description: 'The request was rejected because the specified entity or resource could not be found.'
-};
+type Entries<T> = {
+    [K in keyof T]: [K, T[K]];
+}[keyof T];
 
 /** need typescript@5.6 for string literal export
 https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-6.html#support-for-arbitrary-module-identifiers
 */
-module.exports['KMS.NotFoundException'] = NotFoundException;
+for (const [kmsErr, err] of Object.entries(allowedKmsErrors) as Entries<typeof allowedKmsErrors>[]) {
+    module.exports[`KMS.${kmsErr}`] = err;
+}

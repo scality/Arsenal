@@ -1,4 +1,6 @@
-import { errorInstances } from '../errors';
+import type { AWSError } from 'aws-sdk';
+import { ArsenalError, errorInstances } from '../errors';
+import { allowedKmsErrors } from '../errors/kmsErrors';
 
 /**
  * Normalize errors according to arsenal definitions with a custom prefix
@@ -28,6 +30,27 @@ export function arsenalErrorKMIP(err: string | Error) {
     return _normalizeArsenalError(err, 'KMIP:');
 }
 
-export function arsenalErrorAWSKMS(err: string | Error) {
+const allowedKmsErrorCodes = Object.keys(allowedKmsErrors) as unknown as (keyof typeof allowedKmsErrors)[];
+
+function isAWSError(err: string | Error | AWSError): err is AWSError {
+    return (err as AWSError).code !== undefined
+        && (err as AWSError).retryable !== undefined;
+}
+
+export function arsenalErrorAWSKMS(err: string | Error | AWSError) {
+    if (isAWSError(err)) {
+        if (allowedKmsErrorCodes.includes(err.code as keyof typeof allowedKmsErrors)) {
+            return errorInstances[`KMS.${err.code}`].customizeDescription(err.message);
+        } else {
+            // Encapsulate into a generic ArsenalError but keep the aws error code
+            return ArsenalError.unflatten({
+                is_arsenal_error: true,
+                type: `KMS.${err.code}`, // aws s3 prefix kms errors with KMS.
+                code: 500,
+                description: `unexpected AWS_KMS error`,
+                stack: err.stack,
+            });
+        }
+    }
     return _normalizeArsenalError(err, 'AWS_KMS:');
 }
