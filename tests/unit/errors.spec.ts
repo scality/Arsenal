@@ -80,6 +80,16 @@ describe('Errors: ', () => {
         // don't use errorInstances if you need stacktrace
         expect(first.stack).toEqual(second.stack);
     });
+
+    it('should have KMS.NotFoundException', () => {
+        const err = errorInstances['KMS.NotFoundException'];
+        expect(err).toBeInstanceOf(ArsenalError);
+        expect(err.is['KMS.NotFoundException']).toBeTruthy();
+        expect(err.type).toEqual('KMS.NotFoundException');
+        expect(err.code).toEqual(400);
+        expect(err.description).toEqual(
+            'The request was rejected because the specified entity or resource could not be found.');
+    });
 });
 
 describe('Backward compatibility flag', () => {
