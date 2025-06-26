@@ -10,6 +10,11 @@ import * as constants from '../constants';
 import DataWrapper from '../storage/data/DataWrapper';
 import StatsClient from '../metrics/StatsClient';
 
+export type ApiMethods = {
+    callApiMethod: CallApiMethod;
+    callPostObject: CallApiMethod;
+};
+
 export type CallApiMethod = (
     methodName: string,
     request: http.IncomingMessage,
