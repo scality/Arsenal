@@ -129,14 +129,36 @@ export default class LifecycleConfiguration {
      * @param config - the CloudServer config
      * @return - LifecycleConfiguration instance
      */
-    constructor(xml: any, config: { replicationEndpoints: { site: string }[], supportedLifecycleRules: string[] }) {
+    constructor(
+        xml: any,
+        config: {
+            replicationEndpoints: { site: string }[],
+            locationConstraints?: Record<string, { isCRR: boolean }>,
+            supportedLifecycleRules: string[],
+        }
+    ) {
         this._parsedXML = xml;
-        this._storageClasses =
-            config.replicationEndpoints.map(endpoint => endpoint.site);
+        this._storageClasses = this._buildStorageClasses(config);
         this._supportedLifecycleRules = config.supportedLifecycleRules;
         this._ruleIDs = [];
         this._tagKeys = [];
         this._config = {};
+    }
+
+    /**
+     * Build the list of available storage classes for lifecycle transitions.
+     * This filters out any locations that are designated for cross-region
+     * replication (CRR), as transitions to these are not allowed.
+     * @param config - The CloudServer config
+     * @returns An array of valid storage class names.
+     */
+    _buildStorageClasses(config: {
+        replicationEndpoints: { site: string }[],
+        locationConstraints?: Record<string, { isCRR: boolean }>,
+    }) {
+        return config.replicationEndpoints
+            .map(endpoint => endpoint.site)
+            .filter(site => !config.locationConstraints?.[site]?.isCRR);
     }
 
     /**
@@ -598,7 +620,7 @@ export default class LifecycleConfiguration {
             // This differs from the AWS message. This will help the user since
             // the StorageClass does not conform to AWS specs.
             const list = `'${this._storageClasses.join("', '")}'`;
-            const msg = `'StorageClass' must be one of ${list}`;
+            const msg = `'StorageClass' must be one of ${list}, but provided: ${storageClass}`;
             return errorInstances.MalformedXML.customizeDescription(msg);
         }
         if (usedStorageClasses.includes(storageClass)) {

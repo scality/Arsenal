@@ -13,13 +13,15 @@ const days = {
 
 const mockConfig = {
     replicationEndpoints: [
-        {
-            site: 'a',
-        },
-        {
-            site: 'b',
-        },
+        { site: 'a' },
+        { site: 'b' },
+        { site: 'aCrrLocation' }
     ],
+    locationConstraints: {
+        'a': { isCRR: false },
+        'b': { isCRR: false },
+        'aCrrLocation': { isCRR: true }, // true => 'aCrrLocation' will be filtered out from storageClasses
+    },
     supportedLifecycleRules: ValidLifecycleRules,
 };
 
@@ -468,6 +470,31 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
             done();
         });
     });
+
+    it('should fail if transition destination is marked as a CRR in the location constraints', done => {
+        mockConfig.supportedLifecycleRules = ['Transition', 'NoncurrentVersionTransition'];
+        const xml = `
+            <LifecycleConfiguration>
+                <Rule>
+                    <ID>test-rule</ID>
+                    <Status>Enabled</Status>
+                    <Filter></Filter>
+                    <Transition>
+                        <Days>1</Days>
+                        <StorageClass>aCrrLocation</StorageClass>
+                    </Transition>
+                </Rule>
+            </LifecycleConfiguration>`;
+        parseString(xml, (err, parsedXml) => {
+            assert.equal(err, null, 'Error parsing xml');
+            const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig)
+                .getLifecycleConfiguration();
+            assert.strictEqual(lcConfig.error.is.MalformedXML, true);
+            assert.strictEqual(lcConfig.error.description,
+                    "'StorageClass' must be one of 'a', 'b', but provided: aCrrLocation");
+            done();
+        });
+    });
 });
 
 describe('LifecycleConfiguration', () => {
@@ -630,7 +657,7 @@ describe('LifecycleConfiguration', () => {
             const error = lifecycleConfiguration._checkStorageClasses({
                 storageClass: 'c',
             });
-            const msg = "'StorageClass' must be one of 'a', 'b'";
+            const msg = "'StorageClass' must be one of 'a', 'b', but provided: c";
             expect(error.is.MalformedXML).toBeTruthy();
             expect(error.description).toEqual(msg);
         });
