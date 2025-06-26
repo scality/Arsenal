@@ -132,6 +132,73 @@ export function extractQueryParams(
 
 
 /**
+ * Extract and validate components from formData object
+ * @param  formObj - formData object from request
+ * @param log - logging object
+ * @return object containing extracted query params for authV4
+ */
+export function extractFormParams(
+    formObj: { [key: string]: string | undefined },
+    log: Logger
+) {
+    const authParams: {
+        signedHeaders?: string;
+        signatureFromRequest?: string;
+        timestamp?: string;
+        expiry?: number;
+        credential?: [string, string, string, string, string];
+    } = {};
+
+    // Do not need the algorithm sent back
+    if (formObj['X-Amz-Algorithm'] !== 'AWS4-HMAC-SHA256') {
+        log.warn('algorithm param incorrect',
+        { algo: formObj['X-Amz-Algorithm'] });
+        return authParams;
+    }
+
+    // adding placeholder for signedHeaders to satisfy Vault
+    // as this is not required for form auth
+    authParams.signedHeaders = 'content-type;host;x-amz-date;x-amz-security-token';
+
+    const signature = formObj['X-Amz-Signature'];
+    if (signature && signature.length === 64) {
+        authParams.signatureFromRequest = signature;
+    } else {
+        log.warn('missing signature');
+        return authParams;
+    }
+
+    const timestamp = formObj['X-Amz-Date'];
+    if (timestamp && timestamp.length === 16) {
+        authParams.timestamp = timestamp;
+    } else {
+        log.warn('missing or invalid timestamp',
+            { timestamp: formObj['X-Amz-Date'] });
+        return authParams;
+    }
+
+    // TODO? ARSN-414 Does not seem to be required for form auth
+    // const expiry = Number.parseInt(formObj['X-Amz-Expires'] ?? 'nope', 10);
+    // const sevenDays = 604800;
+    // if (expiry && (expiry > 0 && expiry <= sevenDays)) {
+    //     authParams.expiry = expiry;
+    // } else {
+    //     log.warn('invalid expiry', { expiry });
+    //     return authParams;
+    // }
+
+    const credential = formObj['X-Amz-Credential'];
+    if (credential && credential.length > 28 && credential.indexOf('/') > -1) {
+        // @ts-ignore
+        authParams.credential = credential.split('/');
+    } else {
+        log.warn('invalid credential param', { credential });
+        return authParams;
+    }
+    return authParams;
+}
+
+/**
  * Extract and validate components from auth header
  * @param authHeader - authorization header from request
  * @param log - logging object
