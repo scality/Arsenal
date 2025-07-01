@@ -10,6 +10,7 @@ export enum BucketVersioningFormat {
 export const VersioningConstants = {
     VersionId: {
         Separator: '\0',
+        FormatMarker: '?',
     },
     DbPrefixes: {
         Master: '\x7fM',

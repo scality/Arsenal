@@ -368,7 +368,7 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
                 };
 
                 // simulate a versionId collision by always generating the same versionId
-                const genVID = sinon.stub(VersionID, 'generateUniqueVersionId')
+                const genVID = sinon.stub(VersionID, 'generateVersionId')
                     .returns('test-version-id');
 
                 async.series([
@@ -382,7 +382,7 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
                     );
                     // make sure the retry triggered on the first collision detection
                     assert(genVID.calledThrice,
-                        `expected generateUniqueVersionId to be called thrice, got ${genVID.callCount} times`);
+                        `expected generateVersionId to be called thrice, got ${genVID.callCount} times`);
                     done();
                 });
             });
@@ -398,7 +398,7 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
                 };
 
                 // simulate a versionId collision by always generating the same versionId
-                const genVID = sinon.stub(VersionID, 'generateUniqueVersionId')
+                const genVID = sinon.stub(VersionID, 'generateVersionId')
                     .onFirstCall().returns('test-version-id')
                     .onSecondCall().returns('test-version-id') // trigger collision
                     .onThirdCall().returns('test-version-id-retry'); // change versionId on retry
@@ -412,7 +412,7 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
                     assert.ifError(err, `expected no error, got ${err}`);
                     // make sure the retry triggered on the first collision detection
                     assert(genVID.calledThrice,
-                        `expected generateUniqueVersionId to be called thrice, got ${genVID.callCount} times`);
+                        `expected generateVersionId to be called thrice, got ${genVID.callCount} times`);
                     // make sure the last call returned a different versionId
                     const vid1 = JSON.parse(res[0]).versionId;
                     const vid2 = JSON.parse(res[1]).versionId;
