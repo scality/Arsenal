@@ -1,5 +1,6 @@
 const async = require('async');
 const assert = require('assert');
+const sinon = require('sinon');
 const werelogs = require('werelogs');
 const { MongoMemoryReplSet } = require('mongodb-memory-server');
 const { errors, versioning } = require('../../../../index');
@@ -7,6 +8,7 @@ const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
 const BucketInfo = require('../../../../lib/models/BucketInfo').default;
 const MetadataWrapper =
     require('../../../../lib/storage/metadata/MetadataWrapper');
+const { VersionID } = require('../../../../lib/versioning');
 const { BucketVersioningKeyFormat } = versioning.VersioningConstants;
 
 const IMPL_NAME = 'mongodb';
@@ -128,6 +130,7 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
             });
 
             afterEach(done => {
+                sinon.restore();
                 metadata.deleteBucket(BUCKET_NAME, logger, done);
             });
 
@@ -352,6 +355,71 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
                         return next();
                     }),
                 ], done);
+            });
+
+            it(`should fail on versionID conflict when putting a new version ${variation.it}`, done => {
+                const objVal = {
+                    key: OBJECT_NAME,
+                };
+                const params = {
+                    versioning: true,
+                    versionId: null,
+                    repairMaster: null,
+                };
+
+                // simulate a versionId collision by always generating the same versionId
+                const genVID = sinon.stub(VersionID, 'generateUniqueVersionId')
+                    .returns('test-version-id');
+
+                async.series([
+                    // We first create a master and a version
+                    next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
+                    // We put another version of the object with the same versionId
+                    next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
+                ], err => {
+                    assert(err.is.InternalError,
+                        `expected InternalError, got ${err.name} with message: ${err.message}`,
+                    );
+                    // make sure the retry triggered on the first collision detection
+                    assert(genVID.calledThrice,
+                        `expected generateUniqueVersionId to be called thrice, got ${genVID.callCount} times`);
+                    done();
+                });
+            });
+
+            it(`should succeed on version creation after a versionId collision ${variation.it}`, done => {
+                const objVal = {
+                    key: OBJECT_NAME,
+                };
+                const params = {
+                    versioning: true,
+                    versionId: null,
+                    repairMaster: null,
+                };
+
+                // simulate a versionId collision by always generating the same versionId
+                const genVID = sinon.stub(VersionID, 'generateUniqueVersionId')
+                    .onFirstCall().returns('test-version-id')
+                    .onSecondCall().returns('test-version-id') // trigger collision
+                    .onThirdCall().returns('test-version-id-retry'); // change versionId on retry
+
+                async.series([
+                    // We first create a master and a version
+                    next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
+                    // We put another version of the object with the same versionId
+                    next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
+                ], (err, res) => {
+                    assert.ifError(err, `expected no error, got ${err}`);
+                    // make sure the retry triggered on the first collision detection
+                    assert(genVID.calledThrice,
+                        `expected generateUniqueVersionId to be called thrice, got ${genVID.callCount} times`);
+                    // make sure the last call returned a different versionId
+                    const vid1 = JSON.parse(res[0]).versionId;
+                    const vid2 = JSON.parse(res[1]).versionId;
+                    assert.notStrictEqual(vid1, vid2,
+                        `expected different versionIds, got ${vid1} and ${vid2}`);
+                    done();
+                });
             });
 
             itOnlyInV1(`Should delete master when last version is delete marker ${variation.it}`, done => {

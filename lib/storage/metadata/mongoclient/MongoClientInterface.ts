@@ -843,14 +843,11 @@ class MongoClientInterface {
         const masterKey = formatMasterKey(objName, params.vFormat);
         // initiating array of operations with version creation
         const ops: AnyBulkWriteOperation<ObjectMetastoreDocument>[] = [{
-            updateOne: {
-                filter: {
+            insertOne: {
+                document: {
                     _id: versionKey,
-                },
-                update: {
-                    $set: { _id: versionKey, value: objVal },
-                },
-                upsert: true,
+                    value: objVal,
+                } as ObjectMetastoreDocument,
             },
         }];
         // filter to get master
