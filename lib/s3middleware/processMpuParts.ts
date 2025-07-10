@@ -141,10 +141,10 @@ export function validateAndFilterMpuParts(
     // A user can put more parts than they end up including
     // in the completed MPU but there cannot be more
     // parts in the complete message than were already put
-    if (partLength > storedPartsCopy.length) {
+   /* if (partLength > storedPartsCopy.length) {
         filteredPartsObj.error = errors.InvalidPart;
         return filteredPartsObj;
-    }
+    }*/
 
     let extraParts: any = [];
     const extraPartLocations: any = [];
@@ -158,10 +158,10 @@ export function validateAndFilterMpuParts(
         if (i > 0) {
             const previousPartNumber =
                 Number.parseInt(jsonList.Part[i - 1].PartNumber[0], 10);
-            if (partNumber <= previousPartNumber) {
+            /*if (partNumber <= previousPartNumber) {
                 filteredPartsObj.error = errors.InvalidPartOrder;
                 return filteredPartsObj;
-            }
+            }*/
         }
 
         let isPartUploaded = false;
@@ -187,10 +187,10 @@ export function validateAndFilterMpuParts(
                 // If list of parts sent with complete mpu request contains
                 // a part ETag that does not match the ETag for the part
                 // stored in metadata, return an error
-                if (partETag !== storedPart.ETag) {
+               /* if (partETag !== storedPart.ETag) {
                     filteredPartsObj.error = errors.InvalidPart;
                     return filteredPartsObj;
-                }
+                }*/
 
                 // If any part other than the last part is less than
                 // 5MB, return an error
