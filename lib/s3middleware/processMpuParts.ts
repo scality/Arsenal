@@ -202,7 +202,7 @@ export function validateAndFilterMpuParts(
                 }
                 if (MPU_TESTING !== 'yes' &&
                     i < jsonList.Part.length - 1 &&
-                    storedPartSize < constants.minimumAllowedPartSize) {
+                    storedPartSize < 1) {
                     log.debug('part too small on complete mpu');
                     filteredPartsObj.error = errors.EntityTooSmall;
                     return filteredPartsObj;
