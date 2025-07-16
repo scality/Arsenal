@@ -20,7 +20,7 @@
     "@azure/identity": "^4.10.2",
     "@azure/storage-blob": "^12.27.0",
     "@js-sdsl/ordered-set": "^4.4.2",
-    "@scality/hdclient": "^1.3.1",
+    "@scality/hdclient": "github:scality/hdclient#4e21bdceee3f89c5a5296a906ac9bed68bc577dc",
     "JSONStream": "^1.3.5",
     "agentkeepalive": "^4.6.0",
     "ajv": "6.12.3",
