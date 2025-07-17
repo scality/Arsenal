@@ -210,7 +210,6 @@ export class Delimiter extends Extension {
     /**
      * Add a Common Prefix in the list
      * @param {String} commonPrefix   - common prefix to add
-     * @param {String} key            - full key starting with commonPrefix
      * @return {Boolean}     - indicates if iteration should continue
      */
     addCommonPrefix(commonPrefix: string): void {

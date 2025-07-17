@@ -198,6 +198,10 @@ The Tag Set of a bucket is an array of objects with Key and Value:
 ]
 ```
 
+### Usage
+
+Used to store bucket tagging
+
 ## Model version 16
 
 ### Properties Added
@@ -245,7 +249,7 @@ For capacity-enabled buckets, contains the following data:
 
 ### Usage
 
-Used to store bucket tagging
+Used to store bucket capabilities
 
 ## Model version 17
 

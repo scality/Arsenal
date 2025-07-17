@@ -1,4 +1,4 @@
-import { errorInstances }  from '../errors';
+import { errorInstances } from '../errors';
 
 const validServices = {
     aws: ['s3', 'iam', 'sts', 'ring'],
