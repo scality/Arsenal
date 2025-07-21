@@ -37,7 +37,7 @@ import {
 } from 'mongodb';
 import { v4 as uuidv4 } from 'uuid';
 
-import { generateUniqueVersionId } from '../../../versioning/VersionID';
+import { generateVersionId } from '../../../versioning/VersionID';
 import * as listAlgos from '../../../algos/list/exportAlgos';
 import LRUCache from '../../../algos/cache/LRUCache';
 
@@ -98,6 +98,7 @@ export type MongoDBClientInterfaceParameters = {
     path: string,
     database: string,
     logger: werelogs.Logger,
+    instanceId: string,
     replicationGroupId: string,
     authCredentials: MongoUtils.AuthCredentials,
     isLocationTransient: Function,
@@ -245,6 +246,7 @@ class MongoClientInterface {
     private client: MongoClient | null;
     private db: Db | null;
     private path: string;
+    private instanceId: string;
     private replicationGroupId: string;
     private database: string;
     private isLocationTransient: Function;
@@ -261,7 +263,7 @@ class MongoClientInterface {
 
     constructor(params: MongoDBClientInterfaceParameters) {
         const { replicaSetHosts, writeConcern, replicaSet, readPreference, path,
-            database, logger, replicationGroupId, authCredentials,
+            database, logger, instanceId, replicationGroupId, authCredentials,
             isLocationTransient, shardCollections } = params;
         const cred = MongoUtils.credPrefix(authCredentials);
         this.mongoUrl = `mongodb://${cred}${replicaSetHosts}/` +
@@ -276,6 +278,7 @@ class MongoClientInterface {
         this.adminDb = null;
         this.logger = logger;
         this.path = path;
+        this.instanceId = instanceId;
         this.replicationGroupId = replicationGroupId;
         this.database = database;
         this.isLocationTransient = isLocationTransient;
@@ -837,7 +840,7 @@ class MongoClientInterface {
         cb: ArsenalCallback<string>,
         isRetry?: boolean,
     ) {
-        const versionId = generateUniqueVersionId(this.replicationGroupId);
+        const versionId = generateVersionId(this.instanceId, this.replicationGroupId);
         objVal.versionId = versionId;
         const versionKey = formatVersionKey(objName, versionId, params.vFormat);
         const masterKey = formatMasterKey(objName, params.vFormat);
@@ -961,7 +964,7 @@ class MongoClientInterface {
         log: werelogs.Logger,
         cb: ArsenalCallback<string>,
     ) {
-        const versionId = generateUniqueVersionId(this.replicationGroupId);
+        const versionId = generateVersionId(this.instanceId, this.replicationGroupId);
         objVal.versionId = versionId;
         const masterKey = formatMasterKey(objName, params.vFormat);
         c.updateOne({ _id: masterKey },
@@ -1792,7 +1795,7 @@ class MongoClientInterface {
     ) {
         const masterKey = formatMasterKey(objName, params.vFormat);
         const versionKey = formatVersionKey(objName, params.versionId, params.vFormat);
-        const _vid = generateUniqueVersionId(this.replicationGroupId);
+        const _vid = generateVersionId(this.instanceId, this.replicationGroupId);
         async.series([
             next => c.updateOne(
                 {

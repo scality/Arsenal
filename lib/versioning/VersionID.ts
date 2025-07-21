@@ -1,13 +1,31 @@
-// VersionID format:
+// Hex VersionID format:
 //         timestamp  sequential_position  rep_group_id  other_information
 // where:
 // - timestamp              14 bytes        epoch in ms (good untill 5138)
 // - sequential_position    06 bytes        position in the ms slot (1B ops)
 // - rep_group_id           07 bytes        replication group identifier
 // - other_information      arbitrary       user input, such as a unique string
+//
+// Legacy Base62 VersionID:
+//         timestamp  sequential_position  rep_group_id
+// where:
+// - timestamp              14 bytes        epoch in ms
+// - sequential_position    06 bytes        position in the ms slot
+// - rep_group_id           07 bytes        replication group identifie
+//
+// Base62 VersionID:
+//         timestamp  sequential_position  rep_group_id  instance_id  version_id_format
+// where:
+// - timestamp              14 bytes        epoch in ms
+// - sequential_position    06 bytes        position in the ms slot
+// - rep_group_id           07 bytes        replication group identifier
+// - instance_id            06 bytes        unique instance identifier
+// - version_id_format      02 bytes        version ID format marker + version
 
 import base62Integer from 'base62';
 import baseX from 'base-x';
+import assert from 'assert';
+import { VersioningConstants } from './constants';
 const BASE62 = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const base62String = baseX(BASE62);
 
@@ -15,17 +33,37 @@ const base62String = baseX(BASE62);
 const LENGTH_TS = 14; // timestamp: epoch in ms
 const LENGTH_SEQ = 6; // position in ms slot
 const LENGTH_RG = 7; // replication group id
+const LENGTH_ID = 6; // instance id
+const LENGTH_FT = 2; // version ID format, 1 byte + separator
 
 // empty string template for the variables in a versionId
 const TEMPLATE_TS = new Array(LENGTH_TS + 1).join('0');
 const TEMPLATE_SEQ = new Array(LENGTH_SEQ + 1).join('0');
 const TEMPLATE_RG = new Array(LENGTH_RG + 1).join(' ');
+const TEMPLATE_ID = new Array(LENGTH_ID + 1).join('0');
 
 export const S3_VERSION_ID_ENCODING_TYPE = process.env.S3_VERSION_ID_ENCODING_TYPE;
 
-// Counter that is increased after each call to generateUniqueVersionId
-export let uidCounter = 0;
-export const versionIdSeed = getVersionIdSeed();
+// Flag to enable the new version ID (35 characters) over legacy shortID format (27 characters).
+// When enabled and S3_VERSION_ID_ENCODING_TYPE is 'base62':
+//   - Uses new format: timestamp + sequential_position + rep_group_id + instance_id + version_id_format
+//   - Includes instance_id field to differentiate version IDs across multiple instances in the same k8s cluster
+//   - Appends format marker and version identifier for format detection
+// When disabled and S3_VERSION_ID_ENCODING_TYPE is 'base62':
+//   - Uses old format: timestamp + sequential_position + rep_group_id (legacy 27-char format)
+// Falls back to hex encoding if S3_VERSION_ID_ENCODING_TYPE is 'hex' or unset
+export const ENABLE_FORMATTED_VERSION_ID =
+    process.env.ENABLE_FORMATTED_VERSION_ID === 'true' ||
+    process.env.ENABLE_FORMATTED_VERSION_ID === '1';
+
+// version ID format added to the end of the version ID
+const VERSION_ID_FORMAT_VERSION = '1';
+const VERSION_ID_FORMAT_SUFFIX = `${VersioningConstants.VersionId.FormatMarker}${VERSION_ID_FORMAT_VERSION}`;
+assert(VERSION_ID_FORMAT_SUFFIX.length === LENGTH_FT, `versionID format must be ${LENGTH_FT} bytes`);
+
+const LEGACY_BASE62_DECODED_LENGTH = 27;
+const BASE62_DECODED_LENGTH = 35;
+const BASE62_ENCODED_LENGTH = 32;
 
 /**
  * Left-pad a string representation of a value with a given template.
@@ -91,23 +129,6 @@ function wait(span: number) {
     }
 }
 
-export function getVersionIdSeed(): string {
-    // The HOSTNAME environment variable is set by default by Kubernetes
-    // and populated with the pod name, containing a suffix with a unique id
-    // as a string.
-    // By default, we rely on the pid, to account for multiple workers in
-    // cluster mode. As a result, the unique id is either <pod-suffix>.<pid>
-    // or <pid>.
-    // If unique vID are needed in a multi cluster mode architecture (i.e.,
-    // multiple server instances, each with multiple workers), the
-    // HOSTNAME environment variable can be set.
-    return `${process.env.HOSTNAME?.split('-').pop() || ''}${process.pid}`;
-}
-
-export function generateUniqueVersionId(replicationGroupId: string): string {
-    return generateVersionId(`${versionIdSeed}.${uidCounter++}`, replicationGroupId);
-}
-
 /**
  * This function returns a "versionId" string indicating the current time as a
  * combination of the current time in millisecond, the position of the request
@@ -123,6 +144,20 @@ export function generateUniqueVersionId(replicationGroupId: string): string {
 export function generateVersionId(info: string, replicationGroupId: string): string {
     // replication group ID, like PARIS; will be trimmed if exceed LENGTH_RG
     const repGroupId = padRight(replicationGroupId, TEMPLATE_RG);
+
+    let otherInfo = '';
+    let instanceIdPadded = '';
+    let formatSuffix = '';
+
+    if (!S3_VERSION_ID_ENCODING_TYPE || S3_VERSION_ID_ENCODING_TYPE === 'hex') {
+        // In HEX encoding, the full info data is used.
+        otherInfo = info;
+    } else if (ENABLE_FORMATTED_VERSION_ID) {
+        // In base62, info is for the instance ID and is trimmed/padded.
+        instanceIdPadded = padRight(info, TEMPLATE_ID);
+        // Add the version ID format marker and version.
+        formatSuffix = VERSION_ID_FORMAT_SUFFIX;
+    }
 
     // Need to wait for the millisecond slot got "flushed". We wait for
     // only a single millisecond when the module is restarted, which is
@@ -143,13 +178,6 @@ export function generateVersionId(info: string, replicationGroupId: string): str
     lastSeq = lastTimestamp === ts ? lastSeq + 1 : 0;
     lastTimestamp = ts;
 
-    // if S3_VERSION_ID_ENCODING_TYPE is "hex", info is used.
-    if (S3_VERSION_ID_ENCODING_TYPE === 'hex' || !S3_VERSION_ID_ENCODING_TYPE) {
-        // info field stays as is
-    } else {
-        info = '';
-    }
-
     // In the default cases, we reverse the chronological order of the
     // timestamps so that all versions of an object can be retrieved in the
     // reversed chronological order---newest versions first. This is because of
@@ -158,7 +186,9 @@ export function generateVersionId(info: string, replicationGroupId: string): str
         padLeft(MAX_TS - lastTimestamp, TEMPLATE_TS) +
         padLeft(MAX_SEQ - lastSeq, TEMPLATE_SEQ) +
         repGroupId +
-        info
+        otherInfo +
+        instanceIdPadded +
+        formatSuffix
     );
 }
 
@@ -272,6 +302,30 @@ export const ENC_TYPE_HEX = 0; // legacy (large) encoding
 export const ENC_TYPE_BASE62 = 1; // new (tiny) encoding
 
 /**
+ * Checks if the given versionId string contains the specified format version.
+ *
+ * @param versionId - The versionId string to check.
+ * @param version - The expected format version.
+ * @returns true if the versionId contains the format marker and version, false otherwise.
+ */
+function hasVersionIDFormat(versionId: string, version: string): boolean {
+    // Format marker can only exist after the required versionId sections.
+    // This check removes the risk of looking for the format marker in the
+    // replication group ID, which can technically contain any character as
+    // it's set by the end user.
+    if (versionId.length < LENGTH_TS + LENGTH_SEQ + LENGTH_RG + LENGTH_FT) {
+        return false; // Not enough characters for format marker
+    }
+    // For constant time lookup, we always assume that the format marker is
+    // at the end of the versionId.
+    const formatMarkerIdx = versionId.length - LENGTH_FT;
+    if (versionId.charAt(formatMarkerIdx) !== VersioningConstants.VersionId.FormatMarker) {
+        return false; // no format marker
+    }
+    return versionId.substring(formatMarkerIdx + 1) === version; // check if the version matches
+}
+
+/**
  * Encode a versionId to obscure internal information contained
  * in a version ID.
  *
@@ -279,8 +333,9 @@ export const ENC_TYPE_BASE62 = 1; // new (tiny) encoding
  * @return - the encoded versionId
  */
 export function encode(str: string): string {
-    // default format without 'info' field will always be 27 characters
-    if (str.length === 27) {
+    // Legacy base62 version IDs (without 'info' field) are always 27 characters long.
+    // The new base62 format is 35 characters and includes the format marker at the end.
+    if (str.length === LEGACY_BASE62_DECODED_LENGTH || hasVersionIDFormat(str, VERSION_ID_FORMAT_VERSION)) {
         return base62Encode(str);
     } // legacy format
     return hexEncode(str);
@@ -296,15 +351,20 @@ export function encode(str: string): string {
  */
 export function decode(str: string): string | Error {
     // default format is exactly 32 characters when encoded
-    if (str.length === 32) {
+    if (str.length === BASE62_ENCODED_LENGTH) {
         const decoded: string | Error = base62Decode(str);
-        if (typeof decoded === 'string' && decoded.length !== 27) {
-            return new Error(`decoded ${str} is not length 27`);
+        // Legacy base62 version IDs (without 'info' field) are always 27 characters long.
+        // The new base62 format is always 35 characters long.
+        if (typeof decoded === 'string' &&
+            decoded.length !== LEGACY_BASE62_DECODED_LENGTH &&
+            decoded.length !== BASE62_DECODED_LENGTH) {
+            return new Error(`decoded ${str} is not length ` +
+                `${LEGACY_BASE62_DECODED_LENGTH} or ${BASE62_DECODED_LENGTH}`);
         }
         return decoded;
     }
     // legacy format
-    if (str.length > 32) {
+    if (str.length > BASE62_ENCODED_LENGTH) {
         return hexDecode(str);
     }
     return new Error(`cannot decode str ${str.length}`);
