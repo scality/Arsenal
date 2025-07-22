@@ -139,6 +139,7 @@ export type ObjectMDOperationParams = {
     needOplogUpdate: boolean,
     originOp: string,
     doesNotNeedOpogUpdate?: boolean,
+    preventConcurrentCompletion?: boolean,
     conditions: any,
 };
 
@@ -1200,6 +1201,9 @@ class MongoClientInterface {
      * @param {string} params.vFormat - object key format.
      * @param {boolean} params.needOplogUpdate - If true, the object is directly put into the collection
      * with updating the operation log.
+     * @param {boolean} params.preventConcurrentCompletion - If true, the object is only created if 
+     * completeInProgress is not already set to true. Fix this concurrent completeMultipartUpload issue : 
+     * https://scality.atlassian.net/jira/software/c/projects/OS/boards/268?selectedIssue=CLDSRV-687
      * @param {Object} log - The logger to use.
      * @param {Function} cb - The callback function to call when the operation is complete. It is called with an error
      * if there is an issue with the operation.
@@ -1220,6 +1224,9 @@ class MongoClientInterface {
         }
         const key = formatMasterKey(objName, params.vFormat);
         const putFilter = { _id: key };
+        if (params?.preventConcurrentCompletion) {
+            putFilter['value.completeInProgress'] = { $ne: true };
+        }
         return collection.updateOne(putFilter, {
             $set: {
                 _id: key,
