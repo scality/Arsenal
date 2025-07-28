@@ -321,7 +321,10 @@ export default class RequestContext {
             objectLockRetentionDays: this._objectLockRetentionDays,
             needQuota: this._needQuota,
         };
-        return JSON.stringify(requestInfo);
+        console.time('requestContextSerialization');
+        const serialized = JSON.stringify(requestInfo);
+        console.timeEnd('requestContextSerialization');
+        return serialized;
     }
 
     /**
