@@ -140,6 +140,7 @@ export type ObjectMDOperationParams = {
     originOp: string,
     doesNotNeedOpogUpdate?: boolean,
     conditions: any,
+    isForPutObject?: boolean,
 };
 
 export type InternalListObjectParams = {
@@ -505,6 +506,8 @@ class MongoClientInterface {
                         },
                     },
                 };
+                const vFormat = doc.vFormat || this.defaultBucketKeyFormat;
+                this.bucketVFormatCache.add(bucketName, vFormat);
                 return cb(null, BucketInfo.fromJson(bucketMetadata));
             })
             .catch(err => {
@@ -1425,11 +1428,13 @@ class MongoClientInterface {
                 });
             },
             (vFormat, doc, next) => {
-                if (!doc && params && params.versionId) {
+                if (!doc && (params?.versionId || params?.isForPutObject)) {
                     return next(errors.NoSuchKey);
                 }
                 // If no master found then object is either non existent
                 // or last version is delete marker
+                // In the case of PutObject, we don't need to get the
+                // latest version: if the key is not found, we just return NoSuchKey.
                 if (!doc || doc.value.isPHD) {
                     this.getLatestVersion(c, objName, vFormat, log, (err, value?) => {
                         if (err?.is.NoSuchKey) {
