@@ -107,6 +107,8 @@ export type MongoDBClientInterfaceParameters = {
     shardCollections: boolean,
 };
 
+const cachedNoSuchKeyError = errors.NoSuchKey;
+
 export type BucketMetadataMongoDB = Omit<Omit<BucketMetadata, 'quotaMax'>, 'capabilities'> & {
     // Old buckets might not have a quotaMax 
     quotaMax?: Long;
@@ -1474,7 +1476,7 @@ class MongoClientInterface {
             },
             (vFormat, doc, next) => {
                 if (!doc && (params?.versionId || params?.isForPutObject)) {
-                    return next(errors.NoSuchKey);
+                    return next(cachedNoSuchKeyError);
                 }
                 // If no master found then object is either non existent
                 // or last version is delete marker
