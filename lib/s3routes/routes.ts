@@ -206,8 +206,10 @@ export default function routes(
         dataRetrievalParams,
     } = params;
 
+    const requestInfos = requestUtils.getIpAndHttpProtocolSecurity(req, s3config);
+
     const clientInfo = {
-        clientIP: requestUtils.getClientIp(req, s3config),
+        clientIP: requestInfos.ip,
         clientPort: req.socket.remotePort,
         httpMethod: req.method,
         httpURL: req.url,
@@ -220,6 +222,11 @@ export default function routes(
         // @ts-ignore
         bodyLength: parseInt(req.headers['content-length'], 10) || 0,
     };
+
+    // @ts-ignore
+    req.clientIp = clientInfo.clientIP;
+    // @ts-ignore
+    req.isSecure = requestInfos.isSecure;
 
     let reqUids = req.headers['x-scal-request-uids'];
     if (reqUids !== undefined && !isValidReqUids(reqUids)) {
