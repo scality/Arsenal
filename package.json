@@ -3,7 +3,7 @@
   "engines": {
     "node": ">=20"
   },
-  "version": "8.2.27",
+  "version": "8.2.28",
   "description": "Common utilities for the S3 project components",
   "main": "build/index.js",
   "repository": {
@@ -47,8 +47,11 @@
     "sproxydclient": "github:scality/sproxydclient#8.1.0",
     "utf8": "^3.0.0",
     "uuid": "^10.0.0",
-    "werelogs": "scality/werelogs#0bea4b3c8754219a1fc9b9e50d9dfb2797258d32",
+    "werelogs": "scality/werelogs#f38a020d076292e8e4d75a6115fa1c36aa32175b",
     "xml2js": "^0.6.2"
+  },
+  "resolutions": {
+    "werelogs": "scality/werelogs#f38a020d076292e8e4d75a6115fa1c36aa32175b"
   },
   "optionalDependencies": {
     "ioctl": "^2.0.2"
