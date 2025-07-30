@@ -10,6 +10,7 @@ import * as constants from '../constants';
 import DataWrapper from '../storage/data/DataWrapper';
 import StatsClient from '../metrics/StatsClient';
 import { objectKeyByteLimit } from '../constants';
+import LRUCache from '../algos/cache/LRUCache';
 const jsutil = require('../jsutil');
 
 const ALLOW_INVALID_META_HEADERS = !!process.env.ALLOW_INVALID_META_HEADERS;
@@ -1106,6 +1107,8 @@ export function getBucketNameFromHost(
     );
 }
 
+const hostCache = new LRUCache(1000);
+
 /**
  * Modify http request object
  * @param request - http request object
@@ -1122,19 +1125,61 @@ export function normalizeRequest(
     // TODO: make the namespace come from a config variable.
     // @ts-expect-error
     request.namespace = 'default';
-    // Parse bucket and/or object names from request
-    const resources = getResourceNames(request, parsedUrl.pathname!,
-        validHosts);
-    // @ts-expect-error
-    request.gotBucketNameFromHost = resources.gotBucketNameFromHost;
-    // @ts-expect-error
-    request.bucketName = resources.bucket;
-    // @ts-expect-error
-    request.objectKey = resources.object;
-    // @ts-expect-error
-    request.parsedHost = resources.host;
-    // @ts-expect-error
-    request.path = resources.path;
+
+    const hostHeader = request.headers.host;
+    let cached;
+
+    // 3. Check the cache first using your .get() method
+    if (hostHeader) {
+        cached = hostCache.get(hostHeader);
+    }
+
+    if (cached) {
+        // CACHE HIT: Apply the cached results from the host
+        Object.assign(request, cached);
+    
+        const pathWithSpaces = parsedUrl.pathname?.replace(/\+/g, ' ') ?? '';
+        const path = decodeURIComponent(pathWithSpaces);
+        // @ts-expect-error
+        request.path = path;
+    
+        // Now, determine bucketName and objectKey based on the request style
+        if (cached.gotBucketNameFromHost) {
+            // Virtual-hosted style: object key is the whole path
+            // @ts-expect-error
+            request.objectKey = path.startsWith('/') ? path.slice(1) : path;
+        } else {
+            // Path-style: bucket and object are in the path itself
+            const urlArr = path.split('/');
+            // @ts-expect-error
+            request.bucketName = urlArr[1] || undefined;
+            // @ts-expect-error
+            request.objectKey = urlArr.length > 2 ? urlArr.slice(2).join('/') : undefined;
+        }
+    } else {
+        // CACHE MISS: Do the full parsing
+        const resources = getResourceNames(request, parsedUrl.pathname ?? '', validHosts);
+        // @ts-expect-error
+        request.gotBucketNameFromHost = resources.gotBucketNameFromHost;
+        // @ts-expect-error
+        request.bucketName = resources.bucket;
+        // @ts-expect-error
+        request.objectKey = resources.object;
+        // @ts-expect-error
+        request.parsedHost = resources.host;
+        // @ts-expect-error
+        request.path = resources.path;
+
+        // 4. Store the host-derived results in the cache using your .add() method
+        if (hostHeader) {
+            hostCache.add(hostHeader, {
+                bucketName: resources.bucket,
+                parsedHost: resources.host,
+                gotBucketNameFromHost: resources.gotBucketNameFromHost,
+            });
+        }
+    }
+
     // For streaming v4 auth, the total body content length
     // without the chunk metadata is sent as
     // the x-amz-decoded-content-length
