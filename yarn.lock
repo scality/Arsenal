@@ -6947,9 +6947,9 @@ webidl-conversions@^7.0.0:
     fast-safe-stringify "^2.1.1"
     safe-json-stringify "^1.2.0"
 
-werelogs@scality/werelogs#5dd124747dbb0ef110032835d38e1885cc94edd9:
+werelogs@scality/werelogs#0bea4b3c8754219a1fc9b9e50d9dfb2797258d32:
   version "8.2.2"
-  resolved "https://codeload.github.com/scality/werelogs/tar.gz/5dd124747dbb0ef110032835d38e1885cc94edd9"
+  resolved "https://codeload.github.com/scality/werelogs/tar.gz/0bea4b3c8754219a1fc9b9e50d9dfb2797258d32"
   dependencies:
     fast-safe-stringify "^2.1.1"
     safe-json-stringify "^1.2.0"
