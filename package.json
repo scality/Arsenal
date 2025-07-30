@@ -47,7 +47,7 @@
     "sproxydclient": "github:scality/sproxydclient#8.1.0",
     "utf8": "^3.0.0",
     "uuid": "^10.0.0",
-    "werelogs": "scality/werelogs#8.2.2",
+    "werelogs": "scality/werelogs#5dd124747dbb0ef110032835d38e1885cc94edd9",
     "xml2js": "^0.6.2"
   },
   "optionalDependencies": {

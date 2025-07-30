@@ -6940,9 +6940,16 @@ webidl-conversions@^7.0.0:
   resolved "https://registry.yarnpkg.com/webidl-conversions/-/webidl-conversions-7.0.0.tgz#256b4e1882be7debbf01d05f0aa2039778ea080a"
   integrity sha512-VwddBukDzu71offAQR975unBIGqfKZpM+8ZX6ySk8nYhVoo5CYaZyzt3YBvYtRtO+aoGlqxPg/B87NGVZ/fu6g==
 
-"werelogs@github:scality/werelogs#8.2.2", werelogs@scality/werelogs#8.2.2:
+"werelogs@github:scality/werelogs#8.2.2":
   version "8.2.2"
   resolved "https://codeload.github.com/scality/werelogs/tar.gz/e53bef5145697bf8af940dcbe59408988d64854f"
+  dependencies:
+    fast-safe-stringify "^2.1.1"
+    safe-json-stringify "^1.2.0"
+
+werelogs@scality/werelogs#5dd124747dbb0ef110032835d38e1885cc94edd9:
+  version "8.2.2"
+  resolved "https://codeload.github.com/scality/werelogs/tar.gz/5dd124747dbb0ef110032835d38e1885cc94edd9"
   dependencies:
     fast-safe-stringify "^2.1.1"
     safe-json-stringify "^1.2.0"
