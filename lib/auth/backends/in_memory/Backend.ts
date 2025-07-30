@@ -84,6 +84,7 @@ class InMemoryBackend extends BaseBackend {
         options: any,
         callback: any,
     ) {
+        console.log('>>>>>>>>>', "verifySignatureV4");
         const entity = this.indexer.getEntityByKey(accessKey);
         if (!entity) {
             return callback(errors.InvalidAccessKeyId);
