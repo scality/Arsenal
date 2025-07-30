@@ -21,6 +21,8 @@ import ObjectMD, { ObjectMDData } from '../../../models/ObjectMD';
 import * as jsutil from '../../../jsutil';
 import { ArsenalCallback, NestedOmit } from '../../../types';
 
+const OPTIM_CLOUDSERVER_PARALLEL_GETMD = process.env.OPTIM_CLOUDSERVER_PARALLEL_GETMD === 'true';
+
 import {
     MongoClient,
     Long,
@@ -556,6 +558,46 @@ class MongoClientInterface {
         return undefined;
     }
 
+    getBucketAndObjectParallel(
+        bucketName: string,
+        objName: string,
+        params: ObjectMDOperationParams,
+        log: werelogs.Logger,
+        cb: ArsenalCallback<{ bucket: string, obj?: string }>,
+    ) {
+        // same as getBucketAndObject, but with parallel execution
+        // of getBucketAttributes and getObject
+        let _bucket: string;
+        let _obj: string | undefined;
+        return async.parallel([
+            next => this.getBucketAttributes(bucketName, log, (err, bucket?) => {
+                if (err) {
+                    return next(err);
+                }
+                _bucket = BucketInfo.fromObj(bucket).serialize();
+                return next();
+            }),
+            next => this.getObject(bucketName, objName, params, log, (err, obj?) => {
+                if (err?.is.NoSuchKey) {
+                    return next();
+                }
+                if (err) {
+                    return next(err);
+                }
+                _obj = JSON.stringify(obj);
+                return next();
+            }),
+        ], err => {
+            if (err) {
+                return cb(errors.InternalError);
+            }
+            return cb(null, {
+                bucket: _bucket,
+                obj: _obj,
+            });
+        });
+    }
+
     getBucketAndObject(
         bucketName: string,
         objName: string,
@@ -563,7 +605,10 @@ class MongoClientInterface {
         log: werelogs.Logger,
         cb: ArsenalCallback<{ bucket: string, obj?: string }>,
     ) {
-        this.getBucketAttributes(bucketName, log, (err, bucket?) => {
+        if (OPTIM_CLOUDSERVER_PARALLEL_GETMD) {
+            return this.getBucketAndObjectParallel(bucketName, objName, params, log, cb);
+        }
+        return this.getBucketAttributes(bucketName, log, (err, bucket?) => {
             if (err) {
                 log.error(
                     'getBucketAttributes: error getting bucket attributes',
