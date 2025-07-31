@@ -216,8 +216,6 @@ export default function routes(
         // @ts-ignore
         objectKey: req.objectKey,
         // @ts-ignore
-        bytesReceived: req.parsedContentLength || 0, // not defined yet
-        // @ts-ignore
         bodyLength: parseInt(req.headers['content-length'], 10) || 0,
     };
 
