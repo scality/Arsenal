@@ -216,7 +216,7 @@ export default function routes(
         // @ts-ignore
         objectKey: req.objectKey,
         // @ts-ignore
-        bytesReceived: req.parsedContentLength || 0,
+        bytesReceived: req.parsedContentLength || 0, // not defined yet
         // @ts-ignore
         bodyLength: parseInt(req.headers['content-length'], 10) || 0,
     };
@@ -263,6 +263,8 @@ export default function routes(
     try {
         const validHosts = allEndpoints.concat(websiteEndpoints);
         routesUtils.normalizeRequest(req, validHosts);
+        // @ts-ignore parsedContentLength defined in normalizeRequest
+        log.addDefaultFields({ bytesReceived: req.parsedContentLength || 0 });
     } catch (err: any) {
         log.debug('could not normalize request', { error: err.stack });
         return routesUtils.responseXMLBody(
