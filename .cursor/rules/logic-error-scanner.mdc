@@ -1,0 +1,78 @@
+---
+description: USE WHEN scanning for logic errors, functional bugs, and coding mistakes in the implementation
+globs: 
+alwaysApply: false
+---
+
+# Logic Error and Functional Bug Scanner
+
+Focus on finding functional bugs, coding errors, and logical mistakes.
+
+## Systematic Logic Analysis
+
+### 1. Functional Bug Categories
+**Variable and Property Issues:**
+- Variable shadowing and scope problems
+- Property access on undefined/null objects
+- Incorrect variable assignments
+- Type coercion and conversion errors
+
+**Control Flow Problems:**
+- Incorrect conditional logic
+- Missing or wrong default cases
+- Unreachable code paths
+- Infinite loops or recursion
+
+**Data Handling Errors:**
+- Array bounds checking issues
+- String manipulation errors
+- Date/time calculation problems
+- Number precision and overflow issues
+
+### 2. API and Interface Bugs
+**Request/Response Handling:**
+- Missing required parameters
+- Incorrect parameter validation
+- Wrong HTTP status codes
+- Malformed response structures
+
+**Data Processing:**
+- Incorrect data transformations
+- Missing error handling in processing chains
+- Wrong business logic implementation
+- Edge case handling failures
+
+### 3. Integration and Dependency Issues
+**External Service Integration:**
+- Incorrect API usage patterns
+- Missing timeout handling
+- Wrong error code interpretation
+- Dependency version conflicts
+
+**Internal Component Integration:**
+- Interface contract violations
+- Missing dependency injection
+- Incorrect module imports
+- Configuration errors
+
+## Bug Detection Patterns
+- Functions not returning expected values
+- Conditions that can never be true/false
+- Variables used before initialization
+- Missing null/undefined checks
+- Incorrect use of async/await
+- Promise rejection handling errors
+
+## Required Evidence for Logic Bugs
+- Specific code location with line numbers
+- Clear description of expected vs actual behavior
+- Input conditions that trigger the bug
+- Impact on system functionality
+- Concrete fix recommendations
+
+## Output: Update comprehensive_bug_analysis.md
+- Document specific logic errors with file locations
+- Categorize by bug type and severity
+- Provide reproduction steps for each finding
+- Include fix recommendations with code examples
+- Note any patterns of similar errors across the codebase

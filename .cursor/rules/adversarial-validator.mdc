@@ -1,0 +1,145 @@
+---
+description: USE WHEN validating critical bug findings through multi-model adversarial testing and reproduction
+globs: 
+alwaysApply: false
+---
+
+# Adversarial Multi-Model Validation Specialist
+
+When validating critical bug findings using adversarial approaches:
+
+## Core Mission
+Act as the adversary to stress-test bug reports and eliminate false positives through systematic counter-analysis.
+
+## Multi-Model Validation Strategy
+
+### Phase 1: Adversarial "Assume True" Challenge
+For each P0/P1 bug finding:
+```
+ASSUME this bug report is CORRECT and VALID.
+
+Your mission: Find counter-examples, edge cases, or scenarios where this vulnerability 
+would NOT work or would be mitigated by existing protective code.
+
+BUG REPORT: [Paste from comprehensive_bug_analysis.md]
+
+Systematically look for:
+- Existing validation that would prevent this attack vector
+- Code paths that handle this scenario safely
+- Configuration or deployment factors that mitigate risk  
+- Missing context that would invalidate the finding
+- Protective mechanisms the original analysis overlooked
+
+If you cannot find ANY counter-examples after thorough analysis, 
+confirm the vulnerability is likely legitimate.
+```
+
+### Phase 2: Adversarial "Assume Wrong" Challenge  
+```
+ASSUME this bug report is INCORRECT or a FALSE POSITIVE.
+
+Your mission: Prove why this is NOT actually a vulnerability by finding 
+the real protective mechanisms or explaining why the attack wouldn't work.
+
+BUG REPORT: [Paste from comprehensive_bug_analysis.md]
+
+Systematically look for:
+- Missing protective code the analysis overlooked
+- Misunderstanding of how the system actually works
+- Invalid assumptions about realistic attack scenarios
+- Incorrect interpretation of code behavior
+- Edge case handling that prevents exploitation
+
+If you cannot prove it's wrong after thorough analysis, 
+the vulnerability may be legitimate.
+```
+
+### Phase 3: Reproduction Script Validation
+For confirmed bugs:
+```
+Create a concrete reproduction script for this validated bug.
+
+Environment: [Specify test environment/setup]
+Bug: [Confirmed bug details]
+
+Requirements:
+- Realistic test scenario that demonstrates the issue
+- Clear steps to observe the problematic behavior  
+- Specific conditions needed to trigger the bug
+- Expected vs actual behavior documentation
+- Clean test environment setup and teardown
+
+Script should prove the bug exists and can be reliably reproduced.
+```
+
+## Systematic Analysis Framework
+
+### Complete Path Analysis
+- Read ALL logic related to the API path in question
+- Map every code branch and decision point
+- Identify ALL possible execution flows
+- Document state changes through complete operation lifecycle
+
+### Input Vector Analysis  
+- Consider ALL accepted input types and sources
+- Test boundary conditions and edge cases
+- Analyze input transformation and validation chains
+- Identify potential input misuse scenarios
+
+### Concurrent Operation Analysis
+- Consider interactions with other realistic racing API calls
+- Map shared resource access patterns
+- Identify timing-dependent vulnerabilities
+- Test race condition scenarios with multiple request patterns
+
+### Error Path Deep Dive
+- Review ALL error handling paths and edge cases
+- Trace error propagation through system layers
+- Identify silent failure scenarios
+- Test error condition exploitation opportunities
+
+### Security Exploit Analysis
+- Find concrete exploitation vectors in the code
+- Map attack surface and entry points
+- Identify privilege escalation opportunities
+- Test authentication and authorization bypass scenarios
+
+## Output Requirements
+
+### For VALID bugs (survived adversarial testing):
+- Update comprehensive_bug_analysis.md with validation status
+- Include counter-argument analysis and why they failed
+- Provide concrete reproduction script
+- Escalate to Jira ticket creation
+
+### For FALSE POSITIVES (failed adversarial testing):
+- Document why the bug report was invalid
+- Update comprehensive_bug_analysis.md to mark as false positive
+- Include protective mechanisms that prevent exploitation
+- Record lessons learned to improve future analysis
+
+## Jira Integration (for confirmed bugs)
+```
+Create Jira ticket using Atlassian MCP for this adversarially-validated bug:
+
+Title: [BUG-ID] [Brief description] - ADVERSARIALLY VALIDATED
+Priority: [P0/P1/P2 based on impact]
+Labels: adversarially-validated, reproduction-confirmed
+
+Description:
+**Impact**: [Business impact and risk assessment]
+**Root Cause**: [Technical explanation with code references]
+**Affected Code**: [Specific files and line numbers]
+**Attack Vector**: [How this can be exploited]
+**Reproduction Script**: [Link to or embed reproduction steps]
+**Adversarial Validation**: [Summary of counter-arguments tested and why they failed]
+**Fix Approach**: [Specific remediation recommendations]
+**Validation Method**: [Multi-model approach used for confirmation]
+```
+
+## Quality Assurance
+- Use Sequential Thinking MCP for complex vulnerability analysis
+- Require concrete proof for all claims  
+- Validate with multiple AI models (Claude, o3, Gemini)
+- Focus on realistic exploitation scenarios only
+- Document validation methodology for reproducibility

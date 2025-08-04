@@ -1,0 +1,336 @@
+Date : 2025-07-31 17:25:34
+Directory : /home/william/Scality/arsenal/lib
+Total : 236 files,  35970 codes, 11380 comments, 3651 blanks, all 51001 lines
+
+Languages
++--------------------+------------+------------+------------+------------+------------+
+| language           | files      | code       | comment    | blank      | total      |
++--------------------+------------+------------+------------+------------+------------+
+| TypeScript         |        153 |     23,521 |      9,152 |      2,533 |     35,206 |
+| JavaScript         |         69 |      8,921 |      2,210 |        891 |     12,022 |
+| JSON               |          6 |      2,611 |          0 |          5 |      2,616 |
+| Markdown           |          7 |        776 |          0 |        221 |        997 |
+| JSON with Comments |          1 |        141 |         18 |          1 |        160 |
++--------------------+------------+------------+------------+------------+------------+
+
+Directories
++--------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                                       | files      | code       | comment    | blank      | total      |
++--------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                                          |        236 |     35,970 |     11,380 |      3,651 |     51,001 |
+| . (Files)                                                                                  |         10 |        462 |        329 |         54 |        845 |
+| algos                                                                                      |         19 |      2,433 |      1,142 |        365 |      3,940 |
+| algos/cache                                                                                |          3 |        421 |        417 |         59 |        897 |
+| algos/heap                                                                                 |          1 |         98 |          0 |         27 |        125 |
+| algos/list                                                                                 |         12 |      1,708 |        715 |        248 |      2,671 |
+| algos/set                                                                                  |          2 |        118 |          3 |         19 |        140 |
+| algos/stream                                                                               |          1 |         88 |          7 |         12 |        107 |
+| auth                                                                                       |         29 |      2,523 |        798 |        259 |      3,580 |
+| auth (Files)                                                                               |          3 |        634 |        219 |         45 |        898 |
+| auth/backends                                                                              |          8 |        747 |        235 |         90 |      1,072 |
+| auth/backends (Files)                                                                      |          2 |        257 |         96 |         35 |        388 |
+| auth/backends/in_memory                                                                    |          6 |        490 |        139 |         55 |        684 |
+| auth/v2                                                                                    |          8 |        316 |         90 |         46 |        452 |
+| auth/v4                                                                                    |         10 |        826 |        254 |         78 |      1,158 |
+| auth/v4 (Files)                                                                            |          8 |        585 |        158 |         63 |        806 |
+| auth/v4/streamingV4                                                                        |          2 |        241 |         96 |         15 |        352 |
+| clustering                                                                                 |          1 |        393 |        137 |         42 |        572 |
+| errors                                                                                     |          3 |      1,061 |        109 |        234 |      1,404 |
+| executables                                                                                |          6 |        145 |          0 |         23 |        168 |
+| executables/pensieveCreds                                                                  |          6 |        145 |          0 |         23 |        168 |
+| executables/pensieveCreds (Files)                                                          |          4 |        103 |          0 |         18 |        121 |
+| executables/pensieveCreds/tests                                                            |          2 |         42 |          0 |          5 |         47 |
+| executables/pensieveCreds/tests (Files)                                                    |          1 |          7 |          0 |          0 |          7 |
+| executables/pensieveCreds/tests/unit                                                       |          1 |         35 |          0 |          5 |         40 |
+| https                                                                                      |          3 |         37 |         31 |          4 |         72 |
+| metrics                                                                                    |          5 |        407 |        247 |         71 |        725 |
+| models                                                                                     |         18 |      4,476 |      2,220 |        483 |      7,179 |
+| network                                                                                    |         30 |      5,206 |      1,479 |        549 |      7,234 |
+| network (Files)                                                                            |          4 |        322 |        103 |         49 |        474 |
+| network/http                                                                               |          2 |        331 |        225 |         37 |        593 |
+| network/kmip                                                                               |         12 |      2,723 |        454 |        231 |      3,408 |
+| network/kmip (Files)                                                                       |          8 |      1,817 |        382 |        128 |      2,327 |
+| network/kmip/codec                                                                         |          2 |        709 |         12 |         87 |        808 |
+| network/kmip/transport                                                                     |          2 |        197 |         60 |         16 |        273 |
+| network/kmsAWS                                                                             |          2 |        291 |         70 |         53 |        414 |
+| network/probe                                                                              |          3 |        158 |         50 |         29 |        237 |
+| network/rest                                                                               |          3 |        475 |        146 |         42 |        663 |
+| network/rpc                                                                                |          4 |        906 |        431 |        108 |      1,445 |
+| patches                                                                                    |          1 |        204 |          0 |          8 |        212 |
+| policy                                                                                     |          3 |      1,175 |         22 |         10 |      1,207 |
+| policyEvaluator                                                                            |         10 |      1,530 |        717 |        110 |      2,357 |
+| policyEvaluator (Files)                                                                    |          4 |        906 |        443 |         73 |      1,422 |
+| policyEvaluator/utils                                                                      |          6 |        624 |        274 |         37 |        935 |
+| s3middleware                                                                               |         19 |      1,654 |        503 |        180 |      2,337 |
+| s3middleware (Files)                                                                       |         13 |        969 |        300 |        104 |      1,373 |
+| s3middleware/azureHelpers                                                                  |          3 |        368 |        103 |         44 |        515 |
+| s3middleware/lifecycleHelpers                                                              |          3 |        317 |        100 |         32 |        449 |
+| s3routes                                                                                   |         10 |      1,703 |        422 |        136 |      2,261 |
+| s3routes (Files)                                                                           |          3 |      1,142 |        375 |         95 |      1,612 |
+| s3routes/routes                                                                            |          7 |        561 |         47 |         41 |        649 |
+| storage                                                                                    |         59 |     11,474 |      2,433 |      1,005 |     14,912 |
+| storage (Files)                                                                            |          1 |        107 |         12 |         16 |        135 |
+| storage/data                                                                               |         32 |      5,504 |        866 |        379 |      6,749 |
+| storage/data (Files)                                                                       |          3 |      1,295 |        199 |         74 |      1,568 |
+| storage/data/external                                                                      |         24 |      3,790 |        487 |        256 |      4,533 |
+| storage/data/external (Files)                                                              |          5 |      1,600 |        163 |        110 |      1,873 |
+| storage/data/external/GCP                                                                  |         19 |      2,190 |        324 |        146 |      2,660 |
+| storage/data/external/GCP (Files)                                                          |          7 |      1,657 |        199 |         99 |      1,955 |
+| storage/data/external/GCP/GcpApis                                                          |         12 |        533 |        125 |         47 |        705 |
+| storage/data/file                                                                          |          3 |        308 |        152 |         33 |        493 |
+| storage/data/in_memory                                                                     |          1 |         96 |          8 |         12 |        116 |
+| storage/data/utils                                                                         |          1 |         15 |         20 |          4 |         39 |
+| storage/metadata                                                                           |         26 |      5,863 |      1,555 |        610 |      8,028 |
+| storage/metadata (Files)                                                                   |          2 |        606 |         85 |         60 |        751 |
+| storage/metadata/bucketclient                                                              |          2 |        253 |         75 |         33 |        361 |
+| storage/metadata/file                                                                      |          4 |        812 |        235 |         81 |      1,128 |
+| storage/metadata/in_memory                                                                 |          7 |        520 |         67 |         73 |        660 |
+| storage/metadata/mongoclient                                                               |          7 |      3,203 |        918 |        308 |      4,429 |
+| storage/metadata/proxy                                                                     |          4 |        469 |        175 |         55 |        699 |
+| stream                                                                                     |          2 |         34 |          8 |          3 |         45 |
+| testing                                                                                    |          1 |         98 |        101 |         13 |        212 |
+| versioning                                                                                 |          7 |        955 |        682 |        102 |      1,739 |
++--------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++--------------------------------------------------------------------------------------------+--------------------+------------+------------+------------+------------+
+| filename                                                                                   | language           | code       | comment    | blank      | total      |
++--------------------------------------------------------------------------------------------+--------------------+------------+------------+------------+------------+
+| /home/william/Scality/arsenal/lib/Clustering.ts                                            | TypeScript         |        182 |         86 |         13 |        281 |
+| /home/william/Scality/arsenal/lib/algos/cache/GapCache.ts                                  | TypeScript         |        141 |        196 |         27 |        364 |
+| /home/william/Scality/arsenal/lib/algos/cache/GapSet.ts                                    | TypeScript         |        200 |        144 |         21 |        365 |
+| /home/william/Scality/arsenal/lib/algos/cache/LRUCache.js                                  | JavaScript         |         80 |         77 |         11 |        168 |
+| /home/william/Scality/arsenal/lib/algos/heap/Heap.ts                                       | TypeScript         |         98 |          0 |         27 |        125 |
+| /home/william/Scality/arsenal/lib/algos/list/Extension.js                                  | JavaScript         |         39 |         80 |         11 |        130 |
+| /home/william/Scality/arsenal/lib/algos/list/MPU.js                                        | JavaScript         |        136 |         38 |         15 |        189 |
+| /home/william/Scality/arsenal/lib/algos/list/basic.js                                      | JavaScript         |         85 |         34 |          9 |        128 |
+| /home/william/Scality/arsenal/lib/algos/list/delimiter.ts                                  | TypeScript         |        233 |         85 |         39 |        357 |
+| /home/william/Scality/arsenal/lib/algos/list/delimiterCurrent.ts                           | TypeScript         |         79 |         35 |         13 |        127 |
+| /home/william/Scality/arsenal/lib/algos/list/delimiterMaster.ts                            | TypeScript         |        424 |        148 |         52 |        624 |
+| /home/william/Scality/arsenal/lib/algos/list/delimiterNonCurrent.js                        | JavaScript         |        124 |         58 |         21 |        203 |
+| /home/william/Scality/arsenal/lib/algos/list/delimiterOrphanDeleteMarker.js                | JavaScript         |        126 |         62 |         17 |        205 |
+| /home/william/Scality/arsenal/lib/algos/list/delimiterVersions.ts                          | TypeScript         |        360 |        129 |         49 |        538 |
+| /home/william/Scality/arsenal/lib/algos/list/exportAlgos.js                                | JavaScript         |         12 |          0 |          1 |         13 |
+| /home/william/Scality/arsenal/lib/algos/list/skip.js                                       | JavaScript         |         49 |         22 |         15 |         86 |
+| /home/william/Scality/arsenal/lib/algos/list/tools.js                                      | JavaScript         |         41 |         24 |          6 |         71 |
+| /home/william/Scality/arsenal/lib/algos/set/ArrayUtils.js                                  | JavaScript         |         75 |          3 |         10 |         88 |
+| /home/william/Scality/arsenal/lib/algos/set/SortedSet.js                                   | JavaScript         |         43 |          0 |          9 |         52 |
+| /home/william/Scality/arsenal/lib/algos/stream/MergeStream.js                              | JavaScript         |         88 |          7 |         12 |        107 |
+| /home/william/Scality/arsenal/lib/auth/AuthInfo.ts                                         | TypeScript         |         86 |         13 |         10 |        109 |
+| /home/william/Scality/arsenal/lib/auth/Vault.ts                                            | TypeScript         |        346 |        147 |         16 |        509 |
+| /home/william/Scality/arsenal/lib/auth/auth.ts                                             | TypeScript         |        202 |         59 |         19 |        280 |
+| /home/william/Scality/arsenal/lib/auth/backends/ChainBackend.ts                            | TypeScript         |        208 |         40 |         24 |        272 |
+| /home/william/Scality/arsenal/lib/auth/backends/base.ts                                    | TypeScript         |         49 |         56 |         11 |        116 |
+| /home/william/Scality/arsenal/lib/auth/backends/in_memory/AuthLoader.ts                    | TypeScript         |        157 |         35 |         13 |        205 |
+| /home/william/Scality/arsenal/lib/auth/backends/in_memory/Backend.ts                       | TypeScript         |        194 |         62 |         16 |        272 |
+| /home/william/Scality/arsenal/lib/auth/backends/in_memory/Indexer.ts                       | TypeScript         |         65 |         24 |         13 |        102 |
+| /home/william/Scality/arsenal/lib/auth/backends/in_memory/types.ts                         | TypeScript         |         40 |          1 |          7 |         48 |
+| /home/william/Scality/arsenal/lib/auth/backends/in_memory/validateAuthConfig.ts            | TypeScript         |         11 |          4 |          2 |         17 |
+| /home/william/Scality/arsenal/lib/auth/backends/in_memory/vaultUtilities.ts                | TypeScript         |         23 |         13 |          4 |         40 |
+| /home/william/Scality/arsenal/lib/auth/v2/algoCheck.ts                                     | TypeScript         |         12 |          4 |          1 |         17 |
+| /home/william/Scality/arsenal/lib/auth/v2/authV2.ts                                        | TypeScript         |          2 |          0 |          1 |          3 |
+| /home/william/Scality/arsenal/lib/auth/v2/checkRequestExpiry.ts                            | TypeScript         |         24 |          5 |          6 |         35 |
+| /home/william/Scality/arsenal/lib/auth/v2/constructStringToSign.ts                         | TypeScript         |         27 |         15 |          6 |         48 |
+| /home/william/Scality/arsenal/lib/auth/v2/getCanonicalizedAmzHeaders.ts                    | TypeScript         |         20 |         20 |          4 |         44 |
+| /home/william/Scality/arsenal/lib/auth/v2/getCanonicalizedResource.ts                      | TypeScript         |         76 |         33 |          9 |        118 |
+| /home/william/Scality/arsenal/lib/auth/v2/headerAuthCheck.ts                               | TypeScript         |         80 |          4 |         10 |         94 |
+| /home/william/Scality/arsenal/lib/auth/v2/queryAuthCheck.ts                                | TypeScript         |         75 |          9 |          9 |         93 |
+| /home/william/Scality/arsenal/lib/auth/v4/authV4.ts                                        | TypeScript         |          2 |          0 |          1 |          3 |
+| /home/william/Scality/arsenal/lib/auth/v4/awsURIencode.ts                                  | TypeScript         |         51 |         28 |          3 |         82 |
+| /home/william/Scality/arsenal/lib/auth/v4/constructStringToSign.ts                         | TypeScript         |         44 |          5 |          4 |         53 |
+| /home/william/Scality/arsenal/lib/auth/v4/createCanonicalRequest.ts                        | TypeScript         |         71 |         17 |          8 |         96 |
+| /home/william/Scality/arsenal/lib/auth/v4/headerAuthCheck.ts                               | TypeScript         |        142 |         27 |         16 |        185 |
+| /home/william/Scality/arsenal/lib/auth/v4/queryAuthCheck.ts                                | TypeScript         |         93 |         18 |         12 |        123 |
+| /home/william/Scality/arsenal/lib/auth/v4/streamingV4/V4Transform.ts                       | TypeScript         |        219 |         84 |         13 |        316 |
+| /home/william/Scality/arsenal/lib/auth/v4/streamingV4/constructChunkStringToSign.ts        | TypeScript         |         22 |         12 |          2 |         36 |
+| /home/william/Scality/arsenal/lib/auth/v4/timeUtils.ts                                     | TypeScript         |         32 |         21 |          4 |         57 |
+| /home/william/Scality/arsenal/lib/auth/v4/validateInputs.ts                                | TypeScript         |        150 |         42 |         15 |        207 |
+| /home/william/Scality/arsenal/lib/clustering/ClusterRPC.ts                                 | TypeScript         |        393 |        137 |         42 |        572 |
+| /home/william/Scality/arsenal/lib/constants.ts                                             | TypeScript         |         73 |         96 |          6 |        175 |
+| /home/william/Scality/arsenal/lib/db.ts                                                    | TypeScript         |         89 |         91 |         15 |        195 |
+| /home/william/Scality/arsenal/lib/errorUtils.ts                                            | TypeScript         |         10 |          0 |          2 |         12 |
+| /home/william/Scality/arsenal/lib/errors/arsenalErrors.ts                                  | TypeScript         |        851 |         28 |        208 |      1,087 |
+| /home/william/Scality/arsenal/lib/errors/index.ts                                          | TypeScript         |        135 |         66 |         25 |        226 |
+| /home/william/Scality/arsenal/lib/errors/kmsErrors.ts                                      | TypeScript         |         75 |         15 |          1 |         91 |
+| /home/william/Scality/arsenal/lib/executables/pensieveCreds/README.md                      | Markdown           |         13 |          0 |          8 |         21 |
+| /home/william/Scality/arsenal/lib/executables/pensieveCreds/getPensieveCreds.js            | JavaScript         |         42 |          0 |          4 |         46 |
+| /home/william/Scality/arsenal/lib/executables/pensieveCreds/package.json                   | JSON               |         14 |          0 |          1 |         15 |
+| /home/william/Scality/arsenal/lib/executables/pensieveCreds/tests/resources.json           | JSON               |          7 |          0 |          0 |          7 |
+| /home/william/Scality/arsenal/lib/executables/pensieveCreds/tests/unit/utilsSpec.js        | JavaScript         |         35 |          0 |          5 |         40 |
+| /home/william/Scality/arsenal/lib/executables/pensieveCreds/utils.js                       | JavaScript         |         34 |          0 |          5 |         39 |
+| /home/william/Scality/arsenal/lib/https/ciphers.ts                                         | TypeScript         |         28 |          0 |          1 |         29 |
+| /home/william/Scality/arsenal/lib/https/dh2048.ts                                          | TypeScript         |          7 |         31 |          2 |         40 |
+| /home/william/Scality/arsenal/lib/https/index.ts                                           | TypeScript         |          2 |          0 |          1 |          3 |
+| /home/william/Scality/arsenal/lib/ipCheck.ts                                               | TypeScript         |         54 |         21 |          4 |         79 |
+| /home/william/Scality/arsenal/lib/jsutil.ts                                                | TypeScript         |         17 |         14 |          3 |         34 |
+| /home/william/Scality/arsenal/lib/metrics/RedisClient.ts                                   | TypeScript         |         96 |        101 |         23 |        220 |
+| /home/william/Scality/arsenal/lib/metrics/StatsClient.ts                                   | TypeScript         |        136 |         75 |         20 |        231 |
+| /home/william/Scality/arsenal/lib/metrics/StatsModel.ts                                    | TypeScript         |        144 |         71 |         18 |        233 |
+| /home/william/Scality/arsenal/lib/metrics/ZenkoMetrics.ts                                  | TypeScript         |         27 |          0 |          9 |         36 |
+| /home/william/Scality/arsenal/lib/metrics/index.ts                                         | TypeScript         |          4 |          0 |          1 |          5 |
+| /home/william/Scality/arsenal/lib/models/ARN.ts                                            | TypeScript         |         97 |         11 |          9 |        117 |
+| /home/william/Scality/arsenal/lib/models/BackendInfo.ts                                    | TypeScript         |        165 |         92 |         16 |        273 |
+| /home/william/Scality/arsenal/lib/models/BucketAzureInfo.ts                                | TypeScript         |        187 |         35 |         43 |        265 |
+| /home/william/Scality/arsenal/lib/models/BucketInfo.ts                                     | TypeScript         |        634 |        403 |         37 |      1,074 |
+| /home/william/Scality/arsenal/lib/models/BucketPolicy.ts                                   | TypeScript         |         86 |         58 |         12 |        156 |
+| /home/william/Scality/arsenal/lib/models/LifecycleConfiguration.ts                         | TypeScript         |        996 |        386 |         55 |      1,437 |
+| /home/william/Scality/arsenal/lib/models/LifecycleRule.ts                                  | TypeScript         |        155 |         31 |         25 |        211 |
+| /home/william/Scality/arsenal/lib/models/NotificationConfiguration.ts                      | TypeScript         |        248 |         90 |         15 |        353 |
+| /home/william/Scality/arsenal/lib/models/ObjectLockConfiguration.ts                        | TypeScript         |        186 |         59 |         13 |        258 |
+| /home/william/Scality/arsenal/lib/models/ObjectMD.ts                                       | TypeScript         |        757 |        634 |        135 |      1,526 |
+| /home/william/Scality/arsenal/lib/models/ObjectMDAmzRestore.ts                             | TypeScript         |         43 |         43 |          9 |         95 |
+| /home/william/Scality/arsenal/lib/models/ObjectMDArchive.ts                                | TypeScript         |        107 |         68 |          9 |        184 |
+| /home/william/Scality/arsenal/lib/models/ObjectMDAzureInfo.ts                              | TypeScript         |        134 |         29 |         28 |        191 |
+| /home/william/Scality/arsenal/lib/models/ObjectMDLocation.ts                               | TypeScript         |        102 |         36 |         17 |        155 |
+| /home/william/Scality/arsenal/lib/models/ReplicationConfiguration.ts                       | TypeScript         |        360 |        142 |         29 |        531 |
+| /home/william/Scality/arsenal/lib/models/Veeam.ts                                          | TypeScript         |         91 |         15 |          8 |        114 |
+| /home/william/Scality/arsenal/lib/models/WebsiteConfiguration.ts                           | TypeScript         |        112 |         88 |         22 |        222 |
+| /home/william/Scality/arsenal/lib/models/index.ts                                          | TypeScript         |         16 |          0 |          1 |         17 |
+| /home/william/Scality/arsenal/lib/network/KMSInterface.ts                                  | TypeScript         |        145 |         44 |         26 |        215 |
+| /home/william/Scality/arsenal/lib/network/RoundRobin.ts                                    | TypeScript         |        119 |         49 |         14 |        182 |
+| /home/william/Scality/arsenal/lib/network/http/server.ts                                   | TypeScript         |        265 |        172 |         32 |        469 |
+| /home/william/Scality/arsenal/lib/network/http/utils.ts                                    | TypeScript         |         66 |         53 |          5 |        124 |
+| /home/william/Scality/arsenal/lib/network/index.ts                                         | TypeScript         |         17 |          0 |          3 |         20 |
+| /home/william/Scality/arsenal/lib/network/kmip/Client.ts                                   | TypeScript         |        455 |        138 |         27 |        620 |
+| /home/william/Scality/arsenal/lib/network/kmip/ClusterClient.ts                            | TypeScript         |        232 |         39 |         40 |        311 |
+| /home/william/Scality/arsenal/lib/network/kmip/Message.ts                                  | TypeScript         |         35 |         12 |          5 |         52 |
+| /home/william/Scality/arsenal/lib/network/kmip/README.md                                   | Markdown           |         91 |          0 |         15 |        106 |
+| /home/william/Scality/arsenal/lib/network/kmip/codec/README.md                             | Markdown           |        300 |          0 |         68 |        368 |
+| /home/william/Scality/arsenal/lib/network/kmip/codec/ttlv.ts                               | TypeScript         |        409 |         12 |         19 |        440 |
+| /home/william/Scality/arsenal/lib/network/kmip/error-comparison.jsonc                      | JSON with Comments |        141 |         18 |          1 |        160 |
+| /home/william/Scality/arsenal/lib/network/kmip/errorMapping.ts                             | TypeScript         |          9 |         25 |          3 |         37 |
+| /home/william/Scality/arsenal/lib/network/kmip/index.ts                                    | TypeScript         |        266 |        150 |         36 |        452 |
+| /home/william/Scality/arsenal/lib/network/kmip/tags.json                                   | JSON               |        588 |          0 |          1 |        589 |
+| /home/william/Scality/arsenal/lib/network/kmip/transport/TransportTemplate.ts              | TypeScript         |        190 |         60 |         14 |        264 |
+| /home/william/Scality/arsenal/lib/network/kmip/transport/tls.ts                            | TypeScript         |          7 |          0 |          2 |          9 |
+| /home/william/Scality/arsenal/lib/network/kmsAWS/Client.ts                                 | TypeScript         |        231 |         70 |         40 |        341 |
+| /home/william/Scality/arsenal/lib/network/kmsAWS/README.md                                 | Markdown           |         60 |          0 |         13 |         73 |
+| /home/william/Scality/arsenal/lib/network/probe/HealthProbeServer.ts                       | TypeScript         |         80 |          3 |         11 |         94 |
+| /home/william/Scality/arsenal/lib/network/probe/ProbeServer.ts                             | TypeScript         |         46 |         34 |         13 |         93 |
+| /home/william/Scality/arsenal/lib/network/probe/Utils.ts                                   | TypeScript         |         32 |         13 |          5 |         50 |
+| /home/william/Scality/arsenal/lib/network/rest/RESTClient.ts                               | TypeScript         |        222 |         65 |         24 |        311 |
+| /home/william/Scality/arsenal/lib/network/rest/RESTServer.ts                               | TypeScript         |        213 |         63 |         15 |        291 |
+| /home/william/Scality/arsenal/lib/network/rest/utils.ts                                    | TypeScript         |         40 |         18 |          3 |         61 |
+| /home/william/Scality/arsenal/lib/network/rpc/level-net.ts                                 | TypeScript         |         47 |         76 |         10 |        133 |
+| /home/william/Scality/arsenal/lib/network/rpc/rpc.ts                                       | TypeScript         |        458 |        266 |         48 |        772 |
+| /home/william/Scality/arsenal/lib/network/rpc/sio-stream.ts                                | TypeScript         |        366 |         63 |         41 |        470 |
+| /home/william/Scality/arsenal/lib/network/rpc/utils.ts                                     | TypeScript         |         35 |         26 |          9 |         70 |
+| /home/william/Scality/arsenal/lib/network/utils.ts                                         | TypeScript         |         41 |         10 |          6 |         57 |
+| /home/william/Scality/arsenal/lib/patches/locationConstraints.ts                           | TypeScript         |        204 |          0 |          8 |        212 |
+| /home/william/Scality/arsenal/lib/policy/policyValidator.ts                                | TypeScript         |        105 |         22 |          8 |        135 |
+| /home/william/Scality/arsenal/lib/policy/resourcePolicySchema.json                         | JSON               |        494 |          0 |          1 |        495 |
+| /home/william/Scality/arsenal/lib/policy/userPolicySchema.json                             | JSON               |        576 |          0 |          1 |        577 |
+| /home/william/Scality/arsenal/lib/policyEvaluator/RequestContext.ts                        | TypeScript         |        458 |        279 |         53 |        790 |
+| /home/william/Scality/arsenal/lib/policyEvaluator/evaluator.ts                             | TypeScript         |        261 |        106 |          9 |        376 |
+| /home/william/Scality/arsenal/lib/policyEvaluator/principal.ts                             | TypeScript         |        136 |         33 |          6 |        175 |
+| /home/william/Scality/arsenal/lib/policyEvaluator/requestUtils.ts                          | TypeScript         |         51 |         25 |          5 |         81 |
+| /home/william/Scality/arsenal/lib/policyEvaluator/utils/actionMaps.ts                      | TypeScript         |        233 |          7 |         13 |        253 |
+| /home/william/Scality/arsenal/lib/policyEvaluator/utils/checkArnMatch.ts                   | TypeScript         |         30 |         22 |          1 |         53 |
+| /home/william/Scality/arsenal/lib/policyEvaluator/utils/conditions.ts                      | TypeScript         |        281 |        149 |          8 |        438 |
+| /home/william/Scality/arsenal/lib/policyEvaluator/utils/objectTags.ts                      | TypeScript         |         13 |         14 |          2 |         29 |
+| /home/william/Scality/arsenal/lib/policyEvaluator/utils/variables.ts                       | TypeScript         |         46 |         54 |          6 |        106 |
+| /home/william/Scality/arsenal/lib/policyEvaluator/utils/wildcards.ts                       | TypeScript         |         21 |         28 |          7 |         56 |
+| /home/william/Scality/arsenal/lib/s3middleware/MD5Sum.ts                                   | TypeScript         |         28 |         16 |          5 |         49 |
+| /home/william/Scality/arsenal/lib/s3middleware/azureHelpers/ResultsCollector.ts            | TypeScript         |         33 |         40 |          8 |         81 |
+| /home/william/Scality/arsenal/lib/s3middleware/azureHelpers/SubStreamInterface.ts          | TypeScript         |         81 |         49 |         16 |        146 |
+| /home/william/Scality/arsenal/lib/s3middleware/azureHelpers/mpuUtils.ts                    | TypeScript         |        254 |         14 |         20 |        288 |
+| /home/william/Scality/arsenal/lib/s3middleware/convertToXml.ts                             | TypeScript         |        147 |          2 |         16 |        165 |
+| /home/william/Scality/arsenal/lib/s3middleware/escapeForXml.ts                             | TypeScript         |         12 |          4 |          2 |         18 |
+| /home/william/Scality/arsenal/lib/s3middleware/lifecycleHelpers/LifecycleDateTime.ts       | TypeScript         |         55 |         22 |          8 |         85 |
+| /home/william/Scality/arsenal/lib/s3middleware/lifecycleHelpers/LifecycleUtils.ts          | TypeScript         |        260 |         78 |         23 |        361 |
+| /home/william/Scality/arsenal/lib/s3middleware/lifecycleHelpers/index.ts                   | TypeScript         |          2 |          0 |          1 |          3 |
+| /home/william/Scality/arsenal/lib/s3middleware/nullStream.ts                               | TypeScript         |         20 |         13 |          3 |         36 |
+| /home/william/Scality/arsenal/lib/s3middleware/objectLegalHold.ts                          | TypeScript         |         79 |         28 |          6 |        113 |
+| /home/william/Scality/arsenal/lib/s3middleware/objectRestore.ts                            | TypeScript         |         78 |         28 |          5 |        111 |
+| /home/william/Scality/arsenal/lib/s3middleware/objectRetention.ts                          | TypeScript         |        102 |         37 |          7 |        146 |
+| /home/william/Scality/arsenal/lib/s3middleware/objectUtils.ts                              | TypeScript         |          9 |          7 |          6 |         22 |
+| /home/william/Scality/arsenal/lib/s3middleware/prepareStream.ts                            | TypeScript         |         18 |         11 |          2 |         31 |
+| /home/william/Scality/arsenal/lib/s3middleware/processMpuParts.ts                          | TypeScript         |        145 |         76 |         18 |        239 |
+| /home/william/Scality/arsenal/lib/s3middleware/tagging.ts                                  | TypeScript         |        197 |         52 |         21 |        270 |
+| /home/william/Scality/arsenal/lib/s3middleware/userMetadata.ts                             | TypeScript         |         16 |          5 |          2 |         23 |
+| /home/william/Scality/arsenal/lib/s3middleware/validateConditionalHeaders.ts               | TypeScript         |        118 |         21 |         11 |        150 |
+| /home/william/Scality/arsenal/lib/s3routes/index.ts                                        | TypeScript         |          2 |          0 |          1 |          3 |
+| /home/william/Scality/arsenal/lib/s3routes/routes.ts                                       | TypeScript         |        237 |         45 |         27 |        309 |
+| /home/william/Scality/arsenal/lib/s3routes/routes/routeDELETE.ts                           | TypeScript         |         63 |          5 |          4 |         72 |
+| /home/william/Scality/arsenal/lib/s3routes/routes/routeGET.ts                              | TypeScript         |         86 |          7 |          6 |         99 |
+| /home/william/Scality/arsenal/lib/s3routes/routes/routeHEAD.ts                             | TypeScript         |         34 |          2 |          3 |         39 |
+| /home/william/Scality/arsenal/lib/s3routes/routes/routeOPTIONS.ts                          | TypeScript         |         34 |          0 |          6 |         40 |
+| /home/william/Scality/arsenal/lib/s3routes/routes/routePOST.ts                             | TypeScript         |         54 |          5 |         12 |         71 |
+| /home/william/Scality/arsenal/lib/s3routes/routes/routePUT.ts                              | TypeScript         |        217 |         15 |          7 |        239 |
+| /home/william/Scality/arsenal/lib/s3routes/routes/routeWebsite.ts                          | TypeScript         |         73 |         13 |          3 |         89 |
+| /home/william/Scality/arsenal/lib/s3routes/routesUtils.ts                                  | TypeScript         |        903 |        330 |         67 |      1,300 |
+| /home/william/Scality/arsenal/lib/shuffle.ts                                               | TypeScript         |          8 |          5 |          2 |         15 |
+| /home/william/Scality/arsenal/lib/simple-glob.d.ts                                         | TypeScript         |          3 |          5 |          1 |          9 |
+| /home/william/Scality/arsenal/lib/storage/data/DataWrapper.js                              | JavaScript         |        830 |        169 |         44 |      1,043 |
+| /home/william/Scality/arsenal/lib/storage/data/LocationConstraintParser.js                 | JavaScript         |        139 |         16 |          5 |        160 |
+| /home/william/Scality/arsenal/lib/storage/data/MultipleBackendGateway.js                   | JavaScript         |        326 |         14 |         25 |        365 |
+| /home/william/Scality/arsenal/lib/storage/data/external/AwsClient.js                       | JavaScript         |        588 |         36 |         29 |        653 |
+| /home/william/Scality/arsenal/lib/storage/data/external/AzureClient.js                     | JavaScript         |        454 |         52 |         34 |        540 |
+| /home/william/Scality/arsenal/lib/storage/data/external/GCP/GcpApis/abortMPU.js            | JavaScript         |         21 |         10 |          3 |         34 |
+| /home/william/Scality/arsenal/lib/storage/data/external/GCP/GcpApis/completeMPU.js         | JavaScript         |         52 |         16 |          3 |         71 |
+| /home/william/Scality/arsenal/lib/storage/data/external/GCP/GcpApis/createMPU.js           | JavaScript         |         31 |         18 |          3 |         52 |
+| /home/william/Scality/arsenal/lib/storage/data/external/GCP/GcpApis/deleteTagging.js       | JavaScript         |         22 |          0 |          3 |         25 |
+| /home/william/Scality/arsenal/lib/storage/data/external/GCP/GcpApis/getTagging.js          | JavaScript         |         17 |          0 |          3 |         20 |
+| /home/william/Scality/arsenal/lib/storage/data/external/GCP/GcpApis/index.js               | JavaScript         |         12 |          2 |          1 |         15 |
+| /home/william/Scality/arsenal/lib/storage/data/external/GCP/GcpApis/listParts.js           | JavaScript         |         31 |          9 |          3 |         43 |
+| /home/william/Scality/arsenal/lib/storage/data/external/GCP/GcpApis/mpuHelper.js           | JavaScript         |        250 |         52 |         15 |        317 |
+| /home/william/Scality/arsenal/lib/storage/data/external/GCP/GcpApis/putObject.js           | JavaScript         |          8 |          1 |          3 |         12 |
+| /home/william/Scality/arsenal/lib/storage/data/external/GCP/GcpApis/putTagging.js          | JavaScript         |         30 |          0 |          4 |         34 |
+| /home/william/Scality/arsenal/lib/storage/data/external/GCP/GcpApis/uploadPart.js          | JavaScript         |         33 |          8 |          3 |         44 |
+| /home/william/Scality/arsenal/lib/storage/data/external/GCP/GcpApis/uploadPartCopy.js      | JavaScript         |         26 |          9 |          3 |         38 |
+| /home/william/Scality/arsenal/lib/storage/data/external/GCP/GcpManagedUpload.js            | JavaScript         |        295 |         86 |         22 |        403 |
+| /home/william/Scality/arsenal/lib/storage/data/external/GCP/GcpService.js                  | JavaScript         |        107 |          7 |         28 |        142 |
+| /home/william/Scality/arsenal/lib/storage/data/external/GCP/GcpServiceSetup.js             | JavaScript         |        127 |         99 |         21 |        247 |
+| /home/william/Scality/arsenal/lib/storage/data/external/GCP/GcpSigner.js                   | JavaScript         |         42 |          0 |         10 |         52 |
+| /home/william/Scality/arsenal/lib/storage/data/external/GCP/GcpUtils.js                    | JavaScript         |        149 |          7 |         16 |        172 |
+| /home/william/Scality/arsenal/lib/storage/data/external/GCP/gcp-2017-11-01.api.json        | JSON               |        932 |          0 |          1 |        933 |
+| /home/william/Scality/arsenal/lib/storage/data/external/GCP/index.js                       | JavaScript         |          5 |          0 |          1 |          6 |
+| /home/william/Scality/arsenal/lib/storage/data/external/GcpClient.js                       | JavaScript         |        254 |         32 |         19 |        305 |
+| /home/william/Scality/arsenal/lib/storage/data/external/PfsClient.js                       | JavaScript         |        128 |          1 |         20 |        149 |
+| /home/william/Scality/arsenal/lib/storage/data/external/utils.js                           | JavaScript         |        176 |         42 |          8 |        226 |
+| /home/william/Scality/arsenal/lib/storage/data/file/DataFileInterface.js                   | JavaScript         |         31 |          1 |          9 |         41 |
+| /home/william/Scality/arsenal/lib/storage/data/file/DataFileStore.js                       | JavaScript         |        268 |        143 |         21 |        432 |
+| /home/william/Scality/arsenal/lib/storage/data/file/utils.js                               | JavaScript         |          9 |          8 |          3 |         20 |
+| /home/william/Scality/arsenal/lib/storage/data/in_memory/datastore.js                      | JavaScript         |         96 |          8 |         12 |        116 |
+| /home/william/Scality/arsenal/lib/storage/data/utils/RelayMD5Sum.js                        | JavaScript         |         15 |         20 |          4 |         39 |
+| /home/william/Scality/arsenal/lib/storage/metadata/MetadataWrapper.js                      | JavaScript         |        555 |         83 |         50 |        688 |
+| /home/william/Scality/arsenal/lib/storage/metadata/bucketclient/BucketClientInterface.js   | JavaScript         |        177 |         26 |         20 |        223 |
+| /home/william/Scality/arsenal/lib/storage/metadata/bucketclient/LogConsumer.js             | JavaScript         |         76 |         49 |         13 |        138 |
+| /home/william/Scality/arsenal/lib/storage/metadata/conditions.js                           | JavaScript         |         51 |          2 |         10 |         63 |
+| /home/william/Scality/arsenal/lib/storage/metadata/file/BucketFileInterface.js             | JavaScript         |        363 |         32 |         30 |        425 |
+| /home/william/Scality/arsenal/lib/storage/metadata/file/MetadataFileClient.js              | JavaScript         |         54 |         37 |          8 |         99 |
+| /home/william/Scality/arsenal/lib/storage/metadata/file/MetadataFileServer.js              | JavaScript         |        205 |         43 |         24 |        272 |
+| /home/william/Scality/arsenal/lib/storage/metadata/file/RecordLog.js                       | JavaScript         |        190 |        123 |         19 |        332 |
+| /home/william/Scality/arsenal/lib/storage/metadata/in_memory/ListMultipartUploadsResult.js | JavaScript         |         29 |          0 |          4 |         33 |
+| /home/william/Scality/arsenal/lib/storage/metadata/in_memory/ListResult.js                 | JavaScript         |         18 |          6 |          4 |         28 |
+| /home/william/Scality/arsenal/lib/storage/metadata/in_memory/bucket_mem.js.Design.md       | Markdown           |         46 |          0 |         17 |         63 |
+| /home/william/Scality/arsenal/lib/storage/metadata/in_memory/bucket_utilities.js           | JavaScript         |         25 |          5 |          5 |         35 |
+| /home/william/Scality/arsenal/lib/storage/metadata/in_memory/getMultipartUploadListing.js  | JavaScript         |        114 |         25 |         10 |        149 |
+| /home/william/Scality/arsenal/lib/storage/metadata/in_memory/metadata.js                   | JavaScript         |          7 |          0 |          2 |          9 |
+| /home/william/Scality/arsenal/lib/storage/metadata/in_memory/metastore.js                  | JavaScript         |        281 |         31 |         31 |        343 |
+| /home/william/Scality/arsenal/lib/storage/metadata/mongoclient/DataCounter.js              | JavaScript         |        193 |         67 |         15 |        275 |
+| /home/william/Scality/arsenal/lib/storage/metadata/mongoclient/ListRecordStream.js         | JavaScript         |        109 |         79 |         10 |        198 |
+| /home/william/Scality/arsenal/lib/storage/metadata/mongoclient/LogConsumer.js              | JavaScript         |        104 |         42 |         10 |        156 |
+| /home/william/Scality/arsenal/lib/storage/metadata/mongoclient/MongoClientInterface.ts     | TypeScript         |      2,248 |        674 |        128 |      3,050 |
+| /home/william/Scality/arsenal/lib/storage/metadata/mongoclient/Mongoclient.md              | Markdown           |        240 |          0 |         93 |        333 |
+| /home/william/Scality/arsenal/lib/storage/metadata/mongoclient/readStream.js               | JavaScript         |        141 |          1 |         20 |        162 |
+| /home/william/Scality/arsenal/lib/storage/metadata/mongoclient/utils.ts                    | TypeScript         |        168 |         55 |         32 |        255 |
+| /home/william/Scality/arsenal/lib/storage/metadata/proxy/BucketdRoutes.js                  | JavaScript         |        253 |         94 |         29 |        376 |
+| /home/william/Scality/arsenal/lib/storage/metadata/proxy/README.md                         | Markdown           |         26 |          0 |          7 |         33 |
+| /home/william/Scality/arsenal/lib/storage/metadata/proxy/Server.js                         | JavaScript         |         73 |         22 |         10 |        105 |
+| /home/william/Scality/arsenal/lib/storage/metadata/proxy/utils.js                          | JavaScript         |        117 |         59 |          9 |        185 |
+| /home/william/Scality/arsenal/lib/storage/utils.js                                         | JavaScript         |        107 |         12 |         16 |        135 |
+| /home/william/Scality/arsenal/lib/stream/index.ts                                          | TypeScript         |          1 |          0 |          1 |          2 |
+| /home/william/Scality/arsenal/lib/stream/readJSONStreamObject.ts                           | TypeScript         |         33 |          8 |          2 |         43 |
+| /home/william/Scality/arsenal/lib/stringHash.ts                                            | TypeScript         |          8 |         11 |          3 |         22 |
+| /home/william/Scality/arsenal/lib/testing/matrix.js                                        | JavaScript         |         98 |        101 |         13 |        212 |
+| /home/william/Scality/arsenal/lib/types.ts                                                 | TypeScript         |         18 |          0 |          5 |         23 |
+| /home/william/Scality/arsenal/lib/versioning/Version.ts                                    | TypeScript         |        114 |        146 |         22 |        282 |
+| /home/william/Scality/arsenal/lib/versioning/VersionID.ts                                  | TypeScript         |        173 |        169 |         30 |        372 |
+| /home/william/Scality/arsenal/lib/versioning/VersioningRequestProcessor.ts                 | TypeScript         |        428 |        225 |         24 |        677 |
+| /home/william/Scality/arsenal/lib/versioning/WriteCache.ts                                 | TypeScript         |        112 |         90 |         12 |        214 |
+| /home/william/Scality/arsenal/lib/versioning/WriteGatheringManager.ts                      | TypeScript         |         95 |         52 |         11 |        158 |
+| /home/william/Scality/arsenal/lib/versioning/constants.ts                                  | TypeScript         |         27 |          0 |          2 |         29 |
+| /home/william/Scality/arsenal/lib/versioning/index.ts                                      | TypeScript         |          6 |          0 |          1 |          7 |
+| Total                                                                                      |                    |     35,970 |     11,380 |      3,651 |     51,001 |
++--------------------------------------------------------------------------------------------+--------------------+------------+------------+------------+------------+

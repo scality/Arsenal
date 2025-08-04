@@ -463,12 +463,14 @@ class MongoClientInterface {
                                     shardCollection: `${this.database}.${bucketName}`,
                                     key: { _id: 1 },
                                 };
-                                return this.adminDb!.command(cmd, {}).then(() => cb(null)).catch(err => {
-                                    log.error(
-                                        'createBucket: enabling sharding',
-                                        { error: err });
-                                    return cb(errors.InternalError);
-                                });
+                                                return this.adminDb!.command(cmd, {}).then(() => {
+                    cb(null);
+                }).catch(err => {
+                    log.error(
+                        'createBucket: enabling sharding',
+                        { error: err });
+                    cb(errors.InternalError);
+                });
                             }
                             return cb(null);
                         });
@@ -565,18 +567,18 @@ class MongoClientInterface {
         objName: string,
         params: ObjectMDOperationParams,
         log: werelogs.Logger,
-        cb: ArsenalCallback<{ bucket: string, obj?: string }>,
+        cb: ArsenalCallback<{ bucket: BucketInfo, obj?: ObjectMDData }>,
     ) {
         // same as getBucketAndObject, but with parallel execution
         // of getBucketAttributes and getObject
-        let _bucket: string;
-        let _obj: string | undefined;
+        let _bucket: BucketInfo;
+        let _obj: ObjectMDData | undefined;
         return async.parallel([
             next => this.getBucketAttributes(bucketName, log, (err, bucket?) => {
                 if (err) {
                     return next(err);
                 }
-                _bucket = BucketInfo.fromObj(bucket).serialize();
+                _bucket = BucketInfo.fromObj(bucket);
                 return next();
             }),
             next => this.getObject(bucketName, objName, params, log, (err, obj?) => {
@@ -586,7 +588,7 @@ class MongoClientInterface {
                 if (err) {
                     return next(err);
                 }
-                _obj = JSON.stringify(obj);
+                _obj = obj;
                 return next();
             }),
         ], err => {
@@ -605,7 +607,7 @@ class MongoClientInterface {
         objName: string,
         params: ObjectMDOperationParams,
         log: werelogs.Logger,
-        cb: ArsenalCallback<{ bucket: string, obj?: string }>,
+        cb: ArsenalCallback<{ bucket: BucketInfo, obj?: ObjectMDData }>,
     ) {
         if (OPTIM_CLOUDSERVER_PARALLEL_GETMD) {
             return this.getBucketAndObjectParallel(bucketName, objName, params, log, cb);
@@ -622,8 +624,7 @@ class MongoClientInterface {
                     if (err.is.NoSuchKey) {
                         return cb(null,
                             {
-                                bucket:
-                                    BucketInfo.fromObj(bucket).serialize(),
+                                bucket: BucketInfo.fromObj(bucket),
                             });
                     }
                     log.error('getObject: error getting object',
@@ -631,8 +632,8 @@ class MongoClientInterface {
                     return cb(err);
                 }
                 return cb(null, {
-                    bucket: BucketInfo.fromObj(bucket).serialize(),
-                    obj: JSON.stringify(obj),
+                    bucket: BucketInfo.fromObj(bucket),
+                    obj: obj,
                 });
             });
             return undefined;
@@ -887,7 +888,7 @@ class MongoClientInterface {
         objVal: ObjectMDData,
         params: ObjectMDOperationParams,
         log: werelogs.Logger,
-        cb: ArsenalCallback<string>,
+        cb: ArsenalCallback<{ versionId: string }>,
         isRetry?: boolean,
     ) {
         const versionId = generateVersionId(this.instanceId, this.replicationGroupId);
@@ -933,7 +934,7 @@ class MongoClientInterface {
         c.bulkWrite(ops, {
             ordered: true,
         })
-            .then(() => cb(null, `{"versionId": "${versionId}"}`))
+            .then(() => cb(null, { versionId }))
             .catch((err: MongoBulkWriteError) => {
                 /*
                  * Previously related to https://jira.mongodb.org/browse/SERVER-14322
@@ -969,7 +970,7 @@ class MongoClientInterface {
                     // This error is expected, it means that two differents version were
                     // put at the same time.
                     if (isMasterOpError) {
-                        return cb(null, `{"versionId": "${versionId}"}`);
+                        return cb(null, { versionId });
                     }
 
                     // If no upserts succeeded and this is not a retry yet, try again with a new version ID
@@ -1015,7 +1016,7 @@ class MongoClientInterface {
         objVal: ObjectMDData,
         params: ObjectMDOperationParams,
         log: werelogs.Logger,
-        cb: ArsenalCallback<string>,
+        cb: ArsenalCallback<{ versionId: string }>,
     ) {
         const versionId = generateVersionId(this.instanceId, this.replicationGroupId);
         objVal.versionId = versionId;
@@ -1024,7 +1025,7 @@ class MongoClientInterface {
             { $set: { value: objVal }, $setOnInsert: { _id: masterKey } },
             { upsert: true },
         )
-            .then(() => cb(null, `{"versionId": "${objVal.versionId}"}`))
+            .then(() => cb(null, { versionId: objVal.versionId! }))
             .catch(err => {
                 log.error('putObjectVerCase2: error putting object version', { error: err.message });
                 return cb(errors.InternalError);
@@ -1058,7 +1059,7 @@ class MongoClientInterface {
         objVal: ObjectMDData,
         params: ObjectMDOperationParams,
         log: werelogs.Logger,
-        cb: ArsenalCallback<string>,
+        cb: ArsenalCallback<{ versionId: string }>,
     ) {
         objVal.versionId = params.versionId;
         const versionKey = formatVersionKey(objName, params.versionId, params.vFormat);
@@ -1068,7 +1069,7 @@ class MongoClientInterface {
             c.bulkWrite(ops, {
                 ordered: true,
             })
-                .then(() => callback(null, `{"versionId": "${objVal.versionId}"}`))
+                .then(() => callback(null, { versionId: objVal.versionId }))
                 .catch(err => {
                     log.error('putObjectVerCase3: error putting object version', { error: err.message });
                     if (err.code === 11000) {
@@ -1168,7 +1169,7 @@ class MongoClientInterface {
         objVal: ObjectMDData,
         params: ObjectMDOperationParams,
         log: werelogs.Logger,
-        cb: ArsenalCallback<string>,
+        cb: ArsenalCallback<{ versionId: string }>,
     ) {
         const versionKey = formatVersionKey(objName, params.versionId, params.vFormat);
         const masterKey = formatMasterKey(objName, params.vFormat);
@@ -1223,15 +1224,18 @@ class MongoClientInterface {
             ops.push(masterOp);
             return c.bulkWrite(ops, {
                 ordered: true,
-            }).then(() => cb(null, `{"versionId": "${objVal.versionId}"}`)).catch(err => {
+            }).then(() => {
+                cb(null, { versionId: objVal.versionId! });
+            }).catch(err => {
                 // we accept that the update fails if
                 // condition is not met, meaning that a more
                 // recent master was already in place
                 if (err.code === 11000) {
-                    return cb(null, `{"versionId": "${objVal.versionId}"}`);
+                    cb(null, { versionId: objVal.versionId! });
+                    return;
                 }
                 log.error('putObjectVerCase4: error upserting master', { error: err.message });
-                return cb(errors.InternalError);
+                cb(errors.InternalError);
             });
         })).catch(err => {
             log.error(
@@ -1280,9 +1284,11 @@ class MongoClientInterface {
             },
         }, {
             upsert: true,
-        }).then(() => cb(null)).catch(err => {
+        }).then(() => {
+            cb(null);
+        }).catch(err => {
             log.error('putObjectNoVer: error putting obect with no versioning', { error: err.message });
-            return cb(errors.InternalError);
+            cb(errors.InternalError);
         });
     }
 
@@ -1416,7 +1422,7 @@ class MongoClientInterface {
         objVal: ObjectMDData,
         params: ObjectMDOperationParams,
         log: werelogs.Logger,
-        cb: ArsenalCallback<string | void>,
+        cb: ArsenalCallback<{ versionId: string } | void>,
     ): void {
         MongoUtils.serialize(objVal);
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
@@ -1472,6 +1478,7 @@ class MongoClientInterface {
                         { 'value.deleted': { $eq: false } },
                     ],
                 }, {}).then(doc => next(null, vFormat, doc)).catch(err => {
+                    console.log('err', err);
                     log.error('findOne: error getting object',
                         { bucket: bucketName, object: objName, error: err.message });
                     return next(errors.InternalError);
@@ -1661,6 +1668,7 @@ class MongoClientInterface {
                 return cb(null, keys[0].value);
             })
             .catch(err => {
+                console.log('err', err);
                 log.error(
                     'getLatestVersion: error getting latest version',
                     { error: err.message });
@@ -2807,12 +2815,14 @@ class MongoClientInterface {
             'value.ingestion': 1,
             'value.locationConstraint': 1,
         }).toArray()
-            .then(doc => cb(null, doc.map(i => i.value))).catch(err => {
+            .then(doc => {
+                cb(null, doc.map(i => i.value));
+            }).catch(err => {
                 log.error('error getting ingestion buckets', {
                     error: err.message,
                     method: 'MongoClientInterface.getIngestionBuckets',
                 });
-                return cb(errors.InternalError);
+                cb(errors.InternalError);
             });
     }
 
@@ -2933,15 +2943,18 @@ class MongoClientInterface {
     putBucketIndexes(bucketName: string, indexSpecs, log: werelogs.Logger, cb: ArsenalCallback<void>) {
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
         const indexes = MongoUtils.indexFormatObjectToMongoArray(indexSpecs);
-        c.createIndexes(indexes).then(() => cb(null)).catch(err => {
+        c.createIndexes(indexes).then(() => {
+            cb(null);
+        }).catch(err => {
             if (err.codeName === 'NamespaceNotFound') {
-                return cb(errors.NoSuchBucket);
+                cb(errors.NoSuchBucket);
+                return;
             }
 
             log.error(
                 'putBucketIndexes: error creating bucket indexes',
                 { error: err });
-            return cb(errors.InternalError);
+            cb(errors.InternalError);
         });
     }
 
@@ -2996,16 +3009,19 @@ class MongoClientInterface {
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
         c.listIndexes()
             .toArray()
-            .then(res => cb(null, MongoUtils.indexFormatMongoArrayToObject(res)))
+            .then(res => {
+                cb(null, MongoUtils.indexFormatMongoArrayToObject(res));
+            })
             .catch(err => {
                 if (err.codeName === 'NamespaceNotFound') {
-                    return cb(errors.NoSuchBucket);
+                    cb(errors.NoSuchBucket);
+                    return;
                 }
 
                 log.error('getBucketIndexes: error retrieving bucket indexes', {
                     error: err,
                 });
-                return cb(errors.InternalError);
+                cb(errors.InternalError);
             });
     }
 
