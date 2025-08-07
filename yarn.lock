@@ -101,10 +101,10 @@
     fast-xml-parser "^5.0.7"
     tslib "^2.8.1"
 
-"@azure/identity@^4.10.2":
-  version "4.10.2"
-  resolved "https://registry.yarnpkg.com/@azure/identity/-/identity-4.10.2.tgz#6609ce398824ff0bb53f1ad1043a9f1cc93e56b8"
-  integrity sha512-Uth4vz0j+fkXCkbvutChUj03PDCokjbC6Wk9JT8hHEUtpy/EurNKAseb3+gO6Zi9VYBvwt61pgbzn1ovk942Qg==
+"@azure/identity@^4.11.1":
+  version "4.11.1"
+  resolved "https://registry.yarnpkg.com/@azure/identity/-/identity-4.11.1.tgz#19ba5b7601ae4f2ded010c55ca55200ffa6c79ec"
+  integrity sha512-0ZdsLRaOyLxtCYgyuqyWqGU5XQ9gGnjxgfoNTt1pvELGkkUFrMATABZFIq8gusM7N1qbqpVtwLOhk0d/3kacLg==
   dependencies:
     "@azure/abort-controller" "^2.0.0"
     "@azure/core-auth" "^1.9.0"
