@@ -273,6 +273,10 @@ class MongoClientInterface {
         const cred = MongoUtils.credPrefix(authCredentials);
         this.mongoUrl = `mongodb://${cred}${replicaSetHosts}/` +
             `?w=${writeConcern}&readPreference=${readPreference}`;
+        // if env var, disable retryWrites
+        if (process.env.DISABLE_RETRY_WRITES) {
+            this.mongoUrl += `&retryWrites=false`;
+        }
 
         if (!shardCollections) {
             this.mongoUrl += `&replicaSet=${replicaSet}`;
