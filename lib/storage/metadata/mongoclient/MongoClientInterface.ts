@@ -74,6 +74,8 @@ const SOCKET_TIMEOUT_MS = MONGO_SOCKET_TIMEOUT_MS ?
     Number.parseInt(MONGO_SOCKET_TIMEOUT_MS, 10) : 360000;
 const CONCURRENT_CURSORS = process.env.CONCURRENT_CURSORS ?
     Number.parseInt(process.env.CONCURRENT_CURSORS, 10) : 10;
+const MONGO_BULK_BATCH_DELAY_MS = process.env.MONGO_BULK_BATCH_DELAY_MS ?
+    Number.parseInt(process.env.MONGO_BULK_BATCH_DELAY_MS, 10) : 20;
 
 const initialInstanceID = process.env.INITIAL_INSTANCE_ID;
 
@@ -108,6 +110,28 @@ export type MongoDBClientInterfaceParameters = {
 };
 
 const cachedNoSuchKeyError = errors.NoSuchKey;
+
+interface BatchedOperation {
+    operations: AnyBulkWriteOperation<ObjectMetastoreDocument>[];
+    callback: ArsenalCallback<{ versionId: string }>;
+    versionId: string;
+    operationStartIndex: number;
+            context: {
+            bucketName: string;
+            objName: string;
+            objVal: ObjectMDData;
+            params: ObjectMDOperationParams;
+            log: werelogs.Logger;
+            isRetry?: boolean;
+        };
+}
+
+interface BatchQueue {
+    operations: AnyBulkWriteOperation<ObjectMetastoreDocument>[];
+    batchedOps: BatchedOperation[];
+    timer: NodeJS.Timeout | null;
+    collection: Collection<ObjectMetastoreDocument>;
+}
 
 export type BucketMetadataMongoDB = Omit<Omit<BucketMetadata, 'quotaMax'>, 'capabilities'> & {
     // Old buckets might not have a quotaMax 
@@ -263,6 +287,8 @@ class MongoClientInterface {
     private cacheMiss: number;
     private cacheHitMissLoggerInterval: NodeJS.Timer | null;
     private adminDb: Db | null;
+    private batchQueues: Map<string, BatchQueue>;
+    private batchDelay: number;
 
     private isConnected = false;
 
@@ -297,6 +323,8 @@ class MongoClientInterface {
 
         this.bucketVFormatCache = new LRUCache(constants.maxCachedBuckets);
         this.defaultBucketKeyFormat = DEFAULT_BUCKET_KEY_FORMAT;
+        this.batchQueues = new Map<string, BatchQueue>();
+        this.batchDelay = MONGO_BULK_BATCH_DELAY_MS;
 
         this.cacheHit = 0;
         this.cacheMiss = 0;
@@ -467,14 +495,14 @@ class MongoClientInterface {
                                     shardCollection: `${this.database}.${bucketName}`,
                                     key: { _id: 1 },
                                 };
-                                                return this.adminDb!.command(cmd, {}).then(() => {
-                    cb(null);
-                }).catch(err => {
-                    log.error(
-                        'createBucket: enabling sharding',
-                        { error: err });
-                    cb(errors.InternalError);
-                });
+                                return this.adminDb!.command(cmd, {}).then(() => {
+                                    cb(null);
+                                }).catch(err => {
+                                    log.error(
+                                        'createBucket: enabling sharding',
+                                        { error: err });
+                                    cb(errors.InternalError);
+                                });
                             }
                             return cb(null);
                         });
@@ -637,7 +665,7 @@ class MongoClientInterface {
                 }
                 return cb(null, {
                     bucket: BucketInfo.fromObj(bucket),
-                    obj: obj,
+                    obj,
                 });
             });
             return undefined;
@@ -863,6 +891,130 @@ class MongoClientInterface {
     }
 
     /**
+     * Adds operations to a batch queue for delayed execution
+     * @param {Collection} collection - The MongoDB collection
+     * @param {AnyBulkWriteOperation<ObjectMetastoreDocument>[]} operations - Operations to batch
+     * @param {ArsenalCallback<{ versionId: string }>} callback - Callback to execute when batch completes
+     * @param {string} versionId - Version ID for the operation
+     * @param {object} context - Additional context for the operation
+     */
+    private addToBatch(
+        collection: Collection<ObjectMetastoreDocument>,
+        operations: AnyBulkWriteOperation<ObjectMetastoreDocument>[],
+        callback: ArsenalCallback<{ versionId: string }>,
+        versionId: string,
+        context: {
+            bucketName: string;
+            objName: string;
+            objVal: ObjectMDData;
+            params: ObjectMDOperationParams;
+            log: werelogs.Logger;
+            isRetry?: boolean;
+        }
+    ): void {
+        const collectionName = collection.collectionName;
+        
+        if (!this.batchQueues.has(collectionName)) {
+            this.batchQueues.set(collectionName, {
+                operations: [],
+                batchedOps: [],
+                timer: null,
+                collection
+            });
+        }
+
+        const batchQueue = this.batchQueues.get(collectionName)!;
+        const operationStartIndex = batchQueue.operations.length;
+
+        // Add operations to the batch
+        batchQueue.operations.push(...operations);
+        batchQueue.batchedOps.push({
+            operations,
+            callback,
+            versionId,
+            operationStartIndex,
+            context
+        });
+
+        // Start timer if this is the first operation in the queue
+        if (batchQueue.timer === null) {
+            batchQueue.timer = setTimeout(() => {
+                this.flushBatch(collectionName);
+            }, this.batchDelay);
+        }
+    }
+
+    /**
+     * Flushes a batch queue and executes all queued operations
+     * @param {string} collectionName - Name of the collection to flush
+     */
+    private flushBatch(collectionName: string): void {
+        const batchQueue = this.batchQueues.get(collectionName);
+        if (!batchQueue || batchQueue.operations.length === 0) {
+            return;
+        }
+
+        const { operations, batchedOps, collection } = batchQueue;
+        
+        // Clear the timer and reset the queue
+        if (batchQueue.timer) {
+            clearTimeout(batchQueue.timer);
+            batchQueue.timer = null;
+        }
+        this.batchQueues.delete(collectionName);
+
+        // Execute the batched operations
+        collection.bulkWrite(operations, { ordered: true })
+            .then(() => {
+                // All operations succeeded, call all callbacks with success
+                batchedOps.forEach(batchedOp => {
+                    batchedOp.callback(null, { versionId: batchedOp.versionId });
+                });
+            })
+            .catch((err: MongoBulkWriteError) => {
+                // Handle batch errors - determine which operations failed
+                this.handleBatchError(err, batchedOps, collection);
+            });
+    }
+
+    /**
+     * Handles errors from batched operations by falling back to individual execution
+     * @param {MongoBulkWriteError} err - The batch error
+     * @param {BatchedOperation[]} batchedOps - The batched operations
+     * @param {Collection} collection - The MongoDB collection
+     */
+    private handleBatchError(
+        err: MongoBulkWriteError,
+        batchedOps: BatchedOperation[],
+        collection: Collection<ObjectMetastoreDocument>
+    ): void {
+        // For simplicity in the first implementation, fall back to individual execution
+        // This preserves all the existing error handling logic
+        batchedOps.forEach(batchedOp => {
+            const { context } = batchedOp;
+            context.log.debug('Batch operation failed, falling back to individual execution', {
+                bucketName: context.bucketName,
+                objName: context.objName,
+                error: err.message
+            });
+
+            // Re-execute the original putObjectVerCase1 with immediate execution
+            // Preserve the original versionId from the batch
+            const objValWithVersionId = { ...context.objVal, versionId: batchedOp.versionId };
+            this.putObjectVerCase1(
+                collection,
+                context.bucketName,
+                context.objName,
+                objValWithVersionId,
+                context.params,
+                context.log,
+                batchedOp.callback,
+                true // Force immediate execution to avoid infinite retry
+            );
+        });
+    }
+
+    /**
      * In this case we generate a versionId and
      * sequentially create the object THEN update the master.
      * Master is deleted when version put is a delete marker
@@ -935,6 +1087,20 @@ class MongoClientInterface {
         // a delete marker or updated otherwise.
         const masterOp = this.updateDeleteMaster(objVal.isDeleteMarker || false, params.vFormat, filter, update, true);
         ops.push(masterOp);
+
+        // Use batching if enabled and not a retry operation
+        if (!isRetry && this.batchDelay > 0) {
+            return this.addToBatch(c, ops, cb, versionId, {
+                bucketName,
+                objName,
+                objVal,
+                params,
+                log,
+                isRetry
+            });
+        }
+
+        // Execute immediately (retry case or batching disabled)
         c.bulkWrite(ops, {
             ordered: true,
         })
