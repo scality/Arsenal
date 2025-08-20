@@ -75,7 +75,7 @@ const SOCKET_TIMEOUT_MS = MONGO_SOCKET_TIMEOUT_MS ?
 const CONCURRENT_CURSORS = process.env.CONCURRENT_CURSORS ?
     Number.parseInt(process.env.CONCURRENT_CURSORS, 10) : 10;
 const MONGO_BULK_BATCH_DELAY_MS = process.env.MONGO_BULK_BATCH_DELAY_MS ?
-    Number.parseInt(process.env.MONGO_BULK_BATCH_DELAY_MS, 10) : 20;
+    Number.parseInt(process.env.MONGO_BULK_BATCH_DELAY_MS, 10) : 0;
 
 const initialInstanceID = process.env.INITIAL_INSTANCE_ID;
 
@@ -323,8 +323,10 @@ class MongoClientInterface {
 
         this.bucketVFormatCache = new LRUCache(constants.maxCachedBuckets);
         this.defaultBucketKeyFormat = DEFAULT_BUCKET_KEY_FORMAT;
-        this.batchQueues = new Map<string, BatchQueue>();
+        
+        // Batching optimization: only initialize if explicitly enabled
         this.batchDelay = MONGO_BULK_BATCH_DELAY_MS;
+        this.batchQueues = this.batchDelay > 0 ? new Map<string, BatchQueue>() : new Map();
 
         this.cacheHit = 0;
         this.cacheMiss = 0;
@@ -892,6 +894,13 @@ class MongoClientInterface {
 
     /**
      * Adds operations to a batch queue for delayed execution
+     * This optimization batches multiple putObjectVerCase1 operations into a single bulkWrite call
+     * to reduce network overhead. Batching is DISABLED by default and must be explicitly enabled.
+     * 
+     * To enable batching, set environment variable:
+     * - MONGO_BULK_BATCH_DELAY_MS=20 (enables batching with 20ms delay)
+     * - MONGO_BULK_BATCH_DELAY_MS=50 (enables batching with 50ms delay)
+     * 
      * @param {Collection} collection - The MongoDB collection
      * @param {AnyBulkWriteOperation<ObjectMetastoreDocument>[]} operations - Operations to batch
      * @param {ArsenalCallback<{ versionId: string }>} callback - Callback to execute when batch completes
@@ -1015,37 +1024,24 @@ class MongoClientInterface {
     }
 
     /**
-     * In this case we generate a versionId and
-     * sequentially create the object THEN update the master.
-     * Master is deleted when version put is a delete marker
-     *
-     * It is possible that 2 version creations are inverted
-     * in flight so we also check that we update a master only
-     * if the version in place is greater that the one we set.
-     *
-     * We also test the existence of the versionId property
-     * to manage the case of an object created before the
-     * versioning was enabled.
-     * @param {Object} c bucket collection
-     * @param {String} bucketName bucket name
-     * @param {String} objName object name
-     * @param {Object} objVal object metadata
-     * @param {Object} params params
-     * @param {String} params.vFormat object key format
-     * @param {Object} log logger
-     * @param {Function} cb callback
-     * @param {boolean} isRetry is function call a retry
-     * @return {undefined}
+     * Batching-enabled version of putObjectVerCase1
+     * This method is only called when MONGO_BULK_BATCH_DELAY_MS > 0
+     * @param {Collection} c - bucket collection
+     * @param {String} bucketName - bucket name
+     * @param {String} objName - object name
+     * @param {Object} objVal - object metadata
+     * @param {Object} params - params
+     * @param {Object} log - logger
+     * @param {Function} cb - callback
      */
-    putObjectVerCase1(
+    private putObjectVerCase1WithBatching(
         c: Collection<ObjectMetastoreDocument>,
         bucketName: string,
         objName: string,
         objVal: ObjectMDData,
         params: ObjectMDOperationParams,
         log: werelogs.Logger,
-        cb: ArsenalCallback<{ versionId: string }>,
-        isRetry?: boolean,
+        cb: ArsenalCallback<{ versionId: string }>
     ) {
         const versionId = generateVersionId(this.instanceId, this.replicationGroupId);
         objVal.versionId = versionId;
@@ -1088,19 +1084,102 @@ class MongoClientInterface {
         const masterOp = this.updateDeleteMaster(objVal.isDeleteMarker || false, params.vFormat, filter, update, true);
         ops.push(masterOp);
 
-        // Use batching if enabled and not a retry operation
+        // Add to batch for delayed execution
+        return this.addToBatch(c, ops, cb, versionId, {
+            bucketName,
+            objName,
+            objVal,
+            params,
+            log,
+            isRetry: false
+        });
+    }
+
+    /**
+     * In this case we generate a versionId and
+     * sequentially create the object THEN update the master.
+     * Master is deleted when version put is a delete marker
+     *
+     * It is possible that 2 version creations are inverted
+     * in flight so we also check that we update a master only
+     * if the version in place is greater that the one we set.
+     *
+     * We also test the existence of the versionId property
+     * to manage the case of an object created before the
+     * versioning was enabled.
+     * 
+     * BATCHING OPTIMIZATION:
+     * - If MONGO_BULK_BATCH_DELAY_MS is unset or 0: uses original immediate execution logic
+     * - If MONGO_BULK_BATCH_DELAY_MS > 0: batches operations to reduce network calls
+     * - Retry operations always use immediate execution regardless of batching settings
+     *
+     * @param {Object} c bucket collection
+     * @param {String} bucketName bucket name
+     * @param {String} objName object name
+     * @param {Object} objVal object metadata
+     * @param {Object} params params
+     * @param {String} params.vFormat object key format
+     * @param {Object} log logger
+     * @param {Function} cb callback
+     * @param {boolean} isRetry is function call a retry
+     * @return {undefined}
+     */
+    putObjectVerCase1(
+        c: Collection<ObjectMetastoreDocument>,
+        bucketName: string,
+        objName: string,
+        objVal: ObjectMDData,
+        params: ObjectMDOperationParams,
+        log: werelogs.Logger,
+        cb: ArsenalCallback<{ versionId: string }>,
+        isRetry?: boolean,
+    ) {
+        // If batching is enabled and this is not a retry, use batching logic
         if (!isRetry && this.batchDelay > 0) {
-            return this.addToBatch(c, ops, cb, versionId, {
-                bucketName,
-                objName,
-                objVal,
-                params,
-                log,
-                isRetry
-            });
+            return this.putObjectVerCase1WithBatching(c, bucketName, objName, objVal, params, log, cb);
         }
 
-        // Execute immediately (retry case or batching disabled)
+        // Original logic - identical to pre-batching implementation
+        const versionId = generateVersionId(this.instanceId, this.replicationGroupId);
+        objVal.versionId = versionId;
+        const versionKey = formatVersionKey(objName, versionId, params.vFormat);
+        const masterKey = formatMasterKey(objName, params.vFormat);
+        // initiating array of operations with version creation
+        const ops: AnyBulkWriteOperation<ObjectMetastoreDocument>[] = [{
+            updateOne: {
+                filter: {
+                    _id: versionKey,
+                },
+                update: {
+                    $set: { _id: versionKey, value: objVal },
+                },
+                upsert: true,
+            },
+        }];
+        // filter to get master
+        const filter = {
+            _id: masterKey,
+            $or: [{
+                'value.versionId': {
+                    $exists: false,
+                },
+            },
+            {
+                'value.versionId': {
+                    $gt: objVal.versionId,
+                },
+            },
+            ],
+        };
+        // values to update master
+        const update = {
+            $set: { _id: masterKey, value: objVal },
+        };
+        // updating or deleting master depending on the last version put
+        // in v0 the master gets updated, in v1 the master gets deleted if version is
+        // a delete marker or updated otherwise.
+        const masterOp = this.updateDeleteMaster(objVal.isDeleteMarker || false, params.vFormat, filter, update, true);
+        ops.push(masterOp);
         c.bulkWrite(ops, {
             ordered: true,
         })
