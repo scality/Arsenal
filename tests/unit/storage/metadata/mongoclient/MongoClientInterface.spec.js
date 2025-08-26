@@ -14,6 +14,7 @@ const MongoUtils = require('../../../../../lib/storage/metadata/mongoclient/util
 const ObjectMD = require('../../../../../lib/models/ObjectMD').default;
 const { BucketVersioningKeyFormat } = require('../../../../../lib/versioning/constants').VersioningConstants;
 const { formatMasterKey } = require('../../../../../lib/storage/metadata/mongoclient/utils');
+const { promisify } = require('util');
 
 const dbName = 'metadata';
 const baseBucket = BucketInfo.fromObj({
@@ -716,15 +717,27 @@ describe('MongoClientInterface, tests', () => {
             assert.ok(retrievedCapacityInfo, 'VeeamSOSApi.CapacityInfo should exist');
 
             assert.strictEqual(typeof retrievedCapacityInfo.Capacity, 'bigint', 'Capacity should be a bigint');
-            assert.strictEqual(retrievedCapacityInfo.Capacity.toString(), veeamCapacity.Capacity, 'Capacity value mismatch');
+            assert.strictEqual(
+                retrievedCapacityInfo.Capacity.toString(),
+                veeamCapacity.Capacity,
+                'Capacity value mismatch',
+            );
 
             assert.strictEqual(typeof retrievedCapacityInfo.Available, 'bigint', 'Available should be a bigint');
-            assert.strictEqual(retrievedCapacityInfo.Available.toString(), veeamCapacity.Available, 'Available value mismatch');
+            assert.strictEqual(
+                retrievedCapacityInfo.Available.toString(),
+                veeamCapacity.Available,
+                'Available value mismatch',
+            );
 
             assert.strictEqual(typeof retrievedCapacityInfo.Used, 'bigint', 'Used should be a bigint');
             assert.strictEqual(retrievedCapacityInfo.Used.toString(), veeamCapacity.Used, 'Used value mismatch');
 
-            assert.strictEqual(retrievedCapacityInfo.LastModified, veeamCapacity.LastModified, 'LastModified value mismatch');
+            assert.strictEqual(
+                retrievedCapacityInfo.LastModified,
+                veeamCapacity.LastModified,
+                'LastModified value mismatch',
+            );
             done();
         });
     });
@@ -895,6 +908,9 @@ describe('MongoClientInterface, putObjectVerCase4', () => {
             if (err) {
                 return done(err);
             }
+
+            client.putObjectVerCase4Promised = promisify(client.putObjectVerCase4).bind(client);
+
             return createBucket(client, bucketName, true, err => {
                 if (err) {
                     return done(err);
@@ -1100,6 +1116,65 @@ describe('MongoClientInterface, putObjectVerCase4', () => {
                     done(assertionError);
                 }
             },
+        );
+    });
+
+    it('should handle missing versionId ($exists: false) in putObjectVerCase4 to update master', async () => {
+        const objName = 'test-object';
+        const versionId = 'test-version-id';
+        const objMD = new ObjectMD()
+            .setKey(objName)
+            .setDataStoreName('us-east-1')
+            .setContentLength(100)
+            .setLastModified(new Date());
+
+        const updateOneStub = sandbox.stub(collection, 'updateOne').resolves({ modifiedCount: 1 });
+
+        sandbox.stub(client, 'getLatestVersion').callsFake((c, objName, vFormat, log, cb) => {
+            cb(null, objMD.getValue());
+        });
+
+        const bulkWriteStub = sandbox.stub(collection, 'bulkWrite').resolves({
+            modifiedCount: 1,
+            upsertedCount: 1,
+            matchedCount: 1,
+        });
+
+        const params = {
+            vFormat: BucketVersioningKeyFormat.v1,
+            versionId,
+            repairMaster: true,
+            versioning: true,
+            needOplogUpdate: false,
+            originOp: 'test',
+            conditions: {},
+        };
+
+        const result = await client.putObjectVerCase4Promised(
+            collection,
+            bucketName,
+            objName,
+            objMD.getValue(),
+            params,
+            logger,
+        );
+
+        assert(result, 'Expected result on success');
+        assert.strictEqual(
+            result,
+            `{"versionId": "undefined"}`,
+            'Expected versionId in result',
+        );
+        assert(updateOneStub.calledOnce, 'Expected updateOne to be called');
+        assert(bulkWriteStub.calledOnce, 'Expected bulkWrite to be called');
+        const bulkOps = bulkWriteStub.firstCall.args[0];
+        const masterUpdateOp = bulkOps.find(
+            op => op.updateOne && op.updateOne.filter._id === formatMasterKey(objName, BucketVersioningKeyFormat.v1)
+        );
+        assert(masterUpdateOp, 'Expected master update operation');
+        assert(
+            masterUpdateOp.updateOne.filter.$or[0]['value.versionId'].$exists === false,
+            'Expected filter to check for non-existing versionId'
         );
     });
 });
@@ -1470,7 +1545,7 @@ describe('MongoClientInterface, writeUUIDIfNotExists', () => {
 
         sandbox.stub(client, 'getCollection').returns(mockCollection);
 
-        client.writeUUIDIfNotExists('test-uuid', logger, (err) => {
+        client.writeUUIDIfNotExists('test-uuid', logger, err => {
             try {
                 assert(err, 'Expected an error to be returned');
                 assert.strictEqual(err.code, 500, 'Expected 500 error code');
@@ -1491,7 +1566,7 @@ describe('MongoClientInterface, writeUUIDIfNotExists', () => {
 
         sandbox.stub(client, 'getCollection').returns(mockCollection);
 
-        client.writeUUIDIfNotExists('test-uuid', logger, (err) => {
+        client.writeUUIDIfNotExists('test-uuid', logger, err => {
             try {
                 assert(err, 'Expected an error to be returned');
                 assert.strictEqual(err.code, 409, 'Expected KeyAlreadyExists error');

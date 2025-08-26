@@ -1143,8 +1143,9 @@ class MongoClientInterface {
             const ops: AnyBulkWriteOperation<ObjectMetastoreDocument>[] = [];
             // filter to get master
             const filter = {
-                '_id': masterKey,
-                'value.versionId': {
+                _id: masterKey,
+                $or: [
+                    { 'value.versionId': { $exists: false } },
                     // We break the semantic correctness here with
                     // $gte instead of $gt because we do not have
                     // a microVersionId to capture the micro
@@ -1155,8 +1156,11 @@ class MongoClientInterface {
                     // replication and ingestion can hopefully
                     // ensure), but this would not work e.g. in
                     // the case of an active-active replication.
-                    $gte: mstObjVal!.versionId,
-                },
+
+                    { 'value.versionId': {
+                        $gte: mstObjVal!.versionId,
+                    } },
+                ]
             };
             // values to update master
             const update = {
