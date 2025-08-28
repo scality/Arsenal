@@ -45,7 +45,6 @@ import LRUCache from '../../../algos/cache/LRUCache';
 
 import MongoReadStream from './readStream';
 import * as MongoUtils from './utils';
-import { MongoOperationsWrapper, MongoWrapperConfig } from './MongoOperationsWrapper';
 import Skip from '../../../algos/list/skip';
 import MergeStream from '../../../algos/stream/MergeStream';
 import { Transform } from 'stream';
@@ -75,6 +74,8 @@ const SOCKET_TIMEOUT_MS = MONGO_SOCKET_TIMEOUT_MS ?
     Number.parseInt(MONGO_SOCKET_TIMEOUT_MS, 10) : 360000;
 const CONCURRENT_CURSORS = process.env.CONCURRENT_CURSORS ?
     Number.parseInt(process.env.CONCURRENT_CURSORS, 10) : 10;
+const MONGO_BULK_BATCH_DELAY_MS = process.env.MONGO_BULK_BATCH_DELAY_MS ?
+    Number.parseInt(process.env.MONGO_BULK_BATCH_DELAY_MS, 10) : 0;
 
 const initialInstanceID = process.env.INITIAL_INSTANCE_ID;
 
@@ -110,7 +111,27 @@ export type MongoDBClientInterfaceParameters = {
 
 const cachedNoSuchKeyError = errors.NoSuchKey;
 
+interface BatchedOperation {
+    operations: AnyBulkWriteOperation<ObjectMetastoreDocument>[];
+    callback: ArsenalCallback<{ versionId: string }>;
+    versionId: string;
+    operationStartIndex: number;
+            context: {
+            bucketName: string;
+            objName: string;
+            objVal: ObjectMDData;
+            params: ObjectMDOperationParams;
+            log: werelogs.Logger;
+            isRetry?: boolean;
+        };
+}
 
+interface BatchQueue {
+    operations: AnyBulkWriteOperation<ObjectMetastoreDocument>[];
+    batchedOps: BatchedOperation[];
+    timer: NodeJS.Timeout | null;
+    collection: Collection<ObjectMetastoreDocument>;
+}
 
 export type BucketMetadataMongoDB = Omit<Omit<BucketMetadata, 'quotaMax'>, 'capabilities'> & {
     // Old buckets might not have a quotaMax 
@@ -266,8 +287,10 @@ class MongoClientInterface {
     private cacheMiss: number;
     private cacheHitMissLoggerInterval: NodeJS.Timer | null;
     private adminDb: Db | null;
-    private wrapperConfig: MongoWrapperConfig;
-
+    private batchQueues: Map<string, BatchQueue>;
+    private batchDelay: number;
+    private mockGetBucketAttributes: number;
+    private mockGetObject: number;
     private isConnected = false;
 
     constructor(params: MongoDBClientInterfaceParameters) {
@@ -302,17 +325,12 @@ class MongoClientInterface {
         this.bucketVFormatCache = new LRUCache(constants.maxCachedBuckets);
         this.defaultBucketKeyFormat = DEFAULT_BUCKET_KEY_FORMAT;
         
-        // Initialize the MongoDB operations wrapper configuration
-        this.wrapperConfig = {
-            batchDelayMs: process.env.MONGO_BULK_BATCH_DELAY_MS ? Number.parseInt(process.env.MONGO_BULK_BATCH_DELAY_MS, 10) : 0,
-            maxBatchSize: process.env.MONGO_MAX_BATCH_SIZE ? Number.parseInt(process.env.MONGO_MAX_BATCH_SIZE, 10) : 100,
-            logger: this.logger,
-            enableReadBatching: process.env.MONGO_ENABLE_READ_BATCHING === 'true',
-            enableWriteBatching: process.env.MONGO_ENABLE_WRITE_BATCHING !== 'false', // Default to true
-            readOpsPerSecThreshold: process.env.MONGO_READ_OPS_THRESHOLD ? Number.parseInt(process.env.MONGO_READ_OPS_THRESHOLD, 10) : 0,
-            writeOpsPerSecThreshold: process.env.MONGO_WRITE_OPS_THRESHOLD ? Number.parseInt(process.env.MONGO_WRITE_OPS_THRESHOLD, 10) : 0
-        };
+        // Batching optimization: only initialize if explicitly enabled
+        this.batchDelay = MONGO_BULK_BATCH_DELAY_MS;
+        this.batchQueues = this.batchDelay > 0 ? new Map<string, BatchQueue>() : new Map();
 
+        this.mockGetBucketAttributes = process.env.MOCK_GET_BUCKET_ATTRIBUTES ? Number.parseInt(process.env.MOCK_GET_BUCKET_ATTRIBUTES, 10) : 0;
+        this.mockGetObject = process.env.MOCK_GET_OBJECT ? Number.parseInt(process.env.MOCK_GET_OBJECT, 10) : 0;
         this.cacheHit = 0;
         this.cacheMiss = 0;
         this.cacheHitMissLoggerInterval = null;
@@ -502,6 +520,8 @@ class MongoClientInterface {
             });
     }
 
+    private cachedBucketAttributes: Map<string, BucketInfo> = new Map();
+
     /**
      * Gets bucket metadata
      * @param {String} bucketName bucket name
@@ -511,6 +531,9 @@ class MongoClientInterface {
      */
     getBucketAttributes(bucketName: string, log: werelogs.Logger, cb: ArsenalCallback<BucketInfo>) {
         const m = this.getCollection<BucketMetastoreDocument>(METASTORE);
+        if (this.mockGetBucketAttributes > 0 && this.cachedBucketAttributes.has(bucketName)) {
+            return setTimeout(() => cb(null, this.cachedBucketAttributes.get(bucketName)!), this.mockGetBucketAttributes);
+        }
         m.findOne({
             _id: bucketName,
         })
@@ -533,6 +556,7 @@ class MongoClientInterface {
                 };
                 const vFormat = doc.vFormat || this.defaultBucketKeyFormat;
                 this.bucketVFormatCache.add(bucketName, vFormat);
+                this.cachedBucketAttributes.set(bucketName, BucketInfo.fromJson(bucketMetadata));
                 return cb(null, BucketInfo.fromJson(bucketMetadata));
             })
             .catch(err => {
@@ -877,7 +901,208 @@ class MongoClientInterface {
         };
     }
 
+    /**
+     * Adds operations to a batch queue for delayed execution
+     * This optimization batches multiple putObjectVerCase1 operations into a single bulkWrite call
+     * to reduce network overhead. Batching is DISABLED by default and must be explicitly enabled.
+     * 
+     * To enable batching, set environment variable:
+     * - MONGO_BULK_BATCH_DELAY_MS=20 (enables batching with 20ms delay)
+     * - MONGO_BULK_BATCH_DELAY_MS=50 (enables batching with 50ms delay)
+     * 
+     * @param {Collection} collection - The MongoDB collection
+     * @param {AnyBulkWriteOperation<ObjectMetastoreDocument>[]} operations - Operations to batch
+     * @param {ArsenalCallback<{ versionId: string }>} callback - Callback to execute when batch completes
+     * @param {string} versionId - Version ID for the operation
+     * @param {object} context - Additional context for the operation
+     */
+    private addToBatch(
+        collection: Collection<ObjectMetastoreDocument>,
+        operations: AnyBulkWriteOperation<ObjectMetastoreDocument>[],
+        callback: ArsenalCallback<{ versionId: string }>,
+        versionId: string,
+        context: {
+            bucketName: string;
+            objName: string;
+            objVal: ObjectMDData;
+            params: ObjectMDOperationParams;
+            log: werelogs.Logger;
+            isRetry?: boolean;
+        }
+    ): void {
+        const collectionName = collection.collectionName;
+        
+        if (!this.batchQueues.has(collectionName)) {
+            this.batchQueues.set(collectionName, {
+                operations: [],
+                batchedOps: [],
+                timer: null,
+                collection
+            });
+        }
 
+        const batchQueue = this.batchQueues.get(collectionName)!;
+        const operationStartIndex = batchQueue.operations.length;
+
+        // Add operations to the batch
+        batchQueue.operations.push(...operations);
+        batchQueue.batchedOps.push({
+            operations,
+            callback,
+            versionId,
+            operationStartIndex,
+            context
+        });
+
+        // Start timer if this is the first operation in the queue
+        if (batchQueue.timer === null) {
+            batchQueue.timer = setTimeout(() => {
+                this.flushBatch(collectionName);
+            }, this.batchDelay);
+        }
+    }
+
+    /**
+     * Flushes a batch queue and executes all queued operations
+     * @param {string} collectionName - Name of the collection to flush
+     */
+    private flushBatch(collectionName: string): void {
+        const batchQueue = this.batchQueues.get(collectionName);
+        if (!batchQueue || batchQueue.operations.length === 0) {
+            return;
+        }
+
+        const { operations, batchedOps, collection } = batchQueue;
+        
+        // Clear the timer and reset the queue
+        if (batchQueue.timer) {
+            clearTimeout(batchQueue.timer);
+            batchQueue.timer = null;
+        }
+        this.batchQueues.delete(collectionName);
+
+        // Execute the batched operations
+        collection.bulkWrite(operations, { ordered: true })
+            .then(() => {
+                // All operations succeeded, call all callbacks with success
+                batchedOps.forEach(batchedOp => {
+                    batchedOp.callback(null, { versionId: batchedOp.versionId });
+                });
+            })
+            .catch((err: MongoBulkWriteError) => {
+                // Handle batch errors - determine which operations failed
+                this.handleBatchError(err, batchedOps, collection);
+            });
+    }
+
+    /**
+     * Handles errors from batched operations by falling back to individual execution
+     * @param {MongoBulkWriteError} err - The batch error
+     * @param {BatchedOperation[]} batchedOps - The batched operations
+     * @param {Collection} collection - The MongoDB collection
+     */
+    private handleBatchError(
+        err: MongoBulkWriteError,
+        batchedOps: BatchedOperation[],
+        collection: Collection<ObjectMetastoreDocument>
+    ): void {
+        // For simplicity in the first implementation, fall back to individual execution
+        // This preserves all the existing error handling logic
+        batchedOps.forEach(batchedOp => {
+            const { context } = batchedOp;
+            context.log.debug('Batch operation failed, falling back to individual execution', {
+                bucketName: context.bucketName,
+                objName: context.objName,
+                error: err.message
+            });
+
+            // Re-execute the original putObjectVerCase1 with immediate execution
+            // Preserve the original versionId from the batch
+            const objValWithVersionId = { ...context.objVal, versionId: batchedOp.versionId };
+            this.putObjectVerCase1(
+                collection,
+                context.bucketName,
+                context.objName,
+                objValWithVersionId,
+                context.params,
+                context.log,
+                batchedOp.callback,
+                true // Force immediate execution to avoid infinite retry
+            );
+        });
+    }
+
+    /**
+     * Batching-enabled version of putObjectVerCase1
+     * This method is only called when MONGO_BULK_BATCH_DELAY_MS > 0
+     * @param {Collection} c - bucket collection
+     * @param {String} bucketName - bucket name
+     * @param {String} objName - object name
+     * @param {Object} objVal - object metadata
+     * @param {Object} params - params
+     * @param {Object} log - logger
+     * @param {Function} cb - callback
+     */
+    private putObjectVerCase1WithBatching(
+        c: Collection<ObjectMetastoreDocument>,
+        bucketName: string,
+        objName: string,
+        objVal: ObjectMDData,
+        params: ObjectMDOperationParams,
+        log: werelogs.Logger,
+        cb: ArsenalCallback<{ versionId: string }>
+    ) {
+        const versionId = generateVersionId(this.instanceId, this.replicationGroupId);
+        objVal.versionId = versionId;
+        const versionKey = formatVersionKey(objName, versionId, params.vFormat);
+        const masterKey = formatMasterKey(objName, params.vFormat);
+        // initiating array of operations with version creation
+        const ops: AnyBulkWriteOperation<ObjectMetastoreDocument>[] = [{
+            updateOne: {
+                filter: {
+                    _id: versionKey,
+                },
+                update: {
+                    $set: { _id: versionKey, value: objVal },
+                },
+                upsert: true,
+            },
+        }];
+        // filter to get master
+        const filter = {
+            _id: masterKey,
+            $or: [{
+                'value.versionId': {
+                    $exists: false,
+                },
+            },
+            {
+                'value.versionId': {
+                    $gt: objVal.versionId,
+                },
+            },
+            ],
+        };
+        // values to update master
+        const update = {
+            $set: { _id: masterKey, value: objVal },
+        };
+        // updating or deleting master depending on the last version put
+        // in v0 the master gets updated, in v1 the master gets deleted if version is
+        // a delete marker or updated otherwise.
+        const masterOp = this.updateDeleteMaster(objVal.isDeleteMarker || false, params.vFormat, filter, update, true);
+        ops.push(masterOp);
+
+        // Add to batch for delayed execution
+        return this.addToBatch(c, ops, cb, versionId, {
+            bucketName,
+            objName,
+            objVal,
+            params,
+            log,
+            isRetry: false
+        });
+    }
 
     /**
      * In this case we generate a versionId and
@@ -892,7 +1117,10 @@ class MongoClientInterface {
      * to manage the case of an object created before the
      * versioning was enabled.
      * 
-     * Uses MongoOperationsWrapper for automatic batching based on operations/second thresholds.
+     * BATCHING OPTIMIZATION:
+     * - If MONGO_BULK_BATCH_DELAY_MS is unset or 0: uses original immediate execution logic
+     * - If MONGO_BULK_BATCH_DELAY_MS > 0: batches operations to reduce network calls
+     * - Retry operations always use immediate execution regardless of batching settings
      *
      * @param {Object} c bucket collection
      * @param {String} bucketName bucket name
@@ -915,11 +1143,16 @@ class MongoClientInterface {
         cb: ArsenalCallback<{ versionId: string }>,
         isRetry?: boolean,
     ) {
+        // If batching is enabled and this is not a retry, use batching logic
+        if (!isRetry && this.batchDelay > 0) {
+            return this.putObjectVerCase1WithBatching(c, bucketName, objName, objVal, params, log, cb);
+        }
+
+        // Original logic - identical to pre-batching implementation
         const versionId = generateVersionId(this.instanceId, this.replicationGroupId);
         objVal.versionId = versionId;
         const versionKey = formatVersionKey(objName, versionId, params.vFormat);
         const masterKey = formatMasterKey(objName, params.vFormat);
-        
         // initiating array of operations with version creation
         const ops: AnyBulkWriteOperation<ObjectMetastoreDocument>[] = [{
             updateOne: {
@@ -932,7 +1165,6 @@ class MongoClientInterface {
                 upsert: true,
             },
         }];
-        
         // filter to get master
         const filter = {
             _id: masterKey,
@@ -948,21 +1180,20 @@ class MongoClientInterface {
             },
             ],
         };
-        
         // values to update master
         const update = {
             $set: { _id: masterKey, value: objVal },
         };
-        
         // updating or deleting master depending on the last version put
         // in v0 the master gets updated, in v1 the master gets deleted if version is
         // a delete marker or updated otherwise.
         const masterOp = this.updateDeleteMaster(objVal.isDeleteMarker || false, params.vFormat, filter, update, true);
         ops.push(masterOp);
-
-        // Use the wrapper for automatic batching
-        const wrappedCallback = (err: ArsenalError | null, result?: any) => {
-            if (err) {
+        c.bulkWrite(ops, {
+            ordered: true,
+        })
+            .then(() => cb(null, { versionId }))
+            .catch((err: MongoBulkWriteError) => {
                 /*
                  * Previously related to https://jira.mongodb.org/browse/SERVER-14322
                  * the issue has been fixed in MongoDB v5.0+.
@@ -979,7 +1210,7 @@ class MongoClientInterface {
                 if (err.code === 11000) {
                     log.debug('putObjectVerCase1: error putting object version', {
                         code: err.code,
-                        error: err.message,
+                        error: err.errmsg,
                         isRetry: !!isRetry,
                     });
 
@@ -989,23 +1220,21 @@ class MongoClientInterface {
                     // encountered, and thus won't execute any pending operation.
                     // As a result, checking for the [0] error is enough to know, after checking
                     // its index, what operation failed.
-                    if ((err as any).writeErrors && (err as any).writeErrors[0]) {
-                        const bulkError: WriteError = (err as any).writeErrors[0];
-                        // Check index of the operation that failed (0 = version, 1 = master)
-                        const isMasterOpError = bulkError.index === 1;
+                    const bulkError: WriteError = err.writeErrors[0];
+                    // Check index of the operation that failed (0 = version, 1 = master)
+                    const isMasterOpError = bulkError.index === 1;
 
-                        // Master operation failed but version succeeded.
-                        // This error is expected, it means that two differents version were
-                        // put at the same time.
-                        if (isMasterOpError) {
-                            return cb(null, { versionId });
-                        }
+                    // Master operation failed but version succeeded.
+                    // This error is expected, it means that two differents version were
+                    // put at the same time.
+                    if (isMasterOpError) {
+                        return cb(null, { versionId });
                     }
 
                     // If no upserts succeeded and this is not a retry yet, try again with a new version ID
                     if (!isRetry) {
                         log.error('putObjectVerCase1: race condition upserting versionId', {
-                            error: err.message,
+                            error: err.errmsg,
                         });
                         return process.nextTick(() =>
                             this.putObjectVerCase1(c, bucketName, objName, objVal, params, log, cb, true));
@@ -1013,35 +1242,16 @@ class MongoClientInterface {
 
                     // Version operation failed twice, reject the operation.
                     log.error('putObjectVerCase1: version operation failed twice', {
-                        error: err.message,
+                        error: err.errmsg,
                     });
                     return cb(errors.InternalError);
                 }
 
                 log.error('putObjectVerCase1: error putting object version', {
-                    error: err.message,
+                    error: err.errmsg,
                 });
                 return cb(errors.InternalError);
-            }
-
-            cb(null, { versionId });
-        };
-
-        MongoOperationsWrapper.bulkWrite(
-            this.instanceId,
-            this.wrapperConfig,
-            c,
-            ops,
-            { ordered: true },
-            // @ts-ignore
-            wrappedCallback,
-            {
-                bucketName,
-                objName,
-                operationId: `putObjectVerCase1-${versionId}`,
-                log
-            }
-        );
+            });
     }
 
     /**
@@ -1325,34 +1535,19 @@ class MongoClientInterface {
         }
         const key = formatMasterKey(objName, params.vFormat);
         const putFilter = { _id: key };
-        
-        MongoOperationsWrapper.updateOne(
-            this.instanceId,
-            this.wrapperConfig,
-            collection,
-            putFilter,
-            {
-                $set: {
-                    _id: key,
-                    value,
-                },
+        return collection.updateOne(putFilter, {
+            $set: {
+                _id: key,
+                value,
             },
-            { upsert: true },
-            // @ts-ignore
-            (err: ArsenalError | null) => {
-                if (err) {
-                    log.error('putObjectNoVer: error putting object with no versioning', { error: err.message });
-                    return cb(errors.InternalError);
-                }
-                cb(null);
-            },
-            {
-                bucketName,
-                objName,
-                operationId: `putObjectNoVer-${key}`,
-                log
-            }
-        );
+        }, {
+            upsert: true,
+        }).then(() => {
+            cb(null);
+        }).catch(err => {
+            log.error('putObjectNoVer: error putting obect with no versioning', { error: err.message });
+            cb(errors.InternalError);
+        });
     }
 
     /**
@@ -1506,6 +1701,7 @@ class MongoClientInterface {
         });
     }
 
+    private mockedObjectResult: ObjectMDData | undefined = undefined;
     /**
      * gets versioned and non versioned object metadata
      * @param {String} bucketName bucket name
@@ -1525,6 +1721,9 @@ class MongoClientInterface {
     ) {
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
         let key;
+        if (this.mockGetObject > 0 && this.mockedObjectResult) {
+            return setTimeout(() => cb(null, this.mockedObjectResult!), this.mockGetObject);
+        }
         async.waterfall([
             next => this.getBucketVFormat(bucketName, log, next),
             (vFormat, next) => {
@@ -1579,6 +1778,7 @@ class MongoClientInterface {
             if (err) {
                 return cb(err);
             }
+            this.mockedObjectResult = result;
             return cb(null, result!);
         });
     }
@@ -3123,8 +3323,6 @@ class MongoClientInterface {
                 return cb(err);
             });
     }
-
-
 }
 
 module.exports = MongoClientInterface;

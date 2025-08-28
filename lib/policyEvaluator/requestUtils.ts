@@ -41,7 +41,8 @@ export function getClientIp(request: IncomingMessage, s3config?: S3Config): stri
 }
 
 // function to get ip and the http protocol security
-export function getIpAndHttpProtocolSecurity(request: IncomingMessage, s3config?: S3Config): { ip: string, isSecure: boolean } {
+export function getIpAndHttpProtocolSecurity(request: IncomingMessage, s3config?: S3Config):
+    { ip: string, isSecure: boolean } {
     const requestConfig = s3config?.requests;
     const remoteAddress = request.socket.remoteAddress;
     const clientIp = remoteAddress?.toString() ?? '';
@@ -55,7 +56,8 @@ export function getIpAndHttpProtocolSecurity(request: IncomingMessage, s3config?
         if (ipCheck.ipMatchCidrList(trustedProxyCIDRs, clientIp)) {
             const ipFromHeader = request.headers[extractClientIPFromHeader.toLowerCase()]?.toString();
             if (ipFromHeader && ipFromHeader.trim().length) {
-                return { ip: ipFromHeader.split(',')[0].trim(), isSecure: request.headers[requestConfig.extractProtocolFromHeader.toLowerCase()] === 'https' };
+                return { ip: ipFromHeader.split(',')[0].trim(),
+                    isSecure: request.headers[requestConfig.extractProtocolFromHeader.toLowerCase()] === 'https' };
             }
         }
     }

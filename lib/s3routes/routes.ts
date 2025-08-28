@@ -166,6 +166,8 @@ export type Params = {
     api: { callApiMethod: routesUtils.CallApiMethod };
 }
 
+let cachedEndpoints: string[] = [];
+
 /** routes - route request to appropriate method
  * @param req - http request object
  * @param res - http response sent to the client
@@ -208,6 +210,27 @@ export default function routes(
 
     const requestInfos = requestUtils.getIpAndHttpProtocolSecurity(req, s3config);
 
+    let reqUids = req.headers['x-scal-request-uids'];
+    if (reqUids !== undefined && !isValidReqUids(reqUids)) {
+        // simply ignore invalid id (any user can provide an
+        // invalid request ID through a crafted header)
+        reqUids = undefined;
+    }
+    const log = (reqUids !== undefined ?
+        // @ts-ignore
+        logger.newRequestLoggerFromSerializedUids(reqUids) :
+        // @ts-ignore
+        logger.newRequestLogger());
+
+    // @ts-ignore
+    const { error, method } = checkUnsupportedRoutes(req.method, req.query);
+
+    if (error) {
+        log.trace('error validating route or uri params', { error });
+        // @ts-ignore
+        return routesUtils.responseXMLBody(error, '', res, log);
+    }
+
     const clientInfo = {
         clientIP: requestInfos.ip,
         clientPort: req.socket.remotePort,
@@ -228,24 +251,12 @@ export default function routes(
     // @ts-ignore
     req.isSecure = requestInfos.isSecure;
 
-    let reqUids = req.headers['x-scal-request-uids'];
-    if (reqUids !== undefined && !isValidReqUids(reqUids)) {
-        // simply ignore invalid id (any user can provide an
-        // invalid request ID through a crafted header)
-        reqUids = undefined;
-    }
-    const log = (reqUids !== undefined ?
-        // @ts-ignore
-        logger.newRequestLoggerFromSerializedUids(reqUids) :
-        // @ts-ignore
-        logger.newRequestLogger());
+    log.addDefaultFields(clientInfo);
 
     if (!req.url!.startsWith('/_/healthcheck') &&
         !req.url!.startsWith('/_/report')) {
-        log.debug('received request', clientInfo);
+        log.debug('received request');
     }
-
-    log.addDefaultFields(clientInfo);
 
     if (req.url!.startsWith('/_/')) {
         let internalServiceName = req.url!.slice(3);
@@ -267,24 +278,18 @@ export default function routes(
         statsClient.reportNewRequest('s3');
     }
 
+    if (cachedEndpoints.length === 0) {
+        cachedEndpoints = allEndpoints.concat(websiteEndpoints);
+    }
+
     try {
-        const validHosts = allEndpoints.concat(websiteEndpoints);
-        routesUtils.normalizeRequest(req, validHosts);
+        routesUtils.normalizeRequest(req, cachedEndpoints);
     } catch (err: any) {
         log.debug('could not normalize request', { error: err.stack });
         return routesUtils.responseXMLBody(
             errorInstances.InvalidURI.customizeDescription('Could not parse the ' +
                 'specified URI. Check your restEndpoints configuration.'),
             null, res, log);
-    }
-
-    // @ts-ignore
-    const { error, method } = checkUnsupportedRoutes(req.method, req.query);
-
-    if (error) {
-        log.trace('error validating route or uri params', { error });
-        // @ts-ignore
-        return routesUtils.responseXMLBody(error, '', res, log);
     }
 
     // @ts-ignore
