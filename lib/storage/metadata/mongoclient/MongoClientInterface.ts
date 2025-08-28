@@ -1010,7 +1010,7 @@ class MongoClientInterface {
         // This preserves all the existing error handling logic
         batchedOps.forEach(batchedOp => {
             const { context } = batchedOp;
-            context.log.debug('Batch operation failed, falling back to individual execution', {
+            context.log.info('Batch operation failed, falling back to individual execution', {
                 bucketName: context.bucketName,
                 objName: context.objName,
                 error: err.message
