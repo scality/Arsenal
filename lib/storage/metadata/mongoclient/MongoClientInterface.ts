@@ -76,6 +76,12 @@ const SOCKET_TIMEOUT_MS = MONGO_SOCKET_TIMEOUT_MS ?
 const CONCURRENT_CURSORS = process.env.CONCURRENT_CURSORS ?
     Number.parseInt(process.env.CONCURRENT_CURSORS, 10) : 10;
 
+// Mock configuration - if set to a number, enables mock with that delay in ms
+const MOCK_GET_BUCKET_DELAY_MS = process.env.MOCK_GET_BUCKET_DELAY_MS ?
+    Number.parseInt(process.env.MOCK_GET_BUCKET_DELAY_MS, 10) : null;
+const MOCK_GET_OBJECT_DELAY_MS = process.env.MOCK_GET_OBJECT_DELAY_MS ?
+    Number.parseInt(process.env.MOCK_GET_OBJECT_DELAY_MS, 10) : null;
+
 const initialInstanceID = process.env.INITIAL_INSTANCE_ID;
 
 const BUCKET_VERSIONS = require('../../../versioning/constants')
@@ -510,6 +516,24 @@ class MongoClientInterface {
      * @return {undefined}
      */
     getBucketAttributes(bucketName: string, log: werelogs.Logger, cb: ArsenalCallback<BucketInfo>) {
+        // MOCK: If MOCK_GET_BUCKET_DELAY_MS is set, return mock data after delay
+        if (MOCK_GET_BUCKET_DELAY_MS !== null) {
+            const mockBucketInfo = new BucketInfo(
+                bucketName,
+                'mock-owner',
+                'mock-owner-display-name',
+                new Date().toISOString(),
+                BucketInfo.currentModelVersion()
+            );
+            
+            if (MOCK_GET_BUCKET_DELAY_MS > 0) {
+                setTimeout(() => cb(null, mockBucketInfo), MOCK_GET_BUCKET_DELAY_MS);
+            } else {
+                process.nextTick(() => cb(null, mockBucketInfo));
+            }
+            return undefined;
+        }
+
         const m = this.getCollection<BucketMetastoreDocument>(METASTORE);
         m.findOne({
             _id: bucketName,
@@ -1532,6 +1556,53 @@ class MongoClientInterface {
         log: werelogs.Logger,
         cb: ArsenalCallback<ObjectMDData>,
     ) {
+        // MOCK: If MOCK_GET_OBJECT_DELAY_MS is set, return mock object data after delay
+        if (MOCK_GET_OBJECT_DELAY_MS !== null) {
+            const mockObjectMD = new ObjectMD({
+                'owner-display-name': 'mock-owner',
+                'owner-id': 'mock-owner-id',
+                'content-length': 1024,
+                'content-type': 'application/octet-stream',
+                'last-modified': new Date().toISOString(),
+                'content-md5': 'mock-md5-hash',
+                'x-amz-version-id': 'mock-version-id',
+                'x-amz-server-version-id': 'mock-server-version-id',
+                'x-amz-storage-class': 'STANDARD',
+                'x-amz-server-side-encryption': '',
+                'x-amz-server-side-encryption-aws-kms-key-id': '',
+                'x-amz-server-side-encryption-context': '',
+                'x-amz-website-redirect-location': '',
+                'acl': {
+                    Canned: 'private',
+                    FULL_CONTROL: [],
+                    WRITE_ACP: [],
+                    READ: [],
+                    READ_ACP: []
+                },
+                'key': objName,
+                'location': null,
+                'isDeleteMarker': false,
+                'tags': {},
+                'replicationInfo': {
+                    status: '',
+                    backends: [],
+                    content: [],
+                    destination: '',
+                    storageClass: '',
+                    role: '',
+                },
+                'dataStoreName': 'mock-store',
+                'originOp': 's3:ObjectCreated:Put'
+            });
+            
+            if (MOCK_GET_OBJECT_DELAY_MS > 0) {
+                setTimeout(() => cb(null, mockObjectMD.getValue()), MOCK_GET_OBJECT_DELAY_MS);
+            } else {
+                process.nextTick(() => cb(null, mockObjectMD.getValue()));
+            }
+            return;
+        }
+
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
         let key;
         async.waterfall([
