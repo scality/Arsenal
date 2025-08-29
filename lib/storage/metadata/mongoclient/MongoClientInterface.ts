@@ -289,7 +289,20 @@ class MongoClientInterface {
     private adminDb: Db | null;
     private batchQueues: Map<string, BatchQueue>;
     private batchDelay: number;
+    private batchMaxOps: number;
     private batchMetricsInterval: NodeJS.Timer | null;
+    private batchWindowStats: {
+        totalFlushes: number;
+        versionWaveFlushes: number;
+        masterWaveFlushes: number;
+        requestsFlushed: number;
+        versionOpsFlushed: number;
+        masterOpsFlushed: number;
+        versionWaveErrors: number;
+        masterWaveErrors: number;
+        requestsFallback: number;
+        masterConflictAsSuccess: number;
+    };
     private mockGetBucketAttributes: number;
     private mockGetObject: number;
     private isConnected = false;
@@ -329,7 +342,20 @@ class MongoClientInterface {
         // Batching optimization: only initialize if explicitly enabled
         this.batchDelay = MONGO_BULK_BATCH_DELAY_MS;
         this.batchQueues = this.batchDelay > 0 ? new Map<string, BatchQueue>() : new Map();
+        this.batchMaxOps = process.env.MONGO_BULK_MAX_OPS ? Number.parseInt(process.env.MONGO_BULK_MAX_OPS, 10) : 200;
         this.batchMetricsInterval = null;
+        this.batchWindowStats = {
+            totalFlushes: 0,
+            versionWaveFlushes: 0,
+            masterWaveFlushes: 0,
+            requestsFlushed: 0,
+            versionOpsFlushed: 0,
+            masterOpsFlushed: 0,
+            versionWaveErrors: 0,
+            masterWaveErrors: 0,
+            requestsFallback: 0,
+            masterConflictAsSuccess: 0,
+        };
 
         this.mockGetBucketAttributes = process.env.MOCK_GET_BUCKET_ATTRIBUTES ? Number.parseInt(process.env.MOCK_GET_BUCKET_ATTRIBUTES, 10) : 0;
         this.mockGetObject = process.env.MOCK_GET_OBJECT ? Number.parseInt(process.env.MOCK_GET_OBJECT, 10) : 0;
@@ -985,6 +1011,13 @@ class MongoClientInterface {
             });
         }
 
+        // Flush immediately if we reached the max ops threshold
+        if (batchQueue.operations.length >= this.batchMaxOps) {
+            // Avoid immediate recursion if called from within a flush
+            setImmediate(() => this.flushBatch(collectionName));
+            return;
+        }
+
         // Start timer if this is the first operation in the queue
         if (batchQueue.timer === null) {
             batchQueue.timer = setTimeout(() => {
@@ -1064,6 +1097,10 @@ class MongoClientInterface {
         };
 
         // Wave 1: versions
+        this.batchWindowStats.totalFlushes++;
+        this.batchWindowStats.requestsFlushed += totalRequests;
+        this.batchWindowStats.versionOpsFlushed += versionOps.length;
+        this.batchWindowStats.versionWaveFlushes++;
         collection.bulkWrite(versionOps, { ordered: false })
             .then(() => {
                 for (let i = 0; i < totalRequests; i++) {
@@ -1077,6 +1114,7 @@ class MongoClientInterface {
                     error: err.message,
                     batchDelayMs: this.batchDelay,
                 });
+                this.batchWindowStats.versionWaveErrors++;
                 if ((err as any).writeErrors && Array.isArray((err as any).writeErrors)) {
                     for (const we of (err as any).writeErrors) {
                         const idx = we.index as number;
@@ -1112,12 +1150,15 @@ class MongoClientInterface {
                     for (let i = 0; i < totalRequests; i++) {
                         if (needsFallbackVersion[i]) {
                             invokeFallbackImmediate(i);
+                            this.batchWindowStats.requestsFallback++;
                         }
                     }
                     return;
                 }
 
                 // Wave 2: masters
+                this.batchWindowStats.masterWaveFlushes++;
+                this.batchWindowStats.masterOpsFlushed += masterOpsToRun.length;
                 collection.bulkWrite(masterOpsToRun, { ordered: false })
                     .then(() => {
                         // All masters succeeded, success callbacks for these
@@ -1132,6 +1173,7 @@ class MongoClientInterface {
                             error: err.message,
                             batchDelayMs: this.batchDelay,
                         });
+                        this.batchWindowStats.masterWaveErrors++;
 
                         // Determine which masters failed
                         const failedMasterBulkIdx = new Set<number>();
@@ -1141,6 +1183,9 @@ class MongoClientInterface {
                                 // Treat duplicate key on master as success, otherwise fallback
                                 if (we.code !== 11000) {
                                     failedMasterBulkIdx.add(bulkIdx);
+                                }
+                                if (we.code === 11000) {
+                                    this.batchWindowStats.masterConflictAsSuccess++;
                                 }
                             }
                         } else {
@@ -1168,6 +1213,7 @@ class MongoClientInterface {
                         for (let i = 0; i < totalRequests; i++) {
                             if (needsFallbackVersion[i] || needsFallbackMaster[i]) {
                                 invokeFallbackImmediate(i);
+                                this.batchWindowStats.requestsFallback++;
                             }
                         }
                     })
@@ -1176,47 +1222,11 @@ class MongoClientInterface {
                         for (let i = 0; i < totalRequests; i++) {
                             if (needsFallbackVersion[i]) {
                                 invokeFallbackImmediate(i);
+                                this.batchWindowStats.requestsFallback++;
                             }
                         }
                     });
             });
-    }
-
-    /**
-     * Handles errors from batched operations by falling back to individual execution
-     * @param {MongoBulkWriteError} err - The batch error
-     * @param {BatchedOperation[]} batchedOps - The batched operations
-     * @param {Collection} collection - The MongoDB collection
-     */
-    private handleBatchError(
-        err: MongoBulkWriteError,
-        batchedOps: BatchedOperation[],
-        collection: Collection<ObjectMetastoreDocument>
-    ): void {
-        // For simplicity in the first implementation, fall back to individual execution
-        // This preserves all the existing error handling logic
-        batchedOps.forEach(batchedOp => {
-            const { context } = batchedOp;
-            context.log.info('Batch operation failed, falling back to individual execution', {
-                bucketName: context.bucketName,
-                objName: context.objName,
-                error: err.message
-            });
-
-            // Re-execute the original putObjectVerCase1 with immediate execution
-            // Preserve the original versionId from the batch
-            const objValWithVersionId = { ...context.objVal, versionId: batchedOp.versionId };
-            this.putObjectVerCase1(
-                collection,
-                context.bucketName,
-                context.objName,
-                objValWithVersionId,
-                context.params,
-                context.log,
-                batchedOp.callback,
-                true // Force immediate execution to avoid infinite retry
-            );
-        });
     }
 
     /**
@@ -1265,8 +1275,8 @@ class MongoClientInterface {
         const batchingEfficiency = totalQueuedOperations > 0 ?
             ((totalQueuedOperations - totalBatchedOps) / totalQueuedOperations * 100).toFixed(2) : '0.00';
 
-        // Log overall metrics
-        this.logger.info('MongoClientInterface: Batch operations metrics (30s)', {
+        // Log overall metrics with rolling 30s window stats accumulated between logs
+        this.logger.info('MongoClientInterface: Batch operations metrics (rolling window)', {
             totalCollections: this.batchQueues.size,
             totalQueuedOperations,
             totalBatchedOps,
@@ -1274,8 +1284,35 @@ class MongoClientInterface {
             avgBatchSize: avgBatchSize.toFixed(2),
             batchingEfficiency: `${batchingEfficiency}%`,
             batchDelayMs: this.batchDelay,
-            collectionMetrics
+            collectionMetrics,
+            // Rolling window stats since last log
+            windowStats: {
+                totalFlushes: this.batchWindowStats.totalFlushes,
+                versionWaveFlushes: this.batchWindowStats.versionWaveFlushes,
+                masterWaveFlushes: this.batchWindowStats.masterWaveFlushes,
+                requestsFlushed: this.batchWindowStats.requestsFlushed,
+                versionOpsFlushed: this.batchWindowStats.versionOpsFlushed,
+                masterOpsFlushed: this.batchWindowStats.masterOpsFlushed,
+                versionWaveErrors: this.batchWindowStats.versionWaveErrors,
+                masterWaveErrors: this.batchWindowStats.masterWaveErrors,
+                requestsFallback: this.batchWindowStats.requestsFallback,
+                masterConflictAsSuccess: this.batchWindowStats.masterConflictAsSuccess,
+            }
         });
+
+        // Reset window stats after logging
+        this.batchWindowStats = {
+            totalFlushes: 0,
+            versionWaveFlushes: 0,
+            masterWaveFlushes: 0,
+            requestsFlushed: 0,
+            versionOpsFlushed: 0,
+            masterOpsFlushed: 0,
+            versionWaveErrors: 0,
+            masterWaveErrors: 0,
+            requestsFallback: 0,
+            masterConflictAsSuccess: 0,
+        };
     }
 
     /**
