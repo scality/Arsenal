@@ -1,6 +1,7 @@
 import { Collection, AnyBulkWriteOperation, BulkWriteResult } from 'mongodb';
 import * as werelogs from 'werelogs';
 import { ArsenalCallback } from '../../../types';
+import errors from '../../../errors';
 
 /**
  * Types of MongoDB operations that can be batched
@@ -54,40 +55,87 @@ export interface MongoWrapperConfig {
 }
 
 /**
- * Represents a single operation in the batch queue
+ * Lightweight operation representation - minimize memory footprint
  */
 interface BatchedOperation<T = any> {
-    /** The operation type */
+    /** The operation type - using enum for better performance */
     type: MongoOperationType;
-    /** The operation parameters */
-    params: any[];
+    /** Flattened parameters - avoid array allocation where possible */
+    filter: any;
+    update?: any;
+    options?: any;
     /** The callback to execute when operation completes */
     callback: ArsenalCallback<T>;
-    /** The collection to execute on */
-    collection: Collection<any>;
-    /** Additional context for debugging */
-    context?: {
-        bucketName?: string;
-        objName?: string;
-        operationId?: string;
-        log?: werelogs.Logger;
-    };
-    /** The base function to call in case of fallback */
-    baseCall: () => Promise<T>;
+    /** Minimal context - only what's essential */
+    bucketName?: string;
+    objName?: string;
+    /** Collection reference for fallback execution */
+    collection?: Collection<any>;
 }
 
 /**
- * Represents a batch queue for a specific collection
+ * Optimized batch queue - focus on writes only for putObjectVerCase1
  */
 interface BatchQueue {
-    /** Write operations that can be batched together */
+    /** Write operations only - reads don't benefit from batching in our use case */
     writeOps: BatchedOperation[];
-    /** Read operations (for potential future batching) */
-    readOps: BatchedOperation[];
+    /** Pre-allocated bulk operations array to avoid repeated allocations */
+    bulkOps: AnyBulkWriteOperation[];
     /** Timer for flushing the batch */
     timer: NodeJS.Timeout | null;
     /** The collection this queue belongs to */
     collection: Collection<any>;
+    /** Pre-allocated capacity to avoid array resizing */
+    capacity: number;
+}
+
+/**
+ * Object pool for frequently allocated objects to reduce GC pressure
+ */
+class ObjectPool {
+    private static filterPool: any[] = [];
+    private static updatePool: any[] = [];
+    private static optionsPool: any[] = [];
+
+    static getFilter(): any {
+        return this.filterPool.pop() || {};
+    }
+
+    static returnFilter(obj: any): void {
+        // Clear the object and return to pool
+        for (const key in obj) {
+            delete obj[key];
+        }
+        if (this.filterPool.length < 100) { // Max pool size
+            this.filterPool.push(obj);
+        }
+    }
+
+    static getUpdate(): any {
+        return this.updatePool.pop() || {};
+    }
+
+    static returnUpdate(obj: any): void {
+        for (const key in obj) {
+            delete obj[key];
+        }
+        if (this.updatePool.length < 100) {
+            this.updatePool.push(obj);
+        }
+    }
+
+    static getOptions(): any {
+        return this.optionsPool.pop() || {};
+    }
+
+    static returnOptions(obj: any): void {
+        for (const key in obj) {
+            delete obj[key];
+        }
+        if (this.optionsPool.length < 100) {
+            this.optionsPool.push(obj);
+        }
+    }
 }
 
 /**
@@ -249,7 +297,7 @@ export class MongoOperationsWrapper {
     }
 
     /**
-     * Execute a MongoDB updateOne operation with optional batching
+     * OPTIMIZED: Execute a MongoDB updateOne operation - streamlined for putObjectVerCase1
      */
     public static updateOne<T = any>(
         instanceId: string,
@@ -266,20 +314,17 @@ export class MongoOperationsWrapper {
             log?: werelogs.Logger;
         }
     ): void {
-        const baseCall = async (): Promise<T> => {
-            return collection.updateOne(filter, update, options) as Promise<T>;
-        };
+        // FAST PATH: Execute immediately if batching disabled
+        if (config.batchDelayMs <= 0) {
+            collection.updateOne(filter, update, options)
+                .then(result => callback(null, result as T))
+                .catch(error => callback(error));
+            return;
+        }
 
-        MongoOperationsWrapper.execute(
-            instanceId,
-            config,
-            collection,
-            'updateOne',
-            [filter, update, options],
-            callback,
-            context,
-            baseCall
-        );
+        // OPTIMIZED BATCHING PATH
+        const wrapper = MongoOperationsWrapper.getInstance(instanceId, config);
+        wrapper.addUpdateToBatch<T>(collection, filter, update, options, callback, context);
     }
 
     /**
@@ -316,38 +361,7 @@ export class MongoOperationsWrapper {
         );
     }
 
-    /**
-     * Execute a MongoDB deleteOne operation with optional batching
-     */
-    public static deleteOne<T = any>(
-        instanceId: string,
-        config: MongoWrapperConfig,
-        collection: Collection<any>,
-        filter: any,
-        options: any,
-        callback: ArsenalCallback<T>,
-        context?: {
-            bucketName?: string;
-            objName?: string;
-            operationId?: string;
-            log?: werelogs.Logger;
-        }
-    ): void {
-        const baseCall = async (): Promise<T> => {
-            return collection.deleteOne(filter, options) as Promise<T>;
-        };
 
-        MongoOperationsWrapper.execute(
-            instanceId,
-            config,
-            collection,
-            'deleteOne',
-            [filter, options],
-            callback,
-            context,
-            baseCall
-        );
-    }
 
     /**
      * Execute a MongoDB bulkWrite operation
@@ -520,6 +534,39 @@ export class MongoOperationsWrapper {
     }
 
     /**
+     * OPTIMIZED: Static deleteOne method for MongoClientInterface compatibility
+     */
+    public static deleteOne<T = any>(
+        instanceId: string,
+        config: MongoWrapperConfig,
+        collection: Collection<any>,
+        filter: any,
+        options: any,
+        callback: ArsenalCallback<T>,
+        context?: {
+            bucketName?: string;
+            objName?: string;
+            operationId?: string;
+            log?: werelogs.Logger;
+        }
+    ): void {
+        // FAST PATH: Execute immediately if batching disabled
+        if (config.batchDelayMs <= 0) {
+            collection.deleteOne(filter, options)
+                .then(result => callback(null, result as T))
+                .catch(error => callback(error));
+            return;
+        }
+
+        // For now, execute deleteOne immediately (less common than updateOne)
+        collection.deleteOne(filter, options)
+            .then(result => callback(null, result as T))
+            .catch(error => callback(error));
+    }
+
+
+
+    /**
      * Determine if batching should be enabled based on current operations per second
      */
     private shouldEnableBatching(isWrite: boolean): boolean {
@@ -554,6 +601,76 @@ export class MongoOperationsWrapper {
     }
 
     /**
+     * OPTIMIZED: Add updateOne operation directly to batch - eliminates overhead
+     */
+    private addUpdateToBatch<T>(
+        collection: Collection<any>,
+        filter: any,
+        update: any,
+        options: any,
+        callback: ArsenalCallback<T>,
+        context?: {
+            bucketName?: string;
+            objName?: string;
+            operationId?: string;
+            log?: werelogs.Logger;
+        }
+    ): void {
+        const collectionName = collection.collectionName;
+
+        // Get or create batch queue with pre-allocated capacity
+        if (!this.batchQueues.has(collectionName)) {
+            const capacity = this.config.maxBatchSize;
+            this.batchQueues.set(collectionName, {
+                writeOps: [],
+                bulkOps: new Array(capacity), // Pre-allocate to avoid resizing
+                timer: null,
+                collection,
+                capacity
+            });
+        }
+
+        const batchQueue = this.batchQueues.get(collectionName)!;
+
+        // Create lightweight batched operation
+        const batchedOp: BatchedOperation<T> = {
+            type: 'updateOne',
+            filter,
+            update,
+            options,
+            callback,
+            bucketName: context?.bucketName,
+            objName: context?.objName,
+            collection // Store collection reference for fallback
+        };
+
+        batchQueue.writeOps.push(batchedOp);
+
+        // OPTIMIZED: Pre-build bulk operation to avoid conversion overhead later
+        const bulkOp: AnyBulkWriteOperation = {
+            updateOne: {
+                filter,
+                update,
+                upsert: options?.upsert || false
+            }
+        };
+        batchQueue.bulkOps[batchQueue.writeOps.length - 1] = bulkOp;
+
+        // Flush immediately if batch is full
+        if (batchQueue.writeOps.length >= this.config.maxBatchSize) {
+            this.flushBatchOptimized(collectionName);
+            return;
+        }
+
+        // Start timer if this is the first operation
+        if (batchQueue.timer === null) {
+            batchQueue.timer = setTimeout(() => {
+                this.flushBatchOptimized(collectionName);
+            }, this.config.batchDelayMs);
+        }
+    }
+
+    /**
      * Add an operation to the batch queue
      */
     private addToBatch<T>(
@@ -573,11 +690,13 @@ export class MongoOperationsWrapper {
         const log = context?.log || this.config.logger;
 
         if (!this.batchQueues.has(collectionName)) {
+            const capacity = this.config.maxBatchSize;
             this.batchQueues.set(collectionName, {
                 writeOps: [],
-                readOps: [],
+                bulkOps: new Array(capacity),
                 timer: null,
-                collection
+                collection,
+                capacity
             });
         }
 
@@ -586,220 +705,109 @@ export class MongoOperationsWrapper {
 
         const batchedOp: BatchedOperation<T> = {
             type: operation,
-            params,
+            filter: params[0],
+            update: params[1], 
+            options: params[2],
             callback,
             collection,
-            context,
-            baseCall: baseCall || (() => MongoOperationsWrapper.executeDirectlySync<T>(collection, operation, params))
+            bucketName: context?.bucketName,
+            objName: context?.objName
         };
 
-        // Add to appropriate queue
-        if (isWrite) {
-            batchQueue.writeOps.push(batchedOp);
-        } else {
-            batchQueue.readOps.push(batchedOp);
-        }
-
-        log.debug('Added operation to batch queue', {
-            operation,
-            collection: collectionName,
-            queueSize: isWrite ? batchQueue.writeOps.length : batchQueue.readOps.length,
-            isWrite,
-            readOpsPerSec: this.readOpsTracker.currentOpsPerSec,
-            writeOpsPerSec: this.writeOpsTracker.currentOpsPerSec,
-            ...context
-        });
+        // Add to write queue (only writes are batched in our optimized version)
+        batchQueue.writeOps.push(batchedOp);
 
         // Check if we should flush immediately due to batch size limit
-        const totalOps = batchQueue.writeOps.length + batchQueue.readOps.length;
+        const totalOps = batchQueue.writeOps.length;
         if (totalOps >= this.config.maxBatchSize) {
-            log.debug('Flushing batch due to size limit', {
-                collection: collectionName,
-                totalOps,
-                maxBatchSize: this.config.maxBatchSize
-            });
-            this.flushBatch(collectionName);
+            this.flushBatchOptimized(collectionName);
             return;
         }
 
         // Start timer if this is the first operation in the queue
         if (batchQueue.timer === null) {
             batchQueue.timer = setTimeout(() => {
-                this.flushBatch(collectionName);
+                this.flushBatchOptimized(collectionName);
             }, this.config.batchDelayMs);
         }
     }
 
     /**
-     * Flush a batch queue and execute all queued operations
+     * OPTIMIZED: Flush batch with pre-built bulk operations - eliminates conversion overhead
      */
-    private flushBatch(collectionName: string): void {
+    private flushBatchOptimized(collectionName: string): void {
         const batchQueue = this.batchQueues.get(collectionName);
-        if (!batchQueue || (batchQueue.writeOps.length === 0 && batchQueue.readOps.length === 0)) {
+        if (!batchQueue || batchQueue.writeOps.length === 0) {
             return;
         }
 
         const log = this.config.logger;
-        log.info('MongoOperationsWrapper: Flushing batch', {
-            collection: collectionName,
-            writeOps: batchQueue.writeOps.length,
-            readOps: batchQueue.readOps.length,
-            totalOps: batchQueue.writeOps.length + batchQueue.readOps.length
-        });
+        const { writeOps, bulkOps, collection } = batchQueue;
+        const opCount = writeOps.length;
 
-        // Clear the timer and reset the queue
+        // Clear timer and reset queue
         if (batchQueue.timer) {
             clearTimeout(batchQueue.timer);
             batchQueue.timer = null;
         }
-
-        const { writeOps, readOps, collection } = batchQueue;
         this.batchQueues.delete(collectionName);
 
-        // Execute write operations as a bulk write if possible
-        if (writeOps.length > 0) {
-            this.executeBatchedWrites(writeOps, collection);
-        }
+        // Use pre-built bulk operations (no conversion needed!)
+        const bulkOpsToExecute = bulkOps.slice(0, opCount);
 
-        // Execute read operations individually (for now)
-        if (readOps.length > 0) {
-            this.executeBatchedReads(readOps);
-        }
-    }
-
-    /**
-     * Execute batched write operations using bulkWrite
-     */
-    private executeBatchedWrites(operations: BatchedOperation[], collection: Collection): void {
-        const log = this.config.logger;
-        
-        try {
-            // Convert individual operations to bulk operations
-            const bulkOps: AnyBulkWriteOperation[] = [];
-            
-            for (const op of operations) {
-                const bulkOp = MongoOperationsWrapper.convertToBulkOperation(op);
-                if (bulkOp) {
-                    bulkOps.push(bulkOp);
+        // Execute bulk write with minimal overhead
+        collection.bulkWrite(bulkOpsToExecute, { ordered: false })
+            .then(() => {
+                // All operations succeeded - call all callbacks
+                for (let i = 0; i < opCount; i++) {
+                    writeOps[i].callback(null, {} as any);
                 }
-            }
-
-            if (bulkOps.length === 0) {
-                log.warn('No valid bulk operations to execute', {
-                    collection: collection.collectionName,
-                    originalOpsCount: operations.length
+            })
+            .catch((error: any) => {
+                log.warn('Optimized bulk write failed, falling back to individual execution', {
+                    collection: collectionName,
+                    error: error.message,
+                    opsCount: opCount
                 });
-                // Fall back to individual execution
-                this.fallbackToIndividualExecution(operations);
-                return;
-            }
-
-            // Execute the bulk operation
-            collection.bulkWrite(bulkOps, { ordered: false })
-                .then((result: BulkWriteResult) => {
-                    log.info('MongoOperationsWrapper: Bulk write completed successfully', {
-                        collection: collection.collectionName,
-                        batchSize: operations.length,
-                        bulkOpsCount: bulkOps.length,
-                        insertedCount: result.insertedCount,
-                        modifiedCount: result.modifiedCount,
-                        deletedCount: result.deletedCount,
-                        upsertedCount: result.upsertedCount
-                    });
-
-                    // Call all callbacks with success
-                    operations.forEach(op => {
-                        op.callback(null, result as any);
-                    });
-                })
-                .catch((error: any) => {
-                    log.warn('Bulk write failed, falling back to individual execution', {
-                        collection: collection.collectionName,
-                        error: error.message,
-                        opsCount: operations.length
-                    });
-                    
-                    this.fallbackToIndividualExecution(operations);
-                });
-        } catch (error) {
-            log.error('Error preparing bulk write operations', {
-                collection: collection.collectionName,
-                error: (error as Error).message,
-                opsCount: operations.length
+                
+                // Fallback: execute individually
+                this.fallbackToIndividualExecution(writeOps);
             });
-            
-            this.fallbackToIndividualExecution(operations);
-        }
     }
 
     /**
-     * Convert an individual operation to a bulk operation
+     * Flush a batch queue and execute all queued operations (LEGACY - use flushBatchOptimized)
      */
-    private static convertToBulkOperation(op: BatchedOperation): AnyBulkWriteOperation | null {
-        try {
-            switch (op.type) {
-                case 'insertOne':
-                    return {
-                        insertOne: {
-                            document: op.params[0]
-                        }
-                    };
-                case 'updateOne':
-                    return {
-                        updateOne: {
-                            filter: op.params[0],
-                            update: op.params[1],
-                            upsert: op.params[2]?.upsert || false
-                        }
-                    };
-                case 'replaceOne':
-                    return {
-                        replaceOne: {
-                            filter: op.params[0],
-                            replacement: op.params[1],
-                            upsert: op.params[2]?.upsert || false
-                        }
-                    };
-                case 'deleteOne':
-                    return {
-                        deleteOne: {
-                            filter: op.params[0]
-                        }
-                    };
-                default:
-                    return null;
-            }
-        } catch (error) {
-            return null;
-        }
+    private flushBatch(collectionName: string): void {
+        // Delegate to optimized version
+        this.flushBatchOptimized(collectionName);
     }
 
-    /**
-     * Execute read operations individually
-     */
-    private executeBatchedReads(operations: BatchedOperation[]): void {
-        // For now, execute reads individually
-        // Future enhancement: could use aggregation pipeline to batch some read operations
-        operations.forEach(op => {
-            MongoOperationsWrapper.executeDirectly(op.baseCall, op.callback, op.context, this.config.logger);
-        });
-    }
+
+
+
 
     /**
      * Fall back to individual execution for failed batch operations
      */
     private fallbackToIndividualExecution(operations: BatchedOperation[]): void {
-        const log = this.config.logger;
-        
-        operations.forEach(op => {
-            log.debug('Executing operation individually as fallback', {
-                operation: op.type,
-                collection: op.collection.collectionName,
-                context: op.context
-            });
-            
-            MongoOperationsWrapper.executeDirectly(op.baseCall, op.callback, op.context, this.config.logger);
-        });
+        // OPTIMIZED: Direct execution without logging overhead for performance
+        for (const op of operations) {
+            if (op.type === 'updateOne') {
+                // Direct path for updateOne (most common in putObjectVerCase1)
+                const collection = op.collection;
+                if (collection) {
+                    collection.updateOne(op.filter, op.update, op.options)
+                        .then(result => op.callback(null, result))
+                        .catch(error => op.callback(error));
+                } else {
+                    op.callback(errors.InternalError.customizeDescription('Collection not found for fallback'));
+                }
+            } else {
+                // Generic fallback for other operations (rarely used)
+                op.callback(errors.InternalError.customizeDescription(`Fallback not implemented for ${op.type}`));
+            }
+        }
     }
 
     /**
@@ -819,27 +827,24 @@ export class MongoOperationsWrapper {
      * Get statistics about current batch queues for a specific instance
      */
     public static getBatchStatistics(instanceId: string): { 
-        collections: { [collectionName: string]: { writeOps: number; readOps: number } };
-        readOpsPerSec: number;
+        collections: { [collectionName: string]: { writeOps: number } };
         writeOpsPerSec: number;
     } {
         const instance = MongoOperationsWrapper.instances.get(instanceId);
         if (!instance) {
-            return { collections: {}, readOpsPerSec: 0, writeOpsPerSec: 0 };
+            return { collections: {}, writeOpsPerSec: 0 };
         }
 
-        const collections: { [collectionName: string]: { writeOps: number; readOps: number } } = {};
+        const collections: { [collectionName: string]: { writeOps: number } } = {};
         
         instance.batchQueues.forEach((queue, collectionName) => {
             collections[collectionName] = {
-                writeOps: queue.writeOps.length,
-                readOps: queue.readOps.length
+                writeOps: queue.writeOps.length
             };
         });
         
         return {
             collections,
-            readOpsPerSec: instance.readOpsTracker.currentOpsPerSec,
             writeOpsPerSec: instance.writeOpsTracker.currentOpsPerSec
         };
     }
