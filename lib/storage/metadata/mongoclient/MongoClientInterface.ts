@@ -403,11 +403,13 @@ class MongoClientInterface {
                     this.cacheMiss = 0;
                 }, 300000);
 
-                // log batch metrics every 30 seconds when batching is enabled
+                // log batch metrics on a configurable interval when batching is enabled
                 if (this.batchDelay > 0) {
+                    const metricsInterval = process.env.MONGO_BULK_METRICS_INTERVAL_MS ?
+                        Number.parseInt(process.env.MONGO_BULK_METRICS_INTERVAL_MS, 10) : 30000;
                     this.batchMetricsInterval = setInterval(() => {
                         this.logBatchMetrics();
-                    }, 30000);
+                    }, metricsInterval);
                 }
 
                 this.client.on('close', reason => {
@@ -1053,6 +1055,16 @@ class MongoClientInterface {
         this.batchQueues.delete(collectionName);
         // Build two waves: first all version ops, then all master ops
         const totalRequests = batchedOps.length;
+        
+        // Log every single flush immediately to verify batching is working
+        this.logger.info('FLUSH BATCH NOW', {
+            collectionName,
+            totalRequests,
+            totalOperations: operations.length,
+            batchDelayMs: this.batchDelay,
+            timestamp: Date.now()
+        });
+        
         const versionOps = new Array(totalRequests);
         const masterOpsAll = new Array(totalRequests);
         for (let i = 0; i < totalRequests; i++) {
@@ -1234,9 +1246,7 @@ class MongoClientInterface {
      * Called every 30 seconds when batching is enabled
      */
     private logBatchMetrics(): void {
-        if (this.batchQueues.size === 0) {
-            return;
-        }
+        // Always log rolling window stats even if queues are empty
 
         let totalQueuedOperations = 0;
         let totalBatchedOps = 0;
