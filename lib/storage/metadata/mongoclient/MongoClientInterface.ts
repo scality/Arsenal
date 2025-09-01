@@ -856,16 +856,9 @@ class MongoClientInterface {
         // filter to get master
         const filter = {
             _id: masterKey,
-            $or: [{
-                'value.versionId': {
-                    $exists: false,
-                },
-            },
-            {
-                'value.versionId': {
-                    $gt: objVal.versionId,
-                },
-            },
+            $or: [
+                { 'value.versionId': { $exists: false } },
+                { 'value.versionId': { $gt: objVal.versionId } },
             ],
         };
         // values to update master
@@ -1157,9 +1150,7 @@ class MongoClientInterface {
                     // ensure), but this would not work e.g. in
                     // the case of an active-active replication.
 
-                    { 'value.versionId': {
-                        $gte: mstObjVal!.versionId,
-                    } },
+                    { 'value.versionId': { $gte: mstObjVal!.versionId } },
                 ]
             };
             // values to update master
