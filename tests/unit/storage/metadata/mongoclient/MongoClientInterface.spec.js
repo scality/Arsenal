@@ -15,6 +15,7 @@ const ObjectMD = require('../../../../../lib/models/ObjectMD').default;
 const { BucketVersioningKeyFormat } = require('../../../../../lib/versioning/constants').VersioningConstants;
 const { formatMasterKey } = require('../../../../../lib/storage/metadata/mongoclient/utils');
 const { promisify } = require('util');
+const constants = require('../../../../../lib/constants');
 
 const dbName = 'metadata';
 const baseBucket = BucketInfo.fromObj({
@@ -2853,6 +2854,406 @@ describe('MongoClientInterface, deleteBucketIndexes', () => {
             } catch (assertionError) {
                 done(assertionError);
             }
+        });
+    });
+});
+
+describe('MongoClientInterface Race Condition Tests', () => {
+    let client;
+    const mpuShadowBucket = `${constants.mpuBucketPrefix}race-test-bucket`;
+    const regularBucket = 'race-test-bucket';
+    const testKey = 'testkey..|..00001';
+
+    beforeEach(done => {
+        client = createClient();
+        client.setup(err => {
+            if (err) {
+                return done(err);
+            }
+
+            // Create test buckets using the same pattern as other tests
+            async.series([
+                cb => createBucket(client, regularBucket, false, cb),
+                cb => createBucket(client, mpuShadowBucket, false, cb),
+            ], done);
+        });
+    });
+
+    afterEach(done => {
+        if (client) {
+            async.series([
+                cb => client.deleteBucket(regularBucket, logger, () => cb()), // Ignore errors
+                cb => client.deleteBucket(mpuShadowBucket, logger, () => cb()), // Ignore errors
+            ], () => {
+                client.close(() => done());
+            });
+        } else {
+            done();
+        }
+    });
+
+    describe('internalDeleteObject race conditions', () => {
+        it('should handle concurrent deletes in MPU shadow bucket gracefully', function(done) {
+
+            // First, put an object in the MPU shadow bucket
+            const objMD = new ObjectMD()
+                .setContentLength(1024)
+                .setContentMd5('d41d8cd98f00b204e9800998ecf8427e')
+                .setLastModified(new Date().toISOString());
+
+            const params = {
+                vFormat: 'v1',
+                versionId: '',
+                repairMaster: false,
+                versioning: false,
+                needOplogUpdate: false,
+                originOp: 's3:ObjectCreated:Put',
+                conditions: {},
+            };
+
+            client.putObject(mpuShadowBucket, testKey, objMD.getValue(), params, logger, (err) => {
+                assert.ifError(err);
+
+                // Simulate concurrent delete operations
+                let deletesCompleted = 0;
+                let errors = [];
+
+                const performConcurrentDelete = (callback) => {
+                    client.deleteObject(mpuShadowBucket, testKey, params, logger, (err) => {
+                        deletesCompleted++;
+                        if (err) {
+                            errors.push(err);
+                        }
+                        callback();
+                    }, 's3:ObjectRemoved:Delete');
+                };
+
+                // Launch 3 concurrent delete operations
+                async.parallel([
+                    performConcurrentDelete,
+                    performConcurrentDelete,
+                    performConcurrentDelete,
+                ], () => {
+                    // At least one should succeed, others should not cause InternalError
+                    assert(deletesCompleted === 3, 'All delete operations should complete');
+                    
+                    // Filter out expected NoSuchKey errors (these are acceptable)
+                    const unexpectedErrors = errors.filter(err => 
+                        !err.is || (!err.is.NoSuchKey && !err.is.DeleteConflict)
+                    );
+                    
+                    assert.strictEqual(unexpectedErrors.length, 0, 
+                        `Should not have unexpected errors: ${JSON.stringify(unexpectedErrors)}`);
+                    
+                    done();
+                });
+            });
+        });
+
+        it('should still return DeleteConflict for regular buckets during race conditions', function(done) {
+
+            // Put an object in a regular bucket
+            const objMD = new ObjectMD()
+                .setContentLength(1024)
+                .setContentMd5('d41d8cd98f00b204e9800998ecf8427e')
+                .setLastModified(new Date().toISOString());
+
+            const params = {
+                vFormat: 'v1',
+                versionId: '',
+                repairMaster: false,
+                versioning: false,
+                needOplogUpdate: true, // Use oplog path to test bulk operation
+                originOp: 's3:ObjectCreated:Put',
+                conditions: {},
+            };
+
+            client.putObject(regularBucket, testKey, objMD.getValue(), params, logger, (err) => {
+                assert.ifError(err);
+
+                // Mock the collection to simulate race condition in bulk write
+                const collection = client.getCollection(regularBucket);
+                const originalBulkWrite = collection.bulkWrite.bind(collection);
+                
+                collection.bulkWrite = function(operations, options) {
+                    // Simulate a bulk write that returns 0 deletedCount (race condition)
+                    return Promise.resolve({
+                        ok: 1,
+                        deletedCount: 0, // This simulates concurrent deletion
+                        matchedCount: 1,
+                        modifiedCount: 1,
+                        upsertedCount: 0,
+                    });
+                };
+
+                // Call internalDeleteObject directly to test the bulk write path
+                const key = formatMasterKey(testKey, 'v1');
+                client.internalDeleteObject(
+                    collection,
+                    regularBucket,
+                    key,
+                    {},
+                    params,
+                    logger,
+                    (err) => {
+                        // Restore original method
+                        collection.bulkWrite = originalBulkWrite;
+                        
+                        try {
+                            // Should get a DeleteConflict error for regular buckets
+                            assert(err, 'Should have an error');
+                            assert(err.is.DeleteConflict, 'Should be a DeleteConflict error');
+                            done();
+                        } catch (assertionError) {
+                            done(assertionError);
+                        }
+                    }
+                );
+            });
+        });
+
+        it('should handle direct internalDeleteObject calls for MPU shadow bucket', function(done) {
+
+            // Put an object in the MPU shadow bucket
+            const objMD = new ObjectMD()
+                .setContentLength(1024)
+                .setContentMd5('d41d8cd98f00b204e9800998ecf8427e')
+                .setLastModified(new Date().toISOString());
+
+            const params = {
+                vFormat: 'v1',
+                versionId: '',
+                repairMaster: false,
+                versioning: false,
+                needOplogUpdate: true, // Use oplog path to test bulk operation
+                originOp: 's3:ObjectCreated:Put',
+                conditions: {},
+            };
+
+            client.putObject(mpuShadowBucket, testKey, objMD.getValue(), params, logger, (err) => {
+                assert.ifError(err);
+
+                const collection = client.getCollection(mpuShadowBucket);
+                const key = formatMasterKey(testKey, 'v1');
+
+                // Mock findOneAndUpdate to succeed (object exists)
+                const originalFindOneAndUpdate = collection.findOneAndUpdate.bind(collection);
+                collection.findOneAndUpdate = function(filter, update, options) {
+                    return Promise.resolve({
+                        value: {
+                            _id: key,
+                            value: objMD.getValue(),
+                        },
+                    });
+                };
+
+                // Mock bulkWrite to return 0 deletedCount (simulating concurrent deletion)
+                const originalBulkWrite = collection.bulkWrite.bind(collection);
+                collection.bulkWrite = function(operations, options) {
+                    return Promise.resolve({
+                        ok: 1,
+                        deletedCount: 0, // This simulates concurrent deletion
+                        matchedCount: 1,
+                        modifiedCount: 1,
+                        upsertedCount: 0,
+                    });
+                };
+
+                client.internalDeleteObject(
+                    collection,
+                    mpuShadowBucket,
+                    key,
+                    {},
+                    params,
+                    logger,
+                    (err) => {
+                        // Restore original methods
+                        collection.findOneAndUpdate = originalFindOneAndUpdate;
+                        collection.bulkWrite = originalBulkWrite;
+                        
+                        try {
+                            // Should succeed for MPU shadow bucket even when deletedCount is 0
+                            assert.ifError(err);
+                            done();
+                        } catch (assertionError) {
+                            done(assertionError);
+                        }
+                    }
+                );
+            });
+        });
+
+        it('should handle bulk write failures in MPU shadow bucket', function(done) {
+
+            // Put an object in the MPU shadow bucket with oplog update
+            const objMD = new ObjectMD()
+                .setContentLength(1024)
+                .setContentMd5('d41d8cd98f00b204e9800998ecf8427e')
+                .setLastModified(new Date().toISOString());
+
+            const params = {
+                vFormat: 'v1',
+                versionId: '',
+                repairMaster: false,
+                versioning: false,
+                needOplogUpdate: true, // Force oplog path with bulk operations
+                originOp: 's3:ObjectCreated:Put',
+                conditions: {},
+            };
+
+            client.putObject(mpuShadowBucket, testKey, objMD.getValue(), params, logger, (err) => {
+                assert.ifError(err);
+
+                const collection = client.getCollection(mpuShadowBucket);
+                const key = formatMasterKey(testKey, 'v1');
+
+                // Mock findOneAndUpdate to succeed (object exists)
+                const originalFindOneAndUpdate = collection.findOneAndUpdate.bind(collection);
+                collection.findOneAndUpdate = function(filter, update, options) {
+                    return Promise.resolve({
+                        value: {
+                            _id: key,
+                            value: objMD.getValue(),
+                        },
+                    });
+                };
+
+                // Mock bulkWrite to simulate race condition (0 deletedCount)
+                const originalBulkWrite = collection.bulkWrite.bind(collection);
+                collection.bulkWrite = function(operations, options) {
+                    return Promise.resolve({
+                        ok: 1,
+                        deletedCount: 0, // Simulate concurrent deletion
+                        matchedCount: 1,
+                        modifiedCount: 1,
+                        upsertedCount: 0,
+                    });
+                };
+
+                client.internalDeleteObject(
+                    collection,
+                    mpuShadowBucket,
+                    key,
+                    {},
+                    params,
+                    logger,
+                    (err) => {
+                        // Restore original methods
+                        collection.findOneAndUpdate = originalFindOneAndUpdate;
+                        collection.bulkWrite = originalBulkWrite;
+                        
+                        try {
+                            // Should succeed for MPU shadow bucket even when bulk operation shows 0 deletedCount
+                            assert.ifError(err);
+                            done();
+                        } catch (assertionError) {
+                            done(assertionError);
+                        }
+                    }
+                );
+            });
+        });
+    });
+
+    describe('edge cases for race condition fix', () => {
+        it('should not affect regular bucket error handling', function(done) {
+            const collection = client.getCollection(regularBucket);
+            const key = 'nonexistentkey';
+
+            client.internalDeleteObject(
+                collection,
+                regularBucket,
+                key,
+                {},
+                null,
+                logger,
+                (err) => {
+                    // Should get NoSuchKey for regular buckets when object doesn't exist
+                    assert(err, 'Should have an error');
+                    assert(err.is.NoSuchKey, 'Should be a NoSuchKey error');
+                    done();
+                }
+            );
+        });
+
+        it('should handle bucket names that contain mpuBucketPrefix substring', function(done) {
+            const subBucketName = `my-${constants.mpuBucketPrefix}-race-test`;
+            
+            createBucket(client, subBucketName, false, (err) => {
+                assert.ifError(err);
+
+                // Put an object first to test the race condition properly
+                const objMD = new ObjectMD()
+                    .setContentLength(1024)
+                    .setContentMd5('d41d8cd98f00b204e9800998ecf8427e')
+                    .setLastModified(new Date().toISOString());
+
+                const params = {
+                    vFormat: 'v1',
+                    versionId: '',
+                    repairMaster: false,
+                    versioning: false,
+                    needOplogUpdate: true,
+                    originOp: 's3:ObjectCreated:Put',
+                    conditions: {},
+                };
+
+                client.putObject(subBucketName, 'testkey', objMD.getValue(), params, logger, (putErr) => {
+                    assert.ifError(putErr);
+
+                    const collection = client.getCollection(subBucketName);
+                    const key = formatMasterKey('testkey', 'v1');
+
+                    // Mock findOneAndUpdate to succeed (object exists)
+                    const originalFindOneAndUpdate = collection.findOneAndUpdate.bind(collection);
+                    collection.findOneAndUpdate = function(filter, update, options) {
+                        return Promise.resolve({
+                            value: {
+                                _id: key,
+                                value: objMD.getValue(),
+                            },
+                        });
+                    };
+
+                    // Mock bulkWrite to return 0 deletedCount
+                    const originalBulkWrite = collection.bulkWrite.bind(collection);
+                    collection.bulkWrite = function(operations, options) {
+                        return Promise.resolve({
+                            ok: 1,
+                            deletedCount: 0, // This simulates concurrent deletion
+                            matchedCount: 1,
+                            modifiedCount: 1,
+                            upsertedCount: 0,
+                        });
+                    };
+
+                    client.internalDeleteObject(
+                        collection,
+                        subBucketName,
+                        key,
+                        {},
+                        params,
+                        logger,
+                        (err) => {
+                            // Restore original methods
+                            collection.findOneAndUpdate = originalFindOneAndUpdate;
+                            collection.bulkWrite = originalBulkWrite;
+                            
+                            // Clean up the test bucket
+                            client.deleteBucket(subBucketName, logger, () => {
+                                try {
+                                    // Should get DeleteConflict for buckets that don't START with mpuBucketPrefix
+                                    assert(err, 'Should have an error');
+                                    assert(err.is.DeleteConflict, 'Should be a DeleteConflict error');
+                                    done();
+                                } catch (assertionError) {
+                                    done(assertionError);
+                                }
+                            });
+                        }
+                    );
+                });
+            });
         });
     });
 });
