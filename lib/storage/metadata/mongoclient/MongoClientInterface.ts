@@ -2028,6 +2028,14 @@ class MongoClientInterface {
                     if (!result || result?.deletedCount != 1) {
                         log.debug('internalDeleteObject: object not found or already deleted',
                             { bucket: bucketName, object: key });
+                        // For MPU shadow bucket objects, if the object is already deleted by another
+                        // concurrent operation (like completeMultipartUpload), treat it as success
+                        // rather than an error to avoid race condition failures
+                        if (bucketName.startsWith(constants.mpuBucketPrefix)) {
+                            log.debug('internalDeleteObject: MPU shadow object already deleted by concurrent operation',
+                                { bucket: bucketName, object: key });
+                            return cb(null, undefined);
+                        }
                         return cb(errors.NoSuchKey);
                     }
                     return cb(null, undefined);
@@ -2107,6 +2115,14 @@ class MongoClientInterface {
                 if (result.deletedCount === 0) {
                     log.debug('internalDeleteObject: object not found or already deleted', 
                         { bucket: bucketName, object: key });
+                    // For MPU shadow bucket objects, if the object is already deleted by another
+                    // concurrent operation (like completeMultipartUpload), treat it as success
+                    // rather than an error to avoid race condition failures
+                    if (bucketName.startsWith(constants.mpuBucketPrefix)) {
+                        log.debug('internalDeleteObject: MPU shadow object already deleted by concurrent operation',
+                            { bucket: bucketName, object: key });
+                        return next(null);
+                    }
                     return next(errors.DeleteConflict);
                 }
                 return next(null);
