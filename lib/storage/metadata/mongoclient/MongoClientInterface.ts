@@ -34,8 +34,6 @@ import {
     AnyBulkWriteOperation,
     UpdateFilter,
     MongoServerError,
-    MongoBulkWriteError,
-    WriteError
 } from 'mongodb';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -115,7 +113,6 @@ export type MongoDBClientInterfaceParameters = {
 };
 
 const cachedNoSuchKeyError = errors.NoSuchKey;
-
 
 
 export type BucketMetadataMongoDB = Omit<Omit<BucketMetadata, 'quotaMax'>, 'capabilities'> & {
@@ -391,7 +388,7 @@ class MongoClientInterface {
                 if (err) {
                     this.logger.fatal('error writing usersBucket ' +
                         'attributes to metastore',
-                        { error: err });
+                    { error: err });
                     throw (errors.InternalError);
                 }
                 return cb();
@@ -902,7 +899,6 @@ class MongoClientInterface {
     }
 
 
-
     /**
      * In this case we generate a versionId and
      * sequentially create the object THEN update the master.
@@ -944,7 +940,7 @@ class MongoClientInterface {
         const versionKey = formatVersionKey(objName, versionId, params.vFormat);
         const masterKey = formatMasterKey(objName, params.vFormat);
 
-                        // First operation: create/update the version
+        // First operation: create/update the version
         MongoOperationsWrapper.updateOne(
             this.instanceId,
             this.wrapperConfig,
@@ -1365,10 +1361,10 @@ class MongoClientInterface {
             collection,
             putFilter,
             {
-            $set: {
-                _id: key,
-                value,
-            },
+                $set: {
+                    _id: key,
+                    value,
+                },
             },
             { upsert: true },
             // @ts-ignore
@@ -1377,7 +1373,7 @@ class MongoClientInterface {
                     log.error('putObjectNoVer: error putting object with no versioning', { error: err.message });
                     return cb(errors.InternalError);
                 }
-            cb(null);
+                cb(null);
             },
             {
                 bucketName,
@@ -3202,6 +3198,238 @@ class MongoClientInterface {
                 });
                 return cb(err);
             });
+    }
+
+    /**
+     * Atomically updates object retention metadata using MongoDB findOneAndUpdate.
+     * This method avoids the expensive read-modify-write pattern used by putObjectMD.
+     * 
+     * @param {String} bucketName bucket name
+     * @param {String} objName object name
+     * @param {Object} retentionInfo retention information
+     * @param {String} retentionInfo.mode retention mode (GOVERNANCE or COMPLIANCE)
+     * @param {String} retentionInfo.date retention until date (ISO string)
+     * @param {Object} params operation parameters
+     * @param {String} params.versionId specific version to update (optional)
+     * @param {String} params.originOp origin operation (default: 's3:ObjectRetention:Put')
+     * @param {Object} log logger
+     * @param {Function} cb callback
+     * @return {undefined}
+     */
+    putObjectRetention(
+        bucketName: string,
+        objName: string,
+        retentionInfo: { mode: string; date: string },
+        params: { versionId?: string; originOp?: string },
+        log: werelogs.Logger,
+        cb: ArsenalCallback<ObjectMDData>,
+    ) {
+        log.debug('putting object retention metadata atomically', {
+            bucket: bucketName,
+            object: objName,
+            retentionMode: retentionInfo.mode,
+            retentionDate: retentionInfo.date,
+            versionId: params.versionId
+        });
+
+        const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
+        
+        async.waterfall([
+            (next: any) => this.getBucketVFormat(bucketName, log, next),
+            (vFormat: any, next: any) => {
+                const key = params.versionId 
+                    ? formatVersionKey(objName, params.versionId, vFormat)
+                    : formatMasterKey(objName, vFormat);
+
+                const filter = {
+                    _id: key,
+                    // Ensure object exists and is not deleted
+                    $or: [
+                        { 'value.deleted': { $exists: false } },
+                        { 'value.deleted': { $eq: false } },
+                    ],
+                };
+
+                const update = {
+                    $set: {
+                        'value.retentionMode': retentionInfo.mode,
+                        'value.retentionDate': retentionInfo.date,
+                        'value.originOp': params.originOp || 's3:ObjectRetention:Put',
+                        'value.last-modified': new Date().toISOString(),
+                    },
+                };
+
+                const options = {
+                    returnDocument: 'after' as const, // Return updated document
+                };
+
+                // Use native MongoDB findOneAndUpdate for atomic operation
+                c.findOneAndUpdate(filter, update, options)
+                    .then(result => {
+                        if (!result || !result.value) {
+                            log.debug('putObjectRetention: object not found or update failed', {
+                                bucket: bucketName,
+                                object: objName,
+                                versionId: params.versionId
+                            });
+                            return next(errors.NoSuchKey);
+                        }
+
+                        MongoUtils.unserialize(result.value);
+                        return next(null, result.value);
+                    })
+                    .catch(updateErr => {
+                        log.error('putObjectRetention: atomic update error', {
+                            error: updateErr.message,
+                            bucket: bucketName,
+                            object: objName
+                        });
+                        return next(errors.InternalError);
+                    });
+            },
+        ], cb as any);
+    }
+
+    /**
+     * Gets object metadata with projection support to minimize data transfer.
+     * Only fetches specified fields instead of the entire document.
+     * 
+     * @param {String} bucketName bucket name
+     * @param {String} objName object name
+     * @param {Object} projection MongoDB projection object (e.g., { 'value.retentionMode': 1 })
+     * @param {Object} params operation parameters
+     * @param {String} params.versionId specific version to get (optional)
+     * @param {Object} log logger
+     * @param {Function} cb callback
+     * @return {undefined}
+     */
+    getObjectMDPartial(
+        bucketName: string,
+        objName: string,
+        projection: any,
+        params: { versionId?: string } | null,
+        log: werelogs.Logger,
+        cb: ArsenalCallback<ObjectMDData>,
+    ) {
+        const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
+        
+        async.waterfall([
+            (next: any) => this.getBucketVFormat(bucketName, log, next),
+            (vFormat: any, next: any) => {
+                const key = (params && params.versionId) 
+                    ? formatVersionKey(objName, params.versionId, vFormat)
+                    : formatMasterKey(objName, vFormat);
+
+                const filter = {
+                    _id: key,
+                    // filtering out objects flagged for deletion
+                    $or: [
+                        { 'value.deleted': { $exists: false } },
+                        { 'value.deleted': { $eq: false } },
+                    ],
+                };
+
+                const options = { projection };
+
+                c.findOne(filter, options)
+                    .then(doc => {
+                        if (!doc) {
+                            return next(errors.NoSuchKey);
+                        }
+
+                        MongoUtils.unserialize(doc.value);
+                        return next(null, doc.value);
+                    })
+                    .catch(err => {
+                        log.error('getObjectMDPartial: error getting object', {
+                            error: err.message,
+                            bucket: bucketName,
+                            object: objName
+                        });
+                        return next(errors.InternalError);
+                    });
+            },
+        ], cb as any);
+    }
+
+    /**
+     * Bulk update retention metadata for multiple objects using MongoDB bulkWrite.
+     * Optimized for high-throughput retention operations.
+     * 
+     * @param {String} bucketName bucket name
+     * @param {Array} updates array of retention updates
+     * @param {String} updates[].objName object name
+     * @param {String} updates[].versionId version ID (optional)
+     * @param {Object} updates[].retentionInfo retention information
+     * @param {String} updates[].retentionInfo.mode retention mode
+     * @param {String} updates[].retentionInfo.date retention date
+     * @param {Object} params operation parameters
+     * @param {String} params.originOp origin operation (default: 's3:ObjectRetention:BulkPut')
+     * @param {Object} log logger
+     * @param {Function} cb callback
+     * @return {undefined}
+     */
+    bulkUpdateRetention(
+        bucketName: string,
+        updates: Array<{
+            objName: string;
+            versionId?: string;
+            retentionInfo: { mode: string; date: string };
+        }>,
+        params: { originOp?: string },
+        log: werelogs.Logger,
+        cb: ArsenalCallback<{ modifiedCount: number; matchedCount: number }>,
+    ) {
+        if (updates.length === 0) {
+            return cb(null, { modifiedCount: 0, matchedCount: 0 });
+        }
+
+        const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
+        
+        async.waterfall([
+            (next: any) => this.getBucketVFormat(bucketName, log, next),
+            (vFormat: any, next: any) => {
+                const bulkOps = updates.map(update => {
+                    const key = update.versionId 
+                        ? formatVersionKey(update.objName, update.versionId, vFormat)
+                        : formatMasterKey(update.objName, vFormat);
+
+                    return {
+                        updateOne: {
+                            filter: {
+                                _id: key,
+                                $or: [
+                                    { 'value.deleted': { $exists: false } },
+                                    { 'value.deleted': { $eq: false } },
+                                ],
+                            },
+                            update: {
+                                $set: {
+                                    'value.retentionMode': update.retentionInfo.mode,
+                                    'value.retentionDate': update.retentionInfo.date,
+                                    'value.originOp': params.originOp || 's3:ObjectRetention:BulkPut',
+                                    'value.last-modified': new Date().toISOString(),
+                                },
+                            },
+                        },
+                    };
+                });
+
+                c.bulkWrite(bulkOps, { ordered: false })
+                    .then(result => next(null, {
+                        modifiedCount: result.modifiedCount,
+                        matchedCount: result.matchedCount
+                    }))
+                    .catch(err => {
+                        log.error('bulkUpdateRetention: error in bulk operation', {
+                            error: err.message,
+                            bucket: bucketName,
+                            updateCount: updates.length
+                        });
+                        return next(errors.InternalError);
+                    });
+            },
+        ], cb as any);
     }
 
 

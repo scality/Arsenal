@@ -1,4 +1,4 @@
-import { Collection, AnyBulkWriteOperation, BulkWriteResult } from 'mongodb';
+import { Collection, AnyBulkWriteOperation } from 'mongodb';
 import * as werelogs from 'werelogs';
 import { ArsenalCallback } from '../../../types';
 import errors from '../../../errors';
@@ -87,55 +87,6 @@ interface BatchQueue {
     collection: Collection<any>;
     /** Pre-allocated capacity to avoid array resizing */
     capacity: number;
-}
-
-/**
- * Object pool for frequently allocated objects to reduce GC pressure
- */
-class ObjectPool {
-    private static filterPool: any[] = [];
-    private static updatePool: any[] = [];
-    private static optionsPool: any[] = [];
-
-    static getFilter(): any {
-        return this.filterPool.pop() || {};
-    }
-
-    static returnFilter(obj: any): void {
-        // Clear the object and return to pool
-        for (const key in obj) {
-            delete obj[key];
-        }
-        if (this.filterPool.length < 100) { // Max pool size
-            this.filterPool.push(obj);
-        }
-    }
-
-    static getUpdate(): any {
-        return this.updatePool.pop() || {};
-    }
-
-    static returnUpdate(obj: any): void {
-        for (const key in obj) {
-            delete obj[key];
-        }
-        if (this.updatePool.length < 100) {
-            this.updatePool.push(obj);
-        }
-    }
-
-    static getOptions(): any {
-        return this.optionsPool.pop() || {};
-    }
-
-    static returnOptions(obj: any): void {
-        for (const key in obj) {
-            delete obj[key];
-        }
-        if (this.optionsPool.length < 100) {
-            this.optionsPool.push(obj);
-        }
-    }
 }
 
 /**
@@ -247,9 +198,7 @@ export class MongoOperationsWrapper {
             log?: werelogs.Logger;
         }
     ): void {
-        const baseCall = async (): Promise<T> => {
-            return collection.findOne(filter, options) as Promise<T>;
-        };
+        const baseCall = async (): Promise<T> => collection.findOne(filter, options) as Promise<T>;
 
         MongoOperationsWrapper.execute(
             instanceId,
@@ -280,9 +229,7 @@ export class MongoOperationsWrapper {
             log?: werelogs.Logger;
         }
     ): void {
-        const baseCall = async (): Promise<T> => {
-            return collection.insertOne(document, options) as Promise<T>;
-        };
+        const baseCall = async (): Promise<T> => collection.insertOne(document, options) as Promise<T>;
 
         MongoOperationsWrapper.execute(
             instanceId,
@@ -345,9 +292,7 @@ export class MongoOperationsWrapper {
             log?: werelogs.Logger;
         }
     ): void {
-        const baseCall = async (): Promise<T> => {
-            return collection.replaceOne(filter, replacement, options) as Promise<T>;
-        };
+        const baseCall = async (): Promise<T> => collection.replaceOne(filter, replacement, options) as Promise<T>;
 
         MongoOperationsWrapper.execute(
             instanceId,
@@ -360,7 +305,6 @@ export class MongoOperationsWrapper {
             baseCall
         );
     }
-
 
 
     /**
@@ -380,9 +324,7 @@ export class MongoOperationsWrapper {
             log?: werelogs.Logger;
         }
     ): void {
-        const baseCall = async (): Promise<T> => {
-            return collection.bulkWrite(operations, options) as Promise<T>;
-        };
+        const baseCall = async (): Promise<T> => collection.bulkWrite(operations, options) as Promise<T>;
 
         // BulkWrite is always executed directly (no double-batching)
         MongoOperationsWrapper.executeDirectly(baseCall, callback, context, config.logger);
@@ -410,9 +352,8 @@ export class MongoOperationsWrapper {
         const log = context?.log || config.logger;
 
         // Create a base call function if not provided
-        const defaultBaseCall = async (): Promise<T> => {
-            return MongoOperationsWrapper.executeDirectlySync<T>(collection, operation, params);
-        };
+        const defaultBaseCall = async (): Promise<T> =>
+            MongoOperationsWrapper.executeDirectlySync<T>(collection, operation, params);
 
         const actualBaseCall = baseCall || defaultBaseCall;
 
@@ -468,7 +409,7 @@ export class MongoOperationsWrapper {
         }
 
         // Add to batch
-        wrapper.addToBatch<T>(collection, operation, params, callback, context, actualBaseCall);
+        wrapper.addToBatch<T>(collection, operation, params, callback, context);
     }
 
     /**
@@ -543,12 +484,6 @@ export class MongoOperationsWrapper {
         filter: any,
         options: any,
         callback: ArsenalCallback<T>,
-        context?: {
-            bucketName?: string;
-            objName?: string;
-            operationId?: string;
-            log?: werelogs.Logger;
-        }
     ): void {
         // FAST PATH: Execute immediately if batching disabled
         if (config.batchDelayMs <= 0) {
@@ -563,7 +498,6 @@ export class MongoOperationsWrapper {
             .then(result => callback(null, result as T))
             .catch(error => callback(error));
     }
-
 
 
     /**
@@ -683,11 +617,9 @@ export class MongoOperationsWrapper {
             objName?: string;
             operationId?: string;
             log?: werelogs.Logger;
-        },
-        baseCall?: () => Promise<T>
+        }
     ): void {
         const collectionName = collection.collectionName;
-        const log = context?.log || this.config.logger;
 
         if (!this.batchQueues.has(collectionName)) {
             const capacity = this.config.maxBatchSize;
@@ -701,7 +633,6 @@ export class MongoOperationsWrapper {
         }
 
         const batchQueue = this.batchQueues.get(collectionName)!;
-        const isWrite = MongoOperationsWrapper.isWriteOperation(operation);
 
         const batchedOp: BatchedOperation<T> = {
             type: operation,
@@ -782,9 +713,6 @@ export class MongoOperationsWrapper {
         // Delegate to optimized version
         this.flushBatchOptimized(collectionName);
     }
-
-
-
 
 
     /**
