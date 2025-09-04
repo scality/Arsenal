@@ -1052,12 +1052,6 @@ class MongoClientInterface {
                             }
                             cb(null, { versionId });
                         },
-                        {
-                            bucketName,
-                            objName,
-                            operationId: `putObjectVerCase1-master-delete-${versionId}`,
-                            log
-                        }
                     );
                 } else {
                     // No master operation needed
