@@ -3216,7 +3216,7 @@ class MongoClientInterface {
         retentionInfo: { mode: string; date: string },
         params: { versionId?: string; originOp?: string },
         log: werelogs.Logger,
-        cb: ArsenalCallback<ObjectMDData>,
+        cb: ArsenalCallback<{ success: boolean }>,
     ) {
         log.debug('putting object retention metadata atomically', {
             bucket: bucketName,
@@ -3225,7 +3225,7 @@ class MongoClientInterface {
             retentionDate: retentionInfo.date,
             versionId: params.versionId
         });
-
+    
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
         
         async.waterfall([
@@ -3234,16 +3234,15 @@ class MongoClientInterface {
                 const key = params.versionId 
                     ? formatVersionKey(objName, params.versionId, vFormat)
                     : formatMasterKey(objName, vFormat);
-
+    
                 const filter = {
                     _id: key,
-                    // Ensure object exists and is not deleted
                     $or: [
                         { 'value.deleted': { $exists: false } },
                         { 'value.deleted': { $eq: false } },
                     ],
                 };
-
+    
                 const update = {
                     $set: {
                         'value.retentionMode': retentionInfo.mode,
@@ -3252,25 +3251,23 @@ class MongoClientInterface {
                         'value.last-modified': new Date().toISOString(),
                     },
                 };
-
+    
                 const options = {
-                    returnDocument: 'after' as const, // Return updated document
+                    projection: { _id: 1 },
                 };
-
-                // Use native MongoDB findOneAndUpdate for atomic operation
+    
                 c.findOneAndUpdate(filter, update, options)
                     .then(result => {
-                        if (!result || !result.value) {
-                            log.debug('putObjectRetention: object not found or update failed', {
+                        if (!result) {
+                            log.debug('putObjectRetention: object not found', {
                                 bucket: bucketName,
                                 object: objName,
                                 versionId: params.versionId
                             });
                             return next(errors.NoSuchKey);
                         }
-
-                        MongoUtils.unserialize(result.value);
-                        return next(null, result.value);
+    
+                        return next(null, { success: true });
                     })
                     .catch(updateErr => {
                         log.error('putObjectRetention: atomic update error', {
