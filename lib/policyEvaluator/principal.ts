@@ -134,6 +134,14 @@ export default class Principal {
         const requesterArn = params.rc.getRequesterPrincipalArn();
         const requesterEndArn = params.rc.getRequesterEndArn();
         const requesterType = params.rc.getRequesterType();
+        console.log({
+            account,
+            targetAccount,
+            accountArn,
+            requesterArn,
+            requesterEndArn,
+            requesterType,
+        });
         if (account !== targetAccount) {
             valids = {
                 AWS: [
