@@ -14,19 +14,19 @@ export default function checkRequestExpiry(timestamp: number, log: RequestLogger
     // timestamp is more than 15 minutes in the future, the request
     // has expired and return errors.RequestTimeTooSkewed
     const currentTime = Date.now();
-    log.trace('request timestamp', { requestTimestamp: timestamp });
-    log.trace('current timestamp', { currentTimestamp: currentTime });
+    log.trace('request and current timestamp', {
+        requestTimestamp: timestamp,
+        currentTimestamp: currentTime,
+    });
 
     const fifteenMinutes = (15 * 60 * 1000);
     if (currentTime - timestamp > fifteenMinutes) {
-        log.trace('request timestamp is not within 15 minutes of current time');
-        log.debug('request time too skewed', { timestamp });
+        log.debug('request timestamp is not within 15 minutes of current time', { timestamp });
         return errors.RequestTimeTooSkewed;
     }
 
     if (currentTime + fifteenMinutes < timestamp) {
-        log.trace('request timestamp is more than 15 minutes into future');
-        log.debug('request time too skewed', { timestamp });
+        log.debug('request timestamp is more than 15 minutes into future', { timestamp });
         return errors.RequestTimeTooSkewed;
     }
 

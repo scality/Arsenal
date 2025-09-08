@@ -333,7 +333,6 @@ export function standardEvaluateAllPolicies(
     verdict: string;
     isImplicit: boolean;
 } {
-    log.trace('evaluating all policies');
     let allow = false;
     let allowWithTagCondition = false;
     let denyWithTagCondition = false;

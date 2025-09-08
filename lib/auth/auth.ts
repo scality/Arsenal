@@ -77,7 +77,6 @@ function extractParams(
     awsService: string,
     data: Record<string, string>
 ): AuthResult<AuthV2RequestParams | AuthV4RequestParams | AuthInfo> {
-    log.trace('entered', { method: 'Arsenal.auth.server.extractParams' });
     const authHeader = request.headers.authorization;
     let version: 'v2' |'v4' | null = null;
     let method: 'query' | 'headers' | null = null;
