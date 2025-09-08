@@ -5,8 +5,8 @@ export default function getCanonicalizedAmzHeaders(headers: Record<string, strin
     ambiguous on this.
     */
     const filterFn = clientType === 'GCP' ?
-        (val: string) => val.substr(0, 7) === 'x-goog-' :
-        (val: string) => val.substr(0, 6) === 'x-amz-';
+        (val: string) => val.startsWith('x-goog-') :
+        (val: string) => val.startsWith('x-amz-');
     const amzHeaders = Object.keys(headers)
         .filter(filterFn)
         .map(val => [val.trim(), headers[val].trim()]);
