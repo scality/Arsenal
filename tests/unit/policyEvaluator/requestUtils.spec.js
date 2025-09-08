@@ -190,7 +190,7 @@ describe('requestUtils.getHttpProtocolSecurity', () => {
     });
 });
 
-describe('requestUtils.getIpAndHttpProtocolSecurity', () => {
+describe('requestUtils.computeIpAndHttpProtocolSecurity', () => {
     const configWithProxy = require('../../utils/dummyS3ConfigProxy.json');
     const configWithoutProxy = require('../../utils/dummyS3Config.json');
     const testClientIp1 = '192.168.100.1';
@@ -209,9 +209,9 @@ describe('requestUtils.getIpAndHttpProtocolSecurity', () => {
                 remoteAddress: testProxyIp,
             },
         });
-        const result = requestUtils.getIpAndHttpProtocolSecurity(request, configWithProxy);
-        assert.strictEqual(result.ip, testClientIp1);
-        assert.strictEqual(result.isSecure, true);
+        requestUtils.computeIpAndHttpProtocolSecurity(request, configWithProxy);
+        assert.strictEqual(request.clientIp, testClientIp1);
+        assert.strictEqual(request.isSecure, true);
     });
 
     it('should return IP from header and http security when proxy sends http protocol', () => {
@@ -226,9 +226,9 @@ describe('requestUtils.getIpAndHttpProtocolSecurity', () => {
                 remoteAddress: testProxyIp,
             },
         });
-        const result = requestUtils.getIpAndHttpProtocolSecurity(request, configWithProxy);
-        assert.strictEqual(result.ip, testClientIp1);
-        assert.strictEqual(result.isSecure, false);
+        requestUtils.computeIpAndHttpProtocolSecurity(request, configWithProxy);
+        assert.strictEqual(request.clientIp, testClientIp1);
+        assert.strictEqual(request.isSecure, false);
     });
 
     it('should return socket IP and TLS security when not using proxy', () => {
@@ -247,9 +247,9 @@ describe('requestUtils.getIpAndHttpProtocolSecurity', () => {
             socket: mockTLSSocket,
         });
         
-        const result = requestUtils.getIpAndHttpProtocolSecurity(request, configWithoutProxy);
-        assert.strictEqual(result.ip, testClientIp2);
-        assert.strictEqual(result.isSecure, true);
+        requestUtils.computeIpAndHttpProtocolSecurity(request, configWithoutProxy);
+        assert.strictEqual(request.clientIp, testClientIp2);
+        assert.strictEqual(request.isSecure, true);
     });
 
     it('should return socket IP and false security for non-TLS socket', () => {
@@ -261,12 +261,10 @@ describe('requestUtils.getIpAndHttpProtocolSecurity', () => {
                 remoteAddress: testClientIp2,
             },
         });
-        const result = requestUtils.getIpAndHttpProtocolSecurity(request, configWithoutProxy);
-        assert.strictEqual(result.ip, testClientIp2);
-        assert.strictEqual(result.isSecure, false);
+        requestUtils.computeIpAndHttpProtocolSecurity(request, configWithoutProxy);
+        assert.strictEqual(request.clientIp, testClientIp2);
+        assert.strictEqual(request.isSecure, false);
     });
-
-
 
     it('should work when individual functions are called first', () => {
         const request = new DummyRequest({
@@ -286,10 +284,9 @@ describe('requestUtils.getIpAndHttpProtocolSecurity', () => {
         const isSecure = requestUtils.getHttpProtocolSecurity(request, configWithProxy);
         
         // Combined function should return cached result
-        const combinedResult = requestUtils.getIpAndHttpProtocolSecurity(request, configWithProxy);
-        
-        assert.strictEqual(ip, combinedResult.ip);
-        assert.strictEqual(isSecure, combinedResult.isSecure);
+        requestUtils.computeIpAndHttpProtocolSecurity(request, configWithProxy);
+        assert.strictEqual(request.clientIp, testClientIp1);
+        assert.strictEqual(request.isSecure, true);
         assert.strictEqual(ip, testClientIp1);
         assert.strictEqual(isSecure, true);
     });
@@ -303,8 +300,8 @@ describe('requestUtils.getIpAndHttpProtocolSecurity', () => {
                 remoteAddress: testClientIp2,
             },
         });
-        const result = requestUtils.getIpAndHttpProtocolSecurity(request);
-        assert.strictEqual(result.ip, testClientIp2);
-        assert.strictEqual(result.isSecure, false);
+        requestUtils.computeIpAndHttpProtocolSecurity(request, configWithoutProxy);
+        assert.strictEqual(request.clientIp, testClientIp2);
+        assert.strictEqual(request.isSecure, false);
     });
 });

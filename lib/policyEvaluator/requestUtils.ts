@@ -11,13 +11,13 @@ export interface S3Config {
 }
 
 /**
- * getIpAndHttpProtocolSecurity - Gets the client IP and protocol security info from the request
+ * computeIpAndHttpProtocolSecurity - Compute the client IP and protocol security info from the request
+ * and set the clientIp and isSecure properties on the request object
  * @param request - http request object
  * @param s3config - s3 config
- * @return - returns object with client IP and security status
+ * @return - returns undefined
  */
-export function getIpAndHttpProtocolSecurity(request: ArsenalRequest, s3config?: S3Config): 
-    { ip: string, isSecure: boolean } {
+export function computeIpAndHttpProtocolSecurity(request: ArsenalRequest, s3config?: S3Config) {
     const requestConfig = s3config?.requests;
     const remoteAddress = request.socket.remoteAddress;
     const clientIp = remoteAddress?.toString() ?? '';
@@ -43,41 +43,41 @@ export function getIpAndHttpProtocolSecurity(request: ArsenalRequest, s3config?:
             } else {
                 isSecure = request.socket instanceof TLSSocket && request.socket.encrypted;
             }
-            return { 
-                ip: finalIp,
-                isSecure
-            };
+            request.clientIp = finalIp;
+            request.isSecure = isSecure;
+            return;
         }
     }
-    
-    return { 
-        ip: clientIp, 
-        isSecure: request.socket instanceof TLSSocket && request.socket.encrypted 
-    };
+
+    request.clientIp = clientIp;
+    request.isSecure = request.socket instanceof TLSSocket && request.socket.encrypted;
+    return;
 }
 
 /**
  * getClientIp - Gets the client IP from the request
  * @param request - http request object
  * @param s3config - s3 config
- * @return - returns client IP from the request
+ * @return - returns client IP from the request object
  */
 export function getClientIp(request: ArsenalRequest, s3config?: S3Config): string {
-    if (request.clientIp) {
+    if (request.clientIp !== undefined) {
         return request.clientIp;
     }
-    return getIpAndHttpProtocolSecurity(request, s3config).ip;
+    computeIpAndHttpProtocolSecurity(request, s3config);
+    return request.clientIp;
 }
 
 /**
  * getHttpProtocolSecurity - Determines if the request is secure
  * @param request - http request object
  * @param s3config - s3 config
- * @return {boolean} - returns true if the request is secure
+ * @return - returns true if the request is secure
  */
 export function getHttpProtocolSecurity(request: ArsenalRequest, s3config?: S3Config): boolean {
-    if (request.isSecure) {
+    if (request.isSecure !== undefined) {
         return request.isSecure;
     }
-    return getIpAndHttpProtocolSecurity(request, s3config).isSecure;
+    computeIpAndHttpProtocolSecurity(request, s3config);
+    return request.isSecure;
 }
