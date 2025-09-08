@@ -4,9 +4,10 @@ import * as routesUtils from '../routesUtils';
 import { errorInstances } from '../../errors';
 import * as http from 'http';
 import StatsClient from '../../metrics/StatsClient';
+import { ArsenalRequest } from '../../types/ArsenalRequest';
 
 export default function routeOPTIONS(
-    request: http.IncomingMessage,
+    request: ArsenalRequest,
     response: http.ServerResponse,
     api: { callApiMethod: routesUtils.CallApiMethod },
     log: RequestLogger,

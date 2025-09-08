@@ -10,13 +10,14 @@ import * as constants from '../constants';
 import DataWrapper from '../storage/data/DataWrapper';
 import StatsClient from '../metrics/StatsClient';
 import { objectKeyByteLimit } from '../constants';
+import { ArsenalRequest } from '../types/ArsenalRequest';
 const jsutil = require('../jsutil');
 
 const ALLOW_INVALID_META_HEADERS = !!process.env.ALLOW_INVALID_META_HEADERS;
 
 export type CallApiMethod = (
     methodName: string,
-    request: http.IncomingMessage,
+    request: ArsenalRequest,
     response: http.ServerResponse,
     log: RequestLogger,
     callback: (err: ArsenalError | Error | null, ...data: any[]) => void,
@@ -749,7 +750,7 @@ g */
 export function errorHtmlResponse(
     err: ArsenalError | Error,
     userErrorPageFailure: boolean,
-    bucketName: string,
+    bucketName: string | undefined,
     response: http.ServerResponse,
     corsHeaders: Record<string, string> | null,
     log: RequestLogger,
@@ -1113,35 +1114,27 @@ export function getBucketNameFromHost(
  * @return request object with additional attributes
  */
 export function normalizeRequest(
-    request: http.IncomingMessage,
+    request: ArsenalRequest,
     validHosts: string[],
 ) {
     const parsedUrl = url.parse(request.url!, true);
-    // @ts-expect-error
-    request.query = parsedUrl.query;
+    request.query = parsedUrl.query as Record<string, string>;
     // TODO: make the namespace come from a config variable.
-    // @ts-expect-error
     request.namespace = 'default';
     // Parse bucket and/or object names from request
     const resources = getResourceNames(request, parsedUrl.pathname!,
         validHosts);
-    // @ts-expect-error
-    request.gotBucketNameFromHost = resources.gotBucketNameFromHost;
-    // @ts-expect-error
+    request.gotBucketNameFromHost = resources.gotBucketNameFromHost ?? false;
     request.bucketName = resources.bucket;
-    // @ts-expect-error
     request.objectKey = resources.object;
-    // @ts-expect-error
-    request.parsedHost = resources.host;
-    // @ts-expect-error
-    request.path = resources.path;
+    request.parsedHost = resources.host ?? '';
+    request.path = resources.path ?? '';
     // For streaming v4 auth, the total body content length
     // without the chunk metadata is sent as
     // the x-amz-decoded-content-length
     const contentLength = request.headers['x-amz-decoded-content-length'] ?
         request.headers['x-amz-decoded-content-length'] :
         request.headers['content-length'];
-    // @ts-expect-error
     request.parsedContentLength =
         Number.parseInt(contentLength?.toString() ?? '', 10);
 
@@ -1163,7 +1156,7 @@ export function normalizeRequest(
             }
         }
     }
-    return request;
+    return request as ArsenalRequest;
 }
 
 /**

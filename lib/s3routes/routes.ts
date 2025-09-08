@@ -15,6 +15,7 @@ import * as http from 'http';
 import StatsClient from '../metrics/StatsClient';
 import { objectKeyByteLimit } from '../constants';
 import * as requestUtils from '../../lib/policyEvaluator/requestUtils';
+import { ArsenalRequest } from '../types/ArsenalRequest';
 
 const routeMap = {
     GET: routeGET,
@@ -42,8 +43,8 @@ function checkUnsupportedRoutes(reqMethod: keyof typeof routeMap) {
 }
 
 function checkBucketAndKey(
-    bucketName: string,
-    objectKey: string,
+    bucketName: string | undefined,
+    objectKey: string | undefined,
     method: keyof typeof routeMap,
     reqQuery: any,
     blacklistedPrefixes: any,
@@ -188,7 +189,7 @@ export type Params = {
  * @param [s3config] - s3 configuration
  */
 export default function routes(
-    req: http.IncomingMessage,
+    req: ArsenalRequest,
     res: http.ServerResponse,
     params: Params,
     logger: RequestLogger,
@@ -211,12 +212,9 @@ export default function routes(
         clientPort: req.socket.remotePort,
         httpMethod: req.method,
         httpURL: req.url,
-        // @ts-ignore
         bucketName: req.bucketName,
-        // @ts-ignore
         objectKey: req.objectKey,
-        // @ts-ignore
-        bodyLength: parseInt(req.headers['content-length'], 10) || 0,
+        bodyLength: parseInt(req.headers['content-length'] || '0', 10) || 0,
     };
 
     let reqUids = req.headers['x-scal-request-uids'];
@@ -261,7 +259,6 @@ export default function routes(
     try {
         const validHosts = allEndpoints.concat(websiteEndpoints);
         routesUtils.normalizeRequest(req, validHosts);
-        // @ts-ignore parsedContentLength defined in normalizeRequest
         log.addDefaultFields({ bytesReceived: req.parsedContentLength || 0 });
     } catch (err: any) {
         log.debug('could not normalize request', { error: err.stack });
@@ -271,18 +268,14 @@ export default function routes(
             null, res, log);
     }
 
-    // @ts-ignore
-    const { error, method } = checkUnsupportedRoutes(req.method, req.query);
+    const { error, method } = checkUnsupportedRoutes(req.method);
 
     if (error) {
         log.trace('error validating route or uri params', { error });
-        // @ts-ignore
         return routesUtils.responseXMLBody(error, '', res, log);
     }
 
-    // @ts-ignore
     const bucketOrKeyError = checkBucketAndKey(req.bucketName, req.objectKey,
-        // @ts-ignore
         req.method, req.query, blacklistedPrefixes, log);
 
     if (bucketOrKeyError) {
@@ -292,7 +285,6 @@ export default function routes(
     }
 
     // bucket website request
-    // @ts-ignore
     if (websiteEndpoints && websiteEndpoints.indexOf(req.parsedHost) > -1) {
         return routeWebsite(req, res, api, log, statsClient, dataRetrievalParams);
     }
