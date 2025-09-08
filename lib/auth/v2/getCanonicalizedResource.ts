@@ -1,7 +1,7 @@
 import * as url from 'url';
 import { type ArsenalRequest } from '../../types/ArsenalRequest';
 
-const gcpSubresources = [
+const gcpSubresources = new Set([
     'acl',
     'billing',
     'compose',
@@ -16,9 +16,9 @@ const gcpSubresources = [
     'versioning',
     'versions',
     'websiteConfig',
-];
+]);
 
-const awsSubresources = [
+const awsSubresources = new Set([
     'acl',
     'cors',
     'delete',
@@ -38,7 +38,7 @@ const awsSubresources = [
     'replication',
     'versions',
     'website',
-];
+]);
 
 export default function getCanonicalizedResource(request: ArsenalRequest, clientType: string) {
     /*
@@ -85,7 +85,7 @@ export default function getCanonicalizedResource(request: ArsenalRequest, client
     // build array with them
     const query = request.query;
     const presentSubresources = Object.keys(query).filter(val =>
-        subresources.indexOf(val) !== -1);
+        subresources.has(val));
     // Sort the array and add the subresources and their value (if any)
     // to the resourceString
     presentSubresources.sort();
