@@ -1,5 +1,6 @@
 import type { RequestLogger } from 'werelogs';
 import errors, { ArsenalError } from '../../../lib/errors';
+import { type ArsenalRequestHeaders } from '../../types/ArsenalRequest';
 
 /**
  * Validate Credentials
@@ -189,7 +190,7 @@ export function extractAuthItems(authHeader: string, log: RequestLogger) {
  * @param allHeaders - request.headers
  * @return true if all x-amz-headers included and false if not
  */
-export function areSignedHeadersComplete(signedHeaders: string, allHeaders: Headers) {
+export function areSignedHeadersComplete(signedHeaders: string, allHeaders: ArsenalRequestHeaders) {
     const signedHeadersList = signedHeaders.split(';');
     if (signedHeadersList.indexOf('host') === -1) {
         return false;

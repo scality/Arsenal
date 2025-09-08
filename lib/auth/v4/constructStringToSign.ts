@@ -1,6 +1,7 @@
 import * as crypto from 'crypto';
 import type { RequestLogger } from 'werelogs';
 import createCanonicalRequest from './createCanonicalRequest';
+import { ArsenalRequest, ArsenalClientRequest } from '../../types/ArsenalRequest';
 
 /**
  * constructStringToSign - creates V4 stringToSign
@@ -8,7 +9,7 @@ import createCanonicalRequest from './createCanonicalRequest';
  * @returns {string} - stringToSign
  */
 export default function constructStringToSign(params: {
-    request: any;
+    request: ArsenalRequest | ArsenalClientRequest;
     signedHeaders: any;
     payloadChecksum: any;
     credentialScope: string;
@@ -31,7 +32,7 @@ export default function constructStringToSign(params: {
     const path = proxyPath || request.path;
 
     const canonicalReqResult = createCanonicalRequest({
-        pHttpVerb: request.method,
+        pHttpVerb: request.method!,
         pResource: path,
         pQuery: query,
         pHeaders: request.headers,
