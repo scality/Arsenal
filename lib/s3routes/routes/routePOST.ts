@@ -3,7 +3,7 @@ import type { RequestLogger } from 'werelogs';
 import * as routesUtils from '../routesUtils';
 import errors from '../../errors';
 import * as http from 'http';
-import { ArsenalRequest } from '../../types/ArsenalRequest';
+import { type ArsenalRequest } from '../../types/ArsenalRequest';
 
 export default function routePOST(
     request: ArsenalRequest,

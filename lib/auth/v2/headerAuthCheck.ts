@@ -6,7 +6,7 @@ import checkRequestExpiry from './checkRequestExpiry';
 import algoCheck from './algoCheck';
 import { AuthV2RequestParams } from '../Vault';
 import { AuthResult } from '../auth';
-import { ArsenalRequest } from '../../types/ArsenalRequest';
+import { type ArsenalRequest } from '../../types/ArsenalRequest';
 
 export function check(
     request: ArsenalRequest,

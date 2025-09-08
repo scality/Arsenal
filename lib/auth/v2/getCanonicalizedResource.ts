@@ -1,5 +1,5 @@
 import * as url from 'url';
-import { ArsenalRequest } from '../../types/ArsenalRequest';
+import { type ArsenalRequest } from '../../types/ArsenalRequest';
 
 const gcpSubresources = [
     'acl',

@@ -4,7 +4,7 @@ import * as routesUtils from '../routesUtils';
 import { errorInstances } from '../../errors';
 import * as http from 'http';
 import StatsClient from '../../metrics/StatsClient';
-import { ArsenalRequest } from '../../types/ArsenalRequest';
+import { type ArsenalRequest } from '../../types/ArsenalRequest';
 
 export default function routeOPTIONS(
     request: ArsenalRequest,

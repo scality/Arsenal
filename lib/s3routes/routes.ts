@@ -15,7 +15,7 @@ import * as http from 'http';
 import StatsClient from '../metrics/StatsClient';
 import { objectKeyByteLimit } from '../constants';
 import * as requestUtils from '../../lib/policyEvaluator/requestUtils';
-import { ArsenalRequest } from '../types/ArsenalRequest';
+import { type ArsenalRequest } from '../types/ArsenalRequest';
 
 const routeMap = {
     GET: routeGET,

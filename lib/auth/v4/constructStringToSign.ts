@@ -1,7 +1,7 @@
 import * as crypto from 'crypto';
 import type { RequestLogger } from 'werelogs';
 import createCanonicalRequest from './createCanonicalRequest';
-import { ArsenalRequest, ArsenalClientRequest } from '../../types/ArsenalRequest';
+import { type ArsenalRequest, ArsenalClientRequest } from '../../types/ArsenalRequest';
 
 /**
  * constructStringToSign - creates V4 stringToSign

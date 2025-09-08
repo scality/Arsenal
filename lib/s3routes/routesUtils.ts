@@ -10,7 +10,7 @@ import * as constants from '../constants';
 import DataWrapper from '../storage/data/DataWrapper';
 import StatsClient from '../metrics/StatsClient';
 import { objectKeyByteLimit } from '../constants';
-import { ArsenalRequest } from '../types/ArsenalRequest';
+import { type ArsenalRequest } from '../types/ArsenalRequest';
 const jsutil = require('../jsutil');
 
 const ALLOW_INVALID_META_HEADERS = !!process.env.ALLOW_INVALID_META_HEADERS;

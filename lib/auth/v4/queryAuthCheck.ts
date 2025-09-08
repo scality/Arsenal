@@ -7,7 +7,7 @@ import { validateCredentials, extractQueryParams } from './validateInputs';
 import { areSignedHeadersComplete } from './validateInputs';
 import { AuthV4RequestParams } from '../Vault';
 import { AuthResult } from '../auth';
-import { ArsenalRequest } from '../../types/ArsenalRequest';
+import { type ArsenalRequest } from '../../types/ArsenalRequest';
 
 /**
  * V4 query auth check

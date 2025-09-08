@@ -18,7 +18,7 @@ import validateAuthConfig from './backends/in_memory/validateAuthConfig';
 import AuthLoader from './backends/in_memory/AuthLoader';
 import Vault, { AuthV2RequestParams, AuthV4RequestParams } from './Vault';
 import RequestContext, { RequestContextType } from '../policyEvaluator/RequestContext';
-import { ArsenalRequest, ArsenalClientRequest } from '../types/ArsenalRequest';
+import { type ArsenalRequest, type ArsenalClientRequest } from '../types/ArsenalRequest';
 
 export type AuthResult<T> = { err: ArsenalError } | { err: null, params: T };
 
