@@ -72,7 +72,7 @@ export type AuthV2RequestParams = {
         accessKey: string;
         algo: 'sha1' | 'sha256';
         authType: 'query' | 'header' | 'REST-HEADER' | 'REST-QUERY-STRING';
-        securityToken: string;
+        securityToken?: string;
         signatureAge?: number;
         signatureFromRequest: string;
         signatureVersion: string;
