@@ -189,3 +189,122 @@ describe('requestUtils.getHttpProtocolSecurity', () => {
         assert.strictEqual(result, true);
     });
 });
+
+describe('requestUtils.getIpAndHttpProtocolSecurity', () => {
+    const configWithProxy = require('../../utils/dummyS3ConfigProxy.json');
+    const configWithoutProxy = require('../../utils/dummyS3Config.json');
+    const testClientIp1 = '192.168.100.1';
+    const testClientIp2 = '192.168.104.0';
+    const testProxyIp = '192.168.100.2';
+
+    it('should return both IP and security info from headers when request comes via trusted proxy', () => {
+        const request = new DummyRequest({
+            headers: {
+                'x-forwarded-for': [testClientIp1, testProxyIp].join(','),
+                'x-forwarded-proto': 'https',
+            },
+            url: '/',
+            parsedHost: 'localhost',
+            socket: {
+                remoteAddress: testProxyIp,
+            },
+        });
+        const result = requestUtils.getIpAndHttpProtocolSecurity(request, configWithProxy);
+        assert.strictEqual(result.ip, testClientIp1);
+        assert.strictEqual(result.isSecure, true);
+    });
+
+    it('should return IP from header and http security when proxy sends http protocol', () => {
+        const request = new DummyRequest({
+            headers: {
+                'x-forwarded-for': [testClientIp1, testProxyIp].join(','),
+                'x-forwarded-proto': 'http',
+            },
+            url: '/',
+            parsedHost: 'localhost',
+            socket: {
+                remoteAddress: testProxyIp,
+            },
+        });
+        const result = requestUtils.getIpAndHttpProtocolSecurity(request, configWithProxy);
+        assert.strictEqual(result.ip, testClientIp1);
+        assert.strictEqual(result.isSecure, false);
+    });
+
+    it('should return socket IP and TLS security when not using proxy', () => {
+        // Create a mock TLS socket that allows property assignment
+        const mockTLSSocket = {
+            remoteAddress: testClientIp2,
+            encrypted: true
+        };
+        // Make it pass instanceof check
+        Object.setPrototypeOf(mockTLSSocket, TLSSocket.prototype);
+        
+        const request = new DummyRequest({
+            headers: {},
+            url: '/',
+            parsedHost: 'localhost',
+            socket: mockTLSSocket,
+        });
+        
+        const result = requestUtils.getIpAndHttpProtocolSecurity(request, configWithoutProxy);
+        assert.strictEqual(result.ip, testClientIp2);
+        assert.strictEqual(result.isSecure, true);
+    });
+
+    it('should return socket IP and false security for non-TLS socket', () => {
+        const request = new DummyRequest({
+            headers: {},
+            url: '/',
+            parsedHost: 'localhost',
+            socket: {
+                remoteAddress: testClientIp2,
+            },
+        });
+        const result = requestUtils.getIpAndHttpProtocolSecurity(request, configWithoutProxy);
+        assert.strictEqual(result.ip, testClientIp2);
+        assert.strictEqual(result.isSecure, false);
+    });
+
+
+
+    it('should work when individual functions are called first', () => {
+        const request = new DummyRequest({
+            headers: {
+                'x-forwarded-for': [testClientIp1, testProxyIp].join(','),
+                'x-forwarded-proto': 'https',
+            },
+            url: '/',
+            parsedHost: 'localhost',
+            socket: {
+                remoteAddress: testProxyIp,
+            },
+        });
+        
+        // Call individual functions first
+        const ip = requestUtils.getClientIp(request, configWithProxy);
+        const isSecure = requestUtils.getHttpProtocolSecurity(request, configWithProxy);
+        
+        // Combined function should return cached result
+        const combinedResult = requestUtils.getIpAndHttpProtocolSecurity(request, configWithProxy);
+        
+        assert.strictEqual(ip, combinedResult.ip);
+        assert.strictEqual(isSecure, combinedResult.isSecure);
+        assert.strictEqual(ip, testClientIp1);
+        assert.strictEqual(isSecure, true);
+    });
+
+    it('should work without s3config', () => {
+        const request = new DummyRequest({
+            headers: {},
+            url: '/',
+            parsedHost: 'localhost',
+            socket: {
+                remoteAddress: testClientIp2,
+            },
+        });
+        const result = requestUtils.getIpAndHttpProtocolSecurity(request);
+        assert.strictEqual(result.ip, testClientIp2);
+        assert.strictEqual(result.isSecure, false);
+    });
+});

@@ -217,6 +217,9 @@ export default function routes(
         bodyLength: parseInt(req.headers['content-length'] || '0', 10) || 0,
     };
 
+    req.clientIp = clientInfo.clientIP;
+    req.isSecure = requestUtils.getHttpProtocolSecurity(req, s3config);
+
     let reqUids = req.headers['x-scal-request-uids'];
     if (reqUids !== undefined && !isValidReqUids(reqUids)) {
         // simply ignore invalid id (any user can provide an
