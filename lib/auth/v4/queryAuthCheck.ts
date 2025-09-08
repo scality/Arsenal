@@ -87,14 +87,12 @@ export function check(
     // string 'UNSIGNED-PAYLOAD' should be
     // added to the canonicalRequest in
     // building string to sign
-    const payloadChecksum = 'UNSIGNED-PAYLOAD';
-
     const stringToSign = constructStringToSign({
         log,
         request,
         query: queryWithoutSignature,
         signedHeaders,
-        payloadChecksum,
+        payloadChecksum: constants.unsignedPayload,
         timestamp,
         credentialScope:
             `${scopeDate}/${region}/${service}/${requestType}`,

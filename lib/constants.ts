@@ -9,6 +9,12 @@ export const vaultGeneratedIamSecurityTokenSizeMax = 8192;
 // Base-64
 export const vaultGeneratedIamSecurityTokenPattern = /^[A-Za-z0-9/+=]*$/;
 
+// 15 minutes in seconds for request expiry
+export const requestExpirySeconds = 900;
+export const fifteenMinutesInMilliseconds = 900_000;
+
+export const unsignedPayload = 'UNSIGNED-PAYLOAD';
+
 // info about the iam security token
 export const iamSecurityToken = {
     min: vaultGeneratedIamSecurityTokenSizeMin,

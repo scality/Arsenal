@@ -1,5 +1,6 @@
 import type { RequestLogger } from 'werelogs';
 import errors from '../../errors';
+import { fifteenMinutesInMilliseconds } from '../../constants';
 
 const epochTime = new Date('1970-01-01').getTime();
 
@@ -14,19 +15,19 @@ export default function checkRequestExpiry(timestamp: number, log: RequestLogger
     // timestamp is more than 15 minutes in the future, the request
     // has expired and return errors.RequestTimeTooSkewed
     const currentTime = Date.now();
-    log.trace('request and current timestamp', {
-        requestTimestamp: timestamp,
-        currentTimestamp: currentTime,
-    });
-
-    const fifteenMinutes = (15 * 60 * 1000);
-    if (currentTime - timestamp > fifteenMinutes) {
-        log.debug('request timestamp is not within 15 minutes of current time', { timestamp });
+    if (currentTime - timestamp > fifteenMinutesInMilliseconds) {
+        log.debug('request timestamp is not within 15 minutes of current time', {
+            requestTimestamp: timestamp,
+            currentTimestamp: currentTime,
+        });
         return errors.RequestTimeTooSkewed;
     }
 
-    if (currentTime + fifteenMinutes < timestamp) {
-        log.debug('request timestamp is more than 15 minutes into future', { timestamp });
+    if (currentTime + fifteenMinutesInMilliseconds < timestamp) {
+        log.debug('request timestamp is more than 15 minutes into future', {
+            requestTimestamp: timestamp,
+            currentTimestamp: currentTime,
+        });
         return errors.RequestTimeTooSkewed;
     }
 

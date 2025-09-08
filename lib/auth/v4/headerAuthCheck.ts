@@ -128,9 +128,7 @@ export function check(
     // note that expiration can be shortened so
     // expiry is as set out in the policy.
 
-    // 15 minutes in seconds
-    const expiry = (15 * 60);
-    const isTimeSkewed = checkTimeSkew(timestamp, expiry, log);
+    const isTimeSkewed = checkTimeSkew(timestamp, constants.requestExpirySeconds, log);
     if (isTimeSkewed) {
         return { err: errors.RequestTimeTooSkewed };
     }

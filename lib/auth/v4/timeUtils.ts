@@ -1,4 +1,5 @@
 import type { RequestLogger } from 'werelogs';
+import { fifteenMinutesInMilliseconds } from '../../constants';
 
 /**
  * Convert timestamp to milliseconds since Unix Epoch
@@ -36,9 +37,8 @@ export function convertUTCtoISO8601(timestamp: string | number) {
  */
 export function checkTimeSkew(timestamp: string, expiry: number, log: RequestLogger) {
     const currentTime = Date.now();
-    const fifteenMinutes = (15 * 60 * 1000);
     const parsedTimestamp = convertAmzTimeToMs(timestamp);
-    if ((currentTime + fifteenMinutes) < parsedTimestamp) {
+    if ((currentTime + fifteenMinutesInMilliseconds) < parsedTimestamp) {
         log.debug('current time pre-dates timestamp', {
             parsedTimestamp,
             currentTimeInMilliseconds: currentTime });
