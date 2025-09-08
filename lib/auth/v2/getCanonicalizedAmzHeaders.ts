@@ -1,4 +1,4 @@
-export default function getCanonicalizedAmzHeaders(headers: Headers, clientType: string) {
+export default function getCanonicalizedAmzHeaders(headers: Record<string, string>, clientType: string) {
     /*
     Iterate through headers and pull any headers that are x-amz headers.
     Need to include 'x-amz-date' here even though AWS docs
