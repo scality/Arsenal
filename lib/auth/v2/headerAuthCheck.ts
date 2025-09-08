@@ -8,6 +8,8 @@ import { AuthV2RequestParams } from '../Vault';
 import { AuthResult } from '../auth';
 import { type ArsenalRequest } from '../../types/ArsenalRequest';
 
+const iamSecurityTokenPattern = constants.iamSecurityToken.pattern;
+
 export function check(
     request: ArsenalRequest,
     log: RequestLogger,
@@ -17,7 +19,7 @@ export function check(
     const headers = request.headers;
 
     const token = headers['x-amz-security-token'];
-    if (token && !constants.iamSecurityToken.pattern.test(token)) {
+    if (token && !iamSecurityTokenPattern.test(token)) {
         log.debug('invalid security token', { token });
         return { err: errors.InvalidToken };
     }
