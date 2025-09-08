@@ -5,13 +5,14 @@ import algoCheck from './algoCheck';
 import constructStringToSign from './constructStringToSign';
 import { AuthV2RequestParams } from '../Vault';
 import { AuthResult } from '../auth';
+import { ArsenalRequest } from '../../types/ArsenalRequest';
 
 export const PRE_SIGN_URL_EXPIRY = process.env.PRE_SIGN_URL_EXPIRY ?
     Number.parseInt(process.env.PRE_SIGN_URL_EXPIRY, 10) :
     constants.defaultPreSignedURLExpiry * 1000;
 
 export function check(
-    request: any,
+    request: ArsenalRequest,
     log: RequestLogger,
     data: Record<string, string>,
 ): AuthResult<AuthV2RequestParams> {
