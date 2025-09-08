@@ -111,7 +111,6 @@ function extractParams(
                 { version, authMethod: method });
             return { err: errors.NotImplemented };
         }
-        log.trace('identified auth method', { version, authMethod: method });
         return checkFunctions[version][method](request, log, data, awsService);
     }
 
