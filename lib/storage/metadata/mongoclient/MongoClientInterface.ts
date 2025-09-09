@@ -1421,7 +1421,7 @@ class MongoClientInterface {
             },
             (vFormat, doc, next) => {
                 if (!doc && params && params.versionId) {
-                    return next(errors.NoSuchKey);
+                    return next(errorInstances.NoSuchKey);
                 }
                 // If no master found then object is either non existent
                 // or last version is delete marker
@@ -1482,7 +1482,7 @@ class MongoClientInterface {
             if (!doc && versionIdValue) {
                 // If no document and a version ID is provided, return an error.
                 return cb(null, {
-                    err: errors.NoSuchKey,
+                    err: errorInstances.NoSuchKey,
                     doc: null,
                     versionId: versionIdValue,
                     key,

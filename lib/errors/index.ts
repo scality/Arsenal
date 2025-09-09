@@ -194,9 +194,15 @@ export class ArsenalError extends Error {
     }
 
     /**
-     * Like errors but generate singleton instances of errors
+     * Like errors but generate singleton instances of errors.
+     * These pre-created instances avoid the performance cost of creating new ArsenalError
+     * objects, stack traces, and metadata Maps on every error creation.
+     * 
+     * Use these instances in hot paths where errors are frequently created as part of
+     * normal operation flow, and traces are not needed, to reduce CPU usage and GC pressure.
+     * 
      * To use before .customizeDescription to avoid intermediate instance.
-     * Adds +0.2 MB in heap at start
+     * Adds +0.2 MB in heap at startup.
      */
     static errorInstances() {
         const errors = {};
@@ -213,13 +219,19 @@ export class ArsenalError extends Error {
     }
 }
 
-/** Mapping of all possible Errors.
- * Use them with errors[error].customizeDescription for any customization. */
+/**
+ * Mapping of all possible Errors.
+ * Use them with errors[error].customizeDescription for any customization.
+ */
 export default ArsenalError.errors();
 
 /**
- * Same as errors but already instanciated.
- * To be used like errorInstances[error].customizeDescription or errorInstances.ok.code.
- * Avoid intermediate instance
+ * Pre-instantiated error instances for performance-critical code paths.
+ * These errors do not have stack traces.
+ * 
+ * Usage: errorInstances.NoSuchKey, errorInstances.AccessDenied.customizeDescription('msg')
+ * 
+ * Performance benefit: Avoids creating new ArsenalError objects, stack traces, and metadata
+ * Maps on every error creation, reducing CPU usage and GC pressure.
  */
 export const errorInstances = ArsenalError.errorInstances();
