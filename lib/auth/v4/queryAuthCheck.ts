@@ -82,17 +82,17 @@ export function check(
     const queryWithoutSignature = Object.assign({}, data);
     delete queryWithoutSignature['X-Amz-Signature'];
 
-    // For query auth, instead of a
-    // checksum of the contents, the
-    // string 'UNSIGNED-PAYLOAD' should be
-    // added to the canonicalRequest in
-    // building string to sign
     const stringToSign = constructStringToSign({
         log,
         request,
         query: queryWithoutSignature,
         signedHeaders,
-        payloadChecksum: constants.unsignedPayload,
+        // For query auth, instead of a
+        // checksum of the contents, the
+        // string 'UNSIGNED-PAYLOAD' should be
+        // added to the canonicalRequest in
+        // building string to sign
+        payloadChecksum: constants.authChecksumUnsignedPayload,
         timestamp,
         credentialScope:
             `${scopeDate}/${region}/${service}/${requestType}`,

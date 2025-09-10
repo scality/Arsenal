@@ -16,7 +16,7 @@ export default function checkRequestExpiry(timestamp: number, log: RequestLogger
     // has expired and return errors.RequestTimeTooSkewed
     const currentTime = Date.now();
     if (currentTime - timestamp > fifteenMinutesInMilliseconds) {
-        log.debug('request timestamp is not within 15 minutes of current time', {
+        log.debug('request time too skewed, timestamp not within 15 minutes of current time', {
             requestTimestamp: timestamp,
             currentTimestamp: currentTime,
         });

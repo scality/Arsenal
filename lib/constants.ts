@@ -13,7 +13,7 @@ export const vaultGeneratedIamSecurityTokenPattern = /^[A-Za-z0-9/+=]*$/;
 export const requestExpirySeconds = 900;
 export const fifteenMinutesInMilliseconds = 900_000;
 
-export const unsignedPayload = 'UNSIGNED-PAYLOAD';
+export const authChecksumUnsignedPayload = 'UNSIGNED-PAYLOAD';
 
 // info about the iam security token
 export const iamSecurityToken = {
