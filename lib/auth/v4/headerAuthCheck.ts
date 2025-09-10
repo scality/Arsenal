@@ -14,6 +14,7 @@ import {
 } from './validateInputs';
 import { AuthV4RequestParams } from '../Vault';
 import { AuthResult } from '../auth';
+import { type ArsenalRequest } from '../../types/ArsenalRequest';
 
 /**
  * V4 header auth check
@@ -24,7 +25,7 @@ import { AuthResult } from '../auth';
  * @param awsService - Aws service ('iam' or 's3')
  */
 export function check(
-    request: any,
+    request: ArsenalRequest,
     log: RequestLogger,
     data: Record<string, string>,
     awsService: string

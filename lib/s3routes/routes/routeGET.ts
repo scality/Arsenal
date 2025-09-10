@@ -4,9 +4,10 @@ import * as routesUtils from '../routesUtils';
 import errors from '../../errors';
 import * as http from 'http';
 import StatsClient from '../../metrics/StatsClient';
+import { type ArsenalRequest } from '../../types/ArsenalRequest';
 
 export default function routerGET(
-    request: http.IncomingMessage,
+    request: ArsenalRequest,
     response: http.ServerResponse,
     api: { callApiMethod: routesUtils.CallApiMethod },
     log: RequestLogger,
@@ -15,7 +16,7 @@ export default function routerGET(
 ) {
     log.debug('routing request', { method: 'routerGET' });
 
-    const { bucketName, objectKey, query } = request as any;
+    const { bucketName, objectKey, query } = request;
 
     const call = (name: string) => {
         api.callApiMethod(name, request, response, log, (err, xml, corsHeaders) => {

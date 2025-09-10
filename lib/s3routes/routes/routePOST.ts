@@ -3,16 +3,17 @@ import type { RequestLogger } from 'werelogs';
 import * as routesUtils from '../routesUtils';
 import errors from '../../errors';
 import * as http from 'http';
+import { type ArsenalRequest } from '../../types/ArsenalRequest';
 
 export default function routePOST(
-    request: http.IncomingMessage,
+    request: ArsenalRequest,
     response: http.ServerResponse,
     api: { callApiMethod: routesUtils.CallApiMethod },
     log: RequestLogger,
 ) {
     log.debug('routing request', { method: 'routePOST' });
 
-    const { query, bucketName, objectKey } = request as any;
+    const { query, bucketName, objectKey } = request;
 
     const invalidMultiObjectDelReq = query.delete !== undefined
         && bucketName === undefined;
@@ -21,7 +22,6 @@ export default function routePOST(
             response, undefined, log);
     }
 
-    // @ts-ignore
     request.post = '';
 
     const invalidInitiateMpuReq = query.uploads !== undefined

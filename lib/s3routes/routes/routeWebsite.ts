@@ -4,16 +4,17 @@ import * as routesUtils from '../routesUtils';
 import errors from '../../errors';
 import * as http from 'http';
 import StatsClient from '../../metrics/StatsClient';
+import { type ArsenalRequest } from '../../types/ArsenalRequest';
 
 export default function routerWebsite(
-    request: http.IncomingMessage,
+    request: ArsenalRequest,
     response: http.ServerResponse,
     api: { callApiMethod: routesUtils.CallApiMethod },
     log: RequestLogger,
     statsClient?: StatsClient,
     dataRetrievalParams?: any,
 ) {
-    const { bucketName, query } = request as any;
+    const { bucketName, query } = request;
     log.debug('routing request', { method: 'routerWebsite' });
     // website endpoint only supports GET and HEAD and must have a bucket
     // http://docs.aws.amazon.com/AmazonS3/latest/dev/WebsiteEndpoints.html

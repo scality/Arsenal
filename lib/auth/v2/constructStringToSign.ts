@@ -2,9 +2,10 @@ import type { RequestLogger } from 'werelogs';
 import utf8 from 'utf8';
 import getCanonicalizedAmzHeaders from './getCanonicalizedAmzHeaders';
 import getCanonicalizedResource from './getCanonicalizedResource';
+import { type ArsenalRequest } from '../../types/ArsenalRequest';
 
 export default function constructStringToSign(
-    request: any,
+    request: ArsenalRequest,
     data: Record<string, string>,
     log: RequestLogger,
     clientType?: any,

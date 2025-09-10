@@ -4,9 +4,10 @@ import * as routesUtils from '../routesUtils';
 import errors from '../../errors';
 import * as http from 'http';
 import StatsClient from '../../metrics/StatsClient';
+import { type ArsenalRequest } from '../../types/ArsenalRequest';
 
 export default function routePUT(
-    request: http.IncomingMessage,
+    request: ArsenalRequest,
     response: http.ServerResponse,
     api: { callApiMethod: routesUtils.CallApiMethod },
     log: RequestLogger,
@@ -14,7 +15,7 @@ export default function routePUT(
 ) {
     log.debug('routing request', { method: 'routePUT' });
 
-    const { objectKey, query, bucketName, parsedContentLength } = request as any;
+    const { objectKey, query, bucketName, parsedContentLength } = request;
 
     if (objectKey === undefined) {
         // PUT bucket - PUT bucket ACL

@@ -7,6 +7,7 @@ import { validateCredentials, extractQueryParams } from './validateInputs';
 import { areSignedHeadersComplete } from './validateInputs';
 import { AuthV4RequestParams } from '../Vault';
 import { AuthResult } from '../auth';
+import { type ArsenalRequest } from '../../types/ArsenalRequest';
 
 /**
  * V4 query auth check
@@ -15,7 +16,7 @@ import { AuthResult } from '../auth';
  * @param data - Contain authentification params (GET or POST data)
  */
 export function check(
-    request: any,
+    request: ArsenalRequest,
     log: RequestLogger,
     data: Record<string, string>,
 ): AuthResult<AuthV4RequestParams> {

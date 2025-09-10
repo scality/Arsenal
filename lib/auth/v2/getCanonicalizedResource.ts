@@ -1,4 +1,5 @@
 import * as url from 'url';
+import { type ArsenalRequest } from '../../types/ArsenalRequest';
 
 const gcpSubresources = [
     'acl',
@@ -39,7 +40,7 @@ const awsSubresources = [
     'website',
 ];
 
-export default function getCanonicalizedResource(request: any, clientType: string) {
+export default function getCanonicalizedResource(request: ArsenalRequest, clientType: string) {
     /*
     This variable is used to determine whether to insert
     a '?' or '&'.  Once a query parameter is added to the resourceString,
@@ -50,7 +51,7 @@ export default function getCanonicalizedResource(request: any, clientType: strin
     let resourceString = request.gotBucketNameFromHost ?
         `/${request.bucketName}` : '';
     // Add the path to the resourceString
-    resourceString += url.parse(request.url).pathname;
+    resourceString += url.parse(request.url || '').pathname || '';
 
     /*
     If request includes a specified subresource,

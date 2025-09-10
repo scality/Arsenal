@@ -6,9 +6,10 @@ import checkRequestExpiry from './checkRequestExpiry';
 import algoCheck from './algoCheck';
 import { AuthV2RequestParams } from '../Vault';
 import { AuthResult } from '../auth';
+import { type ArsenalRequest } from '../../types/ArsenalRequest';
 
 export function check(
-    request: any,
+    request: ArsenalRequest,
     log: RequestLogger,
     data: Record<string, string>,
 ): AuthResult<AuthV2RequestParams> {
@@ -22,9 +23,7 @@ export function check(
     }
 
     // Check to make sure timestamp is within 15 minutes of current time
-    let timestamp = headers['x-amz-date'] ?
-        headers['x-amz-date'] : headers.date;
-    timestamp = Date.parse(timestamp);
+    const timestamp = Date.parse(headers['x-amz-date'] || headers.date || '');
     if (!timestamp) {
         log.debug('missing or invalid date header',
             { method: 'auth/v2/headerAuthCheck.check' });

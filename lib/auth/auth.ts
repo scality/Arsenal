@@ -18,6 +18,7 @@ import validateAuthConfig from './backends/in_memory/validateAuthConfig';
 import AuthLoader from './backends/in_memory/AuthLoader';
 import Vault, { AuthV2RequestParams, AuthV4RequestParams } from './Vault';
 import RequestContext, { RequestContextType } from '../policyEvaluator/RequestContext';
+import { type ArsenalRequest, type ArsenalClientRequest } from '../types/ArsenalRequest';
 
 export type AuthResult<T> = { err: ArsenalError } | { err: null, params: T };
 
@@ -71,7 +72,7 @@ function setAuthHandler(handler: Vault) {
  * @return ret.params.data - the auth scheme's specific data
  */
 function extractParams(
-    request: any,
+    request: ArsenalRequest,
     log: RequestLogger,
     awsService: string,
     data: Record<string, string>
@@ -131,7 +132,7 @@ function extractParams(
  * in multi-object delete request)
  */
 function doAuth(
-    request: any,
+    request: ArsenalRequest,
     log: RequestLogger,
     cb: (err: Error | null, data?: any) => void,
     awsService: string,
@@ -206,7 +207,7 @@ function generateContentMD5Header(
  * @param [payload] - body of the request if any
  */
 function generateV4Headers(
-    request: any,
+    request: ArsenalClientRequest,
     data: Record<string, string>,
     accessKey: string,
     secretKeyValue: string,
@@ -234,10 +235,10 @@ function generateV4Headers(
     }
     const payloadChecksum = crypto.createHash('sha256')
         .update(payload, 'binary').digest('hex');
-    request.setHeader('host', request.getHeader('host'));
+    request.setHeader('host', request.getHeader('host') || '');
     request.setHeader('x-amz-date', amzDate);
     request.setHeader('x-amz-content-sha256', payloadChecksum);
-    request.setHeader('content-md5', generateContentMD5Header(request.path, payload));
+    request.setHeader('content-md5', generateContentMD5Header(request.path || '', payload));
 
     if (sessionToken) {
         request.setHeader('x-amz-security-token', sessionToken);

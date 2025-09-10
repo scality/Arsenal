@@ -4,16 +4,17 @@ import * as routesUtils from '../routesUtils';
 import errors from '../../errors';
 import StatsClient from '../../metrics/StatsClient';
 import * as http from 'http';
+import { type ArsenalRequest } from '../../types/ArsenalRequest';
 
 export default function routeHEAD(
-    request: http.IncomingMessage,
+    request: ArsenalRequest,
     response: http.ServerResponse,
     api: { callApiMethod: routesUtils.CallApiMethod },
     log: RequestLogger,
     statsClient?: StatsClient,
 ) {
     log.debug('routing request', { method: 'routeHEAD' });
-    const { bucketName, objectKey } = request as any;
+    const { bucketName, objectKey } = request;
     if (bucketName === undefined) {
         log.trace('head request without bucketName');
         routesUtils.responseXMLBody(errors.MethodNotAllowed,

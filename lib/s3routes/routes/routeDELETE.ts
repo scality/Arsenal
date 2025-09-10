@@ -4,9 +4,10 @@ import * as routesUtils from '../routesUtils';
 import { ArsenalError, errorInstances } from '../../errors';
 import StatsClient from '../../metrics/StatsClient';
 import * as http from 'http';
+import { type ArsenalRequest } from '../../types/ArsenalRequest';
 
 export default function routeDELETE(
-    request: http.IncomingMessage,
+    request: ArsenalRequest,
     response: http.ServerResponse,
     api: { callApiMethod: routesUtils.CallApiMethod },
     log: RequestLogger,
@@ -18,7 +19,7 @@ export default function routeDELETE(
     });
     log.debug('routing request', { method: 'routeDELETE' });
 
-    const { query, objectKey } = request as any;
+    const { query, objectKey } = request;
     if (query?.uploadId) {
         if (objectKey === undefined) {
             const message = 'A key must be specified';
