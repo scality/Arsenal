@@ -32,14 +32,14 @@ export function computeIpAndHttpProtocolSecurity(request: ArsenalRequest, s3conf
             // Request headers in nodejs are lower-cased, so we should not
             // be case-sentive when looking for the header, as http headers
             // are case-insensitive.
-            const ipFromHeader = request.headers[extractClientIPFromHeader.toLowerCase()]?.toString();
+            const ipFromHeader = request.headers[extractClientIPFromHeader]?.toString();
             let finalIp = clientIp;
             if (ipFromHeader && ipFromHeader.trim().length) {
                 finalIp = ipFromHeader.split(',')[0].trim();
             }
             let isSecure = false;
             if (extractProtocolFromHeader) {
-                isSecure = request.headers[extractProtocolFromHeader.toLowerCase()] === 'https';
+                isSecure = request.headers[extractProtocolFromHeader] === 'https';
             } else {
                 isSecure = request.socket instanceof TLSSocket && request.socket.encrypted;
             }
