@@ -1179,10 +1179,17 @@ export function isValidObjectKey(objectKey: string, prefixBlacklist: string[]) {
     if (invalidPrefix) {
         return { isValid: false, invalidPrefix };
     }
-    if (Buffer.byteLength(objectKey, 'utf8') > objectKeyByteLimit) {
-        return { isValid: false };
-    }
     return { isValid: true };
+}
+
+// To be validated only for key creation, such as PutObject, CopyObject, MPU
+export function validateObjectKeyLength(objectKey: string, maxByteLength?: number) {
+    if (maxByteLength !== 0 && Buffer.byteLength(objectKey, 'utf8') > (maxByteLength || objectKeyByteLimit)) {
+        return errorInstances.KeyTooLong.customizeDescription('Object key is too ' +
+            'long. Maximum number of bytes allowed in keys is ' +
+            `${maxByteLength || objectKeyByteLimit}.`);
+    }
+    return null;
 }
 
 /**
