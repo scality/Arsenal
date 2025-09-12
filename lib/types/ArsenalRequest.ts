@@ -117,6 +117,16 @@ export interface ArsenalRequest extends Omit<http.IncomingMessage, 'headers'> {
      * Added in GCP backend processing
      */
     virtualHostedBucket?: string;
+
+    /**
+     * Client IP address
+     */
+    clientIp: string;
+
+    /**
+     * Whether the request is secure
+     */
+    isSecure: boolean;
 }
 
 /**

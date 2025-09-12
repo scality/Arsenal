@@ -207,8 +207,10 @@ export default function routes(
         dataRetrievalParams,
     } = params;
 
+    requestUtils.computeIpAndHttpProtocolSecurity(req, s3config);
+
     const clientInfo = {
-        clientIP: requestUtils.getClientIp(req, s3config),
+        clientIP: req.clientIp,
         clientPort: req.socket.remotePort,
         httpMethod: req.method,
         httpURL: req.url,
