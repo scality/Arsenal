@@ -35,7 +35,7 @@
     "https-proxy-agent": "^7.0.6",
     "ioredis": "^5.7.0",
     "ipaddr.js": "^2.2.0",
-    "joi": "^18.0.0",
+    "joi": "^18.0.1",
     "level": "~5.0.1",
     "level-sublevel": "~6.6.5",
     "mongodb": "^6.19.0",
