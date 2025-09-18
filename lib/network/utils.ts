@@ -1,4 +1,3 @@
-import type { AWSError } from 'aws-sdk';
 import { ArsenalError, errorInstances } from '../errors';
 import { allowedKmsErrors } from '../errors/kmsErrors';
 
@@ -31,6 +30,15 @@ export function arsenalErrorKMIP(err: string | Error) {
 }
 
 const allowedKmsErrorCodes = Object.keys(allowedKmsErrors) as unknown as (keyof typeof allowedKmsErrors)[];
+
+// Local AWSError type for compatibility with v3 error handling
+export type AWSError = Error & { 
+    code?: string; 
+    retryable?: boolean; 
+    statusCode?: number; 
+    time?: Date; 
+    requestId?: string; 
+};
 
 function isAWSError(err: string | Error | AWSError): err is AWSError {
     return (err as AWSError).code !== undefined

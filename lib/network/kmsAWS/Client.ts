@@ -1,9 +1,8 @@
 'use strict';  
 
 import { arsenalErrorAWSKMS } from '../utils';
-import { Agent as HttpAgent } from 'http';
-import { Agent as HttpsAgent } from 'https';
-import { KMS, AWSError } from 'aws-sdk';
+import { KMSClient, CreateKeyCommand, ScheduleKeyDeletionCommand,
+    GenerateDataKeyCommand, EncryptCommand, DecryptCommand, ListKeysCommand } from '@aws-sdk/client-kms';
 import * as werelogs from 'werelogs';
 import assert from 'assert';
 import { KMSInterface, KmsBackend, getKeyIdFromArn, KmsProtocol, KmsType, makeBackend } from '../KMSInterface';
@@ -45,42 +44,25 @@ interface ClientOptions {
 
 export default class Client implements KMSInterface {
     private _supportsDefaultKeyPerAccount: boolean;
-    private client: KMS;
+    private client: KMSClient;
     public readonly backend: KmsBackend<KmsType.external>;
     public readonly noAwsArn?: boolean;
 
     constructor(options: ClientOptions) {
         this._supportsDefaultKeyPerAccount = true;
-        const { providerName, tls, ak, sk, region, endpoint, noAwsArn } = options.kmsAWS;
+        const { providerName, ak, sk, region, endpoint, noAwsArn } = options.kmsAWS;
 
-        const httpOptions = tls ? {
-            agent: new HttpsAgent({
-                keepAlive: true,
-                rejectUnauthorized: tls.rejectUnauthorized,
-                ca: tls.ca,
-                cert: tls.cert,
-                minVersion: tls.minVersion,
-                maxVersion: tls.maxVersion,
-                key: tls.key,
-            }),
-        } : {
-            agent: new HttpAgent({
-                keepAlive: true,
-            }),
-        };
 
         const credentials = (ak && sk) ? {
-            credentials: {
-                accessKeyId: ak,
-                secretAccessKey: sk,
-            },
+            accessKeyId: ak,
+            secretAccessKey: sk,
         } : undefined;
 
-        this.client = new KMS({
+        this.client = new KMSClient({
             region,
             endpoint,
-            httpOptions,
-            ...credentials,
+            requestHandler: undefined, // v3 handles agents differently
+            credentials,
         });
         this.backend = makeBackend(KmsType.external, KmsProtocol.aws_kms, providerName);
         this.noAwsArn = noAwsArn;
@@ -118,31 +100,21 @@ export default class Client implements KMSInterface {
 
     createMasterKey(logger: werelogs.Logger, cb: (err: Error | null, keyId?: string, keyArn?: string) => void): void {
         logger.debug('AWS KMS: creating master encryption key');
-        this.client.createKey({}, (err: AWSError, data) => {
-            if (err) {
-                const error = arsenalErrorAWSKMS(err);
-                logger.error('AWS KMS: failed to create master encryption key', { err });
-                cb(error);
-                return;
-            }
+        this.client.send(new CreateKeyCommand({})).then(data => {
             const keyMetadata = data?.KeyMetadata;
             logger.debug("AWS KMS: master encryption key created", { KeyMetadata: keyMetadata });
             let keyId: string;
             if (this.noAwsArn) {
-                // Use KeyId when ARN is not wanted
-                // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
-                keyId = keyMetadata?.KeyId!;
+                keyId = keyMetadata?.KeyId || '';
             } else {
-                // Prefer ARN, but fall back to KeyId if ARN is missing
-                // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
-                keyId = keyMetadata?.Arn ?? keyMetadata?.KeyId!;
+                keyId = keyMetadata?.Arn ?? (keyMetadata?.KeyId || '');
             }
-            // May produce double arn prefix: scality arn + aws arn
-            // arn:scality:kms:external:aws_kms:custom:key/arn:aws:kms:region:accountId:key/cbd69d33-ba8e-4b56-8cfe
-            // If this is a problem, a config flag should be used to hide the scality arn when returning the KMS KeyId
-            // or aws arn when creating the KMS Key
             const arn = `${this.backend.arnPrefix}${keyId}`;
             cb(null, keyId, arn);
+        }).catch(err => {
+            const error = arsenalErrorAWSKMS(err);
+            logger.error('AWS KMS: failed to create master encryption key', { err });
+            cb(error);
         });
     }
 
@@ -163,30 +135,23 @@ export default class Client implements KMSInterface {
             KeyId: masterKeyId,
             PendingWindowInDays: 7,
         };
-        this.client.scheduleKeyDeletion(params, (err: AWSError, data) => {
-            if (err) {
-                if (err.code === 'NotFoundException' || err.code === 'KMSInvalidStateException') {
-                    // master key does not exist or is already pending deletion
-                    logger.info('AWS KMS: key does not exist or is already pending deletion',
-                        { masterKeyId, error: err });
-                    cb(null);
-                    return;
-                }
-
-                const error = arsenalErrorAWSKMS(err);
-                logger.error('AWS KMS: failed to delete master encryption key', { err });
-                cb(error);
-                return;
-            }
-
+        this.client.send(new ScheduleKeyDeletionCommand(params)).then(data => {
             if (data?.KeyState && data.KeyState !== 'PendingDeletion') {
                 const error = arsenalErrorAWSKMS('key is not in PendingDeletion state');
-                logger.error('AWS KMS: failed to delete master encryption key', { err, data });
+                logger.error('AWS KMS: failed to delete master encryption key', { data });
                 cb(error);
                 return;
             }
-
             cb(null);
+        }).catch(err => {
+            if (err.name === 'NotFoundException' || err.name === 'KMSInvalidStateException') {
+                logger.info('AWS KMS: key does not exist or is already pending deletion', { masterKeyId, error: err });
+                cb(null);
+                return;
+            }
+            const error = arsenalErrorAWSKMS(err);
+            logger.error('AWS KMS: failed to delete master encryption key', { err });
+            cb(error);
         });
     }
 
@@ -199,31 +164,24 @@ export default class Client implements KMSInterface {
         const masterKeyId = getKeyIdFromArn(masterKeyIdOrArn);
         logger.debug("AWS KMS: generating data key", { cryptoScheme, masterKeyId, masterKeyIdOrArn });
         assert.strictEqual(cryptoScheme, 1);
-
         const params = {
             KeyId: masterKeyId,
-            KeySpec: 'AES_256',
+            KeySpec: "AES_256" as const,
         };
-
-        this.client.generateDataKey(params, (err: AWSError, data) => {
-            if (err) {
-                const error = arsenalErrorAWSKMS(err);
-                logger.error('AWS KMS: failed to generate data key', { err });
-                cb(error);
-                return;
-            }
-
+        this.client.send(new GenerateDataKeyCommand(params)).then(data => {
             if (!data) {
                 const error = arsenalErrorAWSKMS("failed to generate data key: empty response");
                 logger.error("AWS KMS: failed to generate data key: empty response");
                 cb(error);
                 return;
             }
-
             const isolatedPlaintext = this.safePlaintext(data.Plaintext as Buffer);
-
             logger.debug('AWS KMS: data key generated');
             cb(null, isolatedPlaintext, Buffer.from(data.CiphertextBlob as Uint8Array));
+        }).catch(err => {
+            const error = arsenalErrorAWSKMS(err);
+            logger.error('AWS KMS: failed to generate data key', { err });
+            cb(error);
         });
     }
 
@@ -244,14 +202,7 @@ export default class Client implements KMSInterface {
             Plaintext: plainTextDataKey,
         };
 
-        this.client.encrypt(params, (err: AWSError, data) => {
-            if (err) {
-                const error = arsenalErrorAWSKMS(err);
-                logger.error('AWS KMS: failed to cipher data key', { err });
-                cb(error);
-                return;
-            }
-
+        this.client.send(new EncryptCommand(params)).then(data => {
             if (!data) {
                 const error = arsenalErrorAWSKMS("failed to cipher data key: empty response");
                 logger.error("AWS KMS: failed to cipher data key: empty response");
@@ -262,6 +213,10 @@ export default class Client implements KMSInterface {
             logger.debug('AWS KMS: data key ciphered');
             cb(null, Buffer.from(data.CiphertextBlob as Uint8Array));
             return;
+        }).catch(err => {
+            const error = arsenalErrorAWSKMS(err);
+            logger.error('AWS KMS: failed to cipher data key', { err });
+            cb(error);
         });
     }
 
@@ -281,14 +236,7 @@ export default class Client implements KMSInterface {
             CiphertextBlob: cipheredDataKey,
         };
 
-        this.client.decrypt(params, (err: AWSError, data) => {
-            if (err) {
-                const error = arsenalErrorAWSKMS(err);
-                logger.error('AWS KMS: failed to decipher data key', { err });
-                cb(error);
-                return;
-            }
-
+        this.client.send(new DecryptCommand(params)).then(data => {
             if (!data) {
                 const error = arsenalErrorAWSKMS("failed to decipher data key: empty response");
                 logger.error("AWS KMS: failed to decipher data key: empty response");
@@ -300,41 +248,30 @@ export default class Client implements KMSInterface {
 
             logger.debug('AWS KMS: data key deciphered');
             cb(null, isolatedPlaintext);
+        }).catch(err => {
+            const error = arsenalErrorAWSKMS(err);
+            logger.error('AWS KMS: failed to decipher data key', { err });
+            cb(error);
         });
     }
 
     /**
-     * NOTE1: S3C-4833 KMS healthcheck is disabled in CloudServer
-     * NOTE2: The best approach for implementing the AWS KMS health check is still under consideration.
-     * In the meantime, this method is commented out to prevent potential issues related to costs or permissions.
-     *
-     * Reasons for commenting out:
-     * - frequent API calls can lead to increased expenses.
-     * - access key secret key used must have `kms:ListKeys` permissions
-     *
-     * Future potential actions:
-     * - implement caching mechanisms to reduce the number of API calls.
-     * - differentiate between error types (e.g., 500 vs. 403) for more effective error handling.
+     * Healthcheck function to verify KMS connectivity
      */
-    /*
     healthcheck(logger: werelogs.Logger, cb: (err: Error | null) => void): void {
         logger.debug("AWS KMS: performing healthcheck");
     
-        const params = {
+        const command = new ListKeysCommand({
             Limit: 1,
-        };
+        });
     
-        this.client.listKeys(params, (err, data) => {
-            if (err) {
-                const error = arsenalErrorAWSKMS(err);
-                logger.error("AWS KMS healthcheck: failed to list keys", { err });
-                cb(error);
-                return;
-            }
-    
+        this.client.send(command).then(() => {
             logger.debug("AWS KMS healthcheck: list keys succeeded");
             cb(null);
+        }).catch(err => {
+            const error = arsenalErrorAWSKMS(err);
+            logger.error("AWS KMS healthcheck: failed to list keys", { err });
+            cb(error);
         });
     }
-    */
 }
