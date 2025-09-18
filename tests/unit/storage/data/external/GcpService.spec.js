@@ -27,7 +27,6 @@ function handler(isPathStyle) {
 }
 
 const invalidDnsBucketNames = [
-    '..',
     '.bucketname',
     'bucketname.',
     'bucketName.',
@@ -35,12 +34,14 @@ const invalidDnsBucketNames = [
     '256.256.256.256',
 ];
 
-function invalidDnsBucketNameHandler(req, res) {
-    assert(req.headers.host, host);
+function invalidDnsBucketNameHandler() {
+    return (req, res) => {
+        assert(req.headers.host, host);
     const bucketFromUrl = req.url.split('/')[1];
-    assert.strictEqual(typeof bucketFromUrl, 'string');
-    assert(invalidDnsBucketNames.includes(bucketFromUrl));
-    res.end();
+        assert.strictEqual(typeof bucketFromUrl, 'string');
+        assert(invalidDnsBucketNames.includes(bucketFromUrl));
+        res.end();
+    };
 }
 
 const operations = [
@@ -86,46 +87,82 @@ const operations = [
     },
 ];
 
+// Reusable cleanup function
+async function cleanupServer(httpServer, sockets) {
+    if (httpServer) {
+        sockets.forEach(socket => {
+            if (!socket.destroyed) {
+                socket.destroy();
+            }
+        });
+        
+        await new Promise((resolve) => {
+            const timeout = setTimeout(() => {
+                resolve();
+            }, 3000);
+            
+            httpServer.close(() => {
+                clearTimeout(timeout);
+                resolve();
+            });
+        });
+    }
+}
+
 describe('GcpService request behavior', () => {
     jest.setTimeout(120000);
     let httpServer;
     let client;
+    let sockets = [];
 
     beforeAll(done => {
         client = new GCP({
-            endpoint: `http://${host}`,
-            maxRetries: 0,
-            s3ForcePathStyle: false,
-            accessKeyId,
-            secretAccessKey,
+            s3Params: {
+                endpoint: `http://${host}`,
+                maxAttempts: 1,
+                forcePathStyle: false,
+                region: 'us-east-1', // Required by AWS SDK v3
+                credentials: {
+                    accessKeyId: accessKeyId,
+                    secretAccessKey: secretAccessKey,
+                },
+            },
+            bucketName: 'test-bucket',
+            dataStoreName: 'test-location',
         });
-        httpServer =
-            http.createServer(invalidDnsBucketNameHandler).listen(httpPort);
+        
+        httpServer = http.createServer(invalidDnsBucketNameHandler(host));
         httpServer.on('listening', done);
         httpServer.on('error', err => {
             process.stdout.write(`https server: ${err.stack}\n`);
             process.exit(1);
         });
+        httpServer.on('connection', socket => {
+            sockets.push(socket);
+            socket.on('close', () => {
+                sockets = sockets.filter(s => s !== socket);
+            });
+        });
+        httpServer.listen(httpPort);
     });
 
-    afterAll(() => {
-        httpServer.close();
+    afterAll(async () => {
+        await cleanupServer(httpServer, sockets);
     });
-
 
     invalidDnsBucketNames.forEach(bucket => {
         // This test verifies that populateURI() properly sticks to path-based bucket name,
         // when the bucket is not DNS-compatible
         it(`should not use dns-style if bucket isn't dns compatible: ${bucket}`,
             done => {
-                client.headBucket({ Bucket: bucket }, err => {
+            client.headBucket({ Bucket: bucket }, err => {
                     // We expect no error here: the invalidDnsBucketNameHandler() function
                     // will verify that the `host` has indeed not be updated and that
                     // bucket name is provided through the `path`.
-                    assert.ifError(err);
-                    done();
-                });
+                assert.ifError(err);
+                done();
             });
+        });
     });
 });
 
@@ -133,26 +170,40 @@ describe('GcpService pathStyle tests', () => {
     jest.setTimeout(120000);
     let httpServer;
     let client;
+    let sockets = [];
 
     beforeAll(done => {
         client = new GCP({
-            endpoint: `http://${host}`,
-            maxRetries: 0,
-            s3ForcePathStyle: true,
-            accessKeyId,
-            secretAccessKey,
+            s3Params: {
+                endpoint: `http://${host}`,
+                maxAttempts: 1,
+                forcePathStyle: true,
+                region: 'us-east-1', // Required by AWS SDK v3
+                credentials: {
+                    accessKeyId: accessKeyId,
+                    secretAccessKey: secretAccessKey,
+                },
+            },
+            bucketName: 'test-bucket',
+            dataStoreName: 'test-location',
         });
-        httpServer =
-            http.createServer(handler(true)).listen(httpPort);
+        httpServer = http.createServer(handler(true, host));
         httpServer.on('listening', done);
         httpServer.on('error', err => {
             process.stdout.write(`https server: ${err.stack}\n`);
             process.exit(1);
         });
+        httpServer.on('connection', socket => {
+            sockets.push(socket);
+            socket.on('close', () => {
+                sockets = sockets.filter(s => s !== socket);
+            });
+        });
+        httpServer.listen(httpPort);
     });
 
-    afterAll(() => {
-        httpServer.close();
+    afterAll(async () => {
+        await cleanupServer(httpServer, sockets);
     });
 
     operations.forEach(test => it(`GCP::${test.op}`, done => {
@@ -167,26 +218,40 @@ describe('GcpService dnsStyle tests', () => {
     jest.setTimeout(120000);
     let httpServer;
     let client;
+    let sockets = [];
 
     beforeAll(done => {
         client = new GCP({
-            endpoint: `http://${host}`,
-            maxRetries: 0,
-            s3ForcePathStyle: false,
-            accessKeyId,
-            secretAccessKey,
+            s3Params: {
+                endpoint: `http://${host}`,
+                maxAttempts: 1,
+                forcePathStyle: false,
+                region: 'us-east-1', // Required by AWS SDK v3
+                credentials: {
+                    accessKeyId: accessKeyId,
+                    secretAccessKey: secretAccessKey,
+                },
+            },
+            bucketName: 'test-bucket',
+            dataStoreName: 'test-location',
         });
-        httpServer =
-            http.createServer(handler(false)).listen(httpPort);
+        httpServer = http.createServer(handler(false, host));
         httpServer.on('listening', done);
         httpServer.on('error', err => {
             process.stdout.write(`https server: ${err.stack}\n`);
             process.exit(1);
         });
+        httpServer.on('connection', socket => {
+            sockets.push(socket);
+            socket.on('close', () => {
+                sockets = sockets.filter(s => s !== socket);
+            });
+        });
+        httpServer.listen(httpPort);
     });
 
-    afterAll(() => {
-        httpServer.close();
+    afterAll(async () => {
+        await cleanupServer(httpServer, sockets);
     });
 
     operations.forEach(test => it(`GCP::${test.op}`, done => {

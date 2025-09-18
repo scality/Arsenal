@@ -147,6 +147,7 @@ describe('routesUtils.responseStreamData', () => {
         type: 'aws',
     };
     let httpServer;
+    let sockets = [];
     let awsClient;
 
     beforeAll(done => {
@@ -158,36 +159,58 @@ describe('routesUtils.responseStreamData', () => {
         }).listen(8888);
         httpServer.on('listening', done);
         httpServer.on('error', err => assert.ifError(err));
+        httpServer.on('connection', socket => {
+            sockets.push(socket);
+            socket.on('close', () => {
+                sockets = sockets.filter(s => s !== socket);
+            });
+        });
     });
 
-    afterAll(() => {
-        httpServer.close();
+    afterAll(async () => {
+        if (httpServer) {
+            sockets.forEach(socket => socket.destroy());
+            await new Promise(resolve => httpServer.close(resolve));
+        }
     });
 
     it('should not leak socket if client closes the connection before ' +
-    'data backend starts streaming', done => {
-        responseStreamData(undefined, {}, {}, [{
-            key: 'foo',
-            size: 10000000,
-        }], {
-            client: awsClient,
-            implName: 'impl',
-            config: {},
-            locStorageCheckFn: () => {},
-        }, {
-            setHeader: () => {},
-            writeHead: () => {},
-            on: () => {},
-            once: () => {},
-            emit: () => {},
-            write: () => {},
-            end: () => setTimeout(() => {
-                const nOpenSockets = Object.keys(awsAgent.sockets).length;
-                assert.strictEqual(nOpenSockets, 0);
-                done();
-            }, 1000),
-            // fake a connection close from the S3 client by setting the "isclosed" flag
-            isclosed: true,
-        }, undefined, logger.newRequestLogger());
+    'data backend starts streaming', async () => {
+        await new Promise((resolve, reject) => {
+            let called = false;
+            function safeDone(err) {
+                if (!called) {
+                    called = true;
+                    if (err) reject(err);
+                    else resolve();
+                }
+            }
+            responseStreamData(undefined, {}, {}, [{
+                key: 'foo',
+                size: 10000000,
+            }], {
+                client: awsClient,
+                implName: 'impl',
+                config: {},
+                locStorageCheckFn: () => {},
+            }, {
+                setHeader: () => {},
+                writeHead: () => {},
+                on: () => {},
+                once: () => {},
+                emit: () => {},
+                write: () => {},
+                end: () => setTimeout(() => {
+                    try {
+                        const nOpenSockets = Object.keys(awsAgent.sockets).length;
+                        assert.strictEqual(nOpenSockets, 0);
+                        safeDone();
+                    } catch (err) {
+                        safeDone(err);
+                    }
+                }, 1000),
+                isclosed: true,
+            }, undefined, logger.newRequestLogger());
+        });
     });
 });

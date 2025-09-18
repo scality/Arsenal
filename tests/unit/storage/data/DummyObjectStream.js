@@ -78,6 +78,10 @@ class DummyObjectStream extends stream.Readable {
             }
         }
     }
+
+    abort() {
+        // No-op for test compatibility
+    }
 }
 
 module.exports = DummyObjectStream;
