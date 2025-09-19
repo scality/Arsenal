@@ -22,15 +22,40 @@ describe('routesUtils.isValidObjectKey', () => {
         assert.strictEqual(result.invalidPrefix, bannedStr);
     });
 
-    it('should return isValid false if object key name exceeds length of 915',
-        () => {
-            const key = 'a'.repeat(916);
-            const result = routesUtils.isValidObjectKey(key, prefixBlacklist);
-            assert.strictEqual(result.isValid, false);
-        });
-
-    it('should return isValid true for a utf8 string of byte size 915', () => {
+    it('should return isValid true for a utf8 string', () => {
         const result = routesUtils.isValidObjectKey(keyutf8, prefixBlacklist);
         assert.strictEqual(result.isValid, true);
+    });
+});
+
+describe('routesUtils.validateObjectKeyLength', () => {
+    it('should return null if object key does not exceed length of 915', () => {
+        const key = 'a'.repeat(915);
+        const error = routesUtils.validateObjectKeyLength(key);
+        assert.strictEqual(error, null);
+    });
+
+    it('should return error if object key exceeds length of 915', () => {
+        const key = 'a'.repeat(916);
+        const error = routesUtils.validateObjectKeyLength(key);
+        assert.strictEqual(error?.KeyTooLong, true);
+    });
+
+    it('should return null if object key exceeds length of 915 with byteLength disabled (set to 0)', () => {
+        const key = 'a'.repeat(916);
+        const error = routesUtils.validateObjectKeyLength(key, 0);
+        assert.strictEqual(error, null);
+    });
+
+    it('should return null if object key does not exceed custom byteLength 1024', () => {
+        const key = 'a'.repeat(1024);
+        const error = routesUtils.validateObjectKeyLength(key, 1024);
+        assert.strictEqual(error, null);
+    });
+
+    it('should return error if object key exceeds custom byteLength 1024', () => {
+        const key = 'a'.repeat(1025);
+        const error = routesUtils.validateObjectKeyLength(key, 1024);
+        assert.strictEqual(error?.KeyTooLong, true);
     });
 });
