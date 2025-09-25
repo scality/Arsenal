@@ -1,16 +1,16 @@
 import assert from 'assert';
-import { v4 as uuid } from 'uuid';
+import {v4 as uuid} from 'uuid';
 
-import { WebsiteConfiguration, WebsiteConfigurationParams } from './WebsiteConfiguration';
-import ReplicationConfiguration, { ReplicationConfigurationMetadata } from './ReplicationConfiguration';
-import LifecycleConfiguration, { LifecycleConfigurationMetadata } from './LifecycleConfiguration';
-import ObjectLockConfiguration, { ObjectLockConfigurationMetadata } from './ObjectLockConfiguration';
-import BucketPolicy, { BucketPolicyMetadata } from './BucketPolicy';
-import NotificationConfiguration, { NotificationConfigurationMetadata } from './NotificationConfiguration';
-import { ACL as OACL } from './ObjectMD';
-import { areTagsValid, BucketTag } from '../s3middleware/tagging';
-import { VeeamCapability, VeeamSOSApiSchema, VeeamSOSApiSerializable } from './Veeam';
-import { AzureInfoMetadata } from './BucketAzureInfo';
+import {WebsiteConfiguration, WebsiteConfigurationParams} from './WebsiteConfiguration';
+import ReplicationConfiguration, {ReplicationConfigurationMetadata} from './ReplicationConfiguration';
+import LifecycleConfiguration, {LifecycleConfigurationMetadata} from './LifecycleConfiguration';
+import ObjectLockConfiguration, {ObjectLockConfigurationMetadata} from './ObjectLockConfiguration';
+import BucketPolicy, {BucketPolicyMetadata} from './BucketPolicy';
+import NotificationConfiguration, {NotificationConfigurationMetadata} from './NotificationConfiguration';
+import {ACL as OACL} from './ObjectMD';
+import {areTagsValid, BucketTag} from '../s3middleware/tagging';
+import {VeeamCapability, VeeamSOSApiSchema, VeeamSOSApiSerializable} from './Veeam';
+import {AzureInfoMetadata} from './BucketAzureInfo';
 
 // WHEN UPDATING THIS NUMBER, UPDATE BucketInfoModelVersion.md CHANGELOG
 // BucketInfoModelVersion.md can be found in documentation/ at the root
@@ -50,6 +50,10 @@ export type Capabilities = {
 
 export type ACL = OACL & { WRITE: string[] }
 
+export type throttlingPolicy = {
+    maxRps?: number
+}
+
 export type BucketMetadata = {
     acl: ACL;
     name: string,
@@ -78,6 +82,7 @@ export type BucketMetadata = {
     tags: Array<BucketTag>,
     capabilities?: Capabilities,
     quotaMax: bigint | number,
+    throttlingPolicy?: throttlingPolicy,
 };
 
 export type BucketMetadataJSON = Omit<BucketMetadata, 'quotaMax' | 'capabilities'> & {
@@ -115,64 +120,66 @@ export default class BucketInfo implements BucketMetadata {
     private _ingestion?: { status: 'enabled' | 'disabled' };
     private _capabilities?: Capabilities;
     private _quotaMax: bigint;
+    private _throttlingPolicy?: throttlingPolicy;
 
     /**
-    * Represents all bucket information.
-    * @constructor
-    * @param name - bucket name
-    * @param owner - bucket owner's name
-    * @param ownerDisplayName - owner's display name
-    * @param creationDate - creation date of bucket
-    * @param mdBucketModelVersion - bucket model version
-    * @param [acl] - bucket ACLs (no need to copy
-    * ACL object since referenced object will not be used outside of
-    * BucketInfo instance)
-    * @param transient - flag indicating whether bucket is transient
-    * @param deleted - flag indicating whether attempt to delete
-    * @param serverSideEncryption - sse information for this bucket
-    * @param serverSideEncryption.cryptoScheme -
-    * cryptoScheme used
-    * @param serverSideEncryption.algorithm -
-    * algorithm to use
-    * @param serverSideEncryption.masterKeyId -
-    * key to get master key
-    * @param serverSideEncryption.configuredMasterKeyId -
-    * custom KMS key id specified by user
-    * @param serverSideEncryption.mandatory -
-    * true for mandatory encryption
-    * bucket has been made
-    * @param versioningConfiguration - versioning configuration
-    * @param versioningConfiguration.Status - versioning status
-    * @param versioningConfiguration.MfaDelete - versioning mfa delete
-    * @param locationConstraint - locationConstraint for bucket that
-    * also includes the ingestion flag
-    * @param [websiteConfiguration] - website
-    * configuration
-    * @param [cors] - collection of CORS rules to apply
-    * @param [cors[].id] - optional ID to identify rule
-    * @param cors[].allowedMethods - methods allowed for CORS request
-    * @param cors[].allowedOrigins - origins allowed for CORS request
-    * @param [cors[].allowedHeaders] - headers allowed in an OPTIONS
-    * request via the Access-Control-Request-Headers header
-    * @param [cors[].maxAgeSeconds] - seconds browsers should cache
-    * OPTIONS response
-    * @param [cors[].exposeHeaders] - headers expose to applications
-    * @param [replicationConfiguration] - replication configuration
-    * @param [lifecycleConfiguration] - lifecycle configuration
-    * @param [bucketPolicy] - bucket policy
-    * @param [uid] - unique identifier for the bucket, necessary
-    * @param readLocationConstraint - readLocationConstraint for bucket
-    * addition for use with lifecycle operations
-    * @param [isNFS] - whether the bucket is on NFS
-    * @param [ingestionConfig] - object for ingestion status: en/dis
-    * @param [azureInfo] - Azure storage account specific info
-    * @param [objectLockEnabled] - true when object lock enabled
-    * @param [objectLockConfiguration] - object lock configuration
-    * @param [notificationConfiguration] - bucket notification configuration
-    * @param [tags] - bucket tag set
-    * @param [capabilities] - capabilities for the bucket
-    * @param quotaMax - bucket quota
-    */
+     * Represents all bucket information.
+     * @constructor
+     * @param name - bucket name
+     * @param owner - bucket owner's name
+     * @param ownerDisplayName - owner's display name
+     * @param creationDate - creation date of bucket
+     * @param mdBucketModelVersion - bucket model version
+     * @param [acl] - bucket ACLs (no need to copy
+     * ACL object since referenced object will not be used outside of
+     * BucketInfo instance)
+     * @param transient - flag indicating whether bucket is transient
+     * @param deleted - flag indicating whether attempt to delete
+     * @param serverSideEncryption - sse information for this bucket
+     * @param serverSideEncryption.cryptoScheme -
+     * cryptoScheme used
+     * @param serverSideEncryption.algorithm -
+     * algorithm to use
+     * @param serverSideEncryption.masterKeyId -
+     * key to get master key
+     * @param serverSideEncryption.configuredMasterKeyId -
+     * custom KMS key id specified by user
+     * @param serverSideEncryption.mandatory -
+     * true for mandatory encryption
+     * bucket has been made
+     * @param versioningConfiguration - versioning configuration
+     * @param versioningConfiguration.Status - versioning status
+     * @param versioningConfiguration.MfaDelete - versioning mfa delete
+     * @param locationConstraint - locationConstraint for bucket that
+     * also includes the ingestion flag
+     * @param [websiteConfiguration] - website
+     * configuration
+     * @param [cors] - collection of CORS rules to apply
+     * @param [cors[].id] - optional ID to identify rule
+     * @param cors[].allowedMethods - methods allowed for CORS request
+     * @param cors[].allowedOrigins - origins allowed for CORS request
+     * @param [cors[].allowedHeaders] - headers allowed in an OPTIONS
+     * request via the Access-Control-Request-Headers header
+     * @param [cors[].maxAgeSeconds] - seconds browsers should cache
+     * OPTIONS response
+     * @param [cors[].exposeHeaders] - headers expose to applications
+     * @param [replicationConfiguration] - replication configuration
+     * @param [lifecycleConfiguration] - lifecycle configuration
+     * @param [bucketPolicy] - bucket policy
+     * @param [uid] - unique identifier for the bucket, necessary
+     * @param readLocationConstraint - readLocationConstraint for bucket
+     * addition for use with lifecycle operations
+     * @param [isNFS] - whether the bucket is on NFS
+     * @param [ingestionConfig] - object for ingestion status: en/dis
+     * @param [azureInfo] - Azure storage account specific info
+     * @param [objectLockEnabled] - true when object lock enabled
+     * @param [objectLockConfiguration] - object lock configuration
+     * @param [notificationConfiguration] - bucket notification configuration
+     * @param [tags] - bucket tag set
+     * @param [capabilities] - capabilities for the bucket
+     * @param quotaMax - bucket quota
+     * @param throttlingPolicy - bucket throttling configuration
+     */
     constructor(
         name: string,
         owner: string,
@@ -201,6 +208,7 @@ export default class BucketInfo implements BucketMetadata {
         tags?: Array<BucketTag> | [],
         capabilities?: Capabilities,
         quotaMax?: bigint | number,
+        throttlingPolicy?: throttlingPolicy,
     ) {
         assert.strictEqual(typeof name, 'string');
         assert.strictEqual(typeof owner, 'string');
@@ -219,12 +227,14 @@ export default class BucketInfo implements BucketMetadata {
         }
         if (serverSideEncryption) {
             assert.strictEqual(typeof serverSideEncryption, 'object');
-            const { cryptoScheme, algorithm, masterKeyId,
-                configuredMasterKeyId, mandatory } = serverSideEncryption;
+            const {
+                cryptoScheme, algorithm, masterKeyId,
+                configuredMasterKeyId, mandatory
+            } = serverSideEncryption;
             assert.strictEqual(typeof cryptoScheme, 'number');
             assert.strictEqual(typeof algorithm, 'string');
             assert.strictEqual(typeof mandatory, 'boolean');
-            assert.ok(masterKeyId !== undefined || configuredMasterKeyId !== undefined, 
+            assert.ok(masterKeyId !== undefined || configuredMasterKeyId !== undefined,
                 'At least one of masterKeyId or configuredMasterKeyId must be defined');
             if (masterKeyId !== undefined) {
                 assert.strictEqual(typeof masterKeyId, 'string', 'masterKeyId must be a string');
@@ -235,7 +245,7 @@ export default class BucketInfo implements BucketMetadata {
         }
         if (versioningConfiguration) {
             assert.strictEqual(typeof versioningConfiguration, 'object');
-            const { Status, MfaDelete } = versioningConfiguration;
+            const {Status, MfaDelete} = versioningConfiguration;
             assert(Status === undefined ||
                 Status === 'Enabled' ||
                 Status === 'Suspended');
@@ -359,8 +369,14 @@ export default class BucketInfo implements BucketMetadata {
             VeeamSOSApi: capabilities.VeeamSOSApi &&
                 VeeamCapability.toBigInt(capabilities.VeeamSOSApi),
         };
-    
+
         this._quotaMax = BigInt(quotaMax || 0n);
+
+        if (throttlingPolicy) {
+            assert(throttlingPolicy.maxRps === undefined || typeof throttlingPolicy.maxRps === 'number');
+            this._throttlingPolicy = throttlingPolicy;
+        }
+
         return this;
     }
 
@@ -401,6 +417,7 @@ export default class BucketInfo implements BucketMetadata {
                     VeeamCapability.serialize(this._capabilities.VeeamSOSApi),
             },
             quotaMax: this._quotaMax.toString(),
+            throttlingPolicy: this._throttlingPolicy,
         };
         const final = this._websiteConfiguration
             ? {
@@ -441,7 +458,7 @@ export default class BucketInfo implements BucketMetadata {
             obj.bucketPolicy, obj.uid, obj.readLocationConstraint, obj.isNFS,
             obj.ingestion, obj.azureInfo, obj.objectLockEnabled,
             obj.objectLockConfiguration, obj.notificationConfiguration, obj.tags,
-            capabilities, BigInt(obj.quotaMax || 0n));
+            capabilities, BigInt(obj.quotaMax || 0n), obj.throttlingPolicy);
     }
 
     /**
@@ -474,7 +491,7 @@ export default class BucketInfo implements BucketMetadata {
             data._isNFS, data._ingestion, data._azureInfo,
             data._objectLockEnabled, data._objectLockConfiguration,
             data._notificationConfiguration, data._tags, capabilities,
-            BigInt(data._quotaMax || 0n));
+            BigInt(data._quotaMax || 0n), data._throttlingPolicy);
     }
 
     /**
@@ -497,44 +514,49 @@ export default class BucketInfo implements BucketMetadata {
                 ...data.capabilities,
                 VeeamSOSApi: data.capabilities?.VeeamSOSApi &&
                     VeeamCapability.parse(data.capabilities?.VeeamSOSApi),
-            }, BigInt(data.quotaMax || 0n));
+            }, BigInt(data.quotaMax || 0n), data.throttlingPolicy,
+        );
     }
 
     /**
-    * Get the ACLs.
-    * @return acl
-    */
+     * Get the ACLs.
+     * @return acl
+     */
     getAcl() {
         return this._acl;
     }
+
     /**
-    * Set the canned acl's.
-    * @param cannedACL - canned ACL being set
-    * @return - bucket info instance
-    */
+     * Set the canned acl's.
+     * @param cannedACL - canned ACL being set
+     * @return - bucket info instance
+     */
     setCannedAcl(cannedACL: string) {
         this._acl.Canned = cannedACL;
         return this;
     }
+
     /**
-    * Set a specific ACL.
-    * @param canonicalID - id for account being given access
-    * @param typeOfGrant - type of grant being granted
-    * @return - bucket info instance
-    */
+     * Set a specific ACL.
+     * @param canonicalID - id for account being given access
+     * @param typeOfGrant - type of grant being granted
+     * @return - bucket info instance
+     */
     setSpecificAcl(canonicalID: string, typeOfGrant: string) {
         this._acl[typeOfGrant].push(canonicalID);
         return this;
     }
+
     /**
-    * Set all ACLs.
-    * @param acl - new set of ACLs
-    * @return - bucket info instance
-    */
+     * Set all ACLs.
+     * @param acl - new set of ACLs
+     * @return - bucket info instance
+     */
     setFullAcl(acl: ACL) {
         this._acl = acl;
         return this;
     }
+
     /**
      * Get the server side encryption information
      * @return serverSideEncryption
@@ -542,6 +564,7 @@ export default class BucketInfo implements BucketMetadata {
     getServerSideEncryption() {
         return this._serverSideEncryption;
     }
+
     /**
      * Set server side encryption information
      * @param serverSideEncryption - server side encryption information
@@ -551,6 +574,7 @@ export default class BucketInfo implements BucketMetadata {
         this._serverSideEncryption = serverSideEncryption;
         return this;
     }
+
     /**
      * Get the versioning configuration information
      * @return versioningConfiguration
@@ -558,6 +582,7 @@ export default class BucketInfo implements BucketMetadata {
     getVersioningConfiguration() {
         return this._versioningConfiguration;
     }
+
     /**
      * Set versioning configuration information
      * @param versioningConfiguration - versioning information
@@ -567,6 +592,7 @@ export default class BucketInfo implements BucketMetadata {
         this._versioningConfiguration = versioningConfiguration;
         return this;
     }
+
     /**
      * Check that versioning is 'Enabled' on the given bucket.
      * @return - `true` if versioning is 'Enabled', otherwise `false`
@@ -575,6 +601,7 @@ export default class BucketInfo implements BucketMetadata {
         const versioningConfig = this.getVersioningConfiguration();
         return versioningConfig ? versioningConfig.Status === 'Enabled' : false;
     }
+
     /**
      * Get the website configuration information
      * @return websiteConfiguration
@@ -582,6 +609,7 @@ export default class BucketInfo implements BucketMetadata {
     getWebsiteConfiguration() {
         return this._websiteConfiguration;
     }
+
     /**
      * Set website configuration information
      * @param websiteConfiguration - configuration for bucket website
@@ -591,6 +619,7 @@ export default class BucketInfo implements BucketMetadata {
         this._websiteConfiguration = websiteConfiguration;
         return this;
     }
+
     /**
      * Set replication configuration information
      * @param replicationConfiguration - replication information
@@ -600,6 +629,7 @@ export default class BucketInfo implements BucketMetadata {
         this._replicationConfiguration = replicationConfiguration;
         return this;
     }
+
     /**
      * Get replication configuration information
      * @return replication configuration information or `null` if
@@ -608,6 +638,7 @@ export default class BucketInfo implements BucketMetadata {
     getReplicationConfiguration() {
         return this._replicationConfiguration;
     }
+
     /**
      * Get lifecycle configuration information
      * @return lifecycle configuration information or `null` if
@@ -616,6 +647,7 @@ export default class BucketInfo implements BucketMetadata {
     getLifecycleConfiguration() {
         return this._lifecycleConfiguration;
     }
+
     /**
      * Set lifecycle configuration information
      * @param lifecycleConfiguration - lifecycle information
@@ -625,6 +657,7 @@ export default class BucketInfo implements BucketMetadata {
         this._lifecycleConfiguration = lifecycleConfiguration;
         return this;
     }
+
     /**
      * Get bucket policy statement
      * @return bucket policy statement or `null` if the bucket
@@ -633,6 +666,7 @@ export default class BucketInfo implements BucketMetadata {
     getBucketPolicy() {
         return this._bucketPolicy;
     }
+
     /**
      * Set bucket policy statement
      * @param bucketPolicy - bucket policy
@@ -642,6 +676,7 @@ export default class BucketInfo implements BucketMetadata {
         this._bucketPolicy = bucketPolicy;
         return this;
     }
+
     /**
      * Get object lock configuration
      * @return object lock configuration information or `null` if
@@ -650,6 +685,7 @@ export default class BucketInfo implements BucketMetadata {
     getObjectLockConfiguration() {
         return this._objectLockConfiguration;
     }
+
     /**
      * Set object lock configuration
      * @param objectLockConfiguration - object lock information
@@ -659,6 +695,7 @@ export default class BucketInfo implements BucketMetadata {
         this._objectLockConfiguration = objectLockConfiguration;
         return this;
     }
+
     /**
      * Get notification configuration
      * @return notification configuration information or 'null' if
@@ -667,6 +704,7 @@ export default class BucketInfo implements BucketMetadata {
     getNotificationConfiguration() {
         return this._notificationConfiguration;
     }
+
     /**
      * Set notification configuraiton
      * @param notificationConfiguration - bucket notification information
@@ -676,6 +714,7 @@ export default class BucketInfo implements BucketMetadata {
         this._notificationConfiguration = notificationConfiguration;
         return this;
     }
+
     /**
      * Get cors resource
      * @return cors
@@ -683,6 +722,7 @@ export default class BucketInfo implements BucketMetadata {
     getCors() {
         return this._cors;
     }
+
     /**
      * Set cors resource
      * @param rules - collection of CORS rules
@@ -701,6 +741,7 @@ export default class BucketInfo implements BucketMetadata {
         this._cors = rules;
         return this;
     }
+
     /**
      * get the serverside encryption algorithm
      * @return - sse algorithm used by this bucket
@@ -711,6 +752,7 @@ export default class BucketInfo implements BucketMetadata {
         }
         return this._serverSideEncryption.algorithm;
     }
+
     /**
      * get the server side encryption master key Id
      * @return -  sse master key Id used by this bucket
@@ -724,9 +766,9 @@ export default class BucketInfo implements BucketMetadata {
 
     /**
      * Checks if the default encryption is set at the account level instead of the legacy bucket level.
-     * This method helps to prevent deletion of the account-level master encryption key when deleting buckets. 
+     * This method helps to prevent deletion of the account-level master encryption key when deleting buckets.
      *
-     * @returns {boolean} - Returns true if account-level default encryption is enabled, 
+     * @returns {boolean} - Returns true if account-level default encryption is enabled,
      * false if it uses the legacy bucket level.
      */
     isAccountEncryptionEnabled() {
@@ -736,83 +778,91 @@ export default class BucketInfo implements BucketMetadata {
 
         return this._serverSideEncryption.isAccountEncryptionEnabled;
     }
+
     /**
-    * Get bucket name.
-    * @return - bucket name
-    */
+     * Get bucket name.
+     * @return - bucket name
+     */
     getName() {
         return this._name;
     }
+
     /**
-    * Set bucket name.
-    * @param bucketName - new bucket name
-    * @return - bucket info instance
-    */
+     * Set bucket name.
+     * @param bucketName - new bucket name
+     * @return - bucket info instance
+     */
     setName(bucketName: string) {
         this._name = bucketName;
         return this;
     }
+
     /**
-    * Get bucket owner.
-    * @return - bucket owner's canonicalID
-    */
+     * Get bucket owner.
+     * @return - bucket owner's canonicalID
+     */
     getOwner() {
         return this._owner;
     }
+
     /**
-    * Set bucket owner.
-    * @param ownerCanonicalID - bucket owner canonicalID
-    * @return - bucket info instance
-    */
+     * Set bucket owner.
+     * @param ownerCanonicalID - bucket owner canonicalID
+     * @return - bucket info instance
+     */
     setOwner(ownerCanonicalID: string) {
         this._owner = ownerCanonicalID;
         return this;
     }
+
     /**
-    * Get bucket owner display name.
-    * @return - bucket owner dispaly name
-    */
+     * Get bucket owner display name.
+     * @return - bucket owner dispaly name
+     */
     getOwnerDisplayName() {
         return this._ownerDisplayName;
     }
+
     /**
-    * Set bucket owner display name.
-    * @param ownerDisplayName - bucket owner display name
-    * @return - bucket info instance
-    */
+     * Set bucket owner display name.
+     * @param ownerDisplayName - bucket owner display name
+     * @return - bucket info instance
+     */
     setOwnerDisplayName(ownerDisplayName: string) {
         this._ownerDisplayName = ownerDisplayName;
         return this;
     }
+
     /**
-    * Get bucket creation date.
-    * @return - bucket creation date
-    */
+     * Get bucket creation date.
+     * @return - bucket creation date
+     */
     getCreationDate() {
         return this._creationDate;
     }
+
     /**
-    * Set location constraint.
-    * @param location - bucket location constraint
-    * @return - bucket info instance
-    */
+     * Set location constraint.
+     * @param location - bucket location constraint
+     * @return - bucket info instance
+     */
     setLocationConstraint(location: string) {
         this._locationConstraint = location;
         return this;
     }
 
     /**
-    * Get location constraint.
-    * @return - bucket location constraint
-    */
+     * Get location constraint.
+     * @return - bucket location constraint
+     */
     getLocationConstraint() {
         return this._locationConstraint;
     }
 
     /**
-    * Get read location constraint.
-    * @return - bucket read location constraint
-    */
+     * Get read location constraint.
+     * @return - bucket read location constraint
+     */
     getReadLocationConstraint() {
         if (this._readLocationConstraint) {
             return this._readLocationConstraint;
@@ -830,6 +880,7 @@ export default class BucketInfo implements BucketMetadata {
         this._mdBucketModelVersion = version;
         return this;
     }
+
     /**
      * Get Bucket model version
      *
@@ -838,52 +889,59 @@ export default class BucketInfo implements BucketMetadata {
     getMdBucketModelVersion() {
         return this._mdBucketModelVersion;
     }
+
     /**
-    * Add transient flag.
-    * @return - bucket info instance
-    */
+     * Add transient flag.
+     * @return - bucket info instance
+     */
     addTransientFlag() {
         this._transient = true;
         return this;
     }
+
     /**
-    * Remove transient flag.
-    * @return - bucket info instance
-    */
+     * Remove transient flag.
+     * @return - bucket info instance
+     */
     removeTransientFlag() {
         this._transient = false;
         return this;
     }
+
     /**
-    * Check transient flag.
-    * @return - depending on whether transient flag in place
-    */
+     * Check transient flag.
+     * @return - depending on whether transient flag in place
+     */
     hasTransientFlag() {
         return !!this._transient;
     }
+
     /**
-    * Add deleted flag.
-    * @return - bucket info instance
-    */
+     * Add deleted flag.
+     * @return - bucket info instance
+     */
     addDeletedFlag() {
         this._deleted = true;
         return this;
     }
+
     /**
-    * Remove deleted flag.
-    * @return - bucket info instance
-    */
+     * Remove deleted flag.
+     * @return - bucket info instance
+     */
     removeDeletedFlag() {
         this._deleted = false;
         return this;
     }
+
     /**
-    * Check deleted flag.
-    * @return - depending on whether deleted flag in place
-    */
+     * Check deleted flag.
+     * @return - depending on whether deleted flag in place
+     */
     hasDeletedFlag() {
         return !!this._deleted;
     }
+
     /**
      * Check if the versioning mode is on.
      * @return - versioning mode status
@@ -892,6 +950,7 @@ export default class BucketInfo implements BucketMetadata {
         return this._versioningConfiguration &&
             this._versioningConfiguration.Status === 'Enabled';
     }
+
     /**
      * Get unique id of bucket.
      * @return - unique id
@@ -899,6 +958,7 @@ export default class BucketInfo implements BucketMetadata {
     getUid() {
         return this._uid;
     }
+
     /**
      * Set unique id of bucket.
      * @param uid - unique identifier for the bucket
@@ -908,6 +968,7 @@ export default class BucketInfo implements BucketMetadata {
         this._uid = uid;
         return this;
     }
+
     /**
      * Check if the bucket is an NFS bucket.
      * @return - Wether the bucket is NFS or not
@@ -917,6 +978,7 @@ export default class BucketInfo implements BucketMetadata {
     isNFS() {
         return this._isNFS;
     }
+
     /**
      * Set whether the bucket is an NFS bucket.
      * @param isNFS - Wether the bucket is NFS or not
@@ -926,22 +988,25 @@ export default class BucketInfo implements BucketMetadata {
         this._isNFS = isNFS;
         return this;
     }
+
     /**
      * enable ingestion, set 'this._ingestion' to { status: 'enabled' }
      * @return - bucket info instance
      */
     enableIngestion() {
-        this._ingestion = { status: 'enabled' };
+        this._ingestion = {status: 'enabled'};
         return this;
     }
+
     /**
      * disable ingestion, set 'this._ingestion' to { status: 'disabled' }
      * @return - bucket info instance
      */
     disableIngestion() {
-        this._ingestion = { status: 'disabled' };
+        this._ingestion = {status: 'disabled'};
         return this;
     }
+
     /**
      * Get ingestion configuration
      * @return - bucket ingestion configuration: Enabled or Disabled
@@ -962,6 +1027,7 @@ export default class BucketInfo implements BucketMetadata {
         }
         return false;
     }
+
     /**
      * Check if ingestion is enabled
      * @return - 'true' if ingestion is enabled, otherwise 'false'
@@ -979,6 +1045,7 @@ export default class BucketInfo implements BucketMetadata {
     getAzureInfo() {
         return this._azureInfo;
     }
+
     /**
      * Set the Azure specific storage account information for this bucket
      * @param azureInfo - a structure suitable for
@@ -989,18 +1056,20 @@ export default class BucketInfo implements BucketMetadata {
         this._azureInfo = azureInfo;
         return this;
     }
+
     /**
-    * Check if object lock is enabled.
-    * @return - depending on whether object lock is enabled
-    */
+     * Check if object lock is enabled.
+     * @return - depending on whether object lock is enabled
+     */
     isObjectLockEnabled() {
         return !!this._objectLockEnabled;
     }
+
     /**
-    * Set the value of objectLockEnabled field.
-    * @param enabled - true if object lock enabled else false.
-    * @return - bucket info instance
-    */
+     * Set the value of objectLockEnabled field.
+     * @param enabled - true if object lock enabled else false.
+     * @return - bucket info instance
+     */
     setObjectLockEnabled(enabled: boolean) {
         this._objectLockEnabled = enabled;
         return this;
@@ -1013,7 +1082,7 @@ export default class BucketInfo implements BucketMetadata {
     getTags() {
         return this._tags;
     }
-    
+
     /**
      * Set bucket tags
      * @return - bucket info instance
@@ -1033,17 +1102,17 @@ export default class BucketInfo implements BucketMetadata {
 
     /**
      * Get a specific bucket capability
-     * 
+     *
      * @param capability? - if provided, will return a specific capacity
      * @return - capability of the bucket
      */
-    getCapability(capability: string) : Capabilities[keyof Capabilities] | undefined {
+    getCapability(capability: string): Capabilities[keyof Capabilities] | undefined {
         if (capability && this._capabilities && this._capabilities[capability]) {
             return this._capabilities[capability];
         }
         return undefined;
     }
-    
+
     /**
      * Set bucket capabilities
      * @return - bucket info instance
@@ -1060,7 +1129,7 @@ export default class BucketInfo implements BucketMetadata {
     getQuota() {
         return this._quotaMax;
     }
-    
+
     /**
      * Set bucket quota
      * @param quota - quota to be set
@@ -1069,5 +1138,25 @@ export default class BucketInfo implements BucketMetadata {
     setQuota(quota: bigint | number) {
         this._quotaMax = BigInt(quota || 0n);
         return this;
+    }
+
+    getThrottlingPolicy() {
+        return this._throttlingPolicy;
+    }
+
+    setThrottlingMaxRps(rps: number) {
+        assert(Number.isInteger(rps) && rps >= 0);
+
+        if (this._throttlingPolicy === undefined) {
+            this._throttlingPolicy = {};
+        }
+
+        this._throttlingPolicy.maxRps = rps;
+    }
+
+    removeThrotllingMaxRps() {
+        if (this._throttlingPolicy !== undefined) {
+            delete this._throttlingPolicy.maxRps;
+        }
     }
 }
