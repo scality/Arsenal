@@ -202,8 +202,10 @@ export class DelimiterVersions extends Extension {
      * @return {Boolean} - indicates if the iteration has to stop
      */
     _reachedMaxKeys(): boolean {
+        console.log(`[DELIMITER_DEBUG] _reachedMaxKeys: keys=${this.keys}, maxKeys=${this.maxKeys}, reached=${this.keys >= this.maxKeys}`);
         if (this.keys >= this.maxKeys) {
             // In cases of maxKeys <= 0 -> IsTruncated = false
+            console.log(`[DELIMITER_DEBUG] _reachedMaxKeys: setting IsTruncated=${this.maxKeys > 0}`);
             this.IsTruncated = this.maxKeys > 0;
             return true;
         }
@@ -290,6 +292,7 @@ export class DelimiterVersions extends Extension {
         this.nextKeyMarker = key;
         this.nextVersionIdMarker = versionId;
         ++this.keys;
+        console.log(`[DELIMITER_DEBUG] addVersion: key="${key}", versionId="${versionId}", keys=${this.keys}, maxKeys=${this.maxKeys}`);
     }
 
     getCommonPrefix(key: string): string | undefined {
@@ -318,6 +321,7 @@ export class DelimiterVersions extends Extension {
         // add the new prefix to the list
         this.CommonPrefixes.push(commonPrefix);
         ++this.keys;
+        console.log(`[DELIMITER_DEBUG] addCommonPrefix: commonPrefix="${commonPrefix}", keys=${this.keys}, maxKeys=${this.maxKeys}`);
         this.nextKeyMarker = commonPrefix;
         this.nextVersionIdMarker = undefined;
     }
