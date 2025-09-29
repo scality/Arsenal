@@ -2278,6 +2278,7 @@ class MongoClientInterface {
         }
         const gteParams = params.secondaryStreamParams ?
             [params.mainStreamParams.gte, params.secondaryStreamParams.gte] : params.mainStreamParams.gte;
+        console.log(`[MONGO_DEBUG] Creating Skip with gteParams=${JSON.stringify(gteParams)}, secondaryStreamParams=${!!params.secondaryStreamParams}`);
         const skip = new Skip({
             extension,
             gte: gteParams,
@@ -2286,6 +2287,7 @@ class MongoClientInterface {
             stream.emit('end');
         });
         skip.setSkipRangeCb(range => {
+            console.log(`[MONGO_DEBUG] skipRangeCb called with range=${JSON.stringify(range)}`);
             // stop listing this key range
             cleanupStreams();
 
@@ -2295,12 +2297,15 @@ class MongoClientInterface {
             newParams.gt = undefined;
 
             if (newParams.secondaryStreamParams) {
+                console.log(`[MONGO_DEBUG] Updating dual stream params: main=${range[0]}, secondary=${range[1]}`);
                 newParams.mainStreamParams.gte = range[0];
                 newParams.secondaryStreamParams.gte = range[1];
             } else {
+                console.log(`[MONGO_DEBUG] Updating single stream params: gte=${range}`);
                 newParams.mainStreamParams.gte = range;
             }
             // then continue listing the next key range
+            console.log(`[MONGO_DEBUG] Recursively calling internalListObject with new params`);
             this.internalListObject(bucketName, newParams, extension, vFormat, log, cbOnce);
         });
         stream
@@ -2347,6 +2352,7 @@ class MongoClientInterface {
                 return cb(err);
             }
             const extName = params.listingType;
+            console.log(`[MONGO_DEBUG] listObject: bucket=${bucketName}, listingType=${extName}, vFormat=${vFormat}`);
             // extention here can either be DelimiterMaster ot DelimiterVersions
             const extension = new listAlgos[extName](params, log, vFormat);
             // the params returned depend on the vFormat as well as the algorithm used
@@ -2355,6 +2361,7 @@ class MongoClientInterface {
             // in v1 however it returns two objects containing filters to use for two separate
             // listing streams (master and version)
             const extensionParams = extension.genMDParams();
+            console.log(`[MONGO_DEBUG] listObject: extensionParams=${JSON.stringify(extensionParams)}, isArray=${Array.isArray(extensionParams)}`);
             const internalParams = {
                 mainStreamParams: Array.isArray(extensionParams) ? extensionParams[0] : extensionParams,
                 secondaryStreamParams: Array.isArray(extensionParams) ? extensionParams[1] : null,
@@ -2393,8 +2400,17 @@ class MongoClientInterface {
             const extensionParams = extension.genMDParams();
 
             const internalParams = {
-                mainStreamParams: Array.isArray(extensionParams) ? extensionParams[0] : extensionParams,
-                secondaryStreamParams: Array.isArray(extensionParams) ? extensionParams[1] : null,
+                mainStreamParams: Array.isArray(extensionParams) ? {
+                    ...extensionParams[0],
+                    limit: extension.maxKeys
+                } : {
+                    ...extensionParams,
+                    limit: extension.maxKeys
+                },
+                secondaryStreamParams: Array.isArray(extensionParams) ? {
+                    ...extensionParams[1],
+                    limit: extension.maxKeys
+                } : null,
             };
 
             return this.internalListObject(bucketName, internalParams, extension, vFormat, log, cb);
@@ -2424,7 +2440,10 @@ class MongoClientInterface {
         const extension = new listAlgos[extName](params, log);
         const extensionParams = extension.genMDParams();
         const internalParams = {
-            mainStreamParams: extensionParams,
+            mainStreamParams: {
+                ...extensionParams,
+                limit: extension.maxKeys
+            },
             mongifiedSearch: params.mongifiedSearch,
         };
         return this.internalListObject(bucketName, internalParams, extension,

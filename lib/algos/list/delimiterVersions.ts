@@ -82,6 +82,8 @@ export class DelimiterVersions extends Extension {
         // specific to version listing
         this.keyMarker = parameters.keyMarker;
         this.versionIdMarker = parameters.versionIdMarker;
+        
+        console.log(`[DELIMITER_DEBUG] DelimiterVersions constructor: delimiter="${this.delimiter}", prefix="${this.prefix}", maxKeys=${this.maxKeys}, keyMarker="${this.keyMarker}", versionIdMarker="${this.versionIdMarker}", vFormat=${vFormat}`);
         // internal state
         this.masterKey = undefined;
         this.masterVersionId = undefined;
@@ -254,7 +256,9 @@ export class DelimiterVersions extends Extension {
     addKey(key: string, versionId: string, value: string) {
         // add the subprefix to the common prefixes if the key has the delimiter
         const commonPrefix = this.getCommonPrefix(key);
+        console.log(`[DELIMITER_DEBUG] addKey: key="${key}", versionId="${versionId}", commonPrefix="${commonPrefix}", delimiter="${this.delimiter}"`);
         if (commonPrefix) {
+            console.log(`[DELIMITER_DEBUG] Found common prefix "${commonPrefix}", transitioning to SkippingPrefix state`);
             this.addCommonPrefix(commonPrefix);
             // transition into SkippingPrefix state to skip all following keys
             // while they start with the same prefix
@@ -263,6 +267,7 @@ export class DelimiterVersions extends Extension {
                 prefix: commonPrefix,
             });
         } else {
+            console.log(`[DELIMITER_DEBUG] No common prefix, adding version directly`);
             this.addVersion(key, versionId, value);
         }
     }
@@ -289,14 +294,19 @@ export class DelimiterVersions extends Extension {
 
     getCommonPrefix(key: string): string | undefined {
         if (!this.delimiter) {
+            console.log(`[DELIMITER_DEBUG] getCommonPrefix: no delimiter, returning undefined`);
             return undefined;
         }
         const baseIndex = this.prefix ? this.prefix.length : 0;
         const delimiterIndex = key.indexOf(this.delimiter, baseIndex);
+        console.log(`[DELIMITER_DEBUG] getCommonPrefix: key="${key}", delimiter="${this.delimiter}", baseIndex=${baseIndex}, delimiterIndex=${delimiterIndex}`);
         if (delimiterIndex === -1) {
+            console.log(`[DELIMITER_DEBUG] getCommonPrefix: delimiter not found, returning undefined`);
             return undefined;
         }
-        return key.substring(0, delimiterIndex + this.delimiter.length);
+        const result = key.substring(0, delimiterIndex + this.delimiter.length);
+        console.log(`[DELIMITER_DEBUG] getCommonPrefix: returning "${result}"`);
+        return result;
     }
 
     /**
@@ -424,9 +434,12 @@ export class DelimiterVersions extends Extension {
 
     keyHandler_SkippingPrefix(key: string, versionId: string | undefined, value: string): FilterReturnValue {
         const { prefix } = <DelimiterVersionsFilterState_SkippingPrefix> this.state;
+        console.log(`[DELIMITER_DEBUG] SkippingPrefix: key="${key}", prefix="${prefix}", startsWith=${key.startsWith(prefix)}`);
         if (key.startsWith(prefix)) {
+            console.log(`[DELIMITER_DEBUG] SkippingPrefix: FILTER_SKIP for key="${key}"`);
             return FILTER_SKIP;
         }
+        console.log(`[DELIMITER_DEBUG] SkippingPrefix: key doesn't start with prefix, transitioning to NotSkipping`);
         this.setState(<DelimiterVersionsFilterState_NotSkipping> {
             id: DelimiterVersionsFilterStateId.NotSkipping,
         });
@@ -454,10 +467,13 @@ export class DelimiterVersions extends Extension {
     }
 
     skippingBase(): string | undefined {
+        console.log(`[DELIMITER_DEBUG] skippingBase: state.id=${this.state.id}`);
         switch (this.state.id) {
         case DelimiterVersionsFilterStateId.SkippingPrefix: {
             const { prefix } = <DelimiterVersionsFilterState_SkippingPrefix> this.state;
-            return inc(prefix);
+            const skipTo = inc(prefix);
+            console.log(`[DELIMITER_DEBUG] SkippingPrefix: prefix="${prefix}", skipTo="${skipTo}"`);
+            return skipTo;
         }
 
         case DelimiterVersionsFilterStateId.SkippingVersions: {
@@ -465,10 +481,13 @@ export class DelimiterVersions extends Extension {
             // the contract of skipping() is to return the first key
             // that can be skipped to, so adding a null byte to skip
             // over the existing versioned key set in 'gt'
-            return `${gt}\0`;
+            const skipTo = `${gt}\0`;
+            console.log(`[DELIMITER_DEBUG] SkippingVersions: gt="${gt}", skipTo="${skipTo}"`);
+            return skipTo;
         }
 
         default:
+            console.log(`[DELIMITER_DEBUG] skippingBase: returning SKIP_NONE`);
             return SKIP_NONE;
         }
     }
@@ -479,14 +498,18 @@ export class DelimiterVersions extends Extension {
 
     skippingV1() {
         const skipTo = this.skippingBase();
+        console.log(`[DELIMITER_DEBUG] skippingV1: skipTo="${skipTo}"`);
         if (skipTo === SKIP_NONE) {
+            console.log(`[DELIMITER_DEBUG] skippingV1: returning SKIP_NONE`);
             return SKIP_NONE;
         }
         // skip to the same object key in both M and V range listings
-        return [
+        const result = [
             `${DbPrefixes.Master}${skipTo}`,
             `${DbPrefixes.Version}${skipTo}`,
         ];
+        console.log(`[DELIMITER_DEBUG] skippingV1: returning array=${JSON.stringify(result)}`);
+        return result;
     }
 
     /**
