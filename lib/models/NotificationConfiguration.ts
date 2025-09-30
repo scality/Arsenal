@@ -97,6 +97,37 @@ export default class NotificationConfiguration {
     }
 
     /**
+     * Should be called once at configuration time when supported lifecycle rules are parsed
+     * @param supportedLifecycleRules - supported lifecycle rules from configuration
+     */
+    public static restrictSupportedNotificationBasedOnLifecycle(supportedLifecycleRules: string[]) {
+        // We consider cold storage & restore supported if Transition lifecycle rule is supported.
+        // In our implementation, it's the only way to move objects to cold storage (can't write directly to cold)
+        // Even if Transition could be used without cold storage location (hot transition), but both features are
+        // enabled together at the moment.
+        if (!supportedLifecycleRules.some(rule => rule.endsWith('Transition'))) {
+            [
+                's3:ObjectRestore:*',
+                's3:ObjectRestore:Post',
+                's3:ObjectRestore:Completed',
+                's3:ObjectRestore:Delete',
+                's3:LifecycleTransition',
+            ].forEach(event => {
+                supportedNotificationEvents.delete(event);
+            });
+        }
+        if (!supportedLifecycleRules.some(rule => rule.endsWith('Expiration'))) {
+            [
+                's3:LifecycleExpiration:*',
+                's3:LifecycleExpiration:DeleteMarkerCreated',
+                's3:LifecycleExpiration:Delete',
+            ].forEach(event => {
+                supportedNotificationEvents.delete(event);
+            });
+        }
+    }
+
+    /**
      * Get notification configuration
      * @return - contains error if parsing failed
      */
