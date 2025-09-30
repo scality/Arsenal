@@ -29,7 +29,7 @@
     "backo": "^1.1.0",
     "base-x": "3.0.8",
     "base62": "^2.0.2",
-    "debug": "^4.4.1",
+    "debug": "^4.4.3",
     "fcntl": "github:scality/node-fcntl#0.3.0",
     "httpagent": "scality/httpagent#1.1.0",
     "https-proxy-agent": "^7.0.6",
