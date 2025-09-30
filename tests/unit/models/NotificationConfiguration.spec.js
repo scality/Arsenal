@@ -3,6 +3,7 @@ const { parseString } = require('xml2js');
 
 const NotificationConfiguration =
     require('../../../lib/models/NotificationConfiguration').default;
+const { supportedNotificationEvents } = require('../../../lib/constants');
 
 function checkError(parsedXml, err, errMessage, cb) {
     const config = new NotificationConfiguration(parsedXml).
@@ -212,3 +213,80 @@ describe('NotificationConfiguration class getValidatedNotificationConfiguration'
             });
         });
     });
+
+describe('NotificationConfiguration.restrictSupportedNotificationBasedOnLifecycle', () => {
+    // Store original events to restore after each test
+    let originalEvents;
+
+    beforeEach(() => {
+        // Create a copy of the original supported events
+        originalEvents = new Set(supportedNotificationEvents);
+    });
+
+    afterEach(() => {
+        // Restore original supported events
+        supportedNotificationEvents.clear();
+        originalEvents.forEach(event => supportedNotificationEvents.add(event));
+    });
+
+    it('should keep all restore and lifecycle events when both Transition and Expiration rules are supported', () => {
+        const supportedLifecycleRules = ['Transition', 'Expiration'];
+
+        NotificationConfiguration.restrictSupportedNotificationBasedOnLifecycle(supportedLifecycleRules);
+
+        // Verify all lifecycle events remain
+        expect(supportedNotificationEvents.has('s3:ObjectRestore:*')).toBeTruthy();
+        expect(supportedNotificationEvents.has('s3:ObjectRestore:Post')).toBeTruthy();
+        expect(supportedNotificationEvents.has('s3:ObjectRestore:Completed')).toBeTruthy();
+        expect(supportedNotificationEvents.has('s3:ObjectRestore:Delete')).toBeTruthy();
+        expect(supportedNotificationEvents.has('s3:LifecycleTransition')).toBeTruthy();
+        expect(supportedNotificationEvents.has('s3:LifecycleExpiration:*')).toBeTruthy();
+        expect(supportedNotificationEvents.has('s3:LifecycleExpiration:DeleteMarkerCreated')).toBeTruthy();
+        expect(supportedNotificationEvents.has('s3:LifecycleExpiration:Delete')).toBeTruthy();
+
+        // Verify other events remain
+        expect(supportedNotificationEvents.has('s3:ObjectCreated:*')).toBeTruthy();
+    });
+
+    it('should remove ObjectRestore and LifecycleTransition events when no Transition rules', () => {
+        const supportedLifecycleRules = ['Expiration'];
+
+        NotificationConfiguration.restrictSupportedNotificationBasedOnLifecycle(supportedLifecycleRules);
+
+        // Verify Transition-related events are removed
+        expect(supportedNotificationEvents.has('s3:ObjectRestore:*')).toBeFalsy();
+        expect(supportedNotificationEvents.has('s3:ObjectRestore:Post')).toBeFalsy();
+        expect(supportedNotificationEvents.has('s3:ObjectRestore:Completed')).toBeFalsy();
+        expect(supportedNotificationEvents.has('s3:ObjectRestore:Delete')).toBeFalsy();
+        expect(supportedNotificationEvents.has('s3:LifecycleTransition')).toBeFalsy();
+
+        // Verify Expiration events remain
+        expect(supportedNotificationEvents.has('s3:LifecycleExpiration:*')).toBeTruthy();
+        expect(supportedNotificationEvents.has('s3:LifecycleExpiration:DeleteMarkerCreated')).toBeTruthy();
+        expect(supportedNotificationEvents.has('s3:LifecycleExpiration:Delete')).toBeTruthy();
+
+        // Verify other events remain
+        expect(supportedNotificationEvents.has('s3:ObjectCreated:*')).toBeTruthy();
+    });
+
+    it('should remove LifecycleExpiration events when no Expiration rules', () => {
+        const supportedLifecycleRules = ['Transition'];
+
+        NotificationConfiguration.restrictSupportedNotificationBasedOnLifecycle(supportedLifecycleRules);
+
+        // Verify Expiration-related events are removed
+        expect(supportedNotificationEvents.has('s3:LifecycleExpiration:*')).toBeFalsy();
+        expect(supportedNotificationEvents.has('s3:LifecycleExpiration:DeleteMarkerCreated')).toBeFalsy();
+        expect(supportedNotificationEvents.has('s3:LifecycleExpiration:Delete')).toBeFalsy();
+
+        // Verify Transition events remain
+        expect(supportedNotificationEvents.has('s3:ObjectRestore:*')).toBeTruthy();
+        expect(supportedNotificationEvents.has('s3:ObjectRestore:Post')).toBeTruthy();
+        expect(supportedNotificationEvents.has('s3:ObjectRestore:Completed')).toBeTruthy();
+        expect(supportedNotificationEvents.has('s3:ObjectRestore:Delete')).toBeTruthy();
+        expect(supportedNotificationEvents.has('s3:LifecycleTransition')).toBeTruthy();
+
+        // Verify other events remain
+        expect(supportedNotificationEvents.has('s3:ObjectCreated:*')).toBeTruthy();
+    });
+});
