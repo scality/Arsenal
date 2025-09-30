@@ -57,7 +57,7 @@
     "@babel/preset-env": "^7.28.3",
     "@babel/preset-typescript": "^7.27.1",
     "@eslint/compat": "^1.4.0",
-    "@eslint/plugin-kit": "^0.3.5",
+    "@eslint/plugin-kit": "^0.4.0",
     "@scality/eslint-config-scality": "scality/Guidelines#8.3.0",
     "@sinonjs/fake-timers": "^15.0.0",
     "@types/async": "^3.2.24",
