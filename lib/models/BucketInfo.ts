@@ -11,6 +11,7 @@ import { ACL as OACL } from './ObjectMD';
 import { areTagsValid, BucketTag } from '../s3middleware/tagging';
 import { VeeamCapability, VeeamSOSApiSchema, VeeamSOSApiSerializable } from './Veeam';
 import { AzureInfoMetadata } from './BucketAzureInfo';
+import BucketLoggingStatus from './BucketLoggingStatus';
 
 // WHEN UPDATING THIS NUMBER, UPDATE BucketInfoModelVersion.md CHANGELOG
 // BucketInfoModelVersion.md can be found in documentation/ at the root
@@ -78,6 +79,7 @@ export type BucketMetadata = {
     tags: Array<BucketTag>,
     capabilities?: Capabilities,
     quotaMax: bigint | number,
+    bucketLoggingStatus?: BucketLoggingStatus,
 };
 
 export type BucketMetadataJSON = Omit<BucketMetadata, 'quotaMax' | 'capabilities'> & {
@@ -115,6 +117,7 @@ export default class BucketInfo implements BucketMetadata {
     private _ingestion?: { status: 'enabled' | 'disabled' };
     private _capabilities?: Capabilities;
     private _quotaMax: bigint;
+    private _bucketLoggingStatus?: BucketLoggingStatus;
 
     /**
     * Represents all bucket information.
@@ -201,6 +204,7 @@ export default class BucketInfo implements BucketMetadata {
         tags?: Array<BucketTag> | [],
         capabilities?: Capabilities,
         quotaMax?: bigint | number,
+        bucketLoggingStatus?: BucketLoggingStatus,
     ) {
         assert.strictEqual(typeof name, 'string');
         assert.strictEqual(typeof owner, 'string');
@@ -327,6 +331,10 @@ export default class BucketInfo implements BucketMetadata {
         }
         assert.strictEqual(areTagsValid(tags), true);
 
+        if (bucketLoggingStatus) {
+            assert(bucketLoggingStatus instanceof BucketLoggingStatus);
+        }
+
         // IF UPDATING PROPERTIES, INCREMENT MODELVERSION NUMBER ABOVE
         this._acl = aclInstance;
         this._name = name;
@@ -353,6 +361,7 @@ export default class BucketInfo implements BucketMetadata {
         this._objectLockConfiguration = objectLockConfiguration;
         this._notificationConfiguration = notificationConfiguration;
         this._tags = tags;
+        this._bucketLoggingStatus = bucketLoggingStatus;
 
         this._capabilities = capabilities && {
             ...capabilities,
@@ -401,6 +410,7 @@ export default class BucketInfo implements BucketMetadata {
                     VeeamCapability.serialize(this._capabilities.VeeamSOSApi),
             },
             quotaMax: this._quotaMax.toString(),
+            bucketLoggingStatus: this._bucketLoggingStatus,
         };
         const final = this._websiteConfiguration
             ? {
@@ -433,6 +443,8 @@ export default class BucketInfo implements BucketMetadata {
         };
         const websiteConfig = obj.websiteConfiguration ?
             new WebsiteConfiguration(obj.websiteConfiguration) : undefined;
+        const bucketLoggingStatus = obj.bucketLoggingStatus ?
+            new BucketLoggingStatus((obj.bucketLoggingStatus as any)._loggingEnabled) : undefined;
         return new BucketInfo(obj.name, obj.owner, obj.ownerDisplayName,
             obj.creationDate, obj.mdBucketModelVersion, obj.acl,
             obj.transient, obj.deleted, obj.serverSideEncryption,
@@ -441,7 +453,7 @@ export default class BucketInfo implements BucketMetadata {
             obj.bucketPolicy, obj.uid, obj.readLocationConstraint, obj.isNFS,
             obj.ingestion, obj.azureInfo, obj.objectLockEnabled,
             obj.objectLockConfiguration, obj.notificationConfiguration, obj.tags,
-            capabilities, BigInt(obj.quotaMax || 0n));
+            capabilities, BigInt(obj.quotaMax || 0n), bucketLoggingStatus);
     }
 
     /**
@@ -474,7 +486,7 @@ export default class BucketInfo implements BucketMetadata {
             data._isNFS, data._ingestion, data._azureInfo,
             data._objectLockEnabled, data._objectLockConfiguration,
             data._notificationConfiguration, data._tags, capabilities,
-            BigInt(data._quotaMax || 0n));
+            BigInt(data._quotaMax || 0n), data._bucketLoggingStatus);
     }
 
     /**
@@ -484,6 +496,8 @@ export default class BucketInfo implements BucketMetadata {
      * @return Return an BucketInfo
      */
     static fromJson(data: BucketMetadataJSON) {
+        const bucketLoggingStatus = data.bucketLoggingStatus ?
+            new BucketLoggingStatus((data.bucketLoggingStatus as any)._loggingEnabled) : undefined;
         return new BucketInfo(data.name, data.owner, data.ownerDisplayName,
             data.creationDate, data.mdBucketModelVersion, data.acl,
             data.transient, data.deleted, data.serverSideEncryption,
@@ -497,7 +511,7 @@ export default class BucketInfo implements BucketMetadata {
                 ...data.capabilities,
                 VeeamSOSApi: data.capabilities?.VeeamSOSApi &&
                     VeeamCapability.parse(data.capabilities?.VeeamSOSApi),
-            }, BigInt(data.quotaMax || 0n));
+            }, BigInt(data.quotaMax || 0n), bucketLoggingStatus);
     }
 
     /**
@@ -1068,6 +1082,24 @@ export default class BucketInfo implements BucketMetadata {
      */
     setQuota(quota: bigint | number) {
         this._quotaMax = BigInt(quota || 0n);
+        return this;
+    }
+
+    /**
+     * Get bucket logging status
+     * @returns - bucket logging status
+     */
+    getBucketLoggingStatus() : BucketLoggingStatus | undefined {
+        return this._bucketLoggingStatus;
+    }
+
+    /**
+     * Set bucket logging status
+     * @param bucketLoggingStatus - bucket logging status
+     * @returns - this
+     */
+    setBucketLoggingStatus(bucketLoggingStatus : BucketLoggingStatus) {
+        this._bucketLoggingStatus = bucketLoggingStatus;
         return this;
     }
 }
