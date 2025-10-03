@@ -90,6 +90,17 @@ describe('routerGET', () => {
         );
     });
 
+    it('should call bucketGetLogging when query.logging is present', () => {
+        request.bucketName = 'bucketName';
+        request.query = { logging: '' };
+
+        routerGET(request, response, api, log, statsClient, dataRetrievalParams);
+
+        expect(api.callApiMethod).toHaveBeenCalledWith(
+            'bucketGetLogging', request, response, log, expect.any(Function),
+        );
+    });
+
     it('should handle objectGet with responseStreamData when no query is present for an object', () => {
         request.bucketName = 'bucketName';
         request.objectKey = 'objectKey';
