@@ -33,7 +33,7 @@ import {
     UpdateFilter,
     MongoServerError,
     MongoBulkWriteError,
-    WriteError
+    WriteError,
 } from 'mongodb';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -85,6 +85,41 @@ const DEFAULT_BUCKET_KEY_FORMAT =
 const DB_PREFIXES = require('../../../versioning/constants')
     .VersioningConstants.DbPrefixes;
 
+// Environment variable to enable MongoDB transactions
+// Set to 'true' to use transaction-enabled methods
+const ENABLE_MONGO_TRANSACTIONS = process.env.ENABLE_MONGO_TRANSACTIONS === 'true';
+
+/*
+1- No versioning put + delete
+2- Versioning put + delete
+3- Conflicting puts (versioned)
+
+1->
+--- Avg --- PUT (with transactions - NO versioning)
+2025-10-06 14:29:20.771 [Average] (139.856s) Nb Op: 833044, 5956.45 op/s 5956.45 put/s (lat: min=11.18ms, mean=21.46ms, max=77.36ms, p50=20.36ms, p95=31.78ms, p99=38.88ms) 
+2025-10-06 14:29:20.771 [Average] (139.856s) BW GET: 0.00 B/s, PUT: 0.00 B/s
+-- Avg --- DELETE (with transactions - NO versioning)
+2025-10-06 14:32:55.087 [Average] (153.371s) Nb Op: 995644, 6491.72 op/s 6491.72 delete/s (lat: min=10.27ms, mean=19.69ms, max=74.56ms, p50=18.57ms, p95=29.28ms, p99=36.69ms) 
+2025-10-06 14:32:55.087 [Average] (153.371s) BW GET: 0.00 B/s, PUT: 0.00 B/s
+
+2->
+--- Avg --- PUT (with transactions - Versioning)
+2025-10-06 14:34:48.52 [Average] (72.532s) Nb Op: 436302, 6015.29 op/s 6015.29 put/s (lat: min=11.12ms, mean=21.25ms, max=76.91ms, p50=20.31ms, p95=30.29ms, p99=36.22ms) 
+2025-10-06 14:34:48.52 [Average] (72.532s) BW GET: 0.00 B/s, PUT: 0.00 B/s
+-- Avg --- DELETE (with transactions - Versioning)
+2025-10-06 14:36:33.755 [Average] (76.292s) Nb Op: 497891, 6526.14 op/s 6526.14 delete/s (lat: min=10.07ms, mean=19.59ms, max=69.47ms, p50=18.76ms, p95=28.04ms, p99=34.54ms) 
+2025-10-06 14:36:33.755 [Average] (76.292s) BW GET: 0.00 B/s, PUT: 0.00 B/s
+
+3->
+
+
+*/
+
+/*
+
+*/
+
+/* --- */
 function inc(str) {
     return str ? (str.slice(0, str.length - 1) +
         String.fromCharCode(str.charCodeAt(str.length - 1) + 1)) : str;
@@ -258,6 +293,7 @@ class MongoClientInterface {
     private cacheMiss: number;
     private cacheHitMissLoggerInterval: NodeJS.Timer | null;
     private adminDb: Db | null;
+    private readonly useTransactions: boolean;
 
     private isConnected = false;
 
@@ -292,6 +328,13 @@ class MongoClientInterface {
         this.cacheHit = 0;
         this.cacheMiss = 0;
         this.cacheHitMissLoggerInterval = null;
+        
+        // Store the environment variable value to avoid repeated access
+        this.useTransactions = ENABLE_MONGO_TRANSACTIONS;
+        
+        if (this.useTransactions) {
+            logger.info('MongoDB transactions enabled via ENABLE_MONGO_TRANSACTIONS=true');
+        }
     }
 
     setup(cb: Function) {
@@ -840,6 +883,26 @@ class MongoClientInterface {
         cb: ArsenalCallback<string>,
         isRetry?: boolean,
     ) {
+        if (this.useTransactions) {
+            return this.putObjectVerCase1WithTransaction(c, bucketName, objName, objVal, params, log, cb);
+        }
+        return this.putObjectVerCase1Legacy(c, bucketName, objName, objVal, params, log, cb, isRetry);
+    }
+
+    /**
+     * Legacy implementation without transactions
+     * @private
+     */
+    putObjectVerCase1Legacy(
+        c: Collection<ObjectMetastoreDocument>,
+        bucketName: string,
+        objName: string,
+        objVal: ObjectMDData,
+        params: ObjectMDOperationParams,
+        log: werelogs.Logger,
+        cb: ArsenalCallback<string>,
+        isRetry?: boolean,
+    ) {
         const versionId = generateVersionId(this.instanceId, this.replicationGroupId);
         objVal.versionId = versionId;
         const versionKey = formatVersionKey(objName, versionId, params.vFormat);
@@ -933,6 +996,94 @@ class MongoClientInterface {
                 });
                 return cb(errors.InternalError);
             });
+    }
+
+    /**
+     * PUT object with versioning (Case 1) - with MongoDB transactions
+     * Eliminates retry logic by using atomic transaction
+     * @param {Collection} c bucket collection
+     * @param {String} bucketName bucket name
+     * @param {String} objName object name
+     * @param {Object} objVal object metadata
+     * @param {Object} params params
+     * @param {String} params.vFormat object key format
+     * @param {Object} log logger
+     * @param {Function} cb callback
+     * @return {undefined}
+     */
+    async putObjectVerCase1WithTransaction(
+        c: Collection<ObjectMetastoreDocument>,
+        bucketName: string,
+        objName: string,
+        objVal: ObjectMDData,
+        params: ObjectMDOperationParams,
+        log: werelogs.Logger,
+        cb: ArsenalCallback<string>,
+    ) {
+        const versionId = generateVersionId(this.replicationGroupId, this.instanceId);
+        const _params = Object.assign({}, params);
+        _params.versionId = versionId;
+
+        const versionKey = formatVersionKey(objName, versionId, params.vFormat);
+        const masterKey = formatMasterKey(objName, params.vFormat);
+
+        objVal.versionId = versionId;
+
+        const session = this.client!.startSession();
+        
+        try {
+            await session.withTransaction(async () => {
+                // Insert version document
+                await c.insertOne(
+                    {
+                        _id: versionKey,
+                        value: objVal,
+                    } as ObjectMetastoreDocument,
+                    { session }
+                );
+
+                // Update or delete master
+                const filter = {
+                    _id: masterKey,
+                    $or: [
+                        { 'value.versionId': { $exists: false } },
+                        { 'value.versionId': { $gt: objVal.versionId } },
+                    ],
+                };
+                const update = {
+                    $set: { _id: masterKey, value: objVal },
+                };
+
+                const masterOp = this.updateDeleteMaster(
+                    objVal.isDeleteMarker || false,
+                    params.vFormat,
+                    filter,
+                    update,
+                    true
+                );
+
+                if ('deleteOne' in masterOp) {
+                    await c.deleteOne((masterOp as any).deleteOne.filter, { session });
+                } else if ('updateOne' in masterOp) {
+                    await c.updateOne(
+                        (masterOp as any).updateOne.filter,
+                        (masterOp as any).updateOne.update,
+                        { upsert: (masterOp as any).updateOne.upsert, session }
+                    );
+                }
+            });
+
+            await session.endSession();
+            cb(null, `{"versionId": "${versionId}"}`);
+        } catch (err: any) {
+            await session.endSession();
+            log.error('putObjectVerCase1WithTransaction: error putting object version', {
+                error: err.message,
+                bucket: bucketName,
+                object: objName,
+            });
+            return cb(errors.InternalError);
+        }
     }
 
     /**
@@ -1210,8 +1361,31 @@ class MongoClientInterface {
         log: werelogs.Logger,
         cb: ArsenalCallback<void>,
     ) {
+        if (this.useTransactions) {
+            return this.putObjectNoVerWithTransaction(
+                collection, bucketName, objName, value, params, log, cb
+            );
+        }
+        return this.putObjectNoVerLegacy(
+            collection, bucketName, objName, value, params, log, cb
+        );
+    }
+
+    /**
+     * Legacy implementation without transactions
+     * @private
+     */
+    putObjectNoVerLegacy(
+        collection: Collection<ObjectMetastoreDocument>,
+        bucketName: string,
+        objName: string,
+        value: ObjectMDData,
+        params: ObjectMDOperationParams,
+        log: werelogs.Logger,
+        cb: ArsenalCallback<void>,
+    ) {
         if (params?.needOplogUpdate) {
-            return this.putObjectNoVerWithOplogUpdate(collection, bucketName, objName, value, params, log, cb);
+            return this.putObjectNoVerWithOplogUpdateLegacy(collection, bucketName, objName, value, params, log, cb);
         }
         const key = formatMasterKey(objName, params.vFormat);
         const putFilter = { _id: key };
@@ -1223,7 +1397,7 @@ class MongoClientInterface {
         }, {
             upsert: true,
         }).then(() => cb(null)).catch(err => {
-            log.error('putObjectNoVer: error putting obect with no versioning', { error: err.message });
+            log.error('putObjectNoVerLegacy: error putting object with no versioning', { error: err.message });
             return cb(errors.InternalError);
         });
     }
@@ -1246,6 +1420,29 @@ class MongoClientInterface {
      * @returns {void}
      */
     putObjectNoVerWithOplogUpdate(
+        collection: Collection<ObjectMetastoreDocument>,
+        bucketName: string,
+        objName: string,
+        value: ObjectMDData,
+        params: ObjectMDOperationParams,
+        log: werelogs.Logger,
+        cb: ArsenalCallback<void>,
+    ) {
+        if (this.useTransactions) {
+            return this.putObjectNoVerWithOplogUpdateWithTransaction(
+                collection, bucketName, objName, value, params, log, cb
+            );
+        }
+        return this.putObjectNoVerWithOplogUpdateLegacy(
+            collection, bucketName, objName, value, params, log, cb
+        );
+    }
+
+    /**
+     * Legacy implementation without transactions
+     * @private
+     */
+    putObjectNoVerWithOplogUpdateLegacy(
         collection: Collection<ObjectMetastoreDocument>,
         bucketName: string,
         objName: string,
@@ -1322,6 +1519,210 @@ class MongoClientInterface {
             return cb(null);
         });
     }
+    /**
+     * PUT object (overwrite) with MongoDB transactions
+     * Eliminates two-phase PUT pattern by using atomic transaction
+     * @param {Collection} collection bucket collection
+     * @param {String} bucketName bucket name
+     * @param {String} objName object name
+     * @param {Object} value new object metadata
+     * @param {Object} params params
+     * @param {Object} log logger
+     * @param {Function} cb callback
+     * @return {undefined}
+     */
+    async internalPutObjectWithTransaction(
+        collection: Collection<ObjectMetastoreDocument>,
+        bucketName: string,
+        objName: string,
+        value: ObjectMDData,
+        params: ObjectMDOperationParams,
+        log: werelogs.Logger,
+        cb: ArsenalCallback<void>,
+    ) {
+        const key = formatMasterKey(objName, params.vFormat);
+        const putFilter = { _id: key };
+        const findFilter = {
+            ...putFilter,
+            $or: [
+                { 'value.deleted': { $exists: false } },
+                { 'value.deleted': { $eq: false } },
+            ],
+        };
+
+        const session = this.client!.startSession();
+
+        try {
+            await session.withTransaction(async () => {
+                // Find the object
+                const doc = await collection.findOne(findFilter, { session });
+                
+                if (!doc) {
+                    throw errors.NoSuchKey;
+                }
+
+                const objMetadata = new ObjectMD(doc.value);
+                objMetadata.setOriginOp(params.originOp);
+                objMetadata.setDeleted(true);
+                const deletedMetadata = objMetadata.getValue();
+
+                // Update with deleted metadata (for oplog)
+                await collection.updateOne(
+                    putFilter,
+                    { $set: { _id: key, value: deletedMetadata } },
+                    { session }
+                );
+
+                // Put the new object
+                await collection.updateOne(
+                    putFilter,
+                    { $set: { _id: key, value } },
+                    { upsert: true, session }
+                );
+            });
+
+            await session.endSession();
+            cb(null);
+        } catch (err: any) {
+            await session.endSession();
+            
+            if (err instanceof ArsenalError) {
+                return cb(err);
+            }
+            
+            log.error('internalPutObjectWithTransaction: error updating object',
+                { bucket: bucketName, object: key, error: err.message });
+            return cb(errors.InternalError);
+        }
+    }
+
+    /**
+     * PUT object without versioning - with MongoDB transactions
+     * Prevents concurrent PUT race conditions with atomic transaction
+     * @param {Collection} collection bucket collection
+     * @param {String} bucketName bucket name
+     * @param {String} objName object name
+     * @param {Object} value object metadata
+     * @param {Object} params params
+     * @param {Object} log logger
+     * @param {Function} cb callback
+     * @return {undefined}
+     */
+    async putObjectNoVerWithTransaction(
+        collection: Collection<ObjectMetastoreDocument>,
+        bucketName: string,
+        objName: string,
+        value: ObjectMDData,
+        params: ObjectMDOperationParams,
+        log: werelogs.Logger,
+        cb: ArsenalCallback<void>,
+    ) {
+        if (params?.needOplogUpdate) {
+            return this.putObjectNoVerWithOplogUpdateWithTransaction(
+                collection, bucketName, objName, value, params, log, cb
+            );
+        }
+
+        const key = formatMasterKey(objName, params.vFormat);
+        const putFilter = { _id: key };
+        
+        const session = this.client!.startSession();
+
+        try {
+            await session.withTransaction(async () => {
+                await collection.updateOne(
+                    putFilter,
+                    { $set: { _id: key, value } },
+                    { upsert: true, session }
+                );
+            });
+
+            await session.endSession();
+            cb(null);
+        } catch (err: any) {
+            await session.endSession();
+            log.error('putObjectNoVerWithTransaction: error putting object with no versioning', {
+                error: err.message,
+                bucket: bucketName,
+                object: objName,
+            });
+            return cb(errors.InternalError);
+        }
+    }
+
+    /**
+     * PUT object without versioning with oplog update - with MongoDB transactions
+     * Prevents concurrent PUT race conditions with atomic transaction
+     * @param {Collection} collection bucket collection
+     * @param {String} bucketName bucket name
+     * @param {String} objName object name
+     * @param {Object} value object metadata
+     * @param {Object} params params
+     * @param {Object} log logger
+     * @param {Function} cb callback
+     * @return {undefined}
+     */
+    async putObjectNoVerWithOplogUpdateWithTransaction(
+        collection: Collection<ObjectMetastoreDocument>,
+        bucketName: string,
+        objName: string,
+        value: ObjectMDData,
+        params: ObjectMDOperationParams,
+        log: werelogs.Logger,
+        cb: ArsenalCallback<void>,
+    ) {
+        const key = formatMasterKey(objName, params.vFormat);
+        const putFilter = { _id: key };
+        const findFilter = {
+            ...putFilter,
+            $or: [
+                { 'value.deleted': { $exists: false } },
+                { 'value.deleted': { $eq: false } },
+            ],
+        };
+
+        const session = this.client!.startSession();
+
+        try {
+            await session.withTransaction(async () => {
+                // Find existing object
+                const doc = await collection.findOne(findFilter, { session });
+
+                if (doc) {
+                    // Update existing object with deleted flag for oplog
+                    const objMetadata = new ObjectMD(doc.value);
+                    objMetadata.setOriginOp(params.originOp);
+                    objMetadata.setDeleted(true);
+                    const deletedMetadata = objMetadata.getValue();
+
+                    await collection.updateOne(
+                        putFilter,
+                        { $set: { _id: key, value: deletedMetadata } },
+                        { session }
+                    );
+                }
+
+                // Put the new object
+                await collection.updateOne(
+                    putFilter,
+                    { $set: { _id: key, value } },
+                    { upsert: true, session }
+                );
+            });
+
+            await session.endSession();
+            cb(null);
+        } catch (err: any) {
+            await session.endSession();
+            log.error('putObjectNoVerWithOplogUpdateWithTransaction: error putting object', {
+                error: err.message,
+                bucket: bucketName,
+                object: objName,
+            });
+            return cb(errors.InternalError);
+        }
+    }
+
     /**
      * Returns the putObjectVerCase function to use
      * depending on params
@@ -2011,6 +2412,30 @@ class MongoClientInterface {
         cb: ArsenalCallback<unknown>,
         originOp = 's3:ObjectRemoved:Delete',
     ) {
+        if (this.useTransactions) {
+            return this.internalDeleteObjectWithTransaction(
+                collection, bucketName, key, filter, params, log, cb, originOp
+            );
+        }
+        return this.internalDeleteObjectLegacy(
+            collection, bucketName, key, filter, params, log, cb, originOp
+        );
+    }
+
+    /**
+     * Legacy implementation without transactions
+     * @private
+     */
+    internalDeleteObjectLegacy(
+        collection: Collection<ObjectMetastoreDocument>,
+        bucketName: string,
+        key: string,
+        filter: UpdateFilter<ObjectMetastoreDocument>,
+        params: ObjectMDOperationParams | null,
+        log: werelogs.Logger,
+        cb: ArsenalCallback<unknown>,
+        originOp = 's3:ObjectRemoved:Delete',
+    ) {
         // filter used when deleting object
         const deleteFilter = Object.assign({
             _id: key,
@@ -2122,6 +2547,101 @@ class MongoClientInterface {
             }
             return cb(null, res);
         });
+    }
+
+    /**
+     * Delete object with MongoDB transactions
+     * Eliminates two-phase delete pattern by using atomic transaction
+     * @param {Collection} collection bucket collection
+     * @param {String} bucketName bucket name
+     * @param {String} key object key
+     * @param {Object} filter delete filter
+     * @param {Object} params params
+     * @param {Object} log logger
+     * @param {Function} cb callback
+     * @param {String} originOp origin operation
+     * @return {undefined}
+     */
+    async internalDeleteObjectWithTransaction(
+        collection: Collection<ObjectMetastoreDocument>,
+        bucketName: string,
+        key: string,
+        filter: UpdateFilter<ObjectMetastoreDocument>,
+        params: ObjectMDOperationParams | null,
+        log: werelogs.Logger,
+        cb: ArsenalCallback<unknown>,
+        originOp = 's3:ObjectRemoved:Delete',
+    ) {
+        const deleteFilter = Object.assign({
+            _id: key,
+        }, filter);
+
+        if (params && params.doesNotNeedOpogUpdate) {
+            // If flag is true, directly delete object
+            return collection.deleteOne(deleteFilter)
+                .then(result => {
+                    if (!result || result?.deletedCount != 1) {
+                        log.debug('internalDeleteObjectWithTransaction: object not found or already deleted',
+                            { bucket: bucketName, object: key });
+                        return cb(errors.NoSuchKey);
+                    }
+                    return cb(null, undefined);
+                })
+                .catch(err => {
+                    log.error('internalDeleteObjectWithTransaction: error deleting object',
+                        { bucket: bucketName, object: key, error: err.message });
+                    return cb(errors.InternalError);
+                });
+        }
+
+        const findFilter = Object.assign({
+            _id: key,
+            $or: [
+                { 'value.deleted': { $exists: false } },
+                { 'value.deleted': { $eq: false } },
+            ],
+        }, filter);
+
+        const session = this.client!.startSession();
+
+        try {
+            await session.withTransaction(async () => {
+                // Find the object
+                const doc = await collection.findOne(findFilter, { session });
+                
+                if (!doc) {
+                    throw errors.NoSuchKey;
+                }
+
+                const objMetadata = new ObjectMD(doc.value);
+                objMetadata.setOriginOp(originOp);
+                objMetadata.setDeleted(true);
+                const objVal = objMetadata.getValue();
+
+                // Update with full metadata (for oplog)
+                await collection.updateOne(
+                    { _id: key },
+                    { $set: { _id: key, value: objVal } },
+                    { session }
+                );
+
+                // Delete the object
+                await collection.deleteOne({ _id: key }, { session });
+            });
+
+            await session.endSession();
+            cb(null, undefined);
+        } catch (err: any) {
+            await session.endSession();
+            
+            if (err instanceof ArsenalError) {
+                return cb(err);
+            }
+            
+            log.error('internalDeleteObjectWithTransaction: error deleting object',
+                { bucket: bucketName, object: key, error: err.message });
+            return cb(errors.InternalError);
+        }
     }
 
     /**
