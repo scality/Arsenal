@@ -43,8 +43,6 @@ describe('locationConstraintParser', () => {
             assert.strictEqual(client._s3Params.httpOptions.agent.protocol, 'https:');
             assert.strictEqual(client._s3Params.httpOptions.agent.keepAlive, false);
         }
-        // signatureVersion is not used in AWS SDK v3, skip this assertion
-        // assert.strictEqual(client._s3Params.signatureVersion, 'v4');
     });
 
     it('should set correct options for http aws_s3 type location', () => {
@@ -56,8 +54,6 @@ describe('locationConstraintParser', () => {
             assert.strictEqual(client._s3Params.httpOptions.agent.protocol, 'http:');
             assert.strictEqual(client._s3Params.httpOptions.agent.keepAlive, false);
         }
-        // signatureVersion is not used in AWS SDK v3, skip this assertion
-        // assert.strictEqual(client._s3Params.signatureVersion, 'v2');
     });
 
     it('should set correct client for azure type location', () => {

@@ -1,8 +1,15 @@
 'use strict';  
 
 import { arsenalErrorAWSKMS } from '../utils';
-import { KMSClient, CreateKeyCommand, ScheduleKeyDeletionCommand,
-    GenerateDataKeyCommand, EncryptCommand, DecryptCommand, ListKeysCommand } from '@aws-sdk/client-kms';
+import { KMSClient, 
+    CreateKeyCommand, 
+    ScheduleKeyDeletionCommand,
+    GenerateDataKeyCommand, 
+    EncryptCommand, 
+    DecryptCommand, 
+    ListKeysCommand, 
+    NotFoundException, 
+    KMSInvalidStateException } from '@aws-sdk/client-kms';
 import * as werelogs from 'werelogs';
 import assert from 'assert';
 import { KMSInterface, KmsBackend, getKeyIdFromArn, KmsProtocol, KmsType, makeBackend } from '../KMSInterface';
@@ -61,7 +68,7 @@ export default class Client implements KMSInterface {
         this.client = new KMSClient({
             region,
             endpoint,
-            requestHandler: undefined, // v3 handles agents differently
+            requestHandler: undefined,
             credentials,
         });
         this.backend = makeBackend(KmsType.external, KmsProtocol.aws_kms, providerName);
@@ -107,6 +114,7 @@ export default class Client implements KMSInterface {
             if (this.noAwsArn) {
                 keyId = keyMetadata?.KeyId || '';
             } else {
+                // Prefer ARN, but fall back to KeyId if ARN is missing
                 keyId = keyMetadata?.Arn ?? (keyMetadata?.KeyId || '');
             }
             const arn = `${this.backend.arnPrefix}${keyId}`;
@@ -135,7 +143,9 @@ export default class Client implements KMSInterface {
             KeyId: masterKeyId,
             PendingWindowInDays: 7,
         };
-        this.client.send(new ScheduleKeyDeletionCommand(params)).then(data => {
+        const command = new ScheduleKeyDeletionCommand(params);
+
+        this.client.send(command).then(data => {
             if (data?.KeyState && data.KeyState !== 'PendingDeletion') {
                 const error = arsenalErrorAWSKMS('key is not in PendingDeletion state');
                 logger.error('AWS KMS: failed to delete master encryption key', { data });
@@ -144,7 +154,7 @@ export default class Client implements KMSInterface {
             }
             cb(null);
         }).catch(err => {
-            if (err.name === 'NotFoundException' || err.name === 'KMSInvalidStateException') {
+            if (err instanceof NotFoundException || err instanceof KMSInvalidStateException) {
                 logger.info('AWS KMS: key does not exist or is already pending deletion', { masterKeyId, error: err });
                 cb(null);
                 return;
@@ -166,7 +176,7 @@ export default class Client implements KMSInterface {
         assert.strictEqual(cryptoScheme, 1);
         const params = {
             KeyId: masterKeyId,
-            KeySpec: "AES_256" as const,
+            KeySpec: 'AES_256' as const,
         };
         this.client.send(new GenerateDataKeyCommand(params)).then(data => {
             if (!data) {

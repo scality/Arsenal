@@ -1,6 +1,7 @@
 const sinon = require('sinon');
 const assert = require('assert');
 const Client = require('../../../lib/network/kmsAWS/Client').default;
+const { NotFoundException, KMSInvalidStateException } = require('@aws-sdk/client-kms');
 
 describe('KmsAWSClient', () => {
     const logger = {
@@ -181,8 +182,9 @@ describe('KmsAWSClient', () => {
     it('should handle errors creating a new master encryption key', done => {
         const mockError = new Error('mock error');
         mockError.name = 'AccessDeniedException';
-        mockError.code = 'AccessDeniedException';
-        mockError.retryable = false;
+        mockError.$metadata = {
+            httpStatusCode: 403,
+        };
         sendStub = sinon.stub(client.client, 'send');
         sendStub.rejects(mockError);
 
@@ -214,8 +216,9 @@ describe('KmsAWSClient', () => {
     it('should handle errors creating a bucket-level key', done => {
         const mockError = new Error('mock error');
         mockError.name = 'AccessDeniedException';
-        mockError.code = 'AccessDeniedException';
-        mockError.retryable = false;
+        mockError.$metadata = {
+            httpStatusCode: 403,
+        };
         sendStub = sinon.stub(client.client, 'send');
         sendStub.rejects(mockError);
 
@@ -244,8 +247,9 @@ describe('KmsAWSClient', () => {
     it('should handle errors deleting an existing key on bucket deletion', done => {
         const mockError = new Error('mock delete error');
         mockError.name = 'AccessDeniedException';
-        mockError.code = 'AccessDeniedException';
-        mockError.retryable = false;
+        mockError.$metadata = {
+            httpStatusCode: 403,
+        };
         sendStub = sinon.stub(client.client, 'send');
         sendStub.rejects(mockError);
 
@@ -289,8 +293,9 @@ describe('KmsAWSClient', () => {
     it('should handle errors deleting an existing key on account deletion', done => {
         const mockError = new Error('mock delete error');
         mockError.name = 'AccessDeniedException';
-        mockError.code = 'AccessDeniedException';
-        mockError.retryable = false;
+        mockError.$metadata = {
+            httpStatusCode: 403,
+        };
         sendStub = sinon.stub(client.client, 'send');
         sendStub.rejects(mockError);
 
@@ -302,11 +307,12 @@ describe('KmsAWSClient', () => {
     });
 
     it('should handle NotFoundException when deleting master key', done => {
-        const mockError = new Error('NotFoundException');
-        mockError.name = 'NotFoundException';
-        mockError.code = 'NotFoundException';
-        mockError.retryable = false;
-
+        const mockError = new NotFoundException({
+            message: 'The request key was not found',
+            $metadata: {
+                httpStatusCode: 404,
+            }
+        });
         sendStub = sinon.stub(client.client, 'send');
         sendStub.rejects(mockError);
 
@@ -318,10 +324,12 @@ describe('KmsAWSClient', () => {
     });
 
     it('should handle KMSInvalidStateException when deleting master key', done => {
-        const mockError = new Error('KMSInvalidStateException');
-        mockError.name = 'KMSInvalidStateException';
-        mockError.code = 'KMSInvalidStateException';
-        mockError.retryable = false;
+        const mockError = new KMSInvalidStateException({
+            message: 'The request key is not in a valid state',
+            $metadata: {
+                httpStatusCode: 400,
+            }
+        });
 
         sendStub = sinon.stub(client.client, 'send');
         sendStub.rejects(mockError);
@@ -379,8 +387,9 @@ describe('KmsAWSClient', () => {
     it('should handle errors generating a data key', done => {
         const mockError = new Error('mock error');
         mockError.name = 'AccessDeniedException';
-        mockError.code = 'AccessDeniedException';
-        mockError.retryable = false;
+        mockError.$metadata = {
+            httpStatusCode: 403,
+        };
         sendStub = sinon.stub(client.client, 'send');
         sendStub.rejects(mockError);
 
@@ -410,8 +419,9 @@ describe('KmsAWSClient', () => {
     it('should handle errors ciphering a data key', done => {
         const mockError = new Error('mock cipher error');
         mockError.name = 'AccessDeniedException';
-        mockError.code = 'AccessDeniedException';
-        mockError.retryable = false;
+        mockError.$metadata = {
+            httpStatusCode: 403,
+        };
         sendStub = sinon.stub(client.client, 'send');
         sendStub.rejects(mockError);
 
@@ -441,8 +451,9 @@ describe('KmsAWSClient', () => {
     it('should handle errors deciphering a data key', done => {
         const mockError = new Error('mock decipher error');
         mockError.name = 'AccessDeniedException';
-        mockError.code = 'AccessDeniedException';
-        mockError.retryable = false;
+        mockError.$metadata = {
+            httpStatusCode: 403,
+        };
         sendStub = sinon.stub(client.client, 'send');
         sendStub.rejects(mockError);
 
@@ -474,8 +485,9 @@ describe('KmsAWSClient', () => {
     it('should return a failed health check when list keys is unsuccessful', done => {
         const mockError = new Error('mock listKeys error');
         mockError.name = 'AccessDeniedException';
-        mockError.code = 'AccessDeniedException';
-        mockError.retryable = false;
+        mockError.$metadata = {
+            httpStatusCode: 403,
+        };
         sendStub = sinon.stub(client.client, 'send');
         sendStub.rejects(mockError);
 

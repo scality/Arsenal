@@ -17,7 +17,8 @@ const {
     CreateMultipartUploadCommand,
     UploadPartCommand,
     ListPartsCommand,
-    AbortMultipartUploadCommand
+    AbortMultipartUploadCommand,
+    NotFound,
 } = require('@aws-sdk/client-s3');
 
 const OBJECT_SIZE = 1024 * 1024 * 1024;
@@ -30,8 +31,7 @@ class DummyGetObjectRequest {
         if (this.getObjectParams.Key === 'externalBackendTestBucket/externalBackendMissingKey') {
             const errorStream = new EventEmitter();
             process.nextTick(() => {
-                const err = new Error();
-                err.code = 'NotFound';
+                const err = new NotFound();
                 errorStream.emit('error', err);
             });
             return errorStream;
@@ -69,8 +69,7 @@ class AzureDummyContainerClient {
 
     async getProperties() {
         if (this.key === 'externalBackendTestBucket/externalBackendMissingKey') {
-            const err = new Error();
-            err.code = 'NotFound';
+            const err = new NotFound();
             throw err;
         }
         const retObj = {
@@ -82,8 +81,7 @@ class AzureDummyContainerClient {
 
     async download(offset, length) {
         if (this.key === 'externalBackendTestBucket/externalBackendMissingKey') {
-            const err = new Error();
-            err.code = 'NotFound';
+            const err = new NotFound();
             throw err;
         }
         return {
@@ -108,8 +106,7 @@ class DummyService {
     headObject(params, callback) {
         if (params.Key ===
             'externalBackendTestBucket/externalBackendMissingKey') {
-            const err = new Error();
-            err.code = 'NotFound';
+            const err = new NotFound();
             return callback(err);
         }
         const retObj = {
@@ -193,8 +190,7 @@ class DummyService {
         return callback();
     }
     
-    send(command) {  // Remove callback parameter completely
-        // Route based on command type and return promises (no callbacks)
+    send(command) {
         if (command instanceof PutObjectCommand) {
             return new Promise((resolve, reject) => {
                 this.putObject(command.input, (err, result) => {
