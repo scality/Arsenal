@@ -16,7 +16,7 @@ import BucketLoggingStatus from './BucketLoggingStatus';
 // WHEN UPDATING THIS NUMBER, UPDATE BucketInfoModelVersion.md CHANGELOG
 // BucketInfoModelVersion.md can be found in documentation/ at the root
 // of this repository
-const modelVersion = 17;
+const modelVersion = 18;
 
 export type CORS = {
     id: string;
