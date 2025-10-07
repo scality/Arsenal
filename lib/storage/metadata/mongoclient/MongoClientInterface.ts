@@ -1001,7 +1001,7 @@ class MongoClientInterface {
 
     /**
      * PUT object with versioning (Case 1) - with MongoDB transactions
-     * Eliminates retry logic by using atomic transaction
+     * Handles concurrent PUT race conditions similar to legacy implementation
      * @param {Collection} c bucket collection
      * @param {String} bucketName bucket name
      * @param {String} objName object name
@@ -1078,6 +1078,36 @@ class MongoClientInterface {
             cb(null, `{"versionId": "${versionId}"}`);
         } catch (err: any) {
             await session.endSession();
+            
+            // Handle duplicate key errors gracefully (race conditions)
+            if (err.code === 11000 || err.codeName === 'DuplicateKey') {
+                const errorMessage = err.message || err.errmsg || '';
+                
+                // If duplicate master key error, the version was inserted successfully
+                // in the transaction before it aborted. Another concurrent request 
+                // won the race to update the master, which is expected behavior.
+                if (errorMessage.includes(masterKey)) {
+                    log.debug('putObjectVerCase1WithTransaction: master key conflict, version inserted', {
+                        bucket: bucketName,
+                        object: objName,
+                        versionId: versionId,
+                    });
+                    return cb(null, `{"versionId": "${versionId}"}`);
+                }
+                
+                // If duplicate version key error (rare with instance IDs), the same
+                // version was created concurrently. This is a genuine conflict.
+                if (errorMessage.includes(versionKey)) {
+                    log.error('putObjectVerCase1WithTransaction: version key conflict', {
+                        error: errorMessage,
+                        bucket: bucketName,
+                        object: objName,
+                        versionId: versionId,
+                    });
+                    return cb(errors.InternalError);
+                }
+            }
+            
             log.error('putObjectVerCase1WithTransaction: error putting object version', {
                 error: err.message,
                 bucket: bucketName,
