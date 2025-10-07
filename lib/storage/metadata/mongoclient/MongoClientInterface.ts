@@ -315,6 +315,7 @@ class MongoClientInterface {
         this.logger = logger;
         this.path = path;
         this.instanceId = instanceId;
+        console.log('========================INSTANCEID IS', this.instanceId);
         this.replicationGroupId = replicationGroupId;
         this.database = database;
         this.isLocationTransient = isLocationTransient;
@@ -1020,7 +1021,7 @@ class MongoClientInterface {
         log: werelogs.Logger,
         cb: ArsenalCallback<string>,
     ) {
-        const versionId = generateVersionId(this.replicationGroupId, this.instanceId);
+        const versionId = generateVersionId(this.instanceId, this.replicationGroupId);
         const _params = Object.assign({}, params);
         _params.versionId = versionId;
 
