@@ -1,6 +1,8 @@
 'use strict';  
 
 import { arsenalErrorAWSKMS } from '../utils';
+import { Agent as HttpAgent } from 'http';
+import { Agent as HttpsAgent } from 'https';
 import { KMSClient, 
     CreateKeyCommand, 
     ScheduleKeyDeletionCommand,
@@ -10,6 +12,7 @@ import { KMSClient,
     ListKeysCommand, 
     NotFoundException, 
     KMSInvalidStateException } from '@aws-sdk/client-kms';
+const { NodeHttpHandler } = require('@smithy/node-http-handler');
 import * as werelogs from 'werelogs';
 import assert from 'assert';
 import { KMSInterface, KmsBackend, getKeyIdFromArn, KmsProtocol, KmsType, makeBackend } from '../KMSInterface';
@@ -57,8 +60,22 @@ export default class Client implements KMSInterface {
 
     constructor(options: ClientOptions) {
         this._supportsDefaultKeyPerAccount = true;
-        const { providerName, ak, sk, region, endpoint, noAwsArn } = options.kmsAWS;
+        const { providerName,tls, ak, sk, region, endpoint, noAwsArn } = options.kmsAWS;
 
+        const requestHandler = new NodeHttpHandler({
+            httpAgent: !tls ? new HttpAgent({
+                keepAlive: true,
+            }) : undefined,
+            httpsAgent: tls ? new HttpsAgent({
+                keepAlive: true,
+                rejectUnauthorized: tls.rejectUnauthorized,
+                ca: tls.ca,
+                cert: tls.cert,
+                minVersion: tls.minVersion,
+                maxVersion: tls.maxVersion,
+                key: tls.key,
+            }) : undefined,
+        });
 
         const credentials = (ak && sk) ? {
             accessKeyId: ak,
@@ -68,8 +85,8 @@ export default class Client implements KMSInterface {
         this.client = new KMSClient({
             region,
             endpoint,
-            requestHandler: undefined,
             credentials,
+            requestHandler,
         });
         this.backend = makeBackend(KmsType.external, KmsProtocol.aws_kms, providerName);
         this.noAwsArn = noAwsArn;
@@ -156,12 +173,11 @@ export default class Client implements KMSInterface {
         }).catch(err => {
             if (err instanceof NotFoundException || err instanceof KMSInvalidStateException) {
                 logger.info('AWS KMS: key does not exist or is already pending deletion', { masterKeyId, error: err });
-                cb(null);
-                return;
+                return cb(null);
             }
             const error = arsenalErrorAWSKMS(err);
             logger.error('AWS KMS: failed to delete master encryption key', { err });
-            cb(error);
+            return cb(error);
         });
     }
 

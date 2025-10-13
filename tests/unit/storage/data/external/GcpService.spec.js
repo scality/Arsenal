@@ -87,7 +87,6 @@ const operations = [
     },
 ];
 
-// Reusable cleanup function
 async function cleanupServer(httpServer, sockets) {
     if (httpServer) {
         sockets.forEach(socket => {
@@ -121,7 +120,7 @@ describe('GcpService request behavior', () => {
                 endpoint: `http://${host}`,
                 maxAttempts: 1,
                 forcePathStyle: false,
-                region: 'us-east-1', // Required by AWS SDK v3
+                region: 'us-east-1',
                 credentials: {
                     accessKeyId: accessKeyId,
                     secretAccessKey: secretAccessKey,
@@ -178,7 +177,7 @@ describe('GcpService pathStyle tests', () => {
                 endpoint: `http://${host}`,
                 maxAttempts: 1,
                 forcePathStyle: true,
-                region: 'us-east-1', // Required by AWS SDK v3
+                region: 'us-east-1',
                 credentials: {
                     accessKeyId: accessKeyId,
                     secretAccessKey: secretAccessKey,
@@ -226,7 +225,7 @@ describe('GcpService dnsStyle tests', () => {
                 endpoint: `http://${host}`,
                 maxAttempts: 1,
                 forcePathStyle: false,
-                region: 'us-east-1', // Required by AWS SDK v3
+                region: 'us-east-1',
                 credentials: {
                     accessKeyId: accessKeyId,
                     secretAccessKey: secretAccessKey,
