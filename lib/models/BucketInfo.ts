@@ -11,11 +11,12 @@ import { ACL as OACL } from './ObjectMD';
 import { areTagsValid, BucketTag } from '../s3middleware/tagging';
 import { VeeamCapability, VeeamSOSApiSchema, VeeamSOSApiSerializable } from './Veeam';
 import { AzureInfoMetadata } from './BucketAzureInfo';
+import RateLimitConfiguration, { RateLimitConfigurationMetadata } from './RateLimitConfiguration';
 
 // WHEN UPDATING THIS NUMBER, UPDATE BucketInfoModelVersion.md CHANGELOG
 // BucketInfoModelVersion.md can be found in documentation/ at the root
 // of this repository
-const modelVersion = 17;
+const modelVersion = 18;
 
 export type CORS = {
     id: string;
@@ -78,6 +79,7 @@ export type BucketMetadata = {
     tags: Array<BucketTag>,
     capabilities?: Capabilities,
     quotaMax: bigint | number,
+    rateLimitConfiguration?: RateLimitConfigurationMetadata,
 };
 
 export type BucketMetadataJSON = Omit<BucketMetadata, 'quotaMax' | 'capabilities'> & {
@@ -115,6 +117,7 @@ export default class BucketInfo implements BucketMetadata {
     private _ingestion?: { status: 'enabled' | 'disabled' };
     private _capabilities?: Capabilities;
     private _quotaMax: bigint;
+    private _rateLimitConfiguration?: RateLimitConfigurationMetadata;
 
     /**
     * Represents all bucket information.
@@ -172,6 +175,8 @@ export default class BucketInfo implements BucketMetadata {
     * @param [tags] - bucket tag set
     * @param [capabilities] - capabilities for the bucket
     * @param quotaMax - bucket quota
+    * @param rateLimitConfiguration - rate limit config
+    * @param [requestsPerSecond] - max requests per second allowed for bucket
     */
     constructor(
         name: string,
@@ -201,6 +206,7 @@ export default class BucketInfo implements BucketMetadata {
         tags?: Array<BucketTag> | [],
         capabilities?: Capabilities,
         quotaMax?: bigint | number,
+        rateLimitConfiguration?: RateLimitConfigurationMetadata,
     ) {
         assert.strictEqual(typeof name, 'string');
         assert.strictEqual(typeof owner, 'string');
@@ -224,7 +230,7 @@ export default class BucketInfo implements BucketMetadata {
             assert.strictEqual(typeof cryptoScheme, 'number');
             assert.strictEqual(typeof algorithm, 'string');
             assert.strictEqual(typeof mandatory, 'boolean');
-            assert.ok(masterKeyId !== undefined || configuredMasterKeyId !== undefined, 
+            assert.ok(masterKeyId !== undefined || configuredMasterKeyId !== undefined,
                 'At least one of masterKeyId or configuredMasterKeyId must be defined');
             if (masterKeyId !== undefined) {
                 assert.strictEqual(typeof masterKeyId, 'string', 'masterKeyId must be a string');
@@ -359,8 +365,9 @@ export default class BucketInfo implements BucketMetadata {
             VeeamSOSApi: capabilities.VeeamSOSApi &&
                 VeeamCapability.toBigInt(capabilities.VeeamSOSApi),
         };
-    
+
         this._quotaMax = BigInt(quotaMax || 0n);
+        this._rateLimitConfiguration = rateLimitConfiguration;
         return this;
     }
 
@@ -724,9 +731,9 @@ export default class BucketInfo implements BucketMetadata {
 
     /**
      * Checks if the default encryption is set at the account level instead of the legacy bucket level.
-     * This method helps to prevent deletion of the account-level master encryption key when deleting buckets. 
+     * This method helps to prevent deletion of the account-level master encryption key when deleting buckets.
      *
-     * @returns {boolean} - Returns true if account-level default encryption is enabled, 
+     * @returns {boolean} - Returns true if account-level default encryption is enabled,
      * false if it uses the legacy bucket level.
      */
     isAccountEncryptionEnabled() {
@@ -1013,7 +1020,7 @@ export default class BucketInfo implements BucketMetadata {
     getTags() {
         return this._tags;
     }
-    
+
     /**
      * Set bucket tags
      * @return - bucket info instance
@@ -1033,7 +1040,7 @@ export default class BucketInfo implements BucketMetadata {
 
     /**
      * Get a specific bucket capability
-     * 
+     *
      * @param capability? - if provided, will return a specific capacity
      * @return - capability of the bucket
      */
@@ -1043,7 +1050,7 @@ export default class BucketInfo implements BucketMetadata {
         }
         return undefined;
     }
-    
+
     /**
      * Set bucket capabilities
      * @return - bucket info instance
@@ -1060,7 +1067,7 @@ export default class BucketInfo implements BucketMetadata {
     getQuota() {
         return this._quotaMax;
     }
-    
+
     /**
      * Set bucket quota
      * @param quota - quota to be set
@@ -1069,5 +1076,17 @@ export default class BucketInfo implements BucketMetadata {
     setQuota(quota: bigint | number) {
         this._quotaMax = BigInt(quota || 0n);
         return this;
+    }
+
+    getRateLimitConfiguration(): number | undefined {
+        return this._rateLimitConfiguration?.requestsPerSecond;
+    }
+
+    setRateLimitConfiguration(value: RateLimitConfigurationMetadata) {
+        this._rateLimitConfiguration = value;
+    }
+
+    removeRateLimitConfiguration() {
+        delete this._rateLimitConfiguration
     }
 }
