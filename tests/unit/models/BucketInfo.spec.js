@@ -3,6 +3,7 @@ const BucketInfo = require('../../../lib/models/BucketInfo').default;
 const { WebsiteConfiguration } =
     require('../../../lib/models/WebsiteConfiguration');
 const { VeeamCapacityInfo } = require('../../../lib/models/Veeam');
+const BucketLoggingStatus = require('../../../lib/models/BucketLoggingStatus').default;
 
 // create variables to populate dummyBucket
 const bucketName = 'nameOfBucket';
@@ -232,6 +233,11 @@ const testBucketCapabilities = {
 
 const testBucketQuota = 100000n;
 
+const testBucketLoggingStatus = new BucketLoggingStatus({
+    TargetBucket: 'target-bucket',
+    TargetPrefix: 'logs/',
+});
+
 // create a dummy bucket to test getters and setters
 Object.keys(acl).forEach(
     aclObj => describe(`different acl configurations : ${aclObj}`, () => {
@@ -257,6 +263,7 @@ Object.keys(acl).forEach(
             testBucketTagging,
             testBucketCapabilities,
             testBucketQuota,
+            testBucketLoggingStatus,
         );
 
         describe('serialize/deSerialize on BucketInfo class', () => {
@@ -304,6 +311,7 @@ Object.keys(acl).forEach(
                         } : undefined,
                     } : undefined,
                     quotaMax: dummyBucket._quotaMax.toString(),
+                    bucketLoggingStatus: dummyBucket._bucketLoggingStatus,
                 };
                 assert.strictEqual(serialized, JSON.stringify(bucketInfos));
                 done();
@@ -354,6 +362,7 @@ Object.keys(acl).forEach(
                     _tags: dummyBucket._tags,
                     _capabilities: dummyBucket._capabilities,
                     _quotaMax: dummyBucket._quotaMax,
+                    _bucketLoggingStatus: dummyBucket._bucketLoggingStatus,
                 };
                 const fromObj = BucketInfo.fromObj(dataObj);
                 assert(fromObj instanceof BucketInfo);
@@ -505,6 +514,10 @@ Object.keys(acl).forEach(
             it('getCapability should return a specific capability', () => {
                 assert.deepStrictEqual(dummyBucket.getCapability('VeeamSOSApi'),
                     testBucketCapabilities.VeeamSOSApi);
+            });
+            it('getBucketLoggingStatus should return bucket logging status', () => {
+                assert.deepStrictEqual(dummyBucket.getBucketLoggingStatus(),
+                    testBucketLoggingStatus);
             });
         });
 
@@ -720,6 +733,15 @@ Object.keys(acl).forEach(
                 assert.deepStrictEqual(
                     dummyBucket.getQuota(), 0n);
             });
+            it('setBucketLoggingStatus should set bucket logging status', () => {
+                const newLoggingStatus = new BucketLoggingStatus({
+                    TargetBucket: 'new-target-bucket',
+                    TargetPrefix: 'new-logs/',
+                });
+                dummyBucket.setBucketLoggingStatus(newLoggingStatus);
+                assert.deepStrictEqual(
+                    dummyBucket.getBucketLoggingStatus(), newLoggingStatus);
+            });
         });
     }),
 );
@@ -849,5 +871,122 @@ describe('ingest', () => {
         assert.deepStrictEqual(dummyBucket.getIngestion(), null);
         assert.strictEqual(dummyBucket.isIngestionBucket(), false);
         assert.strictEqual(dummyBucket.isIngestionEnabled(), false);
+    });
+});
+
+describe('bucketLoggingStatus', () => {
+    it('should set bucketLoggingStatus if provided during bucket creation', () => {
+        const loggingStatus = new BucketLoggingStatus({
+            TargetBucket: 'log-bucket',
+            TargetPrefix: 'access-logs/',
+        });
+        const dummyBucket = new BucketInfo(
+            bucketName, owner, ownerDisplayName, testDate,
+            BucketInfo.currentModelVersion(), acl[emptyAcl],
+            false, false, {
+                cryptoScheme: 1,
+                algorithm: 'sha1',
+                masterKeyId: 'somekey',
+                mandatory: true,
+            }, testVersioningConfiguration,
+            testLocationConstraint,
+            testWebsiteConfiguration,
+            testCorsConfiguration,
+            testReplicationConfiguration,
+            testLifecycleConfiguration,
+            testBucketPolicy,
+            testUid, undefined, true, undefined, undefined,
+            false, undefined, undefined, undefined,
+            undefined, undefined, loggingStatus);
+        assert.deepStrictEqual(dummyBucket.getBucketLoggingStatus(), loggingStatus);
+    });
+
+    it('should have bucketLoggingStatus as undefined if not provided', () => {
+        const dummyBucket = new BucketInfo(
+            bucketName, owner, ownerDisplayName, testDate,
+            BucketInfo.currentModelVersion(), acl[emptyAcl],
+            false, false, {
+                cryptoScheme: 1,
+                algorithm: 'sha1',
+                masterKeyId: 'somekey',
+                mandatory: true,
+            }, testVersioningConfiguration,
+            testLocationConstraint,
+            testWebsiteConfiguration,
+            testCorsConfiguration,
+            testReplicationConfiguration,
+            testLifecycleConfiguration,
+            testBucketPolicy,
+            testUid, undefined, true);
+        assert.strictEqual(dummyBucket.getBucketLoggingStatus(), undefined);
+    });
+
+    it('should throw assertion error if bucketLoggingStatus is not an instance of BucketLoggingStatus', () => {
+        assert.throws(() => {
+            new BucketInfo(
+                bucketName, owner, ownerDisplayName, testDate,
+                BucketInfo.currentModelVersion(), acl[emptyAcl],
+                false, false, {
+                    cryptoScheme: 1,
+                    algorithm: 'sha1',
+                    masterKeyId: 'somekey',
+                    mandatory: true,
+                },
+                undefined, undefined, undefined, undefined,
+                undefined, undefined, undefined, undefined,
+                undefined, undefined, undefined, undefined,
+                undefined, undefined, undefined, undefined,
+                undefined, { TargetBucket: 'bucket', TargetPrefix: 'logs/' });
+        }, /AssertionError/);
+    });
+
+    it('should serialize and deserialize bucketLoggingStatus correctly', () => {
+        const loggingStatus = new BucketLoggingStatus({
+            TargetBucket: 'serialization-test-bucket',
+            TargetPrefix: 'serialization-logs/',
+        });
+        const dummyBucket = new BucketInfo(
+            bucketName, owner, ownerDisplayName, testDate,
+            BucketInfo.currentModelVersion(), acl[emptyAcl],
+            false, false, {
+                cryptoScheme: 1,
+                algorithm: 'sha1',
+                masterKeyId: 'somekey',
+                mandatory: true,
+            }, testVersioningConfiguration,
+            testLocationConstraint,
+            testWebsiteConfiguration,
+            testCorsConfiguration,
+            testReplicationConfiguration,
+            testLifecycleConfiguration,
+            testBucketPolicy,
+            testUid, undefined, true, undefined, undefined,
+            false, undefined, undefined, undefined,
+            undefined, undefined, loggingStatus);
+        
+        const serialized = dummyBucket.serialize();
+        const deserialized = BucketInfo.deSerialize(serialized);
+        
+        assert.deepStrictEqual(
+            deserialized.getBucketLoggingStatus()?.getLoggingEnabled(),
+            loggingStatus.getLoggingEnabled()
+        );
+    });
+
+    it('should handle undefined bucketLoggingStatus during serialization', () => {
+        const dummyBucket = new BucketInfo(
+            bucketName, owner, ownerDisplayName, testDate,
+            BucketInfo.currentModelVersion(), acl[emptyAcl],
+            false, false, {
+                cryptoScheme: 1,
+                algorithm: 'sha1',
+                masterKeyId: 'somekey',
+                mandatory: true,
+            });
+        
+        const serialized = dummyBucket.serialize();
+        const deserialized = BucketInfo.deSerialize(serialized);
+        
+        assert.strictEqual(deserialized.getBucketLoggingStatus(), undefined);
     });
 });

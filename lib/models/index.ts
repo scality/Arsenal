@@ -13,4 +13,5 @@ export { default as ObjectMDArchive } from './ObjectMDArchive';
 export { default as ObjectMDAzureInfo } from './ObjectMDAzureInfo';
 export { default as ObjectMDLocation } from './ObjectMDLocation';
 export { default as ReplicationConfiguration } from './ReplicationConfiguration';
+export { default as BucketLoggingStatus } from './BucketLoggingStatus';
 export * as WebsiteConfiguration from './WebsiteConfiguration';

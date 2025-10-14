@@ -236,6 +236,18 @@ describe('routePUT', () => {
         );
     });
 
+    it('should call bucketPutLogging when query.logging is set', () => {
+        request.bucketName = 'test-bucket';
+        request.query = { logging: '' };
+        api.callApiMethod = jest.fn();
+
+        routePUT(request, response, api, log, statsClient);
+
+        expect(api.callApiMethod).toHaveBeenCalledWith(
+            'bucketPutLogging', request, response, log, expect.any(Function),
+        );
+    });
+
     it('should return BadRequest when content-length is invalid for PUT bucket', () => {
         request.bucketName = 'test-bucket';
         request.query = {};
