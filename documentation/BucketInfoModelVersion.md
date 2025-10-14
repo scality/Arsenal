@@ -285,3 +285,16 @@ this._quotaMax = quotaMax || 0;
 ### Usage
 
 Used to store bucket quota
+
+## Model version 18
+
+### Properties Added
+
+```javascript
+private _bucketLoggingStatus?: BucketLoggingStatus;
+```
+
+### Usage
+
+Used for bucket logging
+https://docs.aws.amazon.com/AmazonS3/latest/userguide/ServerLogs.html
