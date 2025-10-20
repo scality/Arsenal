@@ -14,6 +14,23 @@ const jsutil = require('../jsutil');
 
 const ALLOW_INVALID_META_HEADERS = !!process.env.ALLOW_INVALID_META_HEADERS;
 
+function storeServerAccessLogFields(
+    res: http.ServerResponse,
+    endTurnAroundTime: bigint,
+    errorCode?: string,
+    bytesSent?: number,
+) {
+    // @ts-expect-error
+    if (res.serverAccessLog) {
+        // @ts-expect-error
+        res.serverAccessLog.errorCode = errorCode;
+        // @ts-expect-error
+        res.serverAccessLog.endTurnAroundTime = endTurnAroundTime;
+        // @ts-expect-error
+        res.serverAccessLog.bytesSent = bytesSent;
+    }
+}
+
 export type CallApiMethod = (
     methodName: string,
     request: http.IncomingMessage,
@@ -97,6 +114,7 @@ export function okHeaderResponse(
     setCommonResponseHeaders(headers, response, log);
     log.debug('response http code', { httpCode });
     response.writeHead(httpCode);
+    storeServerAccessLogFields(response, process.hrtime.bigint());
     return response.end(() => {
         log.end().info('responded to request', {
             httpCode: response.statusCode,
@@ -129,6 +147,7 @@ export const XMLResponseBackend = {
         setCommonResponseHeaders(additionalHeaders, response, log);
         response.writeHead(200, { 'Content-type': 'application/xml' });
         log.trace('xml response', { xml });
+        storeServerAccessLogFields(response, process.hrtime.bigint(), undefined, bytesSent);
         return response.end(xml, 'utf8', () => {
             log.end().info('responded with XML', {
                 httpCode: response.statusCode,
@@ -148,6 +167,7 @@ export const XMLResponseBackend = {
         // early return to avoid extra headers and XML data
         if (error.code === 304) {
             response.writeHead(error.code);
+            storeServerAccessLogFields(response, process.hrtime.bigint(), error.message);
             return response.end('', 'utf8', () => {
                 log.end().info('responded with empty body', {
                     httpCode: response.statusCode,
@@ -191,6 +211,7 @@ export const XMLResponseBackend = {
             'Content-Type': 'application/xml',
             'Content-Length': bytesSent,
         });
+        storeServerAccessLogFields(response, process.hrtime.bigint(), error.message, bytesSent);
         return response.end(xmlStr, 'utf8', () => {
             log.end().info('responded with error XML', {
                 httpCode: response.statusCode,
@@ -221,6 +242,7 @@ export const JSONResponseBackend = {
         setCommonResponseHeaders(additionalHeaders, response, log);
         response.writeHead(200, { 'Content-type': 'application/json' });
         log.trace('sending success json response', { json });
+        storeServerAccessLogFields(response, process.hrtime.bigint(), undefined, bytesSent);
         return response.end(json, 'utf8', () => {
             log.end().info('responded with JSON', {
                 httpCode: response.statusCode,
@@ -267,6 +289,7 @@ export const JSONResponseBackend = {
             'Content-Type': 'application/json',
             'Content-Length': bytesSent,
         });
+        storeServerAccessLogFields(response, process.hrtime.bigint(), error.message, bytesSent);
         return response.end(data, 'utf8', () => {
             log.end().info('responded with error JSON', {
                 httpCode: response.statusCode,
@@ -337,6 +360,7 @@ function okContentHeadersResponse(
     return response;
 }
 
+// TODO: Server access logs fields are not recorded.
 function retrieveDataAzure(
     locations: unknown[],
     // TODO ARSN-174 type check missing
@@ -388,6 +412,7 @@ export function retrieveData(
     log: RequestLogger,
 ) {
     if (locations.length === 0) {
+        storeServerAccessLogFields(response, process.hrtime.bigint());
         return response.end();
     }
     if (locations[0].azureStreamingOptions) {
@@ -414,6 +439,8 @@ export function retrieveData(
         responseDestroyed = true;
         _destroyReadable(currentStream);
     });
+
+    let first_byte_sent_timestamp: bigint = process.hrtime.bigint();
 
     const {
         client,
@@ -474,16 +501,24 @@ export function retrieveData(
                 // Any subsequent error leads to destror deletion.
                 if (!response.headersSent) {
                     response.writeHead(httpCodeOnSucess);
+                    first_byte_sent_timestamp = process.hrtime.bigint();
                 }
                 // TODO ARSN-474: can this be moved above, so we
                 // do not need to call _destroyReadable in the error case
                 // in the callback of data.get()? The 'close' event is not
                 // called if 'end' is.
                 currentStream = readable;
+
                 return readable.pipe(response, { end: false });
             }
         ), err => {
             currentStream = null;
+            storeServerAccessLogFields(
+                response,
+                first_byte_sent_timestamp,
+                err?.message || undefined,
+                _computeContentLengthFromLocation(locations),
+            );
             if (err) {
                 if (!response.headersSent) {
                     XMLResponseBackend.errorResponse(errors.ServiceUnavailable, response, log);
@@ -641,6 +676,8 @@ export function responseContentHeaders(
         log.debug('response http code', { httpCode: 200 });
         response.writeHead(200);
     }
+
+    storeServerAccessLogFields(response, process.hrtime.bigint());
     return response.end(() => {
         log.end().info('responded with content headers', {
             httpCode: response.statusCode,
@@ -686,7 +723,7 @@ export function responseStreamData(
                 dataLocations)) {
             log.error(
                 'logic error: total length of fetched data ' +
-                    'locations does not match returned content-length',
+                'locations does not match returned content-length',
                 { contentLength, dataLocations });
             return XMLResponseBackend.errorResponse(errors.InternalError,
                 response, log,
@@ -700,6 +737,8 @@ export function responseStreamData(
             range, log);
     }
     if (dataLocations === null || _computeContentLengthFromLocation(dataLocations) === 0) {
+
+        storeServerAccessLogFields(response, process.hrtime.bigint());
         return response.end(() => {
             log.end().info('responded with only metadata', {
                 httpCode: response.statusCode,
@@ -799,7 +838,9 @@ export function errorHtmlResponse(
         '</html>',
     );
 
-    return response.end(html.join(''), 'utf8', () => {
+    const body = html.join('');
+    storeServerAccessLogFields(response, process.hrtime.bigint(), error.message, body.length);
+    return response.end(body, 'utf8', () => {
         log.end().info('responded with error html', {
             httpCode: response.statusCode,
         });
@@ -824,6 +865,7 @@ export function errorHeaderResponse(
     response.setHeader('x-amz-error-code', error.message);
     response.setHeader('x-amz-error-message', error.description);
     response.writeHead(error.code);
+    storeServerAccessLogFields(response, process.hrtime.bigint(), error.message);
     return response.end(() => {
         log.end().info('responded with error headers', {
             httpCode: response.statusCode,
@@ -915,6 +957,7 @@ export function redirectRequest(
     response.writeHead(redirectCode, {
         Location: redirectLocation,
     });
+    storeServerAccessLogFields(response, process.hrtime.bigint());
     response.end();
     return undefined;
 }
