@@ -142,7 +142,7 @@ describe('routerWebsite', () => {
         routerWebsite(request, response, api, log, statsClient, dataRetrievalParams);
 
         expect(routesUtils.redirectRequest).toHaveBeenCalledWith(
-            mockRedirectInfo, 'some-key', true, response, request.headers.host, null, log,
+            mockRedirectInfo, 'some-key', request, response, null, log,
         );
     });
 
