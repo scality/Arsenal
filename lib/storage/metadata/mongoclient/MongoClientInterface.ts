@@ -1973,14 +1973,14 @@ class MongoClientInterface {
         const masterKey = formatMasterKey(objName, params.vFormat);
         this.internalDeleteObject(c, bucketName, masterKey, {}, params, log, err => {
             if (err) {
-                // Should not return an error when no object is found
                 if (err.is.NoSuchKey) {
                     return cb(null);
                 }
+
                 log.error(
                     'deleteObjectNoVer: error deleting object with no version',
                     { error: err.message, bucket: bucketName, key: objName });
-                return cb(errors.InternalError);
+                return cb(err);
             }
             return cb(null);
         }, originOp);
