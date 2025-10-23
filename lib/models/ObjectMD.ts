@@ -1177,6 +1177,16 @@ export default class ObjectMD {
         return this;
     }
 
+    setReplicationTargetBucket(destination: string) {
+        this._data.replicationInfo.destination = destination;
+        return this;
+    }
+
+    setReplicationRoles(role: string) {
+        this._data.replicationInfo.role = role;
+        return this;
+    }
+
     getReplicationDataStoreVersionId() {
         return this._data.replicationInfo.dataStoreVersionId;
     }
