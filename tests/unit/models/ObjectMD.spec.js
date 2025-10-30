@@ -202,6 +202,18 @@ describe('ObjectMD class setters/getters', () => {
         assert.strictEqual(md.getReplicationStorageClass(), 'a');
     });
 
+    it('ObjectMD::setReplicationTargetBucket', () => {
+        const bucketName = 'bucket0';
+        md.setReplicationTargetBucket(bucketName);
+        assert.strictEqual(md.getReplicationTargetBucket(), bucketName);
+    });
+
+    it('ObjectMD::setReplicationRoles', () => {
+        const roles = 'arn:aws:iam::123456789012:role/src-resource,arn:aws:iam::123456789012:role/dest-resource';
+        md.setReplicationRoles(roles);
+        assert.strictEqual(md.getReplicationRoles(), roles);
+    });
+
     it('ObjectMD::getReplicationSiteStatus', () => {
         md.setReplicationInfo({
             backends: [{
