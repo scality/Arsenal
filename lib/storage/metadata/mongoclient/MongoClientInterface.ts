@@ -51,6 +51,7 @@ import { Version } from '../../../versioning/Version';
 import { formatMasterKey, formatVersionKey } from './utils';
 import { VeeamCapacityInfo } from '../../../models/Veeam';
 import { BucketVersioningFormat } from '../../../versioning/constants';
+import * as ObjectMDMinify from './objectMDMinify';
 
 const VID_NONE = '';
 
@@ -385,6 +386,32 @@ class MongoClientInterface {
         const newName = (name === constants.usersBucket) ?
             USERSBUCKET : name;
         return this.db!.collection<T>(newName);
+    }
+
+    /**
+     * Prepare ObjectMD value for storage (apply minification if enabled)
+     * @param objVal - ObjectMD data to store
+     * @returns Object with 'v' or 'value' field
+     */
+    private prepareObjectMDForStorage(objVal: ObjectMDData): { v?: any; value?: any } {
+        return ObjectMDMinify.prepareForStorage(objVal);
+    }
+
+    /**
+     * Extract ObjectMD value from storage document (handle minification)
+     * @param doc - MongoDB document
+     * @returns ObjectMD data or undefined
+     */
+    private extractObjectMDFromStorage(doc: any): ObjectMDData | undefined {
+        return ObjectMDMinify.prepareFromStorage(doc);
+    }
+
+    /**
+     * Get the value field name based on minification setting
+     * @returns 'v' or 'value'
+     */
+    private getValueFieldName(): 'v' | 'value' {
+        return ObjectMDMinify.getValueFieldName();
     }
 
     /**
@@ -844,12 +871,15 @@ class MongoClientInterface {
         objVal.versionId = versionId;
         const versionKey = formatVersionKey(objName, versionId, params.vFormat);
         const masterKey = formatMasterKey(objName, params.vFormat);
+        const valueField = this.getValueFieldName();
+        const versionDoc = this.prepareObjectMDForStorage(objVal);
+        
         // initiating array of operations with version creation
         const ops: AnyBulkWriteOperation<ObjectMetastoreDocument>[] = [{
             insertOne: {
                 document: {
                     _id: versionKey,
-                    value: objVal,
+                    ...versionDoc,
                 } as ObjectMetastoreDocument,
             },
         }];
@@ -857,13 +887,14 @@ class MongoClientInterface {
         const filter = {
             _id: masterKey,
             $or: [
-                { 'value.versionId': { $exists: false } },
-                { 'value.versionId': { $gt: objVal.versionId } },
+                { [`${valueField}.versionId`]: { $exists: false } },
+                { [`${valueField}.versionId`]: { $gt: objVal.versionId } },
             ],
         };
         // values to update master
+        const masterDoc = this.prepareObjectMDForStorage(objVal);
         const update = {
-            $set: { _id: masterKey, value: objVal },
+            $set: { _id: masterKey, ...masterDoc },
         };
         // updating or deleting master depending on the last version put
         // in v0 the master gets updated, in v1 the master gets deleted if version is
@@ -960,8 +991,9 @@ class MongoClientInterface {
         const versionId = generateVersionId(this.instanceId, this.replicationGroupId);
         objVal.versionId = versionId;
         const masterKey = formatMasterKey(objName, params.vFormat);
+        const masterDoc = this.prepareObjectMDForStorage(objVal);
         c.updateOne({ _id: masterKey },
-            { $set: { value: objVal }, $setOnInsert: { _id: masterKey } },
+            { $set: masterDoc, $setOnInsert: { _id: masterKey } },
             { upsert: true },
         )
             .then(() => cb(null, `{"versionId": "${objVal.versionId}"}`))
@@ -1003,6 +1035,7 @@ class MongoClientInterface {
         objVal.versionId = params.versionId;
         const versionKey = formatVersionKey(objName, params.versionId, params.vFormat);
         const masterKey = formatMasterKey(objName, params.vFormat);
+        const valueField = this.getValueFieldName();
 
         const putObjectEntry = (ops, callback) => {
             c.bulkWrite(ops, {
@@ -1024,6 +1057,7 @@ class MongoClientInterface {
 
         c.findOne({ _id: masterKey }).then(checkObj => {
             const objUpsert = !checkObj;
+            const versionDoc = this.prepareObjectMDForStorage(objVal);
             // initiating array of operations with version creation/update
             const ops: AnyBulkWriteOperation<ObjectMetastoreDocument>[] = [{
                 updateOne: {
@@ -1033,7 +1067,7 @@ class MongoClientInterface {
                     update: {
                         $set: {
                             _id: versionKey,
-                            value: objVal,
+                            ...versionDoc,
                         },
                     },
                     upsert: true,
@@ -1042,11 +1076,12 @@ class MongoClientInterface {
             // filter to get master
             const filter = {
                 '_id': masterKey,
-                'value.versionId': objVal.versionId,
+                [`${valueField}.versionId`]: objVal.versionId,
             };
             // values to update master
+            const masterDoc = this.prepareObjectMDForStorage(objVal);
             const update = {
-                $set: { _id: masterKey, value: objVal },
+                $set: { _id: masterKey, ...masterDoc },
             };
 
             c.findOne({ _id: versionKey }).then(verObj => {
@@ -1112,12 +1147,15 @@ class MongoClientInterface {
     ) {
         const versionKey = formatVersionKey(objName, params.versionId, params.vFormat);
         const masterKey = formatMasterKey(objName, params.vFormat);
+        const valueField = this.getValueFieldName();
+        const versionDoc = this.prepareObjectMDForStorage(objVal);
+        
         c.updateOne({
             _id: versionKey,
         }, {
             $set: {
                 _id: versionKey,
-                value: objVal,
+                ...versionDoc,
             },
         }, {
             upsert: true,
@@ -1138,7 +1176,7 @@ class MongoClientInterface {
             const filter = {
                 _id: masterKey,
                 $or: [
-                    { 'value.versionId': { $exists: false } },
+                    { [`${valueField}.versionId`]: { $exists: false } },
                     // We break the semantic correctness here with
                     // $gte instead of $gt because we do not have
                     // a microVersionId to capture the micro
@@ -1150,12 +1188,13 @@ class MongoClientInterface {
                     // ensure), but this would not work e.g. in
                     // the case of an active-active replication.
 
-                    { 'value.versionId': { $gte: mstObjVal!.versionId } },
+                    { [`${valueField}.versionId`]: { $gte: mstObjVal!.versionId } },
                 ]
             };
             // values to update master
+            const masterDoc = this.prepareObjectMDForStorage(mstObjVal!);
             const update = {
-                $set: { _id: masterKey, value: mstObjVal },
+                $set: { _id: masterKey, ...masterDoc },
             };
             // updating or deleting master depending on the last version put
             // in v0 the master gets updated, in v1 the master gets deleted if version is
@@ -1215,10 +1254,11 @@ class MongoClientInterface {
         }
         const key = formatMasterKey(objName, params.vFormat);
         const putFilter = { _id: key };
+        const valueDoc = this.prepareObjectMDForStorage(value);
         return collection.updateOne(putFilter, {
             $set: {
                 _id: key,
-                value,
+                ...valueDoc,
             },
         }, {
             upsert: true,
@@ -1256,17 +1296,18 @@ class MongoClientInterface {
     ) {
         const key = formatMasterKey(objName, params.vFormat);
         const putFilter = { _id: key };
+        const valueField = this.getValueFieldName();
         // filter used when finding and updating object
         const findFilter = {
             ...putFilter,
             $or: [
-                { 'value.deleted': { $exists: false } },
-                { 'value.deleted': { $eq: false } },
+                { [`${valueField}.deleted`]: { $exists: false } },
+                { [`${valueField}.deleted`]: { $eq: false } },
             ],
         };
         const updateDeleteFilter = {
             ...putFilter,
-            'value.deleted': true,
+            [`${valueField}.deleted`]: true,
         };
         return async.waterfall([
             // Adding delete flag when getting the object
@@ -1276,13 +1317,13 @@ class MongoClientInterface {
             }, {
                 upsert: false,
             }).then(doc => {
-                if (!doc?.value) {
+                const objData = this.extractObjectMDFromStorage(doc);
+                if (!objData) {
                     log.error('internalPutObject: unable to find target object to update',
                         { bucket: bucketName, object: key });
                     return next(errors.NoSuchKey);
                 }
-                const obj = doc.value;
-                const objMetadata = new ObjectMD(obj);
+                const objMetadata = new ObjectMD(objData);
                 objMetadata.setOriginOp(params.originOp);
                 objMetadata.setDeleted(true);
                 return next(null, objMetadata.getValue());
@@ -1293,26 +1334,30 @@ class MongoClientInterface {
             }),
             // We update the full object to get the whole object metadata
             // in the oplog update event
-            (objMetadata, next) => collection.bulkWrite([
-                {
-                    updateOne: {
-                        filter: updateDeleteFilter,
-                        update: {
-                            $set: { _id: key, value: objMetadata },
+            (objMetadata, next) => {
+                const deletedDoc = this.prepareObjectMDForStorage(objMetadata);
+                const newDoc = this.prepareObjectMDForStorage(value);
+                return collection.bulkWrite([
+                    {
+                        updateOne: {
+                            filter: updateDeleteFilter,
+                            update: {
+                                $set: { _id: key, ...deletedDoc },
+                            },
+                            upsert: false,
                         },
-                        upsert: false,
                     },
-                },
-                {
-                    updateOne: {
-                        filter: putFilter,
-                        update: {
-                            $set: { _id: key, value },
+                    {
+                        updateOne: {
+                            filter: putFilter,
+                            update: {
+                                $set: { _id: key, ...newDoc },
+                            },
+                            upsert: true,
                         },
-                        upsert: true,
                     },
-                },
-            ], { ordered: true }).then(() => next(null)).catch(next),
+                ], { ordered: true }).then(() => next(null)).catch(next);
+            },
         ], err => {
             if (err) {
                 log.error('internalPutObject: error updating object',
@@ -1398,6 +1443,7 @@ class MongoClientInterface {
     ) {
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
         let key;
+        const valueField = this.getValueFieldName();
         async.waterfall([
             next => this.getBucketVFormat(bucketName, log, next),
             (vFormat, next) => {
@@ -1410,6 +1456,9 @@ class MongoClientInterface {
                     _id: key,
                     // filtering out objects flagged for deletion
                     $or: [
+                        { [`${valueField}.deleted`]: { $exists: false } },
+                        { [`${valueField}.deleted`]: { $eq: false } },
+                        // Also check for old 'value' field for backward compatibility
                         { 'value.deleted': { $exists: false } },
                         { 'value.deleted': { $eq: false } },
                     ],
@@ -1423,9 +1472,10 @@ class MongoClientInterface {
                 if (!doc && params && params.versionId) {
                     return next(errorInstances.NoSuchKey);
                 }
+                const objData = this.extractObjectMDFromStorage(doc);
                 // If no master found then object is either non existent
                 // or last version is delete marker
-                if (!doc || doc.value.isPHD) {
+                if (!doc || objData?.isPHD) {
                     this.getLatestVersion(c, objName, vFormat, log, (err, value?) => {
                         if (err?.is.NoSuchKey) {
                             return next(err);
@@ -1442,8 +1492,10 @@ class MongoClientInterface {
                     });
                     return undefined;
                 }
-                MongoUtils.unserialize(doc.value);
-                return next(null, doc.value);
+                if (objData) {
+                    MongoUtils.unserialize(objData);
+                }
+                return next(null, objData);
             },
         ], (err: ArsenalError | null | undefined, result?: ObjectMDData) => {
             if (err) {
@@ -1488,9 +1540,10 @@ class MongoClientInterface {
                     key,
                 });
             }
+            const objData = this.extractObjectMDFromStorage(doc);
             // If no master found then object is either non existent or last
             // version is delete marker
-            if (!doc || doc.value.isPHD) {
+            if (!doc || objData?.isPHD) {
                 return this.getLatestVersion(c!, objName, vFormat, log, (err, _doc?) => cb(null, {
                     err,
                     doc: _doc || null,
@@ -1498,10 +1551,12 @@ class MongoClientInterface {
                     key,
                 }));
             }
-            MongoUtils.unserialize(doc.value);
+            if (objData) {
+                MongoUtils.unserialize(objData);
+            }
             return cb(null, {
                 err: null,
-                doc: doc.value,
+                doc: objData,
                 versionId: versionIdValue,
                 key,
             });
@@ -1517,12 +1572,16 @@ class MongoClientInterface {
                 return callback(errors.InternalError);
             }
             vFormat = _vFormat;
+            const valueField = this.getValueFieldName();
             const keys = objects.map(({ key: objName, params }) => (params && params.versionId
                 ? formatVersionKey(objName, params.versionId, vFormat)
                 : formatMasterKey(objName, vFormat)));
             return c!.find({
                 _id: { $in: keys },
                 $or: [
+                    { [`${valueField}.deleted`]: { $exists: false } },
+                    { [`${valueField}.deleted`]: { $eq: false } },
+                    // Also check for old 'value' field for backward compatibility
                     { 'value.deleted': { $exists: false } },
                     { 'value.deleted': { $eq: false } },
                 ],
@@ -1573,6 +1632,7 @@ class MongoClientInterface {
         // string gives us the last key in the range
         const versionKey = formatVersionKey(objName, VID_NONE, vFormat);
         const lastVersionKey = inc(versionKey);
+        const valueField = this.getValueFieldName();
         const filter = vFormat === BUCKET_VERSIONS.v0 ? {
             $gt: masterKey,
             $lt: lastVersionKey,
@@ -1584,6 +1644,9 @@ class MongoClientInterface {
             _id: filter,
             // filtering out objects flagged for deletion
             $or: [
+                { [`${valueField}.deleted`]: { $exists: false } },
+                { [`${valueField}.deleted`]: { $eq: false } },
+                // Also check for old 'value' field for backward compatibility
                 { 'value.deleted': { $exists: false } },
                 { 'value.deleted': { $eq: false } },
             ],
@@ -1597,8 +1660,12 @@ class MongoClientInterface {
                 if (keys.length === 0) {
                     return cb(errors.NoSuchKey);
                 }
-                MongoUtils.unserialize(keys[0].value);
-                return cb(null, keys[0].value);
+                const objData = this.extractObjectMDFromStorage(keys[0]);
+                if (!objData) {
+                    return cb(errors.InternalError);
+                }
+                MongoUtils.unserialize(objData);
+                return cb(null, objData);
             })
             .catch(err => {
                 log.error(
@@ -1633,15 +1700,17 @@ class MongoClientInterface {
         cb: ArsenalCallback<void>,
     ) {
         const masterKey = formatMasterKey(objName, vFormat);
+        const valueField = this.getValueFieldName();
         MongoUtils.serialize(objVal);
         objVal.originOp = 's3:ObjectRemoved:Delete';
+        const repairDoc = this.prepareObjectMDForStorage(objVal);
         c.findOneAndReplace({
             '_id': masterKey,
-            'value.isPHD': true,
-            'value.versionId': mst.versionId,
+            [`${valueField}.isPHD`]: true,
+            [`${valueField}.versionId`]: mst.versionId,
         }, <WithId<ObjectMetastoreDocument>>{
             _id: masterKey,
-            value: objVal,
+            ...repairDoc,
         }, {
             includeResultMetadata: true,
             upsert: true,
@@ -1718,6 +1787,7 @@ class MongoClientInterface {
         cb: ArsenalCallback<void>,
     ) {
         const masterKey = formatMasterKey(objName, vFormat);
+        const valueField = this.getValueFieldName();
         // Check if there are other versions available
         this.getLatestVersion(c, objName, vFormat, log, (err, version?) => {
             if (err && !err.is.NoSuchKey) {
@@ -1732,8 +1802,8 @@ class MongoClientInterface {
                 // atomic condition on the PHD flag and the mst
                 // version:
                 const filter = {
-                    'value.isPHD': true,
-                    'value.versionId': mst.versionId,
+                    [`${valueField}.isPHD`]: true,
+                    [`${valueField}.versionId`]: mst.versionId,
                 };
                 this.internalDeleteObject(c, bucketName, masterKey, filter, null, log, err => {
                     if (err) {
@@ -1790,6 +1860,7 @@ class MongoClientInterface {
     ) {
         const masterKey = formatMasterKey(objName, params.vFormat);
         const versionKey = formatVersionKey(objName, params.versionId, params.vFormat);
+        const valueField = this.getValueFieldName();
         const _vid = generateVersionId(this.instanceId, this.replicationGroupId);
         async.series([
             next => c.updateOne(
@@ -1805,9 +1876,9 @@ class MongoClientInterface {
                 {
                     $set: {
                         '_id': masterKey,
-                        'value.isPHD': true,
-                        'value.versionId': _vid,
-                        'value.deleted': false,
+                        [`${valueField}.isPHD`]: true,
+                        [`${valueField}.versionId`]: _vid,
+                        [`${valueField}.deleted`]: false,
                     },
                 },
                 { upsert: true })
@@ -1902,12 +1973,16 @@ class MongoClientInterface {
         originOp = 's3:ObjectRemoved:Delete',
     ) {
         const masterKey = formatMasterKey(objName, params.vFormat);
+        const valueField = this.getValueFieldName();
         async.waterfall([
             next => {
                 // find the master version
                 c.findOne({
                     _id: masterKey,
                     $or: [
+                        { [`${valueField}.deleted`]: { $exists: false } },
+                        { [`${valueField}.deleted`]: { $eq: false } },
+                        // Also check for old 'value' field for backward compatibility
                         { 'value.deleted': { $exists: false } },
                         { 'value.deleted': { $eq: false } },
                     ],
@@ -1933,8 +2008,9 @@ class MongoClientInterface {
                 return next(null, mst);
             },
             (mst, next) => {
-                if (mst.value.isPHD ||
-                    mst.value.versionId === params.versionId) {
+                const mstData = this.extractObjectMDFromStorage(mst);
+                if (mstData?.isPHD ||
+                    mstData?.versionId === params.versionId) {
                     return this.deleteObjectVerMaster(c, bucketName, objName,
                         params, log, next, originOp);
                 }
@@ -2011,6 +2087,7 @@ class MongoClientInterface {
         cb: ArsenalCallback<unknown>,
         originOp = 's3:ObjectRemoved:Delete',
     ) {
+        const valueField = this.getValueFieldName();
         // filter used when deleting object
         const deleteFilter = Object.assign({
             _id: key,
@@ -2044,6 +2121,9 @@ class MongoClientInterface {
         const findFilter = Object.assign({
             _id: key,
             $or: [
+                { [`${valueField}.deleted`]: { $exists: false } },
+                { [`${valueField}.deleted`]: { $eq: false } },
+                // Also check for old 'value' field for backward compatibility
                 { 'value.deleted': { $exists: false } },
                 { 'value.deleted': { $eq: false } },
             ],
@@ -2051,7 +2131,7 @@ class MongoClientInterface {
 
         const updateDeleteFilter = Object.assign({
             '_id': key,
-            'value.deleted': true,
+            [`${valueField}.deleted`]: true,
         }, filter);
         return async.waterfall([
             // Adding delete flag when getting the object
@@ -2059,19 +2139,19 @@ class MongoClientInterface {
             next => collection.findOneAndUpdate(findFilter, {
                 $set: {
                     '_id': key,
-                    'value.deleted': true,
+                    [`${valueField}.deleted`]: true,
                 },
             }, {
                 includeResultMetadata : true,
                 upsert: false,
             }).then(doc => {
-                if (!doc.value) {
+                const objData = this.extractObjectMDFromStorage(doc);
+                if (!objData) {
                     log.error('internalDeleteObject: unable to find target object to delete',
                         { bucket: bucketName, object: key });
                     return next(errors.NoSuchKey);
                 }
-                const obj = doc.value;
-                const objMetadata = new ObjectMD(obj.value);
+                const objMetadata = new ObjectMD(objData);
                 objMetadata.setOriginOp(originOp);
                 objMetadata.setDeleted(true);
                 return next(null, objMetadata.getValue());
@@ -2082,35 +2162,44 @@ class MongoClientInterface {
             }),
             // We update the full object to get the whole object metadata
             // in the oplog update event
-            (objMetadata, next) => collection.bulkWrite([
-                {
-                    updateOne: {
-                        filter: updateDeleteFilter,
-                        update: {
-                            $set: { _id: key, value: objMetadata },
+            (objMetadata, next) => {
+                const objData = this.extractObjectMDFromStorage(objMetadata);
+                if (!objData) {
+                    log.error('internalDeleteObject: unable to extract object metadata',
+                        { bucket: bucketName, object: key });
+                    return next(errors.InternalError);
+                }
+                const deletedDoc = this.prepareObjectMDForStorage(objData);
+                return collection.bulkWrite([
+                    {
+                        updateOne: {
+                            filter: updateDeleteFilter,
+                            update: {
+                                $set: { _id: key, ...deletedDoc },
+                            },
+                            upsert: false,
                         },
-                        upsert: false,
+                    }, {
+                        deleteOne: {
+                            filter: updateDeleteFilter,
+                        },
                     },
-                }, {
-                    deleteOne: {
-                        filter: updateDeleteFilter,
-                    },
-                },
-            ], { ordered: true }).then(result => {
-                // in case of race conditions, the bulk operation might fail
-                // in this case we return a DeleteConflict error
-                if (!result || !result.ok) {
-                    log.debug('internalDeleteObject: bulk operation failed', 
-                        { bucket: bucketName, object: key });
-                    return next(errors.DeleteConflict);
-                }
-                if (result.deletedCount === 0) {
-                    log.debug('internalDeleteObject: object not found or already deleted', 
-                        { bucket: bucketName, object: key });
-                    return next(errors.DeleteConflict);
-                }
-                return next(null);
-            }).catch(err => next(err)),
+                ], { ordered: true }).then(result => {
+                    // in case of race conditions, the bulk operation might fail
+                    // in this case we return a DeleteConflict error
+                    if (!result || !result.ok) {
+                        log.debug('internalDeleteObject: bulk operation failed', 
+                            { bucket: bucketName, object: key });
+                        return next(errors.DeleteConflict);
+                    }
+                    if (result.deletedCount === 0) {
+                        log.debug('internalDeleteObject: object not found or already deleted', 
+                            { bucket: bucketName, object: key });
+                        return next(errors.DeleteConflict);
+                    }
+                    return next(null);
+                }).catch(err => next(err));
+            },
         ], (err, res) => {
             if (err) {
                 if (err instanceof ArsenalError) {
@@ -2765,6 +2854,7 @@ class MongoClientInterface {
         log: werelogs.Logger, cb: ArsenalCallback<void>) {
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
         const method = 'deleteObjectWithCond';
+        const valueField = this.getValueFieldName();
         this.getBucketVFormat(bucketName, log, (err, vFormat?) => {
             if (err) {
                 return cb(err);
@@ -2772,7 +2862,7 @@ class MongoClientInterface {
             const masterKey = formatMasterKey(objName, vFormat);
             const filter = {};
             try {
-                MongoUtils.translateConditions(0, 'value', filter,
+                MongoUtils.translateConditions(0, valueField, filter,
                     params.conditions);
             } catch (err) {
                 log.error('error creating mongodb filter', {
@@ -2814,9 +2904,10 @@ class MongoClientInterface {
                 return cb(err);
             }
             const masterKey = formatMasterKey(objName, vFormat);
+            const valueField = this.getValueFieldName();
             const filter = { _id: masterKey };
             try {
-                MongoUtils.translateConditions(0, 'value', filter,
+                MongoUtils.translateConditions(0, valueField, filter,
                     params.conditions);
             } catch (err) {
                 log.error('error creating mongodb filter', {
@@ -2824,10 +2915,11 @@ class MongoClientInterface {
                 });
                 return cb(errors.InternalError);
             }
+            const objDoc = this.prepareObjectMDForStorage(objVal);
             return c.findOneAndUpdate(filter, {
                 $set: {
                     _id: masterKey,
-                    value: objVal,
+                    ...objDoc,
                 },
             }, {
                 includeResultMetadata: true,
