@@ -43,6 +43,8 @@ export default function routeDELETE(
             return call('bucketDeleteTagging');
         } else if (query?.quota !== undefined) {
             return call('bucketDeleteQuota');
+        } else if (query?.['rate-limit'] !== undefined) {
+            return call('bucketDeleteRateLimit');
         }
         return call('bucketDelete');
     } else {
@@ -57,7 +59,7 @@ export default function routeDELETE(
                  * be sent back as a response.
                  */
                 if (err && (
-                    !(err instanceof ArsenalError) || 
+                    !(err instanceof ArsenalError) ||
                     (!err.is.NoSuchKey && !err.is.NoSuchVersion)
                 )) {
                     return routesUtils.responseNoBody(err, corsHeaders,

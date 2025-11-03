@@ -101,6 +101,17 @@ describe('routerGET', () => {
         );
     });
 
+    it('should call bucketGetRateLimit when query.rate-limit is present', () => {
+        request.bucketName = 'bucketName';
+        request.query = { 'rate-limit': '' };
+
+        routerGET(request, response, api, log, statsClient, dataRetrievalParams);
+
+        expect(api.callApiMethod).toHaveBeenCalledWith(
+            'bucketGetRateLimit', request, response, log, expect.any(Function),
+        );
+    });
+
     it('should handle objectGet with responseStreamData when no query is present for an object', () => {
         request.bucketName = 'bucketName';
         request.objectKey = 'objectKey';

@@ -241,7 +241,7 @@ export const InvalidTag: ErrorFormat = {
 export const InvalidTargetBucketForLogging: ErrorFormat = {
     code: 400,
     description:
-        'The target bucket for logging does not exist, is not owned by you, '+ 
+        'The target bucket for logging does not exist, is not owned by you, '+
         'or does not have the appropriate grants for the log-delivery group.',
 };
 
@@ -402,9 +402,15 @@ export const ObjectLockConfigurationNotFoundError: ErrorFormat = {
     description: 'The object lock configuration was not found',
 };
 
+
 export const ServerSideEncryptionConfigurationNotFoundError: ErrorFormat = {
     code: 404,
     description: 'The server side encryption configuration was not found',
+};
+
+export const NoSuchRateLimitConfig: ErrorFormat = {
+    code: 404,
+    description: 'The bucket rate limit configuration does not exist.',
 };
 
 export const NotImplemented: ErrorFormat = {
@@ -483,8 +489,8 @@ export const SignatureDoesNotMatch: ErrorFormat = {
     description:
         'The request signature we calculated does not match the signature you provided.',
 };
-// "This is an AWS S3 specific error. We are opting to use the more general 'ServiceUnavailable' 
-// error used throughout AWS (IAM/EC2) to have uniformity of error messages even though we are 
+// "This is an AWS S3 specific error. We are opting to use the more general 'ServiceUnavailable'
+// error used throughout AWS (IAM/EC2) to have uniformity of error messages even though we are
 // potentially compromising S3 compatibility.",
 
 // export const ServiceUnavailable: ErrorFormat = {

@@ -138,4 +138,15 @@ describe('routeDELETE', () => {
             otherError, {}, response, undefined, log,
         );
     });
+
+    it('should call bucketDeleteRateLimit if query.rate-limit is set', () => {
+        request.query = { 'rate-limit': '' };
+        request.objectKey = undefined;
+
+        routeDELETE(request, response, api, log, statsClient);
+
+        expect(api.callApiMethod).toHaveBeenCalledWith(
+            'bucketDeleteRateLimit', request, response, log, expect.any(Function),
+        );
+    });
 });

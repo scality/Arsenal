@@ -12,11 +12,12 @@ import { areTagsValid, BucketTag } from '../s3middleware/tagging';
 import { VeeamCapability, VeeamSOSApiSchema, VeeamSOSApiSerializable } from './Veeam';
 import { AzureInfoMetadata } from './BucketAzureInfo';
 import BucketLoggingStatus from './BucketLoggingStatus';
+import RateLimitConfiguration, { RateLimitConfigurationMetadata } from './RateLimitConfiguration';
 
 // WHEN UPDATING THIS NUMBER, UPDATE BucketInfoModelVersion.md CHANGELOG
 // BucketInfoModelVersion.md can be found in documentation/ at the root
 // of this repository
-const modelVersion = 18;
+const modelVersion = 19;
 
 export type CORS = {
     id: string;
@@ -80,6 +81,7 @@ export type BucketMetadata = {
     capabilities?: Capabilities,
     quotaMax: bigint | number,
     bucketLoggingStatus?: BucketLoggingStatus,
+    rateLimitConfiguration?: RateLimitConfigurationMetadata,
 };
 
 export type BucketMetadataJSON = Omit<BucketMetadata, 'quotaMax' | 'capabilities'> & {
@@ -118,6 +120,7 @@ export default class BucketInfo implements BucketMetadata {
     private _capabilities?: Capabilities;
     private _quotaMax: bigint;
     private _bucketLoggingStatus?: BucketLoggingStatus;
+    private _rateLimitConfiguration?: RateLimitConfiguration;
 
     /**
     * Represents all bucket information.
@@ -205,6 +208,7 @@ export default class BucketInfo implements BucketMetadata {
         capabilities?: Capabilities,
         quotaMax?: bigint | number,
         bucketLoggingStatus?: BucketLoggingStatus,
+        rateLimitConfiguration?: RateLimitConfiguration,
     ) {
         assert.strictEqual(typeof name, 'string');
         assert.strictEqual(typeof owner, 'string');
@@ -228,7 +232,7 @@ export default class BucketInfo implements BucketMetadata {
             assert.strictEqual(typeof cryptoScheme, 'number');
             assert.strictEqual(typeof algorithm, 'string');
             assert.strictEqual(typeof mandatory, 'boolean');
-            assert.ok(masterKeyId !== undefined || configuredMasterKeyId !== undefined, 
+            assert.ok(masterKeyId !== undefined || configuredMasterKeyId !== undefined,
                 'At least one of masterKeyId or configuredMasterKeyId must be defined');
             if (masterKeyId !== undefined) {
                 assert.strictEqual(typeof masterKeyId, 'string', 'masterKeyId must be a string');
@@ -368,8 +372,9 @@ export default class BucketInfo implements BucketMetadata {
             VeeamSOSApi: capabilities.VeeamSOSApi &&
                 VeeamCapability.toBigInt(capabilities.VeeamSOSApi),
         };
-    
+
         this._quotaMax = BigInt(quotaMax || 0n);
+        this._rateLimitConfiguration = rateLimitConfiguration;
         return this;
     }
 
@@ -411,6 +416,7 @@ export default class BucketInfo implements BucketMetadata {
             },
             quotaMax: this._quotaMax.toString(),
             bucketLoggingStatus: this._bucketLoggingStatus,
+            rateLimitConfiguration: this._rateLimitConfiguration?.getData(),
         };
         const final = this._websiteConfiguration
             ? {
@@ -445,6 +451,8 @@ export default class BucketInfo implements BucketMetadata {
             new WebsiteConfiguration(obj.websiteConfiguration) : undefined;
         const bucketLoggingStatus = obj.bucketLoggingStatus ?
             new BucketLoggingStatus((obj.bucketLoggingStatus as any)._loggingEnabled) : undefined;
+        const rateLimitConfiguration = obj.rateLimitConfiguration ?
+            new RateLimitConfiguration(obj.rateLimitConfiguration) : undefined;
         return new BucketInfo(obj.name, obj.owner, obj.ownerDisplayName,
             obj.creationDate, obj.mdBucketModelVersion, obj.acl,
             obj.transient, obj.deleted, obj.serverSideEncryption,
@@ -453,7 +461,7 @@ export default class BucketInfo implements BucketMetadata {
             obj.bucketPolicy, obj.uid, obj.readLocationConstraint, obj.isNFS,
             obj.ingestion, obj.azureInfo, obj.objectLockEnabled,
             obj.objectLockConfiguration, obj.notificationConfiguration, obj.tags,
-            capabilities, BigInt(obj.quotaMax || 0n), bucketLoggingStatus);
+            capabilities, BigInt(obj.quotaMax || 0n), bucketLoggingStatus, rateLimitConfiguration);
     }
 
     /**
@@ -486,7 +494,8 @@ export default class BucketInfo implements BucketMetadata {
             data._isNFS, data._ingestion, data._azureInfo,
             data._objectLockEnabled, data._objectLockConfiguration,
             data._notificationConfiguration, data._tags, capabilities,
-            BigInt(data._quotaMax || 0n), data._bucketLoggingStatus);
+            BigInt(data._quotaMax || 0n), data._bucketLoggingStatus,
+            data._rateLimitConfiguration);
     }
 
     /**
@@ -498,6 +507,8 @@ export default class BucketInfo implements BucketMetadata {
     static fromJson(data: BucketMetadataJSON) {
         const bucketLoggingStatus = data.bucketLoggingStatus ?
             new BucketLoggingStatus((data.bucketLoggingStatus as any)._loggingEnabled) : undefined;
+        const rateLimitConfiguration = data.rateLimitConfiguration ?
+            new RateLimitConfiguration(data.rateLimitConfiguration) : undefined;
         return new BucketInfo(data.name, data.owner, data.ownerDisplayName,
             data.creationDate, data.mdBucketModelVersion, data.acl,
             data.transient, data.deleted, data.serverSideEncryption,
@@ -511,7 +522,7 @@ export default class BucketInfo implements BucketMetadata {
                 ...data.capabilities,
                 VeeamSOSApi: data.capabilities?.VeeamSOSApi &&
                     VeeamCapability.parse(data.capabilities?.VeeamSOSApi),
-            }, BigInt(data.quotaMax || 0n), bucketLoggingStatus);
+            }, BigInt(data.quotaMax || 0n), bucketLoggingStatus, rateLimitConfiguration);
     }
 
     /**
@@ -738,9 +749,9 @@ export default class BucketInfo implements BucketMetadata {
 
     /**
      * Checks if the default encryption is set at the account level instead of the legacy bucket level.
-     * This method helps to prevent deletion of the account-level master encryption key when deleting buckets. 
+     * This method helps to prevent deletion of the account-level master encryption key when deleting buckets.
      *
-     * @returns {boolean} - Returns true if account-level default encryption is enabled, 
+     * @returns {boolean} - Returns true if account-level default encryption is enabled,
      * false if it uses the legacy bucket level.
      */
     isAccountEncryptionEnabled() {
@@ -1027,7 +1038,7 @@ export default class BucketInfo implements BucketMetadata {
     getTags() {
         return this._tags;
     }
-    
+
     /**
      * Set bucket tags
      * @return - bucket info instance
@@ -1047,7 +1058,7 @@ export default class BucketInfo implements BucketMetadata {
 
     /**
      * Get a specific bucket capability
-     * 
+     *
      * @param capability? - if provided, will return a specific capacity
      * @return - capability of the bucket
      */
@@ -1057,7 +1068,7 @@ export default class BucketInfo implements BucketMetadata {
         }
         return undefined;
     }
-    
+
     /**
      * Set bucket capabilities
      * @return - bucket info instance
@@ -1074,7 +1085,7 @@ export default class BucketInfo implements BucketMetadata {
     getQuota() {
         return this._quotaMax;
     }
-    
+
     /**
      * Set bucket quota
      * @param quota - quota to be set
@@ -1101,5 +1112,13 @@ export default class BucketInfo implements BucketMetadata {
     setBucketLoggingStatus(bucketLoggingStatus : BucketLoggingStatus) {
         this._bucketLoggingStatus = bucketLoggingStatus;
         return this;
+    }
+
+    getRateLimitConfiguration(): RateLimitConfiguration | undefined {
+        return this._rateLimitConfiguration;
+    }
+
+    setRateLimitConfiguration(value: RateLimitConfiguration) {
+        this._rateLimitConfiguration = value;
     }
 }
