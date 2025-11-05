@@ -508,6 +508,7 @@ class MongoClientInterface {
                 return cb(null, BucketInfo.fromJson(bucketMetadata));
             })
             .catch(err => {
+                console.error(err);
                 log.error(
                     'getBucketAttributes: error getting bucket attributes',
                     { error: err.message });
@@ -544,6 +545,7 @@ class MongoClientInterface {
                 return cb(null, vFormat);
             })
             .catch(err => {
+                console.error(err);
                 log.error(
                     'getBucketVFormat: error getting bucket vFormat',
                     { bucket: bucketName, error: err.message },
@@ -618,6 +620,7 @@ class MongoClientInterface {
                 return cb(null);
             })
             .catch(err => {
+                console.error(err);
                 log.error(
                     'putBucketAttributes: error putting bucket attributes',
                     { error: err.message });
@@ -663,6 +666,7 @@ class MongoClientInterface {
             }
             return cb(null);
         }).catch(err => {
+            console.error(err);
             log.error(
                 'putBucketAttributesCapabilities: error putting bucket attributes',
                 { error: err.message });
@@ -705,6 +709,7 @@ class MongoClientInterface {
             return cb(null);
         }).catch(err => {
             if (err) {
+                console.error(err);
                 log.error(
                     'deleteBucketAttributesCapability: error deleting bucket attributes',
                     { error: err.message });
@@ -734,6 +739,7 @@ class MongoClientInterface {
                 return cb(null);
             })
             .catch(err => {
+                console.error(err);
                 log.error('deleteBucketStep2: error deleting bucket',
                     { error: err.message });
                 return cb(errors.InternalError);
@@ -762,6 +768,7 @@ class MongoClientInterface {
                 });
             })
             .catch(err => {
+                console.error(err);
                 if (err.codeName === 'NamespaceNotFound') {
                     return this.deleteBucketStep2(bucketName, log, cb);
                 }
@@ -966,6 +973,7 @@ class MongoClientInterface {
         )
             .then(() => cb(null, `{"versionId": "${objVal.versionId}"}`))
             .catch(err => {
+                console.error(err);
                 log.error('putObjectVerCase2: error putting object version', { error: err.message });
                 return cb(errors.InternalError);
             });
@@ -1010,6 +1018,7 @@ class MongoClientInterface {
             })
                 .then(() => callback(null, `{"versionId": "${objVal.versionId}"}`))
                 .catch(err => {
+                    console.error(err);
                     log.error('putObjectVerCase3: error putting object version', { error: err.message });
                     if (err.code === 11000) {
                         // We want duplicate key error logged however in
@@ -1071,11 +1080,13 @@ class MongoClientInterface {
                 putObjectEntry(ops, cb);
                 return null;
             }).catch(err => {
+                console.error(err);
                 log.error('putObjectVerCase3: mongoDB error finding object', { err });
                 return cb(errors.InternalError);
             });
             return null;
         }).catch(err => {
+            console.error(err);
             log.error('putObjectVerCase3: mongoDB error finding object', { err });
             return cb(errors.InternalError);
         });
@@ -1176,6 +1187,7 @@ class MongoClientInterface {
                 return cb(errors.InternalError);
             });
         })).catch(err => {
+            console.error(err);
             log.error(
                 'putObjectVerCase4: error upserting object version',
                 { error: err.message });
@@ -1223,6 +1235,7 @@ class MongoClientInterface {
         }, {
             upsert: true,
         }).then(() => cb(null)).catch(err => {
+            console.error(err);
             log.error('putObjectNoVer: error putting obect with no versioning', { error: err.message });
             return cb(errors.InternalError);
         });
@@ -1287,6 +1300,7 @@ class MongoClientInterface {
                 objMetadata.setDeleted(true);
                 return next(null, objMetadata.getValue());
             }).catch(err => {
+                console.error(err);
                 log.error('internalPutObject: error getting object',
                     { bucket: bucketName, object: key, error: err.message });
                 return next(errors.InternalError);
@@ -1315,6 +1329,7 @@ class MongoClientInterface {
             ], { ordered: true }).then(() => next(null)).catch(next),
         ], err => {
             if (err) {
+            console.error(err);
                 log.error('internalPutObject: error updating object',
                     { bucket: bucketName, object: key, error: err.message });
                 return cb(errors.InternalError);
@@ -1544,6 +1559,7 @@ class MongoClientInterface {
                         return callback(null, result!);
                     });
             }).catch(err => {
+                console.error(err);
                 callback(err);
             });
         });
@@ -1601,6 +1617,7 @@ class MongoClientInterface {
                 return cb(null, keys[0].value);
             })
             .catch(err => {
+                console.error(err);
                 log.error(
                     'getLatestVersion: error getting latest version',
                     { error: err.message });
@@ -1652,6 +1669,7 @@ class MongoClientInterface {
             }
             return cb(null);
         }).catch(err => {
+            console.error(err);
             log.error('repair: error trying to repair value',
                 { error: err.message });
             return cb(errors.InternalError);
@@ -1914,6 +1932,7 @@ class MongoClientInterface {
                 }, {})
                     .then(mst => next(null, mst))
                     .catch(err => {
+                        console.error(err);
                         log.error('deleteObjectVer: error deleting versioned object',
                             { error: err.message, bucket: bucketName, key: objName });
                         return cb(errors.InternalError);
@@ -2033,6 +2052,7 @@ class MongoClientInterface {
                     return cb(null, undefined);
                 })
                 .catch(err => {
+                    console.error(err);
                     log.error('internalDeleteObject: error deleting object',
                         { bucket: bucketName, object: key, error: err.message });
                     // wrong error type in "no found" case
@@ -2076,6 +2096,7 @@ class MongoClientInterface {
                 objMetadata.setDeleted(true);
                 return next(null, objMetadata.getValue());
             }).catch(err => {
+                console.error(err);
                 log.error('internalDeleteObject: error getting object',
                     { bucket: bucketName, object: key, error: err.message });
                 return next(errors.InternalError);

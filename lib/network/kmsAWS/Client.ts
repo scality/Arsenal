@@ -22,7 +22,7 @@ type TLSVersion = 'TLSv1.3' | 'TLSv1.2' | 'TLSv1.1' | 'TLSv1';
 interface KMSOptions {
     /** To be included in KMS key arn */
     providerName: string;
-    region?: string;
+    region: string;
     endpoint?: string;
     ak?: string;
     sk?: string;

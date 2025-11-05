@@ -9,15 +9,15 @@ Configuration is done using the configuration file.
 
 Supported parameters:
 
-| Config File        | Description                                             |
-|--------------------|---------------------------------------------------------|
-| kmsAWS.providerName| Friendly name to identify the KMS key provider in MD    |
-| kmsAWS.region      | AWS region to use                                       |
-| kmsAWS.endpoint    | Endpoint URL                                            |
-| kmsAWS.ak          | Credentials, Access Key                                 |
-| kmsAWS.sk          | Credentials, Secret Key                                 |
-| kmsAWS.noAwsArn    | Optional (default false): use KeyId instead of KeyArn   |
-| kmsAWS.tls         | TLS configuration (Object, see below)                   |
+| Config File        | Description                                                        |
+|--------------------|--------------------------------------------------------------------|
+| kmsAWS.providerName| **Required**: Friendly name to identify the KMS key provider in MD |
+| kmsAWS.region      | **Required**: AWS region to use                                    |
+| kmsAWS.endpoint    | Optional: Endpoint URL                                             |
+| kmsAWS.ak          | Optional: Credentials, Access Key                                  |
+| kmsAWS.sk          | Optional: Credentials, Secret Key                                  |
+| kmsAWS.noAwsArn    | Optional (default false): use KeyId instead of KeyArn              |
+| kmsAWS.tls         | Optional: TLS configuration (Object, see below)                    |
 
 TLS configuration attributes:
 
