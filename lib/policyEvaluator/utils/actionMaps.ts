@@ -60,6 +60,12 @@ const actionMapBucketQuotas = {
     bucketDeleteQuota: 'scality:DeleteBucketQuota',
 };
 
+const actionMapBucketRateLimit = {
+    bucketGetRateLimit: 'scality:GetBucketRateLimit',
+    bucketPutRateLimit: 'scality:PutBucketRateLimit',
+    bucketDeleteRateLimit: 'scality:DeleteBucketRateLimit',
+};
+
 // action map used for request context
 const actionMapRQ = {
     bucketPut: 's3:CreateBucket',
@@ -89,6 +95,7 @@ const actionMapRQ = {
     listObjectVersions: 's3:ListBucketVersions',
     ...sharedActionMap,
     ...actionMapBucketQuotas,
+    ...actionMapBucketRateLimit,
 };
 
 // action map used for bucket policies
