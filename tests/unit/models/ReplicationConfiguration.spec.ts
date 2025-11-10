@@ -95,6 +95,30 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
         expect(rules[0].prefix).toEqual('');
     });
 
+    it('should succeed for a valid configuration without a prefix', () => {
+        const repConfig = {
+            Role: [TEST_ROLE],
+            Rule: [{
+                Status: ['Enabled'],
+                Destination: [{
+                    Bucket: ['arn:aws:s3:::crr-dest'],
+                }],
+            }],
+        };
+        const instance = new ReplicationConfiguration({ ReplicationConfiguration: repConfig },
+            null, mockS3ServerConfig);
+        const result = instance.parseConfiguration();
+        expect(result).toBeUndefined();
+        expect(instance.getRole()).toEqual(TEST_ROLE);
+        expect(instance.getDestination()).toEqual('arn:aws:s3:::crr-dest');
+        const rules = instance.getRules();
+        expect(rules.length).toEqual(1);
+        expect(rules[0].enabled).toBe(true);
+        // should have generated a new random ID
+        expect(typeof rules[0].id).toBe('string');
+        expect(rules[0].prefix).toEqual('');
+    });
+
     it('should succeed for a minimal valid configuration including Rule ID and destination StorageClass', () => {
         const repConfig = {
             Role: [TEST_ROLE],
