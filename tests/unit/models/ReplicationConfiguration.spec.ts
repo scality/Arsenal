@@ -114,7 +114,6 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
         const rules = instance.getRules();
         expect(rules.length).toEqual(1);
         expect(rules[0].enabled).toBe(true);
-        // should have generated a new random ID
         expect(typeof rules[0].id).toBe('string');
         expect(rules[0].prefix).toEqual('');
     });
