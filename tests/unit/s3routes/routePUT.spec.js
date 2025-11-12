@@ -248,6 +248,18 @@ describe('routePUT', () => {
         );
     });
 
+    it('should call bucketPutRateLimit when query.rate-limit is set', () => {
+        request.bucketName = 'test-bucket';
+        request.query = { 'rate-limit': '' };
+        api.callApiMethod = jest.fn();
+
+        routePUT(request, response, api, log, statsClient);
+
+        expect(api.callApiMethod).toHaveBeenCalledWith(
+            'bucketPutRateLimit', request, response, log, expect.any(Function),
+        );
+    });
+
     it('should return BadRequest when content-length is invalid for PUT bucket', () => {
         request.bucketName = 'test-bucket';
         request.query = {};

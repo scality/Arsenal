@@ -65,6 +65,8 @@ export default function routerGET(
             call('bucketGetQuota');
         } else if (query.logging !== undefined) {
             call('bucketGetLogging');
+        } else if (query['rate-limit'] !== undefined) {
+            call('bucketGetRateLimit');
         } else {
             // GET bucket
             call('bucketGet');
