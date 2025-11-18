@@ -45,7 +45,7 @@ export type Rule = {
 
 export type Destination = { StorageClass: string[]; Bucket: string };
 export type XMLRule = {
-    Prefix: string[];
+    Prefix?: string[];
     Status: Status[];
     ID?: string[];
     Destination: Destination[];
@@ -155,7 +155,7 @@ export default class ReplicationConfiguration {
     _buildRuleObject(rule: XMLRule) {
         const base = {
             id: '',
-            prefix: rule.Prefix[0],
+            prefix: rule.Prefix?.[0] ?? '',
             enabled: rule.Status[0] === 'Enabled',
         };
         const obj: Rule = { ...base };
@@ -238,6 +238,7 @@ export default class ReplicationConfiguration {
                 'Number of defined replication rules cannot exceed 1000'
             );
         }
+
         const err = this._parseEachRule(Rule);
         if (err) {
             return err;
@@ -257,9 +258,11 @@ export default class ReplicationConfiguration {
                 this._parsePrefix(rules[i]) ||
                 this._parseID(rules[i]) ||
                 this._parseDestination(rules[i]);
+
             if (err) {
                 return err;
             }
+
             rulesArr.push(this._buildRuleObject(rules[i]));
         }
         this._rules = rulesArr;
@@ -283,16 +286,22 @@ export default class ReplicationConfiguration {
      * @param rule - The rule object from this._parsedXML
      */
     _parsePrefix(rule: XMLRule) {
-        const prefix = rule.Prefix && rule.Prefix[0];
-        // An empty string prefix should be allowed.
-        if (!prefix && prefix !== '') {
+        if (Array.isArray(rule.Prefix) && rule.Prefix.length > 1) {
             return errors.MalformedXML;
         }
+
+        const prefix = rule.Prefix?.[0] ?? '';
+
+        if (typeof prefix !== 'string') {
+            return errors.MalformedXML;
+        }
+
         if (prefix.length > 1024) {
             return errorInstances.InvalidArgument.customizeDescription(
                 'Rule prefix cannot be longer than maximum allowed key length of 1024'
             );
         }
+    
         // Each Prefix in a list of rules must not overlap. For example, two
         // prefixes 'TaxDocs' and 'TaxDocs/2015' are overlapping. An empty
         // string prefix is expected to overlap with any other prefix.
@@ -304,6 +313,7 @@ export default class ReplicationConfiguration {
                 );
             }
         }
+
         this._configPrefixes.push(prefix);
         return undefined;
     }

@@ -69,6 +69,143 @@ function getPreferredReadXMLConfig(hasPreferredRead) {
 
 describe('ReplicationConfiguration.parseConfiguration()', () => {
     // --- Valid Configurations ---
+    describe('Prefix validation', () => {
+        it('should succeed for a valid configuration without a prefix', () => {
+            const repConfig = {
+                Role: [TEST_ROLE],
+                Rule: [{
+                    Status: ['Enabled'],
+                    Destination: [{
+                        Bucket: ['arn:aws:s3:::crr-dest'],
+                    }],
+                }],
+            };
+            const instance = new ReplicationConfiguration({ ReplicationConfiguration: repConfig },
+                null, mockS3ServerConfig);
+            const result = instance.parseConfiguration();
+            expect(result).toBeUndefined();
+            expect(instance.getRole()).toEqual(TEST_ROLE);
+            expect(instance.getDestination()).toEqual('arn:aws:s3:::crr-dest');
+            const rules = instance.getRules();
+            expect(rules.length).toEqual(1);
+            expect(rules[0].enabled).toBe(true);
+            expect(typeof rules[0].id).toBe('string');
+            expect(rules[0].prefix).toEqual('');
+        });
+
+        it('should succeed for multiple valid rules with non-overlapping prefixes', () => {
+            const repConfig = {
+                Role: [TEST_ROLE],
+                Rule: [
+                    {
+                        ID: ['ImagesRule'],
+                        Prefix: ['main/images/'],
+                        Status: ['Enabled'],
+                        Destination: [{ Bucket: ['arn:aws:s3:::crr-dest'] }],
+                    },
+                    {
+                        ID: ['DocsAndProjects'],
+                        Prefix: ['main/documents/'],
+                        Status: ['Disabled'],
+                        Destination: [{ Bucket: ['arn:aws:s3:::crr-dest'] }],
+                    },
+                ],
+            };
+            const instance = new ReplicationConfiguration({ ReplicationConfiguration: repConfig },
+                null, mockS3ServerConfig);
+            const result = instance.parseConfiguration();
+            expect(result).toBeUndefined();
+            expect(instance.getRole()).toEqual(TEST_ROLE);
+            expect(instance.getDestination()).toEqual('arn:aws:s3:::crr-dest');
+            expect(instance.getRules()).toEqual([
+                {
+                    enabled: true,
+                    id: 'ImagesRule',
+                    prefix: 'main/images/',
+                },
+                {
+                    enabled: false,
+                    id: 'DocsAndProjects',
+                    prefix: 'main/documents/',
+                },
+            ]);
+        });
+
+        it('should return InvalidRequest when config has multiple rules with overlapping prefixes', () => {
+            const repConfig = {
+                Role: [TEST_ROLE],
+                Rule: [
+                    {
+                        ID: ['rule1'],
+                        Prefix: ['prefix/'],
+                        Status: ['Enabled'],
+                        Destination: [{ Bucket: ['arn:aws:s3:::crr-dest'] }],
+                    },
+                    {
+                        ID: ['rule2'],
+                        Prefix: ['prefix/subprefix/'],
+                        Status: ['Enabled'],
+                        Destination: [{ Bucket: ['arn:aws:s3:::crr-dest'] }],
+                    },
+                ],
+            };
+            const instance = new ReplicationConfiguration({ ReplicationConfiguration: repConfig },
+                null, mockS3ServerConfig);
+            const result = instance.parseConfiguration();
+            expect(result).toEqual(errors.InvalidRequest);
+        });
+
+        it('should return InvalidArgument if a prefix is longer than 1024 characters', () => {
+            const repConfig = {
+                Role: [TEST_ROLE],
+                Rule: [{
+                    Prefix: [new Array(1025).fill('X').join('')],
+                    Status: ['Enabled'],
+                    Destination: [{
+                        Bucket: ['arn:aws:s3:::crr-dest'],
+                    }],
+                }],
+            };
+            const instance = new ReplicationConfiguration({ ReplicationConfiguration: repConfig },
+                null, mockS3ServerConfig);
+            const result = instance.parseConfiguration();
+            expect(result).toEqual(errors.InvalidArgument);
+        });
+
+        it('should return MalformedXML if a prefix is an array with more than 1 value', () => {
+            const repConfig = {
+                Rule: [
+                    {
+                        ID: ['rule1'],
+                        Prefix: ['foo', 'bar'],
+                        Status: ['Enabled'],
+                        Destination: [{ Bucket: ['arn:aws:s3:::crr-dest'] }],
+                    },
+                ],
+            };
+            const instance = new ReplicationConfiguration({ ReplicationConfiguration: repConfig },
+                null, mockS3ServerConfig);
+            const result = instance.parseConfiguration();
+            expect(result).toEqual(errors.MalformedXML);
+        });
+
+        it('should return MalformedXML if a prefix is an object', () => {
+            const repConfig = {
+                Rule: [
+                    {
+                        ID: ['rule1'],
+                        Prefix: [{ foo: 'bar' }],
+                        Status: ['Enabled'],
+                        Destination: [{ Bucket: ['arn:aws:s3:::crr-dest'] }],
+                    },
+                ],
+            };
+            const instance = new ReplicationConfiguration({ ReplicationConfiguration: repConfig },
+                null, mockS3ServerConfig);
+            const result = instance.parseConfiguration();
+            expect(result).toEqual(errors.MalformedXML);
+        });
+    });
 
     it('should succeed for a minimal valid configuration without storage class', () => {
         const repConfig = {
@@ -118,44 +255,6 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
                 id: 'RuleID',
                 prefix: '',
                 storageClass: 'STANDARD',
-            },
-        ]);
-    });
-
-    it('should succeed for multiple valid rules with non-overlapping prefixes', () => {
-        const repConfig = {
-            Role: [TEST_ROLE],
-            Rule: [
-                {
-                    ID: ['ImagesRule'],
-                    Prefix: ['main/images/'],
-                    Status: ['Enabled'],
-                    Destination: [{ Bucket: ['arn:aws:s3:::crr-dest'] }],
-                },
-                {
-                    ID: ['DocsAndProjects'],
-                    Prefix: ['main/documents/'],
-                    Status: ['Disabled'],
-                    Destination: [{ Bucket: ['arn:aws:s3:::crr-dest'] }],
-                },
-            ],
-        };
-        const instance = new ReplicationConfiguration({ ReplicationConfiguration: repConfig },
-            null, mockS3ServerConfig);
-        const result = instance.parseConfiguration();
-        expect(result).toBeUndefined();
-        expect(instance.getRole()).toEqual(TEST_ROLE);
-        expect(instance.getDestination()).toEqual('arn:aws:s3:::crr-dest');
-        expect(instance.getRules()).toEqual([
-            {
-                enabled: true,
-                id: 'ImagesRule',
-                prefix: 'main/images/',
-            },
-            {
-                enabled: false,
-                id: 'DocsAndProjects',
-                prefix: 'main/documents/',
             },
         ]);
     });
@@ -281,47 +380,6 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
         expect(result).toEqual(errors.MalformedXML);
     });
 
-    it('should return InvalidRequest when config has multiple rules with overlapping prefixes', () => {
-        const repConfig = {
-            Role: [TEST_ROLE],
-            Rule: [
-                {
-                    ID: ['rule1'],
-                    Prefix: ['prefix/'],
-                    Status: ['Enabled'],
-                    Destination: [{ Bucket: ['arn:aws:s3:::crr-dest'] }],
-                },
-                {
-                    ID: ['rule2'],
-                    Prefix: ['prefix/subprefix/'],
-                    Status: ['Enabled'],
-                    Destination: [{ Bucket: ['arn:aws:s3:::crr-dest'] }],
-                },
-            ],
-        };
-        const instance = new ReplicationConfiguration({ ReplicationConfiguration: repConfig },
-            null, mockS3ServerConfig);
-        const result = instance.parseConfiguration();
-        expect(result).toEqual(errors.InvalidRequest);
-    });
-
-    it('should return InvalidArgument if a prefix is longer than 1024 characters', () => {
-        const repConfig = {
-            Role: [TEST_ROLE],
-            Rule: [{
-                Prefix: [new Array(1025).fill('X').join('')],
-                Status: ['Enabled'],
-                Destination: [{
-                    Bucket: ['arn:aws:s3:::crr-dest'],
-                }],
-            }],
-        };
-        const instance = new ReplicationConfiguration({ ReplicationConfiguration: repConfig },
-            null, mockS3ServerConfig);
-        const result = instance.parseConfiguration();
-        expect(result).toEqual(errors.InvalidArgument);
-    });
-
     it('should return MalformedXML when the provided storage class is invalid', () => {
         const repConfig = {
             Role: [TEST_ROLE],
@@ -410,6 +468,7 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
             done();
         });
     });
+
     it('should parse replication config XML with preferred read', done => {
         const repConfigXML = getPreferredReadXMLConfig(true);
         parseString(repConfigXML, (err, parsedXml) => {
