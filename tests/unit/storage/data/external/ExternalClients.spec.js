@@ -133,13 +133,7 @@ describe('external backend clients', () => {
             }, [10000000, 10000050], '');
             
             let data = '';
-            let streamToRead;
-            
-            if (backend.name === 'AzureClient') {
-                streamToRead = readable;
-            } else {
-                streamToRead = readable.createReadStream();
-            }
+            const streamToRead = readable;
             
             await new Promise((resolve, reject) => {
                 streamToRead.on('data', (chunk) => {
@@ -159,14 +153,9 @@ describe('external backend clients', () => {
                 dataStoreName: backend.config.dataStoreName,
                 response: new stream.PassThrough(),
             }, [10000000, 10000050], '');
+        
             
-            let readable;
-            
-            if (backend.name === 'AzureClient') {
-                readable = result;
-            } else {
-                readable = result.createReadStream();
-            }
+            const readable = result
             
             let errorHandled = false;
             
