@@ -286,6 +286,10 @@ export default class ReplicationConfiguration {
      * @param rule - The rule object from this._parsedXML
      */
     _parsePrefix(rule: XMLRule) {
+        if (Array.isArray(rule.Prefix) && rule.Prefix.length > 1) {
+            return errors.MalformedXML;
+        }
+
         const prefix = rule.Prefix?.[0] ?? '';
 
         if (typeof prefix !== 'string') {

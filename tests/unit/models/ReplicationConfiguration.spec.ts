@@ -172,12 +172,12 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
             expect(result).toEqual(errors.InvalidArgument);
         });
 
-        it('should return MalformedXML if a prefix is an array', () => {
+        it('should return MalformedXML if a prefix is an array with more than 1 value', () => {
             const repConfig = {
                 Rule: [
                     {
                         ID: ['rule1'],
-                        Prefix: [['']],
+                        Prefix: ['foo', 'bar'],
                         Status: ['Enabled'],
                         Destination: [{ Bucket: ['arn:aws:s3:::crr-dest'] }],
                     },
@@ -194,7 +194,7 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
                 Rule: [
                     {
                         ID: ['rule1'],
-                        Prefix: [{}],
+                        Prefix: [{ foo: 'bar' }],
                         Status: ['Enabled'],
                         Destination: [{ Bucket: ['arn:aws:s3:::crr-dest'] }],
                     },
