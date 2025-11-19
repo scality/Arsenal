@@ -76,6 +76,8 @@ export default class Indexer {
      * @param {string} key - The accessKey of the entity
      */
     getEntityByKey(key: string): Entity | undefined {
+        console.log("FFFFF 17.1", this.accountsBy)
+        console.log("FFFFF 17.2", this.accountsBy.accessKey)
         return this.accountsBy.accessKey[key];
     }
 

@@ -195,6 +195,7 @@ export default function routes(
     logger: RequestLogger,
     s3config?: any,
 ) {
+    console.log("FFFFF routes 1")
     checkTypes(req, res, params, logger);
 
     const {

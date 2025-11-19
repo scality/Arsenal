@@ -31,6 +31,8 @@ export function vaultSignatureCb(
     ) => void,
     streamingV4Params?: any
 ) {
+    console.log("FFFFF 10 vaultSignatureCb err", err);
+    console.log("FFFFF 11 vaultSignatureCb authInfo", authInfo);
     // vaultclient API guarantees that it returns:
     // - either `err`, an Error object with `code` and `message` properties set
     // - or `err == null` and `info` is an object with `message.code` and
@@ -155,6 +157,8 @@ export default class Vault {
         requestContexts: RequestContext[] | null,
         callback: (err: Error | null, data?: any) => void
     ) {
+        console.log("FFFFF 31", params)
+
         params.log.debug('authenticating V2 request');
         let serializedRCsArr;
         if (requestContexts) {
@@ -172,8 +176,12 @@ export default class Vault {
                 securityToken: params.data.securityToken,
                 requestContext: serializedRCsArr,
             },
-            (err: Error | null, userInfo?: any) => vaultSignatureCb(err, userInfo,
-                params.log, callback),
+            (err: Error | null, userInfo?: any) => {
+                console.log("FFFFF 32 authenticateV2Request callback err", err);
+                console.log("FFFFF 33 authenticateV2Request callback userInfo", userInfo);
+                vaultSignatureCb(err, userInfo,
+                params.log, callback);
+            },
         );
     }
 
@@ -208,6 +216,8 @@ export default class Vault {
         options: AuthenticationOptions = {},
         callback: (err: Error | null, data?: any) => void,
     ) {
+        console.log("FFFFF 41", params)
+        console.log("FFFFF 41.2", params.data)
         params.log.debug('authenticating V4 request');
         let serializedRCs;
         if (requestContexts) {
@@ -220,6 +230,10 @@ export default class Vault {
             scopeDate: params.data.scopeDate,
             timestamp: params.data.timestamp,
             credentialScope: params.data.credentialScope };
+            
+        console.log("FFFFF 41.3", this.client);
+        console.log("FFFFF 41.4", this.client?.constructor?.name);
+        
         this.client.verifySignatureV4(
             params.data.stringToSign,
             params.data.signatureFromRequest,
@@ -234,8 +248,12 @@ export default class Vault {
                 securityToken: params.data.securityToken,
                 requestContext: serializedRCs,
             },
-            (err: Error | null, userInfo?: any) => vaultSignatureCb(err, userInfo,
-                params.log, callback, streamingV4Params),
+            (err: Error | null, userInfo?: any) => {
+                console.log("FFFFF 42 authenticateV4Request callback err", err);
+                console.log("FFFFF 43 authenticateV4Request callback userInfo", userInfo);
+                vaultSignatureCb(err, userInfo,
+                params.log, callback, streamingV4Params);
+            },
         );
     }
 
@@ -255,11 +273,14 @@ export default class Vault {
             data?: { canonicalID: string; email: string }[]
         ) => void
     ) {
+        console.log("FFFFF 51 getCanonicalIds emailAddresses", emailAddresses);
         log.trace('getting canonicalIDs from Vault based on emailAddresses');
         this.client.getCanonicalIds(emailAddresses,
             // @ts-ignore
             { reqUid: log.getSerializedUids() },
             (err: Error | null, info?: any) => {
+                console.log("FFFFF 52 getCanonicalIds callback err", err);
+                console.log("FFFFF 53 getCanonicalIds callback info", info);
                 if (err) {
                     log.debug('received error message from auth provider',
                         { errorMessage: err });
@@ -295,12 +316,15 @@ export default class Vault {
         log: RequestLogger,
         callback: (err: Error | null, data?: Record<string, any>) => void
     ) {
+        console.log("FFFFF 61 getEmailAddresses canonicalIDs", canonicalIDs);
         log.trace('getting emailAddresses from Vault based on canonicalIDs',
             { canonicalIDs });
         this.client.getEmailAddresses(canonicalIDs,
             // @ts-ignore
             { reqUid: log.getSerializedUids() },
             (err: Error | null, info?: any) => {
+                console.log("FFFFF 62 getEmailAddresses callback err", err);
+                console.log("FFFFF 63 getEmailAddresses callback info", info);
                 if (err) {
                     log.debug('received error message from vault',
                         { errorMessage: err });
@@ -333,11 +357,14 @@ export default class Vault {
         log: RequestLogger,
         callback: (err: Error | null, data?: Record<string, string>) => void
     ) {
+        console.log("FFFFF 71 getAccountIds canonicalIDs", canonicalIDs);
         log.trace('getting accountIds from Vault based on canonicalIDs',
             { canonicalIDs });
         this.client.getAccountIds(canonicalIDs,
             { reqUid: log.getSerializedUids() },
             (err: Error | null, info?: any) => {
+                console.log("FFFFF 72 getAccountIds callback err", err);
+                console.log("FFFFF 73 getAccountIds callback info", info);
                 if (err) {
                     log.debug('received error message from vault',
                         { errorMessage: err });
@@ -371,12 +398,15 @@ export default class Vault {
         log: RequestLogger,
         callback: ArsenalCallback<AccountCanonicalInfo[]>,
     ) {
+        console.log("FFFFF 81 getCanonicalIdsByAccountIds accountIds", accountIds);
         log.trace('getting canonicalIDs from Vault based on accountIDs');
         const options = {
             reqUid: log.getSerializedUids(),
             logger: log,
         };
         this.client.getCanonicalIdsByAccountIds(accountIds, options, (err, res) => {
+            console.log("FFFFF 82 getCanonicalIdsByAccountIds callback err", err);
+            console.log("FFFFF 83 getCanonicalIdsByAccountIds callback res", res);
             if (err) {
                 log.debug('received error message from vault', {
                     error: err,
@@ -407,12 +437,16 @@ export default class Vault {
         log: RequestLogger,
         callback: (err: Error | null, data?: any[]) => void
     ) {
+        console.log("FFFFF 91 checkPolicies requestContextParams", requestContextParams);
+        console.log("FFFFF 92 checkPolicies userArn", userArn);
         log.trace('sending request context params to vault to evaluate' +
         'policies');
         this.client.checkPolicies(requestContextParams, userArn, {
             // @ts-ignore
             reqUid: log.getSerializedUids(),
         }, (err: Error | null, info?: any) => {
+            console.log("FFFFF 93 checkPolicies callback err", err);
+            console.log("FFFFF 94 checkPolicies callback info", info);
             if (err) {
                 log.debug('received error message from auth provider',
                     { error: err });
@@ -424,6 +458,7 @@ export default class Vault {
     }
 
     checkHealth(log: RequestLogger, callback: (err: Error | null, data?: any) => void) {
+        console.log("FFFFF 101 checkHealth");
         if (!this.client.healthcheck) {
             const defResp = {};
             defResp[this.implName] = { code: 200, message: 'OK' };
@@ -431,6 +466,8 @@ export default class Vault {
         }
         // @ts-ignore
         return this.client.healthcheck(log.getSerializedUids(), (err: Error | null, obj?: any) => {
+            console.log("FFFFF 102 checkHealth callback err", err);
+            console.log("FFFFF 103 checkHealth callback obj", obj);
             const respBody = {};
             if (err) {
                 log.debug(`error from ${this.implName}`, { error: err });
@@ -451,12 +488,15 @@ export default class Vault {
     }
 
     report(log: RequestLogger, callback: (err: Error | null, data?: any) => void) {
+        console.log("FFFFF 111 report");
         // call the report function of the client
         if (!this.client.report) {
             return callback(null, {});
         }
         // @ts-ignore
         return this.client.report(log.getSerializedUids(), (err: Error | null, obj?: any) => {
+            console.log("FFFFF 112 report callback err", err);
+            console.log("FFFFF 113 report callback obj", obj);
             if (err) {
                 log.debug(`error from ${this.implName}`, { error: err });
                 return callback(err);
@@ -491,11 +531,14 @@ export default class Vault {
             action: 'retrieved' | 'created' 
         }) => void
     ) {
+        console.log("FFFFF 121 getOrCreateEncryptionKeyId canonicalID", canonicalID);
         log.trace('sending request context params to vault to get or create encryption key id');
         this.client.getOrCreateEncryptionKeyId(canonicalID, {
             // @ts-ignore
             reqUid: log.getSerializedUids(),
         }, (err: Error | null, info?: any) => {
+            console.log("FFFFF 122 getOrCreateEncryptionKeyId callback err", err);
+            console.log("FFFFF 123 getOrCreateEncryptionKeyId callback info", info);
             if (err) {
                 log.debug('received error message from auth provider',
                     { error: err });

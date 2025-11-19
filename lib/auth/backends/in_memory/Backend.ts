@@ -84,15 +84,31 @@ class InMemoryBackend extends BaseBackend {
         options: any,
         callback: any,
     ) {
+        console.log("FFFFF 11", stringToSign)
+        console.log("FFFFF 12", signatureFromRequest)
+        console.log("FFFFF 13", accessKey)
+        console.log("FFFFF 14", region)
+        console.log("FFFFF 15", scopeDate)
+        console.log("FFFFF 16.1", callback)
+        console.log("FFFFF 16.2", callback.toString())
         const entity = this.indexer.getEntityByKey(accessKey);
+        console.log("FFFFF 17", entity)
+        console.log("FFFFF 18", this.indexer)
         if (!entity) {
+            console.log("FFFFF 19.1", entity)
             return callback(errors.InvalidAccessKeyId);
         }
         const secretKey = this.indexer.getSecretKey(entity, accessKey);
         const signingKey = calculateSigningKey(secretKey, region, scopeDate);
         const reconstructedSig = crypto.createHmac('sha256', signingKey)
             .update(stringToSign, 'binary').digest('hex');
+        console.log("FFFFF 19.2", secretKey)
+        console.log("FFFFF 19.3", signingKey)
+        console.log("FFFFF 19.4", reconstructedSig)
+        console.log("FFFFF 19.41", signatureFromRequest !== reconstructedSig)
+        
         if (signatureFromRequest !== reconstructedSig) {
+            console.log("FFFFF 19.42", signatureFromRequest !== reconstructedSig)
             return callback(errors.SignatureDoesNotMatch);
         }
         const userInfoToSend = {
@@ -102,7 +118,9 @@ class InMemoryBackend extends BaseBackend {
             // @ts-ignore
             IAMdisplayName: entity.IAMdisplayName,
         };
+        console.log("FFFFF 19.5", userInfoToSend)
         const vaultReturnObject = this.formatResponse(userInfoToSend);
+        console.log("FFFFF 19.6", vaultReturnObject)
         return callback(null, vaultReturnObject);
     }
 

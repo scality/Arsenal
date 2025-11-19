@@ -80,9 +80,11 @@ function extractParams(
     const authHeader = request.headers.authorization;
     let version: 'v2' |'v4' | null = null;
     let method: 'query' | 'headers' | null = null;
-
+    console.log("FFFFF 1 extractParams authHeader", authHeader);
     // Identify auth version and method to dispatch to the right check function
     if (authHeader) {
+        console.log("FFFFF 2", authHeader)
+
         method = 'headers';
         // TODO: Check for security token header to handle temporary security
         // credentials
@@ -104,13 +106,18 @@ function extractParams(
     }
 
     // Here, either both values are set, or none is set
+    console.log("FFFFF 3", version, method)
     if (version !== null && method !== null) {
+        console.log("FFFFF 4", checkFunctions)
+
         if (!checkFunctions[version] || !checkFunctions[version][method]) {
             log.trace('invalid auth version or method',
                 { version, authMethod: method });
             return { err: errors.NotImplemented };
         }
-        return checkFunctions[version][method](request, log, data, awsService);
+        const result = checkFunctions[version][method](request, log, data, awsService);
+        console.log("FFFFF 5 extractParams result", result);
+        return result;
     }
 
     // no auth info identified
@@ -137,16 +144,26 @@ function doAuth(
     requestContexts: RequestContext[] | null,
     options: AuthenticationOptions = {},
 ) {
+    console.log("FFFFF 20", request.headers);
+    console.log("FFFFF 20.2", request.query);
     const res = extractParams(request, log, awsService, request.query);
+    console.log("FFFFF 21", res.err)
     if (res.err) {
         return cb(res.err);
     }
+    console.log("FFFFF 22", res.params)
+
     if (res.params instanceof AuthInfo) {
+        console.log("FFFFF 22.1 doAuth public user");
         return cb(null, res.params);
     }
+    console.log("FFFFF 23", res.params.data)
+
     const data = res.params.data;
     if (data && requestContexts) {
         requestContexts.forEach(requestContext => {
+            console.log("FFFFF 24", requestContext)
+
             if (data.authType) {
                 requestContext.setAuthType(data.authType);
             }
@@ -163,9 +180,11 @@ function doAuth(
     // Corner cases managed, we're left with normal auth
     res.params.log = log;
     if (res.params.version === 2) {
+        console.log("FFFFF 25 doAuth calling authenticateV2Request");
         return vault!.authenticateV2Request(res.params, requestContexts, cb);
     }
     if (res.params.version === 4) {
+        console.log("FFFFF 26 doAuth calling authenticateV4Request");
         // @ts-ignore
         return vault!.authenticateV4Request(res.params, requestContexts, options, cb);
     }

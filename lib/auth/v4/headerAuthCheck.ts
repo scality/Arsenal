@@ -156,6 +156,7 @@ export function check(
         proxyPath,
     });
     log.trace('constructed stringToSign', { stringToSign });
+    console.log("FFFFF 643", stringToSign)
 
     return {
         err: null,

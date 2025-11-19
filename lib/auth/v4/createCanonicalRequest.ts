@@ -51,7 +51,8 @@ export default function createCanonicalRequest(
     }
 
     const canonicalURI = pResource ? awsURIencode(pResource, false) : '/';
-
+    console.log("FFFFF 631", canonicalURI)
+    
     // canonical query string
     let canonicalQueryStr = '';
     if (pQuery && !((service === 'iam' || service === 'ring' ||
@@ -60,21 +61,30 @@ export default function createCanonicalRequest(
         const sortedQueryParams = Object.keys(pQuery).sort().map(key => {
             const encodedKey = awsURIencode(key);
             const value = pQuery[key] ? awsURIencode(pQuery[key]) : '';
+            console.log("FFFFF 632.1", key, encodedKey)
+            console.log("FFFFF 632.2", value)
             return `${encodedKey}=${value}`;
         });
         canonicalQueryStr = sortedQueryParams.join('&');
+        console.log("FFFFF 632.3", canonicalQueryStr)
+
     }
+    console.log("FFFFF 632.4", canonicalQueryStr)
 
     // signed headers
     const signedHeadersList = pSignedHeaders.split(';');
     signedHeadersList.sort((a: any, b: any) => a.localeCompare(b));
     const signedHeaders = signedHeadersList.join(';');
+    console.log("FFFFF 633", signedHeadersList)
+    console.log("FFFFF 634", signedHeaders)
 
     // canonical headers
     const canonicalHeadersList = signedHeadersList.map((signedHeader: any) => {
+        console.log("FFFFF 635", signedHeader)
         if (pHeaders[signedHeader] !== undefined) {
             const trimmedHeader = pHeaders[signedHeader]
                 .trim().replace(/\s+/g, ' ');
+            console.log("FFFFF 636", trimmedHeader)
             return `${signedHeader}:${trimmedHeader}\n`;
         }
         // nginx will strip the actual expect header so add value of
