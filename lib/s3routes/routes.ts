@@ -231,6 +231,13 @@ export default function routes(
         // @ts-ignore
         logger.newRequestLogger());
 
+
+    // @ts-expect-error
+    if (res.serverAccessLog) {
+        // @ts-expect-error
+        res.serverAccessLog.requestID = log.getSerializedUids();
+    }
+
     if (!req.url!.startsWith('/_/healthcheck') &&
         !req.url!.startsWith('/_/report')) {
         log.debug('received request', clientInfo);

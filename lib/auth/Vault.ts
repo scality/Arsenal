@@ -29,7 +29,9 @@ export function vaultSignatureCb(
         params?: any,
         infos?: AccountInfos,
     ) => void,
-    streamingV4Params?: any
+    streamingV4Params?: any,
+    authType?: string,
+    accessKey?: string,
 ) {
     // vaultclient API guarantees that it returns:
     // - either `err`, an Error object with `code` and `message` properties set
@@ -51,7 +53,8 @@ export function vaultSignatureCb(
     });
 
     const info = authInfo.message.body as AuthV4Results;
-    const userInfo = new AuthInfo(info.userInfo);
+    const userInfo = new AuthInfo(info.userInfo,
+        streamingV4Params ? 'SigV4' : 'SigV2', authType, accessKey);
     const authorizationResults = info.authorizationResults;
     const auditLog: { accountDisplayName: string, IAMdisplayName?: string } =
         { accountDisplayName: userInfo.getAccountDisplayName() };
@@ -172,8 +175,9 @@ export default class Vault {
                 securityToken: params.data.securityToken,
                 requestContext: serializedRCsArr,
             },
-            (err: Error | null, userInfo?: any) => vaultSignatureCb(err, userInfo,
-                params.log, callback),
+            (err: Error | null, userInfo?: any) => vaultSignatureCb(err,
+                userInfo, params.log, callback, undefined,
+                params.data.authType, params.data.accessKey),
         );
     }
 
@@ -234,8 +238,10 @@ export default class Vault {
                 securityToken: params.data.securityToken,
                 requestContext: serializedRCs,
             },
-            (err: Error | null, userInfo?: any) => vaultSignatureCb(err, userInfo,
-                params.log, callback, streamingV4Params),
+            (err: Error | null, userInfo?: any) => vaultSignatureCb(err,
+                userInfo, params.log, callback,
+                streamingV4Params,
+                params.data.authType, params.data.accessKey),
         );
     }
 

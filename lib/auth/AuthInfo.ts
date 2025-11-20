@@ -57,8 +57,16 @@ export default class AuthInfo {
     email: string;
     accountDisplayName: string;
     IAMdisplayName: string;
+    authVersion?: string;
+    authType?: string;
+    accessKey?: string;
 
-    constructor(objectFromVault: any) {
+    constructor(
+        objectFromVault: any,
+        authVersion?: string,
+        authType?: string,
+        accessKey?: string,
+    ) {
         // amazon resource name for IAM user (if applicable)
         this.arn = objectFromVault.arn;
         // account canonicalID
@@ -71,6 +79,27 @@ export default class AuthInfo {
         this.accountDisplayName = objectFromVault.accountDisplayName;
         // display name for user (if applicable)
         this.IAMdisplayName = objectFromVault.IAMdisplayName;
+        // SigV4 or SigV2
+        this.authVersion = authVersion;
+        // QueryString or AuthHeader
+        switch (authType) {
+        case 'REST-QUERY-STRING':
+            this.authType = 'QueryString';
+            break;
+        case 'query':
+            this.authType = 'QueryString';
+            break;
+        case 'REST-HEADER':
+            this.authType = 'AuthHeader';
+            break;
+        case 'header':
+            this.authType = 'AuthHeader';
+            break;
+        default:
+            this.authType = authType;
+            break;
+        }
+        this.accessKey = accessKey;
     }
     getArn() {
         return this.arn;
@@ -89,6 +118,15 @@ export default class AuthInfo {
     }
     getIAMdisplayName() {
         return this.IAMdisplayName;
+    }
+    getAuthVersion() {
+        return this.authVersion;
+    }
+    getAuthType() {
+        return this.authType;
+    }
+    getAccessKey() {
+        return this.accessKey;
     }
     // Check whether requester is an IAM user versus an account
     isRequesterAnIAMUser() {
