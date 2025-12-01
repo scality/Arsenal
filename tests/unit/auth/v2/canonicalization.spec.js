@@ -169,4 +169,60 @@ describe('canonicalization', () => {
         assert.strictEqual(canonicalizedResource,
             '/?compose=yes,please&versioning=yes,please');
     });
+
+    it('should handle header values that are arrays (AWS SDK v3 compatibility) for AWS', () => {
+        const headers = {
+            'date': 'Mon, 21 Sep 2015 22:29:27 GMT',
+            'x-amz-array-header': ['value1', 'value2', 'value3'],
+            'x-amz-meta-meta': 'something very meta',
+            'authorization': 'AWS accessKey1:V8g5UJUFmMzruMqUHVT6ZwvUw+M=',
+            'host': 's3.amazonaws.com:80',
+        };
+        const canonicalizedHeader = getCanonicalizedAmzHeaders(headers);
+        assert.strictEqual(canonicalizedHeader,
+            'x-amz-array-header:value1,value2,value3\n' +
+            'x-amz-meta-meta:something very meta\n');
+    });
+
+    it('should handle header values that are numbers for AWS', () => {
+        const headers = {
+            'date': 'Mon, 21 Sep 2015 22:29:27 GMT',
+            'x-amz-number-header': 12345,
+            'x-amz-meta-meta': 'something very meta',
+            'authorization': 'AWS accessKey1:V8g5UJUFmMzruMqUHVT6ZwvUw+M=',
+            'host': 's3.amazonaws.com:80',
+        };
+        const canonicalizedHeader = getCanonicalizedAmzHeaders(headers);
+        assert.strictEqual(canonicalizedHeader,
+            'x-amz-meta-meta:something very meta\n' +
+            'x-amz-number-header:12345\n');
+    });
+
+    it('should handle header values that are arrays for GCP', () => {
+        const headers = {
+            'date': 'Mon, 21 Sep 2015 22:29:27 GMT',
+            'x-goog-array-header': ['gcp-val1', 'gcp-val2'],
+            'x-goog-meta-meta': 'something very meta',
+            'authorization': 'GOOG1 accessKey1:V8g5UJUFmMzruMqUHVT6ZwvUw+M=',
+            'host': 'storage.googleapis.com:80',
+        };
+        const canonicalizedHeader = getCanonicalizedGcpHeaders(headers);
+        assert.strictEqual(canonicalizedHeader,
+            'x-goog-array-header:gcp-val1,gcp-val2\n' +
+            'x-goog-meta-meta:something very meta\n');
+    });
+
+    it('should handle header values with extra whitespace in arrays', () => {
+        const headers = {
+            'date': 'Mon, 21 Sep 2015 22:29:27 GMT',
+            'x-amz-spaced-header': ['  value1  ', '  value2  '],
+            'x-amz-meta-meta': 'something very meta',
+            'authorization': 'AWS accessKey1:V8g5UJUFmMzruMqUHVT6ZwvUw+M=',
+            'host': 's3.amazonaws.com:80',
+        };
+        const canonicalizedHeader = getCanonicalizedAmzHeaders(headers);
+        assert.strictEqual(canonicalizedHeader,
+            'x-amz-meta-meta:something very meta\n' +
+            'x-amz-spaced-header:value1  ,  value2\n');
+    });
 });
