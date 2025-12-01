@@ -645,6 +645,7 @@ export function responseNoBody(
     if (!response.headersSent) {
         return okHeaderResponse(resHeaders, response, httpCode, log);
     }
+    storeServerAccessLogFields(response, process.hrtime.bigint());
     return undefined;
 }
 
