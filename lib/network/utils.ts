@@ -1,4 +1,3 @@
-import type { AWSError } from 'aws-sdk';
 import { ArsenalError, errorInstances } from '../errors';
 import { allowedKmsErrors } from '../errors/kmsErrors';
 
@@ -32,20 +31,37 @@ export function arsenalErrorKMIP(err: string | Error) {
 
 const allowedKmsErrorCodes = Object.keys(allowedKmsErrors) as unknown as (keyof typeof allowedKmsErrors)[];
 
+// Local AWSError type for compatibility with v3 error handling
+export type AWSError = Error & {
+    name?: string;
+    $fault?: 'client' | 'server';
+    $metadata?: {
+        httpStatusCode?: number;
+        requestId?: string;
+        attempts?: number;
+        totalRetryDelay?: number;
+    };
+    $retryable?: {
+        throttling?: boolean;
+    };
+    message?: string;
+};
+
 function isAWSError(err: string | Error | AWSError): err is AWSError {
-    return (err as AWSError).code !== undefined
-        && (err as AWSError).retryable !== undefined;
+    return (err as AWSError).name !== undefined
+        && (err as AWSError).$metadata !== undefined;
 }
 
 export function arsenalErrorAWSKMS(err: string | Error | AWSError) {
     if (isAWSError(err)) {
-        if (allowedKmsErrorCodes.includes(err.code as keyof typeof allowedKmsErrors)) {
-            return errorInstances[`KMS.${err.code}`].customizeDescription(err.message);
+        const errorCode = err.name;
+        if (allowedKmsErrorCodes.includes(errorCode as keyof typeof allowedKmsErrors)) {
+            return errorInstances[`KMS.${errorCode}`].customizeDescription(err.message);
         } else {
             // Encapsulate into a generic ArsenalError but keep the aws error code
             return ArsenalError.unflatten({
                 is_arsenal_error: true,
-                type: `KMS.${err.code}`, // aws s3 prefix kms errors with KMS.
+                type: `KMS.${errorCode}`, // aws s3 prefix kms errors with KMS.
                 code: 500,
                 description: `unexpected AWS_KMS error`,
                 stack: err.stack,
