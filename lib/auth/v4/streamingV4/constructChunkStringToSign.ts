@@ -24,9 +24,7 @@ export default function constructChunkStringToSign(
         currentChunkHash = constants.emptyStringHash;
     } else {
         const hash = crypto.createHash('sha256');
-        const temp = justDataChunk instanceof Buffer
-            ? hash.update(justDataChunk)
-            : hash.update(justDataChunk, 'binary');
+        const temp = hash.update(justDataChunk);
         currentChunkHash = temp.digest('hex');
     }
     return `AWS4-HMAC-SHA256-PAYLOAD\n${timestamp}\n` +

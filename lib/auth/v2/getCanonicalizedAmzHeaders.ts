@@ -9,7 +9,16 @@ export default function getCanonicalizedAmzHeaders(headers: Record<string, strin
         (val: string) => val.startsWith('x-amz-');
     const amzHeaders = Object.keys(headers)
         .filter(filterFn)
-        .map(val => [val.trim(), headers[val].trim()]);
+        .map(val => {
+            const headerValue = headers[val];
+            // AWS SDK v3 can pass header values as arrays (for multiple values),
+            // strings, or other types. We need to normalize them before calling .trim()
+            // Per HTTP spec and AWS Signature v2, multiple values are joined with commas
+            const stringValue = Array.isArray(headerValue) 
+                ? headerValue.join(',') 
+                : String(headerValue);
+            return [val.trim(), stringValue.trim()];
+        });
     /*
     AWS docs state that duplicate headers should be combined
     in the same header with values concatenated with

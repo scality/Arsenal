@@ -73,7 +73,14 @@ export default function createCanonicalRequest(
     // canonical headers
     const canonicalHeadersList = signedHeadersList.map((signedHeader: any) => {
         if (pHeaders[signedHeader] !== undefined) {
-            const trimmedHeader = pHeaders[signedHeader]
+            const headerValue = pHeaders[signedHeader];
+            // AWS SDK v3 can pass header values as arrays (for multiple values),
+            // strings, or other types. We need to normalize them before calling .trim()
+            // Per HTTP spec and AWS Signature v4, multiple values are joined with commas
+            const stringValue = Array.isArray(headerValue) 
+                ? headerValue.join(',') 
+                : String(headerValue);
+            const trimmedHeader = stringValue
                 .trim().replace(/\s+/g, ' ');
             return `${signedHeader}:${trimmedHeader}\n`;
         }
