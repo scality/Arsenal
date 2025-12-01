@@ -279,4 +279,54 @@ describe('createCanonicalRequest function', () => {
         const actualOutput = createCanonicalRequest(params);
         assert.strictEqual(actualOutput, expectedOutput);
     });
+
+    it('should handle header values that are arrays (AWS SDK v3 compatibility)', () => {
+        const params = {
+            pHttpVerb: 'GET',
+            pResource: '/test.txt',
+            pQuery: {},
+            pHeaders: {
+                'host': 'examplebucket.s3.amazonaws.com',
+                'x-amz-custom-header': ['value1', 'value2'],
+                'x-amz-date': '20130524T000000Z',
+            },
+            pSignedHeaders: 'host;x-amz-custom-header;x-amz-date',
+            payloadChecksum: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4' +
+                '649b934ca495991b7852b855',
+        };
+        const expectedOutput = 'GET\n' +
+            '/test.txt\n\n' +
+            'host:examplebucket.s3.amazonaws.com\n' +
+            'x-amz-custom-header:value1,value2\n' +
+            'x-amz-date:20130524T000000Z\n\n' +
+            'host;x-amz-custom-header;x-amz-date\n' +
+            'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+        const actualOutput = createCanonicalRequest(params);
+        assert.strictEqual(actualOutput, expectedOutput);
+    });
+
+    it('should handle header values that are numbers', () => {
+        const params = {
+            pHttpVerb: 'GET',
+            pResource: '/test.txt',
+            pQuery: {},
+            pHeaders: {
+                'host': 'examplebucket.s3.amazonaws.com',
+                'x-amz-number-header': 12345,
+                'x-amz-date': '20130524T000000Z',
+            },
+            pSignedHeaders: 'host;x-amz-date;x-amz-number-header',
+            payloadChecksum: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4' +
+                '649b934ca495991b7852b855',
+        };
+        const expectedOutput = 'GET\n' +
+            '/test.txt\n\n' +
+            'host:examplebucket.s3.amazonaws.com\n' +
+            'x-amz-date:20130524T000000Z\n' +
+            'x-amz-number-header:12345\n\n' +
+            'host;x-amz-date;x-amz-number-header\n' +
+            'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+        const actualOutput = createCanonicalRequest(params);
+        assert.strictEqual(actualOutput, expectedOutput);
+    });
 });
