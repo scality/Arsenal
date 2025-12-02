@@ -260,4 +260,5 @@ export {
     actionMapSTS,
     actionMapMetadata,
     actionMapSUR,
+    actionMapBucketRateLimit,
 };
