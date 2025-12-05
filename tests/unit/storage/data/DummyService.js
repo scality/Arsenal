@@ -88,6 +88,13 @@ class AzureDummyContainerClient {
             readableStreamBody: new DummyObjectStream(offset, length || OBJECT_SIZE),
         };
     }
+
+    async deleteIfExists() {
+        if (this.key === 'externalBackendTestBucket/externalBackendMissingKey') {
+            return { succeeded: false };
+        }
+        return { succeeded: true };
+    }
 }
 
 class DummyService {

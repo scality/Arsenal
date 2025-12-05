@@ -129,13 +129,15 @@ const invalidDnsBucketNames = [
     '256.256.256.256',
 ];
 
-function invalidDnsBucketNameHandler(req, res) {
-    assert(req.headers.host, host);
-    const bucketFromUrl = req.url.split('/')[1];
-    assert.strictEqual(typeof bucketFromUrl, 'string');
-    assert(invalidDnsBucketNames.includes(bucketFromUrl));
-    res.writeHead(200);
-    res.end();
+function invalidDnsBucketNameHandler() {
+    return (req, res) => {
+         assert(req.headers.host, host);
+        const bucketFromUrl = req.url.split('/')[1];
+        assert.strictEqual(typeof bucketFromUrl, 'string');
+        assert(invalidDnsBucketNames.includes(bucketFromUrl));
+        res.writeHead(200);
+        res.end();
+    };
 }
 
 const operations = [
@@ -349,4 +351,132 @@ describe('GcpService dnsStyle tests', () => {
     operations.forEach(test => it(`GCP::${test.op}`, done => {
         client[test.op](test.params, err => done(err));
     }));
+});
+
+describe('GcpService helper behavior', () => {
+    let client;
+
+    beforeEach(() => {
+        client = new GCP({
+            s3Params: {
+                endpoint: 'http://localhost',
+                maxAttempts: 1,
+                forcePathStyle: true,
+                region: 'us-east-1',
+                credentials: {
+                    accessKeyId: 'access',
+                    secretAccessKey: 'secret',
+                },
+            },
+            bucketName: 'unit-bucket',
+            dataStoreName: 'unit-location',
+        });
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
+
+    it('putObjectTagging should merge tags into metadata', done => {
+        jest.spyOn(client, 'headObject')
+            .mockImplementation((params, cb) => cb(null, { Metadata: { existing: 'alpha' } }));
+        const copySpy = jest.spyOn(client, 'copyObject')
+            .mockImplementation((params, cb) => cb(null, { CopyObjectResult: {} }));
+
+        client.putObjectTagging({
+            Bucket: 'unit-bucket',
+            Key: 'tagged-key',
+            Tagging: {
+                TagSet: [
+                    { Key: 'team', Value: 'storage' },
+                    { Key: 'env', Value: 'prod' },
+                ],
+            },
+        }, err => {
+            assert.ifError(err);
+            expect(copySpy).toHaveBeenCalledTimes(1);
+            const metadata = copySpy.mock.calls[0][0].Metadata;
+            assert.strictEqual(metadata.existing, 'alpha');
+            assert.strictEqual(metadata['aws-tag-team'], 'storage');
+            assert.strictEqual(metadata['aws-tag-env'], 'prod');
+            done();
+        });
+    });
+
+    it('deleteObjectTagging should strip tag metadata and add sentinel', done => {
+        jest.spyOn(client, 'headObject')
+            .mockImplementation((params, cb) => cb(null, {
+                Metadata: {
+                    'aws-tag-project': 'zenko',
+                },
+            }));
+        const copySpy = jest.spyOn(client, 'copyObject')
+            .mockImplementation((params, cb) => cb(null, { CopyObjectResult: {} }));
+
+        client.deleteObjectTagging({
+            Bucket: 'unit-bucket',
+            Key: 'tagged-key',
+        }, err => {
+            assert.ifError(err);
+            const metadata = copySpy.mock.calls[0][0].Metadata;
+            assert.strictEqual(metadata['aws-tag-project'], undefined);
+            assert.strictEqual(metadata['scal-tags-removed'], 'true');
+            done();
+        });
+    });
+
+    it('getObjectTagging should return TagSet derived from metadata', done => {
+        jest.spyOn(client, 'headObject')
+            .mockImplementation((params, cb) => cb(null, {
+                Metadata: {
+                    'aws-tag-owner': 'arsenal',
+                    'aws-tag-color': 'blue',
+                    misc: 'ignored',
+                },
+            }));
+
+        client.getObjectTagging({
+            Bucket: 'unit-bucket',
+            Key: 'tagged-key',
+        }, (err, res) => {
+            assert.ifError(err);
+            assert.deepStrictEqual(res.TagSet, [
+                { Key: 'owner', Value: 'arsenal' },
+                { Key: 'color', Value: 'blue' },
+            ]);
+            done();
+        });
+    });
+
+    it('createMultipartUpload should reject missing parameters', done => {
+        client.createMultipartUpload({ Bucket: 'unit-bucket' }, err => {
+            assert(err);
+            assert(err.is.InvalidRequest);
+            done();
+        });
+    });
+
+    it('uploadPart should reject invalid part number', done => {
+        client.uploadPart({
+            Bucket: 'unit-bucket',
+            Key: 'object',
+            UploadId: 'upload',
+            PartNumber: 'NaN',
+        }, err => {
+            assert(err);
+            assert(err.is.InvalidArgument);
+            done();
+        });
+    });
+
+    it('uploadPartCopy should reject missing parameters', done => {
+        client.uploadPartCopy({
+            Bucket: 'unit-bucket',
+            Key: 'object',
+        }, err => {
+            assert(err);
+            assert(err.is.InvalidRequest);
+            done();
+        });
+    });
 });
