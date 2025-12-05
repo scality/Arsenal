@@ -3,15 +3,16 @@
 import { arsenalErrorAWSKMS } from '../utils';
 import { Agent as HttpAgent } from 'http';
 import { Agent as HttpsAgent } from 'https';
-import { KMSClient, 
-    CreateKeyCommand, 
+import {
+    KMSClient,
+    CreateKeyCommand,
     ScheduleKeyDeletionCommand,
-    GenerateDataKeyCommand, 
-    EncryptCommand, 
-    DecryptCommand, 
-    ListKeysCommand, 
-    NotFoundException, 
-    KMSInvalidStateException } from '@aws-sdk/client-kms';
+    GenerateDataKeyCommand,
+    EncryptCommand,
+    DecryptCommand,
+    NotFoundException,
+    KMSInvalidStateException,
+} from '@aws-sdk/client-kms';
 const { NodeHttpHandler } = require('@smithy/node-http-handler');
 import * as werelogs from 'werelogs';
 import assert from 'assert';
@@ -60,7 +61,7 @@ export default class Client implements KMSInterface {
 
     constructor(options: ClientOptions) {
         this._supportsDefaultKeyPerAccount = true;
-        const { providerName,tls, ak, sk, region, endpoint, noAwsArn } = options.kmsAWS;
+        const { providerName, tls, ak, sk, region, endpoint, noAwsArn } = options.kmsAWS;
 
         const requestHandler = new NodeHttpHandler({
             httpAgent: !tls ? new HttpAgent({
@@ -134,9 +135,13 @@ export default class Client implements KMSInterface {
                 // Prefer ARN, but fall back to KeyId if ARN is missing
                 keyId = keyMetadata?.Arn ?? (keyMetadata?.KeyId || '');
             }
+            // May produce double arn prefix: scality arn + aws arn
+            // arn:scality:kms:external:aws_kms:custom:key/arn:aws:kms:region:accountId:key/cbd69d33-ba8e-4b56-8cfe
+            // If this is a problem, a config flag should be used to hide the scality arn when returning the KMS KeyId
+            // or aws arn when creating the KMS Key
             const arn = `${this.backend.arnPrefix}${keyId}`;
             cb(null, keyId, arn);
-        }).catch(err => {
+        }).catch((err: Error) => {
             const error = arsenalErrorAWSKMS(err);
             logger.error('AWS KMS: failed to create master encryption key', { err });
             cb(error);
@@ -170,9 +175,10 @@ export default class Client implements KMSInterface {
                 return;
             }
             cb(null);
-        }).catch(err => {
+        }).catch((err: Error) => {
             if (err instanceof NotFoundException || err instanceof KMSInvalidStateException) {
-                logger.info('AWS KMS: key does not exist or is already pending deletion', { masterKeyId, error: err });
+                // master key does not exist or is already pending deletion
+                logger.warn('AWS KMS: key does not exist or is already pending deletion', { masterKeyId, error: err });
                 return cb(null);
             }
             const error = arsenalErrorAWSKMS(err);
@@ -204,7 +210,7 @@ export default class Client implements KMSInterface {
             const isolatedPlaintext = this.safePlaintext(data.Plaintext as Buffer);
             logger.debug('AWS KMS: data key generated');
             cb(null, isolatedPlaintext, Buffer.from(data.CiphertextBlob as Uint8Array));
-        }).catch(err => {
+        }).catch((err: Error) => {
             const error = arsenalErrorAWSKMS(err);
             logger.error('AWS KMS: failed to generate data key', { err });
             cb(error);
@@ -238,8 +244,7 @@ export default class Client implements KMSInterface {
 
             logger.debug('AWS KMS: data key ciphered');
             cb(null, Buffer.from(data.CiphertextBlob as Uint8Array));
-            return;
-        }).catch(err => {
+        }).catch((err: Error) => {
             const error = arsenalErrorAWSKMS(err);
             logger.error('AWS KMS: failed to cipher data key', { err });
             cb(error);
@@ -274,7 +279,7 @@ export default class Client implements KMSInterface {
 
             logger.debug('AWS KMS: data key deciphered');
             cb(null, isolatedPlaintext);
-        }).catch(err => {
+        }).catch((err: Error) => {
             const error = arsenalErrorAWSKMS(err);
             logger.error('AWS KMS: failed to decipher data key', { err });
             cb(error);
@@ -282,15 +287,21 @@ export default class Client implements KMSInterface {
     }
 
     /**
-     * Healthcheck function to verify KMS connectivity
+     * NOTE1: S3C-4833 KMS healthcheck is disabled in CloudServer.
+     *
+     * For the Arsenal client library we intentionally keep this as a no-op
+     * to avoid making extra AWS KMS calls (which can incur costs and require
+     * additional permissions). Callers should rely on higher-level health
+     * checks provided by their services instead of this method.
      */
+    /*
     healthcheck(logger: werelogs.Logger, cb: (err: Error | null) => void): void {
         logger.debug("AWS KMS: performing healthcheck");
-    
+
         const command = new ListKeysCommand({
             Limit: 1,
         });
-    
+
         this.client.send(command).then(() => {
             logger.debug("AWS KMS healthcheck: list keys succeeded");
             cb(null);
@@ -300,4 +311,5 @@ export default class Client implements KMSInterface {
             cb(error);
         });
     }
+    */
 }

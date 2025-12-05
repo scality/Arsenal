@@ -1,6 +1,7 @@
 import * as crypto from 'crypto';
 import * as queryString from 'querystring';
 import awsURIencode from './awsURIencode';
+import { normalizeHeaderValue } from '../../utils/normalizeHeaders';
 
 /**
  * createCanonicalRequest - creates V4 canonical request
@@ -77,9 +78,7 @@ export default function createCanonicalRequest(
             // AWS SDK v3 can pass header values as arrays (for multiple values),
             // strings, or other types. We need to normalize them before calling .trim()
             // Per HTTP spec and AWS Signature v4, multiple values are joined with commas
-            const stringValue = Array.isArray(headerValue) 
-                ? headerValue.join(',') 
-                : String(headerValue);
+            const stringValue = normalizeHeaderValue(headerValue);
             const trimmedHeader = stringValue
                 .trim().replace(/\s+/g, ' ');
             return `${signedHeader}:${trimmedHeader}\n`;

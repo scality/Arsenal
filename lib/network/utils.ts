@@ -1,5 +1,7 @@
 import { ArsenalError, errorInstances } from '../errors';
 import { allowedKmsErrors } from '../errors/kmsErrors';
+import { S3ServiceException } from '@aws-sdk/client-s3';
+import { KMSServiceException } from '@aws-sdk/client-kms';
 
 /**
  * Normalize errors according to arsenal definitions with a custom prefix
@@ -31,32 +33,42 @@ export function arsenalErrorKMIP(err: string | Error) {
 
 const allowedKmsErrorCodes = Object.keys(allowedKmsErrors) as unknown as (keyof typeof allowedKmsErrors)[];
 
-// Local AWSError type for compatibility with v3 error handling
-export type AWSError = Error & {
-    name?: string;
-    $fault?: 'client' | 'server';
-    $metadata?: {
-        httpStatusCode?: number;
-        requestId?: string;
-        attempts?: number;
-        totalRetryDelay?: number;
-    };
-    $retryable?: {
-        throttling?: boolean;
-    };
-    message?: string;
-};
+type AwsSdkError = (S3ServiceException | KMSServiceException | (Error & {
+    name: string;
+    $metadata?: { [key: string]: unknown };
+}));
 
-function isAWSError(err: string | Error | AWSError): err is AWSError {
-    return (err as AWSError).name !== undefined
-        && (err as AWSError).$metadata !== undefined;
+function getAwsErrorCode(err: unknown): string | undefined {
+    if (err instanceof S3ServiceException || err instanceof KMSServiceException) {
+        return err.name;
+    }
+
+    if (err instanceof Error && typeof err.name === 'string') {
+        // AWS SDK v3 errors inherit from Error but are not always instances of the
+        // exported Exception classes once they cross async boundaries.
+        // They still expose metadata markers such as `$metadata` and an error `name`.
+        const maybeAwsMetadata = (err as AwsSdkError).$metadata;
+        if (maybeAwsMetadata && typeof maybeAwsMetadata === 'object') {
+            return err.name;
+        }
+
+        if (allowedKmsErrorCodes.includes(err.name as keyof typeof allowedKmsErrors)) {
+            return err.name;
+        }
+    }
+
+    return undefined;
 }
 
-export function arsenalErrorAWSKMS(err: string | Error | AWSError) {
-    if (isAWSError(err)) {
-        const errorCode = err.name;
+export function arsenalErrorAWSKMS(err: string | Error | S3ServiceException) {
+    const awsErrorCode = getAwsErrorCode(err);
+
+    if (awsErrorCode) {
+        const errorCode = awsErrorCode;
+        const errorMessage = err instanceof Error ? err.message : String(err);
+
         if (allowedKmsErrorCodes.includes(errorCode as keyof typeof allowedKmsErrors)) {
-            return errorInstances[`KMS.${errorCode}`].customizeDescription(err.message);
+            return errorInstances[`KMS.${errorCode}`].customizeDescription(errorMessage);
         } else {
             // Encapsulate into a generic ArsenalError but keep the aws error code
             return ArsenalError.unflatten({
@@ -64,7 +76,7 @@ export function arsenalErrorAWSKMS(err: string | Error | AWSError) {
                 type: `KMS.${errorCode}`, // aws s3 prefix kms errors with KMS.
                 code: 500,
                 description: `unexpected AWS_KMS error`,
-                stack: err.stack,
+                stack: err instanceof Error ? err.stack : undefined,
             });
         }
     }

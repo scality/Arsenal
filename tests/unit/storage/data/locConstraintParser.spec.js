@@ -39,9 +39,10 @@ describe('locationConstraintParser', () => {
         assert.notStrictEqual(client, undefined);
         assert(client instanceof AwsClient);
         assert(client._s3Params.endpoint.startsWith('https://'));
-        if (client._s3Params.httpOptions && client._s3Params.httpOptions.agent) {
-            assert.strictEqual(client._s3Params.httpOptions.agent.protocol, 'https:');
-            assert.strictEqual(client._s3Params.httpOptions.agent.keepAlive, false);
+        const httpsAgent = client._s3Params.httpOptions?.agent;
+        if (httpsAgent) {
+            assert.strictEqual(httpsAgent.protocol, 'https:');
+            assert.strictEqual(httpsAgent.keepAlive, false);
         }
     });
 
@@ -50,9 +51,10 @@ describe('locationConstraintParser', () => {
         assert.notStrictEqual(client, undefined);
         assert(client instanceof AwsClient);
         assert(client._s3Params.endpoint.startsWith('http://'));
-        if (client._s3Params.httpOptions && client._s3Params.httpOptions.agent) {
-            assert.strictEqual(client._s3Params.httpOptions.agent.protocol, 'http:');
-            assert.strictEqual(client._s3Params.httpOptions.agent.keepAlive, false);
+        const httpAgent = client._s3Params.httpOptions?.agent;
+        if (httpAgent) {
+            assert.strictEqual(httpAgent.protocol, 'http:');
+            assert.strictEqual(httpAgent.keepAlive, false);
         }
     });
 

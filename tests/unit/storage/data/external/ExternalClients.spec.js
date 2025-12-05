@@ -1,5 +1,4 @@
 const assert = require('assert');
-const async = require('async');
 const stream = require('stream');
 const { promisify } = require('util');
 
@@ -92,7 +91,9 @@ describe('external backend clients', () => {
                 const uploadId = 'externalBackendTestUploadId';
                 testClient.completeMPU(jsonList, null, key,
                     uploadId, bucketName, log, (err, res) => {
-                        if (err) return done(err);
+                        if (err) {
+                            return done(err);
+                        }
                         assert.strictEqual(typeof res.key, 'string');
                         assert.strictEqual(typeof res.eTag, 'string');
                         assert.strictEqual(typeof res.dataStoreVersionId, 'string');
@@ -131,10 +132,8 @@ describe('external backend clients', () => {
                 dataStoreName: backend.config.dataStoreName,
                 response: new stream.PassThrough(),
             }, [10000000, 10000050], '');
-            
             let data = '';
             const streamToRead = readable;
-            
             await new Promise((resolve, reject) => {
                 streamToRead.on('data', (chunk) => {
                     data += chunk.toString();
@@ -153,13 +152,9 @@ describe('external backend clients', () => {
                 dataStoreName: backend.config.dataStoreName,
                 response: new stream.PassThrough(),
             }, [10000000, 10000050], '');
-        
-            
             const readable = result
-            
             let errorHandled = false;
-            
-            await new Promise((resolve) => {
+            await new Promise(resolve => {
                 readable
                     .once('data', () => readable.emit('error', new Error('OOPS')))
                     .on('error', err => {
