@@ -106,18 +106,18 @@ class DummyService {
         this.abortMultipartUploadAsync = promisify(this.abortMultipartUpload.bind(this));
         
         this.commandHandlers = new Map([
-            [PutObjectCommand, (cmd) => this.putObjectAsync(cmd.input)],
-            [CopyObjectCommand, (cmd) => this.copyObjectAsync(cmd.input)],
-            [HeadObjectCommand, (cmd) => this.headObjectAsync(cmd.input)],
-            [PutObjectTaggingCommand, (cmd) => this.putObjectTaggingAsync(cmd.input)],
-            [DeleteObjectTaggingCommand, (cmd) => this.deleteObjectTaggingAsync(cmd.input)],
-            [CompleteMultipartUploadCommand, (cmd) => this.completeMultipartUploadAsync(cmd.input)],
+            [PutObjectCommand, cmd => this.putObjectAsync(cmd.input)],
+            [CopyObjectCommand, cmd => this.copyObjectAsync(cmd.input)],
+            [HeadObjectCommand, cmd => this.headObjectAsync(cmd.input)],
+            [PutObjectTaggingCommand, cmd => this.putObjectTaggingAsync(cmd.input)],
+            [DeleteObjectTaggingCommand, cmd => this.deleteObjectTaggingAsync(cmd.input)],
+            [CompleteMultipartUploadCommand, cmd => this.completeMultipartUploadAsync(cmd.input)],
             [GetObjectCommand, this._handleGetObject.bind(this)], // Special case - returns stream
-            [DeleteObjectCommand, (cmd) => this.deleteObjectAsync(cmd.input)],
-            [CreateMultipartUploadCommand, (cmd) => this.createMultipartUploadAsync(cmd.input)],
-            [UploadPartCommand, (cmd) => this.uploadPartAsync(cmd.input)],
-            [ListPartsCommand, (cmd) => this.listPartsAsync(cmd.input)],
-            [AbortMultipartUploadCommand, (cmd) => this.abortMultipartUploadAsync(cmd.input)],
+            [DeleteObjectCommand, cmd => this.deleteObjectAsync(cmd.input)],
+            [CreateMultipartUploadCommand, cmd => this.createMultipartUploadAsync(cmd.input)],
+            [UploadPartCommand, cmd => this.uploadPartAsync(cmd.input)],
+            [ListPartsCommand, cmd => this.listPartsAsync(cmd.input)],
+            [AbortMultipartUploadCommand, cmd => this.abortMultipartUploadAsync(cmd.input)],
         ]);
     }
 

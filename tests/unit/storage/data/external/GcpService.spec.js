@@ -44,12 +44,21 @@ function handler(isPathStyle) {
         } else if (req.method === 'GET') {
             if (req.url.includes('versioning')) {
                 // getBucketVersioning
-                const xml = '<?xml version="1.0" encoding="UTF-8"?><VersioningConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"/>';
+                const xml = `<?xml version="1.0" encoding="UTF-8"?>
+                <VersioningConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"/>`;
                 res.writeHead(200);
                 res.end(xml);
             } else if (req.url.includes('versions')) {
                 // listVersions
-                const xml = '<?xml version="1.0" encoding="UTF-8"?><ListVersionsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Name>testrequestbucket</Name><Prefix></Prefix><KeyMarker></KeyMarker><VersionIdMarker></VersionIdMarker><MaxKeys>1000</MaxKeys><IsTruncated>false</IsTruncated></ListVersionsResult>';
+                const xml = `<?xml version="1.0" encoding="UTF-8"?>
+                <ListVersionsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                    <Name>testrequestbucket</Name>
+                    <Prefix></Prefix>
+                    <KeyMarker></KeyMarker>
+                    <VersionIdMarker></VersionIdMarker>
+                    <MaxKeys>1000</MaxKeys>
+                    <IsTruncated>false</IsTruncated>
+                </ListVersionsResult>`;
                 res.writeHead(200);
                 res.end(xml);
             } else {
@@ -63,7 +72,14 @@ function handler(isPathStyle) {
                 
                 if (isBucketOperation) {
                     // listObjects - bucket-level request
-                    const xml = '<?xml version="1.0" encoding="UTF-8"?><ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Name>testrequestbucket</Name><Prefix></Prefix><Marker></Marker><MaxKeys>1000</MaxKeys><IsTruncated>false</IsTruncated></ListBucketResult>';
+                    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+                    <ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                        <Name>testrequestbucket</Name>
+                        <Prefix></Prefix>
+                        <Marker></Marker>
+                        <MaxKeys>1000</MaxKeys>
+                        <IsTruncated>false</IsTruncated>
+                    </ListBucketResult>`;
                     res.writeHead(200);
                     res.end(xml);
                 } else {
@@ -75,7 +91,11 @@ function handler(isPathStyle) {
         } else if (req.method === 'PUT') {
             if (req.headers['x-amz-copy-source'] || req.headers['x-goog-copy-source']) {
                 // CopyObject - MUST return CopyObjectResult XML for SDK v3
-                const xml = '<?xml version="1.0" encoding="UTF-8"?><CopyObjectResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><LastModified>2023-01-01T00:00:00.000Z</LastModified><ETag>"d41d8cd98f00b204e9800998ecf8427e"</ETag></CopyObjectResult>';
+                const xml = `<?xml version="1.0" encoding="UTF-8"?>
+                <CopyObjectResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                    <LastModified>2023-01-01T00:00:00.000Z</LastModified>
+                    <ETag>"d41d8cd98f00b204e9800998ecf8427e"</ETag>
+                </CopyObjectResult>`;
                 res.writeHead(200);
                 res.end(xml);
             } else {
@@ -87,7 +107,10 @@ function handler(isPathStyle) {
             res.writeHead(204);
             res.end();
         } else if (req.method === 'POST' && req.url.includes('compose')) {
-            const xml = '<?xml version="1.0" encoding="UTF-8"?><ComposeObjectResult><ETag>"d41d8cd98f00b204e9800998ecf8427e"</ETag></ComposeObjectResult>';
+            const xml = `<?xml version="1.0" encoding="UTF-8"?>
+            <ComposeObjectResult>
+                <ETag>"d41d8cd98f00b204e9800998ecf8427e"</ETag>
+            </ComposeObjectResult>`;
             res.writeHead(200);
             res.end(xml);
         } else {
@@ -98,6 +121,7 @@ function handler(isPathStyle) {
 }
 
 const invalidDnsBucketNames = [
+    '..',
     '.bucketname',
     'bucketname.',
     'bucketName.',
@@ -105,15 +129,13 @@ const invalidDnsBucketNames = [
     '256.256.256.256',
 ];
 
-function invalidDnsBucketNameHandler() {
-    return (req, res) => {
-        assert(req.headers.host, host);
-        const bucketFromUrl = req.url.split('/')[1];
-        assert.strictEqual(typeof bucketFromUrl, 'string');
-        assert(invalidDnsBucketNames.includes(bucketFromUrl));
-        res.writeHead(200);
-        res.end();
-    };
+function invalidDnsBucketNameHandler(req, res) {
+    assert(req.headers.host, host);
+    const bucketFromUrl = req.url.split('/')[1];
+    assert.strictEqual(typeof bucketFromUrl, 'string');
+    assert(invalidDnsBucketNames.includes(bucketFromUrl));
+    res.writeHead(200);
+    res.end();
 }
 
 const operations = [
@@ -167,7 +189,7 @@ async function cleanupServer(httpServer, sockets) {
             }
         });
 
-        await new Promise((resolve) => {
+        await new Promise(resolve => {
             const timeout = setTimeout(() => {
                 resolve();
             }, 3000);
@@ -194,15 +216,15 @@ describe('GcpService request behavior', () => {
                 forcePathStyle: false,
                 region: 'us-east-1',
                 credentials: {
-                    accessKeyId: accessKeyId,
-                    secretAccessKey: secretAccessKey,
+                    accessKeyId,
+                    secretAccessKey,
                 },
             },
             bucketName: 'test-bucket',
             dataStoreName: 'test-location',
         });
 
-        httpServer = http.createServer(invalidDnsBucketNameHandler());
+    httpServer = http.createServer(invalidDnsBucketNameHandler);
         httpServer.on('listening', done);
         httpServer.on('error', err => {
             process.stdout.write(`https server: ${err.stack}\n`);
@@ -251,8 +273,8 @@ describe('GcpService pathStyle tests', () => {
                 forcePathStyle: true,
                 region: 'us-east-1',
                 credentials: {
-                    accessKeyId: accessKeyId,
-                    secretAccessKey: secretAccessKey,
+                    accessKeyId,
+                    secretAccessKey,
                 },
             },
             bucketName: 'test-bucket',

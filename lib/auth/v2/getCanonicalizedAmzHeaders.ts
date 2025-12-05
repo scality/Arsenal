@@ -1,4 +1,7 @@
-export default function getCanonicalizedAmzHeaders(headers: Record<string, string>, clientType: string) {
+import type { ArsenalRequestHeaders } from '../../types/ArsenalRequest';
+import { normalizeHeaderValue } from '../../utils/normalizeHeaders';
+
+export default function getCanonicalizedAmzHeaders(headers: ArsenalRequestHeaders, clientType: string) {
     /*
     Iterate through headers and pull any headers that are x-amz headers.
     Need to include 'x-amz-date' here even though AWS docs
@@ -11,12 +14,7 @@ export default function getCanonicalizedAmzHeaders(headers: Record<string, strin
         .filter(filterFn)
         .map(val => {
             const headerValue = headers[val];
-            // AWS SDK v3 can pass header values as arrays (for multiple values),
-            // strings, or other types. We need to normalize them before calling .trim()
-            // Per HTTP spec and AWS Signature v2, multiple values are joined with commas
-            const stringValue = Array.isArray(headerValue) 
-                ? headerValue.join(',') 
-                : String(headerValue);
+            const stringValue = normalizeHeaderValue(headerValue);
             return [val.trim(), stringValue.trim()];
         });
     /*
