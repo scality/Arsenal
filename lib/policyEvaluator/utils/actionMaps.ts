@@ -6,6 +6,7 @@ const sharedActionMap = {
     bucketDeleteWebsite: 's3:DeleteBucketWebsite',
     bucketDeleteTagging: 's3:PutBucketTagging',
     bucketGet: 's3:ListBucket',
+    listObjectsV2OptionalAttributes: 'scality:ListBucketOptionalObjectAttributes',
     bucketGetACL: 's3:GetBucketAcl',
     bucketGetCors: 's3:GetBucketCORS',
     bucketGetEncryption: 's3:GetEncryptionConfiguration',
