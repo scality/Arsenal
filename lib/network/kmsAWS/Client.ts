@@ -133,7 +133,8 @@ export default class Client implements KMSInterface {
                 keyId = keyMetadata?.KeyId || '';
             } else {
                 // Prefer ARN, but fall back to KeyId if ARN is missing
-                keyId = keyMetadata?.Arn ?? (keyMetadata?.KeyId || '');
+                // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
+                keyId = keyMetadata?.Arn ?? keyMetadata?.KeyId!;
             }
             // May produce double arn prefix: scality arn + aws arn
             // arn:scality:kms:external:aws_kms:custom:key/arn:aws:kms:region:accountId:key/cbd69d33-ba8e-4b56-8cfe

@@ -24,6 +24,7 @@ export default function constructChunkStringToSign(
         currentChunkHash = constants.emptyStringHash;
     } else {
         const hash = crypto.createHash('sha256');
+        // Strings must stay in binary form to match AWS chunk signing format.
         const chunkHash = typeof justDataChunk === 'string'
             ? hash.update(justDataChunk, 'binary')
             : hash.update(justDataChunk);
