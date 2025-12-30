@@ -287,11 +287,8 @@ class DummyService {
 
     _handleGetObject(command) {
         const stream = new DummyObjectStream(0, 10000000);
-        stream.abort = () => {};
         const response = {
-            createReadStream: () => stream,
             Body: stream,
-            abort: () => {},
             $metadata: {
                 httpStatusCode: 200,
                 requestId: 'mock-request-id',
