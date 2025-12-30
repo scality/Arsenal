@@ -8,7 +8,6 @@ const logger = new werelogs.Logger('test:routesUtils.responseStreamData');
 const { responseStreamData } = require('../../../../lib/s3routes/routesUtils');
 const AwsClient = require('../../../../lib/storage/data/external/AwsClient');
 const DummyObjectStream = require('../../storage/data/DummyObjectStream');
-const { once } = require('../../../../lib/jsutil');
 
 werelogs.configure({
     level: 'debug',
@@ -177,32 +176,28 @@ describe('routesUtils.responseStreamData', () => {
 
     it('should not leak socket if client closes the connection before ' +
     'data backend starts streaming', done => {
-        const doneOnce = once(done);
-        try {
-            responseStreamData(undefined, {}, {}, [{
-                key: 'foo',
-                size: 10000000,
-            }], {
-                client: awsClient,
-                implName: 'impl',
-                config: {},
-                locStorageCheckFn: () => {},
-            }, {
-                setHeader: () => {},
-                writeHead: () => {},
-                on: () => {},
-                once: () => {},
-                emit: () => {},
-                write: () => {},
-                end: () => setTimeout(() => {
-                    const nOpenSockets = Object.keys(awsAgent.sockets).length;
-                    assert.strictEqual(nOpenSockets, 0);
-                    doneOnce();
-                }, 1000),
-                isclosed: true,
-            }, undefined, logger.newRequestLogger());
-        } catch (err) {
-            doneOnce(err);
-        }
+        responseStreamData(undefined, {}, {}, [{
+            key: 'foo',
+            size: 10000000,
+        }], {
+            client: awsClient,
+            implName: 'impl',
+            config: {},
+            locStorageCheckFn: () => {},
+        }, {
+            setHeader: () => {},
+            writeHead: () => {},
+            on: () => {},
+            once: () => {},
+            emit: () => {},
+            write: () => {},
+            end: () => setTimeout(() => {
+                const nOpenSockets = Object.keys(awsAgent.sockets).length;
+                assert.strictEqual(nOpenSockets, 0);
+                done();
+            }, 1000),
+            // fake a connection close from the S3 client by setting the "isclosed" flag
+            isclosed: true,
+        }, undefined, logger.newRequestLogger());
     });
 });
