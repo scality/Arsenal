@@ -117,7 +117,7 @@ describe('MetadataWrapper listObject parsing', () => {
         });
     });
 
-    it('should parse restore status: no archive info', done => {
+    it('should ignore restore status: no archive info', done => {
         const rawEntries = [
             {
                 key: 'obj1',
@@ -135,10 +135,7 @@ describe('MetadataWrapper listObject parsing', () => {
         metadataWrapper.listObject(bucketName, {}, logger, (err, data) => {
             assert.ifError(err);
             const entry = data.Contents[0].value;
-            assert.deepStrictEqual(entry.restoreStatus, {
-                inProgress: false,
-                expiryDate: undefined,
-            });
+            assert.deepStrictEqual(entry.restoreStatus, undefined);
             done();
         });
     });
