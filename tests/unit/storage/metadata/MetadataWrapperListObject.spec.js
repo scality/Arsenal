@@ -49,8 +49,8 @@ describe('MetadataWrapper listObject parsing', () => {
             assert.ifError(err);
             assert.strictEqual(data.Contents.length, 1);
             const entry = data.Contents[0].value;
-            assert.strictEqual(entry['x-amz-meta-foo'], 'bar');
-            assert.strictEqual(entry['x-amz-meta-baz'], 'qux');
+            assert.strictEqual(entry.userMetadata['x-amz-meta-foo'], 'bar');
+            assert.strictEqual(entry.userMetadata['x-amz-meta-baz'], 'qux');
             assert.strictEqual(entry.Size, 100);
             done();
         });
