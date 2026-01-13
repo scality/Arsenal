@@ -1,5 +1,6 @@
 const assert = require('assert');
 const stream = require('stream');
+const sinon = require('sinon');
 const { promisify } = require('util');
 
 const AwsClient = require('../../../../../lib/storage/data/external/AwsClient');
@@ -49,11 +50,21 @@ const backendClients = [
     },
 ];
 const log = new DummyRequestLogger();
+let sandbox;
 
 describe('external backend clients', () => {
+    beforeEach(() => {
+        sandbox = sinon.createSandbox();
+    });
+
+    afterEach(() => {
+        sandbox.restore();
+    });
+
     backendClients.forEach(backend => {
         let testClient;
-        let headAsync, getAsync, objectPutTaggingAsync, objectDeleteTaggingAsync;
+        let headAsync, getAsync, deleteAsync, objectPutTaggingAsync, objectDeleteTaggingAsync,
+            createMPUAsync, uploadPartAsync, abortMPUAsync, listPartsAsync;
 
         beforeAll(() => {
             testClient = new backend.Class(backend.config);
@@ -62,9 +73,16 @@ describe('external backend clients', () => {
             // Promisify the client methods
             headAsync = promisify(testClient.head.bind(testClient));
             getAsync = promisify(testClient.get.bind(testClient));
+            deleteAsync = promisify(testClient.delete.bind(testClient));
             if (backend.config.type !== 'azure') {
+                createMPUAsync = promisify(testClient.createMPU.bind(testClient));
+                uploadPartAsync = promisify(testClient.uploadPart.bind(testClient));
+                abortMPUAsync = promisify(testClient.abortMPU.bind(testClient));
                 objectPutTaggingAsync = promisify(testClient.objectPutTagging.bind(testClient));
                 objectDeleteTaggingAsync = promisify(testClient.objectDeleteTagging.bind(testClient));
+            }
+            if (backend.config.type === 'aws') {
+                listPartsAsync = promisify(testClient.listParts.bind(testClient));
             }
         });
 
@@ -167,6 +185,16 @@ describe('external backend clients', () => {
             assert.strictEqual(errorHandled, true);
         });
 
+        it(`${backend.name} delete() should delete the requested key without error`, async () => {
+            const key = 'externalBackendTestKey';
+            const bucketName = 'externalBackendTestBucket';
+            const objectInfo = Object.assign({
+                deleteVersion: false,
+            }, testClient.toObjectGetInfo(key, bucketName));
+            const result = await deleteAsync(objectInfo, '');
+            assert.strictEqual(result, undefined);
+        });
+
         if (backend.config.type !== 'azure') {
             it(`${backend.name} should set tags and then delete it`, async () => {
                 const key = 'externalBackendTestKey';
@@ -221,7 +249,93 @@ describe('external backend clients', () => {
                     assert(err.is.ServiceUnavailable);
                 }
             });
+
+            it(`${backend.name} uploadPart() should return sanitized data retrieval info`, async () => {
+                const key = 'externalBackendTestKey';
+                const bucketName = 'externalBackendTestBucket';
+                const result = await uploadPartAsync(null, null,
+                    stream.Readable.from(['part data']),
+                    9, key, 'uploadId-123', 1, bucketName, log);
+
+                assert.strictEqual(result.key, `${bucketName}/${key}`);
+                assert.strictEqual(result.dataStoreName, backend.config.dataStoreName);
+                assert(result.dataStoreETag);
+                assert.strictEqual(result.dataStoreETag.includes('"'), false);
+            });
+
+            it(`${backend.name} abortMPU() should resolve without error`, async () => {
+                const key = 'externalBackendTestKey';
+                const bucketName = 'externalBackendTestBucket';
+
+                const result = await abortMPUAsync(key, 'uploadId-123', bucketName, log);
+                assert.strictEqual(result, undefined);
+            });
+
+            if (backend.config.type === 'aws') {
+                it(`${backend.name} listParts() should map result parts`, async () => {
+                    const key = 'externalBackendTestKey';
+                    const bucketName = 'externalBackendTestBucket';
+
+                    const storedParts = await listPartsAsync(key, 'uploadId-123', bucketName, 0, 1000, log);
+
+                    assert(Array.isArray(storedParts.Contents));
+                    assert(storedParts.Contents.length > 0);
+                    const firstPart = storedParts.Contents[0];
+                    assert.strictEqual(typeof firstPart.partNumber, 'number');
+                    assert(firstPart.value);
+                    assert.strictEqual(firstPart.value.ETag.includes('"'), false);
+                });
+            }
+
+            it(`${backend.name} createMPU() should trim metadata and forward tagging`, async () => {
+                const key = 'externalBackendTestKey';
+                const bucketName = 'externalBackendTestBucket';
+                const metaHeaders = {
+                    'x-amz-meta-custom-key': 'customValue',
+                    'x-amz-meta-second-key': 'secondValue',
+                    ignored: 'shouldBeDropped',
+                };
+                const args = [
+                    key,
+                    metaHeaders,
+                    bucketName,
+                    'http://redirect',
+                    'text/plain',
+                    'max-age=3600',
+                    'attachment',
+                    'gzip',
+                    'k1=v1&k2=v2',
+                    log,
+                ];
+
+                if (backend.config.type === 'aws') {
+                    const sendSpy = sandbox.spy(testClient._client, 'send');
+                    const result = await createMPUAsync(...args);
+                    assert(result);
+                    assert(result.UploadId);
+                    assert(sendSpy.calledOnce);
+                    const command = sendSpy.firstCall.args[0];
+                    assert.strictEqual(command.constructor.name, 'CreateMultipartUploadCommand');
+                    assert.deepStrictEqual(command.input.Metadata, {
+                        'custom-key': 'customValue',
+                        'second-key': 'secondValue',
+                    });
+                    assert.strictEqual(command.input.Tagging, 'k1=v1&k2=v2');
+                } else {
+                    const createSpy = sandbox.spy(testClient._client, 'createMultipartUpload');
+                    const result = await createMPUAsync(...args);
+                    assert(result);
+                    assert(result.UploadId);
+                    assert(createSpy.calledOnce);
+                    const capturedParams = createSpy.firstCall.args[0];
+                    assert.strictEqual(capturedParams.Bucket, backend.config.mpuBucket);
+                    assert.deepStrictEqual(capturedParams.Metadata, {
+                        'custom-key': 'customValue',
+                        'second-key': 'secondValue',
+                    });
+                    assert.strictEqual(capturedParams.Tagging, 'k1=v1&k2=v2');
+                }
+            });
         }
-        // To-Do: test the other external client methods (delete, createMPU ...)
     });
 });
