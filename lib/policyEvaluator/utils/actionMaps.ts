@@ -6,7 +6,6 @@ const sharedActionMap = {
     bucketDeleteWebsite: 's3:DeleteBucketWebsite',
     bucketDeleteTagging: 's3:PutBucketTagging',
     bucketGet: 's3:ListBucket',
-    listObjectsV2OptionalAttributes: 'scality:ListBucketOptionalObjectAttributes',
     bucketGetACL: 's3:GetBucketAcl',
     bucketGetCors: 's3:GetBucketCORS',
     bucketGetEncryption: 's3:GetEncryptionConfiguration',
@@ -55,6 +54,10 @@ const sharedActionMap = {
     objectPutVersion: 's3:PutObjectVersion',
 };
 
+const actionMapBucketGet = {
+    listObjectsV2OptionalAttributes: 'scality:ListBucketOptionalObjectAttributes',
+};
+
 const actionMapBucketQuotas = {
     bucketGetQuota: 'scality:GetBucketQuota',
     bucketUpdateQuota: 'scality:UpdateBucketQuota',
@@ -98,6 +101,7 @@ const actionMapRQ = {
     ...sharedActionMap,
     ...actionMapBucketQuotas,
     ...actionMapBucketRateLimit,
+    ...actionMapBucketGet,
 };
 
 // action map used for bucket policies
