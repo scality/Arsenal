@@ -1,7 +1,7 @@
 const assert = require('assert');
 const http = require('http');
 const { GCP } = require('../../../../../lib/storage/data/external/GCP');
-const { ListObjectsCommand, ListObjectVersionsCommand } = require('@aws-sdk/client-s3');
+const { ListObjectsCommand, ListObjectVersionsCommand, GetBucketVersioningCommand } = require('@aws-sdk/client-s3');
 const MpuHelper = require('../../../../../lib/storage/data/external/GCP/GcpApis/mpuHelper');
 const { createMpuKey } = require('../../../../../lib/storage/data/external/GCP/GcpUtils');
 
@@ -192,6 +192,11 @@ function callOperation(client, op, params, cb) {
     }
     if (op === 'listVersions') {
         return client.send(new ListObjectVersionsCommand(params))
+            .then(() => cb(null))
+            .catch(err => cb(err));
+    }
+    if (op === 'getBucketVersioning') {
+        return client.send(new GetBucketVersioningCommand(params))
             .then(() => cb(null))
             .catch(err => cb(err));
     }
