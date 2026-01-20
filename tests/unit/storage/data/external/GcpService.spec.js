@@ -162,7 +162,7 @@ const methodOperations = [
     },
     {
         op: 'putObject',
-        params: { Bucket, Key },
+        params: { Bucket, Key, Body: Buffer.from('test-body') },
     },
     {
         op: 'getObject',
