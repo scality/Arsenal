@@ -84,6 +84,8 @@ export default function routerGET(
             call('listParts');
         } else if (query.retention !== undefined) {
             call('objectGetRetention');
+        } else if (query.attributes !== undefined) {
+            call('objectGetAttributes');
         } else {
             // GET object
             api.callApiMethod('objectGet', request, response, log,

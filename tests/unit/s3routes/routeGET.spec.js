@@ -78,6 +78,18 @@ describe('routerGET', () => {
         );
     });
 
+    it('should call objectGetAttributes when query.attributes is present', () => {
+        request.bucketName = 'bucketName';
+        request.objectKey = 'objectKey';
+        request.query = { 'attributes': true };
+
+        routerGET(request, response, api, log, statsClient, dataRetrievalParams);
+
+        expect(api.callApiMethod).toHaveBeenCalledWith(
+            'objectGetAttributes', request, response, log, expect.any(Function),
+        );
+    });
+
     it('should call objectGetACL when query.acl is present for an object', () => {
         request.bucketName = 'bucketName';
         request.objectKey = 'objectKey';
