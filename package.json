@@ -17,10 +17,10 @@
   },
   "homepage": "https://github.com/scality/Arsenal#readme",
   "dependencies": {
-    "@aws-sdk/client-kms": "^3.901.0",
-    "@aws-sdk/client-s3": "^3.901.0",
-    "@aws-sdk/credential-providers": "^3.901.0",
-    "@aws-sdk/lib-storage": "^3.937.0",
+    "@aws-sdk/client-kms": "^3.975.0",
+    "@aws-sdk/client-s3": "^3.975.0",
+    "@aws-sdk/credential-providers": "^3.975.0",
+    "@aws-sdk/lib-storage": "^3.975.0",
     "@azure/identity": "^4.13.0",
     "@azure/storage-blob": "^12.28.0",
     "@js-sdsl/ordered-set": "^4.4.2",
@@ -123,7 +123,7 @@
     }
   },
   "resolutions": {
-    "tar": "^7.5.2"
+    "tar": "^7.5.6"
   },
   "nyc": {
     "tempDirectory": "coverage",
