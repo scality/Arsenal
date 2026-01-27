@@ -63,6 +63,7 @@ export function vaultSignatureCb(
     log.addDefaultFields(auditLog);
     return callback(null, userInfo, authorizationResults, streamingV4Params, {
         accountQuota: info.accountQuota || {},
+        limits: info.limits || {},
     });
 }
 export type AuthV2RequestParams = {
@@ -468,13 +469,13 @@ export default class Vault {
     /**
      * Calls Vault to retrieve the default encryption key id of the account, or creates it if it doesn't exist.
      *
-     * @param {string} canonicalID - The canonical id of the account for which 
+     * @param {string} canonicalID - The canonical id of the account for which
      * the encryption key id is being retrieved or created.
      * @param {RequestLogger} log - logger
-     * @param {(err: Error | null, data?: { 
-     *    canonicalId: string, 
-     *    encryptionKeyId: string, 
-     *    action: 'retrieved' | 'created' 
+     * @param {(err: Error | null, data?: {
+     *    canonicalId: string,
+     *    encryptionKeyId: string,
+     *    action: 'retrieved' | 'created'
      * }) => void}
      *   - canonicalId: The canonical id of the account.
      *   - encryptionKeyId: The retrieved or newly created encryption key id.
@@ -485,10 +486,10 @@ export default class Vault {
     getOrCreateEncryptionKeyId(
         canonicalID: string,
         log: RequestLogger,
-        callback: (err: Error | null, data?: { 
-            canonicalId: string, 
-            encryptionKeyId: string, 
-            action: 'retrieved' | 'created' 
+        callback: (err: Error | null, data?: {
+            canonicalId: string,
+            encryptionKeyId: string,
+            action: 'retrieved' | 'created'
         }) => void
     ) {
         log.trace('sending request context params to vault to get or create encryption key id');

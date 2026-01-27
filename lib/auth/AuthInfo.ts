@@ -22,14 +22,22 @@ export type AccountQuota = {
     quota: bigint,
 };
 
+export type AccountLimits = {
+    RequestsPerSecond?: {
+        Limit: number,
+    },
+}
+
 export type AccountInfos = {
     accountQuota?: AccountQuota,
+    limits?: AccountLimits,
 };
 
 export type AuthV4Results = {
     userInfo: AuthInfoType,
     authorizationResults?: AuthorizationResults,
     accountQuota: AccountQuota,
+    limits?: AccountLimits,
 };
 
 export type AccountCanonicalInfo = {
