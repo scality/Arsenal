@@ -60,6 +60,10 @@ const actionMapBucketGet = {
     listObjectsV2OptionalAttributes: 'scality:ListBucketOptionalObjectAttributes',
 };
 
+const actionMapObjectGetAttributes = {
+    objectGetAttributesCustom: 'scality:GetObjectAttributesCustom',
+};
+
 const actionMapBucketQuotas = {
     bucketGetQuota: 'scality:GetBucketQuota',
     bucketUpdateQuota: 'scality:UpdateBucketQuota',
@@ -104,6 +108,7 @@ const actionMapRQ = {
     ...actionMapBucketQuotas,
     ...actionMapBucketRateLimit,
     ...actionMapBucketGet,
+    ...actionMapObjectGetAttributes,
 };
 
 // action map used for bucket policies
