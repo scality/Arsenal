@@ -54,6 +54,10 @@ const sharedActionMap = {
     objectPutVersion: 's3:PutObjectVersion',
 };
 
+const actionMapBucketGet = {
+    listObjectsV2OptionalAttributes: 'scality:ListBucketOptionalObjectAttributes',
+};
+
 const actionMapBucketQuotas = {
     bucketGetQuota: 'scality:GetBucketQuota',
     bucketUpdateQuota: 'scality:UpdateBucketQuota',
@@ -97,6 +101,7 @@ const actionMapRQ = {
     ...sharedActionMap,
     ...actionMapBucketQuotas,
     ...actionMapBucketRateLimit,
+    ...actionMapBucketGet,
 };
 
 // action map used for bucket policies
