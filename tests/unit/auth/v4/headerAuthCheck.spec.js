@@ -91,6 +91,24 @@ describe('v4 headerAuthCheck', () => {
         done();
     });
 
+    it('should NOT return error if x-amz-content-sha256 is not included ' +
+        'as signed header but is in request', done => {
+        // x-amz-content-sha256 is an exception - AWS does not require it
+        // to be in the signed headers list
+        const clock = fakeTimers.install({ now: 1454962445000 });
+        const alteredRequest = createAlteredRequest({
+            authorization: 'AWS4-HMAC-SHA256 Credential=accessKey1/20160208' +
+                '/us-east-1/s3/aws4_request, SignedHeaders=host;' +
+                'x-amz-date, Signature=abed924c06abf8772c670064d22eacd6ccb85c06' +
+                'befa15f4a789b0bae19307bc',
+            'x-amz-content-sha256': xAMZcontentSha256 },
+            'headers', request, headers);
+        const res = headerAuthCheck(alteredRequest, log);
+        clock.uninstall();
+        assert.strictEqual(res.err, null);
+        done();
+    });
+
     it('should return error if an x-scal header is not included as signed ' +
         'header but is in request', done => {
         const alteredRequest = createAlteredRequest({
