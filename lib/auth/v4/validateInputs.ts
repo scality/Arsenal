@@ -197,6 +197,12 @@ export function areSignedHeadersComplete(signedHeaders: string, allHeaders: Arse
     }
     const headers = Object.keys(allHeaders);
     for (let i = 0; i < headers.length; i++) {
+        // We skip x-amz-content-sha256 because in practice AWS does not require that it be present
+        // in the list of signed headers.
+        if (headers[i] === 'x-amz-content-sha256') {
+            continue;
+        }
+
         if ((headers[i].startsWith('x-amz-')
         || headers[i].startsWith('x-scal-'))
         && signedHeadersList.indexOf(headers[i]) === -1) {
