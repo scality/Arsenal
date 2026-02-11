@@ -15,15 +15,33 @@ export function convertAmzTimeToMs(timestamp: string) {
 }
 
 /**
- * Convert UTC timestamp to ISO 8601 timestamp
- * @param timestamp of UTC form: Fri, 10 Feb 2012 21:34:55 GMT
- * @return ISO8601 timestamp of form: YYYYMMDDTHHMMSSZ
- */
-export function convertUTCtoISO8601(timestamp: string | number) {
-    // convert to ISO string: YYYY-MM-DDTHH:mm:ss.sssZ.
-    const converted = new Date(timestamp).toISOString();
-    // Remove "-"s and "."s and milliseconds
-    return converted.split('.')[0].replace(/-|:/g, '').concat('Z');
+* Convert UTC timestamp to ISO 8601 compact format
+* @param timestamp - UTC timestamp (e.g., 'Fri, 10 Feb 2012 21:34:55 GMT') or Unix timestamp
+* @return ISO8601 timestamp of form YYYYMMDDTHHMMSSZ, or undefined if invalid
+*
+* @example
+* convertUTCtoISO8601('Fri, 10 Feb 2012 21:34:55 GMT'); // '20120210T213455Z'
+* convertUTCtoISO8601(1328910895000); // '20120210T213455Z'
+* convertUTCtoISO8601('invalid'); // undefined
+*/
+export function convertUTCtoISO8601(timestamp: string | number): string | undefined {
+    if (timestamp == null) {
+        return undefined;
+    }
+
+    const date = new Date(timestamp);
+
+    if (isNaN(date.getTime())) {
+        return undefined;
+    }
+
+    try {
+        // Can throw RangeError.
+        const converted = date.toISOString();
+        return converted.split('.')[0].replace(/-|:/g, '').concat('Z');
+    } catch {
+        return undefined;
+    }
 }
 
 /**
@@ -41,7 +59,8 @@ export function checkTimeSkew(timestamp: string, expiry: number, log: RequestLog
     if ((currentTime + fifteenMinutes) < parsedTimestamp) {
         log.debug('current time pre-dates timestamp', {
             parsedTimestamp,
-            currentTimeInMilliseconds: currentTime });
+            currentTimeInMilliseconds: currentTime
+        });
         return true;
     }
     const expiryInMilliseconds = expiry * 1000;
@@ -49,8 +68,56 @@ export function checkTimeSkew(timestamp: string, expiry: number, log: RequestLog
         log.debug('signature has expired', {
             parsedTimestamp,
             expiry,
-            currentTimeInMilliseconds: currentTime });
+            currentTimeInMilliseconds: currentTime
+        });
         return true;
     }
     return false;
+}
+
+/**
+* Validates if a string is in ISO 8601 compact format: YYYYMMDDTHHMMSSZ
+*
+* Checks that: 
+* - String is exactly 16 characters long
+* - Format matches YYYYMMDDTHHMMSSZ (8 digits, 'T', 6 digits, 'Z')
+* - All date/time components are valid (no Feb 30th, no 25:00:00, etc.)
+* - No silent date corrections occur (prevents rollover)
+*
+* @param str - The string to validate
+* @returns true if the string is a valid ISO 8601 compact format, false otherwise
+*
+* @example
+* ```typescript
+* isValidISO8601Compact('20160208T201405Z');  // true
+* isValidISO8601Compact('20160230T201405Z');  // false (Feb 30 invalid)
+* isValidISO8601Compact('20160208T251405Z');  // false (25 hours invalid)
+* isValidISO8601Compact('2016-02-08T20:14:05Z'); // false (wrong format)
+* isValidISO8601Compact('abcd0208T201405Z');  // false (contains letters)
+* ```
+*/
+export function isValidISO8601Compact(str: string): boolean {
+    if (typeof str !== 'string') {
+        return false;
+    }
+
+    // Match format: YYYYMMDDTHHMMSSZ
+    const match = str.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/);
+    if (!match) {
+        return false;
+    }
+
+    const [, year, month, day, hour, minute, second] = match;
+
+    // Construct standard ISO format and validate
+    const isoString = `${year}-${month}-${day}T${hour}:${minute}:${second}.000Z`;
+    const date = new Date(isoString);
+
+    try {
+        // date.toISOString() can throw.
+        // date.toISOString() === isoString check prevents silent date corrections (30 February to 1 March)
+        return !Number.isNaN(date.getTime()) && date.toISOString() === isoString;
+    } catch {
+        return false;
+    }
 }
