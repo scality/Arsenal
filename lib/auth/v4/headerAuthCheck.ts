@@ -6,6 +6,7 @@ import {
     checkTimeSkew,
     convertUTCtoISO8601,
     convertAmzTimeToMs,
+    isValidISO8601Compact,
 } from './timeUtils';
 import {
     extractAuthItems,
@@ -83,20 +84,19 @@ export function check(
     // check request timestamp
     const xAmzDate = request.headers['x-amz-date'];
     if (xAmzDate) {
-        const xAmzDateArr = xAmzDate.split('T');
-        // check that x-amz- date has the correct format and after epochTime
-        if (xAmzDateArr.length === 2 && xAmzDateArr[0].length === 8
-          && xAmzDateArr[1].length === 7
-          && Number.parseInt(xAmzDateArr[0], 10) > 19700101) {
-            // format of x-amz- date is ISO 8601: YYYYMMDDTHHMMSSZ
-            timestamp = request.headers['x-amz-date'];
+        if (isValidISO8601Compact(xAmzDate)) {
+            timestamp = xAmzDate;
         }
     } else if (request.headers.date) {
-        timestamp = convertUTCtoISO8601(request.headers.date);
+        if (isValidISO8601Compact(request.headers.date)) {
+            timestamp = request.headers.date;
+        } else {
+            timestamp = convertUTCtoISO8601(request.headers.date);
+        }
     }
     if (!timestamp) {
         log.debug('missing or invalid date header',
-            { method: 'auth/v4/headerAuthCheck.check' });
+            { 'method': 'auth/v4/headerAuthCheck.check', 'x-amz-date': xAmzDate, 'Date': request.headers.date });
         return { err: errorInstances.AccessDenied.
             customizeDescription('Authentication requires a valid Date or ' +
           'x-amz-date header') };

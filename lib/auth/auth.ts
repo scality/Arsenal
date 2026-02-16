@@ -215,7 +215,9 @@ function generateV4Headers(
     payload?: string,
 ) {
     Object.assign(request, { headers: {} });
-    const amzDate = convertUTCtoISO8601(Date.now());
+    // Date.now() should always return a valid date so we assert non null.
+    const amzDate = convertUTCtoISO8601(Date.now())!;
+
     // get date without time
     const scopeDate = amzDate.slice(0, amzDate.indexOf('T'));
     const region = 'us-east-1';
