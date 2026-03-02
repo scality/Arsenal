@@ -290,3 +290,74 @@ describe('NotificationConfiguration.restrictSupportedNotificationBasedOnLifecycl
         expect(supportedNotificationEvents.has('s3:ObjectCreated:*')).toBeTruthy();
     });
 });
+
+describe('NotificationConfiguration.getConfigXML - XML escaping for special characters', () => {
+    const specialCharacters = ['&', '<', '>', '"', "'"];
+
+    specialCharacters.forEach(char => {
+        it(`should escape \`${char}\` in notification ID and generate valid XML`, done => {
+            const config = {
+                queueConfig: [{
+                    id: `test-id${char}value`,
+                    queueArn: 'arn:scality:bucketnotif:::target',
+                    events: ['s3:ObjectCreated:*'],
+                    filterRules: [],
+                }],
+            };
+
+            const xml = NotificationConfiguration.getConfigXML(config);
+
+            parseString(xml, (err, result) => {
+                assert.ifError(err);
+                const queueConfig = result.NotificationConfiguration.QueueConfiguration[0];
+                assert.strictEqual(queueConfig.Id[0], `test-id${char}value`);
+                done();
+            });
+        });
+
+        it(`should escape \`${char}\` in queue ARN`, done => {
+            const config = {
+                queueConfig: [{
+                    id: 'test-id',
+                    queueArn: `arn:scality:bucketnotif:::queue${char}name`,
+                    events: ['s3:ObjectCreated:*'],
+                    filterRules: [],
+                }],
+            };
+
+            const xml = NotificationConfiguration.getConfigXML(config);
+
+            parseString(xml, (err, result) => {
+                assert.ifError(err);
+                const queueConfig = result.NotificationConfiguration.QueueConfiguration[0];
+                assert.strictEqual(queueConfig.Queue[0], `arn:scality:bucketnotif:::queue${char}name`);
+                done();
+            });
+        });
+
+        it(`should escape \`${char}\` in filter rule name and value`, done => {
+            const config = {
+                queueConfig: [{
+                    id: 'test-id',
+                    queueArn: 'arn:scality:bucketnotif:::target',
+                    events: ['s3:ObjectCreated:*'],
+                    filterRules: [{
+                        name: `Prefix${char}Name`,
+                        value: `logs/${char}path`,
+                    }],
+                }],
+            };
+
+            const xml = NotificationConfiguration.getConfigXML(config);
+
+            parseString(xml, (err, result) => {
+                assert.ifError(err);
+                const queueConfig = result.NotificationConfiguration.QueueConfiguration[0];
+                const filterRule = queueConfig.Filter[0].S3Key[0].FilterRule[0];
+                assert.strictEqual(filterRule.Name[0], `Prefix${char}Name`);
+                assert.strictEqual(filterRule.Value[0], `logs/${char}path`);
+                done();
+            });
+        });
+    });
+});

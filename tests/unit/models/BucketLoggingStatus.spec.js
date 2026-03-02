@@ -306,5 +306,29 @@ describe('BucketLoggingStatus', () => {
                 assert.strictEqual(result.res.getLoggingEnabled(), undefined);
             });
         });
+
+        describe('XML escaping for special characters', () => {
+            const specialCharacters = ['&', '<', '>', '"', "'"];
+
+            specialCharacters.forEach(char =>
+                it(`should escape \`${char}\` in TargetPrefix and generate valid XML`, done => {
+                    const loggingEnabled = {
+                        TargetBucket: 'test-bucket',
+                        TargetPrefix: `logs/app${char}env/`,
+                    };
+                    const config = new BucketLoggingStatus(loggingEnabled);
+                    const xml = config.toXML();
+
+                    // Verify the XML is valid and the character roundtrips by parsing it
+                    parseString(xml, { explicitArray: false }, (err, result) => {
+                        assert.ifError(err);
+                        assert(result.BucketLoggingStatus);
+                        const logging = result.BucketLoggingStatus.LoggingEnabled;
+                        assert.strictEqual(logging.TargetPrefix, `logs/app${char}env/`);
+                        done();
+                    });
+                })
+            );
+        });
     });
 });

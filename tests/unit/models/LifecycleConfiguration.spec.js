@@ -1396,3 +1396,85 @@ describe('LifecycleConfiguration::getConfigJson', () => {
             );
         }));
 });
+
+describe('LifecycleConfiguration.getConfigXml - XML escaping for special characters', () => {
+    const specialCharacters = ['&', '<', '>', '"', "'"];
+
+    specialCharacters.forEach(char => {
+        it(`should escape \`${char}\` in rule ID and generate valid XML`, done => {
+            const config = {
+                rules: [{
+                    ruleID: `test-id${char}value`,
+                    ruleStatus: 'Enabled',
+                    prefix: 'logs/',
+                    actions: [{
+                        actionName: 'Expiration',
+                        days: 90,
+                    }],
+                }],
+            };
+
+            const xml = LifecycleConfiguration.getConfigXml(config);
+
+            parseString(xml, (err, result) => {
+                assert.ifError(err);
+                const rule = result.LifecycleConfiguration.Rule[0];
+                assert.strictEqual(rule.ID[0], `test-id${char}value`);
+                done();
+            });
+        });
+
+        it(`should escape \`${char}\` in prefix`, done => {
+            const config = {
+                rules: [{
+                    ruleID: 'test-id',
+                    ruleStatus: 'Enabled',
+                    prefix: `logs/${char}path/`,
+                    actions: [{
+                        actionName: 'Expiration',
+                        days: 90,
+                    }],
+                }],
+            };
+
+            const xml = LifecycleConfiguration.getConfigXml(config);
+
+            parseString(xml, (err, result) => {
+                assert.ifError(err);
+                const rule = result.LifecycleConfiguration.Rule[0];
+                assert.strictEqual(rule.Prefix[0], `logs/${char}path/`);
+                done();
+            });
+        });
+
+        it(`should escape \`${char}\` in tag key and value`, done => {
+            const config = {
+                rules: [{
+                    ruleID: 'test-id',
+                    ruleStatus: 'Enabled',
+                    filter: {
+                        tags: [{
+                            key: `env${char}key`,
+                            val: `value${char}data`,
+                        }],
+                    },
+                    actions: [{
+                        actionName: 'Expiration',
+                        days: 90,
+                    }],
+                }],
+            };
+
+            const xml = LifecycleConfiguration.getConfigXml(config);
+
+            parseString(xml, (err, result) => {
+                assert.ifError(err);
+                const rule = result.LifecycleConfiguration.Rule[0];
+                const tag = rule.Filter[0].Tag[0];
+                assert.strictEqual(tag.Key[0], `env${char}key`);
+                assert.strictEqual(tag.Value[0], `value${char}data`);
+                done();
+            });
+        });
+    });
+});
