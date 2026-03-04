@@ -1,5 +1,6 @@
 const assert = require('assert');
-const { areTagsValid, _validator } = require('../../../lib/s3middleware/tagging');
+const werelogs = require('werelogs');
+const { areTagsValid, _validator, parseTagXml } = require('../../../lib/s3middleware/tagging');
 
 describe('tagging validator', () => {
     it('validates keys and values are less than 128 and 256', () => {
@@ -68,6 +69,14 @@ describe('areTagsValid', () => {
         assert.strictEqual(result, false);
     });
 
+    it('should return true for tags with empty Value', () => {
+        const validTags = [
+            { Key: 'key1', Value: '' }
+        ];
+        const result = areTagsValid(validTags);
+        assert.strictEqual(result, true);
+    });
+
     it('should return false for tags with duplicate keys', () => {
         const invalidTags = [
             { Key: 'key1', Value: 'value1' },
@@ -91,5 +100,18 @@ describe('areTagsValid', () => {
         ];
         const result = areTagsValid(invalidTags);
         assert.strictEqual(result, false);
+    });
+});
+
+describe('parseTagXml', () => {
+    const log = new werelogs.Logger('test');
+
+    it('should parse tags with empty values from XML', (done) => {
+        const xml = '<Tagging><TagSet><Tag><Key>key1</Key><Value></Value></Tag></TagSet></Tagging>';
+        parseTagXml(xml, log, (err, result) => {
+            assert.ifError(err);
+            assert.deepStrictEqual(result, { key1: '' });
+            done();
+        });
     });
 });
