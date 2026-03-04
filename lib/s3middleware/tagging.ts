@@ -45,7 +45,7 @@ export const _validator = {
     validateTagObjectStructure: (tag: BucketTag) => tag
         && Object.keys(tag).length === 2
         && typeof tag.Key === 'string' && typeof tag.Value === 'string'
-        && tag.Key.length >= 1 && tag.Value.length >= 1,
+        && tag.Key.length >= 1,
 
     validateXMLStructure: (result: any) =>
         result && Object.keys(result).length === 1 &&
