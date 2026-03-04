@@ -1,5 +1,6 @@
 import { parseString } from 'xml2js';
 import errors, { ArsenalError, errorInstances } from '../errors';
+import escapeForXml from '../s3middleware/escapeForXml';
 
 /** BucketLoggingStatus constants, not documented by AWS but found via testing */
 const TARGET_BUCKET_MIN_LENGTH = 3;
@@ -10,7 +11,7 @@ const TARGET_PREFIX_MAX_LENGTH = 800;
  * Format of xml request:
  * https://docs.aws.amazon.com/AmazonS3/latest/API/API_LoggingEnabled.html
  * https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketLogging.html
- * 
+ *
 <?xml version="1.0" encoding="UTF-8"?>
 <BucketLoggingStatus xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
    <LoggingEnabled>
@@ -61,7 +62,7 @@ export default class BucketLoggingStatus {
         if (this._loggingEnabled) {
             loggingEnabledXML = `<LoggingEnabled>
     <TargetBucket>${this._loggingEnabled.TargetBucket}</TargetBucket>
-    <TargetPrefix>${this._loggingEnabled.TargetPrefix}</TargetPrefix>
+    <TargetPrefix>${escapeForXml(this._loggingEnabled.TargetPrefix)}</TargetPrefix>
 </LoggingEnabled>
 `;
         }

@@ -7,6 +7,7 @@ import {
 } from '../constants';
 import { errorInstances } from '../errors';
 import type { ArsenalError } from '../errors';
+import escapeForXml from '../s3middleware/escapeForXml';
 
 /**
  * Format of xml request:
@@ -332,16 +333,16 @@ export default class NotificationConfiguration {
         if (config && config.queueConfig) {
             config.queueConfig.forEach(c => {
                 xmlArray.push('<QueueConfiguration>');
-                xmlArray.push(`<Id>${c.id}</Id>`);
-                xmlArray.push(`<Queue>${c.queueArn}</Queue>`);
+                xmlArray.push(`<Id>${escapeForXml(c.id)}</Id>`);
+                xmlArray.push(`<Queue>${escapeForXml(c.queueArn)}</Queue>`);
                 c.events.forEach(e => {
                     xmlArray.push(`<Event>${e}</Event>`);
                 });
                 if (c.filterRules) {
                     xmlArray.push('<Filter><S3Key>');
                     c.filterRules.forEach(r => {
-                        xmlArray.push(`<FilterRule><Name>${r.name}</Name>` +
-                            `<Value>${r.value}</Value></FilterRule>`);
+                        xmlArray.push(`<FilterRule><Name>${escapeForXml(r.name)}</Name>` +
+                            `<Value>${escapeForXml(r.value)}</Value></FilterRule>`);
                     });
                     xmlArray.push('</S3Key></Filter>');
                 }

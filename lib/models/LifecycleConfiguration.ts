@@ -1250,13 +1250,13 @@ export default class LifecycleConfiguration {
             }
             const tags = filter && filter.tags;
             const Prefix = rulePrefix !== undefined ?
-                `<Prefix>${rulePrefix}</Prefix>` : '';
+                `<Prefix>${escapeForXml(rulePrefix)}</Prefix>` : '';
             let tagXML = '';
             if (tags) {
                 tagXML = tags.map(t => {
                     const { key, val } = t;
-                    const Tag = `<Tag><Key>${key}</Key>` +
-                        `<Value>${val}</Value></Tag>`;
+                    const Tag = `<Tag><Key>${escapeForXml(key)}</Key>` +
+                        `<Value>${escapeForXml(val)}</Value></Tag>`;
                     return Tag;
                 }).join('');
             }
