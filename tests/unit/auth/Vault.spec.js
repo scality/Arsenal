@@ -349,6 +349,77 @@ describe('Vault class', () => {
                 done();
             });
         });
+
+        it('should handle successful authentication with account limits', done => {
+            const limitConfig = {
+                RequestsPerSecond: {
+                    Limit: 1500,
+                },
+            };
+            const mockResponse = {
+                message: {
+                    message: 'Success',
+                    body: {
+                        userInfo: mockUserInfo,
+                        authorizationResults: [{
+                            isAllowed: true,
+                            isImplicit: false,
+                            arn: mockUserInfo.arn,
+                            action: 'testAction',
+                        }],
+                        limits: limitConfig,
+                    },
+                },
+            };
+
+            mockClient.verifySignatureV4.callsFake(
+                (_stringToSign, _signature, _accessKey, _region, _scopeDate,
+                    _options, callback) => {
+                    callback(null, mockResponse);
+                },
+            );
+
+            vault.authenticateV4Request(mockParams, [], {}, (err, data, results,
+                _params, infos) => {
+                assert.strictEqual(err, null);
+                assert(data instanceof AuthInfo);
+                assert.strictEqual(data.getCanonicalID(), mockUserInfo.canonicalID);
+                assert.deepStrictEqual(infos.limits, limitConfig);
+                done();
+            });
+        });
+
+        it('should handle authentication with no account limits', done => {
+            const mockResponse = {
+                message: {
+                    message: 'Success',
+                    body: {
+                        userInfo: mockUserInfo,
+                        authorizationResults: [{
+                            isAllowed: true,
+                            isImplicit: false,
+                            arn: mockUserInfo.arn,
+                            action: 'testAction',
+                        }],
+                    },
+                },
+            };
+
+            mockClient.verifySignatureV4.callsFake(
+                (_stringToSign, _signature, _accessKey, _region, _scopeDate,
+                    _options, callback) => {
+                    callback(null, mockResponse);
+                },
+            );
+
+            vault.authenticateV4Request(mockParams, [], {}, (err, data, results,
+                _params, infos) => {
+                assert.strictEqual(err, null);
+                assert(data instanceof AuthInfo);
+                assert.deepStrictEqual(infos.limits, {});
+                done();
+            });
+        });
     });
 
     describe('getCanonicalIds', () => {
