@@ -285,6 +285,12 @@ export const MalformedXML: ErrorFormat = {
         'The XML you provided was not well-formed or did not validate against our published schema.',
 };
 
+export const MalformedTrailerError: ErrorFormat = {
+    code: 400,
+    description: 
+        'The request contained trailing data that was not well-formed or did not conform to our published schema.',
+};
+
 export const MaxMessageLengthExceeded: ErrorFormat = {
     code: 400,
     description: 'Your request was too big.',
