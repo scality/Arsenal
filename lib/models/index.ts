@@ -9,6 +9,8 @@ export { default as NotificationConfiguration } from './NotificationConfiguratio
 export { default as ObjectLockConfiguration } from './ObjectLockConfiguration';
 export { default as ObjectMD } from './ObjectMD';
 export { default as ObjectMDAmzRestore } from './ObjectMDAmzRestore';
+export { default as ObjectMDChecksum, CHECKSUM_ALGORITHMS, CHECKSUM_TYPES } from './ObjectMDChecksum';
+export type { ChecksumAlgorithm, ChecksumType } from './ObjectMDChecksum';
 export { default as ObjectMDArchive } from './ObjectMDArchive';
 export { default as ObjectMDAzureInfo } from './ObjectMDAzureInfo';
 export { default as ObjectMDLocation } from './ObjectMDLocation';
