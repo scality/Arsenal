@@ -9,6 +9,7 @@ import ObjectMDLocation, {
 import ObjectMDAmzRestore from './ObjectMDAmzRestore';
 import ObjectMDArchive from './ObjectMDArchive';
 import { ObjectMDAzureInfoMetadata } from './ObjectMDAzureInfo';
+import ObjectMDChecksum, { ChecksumAlgorithm, ChecksumType } from './ObjectMDChecksum';
 
 export type ACL = {
     Canned: string;
@@ -102,6 +103,7 @@ export type ObjectMDData = {
     // This is the canonical Id for the bucket owner.
     // This is only set when it differs from `owner-id`.
     bucketOwnerId?: string;
+    checksum?: ObjectMDChecksum;
 };
 
 /**
@@ -274,6 +276,10 @@ export default class ObjectMD {
         if (typeof this._data.location === 'string') {
             // @ts-ignore
             this.setLocation([{ key: this._data.location }]);
+        }
+        if (this._data.checksum && !(this._data.checksum instanceof ObjectMDChecksum)) {
+            const { checksumAlgorithm, checksumValue, checksumType } = this._data.checksum;
+            this._data.checksum = new ObjectMDChecksum(checksumAlgorithm, checksumValue, checksumType);
         }
     }
 
@@ -475,6 +481,38 @@ export default class ObjectMD {
      */
     getContentMd5() {
         return this._data['content-md5'];
+    }
+
+    /**
+     * Set checksum
+     *
+     * @param checksum - ObjectMDChecksum instance
+     * @return itself
+     */
+    setChecksum(checksum: ObjectMDChecksum | {
+        checksumAlgorithm: ChecksumAlgorithm;
+        checksumValue: string;
+        checksumType: ChecksumType;
+    }) {
+        if (checksum instanceof ObjectMDChecksum) {
+            this._data.checksum = checksum;
+        } else if (ObjectMDChecksum.isValid(checksum) === null) {
+            this._data.checksum = new ObjectMDChecksum(
+                checksum.checksumAlgorithm,
+                checksum.checksumValue,
+                checksum.checksumType,
+            );
+        } else {
+            throw new Error('checksum must be of type ObjectMDChecksum.');
+        }
+        return this;
+    }
+
+    /**
+     * Returns checksum as an ObjectMDChecksum instance, or null if not set.
+     */
+    getChecksum(): ObjectMDChecksum | null {
+        return this._data.checksum ?? null;
     }
 
     /**

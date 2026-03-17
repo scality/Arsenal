@@ -1,5 +1,6 @@
 const assert = require('assert');
 const ObjectMD = require('../../../lib/models/ObjectMD').default;
+const ObjectMDChecksum = require('../../../lib/models/ObjectMDChecksum').default;
 const constants = require('../../../lib/constants');
 const ExternalNullVersionId = require('../../../lib/versioning/constants')
     .VersioningConstants.ExternalNullVersionId;
@@ -858,5 +859,74 @@ describe('ObjectMD::getEncodedVersionId', () => {
         objMd.setVersionId(versionId);
         objMd.setIsNull(true);
         assert.strictEqual(objMd.getEncodedVersionId(), ExternalNullVersionId);
+    });
+});
+
+describe('ObjectMD checksum', () => {
+    const sha256Digest = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=';
+
+    it('should store an ObjectMDChecksum instance when setChecksum is called with a valid plain object', () => {
+        const md = new ObjectMD();
+        md.setChecksum({
+            checksumAlgorithm: 'sha256',
+            checksumValue: sha256Digest,
+            checksumType: 'FULL_OBJECT',
+        });
+        const c = md.getChecksum();
+        assert(c instanceof ObjectMDChecksum);
+        assert.doesNotThrow(() => c.toGetObjectAttributesXML());
+    });
+
+    it('should throw when setChecksum is given an invalid object', () => {
+        const md = new ObjectMD();
+        assert.throws(() => {
+            md.setChecksum({ checksumAlgorithm: 'sha256' });
+        }, /ObjectMDChecksum/);
+    });
+
+    it('should return null when no checksum is set', () => {
+        const md = new ObjectMD();
+        assert.strictEqual(md.getChecksum(), null);
+    });
+
+    it('should preserve algorithm, value, and type through setChecksum / getChecksum', () => {
+        const md = new ObjectMD();
+        md.setChecksum(new ObjectMDChecksum('crc64nvme', 'HyOpGHolkII=', 'FULL_OBJECT'));
+        const result = md.getChecksum();
+        assert(result !== null);
+        assert.strictEqual(result.checksumAlgorithm, 'crc64nvme');
+        assert.strictEqual(result.checksumValue, 'HyOpGHolkII=');
+        assert.strictEqual(result.checksumType, 'FULL_OBJECT');
+    });
+
+    it('should return an ObjectMDChecksum instance after JSON round-trip', () => {
+        const md = new ObjectMD();
+        md.setChecksum(new ObjectMDChecksum('sha256', sha256Digest, 'FULL_OBJECT'));
+        const { result } = ObjectMD.createFromBlob(md.getSerialized());
+        assert(result !== undefined);
+        assert(result.getChecksum() instanceof ObjectMDChecksum);
+    });
+
+    it('should preserve algorithm, value, and type through JSON round-trip', () => {
+        const md = new ObjectMD();
+        md.setChecksum(new ObjectMDChecksum('sha256', sha256Digest, 'COMPOSITE'));
+        const { result } = ObjectMD.createFromBlob(md.getSerialized());
+        assert(result !== undefined);
+        const c = result.getChecksum();
+        assert.strictEqual(c.checksumAlgorithm, 'sha256');
+        assert.strictEqual(c.checksumValue, sha256Digest);
+        assert.strictEqual(c.checksumType, 'COMPOSITE');
+    });
+
+    it('should produce valid XML from getChecksum after JSON round-trip', () => {
+        const md = new ObjectMD();
+        md.setChecksum(new ObjectMDChecksum('crc64nvme', 'HyOpGHolkII=', 'FULL_OBJECT'));
+        const { result } = ObjectMD.createFromBlob(md.getSerialized());
+        assert(result !== undefined);
+        const xml = result.getChecksum().toGetObjectAttributesXML();
+        assert(xml.startsWith('<Checksum>'));
+        assert(xml.includes('<ChecksumCRC64NVME>HyOpGHolkII=</ChecksumCRC64NVME>'));
+        assert(xml.includes('<ChecksumType>FULL_OBJECT</ChecksumType>'));
+        assert(xml.endsWith('</Checksum>'));
     });
 });
