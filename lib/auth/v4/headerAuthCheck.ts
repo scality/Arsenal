@@ -5,8 +5,7 @@ import constructStringToSign from './constructStringToSign';
 import {
     checkTimeSkew,
     convertUTCtoISO8601,
-    convertAmzTimeToMs,
-    isValidISO8601Compact,
+    parseISO8601Compact,
 } from './timeUtils';
 import {
     extractAuthItems,
@@ -79,33 +78,46 @@ export function check(
         return { err: errors.AccessDenied };
     }
 
-    let timestamp: string | undefined;
+    let timestampCompact: string | undefined;
+    let timestampParsed: Date | undefined;
+
     // check request timestamp
     const xAmzDate = request.headers['x-amz-date'];
     if (xAmzDate) {
-        if (isValidISO8601Compact(xAmzDate)) {
-            timestamp = xAmzDate;
+        const parsed = parseISO8601Compact(xAmzDate);
+        if (parsed) {
+            timestampCompact = xAmzDate;
+            timestampParsed = parsed;
         }
     } else if (request.headers.date) {
-        if (isValidISO8601Compact(request.headers.date)) {
-            timestamp = request.headers.date;
+        const parsed = parseISO8601Compact(request.headers.date);
+        if (parsed) {
+            timestampCompact = request.headers.date;
+            timestampParsed = parsed;
         } else {
-            timestamp = convertUTCtoISO8601(request.headers.date);
+            const converted = convertUTCtoISO8601(request.headers.date);
+            if (converted) {
+                const convertedParsed = parseISO8601Compact(converted);
+                if (convertedParsed) {
+                    timestampCompact = converted;
+                    timestampParsed = convertedParsed;
+                }
+            }
         }
     }
-    if (!timestamp) {
+    const beforeEpoch = timestampParsed && timestampParsed.getTime() < 0;
+    if (!timestampCompact || !timestampParsed || beforeEpoch) {
         log.debug('missing or invalid date header',
             { 'method': 'auth/v4/headerAuthCheck.check', 'x-amz-date': xAmzDate, 'Date': request.headers.date });
-        return { err: errorInstances.AccessDenied.
-            customizeDescription('Authentication requires a valid Date or ' +
-          'x-amz-date header') };
+        return {
+            err: errorInstances.AccessDenied.
+                customizeDescription('Authentication requires a valid Date or x-amz-date header')
+        };
     }
 
-    const validationResult = validateCredentials(credentialsArr, timestamp,
-        log);
+    const validationResult = validateCredentials(credentialsArr, timestampCompact, log);
     if (validationResult instanceof ArsenalError) {
-        log.debug('credentials in improper format', { credentialsArr,
-            timestamp, validationResult });
+        log.debug('credentials in improper format', { credentialsArr, timestamp: timestampCompact, validationResult });
         return { err: validationResult };
     }
     // credentialsArr is [accessKey, date, region, aws-service, aws4_request]
@@ -129,7 +141,7 @@ export function check(
 
     // 15 minutes in seconds
     const expiry = (15 * 60);
-    const isTimeSkewed = checkTimeSkew(timestamp, expiry, log);
+    const isTimeSkewed = checkTimeSkew(timestampCompact, expiry, log);
     if (isTimeSkewed) {
         return { err: errors.RequestTimeTooSkewed };
     }
@@ -140,8 +152,7 @@ export function check(
             proxyPath = decodeURIComponent(request.headers.proxy_path);
         } catch (err) {
             log.debug('invalid proxy_path header', { proxyPath, err });
-            return { err: errorInstances.InvalidArgument.customizeDescription(
-                'invalid proxy_path header') };
+            return { err: errorInstances.InvalidArgument.customizeDescription('invalid proxy_path header') };
         }
     }
 
@@ -151,7 +162,7 @@ export function check(
         query: data,
         signedHeaders,
         credentialScope,
-        timestamp,
+        timestamp: timestampCompact,
         payloadChecksum,
         awsService: service,
         proxyPath,
@@ -172,11 +183,11 @@ export function check(
                 stringToSign,
                 authType: 'REST-HEADER',
                 signatureVersion: 'AWS4-HMAC-SHA256',
-                signatureAge: Date.now() - convertAmzTimeToMs(timestamp),
+                signatureAge: Date.now() - timestampParsed.getTime(),
                 // credentialScope and timestamp needed for streaming V4
                 // chunk evaluation
                 credentialScope,
-                timestamp,
+                timestamp: timestampCompact,
                 securityToken: token,
             },
         },

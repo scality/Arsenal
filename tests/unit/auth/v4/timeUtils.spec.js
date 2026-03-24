@@ -7,7 +7,7 @@ const {
     checkTimeSkew,
     convertAmzTimeToMs,
     convertUTCtoISO8601,
-    isValidISO8601Compact,
+    parseISO8601Compact,
 } = require('../../../../lib/auth/v4/timeUtils');
 
 const DummyRequestLogger = require('../../helpers').DummyRequestLogger;
@@ -53,34 +53,43 @@ describe('convertUTCtoISO8601 function', () => {
     }));
 });
 
-describe('isValidISO8601Compact function', () => {
+describe('parseISO8601Compact function', () => {
     [
-        { name: 'should return true for valid ISO8601 compact format', input: '20160208T201405Z', expected: true },
-        { name: 'should return true for valid timestamp with zeros', input: '20200101T000000Z', expected: true },
-        { name: 'should return true for valid timestamp at end of day', input: '20201231T235959Z', expected: true },
-        { name: 'should return true for leap year Feb 29', input: '20200229T120000Z', expected: true },
-        { name: 'should return false for string with wrong length', input: '2016020T201405Z', expected: false },
-        { name: 'should return false for ISO8601 with dashes/colons', input: '2016-02-08T20:14:05Z', expected: false },
-        { name: 'should return false for missing T separator', input: '20160208 201405Z', expected: false },
-        { name: 'should return false for missing Z suffix', input: '20160208T201405', expected: false },
-        { name: 'should return false for string with letters in date', input: 'abcd0208T201405Z', expected: false },
-        { name: 'should return false for empty string', input: '', expected: false },
-        { name: 'should return false for invalid month (13)', input: '20161308T201405Z', expected: false },
-        { name: 'should return false for invalid day (32)', input: '20160232T201405Z', expected: false },
-        { name: 'should return false for Feb 30 (invalid)', input: '20160230T201405Z', expected: false },
-        { name: 'should return false for Feb 29 in non-leap year', input: '20190229T201405Z', expected: false },
-        { name: 'should return false for invalid hour (25)', input: '20160208T251405Z', expected: false },
-        { name: 'should return false for invalid minute (60)', input: '20160208T206005Z', expected: false },
-        { name: 'should return false for invalid second (60)', input: '20160208T201460Z', expected: false },
-        { name: 'should return false for month 00', input: '20160008T201405Z', expected: false },
-        { name: 'should return false for day 00', input: '20160200T201405Z', expected: false },
-        { name: 'should return false for null', input: null, expected: false },
-        { name: 'should return false for undefined', input: undefined, expected: false },
-        { name: 'should return false for number', input: 20160208201405, expected: false },
-        { name: 'should return false for object', input: {}, expected: false },
-        { name: 'should return false for array', input: [], expected: false },
+        { name: 'should return a Date for valid ISO8601 compact format', input: '20160208T201405Z', expected: new Date('2016-02-08T20:14:05Z') },
+        { name: 'should return a Date for valid timestamp with zeros', input: '20200101T000000Z', expected: new Date('2020-01-01T00:00:00Z') },
+        { name: 'should return a Date for valid timestamp at end of day', input: '20201231T235959Z', expected: new Date('2020-12-31T23:59:59Z') },
+        { name: 'should return a Date for leap year Feb 29', input: '20200229T120000Z', expected: new Date('2020-02-29T12:00:00Z') },
+        { name: 'should return a Date for pre-epoch date (1950)', input: '19500707T215304Z', expected: new Date('1950-07-07T21:53:04Z') },
+        { name: 'should return a Date for pre-epoch date (1969)', input: '19691231T235959Z', expected: new Date('1969-12-31T23:59:59Z') },
+        { name: 'should return a Date for Unix epoch start (1970)', input: '19700101T000000Z', expected: new Date('1970-01-01T00:00:00Z') },
+        { name: 'should return undefined for string with wrong length', input: '2016020T201405Z', expected: undefined },
+        { name: 'should return undefined for ISO8601 with dashes/colons', input: '2016-02-08T20:14:05Z', expected: undefined },
+        { name: 'should return undefined for missing T separator', input: '20160208 201405Z', expected: undefined },
+        { name: 'should return undefined for missing Z suffix', input: '20160208T201405', expected: undefined },
+        { name: 'should return undefined for string with letters in date', input: 'abcd0208T201405Z', expected: undefined },
+        { name: 'should return undefined for empty string', input: '', expected: undefined },
+        { name: 'should return undefined for invalid month (13)', input: '20161308T201405Z', expected: undefined },
+        { name: 'should return undefined for invalid day (32)', input: '20160232T201405Z', expected: undefined },
+        { name: 'should return undefined for Feb 30 (invalid)', input: '20160230T201405Z', expected: undefined },
+        { name: 'should return undefined for Feb 29 in non-leap year', input: '20190229T201405Z', expected: undefined },
+        { name: 'should return undefined for invalid hour (25)', input: '20160208T251405Z', expected: undefined },
+        { name: 'should return undefined for invalid minute (60)', input: '20160208T206005Z', expected: undefined },
+        { name: 'should return undefined for invalid second (60)', input: '20160208T201460Z', expected: undefined },
+        { name: 'should return undefined for month 00', input: '20160008T201405Z', expected: undefined },
+        { name: 'should return undefined for day 00', input: '20160200T201405Z', expected: undefined },
+        { name: 'should return undefined for null', input: null, expected: undefined },
+        { name: 'should return undefined for undefined', input: undefined, expected: undefined },
+        { name: 'should return undefined for number', input: 20160208201405, expected: undefined },
+        { name: 'should return undefined for object', input: {}, expected: undefined },
+        { name: 'should return undefined for array', input: [], expected: undefined },
     ].forEach(t => it(t.name, () => {
-        assert.strictEqual(isValidISO8601Compact(t.input), t.expected);
+        const result = parseISO8601Compact(t.input);
+        if (t.expected instanceof Date) {
+            assert.ok(result instanceof Date, `expected Date, got ${result}`);
+            assert.strictEqual(result.getTime(), t.expected.getTime());
+        } else {
+            assert.strictEqual(result, undefined);
+        }
     }));
 });
 

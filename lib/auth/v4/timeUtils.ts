@@ -75,36 +75,30 @@ export function checkTimeSkew(timestamp: string, expiry: number, log: RequestLog
     return false;
 }
 
+
 /**
-* Validates if a string is in ISO 8601 compact format: YYYYMMDDTHHMMSSZ
-*
-* Checks that: 
-* - String is exactly 16 characters long
-* - Format matches YYYYMMDDTHHMMSSZ (8 digits, 'T', 6 digits, 'Z')
-* - All date/time components are valid (no Feb 30th, no 25:00:00, etc.)
-* - No silent date corrections occur (prevents rollover)
-*
-* @param str - The string to validate
-* @returns true if the string is a valid ISO 8601 compact format, false otherwise
-*
-* @example
-* ```typescript
-* isValidISO8601Compact('20160208T201405Z');  // true
-* isValidISO8601Compact('20160230T201405Z');  // false (Feb 30 invalid)
-* isValidISO8601Compact('20160208T251405Z');  // false (25 hours invalid)
-* isValidISO8601Compact('2016-02-08T20:14:05Z'); // false (wrong format)
-* isValidISO8601Compact('abcd0208T201405Z');  // false (contains letters)
-* ```
-*/
-export function isValidISO8601Compact(str: string): boolean {
+ * Parses an ISO 8601 compact timestamp string into a Date object.
+ *
+ * @param str - The string to parse
+ * @returns A Date object if the string is a valid ISO 8601 compact timestamp, undefined otherwise
+ *
+ * @example
+ * ```typescript
+ * parseISO8601Compact('20160208T201405Z');  // Date object
+ * parseISO8601Compact('19500707T215304Z');  // Date object (pre-Unix epoch)
+ * parseISO8601Compact('20160230T201405Z');  // undefined (Feb 30 invalid)
+ * parseISO8601Compact('invalid');           // undefined
+ * ```
+ */
+export function parseISO8601Compact(str: string): Date | undefined {
     if (typeof str !== 'string') {
-        return false;
+        return undefined;
     }
 
     // Match format: YYYYMMDDTHHMMSSZ
     const match = str.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/);
     if (!match) {
-        return false;
+        return undefined;
     }
 
     const [, year, month, day, hour, minute, second] = match;
@@ -114,10 +108,19 @@ export function isValidISO8601Compact(str: string): boolean {
     const date = new Date(isoString);
 
     try {
+        if (Number.isNaN(date.getTime())) {
+            return undefined;
+        }
+
         // date.toISOString() can throw.
         // date.toISOString() === isoString check prevents silent date corrections (30 February to 1 March)
-        return !Number.isNaN(date.getTime()) && date.toISOString() === isoString;
+        if (date.toISOString() !== isoString) {
+            return undefined;
+        }
+
+        return date;
     } catch {
-        return false;
+        return undefined;
     }
 }
+
