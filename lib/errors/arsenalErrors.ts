@@ -1025,8 +1025,8 @@ export const RaftSessionNotLeader: ErrorFormat = {
 };
 
 export const RaftSessionLeaderNotConnected: ErrorFormat = {
-    description: 'RaftSessionLeaderNotConnected',
-    code: 400,
+    description: 'not connected to the RAFT session leader',
+    code: 500,
 };
 
 export const NoLeaderForDB: ErrorFormat = {
