@@ -6,21 +6,16 @@ export type ChecksumType = typeof CHECKSUM_TYPES[number];
 
 const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
 
-type AlgoSpec = {
-    xmlTag: string;
-    digestLength: number;
-};
-
-const algoSpecs: Record<ChecksumAlgorithm, AlgoSpec> = {
-    crc32:     { xmlTag: 'ChecksumCRC32',    digestLength: 8  },
-    crc32c:    { xmlTag: 'ChecksumCRC32C',   digestLength: 8  },
-    crc64nvme: { xmlTag: 'ChecksumCRC64NVME', digestLength: 12 },
-    sha1:      { xmlTag: 'ChecksumSHA1',     digestLength: 28 },
-    sha256:    { xmlTag: 'ChecksumSHA256',   digestLength: 44 },
+const digestLengths: Record<ChecksumAlgorithm, number> = {
+    crc32:     8,
+    crc32c:    8,
+    crc64nvme: 12,
+    sha1:      28,
+    sha256:    44,
 };
 
 function isValidDigest(algorithm: ChecksumAlgorithm, value: string): boolean {
-    const { digestLength } = algoSpecs[algorithm];
+    const digestLength = digestLengths[algorithm];
     return typeof value === 'string' && value.length === digestLength && base64Regex.test(value);
 }
 
@@ -28,8 +23,6 @@ function isValidDigest(algorithm: ChecksumAlgorithm, value: string): boolean {
  * Represents an object checksum stored in object metadata.
  *
  * Internal representation uses plain algorithm/value/type fields.
- * The toGetObjectAttributesXML() method produces the wire XML fragment
- * expected inside a GetObjectAttributesResponse Checksum element.
  */
 export default class ObjectMDChecksum {
     checksumAlgorithm: ChecksumAlgorithm;
@@ -65,19 +58,5 @@ export default class ObjectMDChecksum {
         this.checksumAlgorithm = checksumAlgorithm;
         this.checksumValue = checksumValue;
         this.checksumType = checksumType;
-    }
-
-    /**
-     * Returns the XML fragment for the Checksum element in a
-     * GetObjectAttributes response, e.g.:
-     *   <ChecksumSHA256>abc=</ChecksumSHA256>
-     *   <ChecksumType>FULL_OBJECT</ChecksumType>
-     */
-    toGetObjectAttributesXML(): string {
-        const { xmlTag } = algoSpecs[this.checksumAlgorithm];
-        return '<Checksum>' +
-            `<${xmlTag}>${this.checksumValue}</${xmlTag}>` +
-            `<ChecksumType>${this.checksumType}</ChecksumType>` +
-            '</Checksum>';
     }
 }

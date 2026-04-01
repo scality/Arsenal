@@ -51,46 +51,6 @@ describe('ObjectMDChecksum', () => {
         });
     });
 
-    describe('toGetObjectAttributesXML', () => {
-        const cases: [ChecksumAlgorithm, string][] = [
-            ['crc32',     'ChecksumCRC32'],
-            ['crc32c',    'ChecksumCRC32C'],
-            ['crc64nvme', 'ChecksumCRC64NVME'],
-            ['sha1',      'ChecksumSHA1'],
-            ['sha256',    'ChecksumSHA256'],
-        ];
-
-        for (const [algo, xmlTag] of cases) {
-            it(`should use <${xmlTag}> for algorithm "${algo}"`, () => {
-                const c = new ObjectMDChecksum(algo, validDigest[algo], 'FULL_OBJECT');
-                assert(c.toGetObjectAttributesXML().includes(`<${xmlTag}>`),
-                    `expected <${xmlTag}> in XML`);
-            });
-        }
-
-        it('should wrap the checksum value inside the algorithm tag', () => {
-            const c = new ObjectMDChecksum('crc64nvme', 'HyOpGHolkII=', 'FULL_OBJECT');
-            assert(c.toGetObjectAttributesXML().includes('<ChecksumCRC64NVME>HyOpGHolkII=</ChecksumCRC64NVME>'));
-        });
-
-        it('should wrap everything in a <Checksum> element', () => {
-            const c = new ObjectMDChecksum('sha256', validDigest.sha256, 'FULL_OBJECT');
-            const xml = c.toGetObjectAttributesXML();
-            assert(xml.startsWith('<Checksum>'));
-            assert(xml.endsWith('</Checksum>'));
-        });
-
-        it('should append <ChecksumType>FULL_OBJECT</ChecksumType>', () => {
-            const c = new ObjectMDChecksum('sha256', validDigest.sha256, 'FULL_OBJECT');
-            assert(c.toGetObjectAttributesXML().includes('<ChecksumType>FULL_OBJECT</ChecksumType>'));
-        });
-
-        it('should append <ChecksumType>COMPOSITE</ChecksumType> for composite type', () => {
-            const c = new ObjectMDChecksum('crc32', validDigest.crc32, 'COMPOSITE');
-            assert(c.toGetObjectAttributesXML().includes('<ChecksumType>COMPOSITE</ChecksumType>'));
-        });
-    });
-
     describe('isValid', () => {
         it('should return null for a valid checksum object', () => {
             assert.strictEqual(ObjectMDChecksum.isValid({

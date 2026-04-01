@@ -874,7 +874,6 @@ describe('ObjectMD checksum', () => {
         });
         const c = md.getChecksum();
         assert(c instanceof ObjectMDChecksum);
-        assert.doesNotThrow(() => c.toGetObjectAttributesXML());
     });
 
     it('should throw when setChecksum is given an invalid object', () => {
@@ -918,15 +917,4 @@ describe('ObjectMD checksum', () => {
         assert.strictEqual(c.checksumType, 'COMPOSITE');
     });
 
-    it('should produce valid XML from getChecksum after JSON round-trip', () => {
-        const md = new ObjectMD();
-        md.setChecksum(new ObjectMDChecksum('crc64nvme', 'HyOpGHolkII=', 'FULL_OBJECT'));
-        const { result } = ObjectMD.createFromBlob(md.getSerialized());
-        assert(result !== undefined);
-        const xml = result.getChecksum().toGetObjectAttributesXML();
-        assert(xml.startsWith('<Checksum>'));
-        assert(xml.includes('<ChecksumCRC64NVME>HyOpGHolkII=</ChecksumCRC64NVME>'));
-        assert(xml.includes('<ChecksumType>FULL_OBJECT</ChecksumType>'));
-        assert(xml.endsWith('</Checksum>'));
-    });
 });
