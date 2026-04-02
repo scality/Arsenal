@@ -14,6 +14,12 @@ const jsutil = require('../jsutil');
 
 const ALLOW_INVALID_META_HEADERS = !!process.env.ALLOW_INVALID_META_HEADERS;
 
+let serverHeaderValue = 'S3 Server';
+
+export function setServerHeader(value: string) {
+    serverHeaderValue = value;
+}
+
 function storeServerAccessLogFields(
     res: http.ServerResponse,
     endTurnAroundTime: bigint,
@@ -91,7 +97,7 @@ export function setCommonResponseHeaders(
             }
         });
     }
-    response.setHeader('server', 'S3 Server');
+    response.setHeader('server', serverHeaderValue);
     // to be expanded in further implementation of logging of requests
     response.setHeader('x-amz-id-2', log.getSerializedUids());
     response.setHeader('x-amz-request-id', log.getSerializedUids());
