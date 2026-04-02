@@ -56,6 +56,7 @@ function getListingKey(key, vFormat) {
                 },
                 gt: getListingKey('premark', v),
                 lt: getListingKey('prf', v),
+                limit: maxScannedLifecycleListingEntries + 1,
             };
             assert.deepStrictEqual(delimiter.genMDParams(), expectedParams);
             assert.strictEqual(delimiter.maxScannedLifecycleListingEntries, 2);
