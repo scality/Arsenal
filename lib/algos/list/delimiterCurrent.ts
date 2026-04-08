@@ -48,6 +48,19 @@ class DelimiterCurrent extends DelimiterMaster {
             };
         }
 
+        // Limit the number of documents MongoDB returns to bound the
+        // in-memory sort when lifecycle indexes are used (these indexes
+        // order by value.last-modified, forcing a re-sort on _id). Without
+        // a limit, MongoDB must sort all matching documents — which can
+        // exceed the 100MB memory cap and spill to disk.
+        // We use maxScannedLifecycleListingEntries (default 10,000) as the
+        // bound because it counts documents scanned, which maps directly
+        // to cursor documents regardless of bucket format (v0 or v1).
+        // The +1 allows the listing algorithm to detect truncation.
+        if (this.maxScannedLifecycleListingEntries) {
+            params.limit = this.maxScannedLifecycleListingEntries + 1;
+        }
+
         return params;
     }
 
