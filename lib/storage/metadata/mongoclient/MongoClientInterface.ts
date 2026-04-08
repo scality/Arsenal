@@ -2524,17 +2524,32 @@ class MongoClientInterface {
 
         return this.db.command({ dbStats: 1, scale: 1 })
             .then(stats => {
-                const result = {
-                    available: stats.fsFreeSize || 0,
-                    // Same as available in MongoDB context
-                    free: stats.fsFreeSize || 0,
-                    total: stats.fsTotalSize || 0
-                };
-                return cb(null, result);
+                if (stats.fsTotalSize === undefined || stats.fsUsedSize === undefined) {
+                    this.logger.error('unexpected dbStats response: missing fsTotalSize or fsUsedSize',
+                        { stats });
+                    return cb(errors.InternalError);
+                }
+                const free = stats.fsTotalSize - stats.fsUsedSize;
+                return cb(null, { available: free, free, total: stats.fsTotalSize });
             })
             .catch(err => {
-                this.logger.error('Error getting MongoDB disk stats', 
+                this.logger.error('Error getting MongoDB disk stats',
                     { error: err.message });
+                return cb(errors.InternalError);
+            });
+    }
+
+    getCollectionStats(bucketName: string, log: werelogs.Logger, cb: ArsenalCallback<any>) {
+        if (!this.db || !this.client) {
+            return cb(errors.InternalError.customizeDescription(
+                'Cannot get collection stats: database not connected'));
+        }
+        const c = this.getCollection(bucketName);
+        return this.db.command({ collStats: c.collectionName })
+            .then(stats => cb(null, stats))
+            .catch(err => {
+                log.error('error getting collection stats',
+                    { error: err.message, bucketName });
                 return cb(errors.InternalError);
             });
     }
