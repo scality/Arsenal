@@ -307,21 +307,21 @@ describe('MongoClientInterface::getDiskUsage', () => {
         
         // Mock MongoDB stats response
         const mockStats = {
-            fsFreeSize: 1000000,
+            fsUsedSize: 4000000,
             fsTotalSize: 5000000
         };
-        
+
         // Mock the database and command
         testClient.db = {
             command: sinon.stub().resolves(mockStats)
         };
         testClient.client = {}; // Just to pass the initial check
-        
+
         testClient.getDiskUsage((err, result) => {
             assert.strictEqual(err, null);
             assert.deepStrictEqual(result, {
-                available: mockStats.fsFreeSize,
-                free: mockStats.fsFreeSize,
+                available: 1000000,
+                free: 1000000,
                 total: mockStats.fsTotalSize
             });
             assert(testClient.db.command.calledOnce);
@@ -330,7 +330,7 @@ describe('MongoClientInterface::getDiskUsage', () => {
         });
     });
 
-    it('should handle missing stats properties gracefully', done => {
+    it('should return error when stats properties are missing', done => {
         // Setup a client with mock db
         const testClient = new MongoClientInterface({
             logger,
@@ -344,29 +344,23 @@ describe('MongoClientInterface::getDiskUsage', () => {
             isLocationTransient: () => false,
             shardCollections: false,
         });
-        
+
         // Mock MongoDB stats response with missing properties
         const mockStats = {
-            // No fsFreeSize or fsTotalSize
             db: 'test',
             collections: 5
         };
-        
+
         // Mock the database and command
         testClient.db = {
             command: sinon.stub().resolves(mockStats)
         };
         testClient.client = {}; // Just to pass the initial check
-        
+
         testClient.getDiskUsage((err, result) => {
-            assert.strictEqual(err, null);
-            assert.deepStrictEqual(result, {
-                available: 0,
-                free: 0,
-                total: 0
-            });
-            assert(testClient.db.command.calledOnce);
-            assert(testClient.db.command.calledWith({ dbStats: 1, scale: 1 }));
+            assert.strictEqual(result, undefined);
+            assert(err);
+            assert(err.is.InternalError);
             done();
         });
     });
