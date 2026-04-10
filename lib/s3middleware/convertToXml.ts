@@ -60,6 +60,9 @@ export type ListParams = {
                 };
                 StorageClass: string;
                 Initiated: string;
+                ChecksumAlgorithm?: string;
+                ChecksumType?: string;
+                ChecksumIsDefault?: boolean;
             };
         }>;
     };
@@ -116,6 +119,14 @@ export const listMultipartUploads = (xmlParams: ListParams) => {
         xml.push(
             '<Upload>',
             `<Key>${escapeForXml(key)}</Key>`,
+        );
+        if (!val.ChecksumIsDefault && val.ChecksumAlgorithm && val.ChecksumType) {
+            xml.push(
+                `<ChecksumAlgorithm>${escapeForXml(val.ChecksumAlgorithm.toUpperCase())}</ChecksumAlgorithm>`,
+                `<ChecksumType>${escapeForXml(val.ChecksumType)}</ChecksumType>`,
+            );
+        }
+        xml.push(
             `<UploadId>${escapeForXml(val.UploadId)}</UploadId>`,
             '<Initiator>',
             `<ID>${escapeForXml(val.Initiator.ID)}</ID>`,

@@ -122,11 +122,63 @@ describe('Multipart Uploads listing algorithm', () => {
                     },
                     StorageClass: tmp['x-amz-storage-class'],
                     Initiated: tmp.initiated,
+                    ChecksumAlgorithm: tmp.checksumAlgorithm,
+                    ChecksumType: tmp.checksumType,
+                    ChecksumIsDefault: tmp.checksumIsDefault,
                 },
             };
         });
         done();
     });
+
+    const checksumValues = [
+        JSON.stringify({
+            'key': 'test/1',
+            'uploadId': 'uploadId1',
+            'initiator': initiator1,
+            'owner-id': '1',
+            'owner-display-name': 'owner1',
+            'x-amz-storage-class': storageClass,
+            'initiated': '',
+            'checksumAlgorithm': 'CRC32',
+            'checksumType': 'FULL_OBJECT',
+            'checksumIsDefault': false,
+        }),
+        JSON.stringify({
+            'key': 'test/2',
+            'uploadId': 'uploadId2',
+            'initiator': initiator2,
+            'owner-id': '1',
+            'owner-display-name': 'owner2',
+            'x-amz-storage-class': storageClass,
+            'initiated': '',
+            'checksumAlgorithm': 'SHA256',
+            'checksumType': 'COMPOSITE',
+            'checksumIsDefault': true,
+        }),
+        JSON.stringify({
+            'key': 'test/3',
+            'uploadId': 'uploadId3',
+            'initiator': initiator1,
+            'owner-id': '1',
+            'owner-display-name': 'owner1',
+            'x-amz-storage-class': storageClass,
+            'initiated': '',
+        }),
+    ];
+
+    const checksumKeys = {
+        v0: [
+            `${overviewPrefix}test/1${splitter}uploadId1`,
+            `${overviewPrefix}test/2${splitter}uploadId2`,
+            `${overviewPrefix}test/3${splitter}uploadId3`,
+        ],
+        v1: [
+            `${DbPrefixes.Master}${overviewPrefix}test/1${splitter}uploadId1`,
+            `${DbPrefixes.Master}${overviewPrefix}test/2${splitter}uploadId2`,
+            `${DbPrefixes.Master}${overviewPrefix}test/3${splitter}uploadId3`,
+        ],
+    };
 
     ['v0', 'v1'].forEach(vFormat => {
         const dbListing = keys[vFormat].map((key, i) => ({
@@ -169,6 +221,37 @@ describe('Multipart Uploads listing algorithm', () => {
             const listingResult = performListing(dbListing, MultipartUploads,
                 listingParams, logger, vFormat);
             assert.deepStrictEqual(listingResult, expectedResult);
+        });
+
+        it(`should pass through checksum fields ` +
+            `(vFormat=${vFormat})`, () => {
+            const checksumDbListing = checksumKeys[vFormat].map((key, i) => ({
+                key,
+                value: checksumValues[i],
+            }));
+            const result = performListing(checksumDbListing, MultipartUploads,
+                listingParams, logger, vFormat);
+            // First upload: explicit checksum
+            assert.strictEqual(
+                result.Uploads[0].value.ChecksumAlgorithm, 'CRC32');
+            assert.strictEqual(
+                result.Uploads[0].value.ChecksumType, 'FULL_OBJECT');
+            assert.strictEqual(
+                result.Uploads[0].value.ChecksumIsDefault, false);
+            // Second upload: default checksum
+            assert.strictEqual(
+                result.Uploads[1].value.ChecksumAlgorithm, 'SHA256');
+            assert.strictEqual(
+                result.Uploads[1].value.ChecksumType, 'COMPOSITE');
+            assert.strictEqual(
+                result.Uploads[1].value.ChecksumIsDefault, true);
+            // Third upload: no checksum fields
+            assert.strictEqual(
+                result.Uploads[2].value.ChecksumAlgorithm, undefined);
+            assert.strictEqual(
+                result.Uploads[2].value.ChecksumType, undefined);
+            assert.strictEqual(
+                result.Uploads[2].value.ChecksumIsDefault, undefined);
         });
     });
 });
