@@ -202,41 +202,6 @@ const tests = [
         },
     },
     {
-        locationType: 'location-ceph-radosgw-s3-v1',
-        locations: {
-            objectId: 'cephbackendtest',
-            details: {
-                bucketMatch: 'cephbucketmatch',
-                endpoint: 'https://secure.ceph.end.point',
-                accessKey: 'cephs3accesskey',
-                secretKey,
-                bucketName: 'cephbucketname',
-                region: 'us-west-1',
-            },
-        },
-        expected: {
-            details: {
-                awsEndpoint: 'secure.ceph.end.point',
-                bucketMatch: 'cephbucketmatch',
-                bucketName: 'cephbucketname',
-                credentials: {
-                    accessKey: 'cephs3accesskey',
-                    secretKey: decryptedSecretKey,
-                },
-                https: true,
-                pathStyle: true,
-                region: 'us-west-1',
-                serverSideEncryption: false,
-                supportsVersioning: true,
-            },
-            legacyAwsBehavior: false,
-            isTransient: false,
-            sizeLimitGB: null,
-            type: 'aws_s3',
-            objectId: 'cephbackendtest',
-        },
-    },
-    {
         name: 'transient enabled',
         locationType: 'location-file-v1',
         locations: {
@@ -295,6 +260,7 @@ const tests = [
 describe('patch location constriants', () => {
     const mockLog = {
         info: () => {},
+        warn: () => {},
     };
 
     tests.forEach(spec => {
@@ -348,6 +314,105 @@ describe('patch location constriants', () => {
                 mockLog,
             ),
             {},
+        );
+    });
+
+    it('rejects ceph endpoint on aws location type', () => {
+        assert.deepStrictEqual(
+            patchLocations(
+                {
+                    cephAws: {
+                        name: 'cephAws',
+                        objectId: 'ceph-aws-test',
+                        locationType: 'location-aws-s3-v1',
+                        details: {
+                            endpoint: 'https://secure.ceph.end.point',
+                            accessKey,
+                            secretKey,
+                            bucketName: 'bucket',
+                            bucketMatch: true,
+                            region: 'us-east-1',
+                        },
+                    },
+                },
+                { privateKey },
+                mockLog,
+            ),
+            {},
+        );
+    });
+
+    it('rejects radosgw endpoint on aws location type', () => {
+        assert.deepStrictEqual(
+            patchLocations(
+                {
+                    rgwAws: {
+                        name: 'rgwAws',
+                        objectId: 'rgw-aws-test',
+                        locationType: 'location-aws-s3-v1',
+                        details: {
+                            endpoint: 'http://radosgw.example.local',
+                            accessKey,
+                            secretKey,
+                            bucketName: 'bucket',
+                            bucketMatch: true,
+                            region: 'us-east-1',
+                        },
+                    },
+                },
+                { privateKey },
+                mockLog,
+            ),
+            {},
+        );
+    });
+
+    it('does not reject endpoint with rgw as substring of a token', () => {
+        assert.deepStrictEqual(
+            patchLocations(
+                {
+                    nonRgwToken: {
+                        name: 'nonRgwToken',
+                        objectId: 'non-rgw-token-test',
+                        locationType: 'location-aws-s3-v1',
+                        details: {
+                            endpoint: 'https://forgwave.internal',
+                            accessKey,
+                            secretKey,
+                            bucketName: 'bucket',
+                            bucketMatch: true,
+                            region: 'us-east-1',
+                        },
+                    },
+                },
+                { privateKey },
+                mockLog,
+            ),
+            {
+                nonRgwToken: {
+                    type: 'aws_s3',
+                    name: 'nonRgwToken',
+                    objectId: 'non-rgw-token-test',
+                    locationType: 'location-aws-s3-v1',
+                    sizeLimitGB: null,
+                    isTransient: false,
+                    legacyAwsBehavior: false,
+                    details: {
+                        credentials: {
+                            accessKey,
+                            secretKey: decryptedSecretKey,
+                        },
+                        bucketName: 'bucket',
+                        bucketMatch: true,
+                        serverSideEncryption: false,
+                        region: 'us-east-1',
+                        awsEndpoint: 'forgwave.internal',
+                        supportsVersioning: true,
+                        pathStyle: false,
+                        https: true,
+                    },
+                },
+            },
         );
     });
 });
