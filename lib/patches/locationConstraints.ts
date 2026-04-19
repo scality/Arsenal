@@ -108,8 +108,11 @@ export function patchLocations(
             case 'location-wasabi-v1':
                 supportsVersioning = true; // fallthrough
             case 'location-do-spaces-v1':
+                // Ceph support is deprecated/removed from Arsenal.
+                // Keeping this guard to prevent implicit compatibility through
+                // generic S3-compatible location types.
                 if (isUnsupportedCephEndpoint(l.details?.endpoint)) {
-                    log.warn('unsupported ceph endpoint for location type', {
+                    log.warn('deprecated ceph endpoint rejected for location type', {
                         locationType: l.locationType,
                         endpoint: l.details?.endpoint,
                     });
