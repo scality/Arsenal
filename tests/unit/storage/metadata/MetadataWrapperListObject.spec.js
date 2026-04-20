@@ -56,6 +56,36 @@ describe('MetadataWrapper listObject parsing', () => {
         });
     });
 
+    it('should preserve checksum fields in listed entries', done => {
+        const rawEntries = [
+            {
+                key: 'obj1',
+                value: JSON.stringify({
+                    'content-length': 100,
+                    checksumValue: 'base64-checksum-value',
+                    checksumAlgorithm: 'sha256',
+                }),
+            },
+        ];
+
+        mockClient.listObject.callsFake((_bucket, _params, _log, cb) => {
+            cb(null, {
+                IsTruncated: false,
+                Contents: rawEntries,
+            });
+        });
+
+        metadataWrapper.listObject(bucketName, {}, logger, (err, data) => {
+            assert.ifError(err);
+            assert.strictEqual(data.Contents.length, 1);
+            const entry = data.Contents[0].value;
+            assert.strictEqual(entry.ChecksumValue, 'base64-checksum-value');
+            assert.strictEqual(entry.ChecksumAlgorithm, 'sha256');
+            assert.strictEqual(entry.Size, 100);
+            done();
+        });
+    });
+
     it('should parse restore status: in progress', done => {
         const rawEntries = [
             {
