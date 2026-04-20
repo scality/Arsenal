@@ -2,13 +2,10 @@ import { URL } from 'url';
 import { decryptSecret } from '../executables/pensieveCreds/utils';
 import { Logger } from 'werelogs';
 
-const CI_CEPH = process.env.CI_CEPH;
-
 export type LocationType =
     | 'location-mem-v1'
     | 'location-file-v1'
     | 'location-azure-v1'
-    | 'location-ceph-radosgw-s3-v1'
     | 'location-scality-ring-s3-v1'
     | 'location-aws-s3-v1'
     | 'location-wasabi-v1'
@@ -49,6 +46,17 @@ export type Location = {
     legacyAwsBehavior: boolean;
 };
 
+function isUnsupportedCephEndpoint(endpoint: unknown): boolean {
+    if (typeof endpoint !== 'string' || endpoint.length === 0) {
+        return false;
+    }
+
+    const normalized = endpoint.toLowerCase();
+    return /(?:^|[^a-z0-9])(ceph|radosgw|rgw)(?:[^a-z0-9]|$)/.test(
+        normalized
+    );
+}
+
 export function patchLocations(
     overlayLocations: OverlayLocations | undefined | null,
     creds: any,
@@ -68,7 +76,7 @@ export function patchLocations(
                 legacyAwsBehavior: Boolean(l.legacyAwsBehavior),
             };
             let supportsVersioning = false;
-            let pathStyle = CI_CEPH !== undefined;
+            let pathStyle = false;
 
             switch (l.locationType) {
             case 'location-mem-v1':
@@ -94,13 +102,22 @@ export function patchLocations(
                     };
                 }
                 break;
-            case 'location-ceph-radosgw-s3-v1':
             case 'location-scality-ring-s3-v1':
                 pathStyle = true; // fallthrough
             case 'location-aws-s3-v1':
             case 'location-wasabi-v1':
                 supportsVersioning = true; // fallthrough
             case 'location-do-spaces-v1':
+                // Ceph support is deprecated/removed from Arsenal.
+                // Keeping this guard to prevent implicit compatibility through
+                // generic S3-compatible location types.
+                if (isUnsupportedCephEndpoint(l.details?.endpoint)) {
+                    log.warn('deprecated ceph endpoint rejected for location type', {
+                        locationType: l.locationType,
+                        endpoint: l.details?.endpoint,
+                    });
+                    return acc;
+                }
                 location.type = 'aws_s3';
                 if (l.details.secretKey && l.details.secretKey.length > 0) {
                     let https = true;
