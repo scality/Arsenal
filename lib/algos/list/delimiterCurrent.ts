@@ -63,7 +63,7 @@ class DelimiterCurrent extends DelimiterMaster {
         // ensure enough master keys pass through the limit.
         // In v1 format, only master keys are iterated.
             const factor = this.vFormat === 'v0' ? 2 : 1;
-            params.limit = this.maxScannedLifecycleListingEntries + 1;
+            params.limit = (this.maxScannedLifecycleListingEntries * factor) + 1;
         }
 
         return params;
