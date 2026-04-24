@@ -49,6 +49,13 @@ const backendClients = [
         },
     },
 ];
+const awsPartChecksumFields = [
+    ['ChecksumCRC32', 'crc32', 'crc32-value'],
+    ['ChecksumCRC32C', 'crc32c', 'crc32c-value'],
+    ['ChecksumCRC64NVME', 'crc64nvme', 'crc64-value'],
+    ['ChecksumSHA1', 'sha1', 'sha1-value'],
+    ['ChecksumSHA256', 'sha256', 'sha256-value'],
+];
 const log = new DummyRequestLogger();
 let sandbox;
 
@@ -284,6 +291,64 @@ describe('external backend clients', () => {
                     assert.strictEqual(typeof firstPart.partNumber, 'number');
                     assert(firstPart.value);
                     assert.strictEqual(firstPart.value.ETag.includes('"'), false);
+                });
+
+                awsPartChecksumFields.forEach(([checksumField, checksumAlgorithm, checksumValue]) => {
+                    it(`${backend.name} listParts() should normalize ${checksumField}`, async () => {
+                        const key = 'externalBackendTestKey';
+                        const bucketName = 'externalBackendTestBucket';
+                        const lastModified = new Date();
+                        sandbox.stub(testClient._client, 'send').resolves({
+                            IsTruncated: true,
+                            Parts: [
+                                {
+                                    PartNumber: 1,
+                                    ETag: '"part-etag-1"',
+                                    Size: 1024,
+                                    LastModified: lastModified,
+                                    [checksumField]: checksumValue,
+                                },
+                            ],
+                        });
+
+                        const storedParts = await listPartsAsync(key, 'uploadId-123', bucketName, 0, 1000, log);
+
+                        assert.strictEqual(storedParts.IsTruncated, true);
+                        assert.strictEqual(storedParts.Contents.length, 1);
+                        assert.deepStrictEqual(storedParts.Contents[0], {
+                            partNumber: 1,
+                            value: {
+                                Size: 1024,
+                                ETag: 'part-etag-1',
+                                LastModified: lastModified,
+                                ChecksumAlgorithm: checksumAlgorithm,
+                                ChecksumValue: checksumValue,
+                            },
+                        });
+                    });
+                });
+
+                it(`${backend.name} listParts() should omit absent checksum fields`, async () => {
+                    const key = 'externalBackendTestKey';
+                    const bucketName = 'externalBackendTestBucket';
+                    sandbox.stub(testClient._client, 'send').resolves({
+                        IsTruncated: false,
+                        Parts: [
+                            {
+                                PartNumber: 2,
+                                ETag: '"part-etag-2"',
+                                Size: 2048,
+                                LastModified: new Date(),
+                            },
+                        ],
+                    });
+
+                    const storedParts = await listPartsAsync(key, 'uploadId-123', bucketName, 0, 1000, log);
+                    const { value } = storedParts.Contents[0];
+
+                    assert.strictEqual(value.ETag, 'part-etag-2');
+                    assert.strictEqual(value.ChecksumAlgorithm, undefined);
+                    assert.strictEqual(value.ChecksumValue, undefined);
                 });
             }
 
