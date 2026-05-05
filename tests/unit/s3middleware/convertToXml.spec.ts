@@ -1,6 +1,9 @@
 import assert from 'assert';
-import { listMultipartUploads, ListParams } from
+import { completeMultipartUpload, listMultipartUploads, ListParams } from
     '../../../lib/s3middleware/convertToXml';
+
+const completeMpuChecksumTag =
+    /<Checksum(?:CRC32|CRC32C|CRC64NVME|SHA1|SHA256|Type)>/;
 
 function makeUpload(key: string, uploadId: string, overrides?: {
     ChecksumAlgorithm?: string;
@@ -129,5 +132,99 @@ describe('convertToXml listMultipartUploads', () => {
         assert.strictEqual(algoMatches?.length, 1);
         const typeMatches = xml.match(/<ChecksumType>/g);
         assert.strictEqual(typeMatches?.length, 1);
+    });
+});
+
+describe('convertToXml completeMultipartUpload', () => {
+    it('should include checksum fields when provided', () => {
+        const xml = completeMultipartUpload({
+            bucketName: 'test-bucket',
+            hostname: 's3.example.com',
+            objectKey: 'key1',
+            eTag: '"etag"',
+            checksumAlgorithm: 'sha256',
+            checksumValue: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=-3',
+            checksumType: 'COMPOSITE',
+        });
+
+        assert.match(xml,
+            /<ChecksumSHA256>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=-3<\/ChecksumSHA256>/);
+        assert.match(xml, /<ChecksumType>COMPOSITE<\/ChecksumType>/);
+    });
+
+    it('should omit checksum fields when absent', () => {
+        const xml = completeMultipartUpload({
+            bucketName: 'test-bucket',
+            hostname: 's3.example.com',
+            objectKey: 'key1',
+            eTag: '"etag"',
+        });
+
+        assert.doesNotMatch(xml, completeMpuChecksumTag);
+    });
+
+    it('should place checksum fields after ETag', () => {
+        const xml = completeMultipartUpload({
+            bucketName: 'test-bucket',
+            hostname: 's3.example.com',
+            objectKey: 'key1',
+            eTag: '"etag"',
+            checksumAlgorithm: 'crc64nvme',
+            checksumValue: 'AAAAAAAAAAA=',
+            checksumType: 'FULL_OBJECT',
+        });
+
+        const eTagIdx = xml.indexOf('<ETag>');
+        const checksumIdx = xml.indexOf('<ChecksumCRC64NVME>');
+        const checksumTypeIdx = xml.indexOf('<ChecksumType>');
+        assert(eTagIdx < checksumIdx, 'checksum should come after ETag');
+        assert(checksumIdx < checksumTypeIdx, 'ChecksumType should come after checksum value');
+    });
+
+    it('should derive the checksum tag from the algorithm name', () => {
+        const xml = completeMultipartUpload({
+            bucketName: 'test-bucket',
+            hostname: 's3.example.com',
+            objectKey: 'key1',
+            eTag: '"etag"',
+            checksumAlgorithm: 'crc32c',
+            checksumValue: 'AAAAAA==',
+            checksumType: 'FULL_OBJECT',
+        });
+
+        assert.match(xml, /<ChecksumCRC32C>AAAAAA==<\/ChecksumCRC32C>/);
+        assert.doesNotMatch(xml, /<ChecksumCRC32>/);
+        assert.doesNotMatch(xml, /<ChecksumSHA256>/);
+    });
+
+    it('should omit all checksum fields when any checksum input is missing', () => {
+        const xmlWithMissingValue = completeMultipartUpload({
+            bucketName: 'test-bucket',
+            hostname: 's3.example.com',
+            objectKey: 'key1',
+            eTag: '"etag"',
+            checksumAlgorithm: 'sha256',
+            checksumType: 'COMPOSITE',
+        });
+        const xmlWithMissingAlgorithm = completeMultipartUpload({
+            bucketName: 'test-bucket',
+            hostname: 's3.example.com',
+            objectKey: 'key1',
+            eTag: '"etag"',
+            checksumValue: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=-3',
+            checksumType: 'COMPOSITE',
+        } as any);
+        const xmlWithMissingType = completeMultipartUpload({
+            bucketName: 'test-bucket',
+            hostname: 's3.example.com',
+            objectKey: 'key1',
+            eTag: '"etag"',
+            checksumAlgorithm: 'sha256',
+            checksumValue: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=-3',
+        });
+
+        assert.doesNotMatch(xmlWithMissingValue, completeMpuChecksumTag);
+        assert.doesNotMatch(xmlWithMissingAlgorithm, completeMpuChecksumTag);
+        assert.doesNotMatch(xmlWithMissingType, completeMpuChecksumTag);
     });
 });

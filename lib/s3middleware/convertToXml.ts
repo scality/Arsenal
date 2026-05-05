@@ -1,4 +1,6 @@
 import * as querystring from 'querystring';
+import { CHECKSUM_XML_TAGS } from '../models/ObjectMDChecksum';
+import type { ChecksumAlgorithm, ChecksumType } from '../models/ObjectMDChecksum';
 import escapeForXml from './escapeForXml';
 
 export type Params = {
@@ -10,13 +12,50 @@ export type Params = {
     list: string;
 }
 
-export type CompleteParams = { bucketName: string; hostname: string; objectKey: string; eTag: string }
+export type CompleteParams = {
+    bucketName: string;
+    hostname: string;
+    objectKey: string;
+    eTag: string;
+    checksumAlgorithm?: ChecksumAlgorithm;
+    checksumValue?: string;
+    checksumType?: ChecksumType;
+}
 export const completeMultipartUpload = (xmlParams: CompleteParams) => {
     const bucketName = escapeForXml(xmlParams.bucketName);
     const hostname = escapeForXml(xmlParams.hostname);
     const objectKey = escapeForXml(xmlParams.objectKey);
     const location = `http://${bucketName}.${hostname}/${objectKey}`;
     const eTag = escapeForXml(xmlParams.eTag);
+
+    let checksumValXml = '';
+    let checksumTypeXml = '';
+    if (xmlParams.checksumAlgorithm !== undefined &&
+        xmlParams.checksumValue !== undefined &&
+        xmlParams.checksumType !== undefined) {
+        const checksumTag = CHECKSUM_XML_TAGS[xmlParams.checksumAlgorithm];
+        if (checksumTag !== undefined) {
+            checksumValXml =
+                `<${checksumTag}>${escapeForXml(xmlParams.checksumValue)}</${checksumTag}>`;
+            checksumTypeXml =
+                `<ChecksumType>${escapeForXml(xmlParams.checksumType)}</ChecksumType>`;
+        }
+    }
+
+    if (checksumValXml !== '' && checksumTypeXml !== '') {
+        return `
+        <?xml version="1.0" encoding="UTF-8"?>
+        <CompleteMultipartUploadResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+            <Location>${location}</Location>
+            <Bucket>${bucketName}</Bucket>
+            <Key>${objectKey}</Key>
+            <ETag>${eTag}</ETag>
+            ${checksumValXml}
+            ${checksumTypeXml}
+        </CompleteMultipartUploadResult>
+    `.trim();
+    }
+
     return `
         <?xml version="1.0" encoding="UTF-8"?>
         <CompleteMultipartUploadResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">

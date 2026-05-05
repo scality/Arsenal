@@ -4,6 +4,14 @@ export const CHECKSUM_TYPES = ['FULL_OBJECT', 'COMPOSITE'] as const;
 export type ChecksumAlgorithm = typeof CHECKSUM_ALGORITHMS[number];
 export type ChecksumType = typeof CHECKSUM_TYPES[number];
 
+export const CHECKSUM_XML_TAGS: Record<ChecksumAlgorithm, string> = {
+    crc32: 'ChecksumCRC32',
+    crc32c: 'ChecksumCRC32C',
+    crc64nvme: 'ChecksumCRC64NVME',
+    sha1: 'ChecksumSHA1',
+    sha256: 'ChecksumSHA256',
+};
+
 const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
 
 const digestLengths: Record<ChecksumAlgorithm, number> = {
@@ -14,9 +22,32 @@ const digestLengths: Record<ChecksumAlgorithm, number> = {
     sha256:    44,
 };
 
-function isValidDigest(algorithm: ChecksumAlgorithm, value: string): boolean {
+function isValidDigestValue(algorithm: ChecksumAlgorithm, value: string): boolean {
     const digestLength = digestLengths[algorithm];
     return typeof value === 'string' && value.length === digestLength && base64Regex.test(value);
+}
+
+function isValidDigest(
+    algorithm: ChecksumAlgorithm,
+    value: string,
+    checksumType: ChecksumType,
+): boolean {
+    if (checksumType === 'COMPOSITE') {
+        if (isValidDigestValue(algorithm, value)) {
+            return true;
+        }
+
+        // Composite MPU checksums are stored as "<base64 digest>-<part count>",
+        // so validate the raw digest portion while requiring a positive suffix.
+        const compositeMatch = typeof value === 'string' ? value.match(/^([A-Za-z0-9+/]*={0,2})-([1-9][0-9]*)$/) : null;
+        if (!compositeMatch) {
+            return false;
+        }
+
+        return isValidDigestValue(algorithm, compositeMatch[1]);
+    }
+
+    return isValidDigestValue(algorithm, value);
 }
 
 /**
@@ -40,7 +71,7 @@ export default class ObjectMDChecksum {
         if (!CHECKSUM_TYPES.includes(data.checksumType)) {
             return `invalid checksumType: ${data.checksumType}`;
         }
-        if (!isValidDigest(data.checksumAlgorithm, data.checksumValue)) {
+        if (!isValidDigest(data.checksumAlgorithm, data.checksumValue, data.checksumType)) {
             return `invalid checksumValue for ${data.checksumAlgorithm}: ${data.checksumValue}`;
         }
         return null;

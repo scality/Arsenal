@@ -49,6 +49,26 @@ describe('ObjectMDChecksum', () => {
                 /invalid checksumValue/,
             );
         });
+
+        it('should accept a composite checksumValue with a part-count suffix', () => {
+            const checksumValue = `${validDigest.sha256}-3`;
+            const c = new ObjectMDChecksum('sha256', checksumValue, 'COMPOSITE');
+            assert.strictEqual(c.checksumValue, checksumValue);
+        });
+
+        it('should reject a composite checksumValue suffix for FULL_OBJECT', () => {
+            assert.throws(
+                () => new ObjectMDChecksum('sha256', `${validDigest.sha256}-3`, 'FULL_OBJECT'),
+                /invalid checksumValue/,
+            );
+        });
+
+        it('should reject a composite checksumValue with an invalid part-count suffix', () => {
+            assert.throws(
+                () => new ObjectMDChecksum('sha256', `${validDigest.sha256}-0`, 'COMPOSITE'),
+                /invalid checksumValue/,
+            );
+        });
     });
 
     describe('isValid', () => {
@@ -87,6 +107,14 @@ describe('ObjectMDChecksum', () => {
                 checksumType: 'FULL_OBJECT',
             });
             assert.match(result!, /invalid checksumValue/);
+        });
+
+        it('should return null for a valid composite checksum object with a part-count suffix', () => {
+            assert.strictEqual(ObjectMDChecksum.isValid({
+                checksumAlgorithm: 'sha256',
+                checksumValue: `${validDigest.sha256}-12`,
+                checksumType: 'COMPOSITE',
+            }), null);
         });
     });
 });

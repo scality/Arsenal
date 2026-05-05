@@ -917,4 +917,15 @@ describe('ObjectMD checksum', () => {
         assert.strictEqual(c.checksumType, 'COMPOSITE');
     });
 
+    it('should preserve a composite checksum value with a part-count suffix through JSON round-trip', () => {
+        const md = new ObjectMD();
+        md.setChecksum(new ObjectMDChecksum('sha256', `${sha256Digest}-3`, 'COMPOSITE'));
+        const { result } = ObjectMD.createFromBlob(md.getSerialized());
+        assert(result !== undefined);
+        const c = result.getChecksum();
+        assert.strictEqual(c.checksumAlgorithm, 'sha256');
+        assert.strictEqual(c.checksumValue, `${sha256Digest}-3`);
+        assert.strictEqual(c.checksumType, 'COMPOSITE');
+    });
+
 });
