@@ -99,7 +99,7 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
             const result = instance.parseConfiguration();
             expect(result).toBeUndefined();
             expect(instance.getRole()).toEqual(TEST_ROLE);
-            expect(instance.getDestination()).toBeNull();
+            expect(instance.getDestination()).toBeUndefined();
             const rules = instance.getRules();
             expect(rules.length).toEqual(1);
             expect(rules[0].enabled).toBe(true);
@@ -136,7 +136,7 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
             const result = instance.parseConfiguration();
             expect(result).toBeUndefined();
             expect(instance.getRole()).toEqual(TEST_ROLE);
-            expect(instance.getDestination()).toBeNull();
+            expect(instance.getDestination()).toBeUndefined();
             expect(instance.getRules()).toEqual([
                 {
                     enabled: true,
@@ -274,6 +274,84 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
             expect(rules[1].destination).toEqual('arn:aws:s3:::bucket-b');
             expect(instance.getFormat()).toEqual('v1');
         });
+
+        it('should accept overlapping prefixes when rules share a site but target distinct destination buckets', () => {
+            const repConfig = {
+                Role: [TEST_ROLE],
+                Rule: [
+                    {
+                        ID: ['rule1'],
+                        Prefix: [''],
+                        Status: ['Enabled'],
+                        Destination: [
+                            {
+                                Bucket: ['arn:aws:s3:::bucket-a'],
+                                Account: ['692632726100'],
+                                StorageClass: ['ring'],
+                            },
+                        ],
+                    },
+                    {
+                        ID: ['rule2'],
+                        Prefix: [''],
+                        Status: ['Enabled'],
+                        Destination: [
+                            {
+                                Bucket: ['arn:aws:s3:::bucket-b'],
+                                Account: ['692632726100'],
+                                StorageClass: ['ring'],
+                            },
+                        ],
+                    },
+                ],
+            };
+            const instance = new ReplicationConfiguration(
+                { ReplicationConfiguration: repConfig },
+                null,
+                mockS3ServerConfig,
+            );
+            const result = instance.parseConfiguration();
+            expect(result).toBeUndefined();
+        });
+
+        it('should still reject overlapping prefixes when rules share site and destination', () => {
+            const repConfig = {
+                Role: [TEST_ROLE],
+                Rule: [
+                    {
+                        ID: ['rule1'],
+                        Prefix: ['prefix/'],
+                        Status: ['Enabled'],
+                        Destination: [
+                            {
+                                Bucket: ['arn:aws:s3:::bucket-shared'],
+                                Account: ['692632726100'],
+                                StorageClass: ['ring'],
+                            },
+                        ],
+                    },
+                    {
+                        ID: ['rule2'],
+                        Prefix: ['prefix/subprefix/'],
+                        Status: ['Enabled'],
+                        Destination: [
+                            {
+                                Bucket: ['arn:aws:s3:::bucket-shared'],
+                                Account: ['692632726100'],
+                                StorageClass: ['ring'],
+                            },
+                        ],
+                    },
+                ],
+            };
+            const instance = new ReplicationConfiguration(
+                { ReplicationConfiguration: repConfig },
+                null,
+                mockS3ServerConfig,
+            );
+            const result = instance.parseConfiguration();
+            expect(result).toEqual(errors.InvalidRequest);
+        });
     });
 
     it('should succeed for a minimal valid configuration without storage class', () => {
@@ -299,7 +377,7 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
         const result = instance.parseConfiguration();
         expect(result).toBeUndefined();
         expect(instance.getRole()).toEqual(TEST_ROLE);
-        expect(instance.getDestination()).toBeNull();
+        expect(instance.getDestination()).toBeUndefined();
         const rules = instance.getRules();
         expect(rules.length).toEqual(1);
         expect(rules[0].enabled).toBe(true);
@@ -393,7 +471,6 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
         expect(result).toBeUndefined();
     });
 
-    // eslint-disable-next-line max-len
     it('should return InvalidArgument when Scality destination has two comma-separated roles but one is invalid', () => {
         const repConfig = {
             Role: [`invalidarn:${TEST_ROLE}`],
@@ -727,9 +804,10 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
             expect(rules.length).toEqual(1);
             expect(rules[0].prefix).toEqual('docs/');
             expect(rules[0].destination).toEqual('arn:aws:s3:::crr-dest');
+            expect(instance.getFormat()).toEqual('v2');
         });
 
-        it('should succeed with empty Filter (matches all objects)', () => {
+        it('should succeed with empty Filter (no Prefix child, matches all objects)', () => {
             const repConfig = {
                 Role: [TEST_ROLE],
                 Rule: [
@@ -753,7 +831,8 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
             );
             const result = instance.parseConfiguration();
             expect(result).toBeUndefined();
-            expect(instance.getRules()![0].prefix).toEqual('');
+            expect(instance.getRules()![0].prefix).toBeUndefined();
+            expect(instance.getFormat()).toEqual('v2');
         });
 
         it('should reject overlapping prefixes in V2 format', () => {
@@ -777,7 +856,7 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
                         Filter: [{ Prefix: ['docs/2024'] }],
                         Destination: [
                             {
-                                Bucket: ['arn:aws:s3:::bucket-b'],
+                                Bucket: ['arn:aws:s3:::bucket-a'],
                                 StorageClass: ['ring'],
                             },
                         ],
@@ -831,6 +910,7 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
             const rules = instance.getRules()!;
             expect(rules[0].destination).toEqual('arn:aws:s3:::bucket-a');
             expect(rules[1].destination).toEqual('arn:aws:s3:::bucket-b');
+            expect(instance.getFormat()).toEqual('v2');
         });
 
         it('should allow overlapping prefixes when all rules have Priority', () => {
@@ -873,6 +953,7 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
             const rules = instance.getRules()!;
             expect(rules[0].priority).toEqual(1);
             expect(rules[1].priority).toEqual(2);
+            expect(instance.getFormat()).toEqual('v2');
         });
 
         it('should accept equal Priority values across rules', () => {
@@ -912,6 +993,204 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
             );
             const result = instance.parseConfiguration();
             expect(result).toBeUndefined();
+            expect(instance.getFormat()).toEqual('v2');
+        });
+
+        it('should allow overlapping prefixes when storageClass differs', () => {
+            const repConfig = {
+                Role: [TEST_ROLE],
+                Rule: [
+                    {
+                        ID: ['rule1'],
+                        Status: ['Enabled'],
+                        Filter: [{ Prefix: ['docs/'] }],
+                        Destination: [
+                            {
+                                Bucket: ['arn:aws:s3:::bucket-a'],
+                                StorageClass: ['ring'],
+                            },
+                        ],
+                    },
+                    {
+                        ID: ['rule2'],
+                        Status: ['Enabled'],
+                        Filter: [{ Prefix: ['docs/2024'] }],
+                        Destination: [
+                            {
+                                Bucket: ['arn:aws:s3:::bucket-b'],
+                                StorageClass: ['awsbackend'],
+                            },
+                        ],
+                    },
+                ],
+            };
+            const instance = new ReplicationConfiguration(
+                { ReplicationConfiguration: repConfig },
+                null,
+                mockS3ServerConfig,
+            );
+            expect(instance.parseConfiguration()).toBeUndefined();
+        });
+
+        it('should reject overlapping prefixes when only one rule has Priority', () => {
+            const repConfig = {
+                Role: [TEST_ROLE],
+                Rule: [
+                    {
+                        ID: ['rule1'],
+                        Status: ['Enabled'],
+                        Priority: ['1'],
+                        Filter: [{ Prefix: ['docs/'] }],
+                        Destination: [
+                            {
+                                Bucket: ['arn:aws:s3:::bucket-a'],
+                                StorageClass: ['ring'],
+                            },
+                        ],
+                    },
+                    {
+                        ID: ['rule2'],
+                        Status: ['Enabled'],
+                        Filter: [{ Prefix: ['docs/2024'] }],
+                        Destination: [
+                            {
+                                Bucket: ['arn:aws:s3:::bucket-a'],
+                                StorageClass: ['ring'],
+                            },
+                        ],
+                    },
+                ],
+            };
+            const instance = new ReplicationConfiguration(
+                { ReplicationConfiguration: repConfig },
+                null,
+                mockS3ServerConfig,
+            );
+            expect(instance.parseConfiguration()).toEqual(errors.InvalidRequest);
+        });
+
+        it('should reject overlapping prefixes when priorities are equal', () => {
+            const repConfig = {
+                Role: [TEST_ROLE],
+                Rule: [
+                    {
+                        ID: ['rule1'],
+                        Status: ['Enabled'],
+                        Priority: ['1'],
+                        Filter: [{ Prefix: ['docs/'] }],
+                        Destination: [
+                            {
+                                Bucket: ['arn:aws:s3:::bucket-a'],
+                                StorageClass: ['ring'],
+                            },
+                        ],
+                    },
+                    {
+                        ID: ['rule2'],
+                        Status: ['Enabled'],
+                        Priority: ['1'],
+                        Filter: [{ Prefix: ['docs/2024'] }],
+                        Destination: [
+                            {
+                                Bucket: ['arn:aws:s3:::bucket-a'],
+                                StorageClass: ['ring'],
+                            },
+                        ],
+                    },
+                ],
+            };
+            const instance = new ReplicationConfiguration(
+                { ReplicationConfiguration: repConfig },
+                null,
+                mockS3ServerConfig,
+            );
+            expect(instance.parseConfiguration()).toEqual(errors.InvalidRequest);
+        });
+
+        it('should reject overlap between non-adjacent rules in sorted order', () => {
+            const repConfig = {
+                Role: [TEST_ROLE],
+                Rule: [
+                    {
+                        ID: ['rule1'],
+                        Status: ['Enabled'],
+                        Priority: ['1'],
+                        Filter: [{ Prefix: [''] }],
+                        Destination: [
+                            {
+                                Bucket: ['arn:aws:s3:::bucket-a'],
+                                StorageClass: ['ring'],
+                            },
+                        ],
+                    },
+                    {
+                        ID: ['rule2'],
+                        Status: ['Enabled'],
+                        Priority: ['2'],
+                        Filter: [{ Prefix: ['a/'] }],
+                        Destination: [
+                            {
+                                Bucket: ['arn:aws:s3:::bucket-a'],
+                                StorageClass: ['ring'],
+                            },
+                        ],
+                    },
+                    {
+                        ID: ['rule3'],
+                        Status: ['Enabled'],
+                        Priority: ['1'],
+                        Filter: [{ Prefix: ['a/b/'] }],
+                        Destination: [
+                            {
+                                Bucket: ['arn:aws:s3:::bucket-a'],
+                                StorageClass: ['ring'],
+                            },
+                        ],
+                    },
+                ],
+            };
+            const instance = new ReplicationConfiguration(
+                { ReplicationConfiguration: repConfig },
+                null,
+                mockS3ServerConfig,
+            );
+            expect(instance.parseConfiguration()).toEqual(errors.InvalidRequest);
+        });
+
+        it('should reject overlapping prefixes on a shared site in multi-site storageClass', () => {
+            const repConfig = {
+                Role: [TEST_ROLE],
+                Rule: [
+                    {
+                        ID: ['rule1'],
+                        Status: ['Enabled'],
+                        Filter: [{ Prefix: ['docs/'] }],
+                        Destination: [
+                            {
+                                Bucket: ['arn:aws:s3:::bucket-a'],
+                                StorageClass: ['ring,awsbackend'],
+                            },
+                        ],
+                    },
+                    {
+                        ID: ['rule2'],
+                        Status: ['Enabled'],
+                        Filter: [{ Prefix: ['docs/2024'] }],
+                        Destination: [
+                            {
+                                Bucket: ['arn:aws:s3:::bucket-a'],
+                                StorageClass: ['ring'],
+                            },
+                        ],
+                    },
+                ],
+            };
+            const instance = new ReplicationConfiguration(
+                { ReplicationConfiguration: repConfig },
+                null,
+                mockS3ServerConfig,
+            );
+            expect(instance.parseConfiguration()).toEqual(errors.InvalidRequest);
         });
 
         it('should accept Priority on a V1 rule', () => {
@@ -971,6 +1250,32 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
             expect(result).toEqual(errors.InvalidArgument);
         });
 
+        it('should reject an empty Priority element', () => {
+            const repConfig = {
+                Role: [TEST_ROLE],
+                Rule: [
+                    {
+                        ID: ['rule1'],
+                        Status: ['Enabled'],
+                        Priority: [''],
+                        Filter: [{ Prefix: [''] }],
+                        Destination: [
+                            {
+                                Bucket: ['arn:aws:s3:::bucket-a'],
+                                StorageClass: ['ring'],
+                            },
+                        ],
+                    },
+                ],
+            };
+            const instance = new ReplicationConfiguration(
+                { ReplicationConfiguration: repConfig },
+                null,
+                mockS3ServerConfig,
+            );
+            expect(instance.parseConfiguration()).toEqual(errors.InvalidArgument);
+        });
+
         it('should accept mixed Priority presence across rules', () => {
             const repConfig = {
                 Role: [TEST_ROLE],
@@ -1010,6 +1315,7 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
             const rules = instance.getRules()!;
             expect(rules[0].priority).toEqual(1);
             expect(rules[1].priority).toBeUndefined();
+            expect(instance.getFormat()).toEqual('v2');
         });
 
         it('should accept a single-ARN Role for CRR (shared role name)', () => {
@@ -1039,6 +1345,7 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
             expect(result).toBeUndefined();
             const rules = instance.getRules()!;
             expect(rules[0].account).toEqual('222222222222');
+            expect(instance.getFormat()).toEqual('v2');
         });
 
         it('should expose v2 format and omit top-level destination in V2', () => {
@@ -1065,7 +1372,7 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
             );
             expect(instance.parseConfiguration()).toBeUndefined();
             expect(instance.getFormat()).toEqual('v2');
-            expect(instance.getDestination()).toBeNull();
+            expect(instance.getDestination()).toBeUndefined();
         });
 
         it('should return InvalidArgument if V2 prefix is longer than 1024 characters', () => {
@@ -1176,6 +1483,7 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
             expect(result).toBeUndefined();
             const rules = instance.getRules()!;
             expect(rules[0].account).toEqual('222222222222');
+            expect(instance.getFormat()).toEqual('v2');
         });
 
         it('should not set per-rule account when Account is not specified', () => {
@@ -1204,6 +1512,7 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
             expect(result).toBeUndefined();
             const rules = instance.getRules()!;
             expect(rules[0].account).toBeUndefined();
+            expect(instance.getFormat()).toEqual('v2');
         });
 
         it('should parse V2 XML configuration with multiple destinations', done => {
@@ -1243,6 +1552,7 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
                 expect(rules[0].account).toEqual('222222222222');
                 expect(rules[1].destination).toEqual('arn:aws:s3:::bucket-b');
                 expect(rules[1].account).toEqual('333333333333');
+                expect(repConf.getFormat()).toEqual('v2');
                 done();
             });
         });
@@ -1440,6 +1750,84 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
                 `<Role>${TEST_ROLE}</Role>` +
                 `</ReplicationConfiguration>`;
             expect(emitted).toEqual(expected);
+        });
+
+        it('round-trips a configuration with no prefix on any rule', () => {
+            const xml = `<?xml version="1.0" encoding="UTF-8"?>
+                <ReplicationConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                    <Role>${TEST_ROLE}</Role>
+                    <Rule>
+                        <ID>rule1</ID>
+                        <Status>Enabled</Status>
+                        <Destination>
+                            <Bucket>arn:aws:s3:::bucket-a</Bucket>
+                            <StorageClass>ring</StorageClass>
+                        </Destination>
+                    </Rule>
+                </ReplicationConfiguration>`;
+            const { meta1 } = roundTrip(xml);
+            expect(meta1.format).toEqual('v2');
+            expect(meta1.rules[0].prefix).toBeUndefined();
+        });
+
+        it('preserves the "no Prefix" vs "empty Prefix" distinction on the wire (v2)', () => {
+            // <Filter/> (no Prefix child) round-trips to <Filter/>
+            const noPrefixXml = `<?xml version="1.0" encoding="UTF-8"?>
+                <ReplicationConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                    <Role>${TEST_ROLE}</Role>
+                    <Rule>
+                        <ID>rule1</ID>
+                        <Status>Enabled</Status>
+                        <Filter/>
+                        <Destination><Bucket>arn:aws:s3:::bucket-a</Bucket><StorageClass>ring</StorageClass></Destination>
+                    </Rule>
+                </ReplicationConfiguration>`;
+            const { emitted: emittedNoPrefix, meta1: metaNoPrefix } = roundTrip(noPrefixXml);
+            expect(metaNoPrefix.rules[0].prefix).toBeUndefined();
+            expect(emittedNoPrefix).toContain('<Filter/>');
+            expect(emittedNoPrefix).not.toContain('<Prefix');
+
+            // <Filter><Prefix></Prefix></Filter> round-trips with prefix=''
+            const emptyPrefixXml = `<?xml version="1.0" encoding="UTF-8"?>
+                <ReplicationConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                    <Role>${TEST_ROLE}</Role>
+                    <Rule>
+                        <ID>rule1</ID>
+                        <Status>Enabled</Status>
+                        <Filter><Prefix></Prefix></Filter>
+                        <Destination><Bucket>arn:aws:s3:::bucket-a</Bucket><StorageClass>ring</StorageClass></Destination>
+                    </Rule>
+                </ReplicationConfiguration>`;
+            const { emitted: emittedEmptyPrefix, meta1: metaEmptyPrefix } = roundTrip(emptyPrefixXml);
+            expect(metaEmptyPrefix.rules[0].prefix).toEqual('');
+            expect(emittedEmptyPrefix).toContain('<Filter><Prefix/></Filter>');
+        });
+
+        it('round-trips legacy metadata without a format field (falls back to v1)', () => {
+            const legacyMeta = {
+                role: TEST_ROLE,
+                destination: 'arn:aws:s3:::bucket-a',
+                rules: [
+                    {
+                        id: 'rule1',
+                        prefix: 'images/',
+                        enabled: true,
+                        storageClass: 'ring',
+                    },
+                ],
+            } as any;
+
+            const emitted = ReplicationConfiguration.getConfigXML(legacyMeta);
+            expect(emitted).toContain('<Prefix>images/</Prefix>');
+            expect(emitted).not.toContain('<Filter>');
+
+            const inst = new ReplicationConfiguration(parseXML(emitted), null, mockS3ServerConfig);
+            expect(inst.parseConfiguration()).toBeUndefined();
+            const meta2 = inst.getReplicationConfiguration();
+
+            expect(meta2.format).toEqual('v1');
+            expect(meta2.rules[0].prefix).toEqual('images/');
+            expect(meta2.rules[0].destination).toEqual('arn:aws:s3:::bucket-a');
         });
 
         it('emits V2 with Filter, Priority and Account on the wire', () => {
@@ -2105,11 +2493,58 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
                         site: 'crr-a',
                         status: 'COMPLETED',
                         dataStoreVersionId: 'v-123',
+                        destination: 'arn:aws:s3:::bucket-a',
+                        role: 'arn:aws:iam::111:role/src',
                     },
                 ],
             );
             expect(out[0].dataStoreVersionId).toEqual('v-123');
             expect(out[0].status).toEqual('PENDING');
+        });
+
+        it('matches existingBackends per (site, destination, role) for CRR', () => {
+            const out = ReplicationConfiguration.resolveBackends(
+                {
+                    role: 'arn:aws:iam::111:role/src,arn:aws:iam::222:role/dst',
+                    rules: [
+                        {
+                            id: 'r1',
+                            prefix: '',
+                            enabled: true,
+                            storageClass: 'crr-a',
+                            destination: 'arn:aws:s3:::bucket-x',
+                        },
+                        {
+                            id: 'r2',
+                            prefix: '',
+                            enabled: true,
+                            storageClass: 'crr-a',
+                            destination: 'arn:aws:s3:::bucket-y',
+                        },
+                    ],
+                },
+                'k',
+                isCloud,
+                [
+                    {
+                        site: 'crr-a',
+                        status: 'COMPLETED',
+                        dataStoreVersionId: 'v-x',
+                        destination: 'arn:aws:s3:::bucket-x',
+                        role: 'arn:aws:iam::222:role/dst',
+                    },
+                    {
+                        site: 'crr-a',
+                        status: 'COMPLETED',
+                        dataStoreVersionId: 'v-y',
+                        destination: 'arn:aws:s3:::bucket-y',
+                        role: 'arn:aws:iam::222:role/dst',
+                    },
+                ],
+            );
+            const byDest = Object.fromEntries(out.map(b => [b.destination, b.dataStoreVersionId]));
+            expect(byDest['arn:aws:s3:::bucket-x']).toEqual('v-x');
+            expect(byDest['arn:aws:s3:::bucket-y']).toEqual('v-y');
         });
     });
 });
