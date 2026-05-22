@@ -9,7 +9,9 @@ function randomRepGroupId() {
 describe('microVersionId', () => {
     it('should generate unique, length-27 timestamp-ordered ids', () => {
         const repGroupId = randomRepGroupId();
-        const ids = Array(1000).fill(null).map(() => MVID.generate(repGroupId));
+        const ids = Array(1000)
+            .fill(null)
+            .map(() => MVID.generate(repGroupId));
 
         assert.strictEqual(new Set(ids).size, ids.length);
         ids.forEach(id => assert.strictEqual(id.length, 27));

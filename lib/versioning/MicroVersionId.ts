@@ -73,11 +73,7 @@ export function generate(replicationGroupId: string): string {
     const ts = Date.now();
     lastSeq = lastTimestamp === ts ? lastSeq + 1 : 0;
     lastTimestamp = ts;
-    return (
-        padLeft(MAX_TS - lastTimestamp, TEMPLATE_TS) +
-        padLeft(MAX_SEQ - lastSeq, TEMPLATE_SEQ) +
-        repGroupId
-    );
+    return padLeft(MAX_TS - lastTimestamp, TEMPLATE_TS) + padLeft(MAX_SEQ - lastSeq, TEMPLATE_SEQ) + repGroupId;
 }
 
 /**
@@ -113,8 +109,7 @@ export function decode(str: string): string | Error {
         return decoded;
     }
     if (decoded.length !== MICRO_VERSION_ID_LENGTH) {
-        return new Error(
-            `decoded microVersionId has invalid length ${decoded.length}`);
+        return new Error(`decoded microVersionId has invalid length ${decoded.length}`);
     }
     return decoded;
 }
