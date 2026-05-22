@@ -1,6 +1,6 @@
-import * as crypto from 'crypto';
 import * as constants from '../constants';
 import * as VersionIDUtils from '../versioning/VersionID';
+import * as MicroVersionIdUtils from '../versioning/MicroVersionId';
 import { VersioningConstants } from '../versioning/constants';
 import ObjectMDLocation, {
     ObjectMDLocationData,
@@ -35,6 +35,7 @@ export type ReplicationInfo = {
     storageType: string;
     dataStoreVersionId: string;
     isNFS?: boolean;
+    isReplica?: boolean;
 };
 
 export type ObjectMDTag = {
@@ -242,6 +243,7 @@ export default class ObjectMD {
                 storageType: '',
                 dataStoreVersionId: '',
                 isNFS: undefined,
+                isReplica: undefined,
             },
             'dataStoreName': '',
             'originOp': '',
@@ -1097,6 +1099,7 @@ export default class ObjectMD {
         storageType?: string;
         dataStoreVersionId?: string;
         isNFS?: boolean;
+        isReplica?: boolean;
     }) {
         const {
             status,
@@ -1108,6 +1111,7 @@ export default class ObjectMD {
             storageType,
             dataStoreVersionId,
             isNFS,
+            isReplica,
         } = replicationInfo;
         this._data.replicationInfo = {
             status,
@@ -1119,6 +1123,7 @@ export default class ObjectMD {
             storageType: storageType || '',
             dataStoreVersionId: dataStoreVersionId || '',
             isNFS,
+            isReplica,
         };
         return this;
     }
@@ -1153,6 +1158,26 @@ export default class ObjectMD {
      */
     getReplicationIsNFS() {
         return !!this._data.replicationInfo.isNFS;
+    }
+
+    /**
+     * Mark this object as the result of a replication write (replica),
+     * as opposed to a write originating from a user request.
+     *
+     * @param isReplica - true if this object was written by replication
+     * @return itself
+     */
+    setReplicationIsReplica(isReplica: boolean) {
+        this._data.replicationInfo.isReplica = isReplica;
+        return this;
+    }
+
+    /**
+     * Get whether this object was written by replication (replica).
+     * @return true if this object is a replica
+     */
+    getReplicationIsReplica() {
+        return !!this._data.replicationInfo.isReplica;
     }
 
     setReplicationSiteStatus(site: string, status: string) {
@@ -1353,12 +1378,18 @@ export default class ObjectMD {
      * - to manage conflicts during concurrent updates, using
      *   conditions on the microVersionId field.
      *
-     * It's a field of 16 hexadecimal characters randomly generated
+     * The value is a timestamp-ordered identifier matching the
+     * versionId scheme, so two microVersionIds can be compared with
+     * {@link MicroVersionIdUtils.compare} to determine which one is
+     * more recent.
+     *
+     * @param replicationGroupId - replication group id, used to keep
+     *   microVersionIds unique across concurrent writers
      *
      * @return itself
      */
-    updateMicroVersionId() {
-        this._data.microVersionId = crypto.randomBytes(8).toString('hex');
+    updateMicroVersionId(replicationGroupId: string) {
+        this._data.microVersionId = MicroVersionIdUtils.generate(replicationGroupId);
     }
 
     /**

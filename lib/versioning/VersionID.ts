@@ -30,16 +30,16 @@ const BASE62 = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const base62String = baseX(BASE62);
 
 // the lengths of the components in bytes
-const LENGTH_TS = 14; // timestamp: epoch in ms
-const LENGTH_SEQ = 6; // position in ms slot
-const LENGTH_RG = 7; // replication group id
+export const LENGTH_TS = 14; // timestamp: epoch in ms
+export const LENGTH_SEQ = 6; // position in ms slot
+export const LENGTH_RG = 7; // replication group id
 const LENGTH_ID = 6; // instance id
 const LENGTH_FT = 2; // version ID format, 1 byte + separator
 
 // empty string template for the variables in a versionId
-const TEMPLATE_TS = new Array(LENGTH_TS + 1).join('0');
-const TEMPLATE_SEQ = new Array(LENGTH_SEQ + 1).join('0');
-const TEMPLATE_RG = new Array(LENGTH_RG + 1).join(' ');
+export const TEMPLATE_TS = new Array(LENGTH_TS + 1).join('0');
+export const TEMPLATE_SEQ = new Array(LENGTH_SEQ + 1).join('0');
+export const TEMPLATE_RG = new Array(LENGTH_RG + 1).join(' ');
 const TEMPLATE_ID = new Array(LENGTH_ID + 1).join('0');
 
 export const S3_VERSION_ID_ENCODING_TYPE = process.env.S3_VERSION_ID_ENCODING_TYPE;
@@ -73,7 +73,7 @@ const BASE62_ENCODED_LENGTH = 32;
  * @param template - padding template
  * @return - padded string
  */
-function padLeft(value: any, template: string) {
+export function padLeft(value: any, template: string) {
     return `${template}${value}`.slice(-template.length);
 }
 
@@ -85,13 +85,13 @@ function padLeft(value: any, template: string) {
  * @param template - padding template
  * @return - padded string
  */
-function padRight(value: any, template: string) {
+export function padRight(value: any, template: string) {
     return `${value}${template}`.slice(0, template.length);
 }
 
 // constants for max epoch and max sequential number in the same epoch
-const MAX_TS = Math.pow(10, LENGTH_TS) - 1; // good until 16 Nov 5138
-const MAX_SEQ = Math.pow(10, LENGTH_SEQ) - 1; // good for 1 billion ops
+export const MAX_TS = Math.pow(10, LENGTH_TS) - 1; // good until 16 Nov 5138
+export const MAX_SEQ = Math.pow(10, LENGTH_SEQ) - 1; // good for 1 billion ops
 
 /**
  * Generates the earliest versionId, used for versions before versioning
@@ -119,7 +119,7 @@ let lastSeq = 0; // sequential number of the last versionId
  * @param span - time to wait in nanoseconds (1/1000000 millisecond)
  * @return - nothing
  */
-function wait(span: number) {
+export function wait(span: number) {
     function getspan(diff: [number, number]) {
         return diff[0] * 1e9 + diff[1];
     }

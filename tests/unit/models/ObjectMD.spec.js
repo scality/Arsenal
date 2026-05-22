@@ -100,6 +100,7 @@ describe('ObjectMD class setters/getters', () => {
             storageType: '',
             dataStoreVersionId: '',
             isNFS: undefined,
+            isReplica: undefined,
         }],
         ['ReplicationInfo', {
             status: 'PENDING',
@@ -116,10 +117,13 @@ describe('ObjectMD class setters/getters', () => {
             storageType: 'aws_s3',
             dataStoreVersionId: '',
             isNFS: undefined,
+            isReplica: undefined,
         }],
         ['DataStoreName', null, ''],
         ['ReplicationIsNFS', null, false],
         ['ReplicationIsNFS', true],
+        ['ReplicationIsReplica', null, false],
+        ['ReplicationIsReplica', true],
         ['AzureInfo', {
             containerPublicAccess: 'container',
             containerStoredAccessPolicies: [],
@@ -299,18 +303,26 @@ describe('ObjectMD class setters/getters', () => {
     });
 
     it('ObjectMD::microVersionId set', () => {
-        const generatedIds = new Set();
+        const repGroupId = crypto.randomBytes(7).toString('hex').slice(0, 7);
+
+        const generatedIds = [];
         for (let i = 0; i < 100; ++i) {
-            md.updateMicroVersionId();
-            generatedIds.add(md.getMicroVersionId());
+            md.updateMicroVersionId(repGroupId);
+            generatedIds.push(md.getMicroVersionId());
         }
         // all generated IDs should be different
-        assert.strictEqual(generatedIds.size, 100);
+        assert.strictEqual(new Set(generatedIds).size, 100);
         generatedIds.forEach(key => {
-            // length is always 16 in hex because leading 0s are
-            // also encoded in the 8-byte random buffer.
-            assert.strictEqual(key.length, 16);
+            // timestamp (14) + sequence (6) + rep_group_id (7) = 27 chars,
+            // matching the versionId layout.
+            assert.strictEqual(key.length, 27);
         });
+        // microVersionIds are timestamp-ordered with the same reversed
+        // scheme as versionIds: newer values sort before older ones
+        // lexicographically, so the sequence is strictly decreasing.
+        for (let i = 1; i < generatedIds.length; ++i) {
+            assert(generatedIds[i] < generatedIds[i - 1]);
+        }
     });
 
     it('ObjectMD::set/getRetentionMode', () => {
