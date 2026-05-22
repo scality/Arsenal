@@ -160,17 +160,8 @@ export function base62Decode(str: string): string | Error {
         const enc2 = str.substring(start, start + B62V_EPAD.length);
         const orig2 = base62Integer.decode(enc2);
         start += B62V_EPAD.length;
-        let enc3 = str.substring(start);
-        // take off prefix 0s which represent null bytes
-        let idx = 0;
-        while (idx < enc3.length) {
-            if (enc3[idx] === '0') {
-                idx++;
-            } else {
-                break;
-            }
-        }
-        enc3 = enc3.slice(idx);
+        // strip prefix 0s which represent null bytes
+        const enc3 = str.substring(start).replace(/^0+/, '');
         const orig3 = base62String.decode(enc3);
 
         return (
