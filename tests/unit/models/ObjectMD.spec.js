@@ -112,6 +112,7 @@ describe('ObjectMD class setters/getters', () => {
                 storageType: undefined,
                 dataStoreVersionId: undefined,
                 isNFS: undefined,
+                isReplica: undefined,
             },
         ],
         [
@@ -132,6 +133,7 @@ describe('ObjectMD class setters/getters', () => {
                 storageType: 'aws_s3',
                 dataStoreVersionId: '',
                 isNFS: undefined,
+                isReplica: undefined,
             },
         ],
         ['DataStoreName', null, ''],
@@ -181,6 +183,28 @@ describe('ObjectMD class setters/getters', () => {
                 assert.strictEqual(value, defaultValue);
             }
         });
+    });
+
+    it('getReplicationIsReplica: returns true when status is REPLICA', () => {
+        md.setReplicationStatus('REPLICA');
+        assert.strictEqual(
+            md.getReplicationIsReplica(),
+            true,
+            'status REPLICA alone can be used to determine isReplica',
+        );
+    });
+
+    it('getReplicationIsReplica: survives status transition to PENDING (cascade)', () => {
+        md.setReplicationInfo({
+            status: 'REPLICA',
+            isReplica: true,
+            backends: [],
+            content: [],
+            destination: '',
+            role: '',
+        });
+        md.setReplicationStatus('PENDING');
+        assert.strictEqual(md.getReplicationIsReplica(), true, 'isReplica must survive status changes');
     });
 
     it('ObjectMD::setReplicationSiteStatus', () => {
@@ -386,22 +410,22 @@ describe('ObjectMD class setters/getters', () => {
     });
 
     it('ObjectMD::microVersionId unset', () => {
-        assert.strictEqual(md.getMicroVersionId(), null);
+        assert.strictEqual(md.getMicroVersionId(), undefined);
     });
 
     it('ObjectMD::microVersionId set', () => {
-        const generatedIds = new Set();
+        const generatedIds = [];
         for (let i = 0; i < 100; ++i) {
-            md.updateMicroVersionId();
-            generatedIds.add(md.getMicroVersionId());
+            md.updateMicroVersionId('instance', 'RG001');
+            generatedIds.push(md.getMicroVersionId());
         }
         // all generated IDs should be different
-        assert.strictEqual(generatedIds.size, 100);
-        generatedIds.forEach(key => {
-            // length is always 16 in hex because leading 0s are
-            // also encoded in the 8-byte random buffer.
-            assert.strictEqual(key.length, 16);
-        });
+        assert.strictEqual(new Set(generatedIds).size, 100);
+        // microVersionIds use the versionId format (reversed time ordered):
+        // newer values sort before older ones lexicographically.
+        for (let i = 1; i < generatedIds.length; ++i) {
+            assert(generatedIds[i] < generatedIds[i - 1]);
+        }
     });
 
     it('ObjectMD::set/getRetentionMode', () => {

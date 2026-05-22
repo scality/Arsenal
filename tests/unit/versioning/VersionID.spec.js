@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const VID = require('../../../lib/versioning/VersionID');
 const VersioningConstants = require('../../../lib/versioning/constants').VersioningConstants;
 const assert = require('assert');
@@ -191,5 +192,51 @@ describe('test generating versionIds', () => {
                 assert.strictEqual(decoded, legacyVID);
             });
         });
+    });
+});
+
+describe('compare', () => {
+    const { compare, Ordering, generateVersionId } = VID;
+
+    it('should return NOT_COMPARABLE when existing is null', () => {
+        assert.strictEqual(compare(generateVersionId('test', 'RG001'), null), Ordering.NOT_COMPARABLE);
+    });
+
+    it('should return NOT_COMPARABLE when existing is undefined', () => {
+        assert.strictEqual(compare(generateVersionId('test', 'RG001'), undefined), Ordering.NOT_COMPARABLE);
+    });
+
+    it('should return NOT_COMPARABLE when existing is a legacy 16-char hex microVersionId', () => {
+        const legacyHex = crypto.randomBytes(8).toString('hex');
+        assert.strictEqual(legacyHex.length, 16);
+        assert.strictEqual(compare(generateVersionId('test', 'RG001'), legacyHex), Ordering.NOT_COMPARABLE);
+    });
+
+    it('should return NOT_COMPARABLE when incoming is a legacy 16-char hex microVersionId', () => {
+        const legacyHex = crypto.randomBytes(8).toString('hex');
+        assert.strictEqual(compare(legacyHex, generateVersionId('test', 'RG001')), Ordering.NOT_COMPARABLE);
+    });
+
+    it('should return NOT_COMPARABLE for a string shorter than 27 chars', () => {
+        assert.strictEqual(compare('tooshort', generateVersionId('test', 'RG001')), Ordering.NOT_COMPARABLE);
+    });
+
+    it('should return EQUAL when incoming equals existing', () => {
+        const raw = generateVersionId('test', 'RG001');
+        assert.strictEqual(compare(raw, raw), Ordering.EQUAL);
+    });
+
+    it('should return OLDER when incoming is older than existing', () => {
+        const older = generateVersionId('test', 'RG001');
+        const newer = generateVersionId('test', 'RG001');
+        assert.ok(older > newer, 'test requires two distinct versionIds in order');
+        assert.strictEqual(compare(older, newer), Ordering.OLDER);
+    });
+
+    it('should return YOUNGER when incoming is newer than existing', () => {
+        const older = generateVersionId('test', 'RG001');
+        const newer = generateVersionId('test', 'RG001');
+        assert.ok(older > newer, 'test requires two distinct versionIds in order');
+        assert.strictEqual(compare(newer, older), Ordering.YOUNGER);
     });
 });

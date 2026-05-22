@@ -365,3 +365,33 @@ export function decode(str: string): string | Error {
     }
     return new Error(`cannot decode str ${str.length}`);
 }
+
+export enum Ordering {
+    OLDER = 'older',
+    YOUNGER = 'younger',
+    EQUAL = 'equal',
+    NOT_COMPARABLE = 'notComparable',
+}
+
+/**
+ * Compare two raw (decoded) version IDs.
+ *
+ * Returns NOT_COMPARABLE when either value is absent or shorter than
+ * LEGACY_BASE62_DECODED_LENGTH (rejects the old 16-char random-hex format).
+ * Callers are responsible for deciding how to handle NOT_COMPARABLE.
+ */
+export function compare(v1: string | null | undefined, v2: string | null | undefined): Ordering {
+    if (
+        typeof v1 !== 'string' ||
+        v1.length < LEGACY_BASE62_DECODED_LENGTH ||
+        typeof v2 !== 'string' ||
+        v2.length < LEGACY_BASE62_DECODED_LENGTH
+    ) {
+        return Ordering.NOT_COMPARABLE;
+    }
+    if (v1 === v2) {
+        return Ordering.EQUAL;
+    }
+
+    return v1 > v2 ? Ordering.OLDER : Ordering.YOUNGER;
+}

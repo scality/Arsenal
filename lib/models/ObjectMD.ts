@@ -1,4 +1,3 @@
-import * as crypto from 'crypto';
 import * as constants from '../constants';
 import * as VersionIDUtils from '../versioning/VersionID';
 import { VersioningConstants } from '../versioning/constants';
@@ -49,6 +48,7 @@ export type ReplicationInfo = {
     /** @deprecated in favor of per-backend dataStoreVersionId for multi-destination. */
     dataStoreVersionId?: string;
     isNFS?: boolean;
+    isReplica?: boolean;
 };
 
 export type ObjectMDTag = {
@@ -260,6 +260,7 @@ export default class ObjectMD {
                 storageType: undefined,
                 dataStoreVersionId: undefined,
                 isNFS: undefined,
+                isReplica: undefined,
             },
             dataStoreName: '',
             originOp: '',
@@ -1168,6 +1169,26 @@ export default class ObjectMD {
         return this;
     }
 
+    /**
+     * Mark this object as the result of a replication write (replica),
+     * as opposed to a write originating from a user request.
+     *
+     * @param isReplica - true if this object was written by replication
+     * @return itself
+     */
+    setReplicationIsReplica(isReplica: boolean) {
+        this._data.replicationInfo.isReplica = isReplica;
+        return this;
+    }
+
+    /**
+     * Get whether this object was written by replication (replica).
+     * @return true if this object is a replica
+     */
+    getReplicationIsReplica(): boolean {
+        return this._data.replicationInfo.isReplica === true || this._data.replicationInfo.status === 'REPLICA';
+    }
+
     getReplicationSiteStatus(key: BackendKey): string | undefined {
         return this._findBackend(key)?.status;
     }
@@ -1348,35 +1369,28 @@ export default class ObjectMD {
     }
 
     /**
-     * Create or update the microVersionId field
+     * Update the microVersionId
      *
-     * This field can be used to force an update in MongoDB. This can
-     * be needed in the following cases:
+     * This field can be used to force an update in MongoDB when no other
+     * metadata field changes, to detect a change for CRR,
+     * and to manage conflicts during concurrent updates using conditions on this field.
      *
-     * - in case no other metadata field changes
-     *
-     * - to detect a change when fields change but object version does
-     *   not change e.g. when ingesting a putObjectTagging coming from
-     *   S3C to Zenko
-     *
-     * - to manage conflicts during concurrent updates, using
-     *   conditions on the microVersionId field.
-     *
-     * It's a field of 16 hexadecimal characters randomly generated
-     *
+     * @param instanceId - instance identifier (e.g. config.instanceId)
+     * @param replicationGroupId - replication group ID (e.g. config.replicationGroupId)
      * @return itself
      */
-    updateMicroVersionId() {
-        this._data.microVersionId = crypto.randomBytes(8).toString('hex');
+    updateMicroVersionId(instanceId: string, replicationGroupId: string) {
+        this._data.microVersionId = VersionIDUtils.generateVersionId(instanceId, replicationGroupId);
+        return this;
     }
 
     /**
-     * Get the microVersionId field, or null if not set
+     * Get the microVersionId field, or undefined if not set
      *
-     * @return the microVersionId field if exists, or {null} if it does not exist
+     * @return the microVersionId field if set, or undefined if not
      */
     getMicroVersionId() {
-        return this._data.microVersionId || null;
+        return this._data.microVersionId || undefined;
     }
 
     /**
