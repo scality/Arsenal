@@ -1,4 +1,5 @@
 const VID = require('../../../lib/versioning/VersionID');
+const TimestampId = require('../../../lib/versioning/TimestampId');
 const VersioningConstants = require('../../../lib/versioning/constants').VersioningConstants;
 const assert = require('assert');
 
@@ -53,14 +54,14 @@ describe('test generating versionIds', () => {
 
         // nodejs 10 no longer returns error for non-hex string versionIds
         it.skip('should return error decoding non-hex string versionIds', () => {
-            const encoded = vids.map(vid => VID.hexEncode(vid));
-            const decoded = encoded.map(vid => VID.hexDecode(`${vid}foo`));
+            const encoded = vids.map(vid => TimestampId.hexEncode(vid));
+            const decoded = encoded.map(vid => TimestampId.hexDecode(`${vid}foo`));
             decoded.forEach(result => assert(result instanceof Error));
         });
 
         it('should encode and decode versionIds', () => {
-            const encoded = vids.map(vid => VID.hexEncode(vid));
-            const decoded = encoded.map(vid => VID.hexDecode(vid));
+            const encoded = vids.map(vid => TimestampId.hexEncode(vid));
+            const decoded = encoded.map(vid => TimestampId.hexDecode(vid));
             assert.deepStrictEqual(vids, decoded);
         });
 

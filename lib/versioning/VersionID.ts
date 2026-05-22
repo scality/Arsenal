@@ -30,12 +30,6 @@ import {
     LENGTH_TS,
     LENGTH_SEQ,
     LENGTH_RG,
-    TEMPLATE_TS,
-    TEMPLATE_SEQ,
-    TEMPLATE_RG,
-    MAX_TS,
-    MAX_SEQ,
-    padLeft,
     padRight,
     hexEncode,
     hexDecode,
@@ -46,15 +40,10 @@ import {
 const BASE62 = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const base62String = baseX(BASE62);
 
-// Re-exports for backwards compatibility with existing importers.
-export { LENGTH_TS, LENGTH_SEQ, LENGTH_RG, TEMPLATE_TS, TEMPLATE_SEQ, TEMPLATE_RG, MAX_TS, MAX_SEQ };
-export { padLeft, padRight, hexEncode, hexDecode };
-export { wait } from './TimestampId';
-
 const LENGTH_ID = 6; // instance id
 const LENGTH_FT = 2; // version ID format, 1 byte + separator
 
-const TEMPLATE_ID = new Array(LENGTH_ID + 1).join('0');
+const TEMPLATE_ID = '0'.repeat(LENGTH_ID);
 
 export const S3_VERSION_ID_ENCODING_TYPE = process.env.S3_VERSION_ID_ENCODING_TYPE;
 
