@@ -24,11 +24,10 @@ import {
     hexEncode,
     hexDecode,
     createTimestampSequenceGenerator,
-    compare as tsIdCompare,
+    parse,
 } from './TimestampId';
 
-const MICRO_VERSION_ID_LENGTH = TS_SEQ_RG_LENGTH;
-const ENCODED_LENGTH = MICRO_VERSION_ID_LENGTH * 2;
+const ENCODED_LENGTH = TS_SEQ_RG_LENGTH * 2;
 
 /**
  * Generate a timestamp-ordered microVersionId.
@@ -84,27 +83,19 @@ export function decode(str: string): string | Error {
     if (str.length !== ENCODED_LENGTH || !/^[0-9a-f]+$/.test(str)) {
         return new Error('microVersionId is not in the current format');
     }
-
     const decoded = hexDecode(str);
     if (decoded instanceof Error) {
         return decoded;
     }
-
-    if (decoded.length !== MICRO_VERSION_ID_LENGTH) {
-        return new Error(`decoded microVersionId has invalid length ${decoded.length}`);
+    const parsed = parse(decoded);
+    if (parsed instanceof Error) {
+        return parsed;
     }
-
     return decoded;
 }
 
 /**
- * Compare two microVersionIds chronologically. Thin wrapper over
- * {@link tsIdCompare} preserved for callers importing from this module.
- *
- * @param a - first microVersionId (raw, non-encoded form)
- * @param b - second microVersionId (raw, non-encoded form)
- * @return - positive if a is newer than b, negative if older, 0 if equal
+ * Compare two microVersionIds chronologically. Positive if {@code a}
+ * is newer than {@code b}, negative if older, 0 if equal.
  */
-export function compare(a: string, b: string): number {
-    return tsIdCompare(a, b);
-}
+export { compare } from './TimestampId';
