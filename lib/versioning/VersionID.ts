@@ -188,27 +188,21 @@ export const ENC_TYPE_HEX = 0; // legacy (large) encoding
 export const ENC_TYPE_BASE62 = 1; // new (tiny) encoding
 
 /**
- * Checks if the given versionId string contains the specified format version.
+ * Checks whether the given versionId carries the current format
+ * marker + version suffix at its end.
  *
- * @param versionId - The versionId string to check.
- * @param version - The expected format version.
- * @returns true if the versionId contains the format marker and version, false otherwise.
+ * @param versionId - the versionId string to check
+ * @returns true if the versionId ends with the current format suffix
  */
-function hasVersionIDFormat(versionId: string, version: string): boolean {
+function hasCurrentFormatSuffix(versionId: string): boolean {
     // Format marker can only exist after the required versionId sections.
     // This check removes the risk of looking for the format marker in the
     // replication group ID, which can technically contain any character as
     // it's set by the end user.
     if (versionId.length < LENGTH_TS + LENGTH_SEQ + LENGTH_RG + LENGTH_FT) {
-        return false; // Not enough characters for format marker
+        return false;
     }
-    // For constant time lookup, we always assume that the format marker is
-    // at the end of the versionId.
-    const formatMarkerIdx = versionId.length - LENGTH_FT;
-    if (versionId.charAt(formatMarkerIdx) !== VersioningConstants.VersionId.FormatMarker) {
-        return false; // no format marker
-    }
-    return versionId.substring(formatMarkerIdx + 1) === version; // check if the version matches
+    return versionId.endsWith(VERSION_ID_FORMAT_SUFFIX);
 }
 
 /**
@@ -223,7 +217,7 @@ function hasVersionIDFormat(versionId: string, version: string): boolean {
 export function encode(str: string): string {
     // Legacy base62 version IDs (without 'info' field) are always 27 characters long.
     // The new base62 format is 35 characters and includes the format marker at the end.
-    if (str.length === LEGACY_BASE62_DECODED_LENGTH || hasVersionIDFormat(str, VERSION_ID_FORMAT_VERSION)) {
+    if (str.length === LEGACY_BASE62_DECODED_LENGTH || hasCurrentFormatSuffix(str)) {
         return base62Encode(str);
     } // legacy format
     return hexEncode(str);
