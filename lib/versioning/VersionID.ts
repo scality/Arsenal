@@ -78,9 +78,6 @@ export function getInfVid(replicationGroupId: string): string {
     return getInfId(replicationGroupId);
 }
 
-// Stateful ts+seq+rg generator owning the lastTimestamp/lastSeq counters
-// for versionId generation. Kept separate from microVersionId state so
-// the two streams don't interfere.
 const generateTsSeqRg = createTimestampSequenceGenerator();
 
 /**

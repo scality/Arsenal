@@ -30,11 +30,6 @@ import {
 const MICRO_VERSION_ID_LENGTH = TS_SEQ_RG_LENGTH;
 const ENCODED_LENGTH = MICRO_VERSION_ID_LENGTH * 2;
 
-// Stateful ts+seq+rg generator owning the lastTimestamp/lastSeq counters
-// for microVersionId generation. Kept separate from versionId state so
-// microVersionId generation does not perturb versionId sequencing.
-const generateTsSeqRg = createTimestampSequenceGenerator();
-
 /**
  * Generate a timestamp-ordered microVersionId.
  *
@@ -59,9 +54,7 @@ const generateTsSeqRg = createTimestampSequenceGenerator();
  *   // => '98283606399999999999RG001  '
  *   //     └── MAX_TS-now ──┘└MAX_SEQ┘└pad┘
  */
-export function generate(replicationGroupId: string): string {
-    return generateTsSeqRg(replicationGroupId);
-}
+export const generate = createTimestampSequenceGenerator();
 
 /**
  * Encode a microVersionId to obscure its internal structure.

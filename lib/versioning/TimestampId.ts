@@ -115,6 +115,14 @@ function normalizeRg(replicationGroupId: string): string {
     return replicationGroupId.padEnd(LENGTH_RG, ' ').slice(0, LENGTH_RG);
 }
 
+// Process-wide guard for the post-boot millisecond flush. The wait
+// exists to push Date.now() past any millisecond a pre-crash process
+// might have used; once any code path in the process has waited, the
+// clock has moved on and additional waits are redundant. Hoisted out
+// of the generator closure so generators created later in the process
+// don't pay the cost again.
+let hasWaitedAtBoot = false;
+
 /**
  * Build a stateful generator producing the 27-character
  * `timestamp + sequential_position + rep_group_id` backbone shared by
@@ -122,7 +130,9 @@ function normalizeRg(replicationGroupId: string): string {
  *
  * The returned function keeps its own `lastTimestamp` / `lastSeq`
  * state, so each caller (versionId vs microVersionId) maintains an
- * independent counter and one stream cannot perturb the other.
+ * independent counter and one stream cannot perturb the other. The
+ * post-boot ms-flush wait is shared across all generators (see
+ * {@link hasWaitedAtBoot}).
  *
  * Timestamps and sequence numbers are stored in reversed form
  * (MAX - value) so that lexicographic ordering yields newest-first
@@ -138,10 +148,9 @@ export function createTimestampSequenceGenerator(): (replicationGroupId: string)
     return function generate(replicationGroupId: string): string {
         const rg = normalizeRg(replicationGroupId);
 
-        // Wait for the millisecond slot to "flush" on first call after
-        // module load, to guarantee uniqueness across restarts.
-        if (lastTimestamp === 0) {
+        if (!hasWaitedAtBoot) {
             wait(1000000);
+            hasWaitedAtBoot = true;
         }
 
         // A sequence number is used (rather than nanosecond clocks) because
