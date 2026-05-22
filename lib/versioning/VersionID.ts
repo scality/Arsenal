@@ -26,20 +26,34 @@ import base62Integer from 'base62';
 import baseX from 'base-x';
 import assert from 'assert';
 import { VersioningConstants } from './constants';
+import {
+    LENGTH_TS,
+    LENGTH_SEQ,
+    LENGTH_RG,
+    TEMPLATE_TS,
+    TEMPLATE_SEQ,
+    TEMPLATE_RG,
+    MAX_TS,
+    MAX_SEQ,
+    padLeft,
+    padRight,
+    hexEncode,
+    hexDecode,
+    createTimestampSequenceGenerator,
+    getInfId,
+} from './TimestampId';
+
 const BASE62 = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const base62String = baseX(BASE62);
 
-// the lengths of the components in bytes
-export const LENGTH_TS = 14; // timestamp: epoch in ms
-export const LENGTH_SEQ = 6; // position in ms slot
-export const LENGTH_RG = 7; // replication group id
+// Re-exports for backwards compatibility with existing importers.
+export { LENGTH_TS, LENGTH_SEQ, LENGTH_RG, TEMPLATE_TS, TEMPLATE_SEQ, TEMPLATE_RG, MAX_TS, MAX_SEQ };
+export { padLeft, padRight, hexEncode, hexDecode };
+export { wait } from './TimestampId';
+
 const LENGTH_ID = 6; // instance id
 const LENGTH_FT = 2; // version ID format, 1 byte + separator
 
-// empty string template for the variables in a versionId
-export const TEMPLATE_TS = new Array(LENGTH_TS + 1).join('0');
-export const TEMPLATE_SEQ = new Array(LENGTH_SEQ + 1).join('0');
-export const TEMPLATE_RG = new Array(LENGTH_RG + 1).join(' ');
 const TEMPLATE_ID = new Array(LENGTH_ID + 1).join('0');
 
 export const S3_VERSION_ID_ENCODING_TYPE = process.env.S3_VERSION_ID_ENCODING_TYPE;
@@ -65,64 +79,20 @@ const BASE62_DECODED_LENGTH = 35;
 const BASE62_ENCODED_LENGTH = 32;
 
 /**
- * Left-pad a string representation of a value with a given template.
- * For example: pad('foo', '00000') gives '00foo'.
- *
- * @param value - value to pad
- * @param template - padding template
- * @return - padded string
- */
-export function padLeft(value: any, template: string) {
-    return `${template}${value}`.slice(-template.length);
-}
-
-/**
- * Right-pad a string representation of a value with a given template.
- * For example: pad('foo', '00000') gives 'foo00'.
- *
- * @param value - value to pad
- * @param template - padding template
- * @return - padded string
- */
-export function padRight(value: any, template: string) {
-    return `${value}${template}`.slice(0, template.length);
-}
-
-// constants for max epoch and max sequential number in the same epoch
-export const MAX_TS = Math.pow(10, LENGTH_TS) - 1; // good until 16 Nov 5138
-export const MAX_SEQ = Math.pow(10, LENGTH_SEQ) - 1; // good for 1 billion ops
-
-/**
- * Generates the earliest versionId, used for versions before versioning
+ * Generates the earliest versionId, used for versions before versioning.
+ * Thin wrapper over {@link getInfId} preserved for backwards compatibility.
  *
  * @param replicationGroupId - replication group id
- * @return version ID for versions before versionig
+ * @return version ID for versions before versioning
  */
-export function getInfVid(replicationGroupId: string) {
-    const repGroupId = padRight(replicationGroupId, TEMPLATE_RG);
-    return padLeft(MAX_TS, TEMPLATE_TS) + padLeft(MAX_SEQ, TEMPLATE_SEQ) + repGroupId;
+export function getInfVid(replicationGroupId: string): string {
+    return getInfId(replicationGroupId);
 }
 
-// internal state of the module
-let lastTimestamp = 0; // epoch of the last versionId
-let lastSeq = 0; // sequential number of the last versionId
-
-/**
- * This function ACTIVELY (wastes CPU cycles and) waits for an amount of time
- * before returning to the caller. This should not be used frequently.
- *
- * @param span - time to wait in nanoseconds (1/1000000 millisecond)
- * @return - nothing
- */
-export function wait(span: number) {
-    function getspan(diff: [number, number]) {
-        return diff[0] * 1e9 + diff[1];
-    }
-    const start = process.hrtime();
-    while (getspan(process.hrtime(start)) < span) {
-        // do nothing
-    }
-}
+// Stateful ts+seq+rg generator owning the lastTimestamp/lastSeq counters
+// for versionId generation. Kept separate from microVersionId state so
+// the two streams don't interfere.
+const generateTsSeqRg = createTimestampSequenceGenerator();
 
 /**
  * This function returns a "versionId" string indicating the current time as a
@@ -137,9 +107,6 @@ export function wait(span: number) {
  * @return - the formated versionId string
  */
 export function generateVersionId(info: string, replicationGroupId: string): string {
-    // replication group ID, like PARIS; will be trimmed if exceed LENGTH_RG
-    const repGroupId = padRight(replicationGroupId, TEMPLATE_RG);
-
     let otherInfo = '';
     let instanceIdPadded = '';
     let formatSuffix = '';
@@ -154,69 +121,7 @@ export function generateVersionId(info: string, replicationGroupId: string): str
         formatSuffix = VERSION_ID_FORMAT_SUFFIX;
     }
 
-    // Need to wait for the millisecond slot got "flushed". We wait for
-    // only a single millisecond when the module is restarted, which is
-    // necessary for the correctness of the system. This is therefore cheap.
-    if (lastTimestamp === 0) {
-        wait(1000000);
-    }
-    // get the present epoch (in millisecond)
-    const ts = Date.now();
-    // A bit more rationale: why do we use a sequence number instead of using
-    // process.hrtime which gives us time in nanoseconds? The idea is that at
-    // any time resolution, some concurrent requests may have the same time due
-    // to the way the OS is queueing requests or getting clock cycles. Our
-    // approach however will give the time based on the position of a request
-    // in the queue for the same millisecond which is supposed to be unique.
-
-    // increase the position if this request is in the same epoch
-    lastSeq = lastTimestamp === ts ? lastSeq + 1 : 0;
-    lastTimestamp = ts;
-
-    // In the default cases, we reverse the chronological order of the
-    // timestamps so that all versions of an object can be retrieved in the
-    // reversed chronological order---newest versions first. This is because of
-    // the limitation of leveldb for listing keys in the reverse order.
-    return (
-        padLeft(MAX_TS - lastTimestamp, TEMPLATE_TS) +
-        padLeft(MAX_SEQ - lastSeq, TEMPLATE_SEQ) +
-        repGroupId +
-        otherInfo +
-        instanceIdPadded +
-        formatSuffix
-    );
-}
-
-/**
- * Encode a versionId to obscure internal information contained
- * in a version ID.
- *
- * @param str - the versionId to encode
- * @return - the encoded versionId
- */
-export function hexEncode(str: string): string {
-    return Buffer.from(str, 'utf8').toString('hex');
-}
-
-/**
- * Decode a versionId. May return an error if the input string is
- * invalid hex string or results in an invalid value.
- *
- * @param str - the encoded versionId to decode
- * @return - the decoded versionId or an error
- */
-export function hexDecode(str: string): string | Error {
-    try {
-        const result = Buffer.from(str, 'hex').toString('utf8');
-        if (result === '') {
-            return new Error('invalid decoded value');
-        }
-        return result;
-    } catch (err) {
-        // Buffer.from() may throw TypeError if invalid input, e.g. non-string
-        // or string with inappropriate charlength
-        return err as any;
-    }
+    return generateTsSeqRg(replicationGroupId) + otherInfo + instanceIdPadded + formatSuffix;
 }
 
 /* base62 version Ids constants:
@@ -237,6 +142,8 @@ const B62V_STRING_EPAD = '0'.repeat(32 - 2 * B62V_EPAD.length);
  *
  * @param str - the versionId to encode
  * @return - the encoded base62VersionId
+ * @throws - if the timestamp/sequence segments cannot be parsed as numbers,
+ *   or if the underlying base62 libraries reject the input
  */
 export function base62Encode(str: string): string {
     const part1 = Number(str.substring(0, B62V_HALF));
@@ -324,6 +231,8 @@ function hasVersionIDFormat(versionId: string, version: string): boolean {
  *
  * @param str - the versionId to encode
  * @return - the encoded versionId
+ * @throws - via {@link base62Encode} when the input has a base62 shape
+ *   (27 chars or carries the format marker) but malformed segments
  */
 export function encode(str: string): string {
     // Legacy base62 version IDs (without 'info' field) are always 27 characters long.

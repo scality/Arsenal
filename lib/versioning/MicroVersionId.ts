@@ -20,26 +20,20 @@
 // versionId sequencing.
 
 import {
+    TS_SEQ_RG_LENGTH,
     hexEncode,
     hexDecode,
-    LENGTH_TS,
-    LENGTH_SEQ,
-    LENGTH_RG,
-    TEMPLATE_TS,
-    TEMPLATE_SEQ,
-    TEMPLATE_RG,
-    MAX_TS,
-    MAX_SEQ,
-    padLeft,
-    padRight,
-    wait,
-} from './VersionID';
+    createTimestampSequenceGenerator,
+    compare as tsIdCompare,
+} from './TimestampId';
 
-const MICRO_VERSION_ID_LENGTH = LENGTH_TS + LENGTH_SEQ + LENGTH_RG;
+const MICRO_VERSION_ID_LENGTH = TS_SEQ_RG_LENGTH;
 const ENCODED_LENGTH = MICRO_VERSION_ID_LENGTH * 2;
 
-let lastTimestamp = 0;
-let lastSeq = 0;
+// Stateful ts+seq+rg generator owning the lastTimestamp/lastSeq counters
+// for microVersionId generation. Kept separate from versionId state so
+// microVersionId generation does not perturb versionId sequencing.
+const generateTsSeqRg = createTimestampSequenceGenerator();
 
 /**
  * Generate a timestamp-ordered microVersionId.
@@ -66,14 +60,7 @@ let lastSeq = 0;
  *   //     └── MAX_TS-now ──┘└MAX_SEQ┘└pad┘
  */
 export function generate(replicationGroupId: string): string {
-    const repGroupId = padRight(replicationGroupId, TEMPLATE_RG);
-    if (lastTimestamp === 0) {
-        wait(1000000);
-    }
-    const ts = Date.now();
-    lastSeq = lastTimestamp === ts ? lastSeq + 1 : 0;
-    lastTimestamp = ts;
-    return padLeft(MAX_TS - lastTimestamp, TEMPLATE_TS) + padLeft(MAX_SEQ - lastSeq, TEMPLATE_SEQ) + repGroupId;
+    return generateTsSeqRg(replicationGroupId);
 }
 
 /**
@@ -104,32 +91,27 @@ export function decode(str: string): string | Error {
     if (str.length !== ENCODED_LENGTH || !/^[0-9a-f]+$/.test(str)) {
         return new Error('microVersionId is not in the current format');
     }
+
     const decoded = hexDecode(str);
     if (decoded instanceof Error) {
         return decoded;
     }
+
     if (decoded.length !== MICRO_VERSION_ID_LENGTH) {
         return new Error(`decoded microVersionId has invalid length ${decoded.length}`);
     }
+
     return decoded;
 }
 
 /**
- * Compare two microVersionIds chronologically.
- *
- * Because microVersionIds use the reversed-time encoding, the
- * lexicographically smaller value is the more recent one. This
- * function returns a positive number if {@code a} is more recent
- * than {@code b}, a negative number if {@code a} is older, and 0
- * if both refer to the same instant.
+ * Compare two microVersionIds chronologically. Thin wrapper over
+ * {@link tsIdCompare} preserved for callers importing from this module.
  *
  * @param a - first microVersionId (raw, non-encoded form)
  * @param b - second microVersionId (raw, non-encoded form)
  * @return - positive if a is newer than b, negative if older, 0 if equal
  */
 export function compare(a: string, b: string): number {
-    if (a === b) {
-        return 0;
-    }
-    return a < b ? 1 : -1;
+    return tsIdCompare(a, b);
 }
