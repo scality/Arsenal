@@ -5,19 +5,19 @@ const { default: ReplicationConfiguration } = require('../../../lib/models/Repli
 
 const mockS3ServerConfig = {
     locationConstraints: {
-        'ring': {
+        ring: {
             type: 'scality',
             objectId: 'ring',
         },
-        'awsbackend': {
+        awsbackend: {
             type: 'aws_s3',
             objectId: 'awsbackend',
         },
-        'gcpbackend': {
+        gcpbackend: {
             type: 'gcp',
             objectId: 'gcpbackend',
         },
-        'azurebackend': {
+        azurebackend: {
             type: 'azure',
             objectId: 'azurebackend',
         },
@@ -27,29 +27,35 @@ const mockS3ServerConfig = {
             isCold: true,
         },
     },
-    replicationEndpoints: [{
-        site: 'ring',
-        default: true,
-    }, {
-        type: 'aws_s3',
-        site: 'awsbackend',
-    }, {
-        type: 'gcp',
-        site: 'gcpbackend',
-    }, {
-        type: 'azure',
-        site: 'azurebackend',
-    }, {
-        type: 'dmf',
-        site: 'dmf-1',
-    }],
+    replicationEndpoints: [
+        {
+            site: 'ring',
+            default: true,
+        },
+        {
+            type: 'aws_s3',
+            site: 'awsbackend',
+        },
+        {
+            type: 'gcp',
+            site: 'gcpbackend',
+        },
+        {
+            type: 'azure',
+            site: 'azurebackend',
+        },
+        {
+            type: 'dmf',
+            site: 'dmf-1',
+        },
+    ],
 };
 
-const TEST_ROLE =
-      'arn:aws:iam::942839175607:role/crr-trust-role,arn:aws:iam::989181102323:role/crr-trust-role';
+const TEST_ROLE = 'arn:aws:iam::942839175607:role/crr-trust-role,arn:aws:iam::989181102323:role/crr-trust-role';
 
 function getPreferredReadXMLConfig(hasPreferredRead) {
-    return `
+    return (
+        `
     <ReplicationConfiguration>
         <Role>arn:aws:iam::root:role/s3-replication-role</Role>
         <Rule>
@@ -64,7 +70,8 @@ function getPreferredReadXMLConfig(hasPreferredRead) {
             </Destination>
         </Rule>
     </ReplicationConfiguration>
-`;
+`
+    );
 }
 
 describe('ReplicationConfiguration.parseConfiguration()', () => {
@@ -73,15 +80,22 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
         it('should succeed for a valid configuration without a prefix', () => {
             const repConfig = {
                 Role: [TEST_ROLE],
-                Rule: [{
-                    Status: ['Enabled'],
-                    Destination: [{
-                        Bucket: ['arn:aws:s3:::crr-dest'],
-                    }],
-                }],
+                Rule: [
+                    {
+                        Status: ['Enabled'],
+                        Destination: [
+                            {
+                                Bucket: ['arn:aws:s3:::crr-dest'],
+                            },
+                        ],
+                    },
+                ],
             };
-            const instance = new ReplicationConfiguration({ ReplicationConfiguration: repConfig },
-                null, mockS3ServerConfig);
+            const instance = new ReplicationConfiguration(
+                { ReplicationConfiguration: repConfig },
+                null,
+                mockS3ServerConfig,
+            );
             const result = instance.parseConfiguration();
             expect(result).toBeUndefined();
             expect(instance.getRole()).toEqual(TEST_ROLE);
@@ -111,8 +125,11 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
                     },
                 ],
             };
-            const instance = new ReplicationConfiguration({ ReplicationConfiguration: repConfig },
-                null, mockS3ServerConfig);
+            const instance = new ReplicationConfiguration(
+                { ReplicationConfiguration: repConfig },
+                null,
+                mockS3ServerConfig,
+            );
             const result = instance.parseConfiguration();
             expect(result).toBeUndefined();
             expect(instance.getRole()).toEqual(TEST_ROLE);
@@ -149,8 +166,11 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
                     },
                 ],
             };
-            const instance = new ReplicationConfiguration({ ReplicationConfiguration: repConfig },
-                null, mockS3ServerConfig);
+            const instance = new ReplicationConfiguration(
+                { ReplicationConfiguration: repConfig },
+                null,
+                mockS3ServerConfig,
+            );
             const result = instance.parseConfiguration();
             expect(result).toEqual(errors.InvalidRequest);
         });
@@ -158,16 +178,23 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
         it('should return InvalidArgument if a prefix is longer than 1024 characters', () => {
             const repConfig = {
                 Role: [TEST_ROLE],
-                Rule: [{
-                    Prefix: [new Array(1025).fill('X').join('')],
-                    Status: ['Enabled'],
-                    Destination: [{
-                        Bucket: ['arn:aws:s3:::crr-dest'],
-                    }],
-                }],
+                Rule: [
+                    {
+                        Prefix: [new Array(1025).fill('X').join('')],
+                        Status: ['Enabled'],
+                        Destination: [
+                            {
+                                Bucket: ['arn:aws:s3:::crr-dest'],
+                            },
+                        ],
+                    },
+                ],
             };
-            const instance = new ReplicationConfiguration({ ReplicationConfiguration: repConfig },
-                null, mockS3ServerConfig);
+            const instance = new ReplicationConfiguration(
+                { ReplicationConfiguration: repConfig },
+                null,
+                mockS3ServerConfig,
+            );
             const result = instance.parseConfiguration();
             expect(result).toEqual(errors.InvalidArgument);
         });
@@ -183,8 +210,11 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
                     },
                 ],
             };
-            const instance = new ReplicationConfiguration({ ReplicationConfiguration: repConfig },
-                null, mockS3ServerConfig);
+            const instance = new ReplicationConfiguration(
+                { ReplicationConfiguration: repConfig },
+                null,
+                mockS3ServerConfig,
+            );
             const result = instance.parseConfiguration();
             expect(result).toEqual(errors.MalformedXML);
         });
@@ -200,8 +230,11 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
                     },
                 ],
             };
-            const instance = new ReplicationConfiguration({ ReplicationConfiguration: repConfig },
-                null, mockS3ServerConfig);
+            const instance = new ReplicationConfiguration(
+                { ReplicationConfiguration: repConfig },
+                null,
+                mockS3ServerConfig,
+            );
             const result = instance.parseConfiguration();
             expect(result).toEqual(errors.MalformedXML);
         });
@@ -210,16 +243,23 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
     it('should succeed for a minimal valid configuration without storage class', () => {
         const repConfig = {
             Role: [TEST_ROLE],
-            Rule: [{
-                Prefix: [''],
-                Status: ['Enabled'],
-                Destination: [{
-                    Bucket: ['arn:aws:s3:::crr-dest'],
-                }],
-            }],
+            Rule: [
+                {
+                    Prefix: [''],
+                    Status: ['Enabled'],
+                    Destination: [
+                        {
+                            Bucket: ['arn:aws:s3:::crr-dest'],
+                        },
+                    ],
+                },
+            ],
         };
-        const instance = new ReplicationConfiguration({ ReplicationConfiguration: repConfig },
-            null, mockS3ServerConfig);
+        const instance = new ReplicationConfiguration(
+            { ReplicationConfiguration: repConfig },
+            null,
+            mockS3ServerConfig,
+        );
         const result = instance.parseConfiguration();
         expect(result).toBeUndefined();
         expect(instance.getRole()).toEqual(TEST_ROLE);
@@ -235,18 +275,25 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
     it('should succeed for a minimal valid configuration including Rule ID and destination StorageClass', () => {
         const repConfig = {
             Role: [TEST_ROLE],
-            Rule: [{
-                ID: ['RuleID'],
-                Prefix: [''],
-                Status: ['Enabled'],
-                Destination: [{
-                    Bucket: ['arn:aws:s3:::crr-dest'],
-                    StorageClass: ['STANDARD'],
-                }],
-            }],
+            Rule: [
+                {
+                    ID: ['RuleID'],
+                    Prefix: [''],
+                    Status: ['Enabled'],
+                    Destination: [
+                        {
+                            Bucket: ['arn:aws:s3:::crr-dest'],
+                            StorageClass: ['STANDARD'],
+                        },
+                    ],
+                },
+            ],
         };
-        const instance = new ReplicationConfiguration({ ReplicationConfiguration: repConfig },
-            null, mockS3ServerConfig);
+        const instance = new ReplicationConfiguration(
+            { ReplicationConfiguration: repConfig },
+            null,
+            mockS3ServerConfig,
+        );
         const result = instance.parseConfiguration();
         expect(result).toBeUndefined();
         expect(instance.getRules()).toEqual([
@@ -263,16 +310,23 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
 
     it('should return MalformedXML when config is missing a Role array', () => {
         const repConfig = {
-            Rule: [{
-                Prefix: [''],
-                Status: ['Enabled'],
-                Destination: [{
-                    Bucket: ['arn:aws:s3:::crr-dest'],
-                }],
-            }],
+            Rule: [
+                {
+                    Prefix: [''],
+                    Status: ['Enabled'],
+                    Destination: [
+                        {
+                            Bucket: ['arn:aws:s3:::crr-dest'],
+                        },
+                    ],
+                },
+            ],
         };
-        const instance = new ReplicationConfiguration({ ReplicationConfiguration: repConfig },
-            null, mockS3ServerConfig);
+        const instance = new ReplicationConfiguration(
+            { ReplicationConfiguration: repConfig },
+            null,
+            mockS3ServerConfig,
+        );
         const result = instance.parseConfiguration();
         expect(result).toEqual(errors.MalformedXML);
     });
@@ -280,16 +334,23 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
     it('should return InvalidArgument when Scality destination has a single role', () => {
         const repConfig = {
             Role: ['arn:aws:iam::942839175607:role/crr-trust-role'],
-            Rule: [{
-                Prefix: [''],
-                Status: ['Enabled'],
-                Destination: [{
-                    Bucket: ['arn:aws:s3:::crr-dest'],
-                }],
-            }],
+            Rule: [
+                {
+                    Prefix: [''],
+                    Status: ['Enabled'],
+                    Destination: [
+                        {
+                            Bucket: ['arn:aws:s3:::crr-dest'],
+                        },
+                    ],
+                },
+            ],
         };
-        const instance = new ReplicationConfiguration({ ReplicationConfiguration: repConfig },
-            null, mockS3ServerConfig);
+        const instance = new ReplicationConfiguration(
+            { ReplicationConfiguration: repConfig },
+            null,
+            mockS3ServerConfig,
+        );
         const result = instance.parseConfiguration();
         expect(result).toEqual(errors.InvalidArgument);
     });
@@ -298,16 +359,23 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
     it('should return InvalidArgument when Scality destination has two comma-separated roles but one is invalid', () => {
         const repConfig = {
             Role: [`invalidarn:${TEST_ROLE}`],
-            Rule: [{
-                Prefix: [''],
-                Status: ['Enabled'],
-                Destination: [{
-                    Bucket: ['arn:aws:s3:::crr-dest'],
-                }],
-            }],
+            Rule: [
+                {
+                    Prefix: [''],
+                    Status: ['Enabled'],
+                    Destination: [
+                        {
+                            Bucket: ['arn:aws:s3:::crr-dest'],
+                        },
+                    ],
+                },
+            ],
         };
-        const instance = new ReplicationConfiguration({ ReplicationConfiguration: repConfig },
-            null, mockS3ServerConfig);
+        const instance = new ReplicationConfiguration(
+            { ReplicationConfiguration: repConfig },
+            null,
+            mockS3ServerConfig,
+        );
         const result = instance.parseConfiguration();
         expect(result).toEqual(errors.InvalidArgument);
     });
@@ -317,8 +385,11 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
             Role: [TEST_ROLE],
             Rule: [],
         };
-        const instance = new ReplicationConfiguration({ ReplicationConfiguration: repConfig },
-            null, mockS3ServerConfig);
+        const instance = new ReplicationConfiguration(
+            { ReplicationConfiguration: repConfig },
+            null,
+            mockS3ServerConfig,
+        );
         const result = instance.parseConfiguration();
         expect(result).toEqual(errors.MalformedXML);
     });
@@ -326,17 +397,24 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
     it('should return InvalidArgument if a Rule ID exceeds 255 characters', () => {
         const repConfig = {
             Role: [TEST_ROLE],
-            Rule: [{
-                ID: [new Array(256).fill('X').join('')],
-                Prefix: [''],
-                Status: ['Enabled'],
-                Destination: [{
-                    Bucket: ['arn:aws:s3:::crr-dest'],
-                }],
-            }],
+            Rule: [
+                {
+                    ID: [new Array(256).fill('X').join('')],
+                    Prefix: [''],
+                    Status: ['Enabled'],
+                    Destination: [
+                        {
+                            Bucket: ['arn:aws:s3:::crr-dest'],
+                        },
+                    ],
+                },
+            ],
         };
-        const instance = new ReplicationConfiguration({ ReplicationConfiguration: repConfig },
-            null, mockS3ServerConfig);
+        const instance = new ReplicationConfiguration(
+            { ReplicationConfiguration: repConfig },
+            null,
+            mockS3ServerConfig,
+        );
         const result = instance.parseConfiguration();
         expect(result).toEqual(errors.InvalidArgument);
     });
@@ -359,8 +437,11 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
                 },
             ],
         };
-        const instance = new ReplicationConfiguration({ ReplicationConfiguration: repConfig },
-            null, mockS3ServerConfig);
+        const instance = new ReplicationConfiguration(
+            { ReplicationConfiguration: repConfig },
+            null,
+            mockS3ServerConfig,
+        );
         const result = instance.parseConfiguration();
         expect(result).toEqual(errors.InvalidRequest);
     });
@@ -368,14 +449,19 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
     it('should return MalformedXML when config has a rule with an invalid Status value', () => {
         const repConfig = {
             Role: [TEST_ROLE],
-            Rule: [{
-                Prefix: [''],
-                Status: ['Invalid'],
-                Destination: [{ Bucket: ['arn:aws:s3:::crr-dest'] }],
-            }],
+            Rule: [
+                {
+                    Prefix: [''],
+                    Status: ['Invalid'],
+                    Destination: [{ Bucket: ['arn:aws:s3:::crr-dest'] }],
+                },
+            ],
         };
-        const instance = new ReplicationConfiguration({ ReplicationConfiguration: repConfig },
-            null, mockS3ServerConfig);
+        const instance = new ReplicationConfiguration(
+            { ReplicationConfiguration: repConfig },
+            null,
+            mockS3ServerConfig,
+        );
         const result = instance.parseConfiguration();
         expect(result).toEqual(errors.MalformedXML);
     });
@@ -383,17 +469,24 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
     it('should return MalformedXML when the provided storage class is invalid', () => {
         const repConfig = {
             Role: [TEST_ROLE],
-            Rule: [{
-                Prefix: [''],
-                Status: ['Enabled'],
-                Destination: [{
-                    Bucket: ['arn:aws:s3:::crr-dest'],
-                    StorageClass: ['INVALID'],
-                }],
-            }],
+            Rule: [
+                {
+                    Prefix: [''],
+                    Status: ['Enabled'],
+                    Destination: [
+                        {
+                            Bucket: ['arn:aws:s3:::crr-dest'],
+                            StorageClass: ['INVALID'],
+                        },
+                    ],
+                },
+            ],
         };
-        const instance = new ReplicationConfiguration({ ReplicationConfiguration: repConfig },
-            null, mockS3ServerConfig);
+        const instance = new ReplicationConfiguration(
+            { ReplicationConfiguration: repConfig },
+            null,
+            mockS3ServerConfig,
+        );
         const result = instance.parseConfiguration();
         expect(result).toEqual(errors.MalformedXML);
     });
@@ -408,13 +501,18 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
                 ID: [`rule${i}`],
                 Prefix: [`prefix${i}/`],
                 Status: ['Enabled'],
-                Destination: [{
-                    Bucket: ['arn:aws:s3:::crr-dest'],
-                }],
+                Destination: [
+                    {
+                        Bucket: ['arn:aws:s3:::crr-dest'],
+                    },
+                ],
             });
-        };
-        const instance = new ReplicationConfiguration({ ReplicationConfiguration: repConfig },
-            null, mockS3ServerConfig);
+        }
+        const instance = new ReplicationConfiguration(
+            { ReplicationConfiguration: repConfig },
+            null,
+            mockS3ServerConfig,
+        );
         const result = instance.parseConfiguration();
         expect(result).toEqual(errors.InvalidRequest);
     });
@@ -423,16 +521,21 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
     it('should return InvalidRequest if StorageClass not provided and cloudserver config has no replication endpoint', () => {
         const repConfig = {
             Role: [TEST_ROLE],
-            Rule: [{
-                Prefix: [''],
-                Status: ['Enabled'],
-                Destination: [{
-                    Bucket: ['arn:aws:s3:::crr-dest'],
-                }],
-            }],
+            Rule: [
+                {
+                    Prefix: [''],
+                    Status: ['Enabled'],
+                    Destination: [
+                        {
+                            Bucket: ['arn:aws:s3:::crr-dest'],
+                        },
+                    ],
+                },
+            ],
         };
-        const instance = new ReplicationConfiguration({ ReplicationConfiguration: repConfig },
-            null, { replicationEndpoints: [] });
+        const instance = new ReplicationConfiguration({ ReplicationConfiguration: repConfig }, null, {
+            replicationEndpoints: [],
+        });
         const result = instance.parseConfiguration();
         expect(result).toEqual(errors.InvalidRequest);
     });
@@ -441,17 +544,22 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
     it('should return InvalidRequest if StorageClass provided and cloudserver config has no replication endpoint', () => {
         const repConfig = {
             Role: [TEST_ROLE],
-            Rule: [{
-                Prefix: [''],
-                Status: ['Enabled'],
-                Destination: [{
-                    Bucket: ['arn:aws:s3:::crr-dest'],
-                    StorageClass: ['STANDARD'],
-                }],
-            }],
+            Rule: [
+                {
+                    Prefix: [''],
+                    Status: ['Enabled'],
+                    Destination: [
+                        {
+                            Bucket: ['arn:aws:s3:::crr-dest'],
+                            StorageClass: ['STANDARD'],
+                        },
+                    ],
+                },
+            ],
         };
-        const instance = new ReplicationConfiguration({ ReplicationConfiguration: repConfig },
-            null, { replicationEndpoints: [] });
+        const instance = new ReplicationConfiguration({ ReplicationConfiguration: repConfig }, null, {
+            replicationEndpoints: [],
+        });
         const result = instance.parseConfiguration();
         expect(result).toEqual(errors.InvalidRequest);
     });
@@ -460,8 +568,7 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
         const repConfigXML = getPreferredReadXMLConfig(false);
         parseString(repConfigXML, (err, parsedXml) => {
             expect(err).toBeNull();
-            const repConf = new ReplicationConfiguration(
-                parsedXml, null, mockS3ServerConfig);
+            const repConf = new ReplicationConfiguration(parsedXml, null, mockS3ServerConfig);
             const repConfErr = repConf.parseConfiguration();
             expect(repConfErr).toBeUndefined();
             expect(repConf.getPreferredReadLocation()).toBeNull();
@@ -473,8 +580,7 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
         const repConfigXML = getPreferredReadXMLConfig(true);
         parseString(repConfigXML, (err, parsedXml) => {
             expect(err).toBeNull();
-            const repConf = new ReplicationConfiguration(
-                parsedXml, null, mockS3ServerConfig);
+            const repConf = new ReplicationConfiguration(parsedXml, null, mockS3ServerConfig);
             const repConfErr = repConf.parseConfiguration();
             expect(repConfErr).toBeUndefined();
             expect(repConf.getPreferredReadLocation()).toEqual('gcpbackend');
@@ -500,8 +606,7 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
 
         parseString(repConfigXML, (err, parsedXml) => {
             expect(err).toBeNull();
-            const repConf = new ReplicationConfiguration(
-                parsedXml, null, mockS3ServerConfig);
+            const repConf = new ReplicationConfiguration(parsedXml, null, mockS3ServerConfig);
             const repConfErr = repConf.parseConfiguration();
             expect(repConfErr).toEqual(errors.MalformedXML);
             done();

@@ -1,6 +1,6 @@
 import { ArsenalError, allowUnsafeErrComp } from '../../errors';
 
- // eslint-disable-line
+// eslint-disable-line
 
 /**
  * @brief turn all <tt>err</tt> own and prototype attributes into own attributes
@@ -31,7 +31,7 @@ export function flattenError(err: Error) {
         }
     }
     return flattenedErr;
-};
+}
 
 /**
  * @brief recreate a proper Error object from its flattened
@@ -58,7 +58,7 @@ export function reconstructError(err: Error) {
     // This restores the old behavior of errors. This should be removed as soon
     // as all dependent codebases have been migrated to `is` accessors (ARSN-176).
     reconstructedErr[err.message] = true;
-    if (allowUnsafeErrComp){
+    if (allowUnsafeErrComp) {
         // @ts-expect-error
         reconstructedErr.is = { [err.message]: true };
     }
@@ -66,4 +66,4 @@ export function reconstructError(err: Error) {
         reconstructedErr[k] = err[k];
     });
     return reconstructedErr;
-};
+}
