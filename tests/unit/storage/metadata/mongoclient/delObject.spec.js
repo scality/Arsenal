@@ -1,3 +1,16 @@
+// Mock @opentelemetry/api so the trace-context tests below can drive
+// the active-span state without bringing up an OTEL SDK. Existing
+// delObject tests don't touch OTEL; with these defaults the mocks
+// behave like "no active span" and stampActiveTraceContext is a no-op.
+const mockOtelActive = jest.fn();
+const mockOtelGetSpan = jest.fn();
+const mockOtelInject = jest.fn();
+jest.mock('@opentelemetry/api', () => ({
+    context: { active: mockOtelActive },
+    trace: { getSpan: mockOtelGetSpan },
+    propagation: { inject: mockOtelInject },
+}));
+
 const assert = require('assert');
 const werelogs = require('werelogs');
 const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
@@ -5,6 +18,13 @@ const errors = require('../../../../../lib/errors').default;
 const sinon = require('sinon');
 const MongoClientInterface = require('../../../../../lib/storage/metadata/mongoclient/MongoClientInterface');
 const utils = require('../../../../../lib/storage/metadata/mongoclient/utils');
+const { makeOtelHelpers } = require('../otelMockHelpers');
+
+const otel = makeOtelHelpers({
+    active: mockOtelActive,
+    getSpan: mockOtelGetSpan,
+    inject: mockOtelInject,
+});
 
 const objMD = {
     _id: 'example-object',
@@ -296,6 +316,75 @@ describe('MongoClientInterface:delObject', () => {
             assert(findOneAndUpdate.args[0][0]['value.isPHD']);
             assert.strictEqual(findOneAndUpdate.args[0][0]['value.versionId'], '1234');
             return done();
+        });
+    });
+});
+
+describe('MongoClientInterface:internalDeleteObject trace-context plumbing', () => {
+    let client;
+    let collection;
+    let bulkWriteArg;
+
+    beforeAll(() => {
+        client = new MongoClientInterface({});
+    });
+
+    beforeEach(() => {
+        otel.resetMocks();
+        bulkWriteArg = null;
+        collection = {
+            findOneAndUpdate: sinon.stub().callsFake(() =>
+                Promise.resolve({
+                    value: {
+                        _id: 'example',
+                        value: {
+                            // Loaded from storage with a stale trace context —
+                            // exercises the carry-forward guard inside
+                            // stampActiveTraceContext.
+                            key: 'example',
+                            traceContext: { traceparent: 'stale-prior-trace' },
+                        },
+                    },
+                }),
+            ),
+            bulkWrite: sinon.stub().callsFake(ops => {
+                bulkWriteArg = ops;
+                return Promise.resolve({ ok: 1, deletedCount: 1 });
+            }),
+        };
+    });
+
+    afterEach(() => {
+        sinon.restore();
+    });
+
+    it('stamps the active traceContext on the delete tombstone', done => {
+        otel.activateSpan();
+        client.internalDeleteObject(collection, 'bucket', 'example', {}, null, logger, err => {
+            assert.ifError(err);
+            assert.ok(bulkWriteArg, 'bulkWrite was called');
+            const written = bulkWriteArg[0].updateOne.update.$set.value;
+            assert.deepStrictEqual(written.traceContext, { traceparent: otel.TRACEPARENT });
+            done();
+        });
+    });
+
+    it("clears the loaded objVal's stale traceContext when no span is active", done => {
+        otel.deactivateSpan();
+        client.internalDeleteObject(collection, 'bucket', 'example', {}, null, logger, err => {
+            assert.ifError(err);
+            const written = bulkWriteArg[0].updateOne.update.$set.value;
+            assert.strictEqual(written.traceContext, undefined);
+            done();
+        });
+    });
+
+    it('returns NoSuchKey when target object is not found', done => {
+        collection.findOneAndUpdate = sinon.stub().callsFake(() => Promise.resolve({ value: null }));
+        client.internalDeleteObject(collection, 'bucket', 'missing', {}, null, logger, err => {
+            assert.ok(err);
+            assert(err.is.NoSuchKey);
+            done();
         });
     });
 });

@@ -18,6 +18,7 @@ import { ErrorLike, reshapeExceptionError } from '../../../errorUtils';
 import errors, { ArsenalError, errorInstances } from '../../../errors';
 import BucketInfo, { BucketMetadata, Capabilities } from '../../../models/BucketInfo';
 import ObjectMD, { ObjectMDData } from '../../../models/ObjectMD';
+import { stampActiveTraceContext } from '../captureTraceContext';
 import * as jsutil from '../../../jsutil';
 import { ArsenalCallback, NestedOmit } from '../../../types';
 
@@ -1337,6 +1338,7 @@ class MongoClientInterface {
                             const objMetadata = new ObjectMD(obj);
                             objMetadata.setOriginOp(params.originOp);
                             objMetadata.setDeleted(true);
+                            stampActiveTraceContext(objMetadata);
                             return next(null, objMetadata.getValue());
                         })
                         .catch(err => {
@@ -2238,6 +2240,7 @@ class MongoClientInterface {
                             const objMetadata = new ObjectMD(obj.value);
                             objMetadata.setOriginOp(originOp);
                             objMetadata.setDeleted(true);
+                            stampActiveTraceContext(objMetadata);
                             return next(null, objMetadata.getValue());
                         })
                         .catch(err => {

@@ -1,3 +1,16 @@
+// Mock @opentelemetry/api so the trace-context tests below can drive
+// the active-span state without bringing up an OTEL SDK. Existing
+// putObject tests don't touch OTEL; with these defaults the mocks
+// behave like "no active span" and stampActiveTraceContext is a no-op.
+const mockOtelActive = jest.fn();
+const mockOtelGetSpan = jest.fn();
+const mockOtelInject = jest.fn();
+jest.mock('@opentelemetry/api', () => ({
+    context: { active: mockOtelActive },
+    trace: { getSpan: mockOtelGetSpan },
+    propagation: { inject: mockOtelInject },
+}));
+
 const assert = require('assert');
 const werelogs = require('werelogs');
 const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
@@ -9,8 +22,14 @@ const { createClient, createBucket } = require('./MongoClientInterface.spec');
 const { BucketVersioningKeyFormat } = require('../../../../../lib/versioning/constants').VersioningConstants;
 const { default: ObjectMD } = require('../../../../../lib/models/ObjectMD');
 const DummyRequestLogger = require('../../../helpers').DummyRequestLogger;
+const { makeOtelHelpers } = require('../otelMockHelpers');
 
 const log = new DummyRequestLogger();
+const otel = makeOtelHelpers({
+    active: mockOtelActive,
+    getSpan: mockOtelGetSpan,
+    inject: mockOtelInject,
+});
 
 describe('MongoClientInterface:putObject', () => {
     let client;
@@ -603,6 +622,155 @@ describe('MongoClientInterface:putObjectNoVer', () => {
                 return done();
             },
             false,
+        );
+    });
+});
+
+describe('MongoClientInterface:putObject trace-context plumbing', () => {
+    let client;
+
+    beforeAll(() => {
+        client = new MongoClientInterface({});
+    });
+
+    beforeEach(() => {
+        otel.resetMocks();
+        sinon.stub(utils, 'formatMasterKey').callsFake(() => 'master-key');
+        sinon.stub(utils, 'formatVersionKey').callsFake(() => 'version-key');
+        sinon.stub(client, 'getCollection').callsFake(() => ({}));
+        sinon.stub(client, 'getBucketVFormat').callsFake((b, l, cb) => cb(null, 'v0'));
+    });
+
+    afterEach(() => {
+        sinon.restore();
+    });
+
+    it('stamps traceContext on the write when a span is active', done => {
+        otel.activateSpan();
+        const seen = {};
+        sinon.stub(client, 'putObjectNoVer').callsFake((_c, _b, _o, objVal, _p, _l, cb) => {
+            Object.assign(seen, objVal);
+            cb();
+        });
+
+        client.putObject('bucket', 'example', { key: 'example' }, {}, log, err => {
+            assert.ifError(err);
+            assert.deepStrictEqual(seen.traceContext, { traceparent: otel.TRACEPARENT });
+            done();
+        });
+    });
+
+    it('omits traceContext when no span is active', done => {
+        otel.deactivateSpan();
+        const seen = {};
+        sinon.stub(client, 'putObjectNoVer').callsFake((_c, _b, _o, objVal, _p, _l, cb) => {
+            Object.assign(seen, objVal);
+            cb();
+        });
+
+        client.putObject('bucket', 'example', { key: 'x' }, {}, log, err => {
+            assert.ifError(err);
+            assert.strictEqual(seen.traceContext, undefined);
+            done();
+        });
+    });
+
+    it('clears stale traceContext from a loaded objVal when no span is active', done => {
+        // Regression: an objVal loaded from storage may already carry a
+        // previous write's trace context. Without explicit clearing the
+        // next write would inherit the stale value.
+        otel.deactivateSpan();
+        const seen = {};
+        sinon.stub(client, 'putObjectNoVer').callsFake((_c, _b, _o, objVal, _p, _l, cb) => {
+            Object.assign(seen, objVal);
+            cb();
+        });
+
+        const objVal = {
+            key: 'example',
+            traceContext: { traceparent: 'stale-from-prior-write' },
+        };
+        client.putObject('bucket', 'example', objVal, {}, log, err => {
+            assert.ifError(err);
+            assert.strictEqual(seen.traceContext, undefined);
+            done();
+        });
+    });
+});
+
+// putObjectNoVerWithOplogUpdate is reached on the archived-object replace
+// path (cloudserver sets params.needOplogUpdate with originOp
+// 's3:ReplaceArchivedObject'). It bulkWrites two oplog entries: a
+// tombstone of the loaded existing object (consumed by downstream
+// cleanup workers) and the new value. Both need traceContext so
+// consumers reading either oplog event can correlate to the originating
+// S3 request.
+describe('MongoClientInterface:putObjectNoVerWithOplogUpdate trace-context plumbing', () => {
+    let client;
+    let collection;
+    let bulkWriteArg;
+
+    beforeAll(() => {
+        client = new MongoClientInterface({});
+    });
+
+    beforeEach(() => {
+        otel.resetMocks();
+        bulkWriteArg = null;
+        collection = {
+            findOneAndUpdate: sinon.stub().callsFake(() =>
+                Promise.resolve({
+                    value: {
+                        key: 'existing',
+                        traceContext: { traceparent: 'stale-prior-trace' },
+                    },
+                }),
+            ),
+            bulkWrite: sinon.stub().callsFake(ops => {
+                bulkWriteArg = ops;
+                return Promise.resolve({ ok: 1 });
+            }),
+        };
+    });
+
+    afterEach(() => {
+        sinon.restore();
+    });
+
+    it('stamps traceContext on the loaded-object tombstone when a span is active', done => {
+        otel.activateSpan();
+        client.putObjectNoVerWithOplogUpdate(
+            collection,
+            'bucket',
+            'example',
+            { key: 'replacement' },
+            { vFormat: 'v0', originOp: 's3:ReplaceArchivedObject' },
+            log,
+            err => {
+                assert.ifError(err);
+                assert.ok(bulkWriteArg, 'bulkWrite was called');
+                const tombstone = bulkWriteArg[0].updateOne.update.$set.value;
+                assert.deepStrictEqual(tombstone.traceContext, { traceparent: otel.TRACEPARENT });
+                done();
+            },
+        );
+    });
+
+    it('clears stale traceContext on the tombstone when no span is active', done => {
+        otel.deactivateSpan();
+        client.putObjectNoVerWithOplogUpdate(
+            collection,
+            'bucket',
+            'example',
+            { key: 'replacement' },
+            { vFormat: 'v0', originOp: 's3:ReplaceArchivedObject' },
+            log,
+            err => {
+                assert.ifError(err);
+                const tombstone = bulkWriteArg[0].updateOne.update.$set.value;
+                assert.strictEqual(tombstone.traceContext, undefined);
+                done();
+            },
         );
     });
 });

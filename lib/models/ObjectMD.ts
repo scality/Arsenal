@@ -86,6 +86,10 @@ export type ObjectMDData = {
     replicationInfo: ReplicationInfo;
     dataStoreName: string;
     originOp: string;
+    traceContext?: {
+        traceparent: string;
+        tracestate?: string;
+    };
     microVersionId?: string;
     // Deletion flag
     // Used for keeping object metadata in the oplog event
