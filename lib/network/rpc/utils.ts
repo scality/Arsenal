@@ -1,7 +1,5 @@
 import { ArsenalError, allowUnsafeErrComp } from '../../errors';
 
-// eslint-disable-line
-
 /**
  * @brief turn all <tt>err</tt> own and prototype attributes into own attributes
  *
