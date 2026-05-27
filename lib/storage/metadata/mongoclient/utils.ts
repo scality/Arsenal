@@ -1,7 +1,4 @@
-import {
-    supportedOperators,
-    validateConditionsObject,
-} from '../conditions';
+import { supportedOperators, validateConditionsObject } from '../conditions';
 import { VersioningConstants } from '../../../versioning/constants';
 import errors from '../../../errors';
 
@@ -30,9 +27,7 @@ type Condition = string | number | boolean | Record<string, any>;
 function escape(obj: Record<string, string>): Record<string, string> {
     const _obj: Record<string, string> = {};
     Object.keys(obj).forEach(prop => {
-        const _prop = prop
-            .replace(/\$/g, '\uFF04')
-            .replace(/\./g, '\uFF0E');
+        const _prop = prop.replace(/\$/g, '\uFF04').replace(/\./g, '\uFF0E');
         _obj[_prop] = obj[prop];
     });
     return _obj;
@@ -41,9 +36,7 @@ function escape(obj: Record<string, string>): Record<string, string> {
 function unescape(obj: Record<string, string>): Record<string, string> {
     const _obj: Record<string, string> = {};
     Object.keys(obj).forEach(prop => {
-        const _prop = prop
-            .replace(/\uFF04/g, '$')
-            .replace(/\uFF0E/g, '.');
+        const _prop = prop.replace(/\uFF04/g, '$').replace(/\uFF0E/g, '.');
         _obj[_prop] = obj[prop];
     });
     return _obj;
@@ -95,12 +88,7 @@ function _assignCondition(prefix: string, object: Record<string, any>, cond: Con
  *      }
  *  }                              }
  */
-function translateConditions(
-    depth: number,
-    prefix: string,
-    object: Record<string, any>,
-    cond: Condition
-): void {
+function translateConditions(depth: number, prefix: string, object: Record<string, any>, cond: Condition): void {
     if (depth < 0 || depth > 10) {
         throw errors.InternalError;
     }
@@ -116,12 +104,12 @@ function translateConditions(
 
     const fields = Object.keys(cond as Record<string, any>);
     const opFields = fields.filter(f => supportedOperators[f]);
-    
+
     if (fields.length === opFields.length) {
         _assignCondition(prefix, object, cond);
         return;
     }
-    
+
     if (opFields.length === 0) {
         for (const f of fields) {
             if (f.startsWith('$')) {
@@ -132,7 +120,7 @@ function translateConditions(
         }
         return;
     }
-    
+
     // mix of operators and nested fields
     throw errors.InternalError;
 }
@@ -208,13 +196,11 @@ interface MongoIndex {
 
 function indexFormatMongoArrayToObject(mongoIndexArray: MongoIndex[]): Index[] {
     return mongoIndexArray.map(idx => {
-        const entries = idx.key instanceof Map
-            ? Array.from(idx.key.entries())
-            : Object.entries(idx.key);
+        const entries = idx.key instanceof Map ? Array.from(idx.key.entries()) : Object.entries(idx.key);
 
         return {
             name: idx.name,
-            keys: entries.map(([key, order]) => ({ key, order }))
+            keys: entries.map(([key, order]) => ({ key, order })),
         };
     });
 }
@@ -223,7 +209,7 @@ function indexFormatObjectToMongoArray(indexObj: Index[]): MongoIndex[] {
     if (!indexObj || !Array.isArray(indexObj)) {
         return [];
     }
-    
+
     return indexObj.map(idx => {
         const key = new Map();
         idx.keys.forEach(k => key.set(k.key, k.order));

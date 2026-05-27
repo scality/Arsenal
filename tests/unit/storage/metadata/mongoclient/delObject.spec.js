@@ -3,8 +3,7 @@ const werelogs = require('werelogs');
 const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
 const errors = require('../../../../../lib/errors').default;
 const sinon = require('sinon');
-const MongoClientInterface =
-    require('../../../../../lib/storage/metadata/mongoclient/MongoClientInterface');
+const MongoClientInterface = require('../../../../../lib/storage/metadata/mongoclient/MongoClientInterface');
 const utils = require('../../../../../lib/storage/metadata/mongoclient/utils');
 
 const objMD = {
@@ -69,7 +68,8 @@ describe('MongoClientInterface:delObject', () => {
     });
 
     it('deleteObjectNoVer:: should fail when internalDeleteObject fails', done => {
-        const internalDeleteObjectStub = sinon.stub(client, 'internalDeleteObject')
+        const internalDeleteObjectStub = sinon
+            .stub(client, 'internalDeleteObject')
             .callsArgWith(6, errors.InternalError);
         client.deleteObjectNoVer(null, 'example-bucket', 'example-object', {}, logger, err => {
             assert(internalDeleteObjectStub.calledOnce);
@@ -126,7 +126,6 @@ describe('MongoClientInterface:delObject', () => {
             return done();
         });
     });
-
 
     it('deleteObjectVer:: should call deleteObjectVerMaster when version is last', done => {
         const mst = {
@@ -229,11 +228,19 @@ describe('MongoClientInterface:delObject', () => {
             findOneAndUpdate: sinon.stub().resolves({ value: { value: objMD } }),
         };
         const originOp = 's3:TestOriginOp:Created';
-        client.internalDeleteObject(collection, 'example-bucket', 'example-object', {}, null, logger, () => {
-            assert.deepEqual(collection.bulkWrite.args[0][0][0].updateOne.update.$set.value.originOp,
-                originOp);
-            return done();
-        }, originOp);
+        client.internalDeleteObject(
+            collection,
+            'example-bucket',
+            'example-object',
+            {},
+            null,
+            logger,
+            () => {
+                assert.deepEqual(collection.bulkWrite.args[0][0][0].updateOne.update.$set.value.originOp, originOp);
+                return done();
+            },
+            originOp,
+        );
     });
 
     it('internalDeleteObject:: should directly delete object if params.doesNotNeedOpogUpdate is true', done => {
@@ -243,11 +250,20 @@ describe('MongoClientInterface:delObject', () => {
         const params = {
             doesNotNeedOpogUpdate: true,
         };
-        client.internalDeleteObject(collection, 'example-bucket', 'example-object', null, params, logger, err => {
-            assert.deepEqual(err, null);
-            assert(collection.deleteOne.calledOnce);
-            return done();
-        }, 's3:ObjectRemoved:Delete');
+        client.internalDeleteObject(
+            collection,
+            'example-bucket',
+            'example-object',
+            null,
+            params,
+            logger,
+            err => {
+                assert.deepEqual(err, null);
+                assert(collection.deleteOne.calledOnce);
+                return done();
+            },
+            's3:ObjectRemoved:Delete',
+        );
     });
 
     it('internalDeleteObject:: should go through the normal flow if params is null', done => {

@@ -3,8 +3,7 @@ const werelogs = require('werelogs');
 const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
 const errors = require('../../../../../lib/errors').default;
 const sinon = require('sinon');
-const MongoClientInterface =
-    require('../../../../../lib/storage/metadata/mongoclient/MongoClientInterface');
+const MongoClientInterface = require('../../../../../lib/storage/metadata/mongoclient/MongoClientInterface');
 const utils = require('../../../../../lib/storage/metadata/mongoclient/utils');
 const { createClient, createBucket } = require('./MongoClientInterface.spec');
 const { BucketVersioningKeyFormat } = require('../../../../../lib/versioning/constants').VersioningConstants;
@@ -241,11 +240,13 @@ describe('MongoClientInterface:putObjectVerCase1 race condition error handling',
         const versionError = new Error('Duplicate key error');
         versionError.code = 11000;
         // Simulate MongoDB's error structure with writeErrors
-        versionError.writeErrors = [{
-            index: 0, // First operation (version creation)
-            code: 11000,
-            errmsg: 'E11000 duplicate key error',
-        }];
+        versionError.writeErrors = [
+            {
+                index: 0, // First operation (version creation)
+                code: 11000,
+                errmsg: 'E11000 duplicate key error',
+            },
+        ];
 
         // Create a spy to track if putObjectVerCase1 is called with isRetry=true
         // This is a more reliable way to check the retry mechanism
@@ -265,24 +266,16 @@ describe('MongoClientInterface:putObjectVerCase1 race condition error handling',
         };
 
         // Call the method directly to avoid race conditions with the stub
-        client.putObjectVerCase1(
-            collection,
-            bucketName,
-            objName,
-            objMD.getValue(),
-            params,
-            logger,
-            () => {
-                // Check that bulkWrite was called twice (original + retry)
-                assert.strictEqual(bulkWriteStub.callCount, 2, 'Expected bulkWrite to be called twice');
+        client.putObjectVerCase1(collection, bucketName, objName, objMD.getValue(), params, logger, () => {
+            // Check that bulkWrite was called twice (original + retry)
+            assert.strictEqual(bulkWriteStub.callCount, 2, 'Expected bulkWrite to be called twice');
 
-                // Verify putObjectVerCase1 was called with isRetry=true for the retry
-                assert(putObjectVerCase1Spy.calledTwice, 'Expected putObjectVerCase1 to be called twice');
-                assert(putObjectVerCase1Spy.secondCall.args[7], 'Expected second call to have isRetry=true');
+            // Verify putObjectVerCase1 was called with isRetry=true for the retry
+            assert(putObjectVerCase1Spy.calledTwice, 'Expected putObjectVerCase1 to be called twice');
+            assert(putObjectVerCase1Spy.secondCall.args[7], 'Expected second call to have isRetry=true');
 
-                done();
-            },
-        );
+            done();
+        });
     });
 
     it('should handle MongoDB error on master operation (second operation)', done => {
@@ -297,11 +290,13 @@ describe('MongoClientInterface:putObjectVerCase1 race condition error handling',
         const masterError = new Error('Duplicate key error');
         masterError.code = 11000;
         // Simulate MongoDB's error structure with writeErrors
-        masterError.writeErrors = [{
-            index: 1, // Second operation (master update)
-            code: 11000,
-            errmsg: 'E11000 duplicate key error',
-        }];
+        masterError.writeErrors = [
+            {
+                index: 1, // Second operation (master update)
+                code: 11000,
+                errmsg: 'E11000 duplicate key error',
+            },
+        ];
 
         // Add result info showing one operation succeeded
         masterError.result = {
@@ -320,21 +315,13 @@ describe('MongoClientInterface:putObjectVerCase1 race condition error handling',
             conditions: {},
         };
 
-        client.putObjectVerCase1(
-            collection,
-            bucketName,
-            objName,
-            objMD.getValue(),
-            params,
-            logger,
-            (err, result) => {
-                assert.ifError(err, 'Expected no error when master operation fails but version succeeds');
-                assert(result, 'Expected a result to be returned');
-                assert(result.includes('versionId'), 'Expected versionId in result');
-                assert(bulkWriteStub.calledOnce, 'Expected bulkWrite to be called once');
-                done();
-            },
-        );
+        client.putObjectVerCase1(collection, bucketName, objName, objMD.getValue(), params, logger, (err, result) => {
+            assert.ifError(err, 'Expected no error when master operation fails but version succeeds');
+            assert(result, 'Expected a result to be returned');
+            assert(result.includes('versionId'), 'Expected versionId in result');
+            assert(bulkWriteStub.calledOnce, 'Expected bulkWrite to be called once');
+            done();
+        });
     });
 
     it('should handle retry failure when version operation fails twice', done => {
@@ -347,11 +334,13 @@ describe('MongoClientInterface:putObjectVerCase1 race condition error handling',
 
         const versionError = new Error('Duplicate key error');
         versionError.code = 11000;
-        versionError.writeErrors = [{
-            index: 0,
-            code: 11000,
-            errmsg: 'E11000 duplicate key error',
-        }];
+        versionError.writeErrors = [
+            {
+                index: 0,
+                code: 11000,
+                errmsg: 'E11000 duplicate key error',
+            },
+        ];
 
         const putObjectVerCase1Spy = sandbox.spy(client, 'putObjectVerCase1');
 
@@ -367,23 +356,15 @@ describe('MongoClientInterface:putObjectVerCase1 race condition error handling',
             conditions: {},
         };
 
-        client.putObjectVerCase1(
-            collection,
-            bucketName,
-            objName,
-            objMD.getValue(),
-            params,
-            logger,
-            (err, result) => {
-                assert(err, 'Expected an error to be returned after retry failure');
-                assert.strictEqual(err.is.InternalError, true, 'Expected InternalError after retry failure');
-                assert(!result, 'Expected no result on error');
-                assert.strictEqual(bulkWriteStub.callCount, 2, 'Expected bulkWrite to be called twice');
-                assert(putObjectVerCase1Spy.calledTwice, 'Expected putObjectVerCase1 to be called twice');
-                assert(putObjectVerCase1Spy.secondCall.args[7], 'Expected second call to have isRetry=true');
-                done();
-            },
-        );
+        client.putObjectVerCase1(collection, bucketName, objName, objMD.getValue(), params, logger, (err, result) => {
+            assert(err, 'Expected an error to be returned after retry failure');
+            assert.strictEqual(err.is.InternalError, true, 'Expected InternalError after retry failure');
+            assert(!result, 'Expected no result on error');
+            assert.strictEqual(bulkWriteStub.callCount, 2, 'Expected bulkWrite to be called twice');
+            assert(putObjectVerCase1Spy.calledTwice, 'Expected putObjectVerCase1 to be called twice');
+            assert(putObjectVerCase1Spy.secondCall.args[7], 'Expected second call to have isRetry=true');
+            done();
+        });
     });
 
     it('should return version id when no error', done => {
@@ -404,21 +385,13 @@ describe('MongoClientInterface:putObjectVerCase1 race condition error handling',
             conditions: {},
         };
 
-        client.putObjectVerCase1(
-            collection,
-            bucketName,
-            objName,
-            objMD.getValue(),
-            params,
-            logger,
-            (err, result) => {
-                assert.ifError(err, 'Expected no error on successful operation');
-                assert(result, 'Expected a result to be returned');
-                assert(result.includes('versionId'), 'Expected versionId in result');
-                assert(bulkWriteStub.calledOnce, 'Expected bulkWrite to be called once');
-                done();
-            },
-        );
+        client.putObjectVerCase1(collection, bucketName, objName, objMD.getValue(), params, logger, (err, result) => {
+            assert.ifError(err, 'Expected no error on successful operation');
+            assert(result, 'Expected a result to be returned');
+            assert(result.includes('versionId'), 'Expected versionId in result');
+            assert(bulkWriteStub.calledOnce, 'Expected bulkWrite to be called once');
+            done();
+        });
     });
 });
 
@@ -618,9 +591,18 @@ describe('MongoClientInterface:putObjectNoVer', () => {
         const collection = {
             updateOne: () => Promise.reject(errors.InternalError),
         };
-        client.putObjectNoVer(collection, 'example-bucket', 'example-object', {}, {}, logger, err => {
-            assert.deepStrictEqual(err, errors.InternalError);
-            return done();
-        }, false);
+        client.putObjectNoVer(
+            collection,
+            'example-bucket',
+            'example-object',
+            {},
+            {},
+            logger,
+            err => {
+                assert.deepStrictEqual(err, errors.InternalError);
+                return done();
+            },
+            false,
+        );
     });
 });

@@ -33,7 +33,7 @@ import {
     UpdateFilter,
     MongoServerError,
     MongoBulkWriteError,
-    WriteError
+    WriteError,
 } from 'mongodb';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -66,47 +66,42 @@ const MONGO_CONNECT_TIMEOUT_MS = process.env.MONGO_CONNECT_TIMEOUT_MS;
 const MONGO_SOCKET_TIMEOUT_MS = process.env.MONGO_SOCKET_TIMEOUT_MS;
 const MONGO_POOL_SIZE = process.env.MONGO_POOL_SIZE;
 // MongoDB default
-const CONNECT_TIMEOUT_MS = MONGO_CONNECT_TIMEOUT_MS ?
-    Number.parseInt(MONGO_CONNECT_TIMEOUT_MS, 10) : 5000;
-const SOCKET_TIMEOUT_MS = MONGO_SOCKET_TIMEOUT_MS ?
-    Number.parseInt(MONGO_SOCKET_TIMEOUT_MS, 10) : 360000;
-const CONCURRENT_CURSORS = process.env.CONCURRENT_CURSORS ?
-    Number.parseInt(process.env.CONCURRENT_CURSORS, 10) : 10;
+const CONNECT_TIMEOUT_MS = MONGO_CONNECT_TIMEOUT_MS ? Number.parseInt(MONGO_CONNECT_TIMEOUT_MS, 10) : 5000;
+const SOCKET_TIMEOUT_MS = MONGO_SOCKET_TIMEOUT_MS ? Number.parseInt(MONGO_SOCKET_TIMEOUT_MS, 10) : 360000;
+const CONCURRENT_CURSORS = process.env.CONCURRENT_CURSORS ? Number.parseInt(process.env.CONCURRENT_CURSORS, 10) : 10;
 
 const initialInstanceID = process.env.INITIAL_INSTANCE_ID;
 
-const BUCKET_VERSIONS = require('../../../versioning/constants')
-    .VersioningConstants.BucketVersioningKeyFormat;
-const DEFAULT_BUCKET_KEY_FORMAT =
-    [<string>BUCKET_VERSIONS.v0, <string>BUCKET_VERSIONS.v1]
-        .includes(process.env.DEFAULT_BUCKET_KEY_FORMAT!) ?
-            <BucketVersioningFormat>process.env.DEFAULT_BUCKET_KEY_FORMAT : BUCKET_VERSIONS.v1;
+const BUCKET_VERSIONS = require('../../../versioning/constants').VersioningConstants.BucketVersioningKeyFormat;
+const DEFAULT_BUCKET_KEY_FORMAT = [<string>BUCKET_VERSIONS.v0, <string>BUCKET_VERSIONS.v1].includes(
+    process.env.DEFAULT_BUCKET_KEY_FORMAT!,
+)
+    ? <BucketVersioningFormat>process.env.DEFAULT_BUCKET_KEY_FORMAT
+    : BUCKET_VERSIONS.v1;
 
-const DB_PREFIXES = require('../../../versioning/constants')
-    .VersioningConstants.DbPrefixes;
+const DB_PREFIXES = require('../../../versioning/constants').VersioningConstants.DbPrefixes;
 
 function inc(str) {
-    return str ? (str.slice(0, str.length - 1) +
-        String.fromCharCode(str.charCodeAt(str.length - 1) + 1)) : str;
+    return str ? str.slice(0, str.length - 1) + String.fromCharCode(str.charCodeAt(str.length - 1) + 1) : str;
 }
 
 export type MongoDBClientInterfaceParameters = {
-    replicaSetHosts: string,
-    writeConcern: string,
-    replicaSet: string,
-    readPreference: ReadPreferenceMode,
-    path: string,
-    database: string,
-    logger: werelogs.Logger,
-    instanceId: string,
-    replicationGroupId: string,
-    authCredentials: MongoUtils.AuthCredentials,
-    isLocationTransient: Function,
-    shardCollections: boolean,
+    replicaSetHosts: string;
+    writeConcern: string;
+    replicaSet: string;
+    readPreference: ReadPreferenceMode;
+    path: string;
+    database: string;
+    logger: werelogs.Logger;
+    instanceId: string;
+    replicationGroupId: string;
+    authCredentials: MongoUtils.AuthCredentials;
+    isLocationTransient: Function;
+    shardCollections: boolean;
 };
 
 export type BucketMetadataMongoDB = Omit<Omit<BucketMetadata, 'quotaMax'>, 'capabilities'> & {
-    // Old buckets might not have a quotaMax 
+    // Old buckets might not have a quotaMax
     quotaMax?: Long;
     capabilities?: NestedOmit<Capabilities, 'VeeamSOSApi.CapacityInfo'> & {
         VeeamSOSApi?: {
@@ -129,17 +124,17 @@ export interface BucketMetastoreDocument extends Document {
 export interface ObjectMetastoreDocument extends Document {
     _id: string;
     value: ObjectMDData;
-};
+}
 
 export type ObjectMDOperationParams = {
-    vFormat: string,
-    versionId: string,
-    repairMaster: boolean,
-    versioning: boolean,
-    needOplogUpdate: boolean,
-    originOp: string,
-    doesNotNeedOpogUpdate?: boolean,
-    conditions: any,
+    vFormat: string;
+    versionId: string;
+    repairMaster: boolean;
+    versioning: boolean;
+    needOplogUpdate: boolean;
+    originOp: string;
+    doesNotNeedOpogUpdate?: boolean;
+    conditions: any;
 };
 
 export type InternalListObjectParams = {
@@ -152,65 +147,65 @@ export type InternalListObjectParams = {
     mongifiedSearch?: object;
     listingType?: string;
     start?: undefined;
-    gt?: undefined
+    gt?: undefined;
 };
 
 export interface InfostoreDocument extends Document {
     _id: string | 'uuid';
-    value?: string | ObjectMDStats,
+    value?: string | ObjectMDStats;
     measuredOn?: string;
     objectCount?: {
-        current: Long | number,
-        _currentCold: Long | number,
-        deleteMarker: Long | number,
-        nonCurrent: Long | number,
-        _nonCurrentCold: Long | number,
-        _currentRestored: Long | number,
-        _currentRestoring: Long | number,
-        _nonCurrentRestored: Long | number,
-        _nonCurrentRestoring: Long | number,
-        _incompleteMPUUploads: Long | number,
-    },
+        current: Long | number;
+        _currentCold: Long | number;
+        deleteMarker: Long | number;
+        nonCurrent: Long | number;
+        _nonCurrentCold: Long | number;
+        _currentRestored: Long | number;
+        _currentRestoring: Long | number;
+        _nonCurrentRestored: Long | number;
+        _nonCurrentRestoring: Long | number;
+        _incompleteMPUUploads: Long | number;
+    };
     usedCapacity?: {
-        current: Long | number,
-        _currentCold: Long | number,
-        nonCurrent: Long | number,
-        _nonCurrentCold: Long | number,
-        _currentRestored: Long | number,
-        _currentRestoring: Long | number,
-        _nonCurrentRestored: Long | number,
-        _nonCurrentRestoring: Long | number,
-        _incompleteMPUParts: Long | number,
-    },
+        current: Long | number;
+        _currentCold: Long | number;
+        nonCurrent: Long | number;
+        _nonCurrentCold: Long | number;
+        _currentRestored: Long | number;
+        _currentRestoring: Long | number;
+        _nonCurrentRestored: Long | number;
+        _nonCurrentRestoring: Long | number;
+        _incompleteMPUParts: Long | number;
+    };
     locations: {
         [key: string]: {
             usedCapacity: {
-                current: Long | number,
-                nonCurrent: Long | number,
-                _currentCold: Long | number,
-                _nonCurrentCold: Long | number,
-                _currentRestored: Long | number,
-                _currentRestoring: Long | number,
-                _nonCurrentRestored: Long | number,
-                _nonCurrentRestoring: Long | number,
-                _inflightsPreScan: Long | number,
-                _incompleteMPUParts: Long | number,
-            },
+                current: Long | number;
+                nonCurrent: Long | number;
+                _currentCold: Long | number;
+                _nonCurrentCold: Long | number;
+                _currentRestored: Long | number;
+                _currentRestoring: Long | number;
+                _nonCurrentRestored: Long | number;
+                _nonCurrentRestoring: Long | number;
+                _inflightsPreScan: Long | number;
+                _incompleteMPUParts: Long | number;
+            };
             objectCount: {
-                current: Long | number,
-                nonCurrent: Long | number,
-                _currentCold: Long | number,
-                _nonCurrentCold: Long | number,
-                _currentRestored: Long | number,
-                _currentRestoring: Long | number,
-                _nonCurrentRestored: Long | number,
-                _nonCurrentRestoring: Long | number,
-                _incompleteMPUUploads: Long | number,
-                deleteMarker: Long | number,
-            },
-        },
-    },
-};
+                current: Long | number;
+                nonCurrent: Long | number;
+                _currentCold: Long | number;
+                _nonCurrentCold: Long | number;
+                _currentRestored: Long | number;
+                _currentRestoring: Long | number;
+                _nonCurrentRestored: Long | number;
+                _nonCurrentRestoring: Long | number;
+                _incompleteMPUUploads: Long | number;
+                deleteMarker: Long | number;
+            };
+        };
+    };
+}
 
 export type ObjectMDStats = {
     versions: number;
@@ -228,7 +223,7 @@ export type ObjectMDStats = {
         isVersioned: boolean;
         ownerCanonicalId: string;
         ingestion: boolean;
-    }[],
+    }[];
     locations?: any;
     buckets?: number;
     bucketWithQuotaCount?: number;
@@ -262,12 +257,22 @@ class MongoClientInterface {
     private isConnected = false;
 
     constructor(params: MongoDBClientInterfaceParameters) {
-        const { replicaSetHosts, writeConcern, replicaSet, readPreference, path,
-            database, logger, instanceId, replicationGroupId, authCredentials,
-            isLocationTransient, shardCollections } = params;
+        const {
+            replicaSetHosts,
+            writeConcern,
+            replicaSet,
+            readPreference,
+            path,
+            database,
+            logger,
+            instanceId,
+            replicationGroupId,
+            authCredentials,
+            isLocationTransient,
+            shardCollections,
+        } = params;
         const cred = MongoUtils.credPrefix(authCredentials);
-        this.mongoUrl = `mongodb://${cred}${replicaSetHosts}/` +
-            `?w=${writeConcern}&readPreference=${readPreference}`;
+        this.mongoUrl = `mongodb://${cred}${replicaSetHosts}/` + `?w=${writeConcern}&readPreference=${readPreference}`;
 
         if (!shardCollections) {
             this.mongoUrl += `&replicaSet=${replicaSet}`;
@@ -298,10 +303,11 @@ class MongoClientInterface {
         // FIXME: constructors shall not have side effect so there
         // should be an async_init(cb) method in the wrapper to
         // initialize this backend
-        if ((MONGO_CONNECT_TIMEOUT_MS && Number.isNaN(MONGO_CONNECT_TIMEOUT_MS)) ||
-            (MONGO_SOCKET_TIMEOUT_MS && Number.isNaN(MONGO_SOCKET_TIMEOUT_MS))) {
-            this.logger.error('MongoDB connect and socket timeouts must be a ' +
-                'number. Using default value(s).');
+        if (
+            (MONGO_CONNECT_TIMEOUT_MS && Number.isNaN(MONGO_CONNECT_TIMEOUT_MS)) ||
+            (MONGO_SOCKET_TIMEOUT_MS && Number.isNaN(MONGO_SOCKET_TIMEOUT_MS))
+        ) {
+            this.logger.error('MongoDB connect and socket timeouts must be a ' + 'number. Using default value(s).');
         }
         const connectTimeoutMS = CONNECT_TIMEOUT_MS;
         const socketTimeoutMS = SOCKET_TIMEOUT_MS;
@@ -315,7 +321,8 @@ class MongoClientInterface {
         }
         const client = new MongoClient(this.mongoUrl, options);
 
-        return client.connect()
+        return client
+            .connect()
             .then(client => {
                 this.logger.info('connected to mongodb');
                 this.client = client;
@@ -326,9 +333,12 @@ class MongoClientInterface {
                 this.adminDb = client.db('admin');
                 // log cache hit/miss every 5min
                 this.cacheHitMissLoggerInterval = setInterval(() => {
-                    const hitRatio = (this.cacheHit / (this.cacheHit + this.cacheMiss)) || 0;
-                    this.logger.debug('MongoClientInterface: Bucket vFormat cache hit/miss (5min)',
-                        { hits: this.cacheHit, misses: this.cacheMiss, hitRatio: hitRatio.toFixed(3) });
+                    const hitRatio = this.cacheHit / (this.cacheHit + this.cacheMiss) || 0;
+                    this.logger.debug('MongoClientInterface: Bucket vFormat cache hit/miss (5min)', {
+                        hits: this.cacheHit,
+                        misses: this.cacheMiss,
+                        hitRatio: hitRatio.toFixed(3),
+                    });
                     this.cacheHit = 0;
                     this.cacheMiss = 0;
                 }, 300000);
@@ -350,22 +360,20 @@ class MongoClientInterface {
            usersBucket to have attributes, we pre-create the
            usersBucket attributes here (see bucketCreation.js line
            36)*/
-        const usersBucketAttr = new BucketInfo(constants.usersBucket,
-            'admin', 'admin', new Date().toJSON(),
-            BucketInfo.currentModelVersion());
-        return this.createBucket(
+        const usersBucketAttr = new BucketInfo(
             constants.usersBucket,
-            usersBucketAttr,
-            this.logger,
-            err => {
-                if (err) {
-                    this.logger.fatal('error writing usersBucket ' +
-                        'attributes to metastore',
-                    { error: err });
-                    throw (errors.InternalError);
-                }
-                return cb();
-            });
+            'admin',
+            'admin',
+            new Date().toJSON(),
+            BucketInfo.currentModelVersion(),
+        );
+        return this.createBucket(constants.usersBucket, usersBucketAttr, this.logger, err => {
+            if (err) {
+                this.logger.fatal('error writing usersBucket ' + 'attributes to metastore', { error: err });
+                throw errors.InternalError;
+            }
+            return cb();
+        });
     }
 
     close(cb) {
@@ -373,7 +381,8 @@ class MongoClientInterface {
             if (this.cacheHitMissLoggerInterval) {
                 clearInterval(this.cacheHitMissLoggerInterval as NodeJS.Timeout);
             }
-            return this.client.close(true)
+            return this.client
+                .close(true)
                 .then(() => cb())
                 .catch(() => cb());
         }
@@ -382,8 +391,7 @@ class MongoClientInterface {
 
     getCollection<T extends Document>(name): Collection<T> {
         /* mongo has a problem with .. in collection names */
-        const newName = (name === constants.usersBucket) ?
-            USERSBUCKET : name;
+        const newName = name === constants.usersBucket ? USERSBUCKET : name;
         return this.db!.collection<T>(newName);
     }
 
@@ -425,9 +433,11 @@ class MongoClientInterface {
                 vFormat: this.defaultBucketKeyFormat,
             },
         };
-        if (bucketName !== constants.usersBucket &&
+        if (
+            bucketName !== constants.usersBucket &&
             bucketName !== PENSIEVE &&
-            !bucketName.startsWith(constants.mpuBucketPrefix)) {
+            !bucketName.startsWith(constants.mpuBucketPrefix)
+        ) {
             payload.$set.vFormat = this.defaultBucketKeyFormat;
         } else {
             payload.$set.vFormat = BUCKET_VERSIONS.v0;
@@ -435,11 +445,15 @@ class MongoClientInterface {
 
         // we don't have to test bucket existence here as it is done
         // on the upper layers
-        m.updateOne({
-            _id: bucketName,
-        }, payload, {
-            upsert: true,
-        })
+        m.updateOne(
+            {
+                _id: bucketName,
+            },
+            payload,
+            {
+                upsert: true,
+            },
+        )
             .then(result => {
                 if (result.matchedCount === 0 && result.modifiedCount === 0 && result.upsertedCount === 0) {
                     log.debug('createBucket: failed to create bucket', { bucketName, result });
@@ -451,22 +465,21 @@ class MongoClientInterface {
                 // "constants.usersBucket" and "PENSIEVE" since it has already
                 // been created
                 if (bucketName !== constants.usersBucket && bucketName !== PENSIEVE) {
-                    return this.db!.createCollection(bucketName)
-                        .then(() => {
-                            if (this.shardCollections) {
-                                const cmd = {
-                                    shardCollection: `${this.database}.${bucketName}`,
-                                    key: { _id: 1 },
-                                };
-                                return this.adminDb!.command(cmd, {}).then(() => cb(null)).catch(err => {
-                                    log.error(
-                                        'createBucket: enabling sharding',
-                                        { error: err });
+                    return this.db!.createCollection(bucketName).then(() => {
+                        if (this.shardCollections) {
+                            const cmd = {
+                                shardCollection: `${this.database}.${bucketName}`,
+                                key: { _id: 1 },
+                            };
+                            return this.adminDb!.command(cmd, {})
+                                .then(() => cb(null))
+                                .catch(err => {
+                                    log.error('createBucket: enabling sharding', { error: err });
                                     return cb(errors.InternalError);
                                 });
-                            }
-                            return cb(null);
-                        });
+                        }
+                        return cb(null);
+                    });
                 }
                 return cb(null);
             })
@@ -500,7 +513,8 @@ class MongoClientInterface {
                         VeeamSOSApi: doc.value.capabilities?.VeeamSOSApi && {
                             ...doc.value.capabilities.VeeamSOSApi,
                             // Long values are automatically serialized to strings
-                            CapacityInfo: doc.value.capabilities.VeeamSOSApi.CapacityInfo &&
+                            CapacityInfo:
+                                doc.value.capabilities.VeeamSOSApi.CapacityInfo &&
                                 VeeamCapacityInfo.serialize(doc.value.capabilities.VeeamSOSApi.CapacityInfo),
                         },
                     },
@@ -508,9 +522,7 @@ class MongoClientInterface {
                 return cb(null, BucketInfo.fromJson(bucketMetadata));
             })
             .catch(err => {
-                log.error(
-                    'getBucketAttributes: error getting bucket attributes',
-                    { error: err.message });
+                log.error('getBucketAttributes: error getting bucket attributes', { error: err.message });
                 return cb(errors.InternalError);
             });
         return undefined;
@@ -544,10 +556,7 @@ class MongoClientInterface {
                 return cb(null, vFormat);
             })
             .catch(err => {
-                log.error(
-                    'getBucketVFormat: error getting bucket vFormat',
-                    { bucket: bucketName, error: err.message },
-                );
+                log.error('getBucketVFormat: error getting bucket vFormat', { bucket: bucketName, error: err.message });
                 return cb(errors.InternalError);
             });
         return undefined;
@@ -558,26 +567,21 @@ class MongoClientInterface {
         objName: string,
         params: ObjectMDOperationParams,
         log: werelogs.Logger,
-        cb: ArsenalCallback<{ bucket: string, obj?: string }>,
+        cb: ArsenalCallback<{ bucket: string; obj?: string }>,
     ) {
         this.getBucketAttributes(bucketName, log, (err, bucket?) => {
             if (err) {
-                log.error(
-                    'getBucketAttributes: error getting bucket attributes',
-                    { error: err.message });
+                log.error('getBucketAttributes: error getting bucket attributes', { error: err.message });
                 return cb(err);
             }
             this.getObject(bucketName, objName, params, log, (err, obj?) => {
                 if (err) {
                     if (err.is.NoSuchKey) {
-                        return cb(null,
-                            {
-                                bucket:
-                                    BucketInfo.fromObj(bucket).serialize(),
-                            });
+                        return cb(null, {
+                            bucket: BucketInfo.fromObj(bucket).serialize(),
+                        });
                     }
-                    log.error('getObject: error getting object',
-                        { error: err.message });
+                    log.error('getObject: error getting object', { error: err.message });
                     return cb(err);
                 }
                 return cb(null, {
@@ -600,16 +604,20 @@ class MongoClientInterface {
 
         newBucketMD.quotaMax = new Long(newBucketMD.quotaMax || 0);
         const m = this.getCollection<BucketMetastoreDocument>(METASTORE);
-        m.updateOne({
-            _id: bucketName,
-        }, {
-            $set: {
+        m.updateOne(
+            {
                 _id: bucketName,
-                value: newBucketMD,
             },
-        }, {
-            upsert: true,
-        })
+            {
+                $set: {
+                    _id: bucketName,
+                    value: newBucketMD,
+                },
+            },
+            {
+                upsert: true,
+            },
+        )
             .then(result => {
                 if (result.matchedCount === 0 && result.modifiedCount === 0 && result.upsertedCount === 0) {
                     log.debug('putBucketAttributes: failed to update bucket', { bucketName });
@@ -618,9 +626,7 @@ class MongoClientInterface {
                 return cb(null);
             })
             .catch(err => {
-                log.error(
-                    'putBucketAttributes: error putting bucket attributes',
-                    { error: err.message });
+                log.error('putBucketAttributes: error putting bucket attributes', { error: err.message });
                 return cb(errors.InternalError);
             });
     }
@@ -644,30 +650,34 @@ class MongoClientInterface {
         cb: ArsenalCallback<void>,
     ) {
         const m = this.getCollection<BucketMetastoreDocument>(METASTORE);
-        const updateString = capabilityField ?
-            `value.capabilities.${capabilityName}.${capabilityField}` :
-            `value.capabilities.${capabilityName}`;
-        m.updateOne({
-            _id: bucketName,
-        }, {
-            $set: {
+        const updateString = capabilityField
+            ? `value.capabilities.${capabilityName}.${capabilityField}`
+            : `value.capabilities.${capabilityName}`;
+        m.updateOne(
+            {
                 _id: bucketName,
-                [updateString]: capability,
             },
-        }, {
-            upsert: true,
-        }).then(result => {
-            if (result.matchedCount === 0 && result.modifiedCount === 0 && result.upsertedCount === 0) {
-                log.error('putBucketAttributesCapabilities: failed to update bucket', { bucketName });
+            {
+                $set: {
+                    _id: bucketName,
+                    [updateString]: capability,
+                },
+            },
+            {
+                upsert: true,
+            },
+        )
+            .then(result => {
+                if (result.matchedCount === 0 && result.modifiedCount === 0 && result.upsertedCount === 0) {
+                    log.error('putBucketAttributesCapabilities: failed to update bucket', { bucketName });
+                    return cb(errors.InternalError);
+                }
+                return cb(null);
+            })
+            .catch(err => {
+                log.error('putBucketAttributesCapabilities: error putting bucket attributes', { error: err.message });
                 return cb(errors.InternalError);
-            }
-            return cb(null);
-        }).catch(err => {
-            log.error(
-                'putBucketAttributesCapabilities: error putting bucket attributes',
-                { error: err.message });
-            return cb(errors.InternalError);
-        });
+            });
     }
 
     /**
@@ -687,31 +697,37 @@ class MongoClientInterface {
         cb: ArsenalCallback<void>,
     ) {
         const m = this.getCollection<BucketMetastoreDocument>(METASTORE);
-        const updateString = capabilityField ?
-            `value.capabilities.${capabilityName}.${capabilityField}` :
-            `value.capabilities.${capabilityName}`;
-        m.updateOne({
-            _id: bucketName,
-        }, {
-            $unset: {
-                [updateString]: '',
+        const updateString = capabilityField
+            ? `value.capabilities.${capabilityName}.${capabilityField}`
+            : `value.capabilities.${capabilityName}`;
+        m.updateOne(
+            {
+                _id: bucketName,
             },
-        }).then(result => {
-            if (result.matchedCount === 0 && result.modifiedCount === 0) {
-                log.debug('deleteBucketAttributesCapability: bucket not found or capability not present',
-                    { bucketName });
-                return cb(errors.NoSuchBucket);
-            }
-            return cb(null);
-        }).catch(err => {
-            if (err) {
-                log.error(
-                    'deleteBucketAttributesCapability: error deleting bucket attributes',
-                    { error: err.message });
-                return cb(errors.InternalError);
-            }
-            return cb(null);
-        });
+            {
+                $unset: {
+                    [updateString]: '',
+                },
+            },
+        )
+            .then(result => {
+                if (result.matchedCount === 0 && result.modifiedCount === 0) {
+                    log.debug('deleteBucketAttributesCapability: bucket not found or capability not present', {
+                        bucketName,
+                    });
+                    return cb(errors.NoSuchBucket);
+                }
+                return cb(null);
+            })
+            .catch(err => {
+                if (err) {
+                    log.error('deleteBucketAttributesCapability: error deleting bucket attributes', {
+                        error: err.message,
+                    });
+                    return cb(errors.InternalError);
+                }
+                return cb(null);
+            });
     }
 
     /*
@@ -719,11 +735,14 @@ class MongoClientInterface {
      */
     deleteBucketStep2(bucketName: string, log: werelogs.Logger, cb: ArsenalCallback<void>) {
         const m = this.getCollection<BucketMetastoreDocument>(METASTORE);
-        m.findOneAndDelete({
-            _id: bucketName,
-        } , {
-            includeResultMetadata: true,
-        })
+        m.findOneAndDelete(
+            {
+                _id: bucketName,
+            },
+            {
+                includeResultMetadata: true,
+            },
+        )
             .then(result => {
                 if (result.ok !== 1) {
                     log.error('deleteBucketStep2: failed deleting bucket');
@@ -734,8 +753,7 @@ class MongoClientInterface {
                 return cb(null);
             })
             .catch(err => {
-                log.error('deleteBucketStep2: error deleting bucket',
-                    { error: err.message });
+                log.error('deleteBucketStep2: error deleting bucket', { error: err.message });
                 return cb(errors.InternalError);
             });
     }
@@ -765,8 +783,7 @@ class MongoClientInterface {
                 if (err.codeName === 'NamespaceNotFound') {
                     return this.deleteBucketStep2(bucketName, log, cb);
                 }
-                log.error('deleteBucket: error deleting bucket',
-                    { error: err.message });
+                log.error('deleteBucket: error deleting bucket', { error: err.message });
                 return cb(errors.InternalError);
             });
     }
@@ -784,8 +801,13 @@ class MongoClientInterface {
      * @param {Boolean} upsert if upserting is needed
      * @return {Object} mongo operation
      */
-    updateDeleteMaster(isDeleteMarker: boolean, vFormat: string, 
-        filter: any, update: any, upsert: boolean): AnyBulkWriteOperation<ObjectMetastoreDocument> {
+    updateDeleteMaster(
+        isDeleteMarker: boolean,
+        vFormat: string,
+        filter: any,
+        update: any,
+        upsert: boolean,
+    ): AnyBulkWriteOperation<ObjectMetastoreDocument> {
         // delete master when we are in v1 and the version is a delete
         // marker
         if (isDeleteMarker && vFormat === BUCKET_VERSIONS.v1) {
@@ -845,21 +867,20 @@ class MongoClientInterface {
         const versionKey = formatVersionKey(objName, versionId, params.vFormat);
         const masterKey = formatMasterKey(objName, params.vFormat);
         // initiating array of operations with version creation
-        const ops: AnyBulkWriteOperation<ObjectMetastoreDocument>[] = [{
-            insertOne: {
-                document: {
-                    _id: versionKey,
-                    value: objVal,
-                } as ObjectMetastoreDocument,
+        const ops: AnyBulkWriteOperation<ObjectMetastoreDocument>[] = [
+            {
+                insertOne: {
+                    document: {
+                        _id: versionKey,
+                        value: objVal,
+                    } as ObjectMetastoreDocument,
+                },
             },
-        }];
+        ];
         // filter to get master
         const filter = {
             _id: masterKey,
-            $or: [
-                { 'value.versionId': { $exists: false } },
-                { 'value.versionId': { $gt: objVal.versionId } },
-            ],
+            $or: [{ 'value.versionId': { $exists: false } }, { 'value.versionId': { $gt: objVal.versionId } }],
         };
         // values to update master
         const update = {
@@ -918,7 +939,8 @@ class MongoClientInterface {
                             error: err.errmsg,
                         });
                         return process.nextTick(() =>
-                            this.putObjectVerCase1(c, bucketName, objName, objVal, params, log, cb, true));
+                            this.putObjectVerCase1(c, bucketName, objName, objVal, params, log, cb, true),
+                        );
                     }
 
                     // Version operation failed twice, reject the operation.
@@ -960,10 +982,7 @@ class MongoClientInterface {
         const versionId = generateVersionId(this.instanceId, this.replicationGroupId);
         objVal.versionId = versionId;
         const masterKey = formatMasterKey(objName, params.vFormat);
-        c.updateOne({ _id: masterKey },
-            { $set: { value: objVal }, $setOnInsert: { _id: masterKey } },
-            { upsert: true },
-        )
+        c.updateOne({ _id: masterKey }, { $set: { value: objVal }, $setOnInsert: { _id: masterKey } }, { upsert: true })
             .then(() => cb(null, `{"versionId": "${objVal.versionId}"}`))
             .catch(err => {
                 log.error('putObjectVerCase2: error putting object version', { error: err.message });
@@ -1022,63 +1041,69 @@ class MongoClientInterface {
                 });
         };
 
-        c.findOne({ _id: masterKey }).then(checkObj => {
-            const objUpsert = !checkObj;
-            // initiating array of operations with version creation/update
-            const ops: AnyBulkWriteOperation<ObjectMetastoreDocument>[] = [{
-                updateOne: {
-                    filter: {
-                        _id: versionKey,
-                    },
-                    update: {
-                        $set: {
-                            _id: versionKey,
-                            value: objVal,
+        c.findOne({ _id: masterKey })
+            .then(checkObj => {
+                const objUpsert = !checkObj;
+                // initiating array of operations with version creation/update
+                const ops: AnyBulkWriteOperation<ObjectMetastoreDocument>[] = [
+                    {
+                        updateOne: {
+                            filter: {
+                                _id: versionKey,
+                            },
+                            update: {
+                                $set: {
+                                    _id: versionKey,
+                                    value: objVal,
+                                },
+                            },
+                            upsert: true,
                         },
                     },
-                    upsert: true,
-                },
-            }];
-            // filter to get master
-            const filter = {
-                '_id': masterKey,
-                'value.versionId': objVal.versionId,
-            };
-            // values to update master
-            const update = {
-                $set: { _id: masterKey, value: objVal },
-            };
+                ];
+                // filter to get master
+                const filter = {
+                    _id: masterKey,
+                    'value.versionId': objVal.versionId,
+                };
+                // values to update master
+                const update = {
+                    $set: { _id: masterKey, value: objVal },
+                };
 
-            c.findOne({ _id: versionKey }).then(verObj => {
-                // existing versioned entry update.
-                // if master entry doesn't exist, skip upsert of master
-                if (verObj && !checkObj) {
-                    putObjectEntry(ops, cb);
-                    return null;
-                }
+                c.findOne({ _id: versionKey })
+                    .then(verObj => {
+                        // existing versioned entry update.
+                        // if master entry doesn't exist, skip upsert of master
+                        if (verObj && !checkObj) {
+                            putObjectEntry(ops, cb);
+                            return null;
+                        }
 
-                // updating or deleting master depending on the last version put
-                // in v0 the master gets updated, in v1 the master gets deleted if version is
-                // a delete marker or updated otherwise.
-                const masterOp = this.updateDeleteMaster(
-                    objVal.isDeleteMarker || false,
-                    params.vFormat,
-                    filter,
-                    update,
-                    objUpsert,
-                );
-                ops.push(masterOp);
-                putObjectEntry(ops, cb);
+                        // updating or deleting master depending on the last version put
+                        // in v0 the master gets updated, in v1 the master gets deleted if version is
+                        // a delete marker or updated otherwise.
+                        const masterOp = this.updateDeleteMaster(
+                            objVal.isDeleteMarker || false,
+                            params.vFormat,
+                            filter,
+                            update,
+                            objUpsert,
+                        );
+                        ops.push(masterOp);
+                        putObjectEntry(ops, cb);
+                        return null;
+                    })
+                    .catch(err => {
+                        log.error('putObjectVerCase3: mongoDB error finding object', { err });
+                        return cb(errors.InternalError);
+                    });
                 return null;
-            }).catch(err => {
+            })
+            .catch(err => {
                 log.error('putObjectVerCase3: mongoDB error finding object', { err });
                 return cb(errors.InternalError);
             });
-            return null;
-        }).catch(err => {
-            log.error('putObjectVerCase3: mongoDB error finding object', { err });
-            return cb(errors.InternalError);
-        });
     }
 
     /**
@@ -1112,75 +1137,88 @@ class MongoClientInterface {
     ) {
         const versionKey = formatVersionKey(objName, params.versionId, params.vFormat);
         const masterKey = formatMasterKey(objName, params.vFormat);
-        c.updateOne({
-            _id: versionKey,
-        }, {
-            $set: {
+        c.updateOne(
+            {
                 _id: versionKey,
-                value: objVal,
             },
-        }, {
-            upsert: true,
-        }).then(() => this.getLatestVersion(c, objName, params.vFormat, log, (err, mstObjVal?) => {
-            if (err?.is.NoSuchKey) {
-                return cb(err);
-            }
+            {
+                $set: {
+                    _id: versionKey,
+                    value: objVal,
+                },
+            },
+            {
+                upsert: true,
+            },
+        )
+            .then(() =>
+                this.getLatestVersion(c, objName, params.vFormat, log, (err, mstObjVal?) => {
+                    if (err?.is.NoSuchKey) {
+                        return cb(err);
+                    }
 
-            if (err) {
-                log.error('getLatestVersion: getting latest version',
-                    { error: err.message });
-                return cb(err);
-            }
+                    if (err) {
+                        log.error('getLatestVersion: getting latest version', { error: err.message });
+                        return cb(err);
+                    }
 
-            MongoUtils.serialize(mstObjVal);
-            const ops: AnyBulkWriteOperation<ObjectMetastoreDocument>[] = [];
-            // filter to get master
-            const filter = {
-                _id: masterKey,
-                $or: [
-                    { 'value.versionId': { $exists: false } },
-                    // We break the semantic correctness here with
-                    // $gte instead of $gt because we do not have
-                    // a microVersionId to capture the micro
-                    // changes (tags, ACLs, etc). If we do not use
-                    // $gte currently the micro changes are not
-                    // propagated. We are now totally dependent of
-                    // the order of changes (which Backbeat
-                    // replication and ingestion can hopefully
-                    // ensure), but this would not work e.g. in
-                    // the case of an active-active replication.
+                    MongoUtils.serialize(mstObjVal);
+                    const ops: AnyBulkWriteOperation<ObjectMetastoreDocument>[] = [];
+                    // filter to get master
+                    const filter = {
+                        _id: masterKey,
+                        $or: [
+                            { 'value.versionId': { $exists: false } },
+                            // We break the semantic correctness here with
+                            // $gte instead of $gt because we do not have
+                            // a microVersionId to capture the micro
+                            // changes (tags, ACLs, etc). If we do not use
+                            // $gte currently the micro changes are not
+                            // propagated. We are now totally dependent of
+                            // the order of changes (which Backbeat
+                            // replication and ingestion can hopefully
+                            // ensure), but this would not work e.g. in
+                            // the case of an active-active replication.
 
-                    { 'value.versionId': { $gte: mstObjVal!.versionId } },
-                ]
-            };
-            // values to update master
-            const update = {
-                $set: { _id: masterKey, value: mstObjVal },
-            };
-            // updating or deleting master depending on the last version put
-            // in v0 the master gets updated, in v1 the master gets deleted if version is
-            // a delete marker or updated otherwise.
-            const masterOp = this.updateDeleteMaster(mstObjVal!.isDeleteMarker || false, params.vFormat, filter, update,
-                true);
-            ops.push(masterOp);
-            return c.bulkWrite(ops, {
-                ordered: true,
-            }).then(() => cb(null, `{"versionId": "${objVal.versionId}"}`)).catch(err => {
-                // we accept that the update fails if
-                // condition is not met, meaning that a more
-                // recent master was already in place
-                if (err.code === 11000) {
-                    return cb(null, `{"versionId": "${objVal.versionId}"}`);
-                }
-                log.error('putObjectVerCase4: error upserting master', { error: err.message });
+                            { 'value.versionId': { $gte: mstObjVal!.versionId } },
+                        ],
+                    };
+                    // values to update master
+                    const update = {
+                        $set: { _id: masterKey, value: mstObjVal },
+                    };
+                    // updating or deleting master depending on the last version put
+                    // in v0 the master gets updated, in v1 the master gets deleted if version is
+                    // a delete marker or updated otherwise.
+                    const masterOp = this.updateDeleteMaster(
+                        mstObjVal!.isDeleteMarker || false,
+                        params.vFormat,
+                        filter,
+                        update,
+                        true,
+                    );
+                    ops.push(masterOp);
+                    return c
+                        .bulkWrite(ops, {
+                            ordered: true,
+                        })
+                        .then(() => cb(null, `{"versionId": "${objVal.versionId}"}`))
+                        .catch(err => {
+                            // we accept that the update fails if
+                            // condition is not met, meaning that a more
+                            // recent master was already in place
+                            if (err.code === 11000) {
+                                return cb(null, `{"versionId": "${objVal.versionId}"}`);
+                            }
+                            log.error('putObjectVerCase4: error upserting master', { error: err.message });
+                            return cb(errors.InternalError);
+                        });
+                }),
+            )
+            .catch(err => {
+                log.error('putObjectVerCase4: error upserting object version', { error: err.message });
                 return cb(errors.InternalError);
             });
-        })).catch(err => {
-            log.error(
-                'putObjectVerCase4: error upserting object version',
-                { error: err.message });
-            return cb(errors.InternalError);
-        });
     }
     /**
      * Puts an object into a MongoDB collection.
@@ -1215,17 +1253,24 @@ class MongoClientInterface {
         }
         const key = formatMasterKey(objName, params.vFormat);
         const putFilter = { _id: key };
-        return collection.updateOne(putFilter, {
-            $set: {
-                _id: key,
-                value,
-            },
-        }, {
-            upsert: true,
-        }).then(() => cb(null)).catch(err => {
-            log.error('putObjectNoVer: error putting obect with no versioning', { error: err.message });
-            return cb(errors.InternalError);
-        });
+        return collection
+            .updateOne(
+                putFilter,
+                {
+                    $set: {
+                        _id: key,
+                        value,
+                    },
+                },
+                {
+                    upsert: true,
+                },
+            )
+            .then(() => cb(null))
+            .catch(err => {
+                log.error('putObjectNoVer: error putting obect with no versioning', { error: err.message });
+                return cb(errors.InternalError);
+            });
     }
 
     /**
@@ -1259,68 +1304,91 @@ class MongoClientInterface {
         // filter used when finding and updating object
         const findFilter = {
             ...putFilter,
-            $or: [
-                { 'value.deleted': { $exists: false } },
-                { 'value.deleted': { $eq: false } },
-            ],
+            $or: [{ 'value.deleted': { $exists: false } }, { 'value.deleted': { $eq: false } }],
         };
         const updateDeleteFilter = {
             ...putFilter,
             'value.deleted': true,
         };
-        return async.waterfall([
-            // Adding delete flag when getting the object
-            // to avoid having race conditions.
-            next => collection.findOneAndUpdate(findFilter, {
-                $set: updateDeleteFilter,
-            }, {
-                upsert: false,
-            }).then(doc => {
-                if (!doc?.value) {
-                    log.error('internalPutObject: unable to find target object to update',
-                        { bucket: bucketName, object: key });
-                    return next(errors.NoSuchKey);
+        return async.waterfall(
+            [
+                // Adding delete flag when getting the object
+                // to avoid having race conditions.
+                next =>
+                    collection
+                        .findOneAndUpdate(
+                            findFilter,
+                            {
+                                $set: updateDeleteFilter,
+                            },
+                            {
+                                upsert: false,
+                            },
+                        )
+                        .then(doc => {
+                            if (!doc?.value) {
+                                log.error('internalPutObject: unable to find target object to update', {
+                                    bucket: bucketName,
+                                    object: key,
+                                });
+                                return next(errors.NoSuchKey);
+                            }
+                            const obj = doc.value;
+                            const objMetadata = new ObjectMD(obj);
+                            objMetadata.setOriginOp(params.originOp);
+                            objMetadata.setDeleted(true);
+                            return next(null, objMetadata.getValue());
+                        })
+                        .catch(err => {
+                            log.error('internalPutObject: error getting object', {
+                                bucket: bucketName,
+                                object: key,
+                                error: err.message,
+                            });
+                            return next(errors.InternalError);
+                        }),
+                // We update the full object to get the whole object metadata
+                // in the oplog update event
+                (objMetadata, next) =>
+                    collection
+                        .bulkWrite(
+                            [
+                                {
+                                    updateOne: {
+                                        filter: updateDeleteFilter,
+                                        update: {
+                                            $set: { _id: key, value: objMetadata },
+                                        },
+                                        upsert: false,
+                                    },
+                                },
+                                {
+                                    updateOne: {
+                                        filter: putFilter,
+                                        update: {
+                                            $set: { _id: key, value },
+                                        },
+                                        upsert: true,
+                                    },
+                                },
+                            ],
+                            { ordered: true },
+                        )
+                        .then(() => next(null))
+                        .catch(next),
+            ],
+            err => {
+                if (err) {
+                    log.error('internalPutObject: error updating object', {
+                        bucket: bucketName,
+                        object: key,
+                        error: err.message,
+                    });
+                    return cb(errors.InternalError);
                 }
-                const obj = doc.value;
-                const objMetadata = new ObjectMD(obj);
-                objMetadata.setOriginOp(params.originOp);
-                objMetadata.setDeleted(true);
-                return next(null, objMetadata.getValue());
-            }).catch(err => {
-                log.error('internalPutObject: error getting object',
-                    { bucket: bucketName, object: key, error: err.message });
-                return next(errors.InternalError);
-            }),
-            // We update the full object to get the whole object metadata
-            // in the oplog update event
-            (objMetadata, next) => collection.bulkWrite([
-                {
-                    updateOne: {
-                        filter: updateDeleteFilter,
-                        update: {
-                            $set: { _id: key, value: objMetadata },
-                        },
-                        upsert: false,
-                    },
-                },
-                {
-                    updateOne: {
-                        filter: putFilter,
-                        update: {
-                            $set: { _id: key, value },
-                        },
-                        upsert: true,
-                    },
-                },
-            ], { ordered: true }).then(() => next(null)).catch(next),
-        ], err => {
-            if (err) {
-                log.error('internalPutObject: error updating object',
-                    { bucket: bucketName, object: key, error: err.message });
-                return cb(errors.InternalError);
-            }
-            return cb(null);
-        });
+                return cb(null);
+            },
+        );
     }
     /**
      * Returns the putObjectVerCase function to use
@@ -1371,8 +1439,7 @@ class MongoClientInterface {
                 _params.vFormat = vFormat;
             }
             if (params) {
-                const putObjectVer = this.getPutObjectVerStrategy(params)
-                    .bind(this);
+                const putObjectVer = this.getPutObjectVerStrategy(params).bind(this);
                 return putObjectVer(c, bucketName, objName, objVal, _params, log, cb);
             }
             return this.putObjectNoVer(c, bucketName, objName, objVal, _params, log, cb);
@@ -1398,59 +1465,70 @@ class MongoClientInterface {
     ) {
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
         let key;
-        async.waterfall([
-            next => this.getBucketVFormat(bucketName, log, next),
-            (vFormat, next) => {
-                if (params && params.versionId) {
-                    key = formatVersionKey(objName, params.versionId, vFormat);
-                } else {
-                    key = formatMasterKey(objName, vFormat);
-                }
-                c.findOne({
-                    _id: key,
-                    // filtering out objects flagged for deletion
-                    $or: [
-                        { 'value.deleted': { $exists: false } },
-                        { 'value.deleted': { $eq: false } },
-                    ],
-                }, {}).then(doc => next(null, vFormat, doc)).catch(err => {
-                    log.error('findOne: error getting object',
-                        { bucket: bucketName, object: objName, error: err.message });
-                    return next(errors.InternalError);
-                });
-            },
-            (vFormat, doc, next) => {
-                if (!doc && params && params.versionId) {
-                    return next(errorInstances.NoSuchKey);
-                }
-                // If no master found then object is either non existent
-                // or last version is delete marker
-                if (!doc || doc.value.isPHD) {
-                    this.getLatestVersion(c, objName, vFormat, log, (err, value?) => {
-                        if (err?.is.NoSuchKey) {
-                            return next(err);
-                        }
-
-                        if (err) {
-                            log.error('getLatestVersion: getting latest version',
-                                { bucket: bucketName, object: objName, error: err.message });
-
+        async.waterfall(
+            [
+                next => this.getBucketVFormat(bucketName, log, next),
+                (vFormat, next) => {
+                    if (params && params.versionId) {
+                        key = formatVersionKey(objName, params.versionId, vFormat);
+                    } else {
+                        key = formatMasterKey(objName, vFormat);
+                    }
+                    c.findOne(
+                        {
+                            _id: key,
+                            // filtering out objects flagged for deletion
+                            $or: [{ 'value.deleted': { $exists: false } }, { 'value.deleted': { $eq: false } }],
+                        },
+                        {},
+                    )
+                        .then(doc => next(null, vFormat, doc))
+                        .catch(err => {
+                            log.error('findOne: error getting object', {
+                                bucket: bucketName,
+                                object: objName,
+                                error: err.message,
+                            });
                             return next(errors.InternalError);
-                        }
+                        });
+                },
+                (vFormat, doc, next) => {
+                    if (!doc && params && params.versionId) {
+                        return next(errorInstances.NoSuchKey);
+                    }
+                    // If no master found then object is either non existent
+                    // or last version is delete marker
+                    if (!doc || doc.value.isPHD) {
+                        this.getLatestVersion(c, objName, vFormat, log, (err, value?) => {
+                            if (err?.is.NoSuchKey) {
+                                return next(err);
+                            }
 
-                        return next(null, value);
-                    });
-                    return undefined;
+                            if (err) {
+                                log.error('getLatestVersion: getting latest version', {
+                                    bucket: bucketName,
+                                    object: objName,
+                                    error: err.message,
+                                });
+
+                                return next(errors.InternalError);
+                            }
+
+                            return next(null, value);
+                        });
+                        return undefined;
+                    }
+                    MongoUtils.unserialize(doc.value);
+                    return next(null, doc.value);
+                },
+            ],
+            (err: ArsenalError | null | undefined, result?: ObjectMDData) => {
+                if (err) {
+                    return cb(err);
                 }
-                MongoUtils.unserialize(doc.value);
-                return next(null, doc.value);
+                return cb(null, result!);
             },
-        ], (err: ArsenalError | null | undefined, result?: ObjectMDData) => {
-            if (err) {
-                return cb(err);
-            }
-            return cb(null, result!);
-        });
+        );
     }
 
     /**
@@ -1463,7 +1541,7 @@ class MongoClientInterface {
      */
     getObjects(
         bucketName: string,
-        objects: { key: string, params: ObjectMDOperationParams }[],
+        objects: { key: string; params: ObjectMDOperationParams }[],
         log: werelogs.Logger,
         callback: ArsenalCallback<unknown[]>,
     ) {
@@ -1491,12 +1569,14 @@ class MongoClientInterface {
             // If no master found then object is either non existent or last
             // version is delete marker
             if (!doc || doc.value.isPHD) {
-                return this.getLatestVersion(c!, objName, vFormat, log, (err, _doc?) => cb(null, {
-                    err,
-                    doc: _doc || null,
-                    versionId: versionIdValue,
-                    key,
-                }));
+                return this.getLatestVersion(c!, objName, vFormat, log, (err, _doc?) =>
+                    cb(null, {
+                        err,
+                        doc: _doc || null,
+                        versionId: versionIdValue,
+                        key,
+                    }),
+                );
             }
             MongoUtils.unserialize(doc.value);
             return cb(null, {
@@ -1517,35 +1597,43 @@ class MongoClientInterface {
                 return callback(errors.InternalError);
             }
             vFormat = _vFormat;
-            const keys = objects.map(({ key: objName, params }) => (params && params.versionId
-                ? formatVersionKey(objName, params.versionId, vFormat)
-                : formatMasterKey(objName, vFormat)));
-            return c!.find({
-                _id: { $in: keys },
-                $or: [
-                    { 'value.deleted': { $exists: false } },
-                    { 'value.deleted': { $eq: false } },
-                ],
-            }).toArray().then(docs => {
-                // Create a Map to quickly find docs by their keys
-                const docByKey = new Map(docs.map(doc => [doc._id, doc]));
-                // Process each document using associated context (objName, params)
-                async.mapLimit(objects, constants.maxBatchingConcurrentOperations,
-                    ({ key: objName, params }, cb) => {
-                        const key = params && params.versionId
-                            ? formatVersionKey(objName, params.versionId, vFormat)
-                            : formatMasterKey(objName, vFormat);
-                        const doc = docByKey.get(key);
-                        processDoc(doc, objName, params, key, cb);
-                    }, (err: ArsenalError | null | undefined, result?: unknown[]) => {
-                        if (err) {
-                            return callback(err);
-                        }
-                        return callback(null, result!);
-                    });
-            }).catch(err => {
-                callback(err);
-            });
+            const keys = objects.map(({ key: objName, params }) =>
+                params && params.versionId
+                    ? formatVersionKey(objName, params.versionId, vFormat)
+                    : formatMasterKey(objName, vFormat),
+            );
+            return c!
+                .find({
+                    _id: { $in: keys },
+                    $or: [{ 'value.deleted': { $exists: false } }, { 'value.deleted': { $eq: false } }],
+                })
+                .toArray()
+                .then(docs => {
+                    // Create a Map to quickly find docs by their keys
+                    const docByKey = new Map(docs.map(doc => [doc._id, doc]));
+                    // Process each document using associated context (objName, params)
+                    async.mapLimit(
+                        objects,
+                        constants.maxBatchingConcurrentOperations,
+                        ({ key: objName, params }, cb) => {
+                            const key =
+                                params && params.versionId
+                                    ? formatVersionKey(objName, params.versionId, vFormat)
+                                    : formatMasterKey(objName, vFormat);
+                            const doc = docByKey.get(key);
+                            processDoc(doc, objName, params, key, cb);
+                        },
+                        (err: ArsenalError | null | undefined, result?: unknown[]) => {
+                            if (err) {
+                                return callback(err);
+                            }
+                            return callback(null, result!);
+                        },
+                    );
+                })
+                .catch(err => {
+                    callback(err);
+                });
         });
     }
 
@@ -1573,26 +1661,29 @@ class MongoClientInterface {
         // string gives us the last key in the range
         const versionKey = formatVersionKey(objName, VID_NONE, vFormat);
         const lastVersionKey = inc(versionKey);
-        const filter = vFormat === BUCKET_VERSIONS.v0 ? {
-            $gt: masterKey,
-            $lt: lastVersionKey,
-        } : {
-            $gt: versionKey,
-            $lt: lastVersionKey,
-        };
-        c.find({
-            _id: filter,
-            // filtering out objects flagged for deletion
-            $or: [
-                { 'value.deleted': { $exists: false } },
-                { 'value.deleted': { $eq: false } },
-            ],
-        }, {}).
-            sort({
+        const filter =
+            vFormat === BUCKET_VERSIONS.v0
+                ? {
+                      $gt: masterKey,
+                      $lt: lastVersionKey,
+                  }
+                : {
+                      $gt: versionKey,
+                      $lt: lastVersionKey,
+                  };
+        c.find(
+            {
+                _id: filter,
+                // filtering out objects flagged for deletion
+                $or: [{ 'value.deleted': { $exists: false } }, { 'value.deleted': { $eq: false } }],
+            },
+            {},
+        )
+            .sort({
                 _id: 1,
-            }).
-            limit(1).
-            toArray()
+            })
+            .limit(1)
+            .toArray()
             .then(keys => {
                 if (keys.length === 0) {
                     return cb(errors.NoSuchKey);
@@ -1601,9 +1692,7 @@ class MongoClientInterface {
                 return cb(null, keys[0].value);
             })
             .catch(err => {
-                log.error(
-                    'getLatestVersion: error getting latest version',
-                    { error: err.message });
+                log.error('getLatestVersion: error getting latest version', { error: err.message });
                 return cb(errors.InternalError);
             });
     }
@@ -1635,27 +1724,32 @@ class MongoClientInterface {
         const masterKey = formatMasterKey(objName, vFormat);
         MongoUtils.serialize(objVal);
         objVal.originOp = 's3:ObjectRemoved:Delete';
-        c.findOneAndReplace({
-            '_id': masterKey,
-            'value.isPHD': true,
-            'value.versionId': mst.versionId,
-        }, <WithId<ObjectMetastoreDocument>>{
-            _id: masterKey,
-            value: objVal,
-        }, {
-            includeResultMetadata: true,
-            upsert: true,
-        }).then(result => {
-            if (result.ok !== 1) {
-                log.error('repair: failed trying to repair value');
+        c.findOneAndReplace(
+            {
+                _id: masterKey,
+                'value.isPHD': true,
+                'value.versionId': mst.versionId,
+            },
+            <WithId<ObjectMetastoreDocument>>{
+                _id: masterKey,
+                value: objVal,
+            },
+            {
+                includeResultMetadata: true,
+                upsert: true,
+            },
+        )
+            .then(result => {
+                if (result.ok !== 1) {
+                    log.error('repair: failed trying to repair value');
+                    return cb(errors.InternalError);
+                }
+                return cb(null);
+            })
+            .catch(err => {
+                log.error('repair: error trying to repair value', { error: err.message });
                 return cb(errors.InternalError);
-            }
-            return cb(null);
-        }).catch(err => {
-            log.error('repair: error trying to repair value',
-                { error: err.message });
-            return cb(errors.InternalError);
-        });
+            });
     }
 
     /**
@@ -1676,12 +1770,11 @@ class MongoClientInterface {
         objName: string,
         mst: { versionId: string },
         vFormat: string,
-        log: werelogs.Logger
+        log: werelogs.Logger,
     ) {
         this.getLatestVersion(c, objName, vFormat, log, (err, value?) => {
             if (err) {
-                log.error('async-repair: getting latest version',
-                    { error: err.message });
+                log.error('async-repair: getting latest version', { error: err.message });
                 return undefined;
             }
             this.repair(c, bucketName, objName, value!, mst, vFormat, log, err => {
@@ -1721,11 +1814,14 @@ class MongoClientInterface {
         // Check if there are other versions available
         this.getLatestVersion(c, objName, vFormat, log, (err, version?) => {
             if (err && !err.is.NoSuchKey) {
-                log.error('getLatestVersion: error getting latest version',
-                    { error: err.message, bucket: bucketName, key: objName });
+                log.error('getLatestVersion: error getting latest version', {
+                    error: err.message,
+                    bucket: bucketName,
+                    key: objName,
+                });
                 return cb(err);
             }
-            if ((err?.is.NoSuchKey) || (version!.isDeleteMarker && vFormat === BUCKET_VERSIONS.v1)) {
+            if (err?.is.NoSuchKey || (version!.isDeleteMarker && vFormat === BUCKET_VERSIONS.v1)) {
                 // We try to delete the master. A race condition
                 // is possible here: another process may recreate
                 // a master or re-delete it in between so place an
@@ -1743,9 +1839,11 @@ class MongoClientInterface {
                         if (err.is.NoSuchKey) {
                             return cb(null);
                         }
-                        log.error(
-                            'deleteOrRepairPHD: error deleting object',
-                            { error: err.message, bucket: bucketName, key: objName });
+                        log.error('deleteOrRepairPHD: error deleting object', {
+                            error: err.message,
+                            bucket: bucketName,
+                            key: objName,
+                        });
                         return cb(errors.InternalError);
                     }
                     // do not test result.ok === 1 because
@@ -1791,48 +1889,65 @@ class MongoClientInterface {
         const masterKey = formatMasterKey(objName, params.vFormat);
         const versionKey = formatVersionKey(objName, params.versionId, params.vFormat);
         const _vid = generateVersionId(this.instanceId, this.replicationGroupId);
-        async.series([
-            next => c.updateOne(
-                {
-                    // Can't filter out objects with deletiong flag
-                    // as it will try and recreate an object with the same _id
-                    // instead we reset the flag to false, the data might be
-                    // inconsistent with the current state of the object but
-                    // this is not an issue as the object is in a temporary
-                    // placeholder (PHD) state
-                    _id: masterKey,
-                },
-                {
-                    $set: {
-                        '_id': masterKey,
-                        'value.isPHD': true,
-                        'value.versionId': _vid,
-                        'value.deleted': false,
-                    },
-                },
-                { upsert: true })
-                .then(() => next())
-                .catch(err => next(err)),
-            // delete version
-            next => this.internalDeleteObject(c, bucketName, versionKey, {}, params, log,
-                err => {
-                    // we don't return an error in case we don't find
-                    // a version as we expect this case when dealing with
-                    // a versioning suspended object.
-                    if (err?.is.NoSuchKey) {
-                        return next(null);
-                    }
-                    return next(err);
-                }, originOp),
-        ], err => {
-            if (err) {
-                log.error(
-                    'deleteObjectVerMaster: error deleting the object',
-                    { error: err.message, bucket: bucketName, key: objName });
-                return cb(errors.InternalError);
-            }
-            return this.deleteOrRepairPHD(c, bucketName, objName, { versionId: _vid }, params.vFormat, log, cb);
-        });
+        async.series(
+            [
+                next =>
+                    c
+                        .updateOne(
+                            {
+                                // Can't filter out objects with deletiong flag
+                                // as it will try and recreate an object with the same _id
+                                // instead we reset the flag to false, the data might be
+                                // inconsistent with the current state of the object but
+                                // this is not an issue as the object is in a temporary
+                                // placeholder (PHD) state
+                                _id: masterKey,
+                            },
+                            {
+                                $set: {
+                                    _id: masterKey,
+                                    'value.isPHD': true,
+                                    'value.versionId': _vid,
+                                    'value.deleted': false,
+                                },
+                            },
+                            { upsert: true },
+                        )
+                        .then(() => next())
+                        .catch(err => next(err)),
+                // delete version
+                next =>
+                    this.internalDeleteObject(
+                        c,
+                        bucketName,
+                        versionKey,
+                        {},
+                        params,
+                        log,
+                        err => {
+                            // we don't return an error in case we don't find
+                            // a version as we expect this case when dealing with
+                            // a versioning suspended object.
+                            if (err?.is.NoSuchKey) {
+                                return next(null);
+                            }
+                            return next(err);
+                        },
+                        originOp,
+                    ),
+            ],
+            err => {
+                if (err) {
+                    log.error('deleteObjectVerMaster: error deleting the object', {
+                        error: err.message,
+                        bucket: bucketName,
+                        key: objName,
+                    });
+                    return cb(errors.InternalError);
+                }
+                return this.deleteOrRepairPHD(c, bucketName, objName, { versionId: _vid }, params.vFormat, log, cb);
+            },
+        );
     }
 
     /**
@@ -1859,21 +1974,34 @@ class MongoClientInterface {
         originOp = 's3:ObjectRemoved:Delete',
     ) {
         const versionKey = formatVersionKey(objName, params.versionId, params.vFormat);
-        this.internalDeleteObject(c, bucketName, versionKey, {}, params, log, err => {
-            if (err) {
-                if (err.is.NoSuchKey) {
-                    log.error(
-                        'deleteObjectVerNotMaster: unable to find target object to delete',
-                        { error: err.message, bucket: bucketName, key: objName });
-                    return cb(errors.NoSuchKey);
+        this.internalDeleteObject(
+            c,
+            bucketName,
+            versionKey,
+            {},
+            params,
+            log,
+            err => {
+                if (err) {
+                    if (err.is.NoSuchKey) {
+                        log.error('deleteObjectVerNotMaster: unable to find target object to delete', {
+                            error: err.message,
+                            bucket: bucketName,
+                            key: objName,
+                        });
+                        return cb(errors.NoSuchKey);
+                    }
+                    log.error('deleteObjectVerNotMaster: error deleting object with no version', {
+                        error: err.message,
+                        bucket: bucketName,
+                        key: objName,
+                    });
+                    return cb(errors.InternalError);
                 }
-                log.error(
-                    'deleteObjectVerNotMaster: error deleting object with no version',
-                    { error: err.message, bucket: bucketName, key: objName });
-                return cb(errors.InternalError);
-            }
-            return cb(null);
-        }, originOp);
+                return cb(null);
+            },
+            originOp,
+        );
     }
 
     /**
@@ -1902,51 +2030,54 @@ class MongoClientInterface {
         originOp = 's3:ObjectRemoved:Delete',
     ) {
         const masterKey = formatMasterKey(objName, params.vFormat);
-        async.waterfall([
-            next => {
-                // find the master version
-                c.findOne({
-                    _id: masterKey,
-                    $or: [
-                        { 'value.deleted': { $exists: false } },
-                        { 'value.deleted': { $eq: false } },
-                    ],
-                }, {})
-                    .then(mst => next(null, mst))
-                    .catch(err => {
-                        log.error('deleteObjectVer: error deleting versioned object',
-                            { error: err.message, bucket: bucketName, key: objName });
-                        return cb(errors.InternalError);
-                    });
-            },
-            (mst, next) => {
-                // getting the last version if master not found
-                // (either object non existent or last version is a delete marker)
-                if (!mst) {
-                    return this.getLatestVersion(c, objName, params.vFormat, log, (err, version?) => {
-                        if (err) {
-                            return next(err);
-                        }
-                        return next(null, { value: version });
-                    });
+        async.waterfall(
+            [
+                next => {
+                    // find the master version
+                    c.findOne(
+                        {
+                            _id: masterKey,
+                            $or: [{ 'value.deleted': { $exists: false } }, { 'value.deleted': { $eq: false } }],
+                        },
+                        {},
+                    )
+                        .then(mst => next(null, mst))
+                        .catch(err => {
+                            log.error('deleteObjectVer: error deleting versioned object', {
+                                error: err.message,
+                                bucket: bucketName,
+                                key: objName,
+                            });
+                            return cb(errors.InternalError);
+                        });
+                },
+                (mst, next) => {
+                    // getting the last version if master not found
+                    // (either object non existent or last version is a delete marker)
+                    if (!mst) {
+                        return this.getLatestVersion(c, objName, params.vFormat, log, (err, version?) => {
+                            if (err) {
+                                return next(err);
+                            }
+                            return next(null, { value: version });
+                        });
+                    }
+                    return next(null, mst);
+                },
+                (mst, next) => {
+                    if (mst.value.isPHD || mst.value.versionId === params.versionId) {
+                        return this.deleteObjectVerMaster(c, bucketName, objName, params, log, next, originOp);
+                    }
+                    return this.deleteObjectVerNotMaster(c, bucketName, objName, params, log, next, originOp);
+                },
+            ],
+            (err: ArsenalError | null | undefined) => {
+                if (err) {
+                    return cb(err);
                 }
-                return next(null, mst);
+                return cb(null);
             },
-            (mst, next) => {
-                if (mst.value.isPHD ||
-                    mst.value.versionId === params.versionId) {
-                    return this.deleteObjectVerMaster(c, bucketName, objName,
-                        params, log, next, originOp);
-                }
-                return this.deleteObjectVerNotMaster(c, bucketName, objName,
-                    params, log, next, originOp);
-            },
-        ], (err: ArsenalError | null | undefined) => {
-            if (err) {
-                return cb(err);
-            }
-            return cb(null);
-        });
+        );
     }
 
     /**
@@ -1971,19 +2102,30 @@ class MongoClientInterface {
         originOp = 's3:ObjectRemoved:Delete',
     ) {
         const masterKey = formatMasterKey(objName, params.vFormat);
-        this.internalDeleteObject(c, bucketName, masterKey, {}, params, log, err => {
-            if (err) {
-                if (err.is.NoSuchKey) {
-                    return cb(null);
-                }
+        this.internalDeleteObject(
+            c,
+            bucketName,
+            masterKey,
+            {},
+            params,
+            log,
+            err => {
+                if (err) {
+                    if (err.is.NoSuchKey) {
+                        return cb(null);
+                    }
 
-                log.error(
-                    'deleteObjectNoVer: error deleting object with no version',
-                    { error: err.message, bucket: bucketName, key: objName });
-                return cb(err);
-            }
-            return cb(null);
-        }, originOp);
+                    log.error('deleteObjectNoVer: error deleting object with no version', {
+                        error: err.message,
+                        bucket: bucketName,
+                        key: objName,
+                    });
+                    return cb(err);
+                }
+                return cb(null);
+            },
+            originOp,
+        );
     }
 
     /**
@@ -2012,13 +2154,17 @@ class MongoClientInterface {
         originOp = 's3:ObjectRemoved:Delete',
     ) {
         // filter used when deleting object
-        const deleteFilter = Object.assign({
-            _id: key,
-        }, filter);
+        const deleteFilter = Object.assign(
+            {
+                _id: key,
+            },
+            filter,
+        );
 
         if (params && params.doesNotNeedOpogUpdate) {
             // If flag is true, directly delete object
-            return collection.deleteOne(deleteFilter)
+            return collection
+                .deleteOne(deleteFilter)
                 .then(result => {
                     // In case of race conditions (e.g. two concurrent deletes), or invalid state
                     // (e.g. object is already deleted), the result.deletedCount will be 0
@@ -2026,102 +2172,141 @@ class MongoClientInterface {
                     // delete the actual data, leading to an invalid state, where MongoDB references
                     // and object not in the data layers anymore.
                     if (!result || result?.deletedCount != 1) {
-                        log.debug('internalDeleteObject: object not found or already deleted',
-                            { bucket: bucketName, object: key });
+                        log.debug('internalDeleteObject: object not found or already deleted', {
+                            bucket: bucketName,
+                            object: key,
+                        });
                         return cb(errors.NoSuchKey);
                     }
                     return cb(null, undefined);
                 })
                 .catch(err => {
-                    log.error('internalDeleteObject: error deleting object',
-                        { bucket: bucketName, object: key, error: err.message });
+                    log.error('internalDeleteObject: error deleting object', {
+                        bucket: bucketName,
+                        object: key,
+                        error: err.message,
+                    });
                     // wrong error type in "no found" case
                     return cb(errors.InternalError);
                 });
         }
 
         // filter used when finding and updating object
-        const findFilter = Object.assign({
-            _id: key,
-            $or: [
-                { 'value.deleted': { $exists: false } },
-                { 'value.deleted': { $eq: false } },
-            ],
-        }, filter);
+        const findFilter = Object.assign(
+            {
+                _id: key,
+                $or: [{ 'value.deleted': { $exists: false } }, { 'value.deleted': { $eq: false } }],
+            },
+            filter,
+        );
 
-        const updateDeleteFilter = Object.assign({
-            '_id': key,
-            'value.deleted': true,
-        }, filter);
-        return async.waterfall([
-            // Adding delete flag when getting the object
-            // to avoid having race conditions.
-            next => collection.findOneAndUpdate(findFilter, {
-                $set: {
-                    '_id': key,
-                    'value.deleted': true,
-                },
-            }, {
-                includeResultMetadata : true,
-                upsert: false,
-            }).then(doc => {
-                if (!doc.value) {
-                    log.error('internalDeleteObject: unable to find target object to delete',
-                        { bucket: bucketName, object: key });
-                    return next(errors.NoSuchKey);
+        const updateDeleteFilter = Object.assign(
+            {
+                _id: key,
+                'value.deleted': true,
+            },
+            filter,
+        );
+        return async.waterfall(
+            [
+                // Adding delete flag when getting the object
+                // to avoid having race conditions.
+                next =>
+                    collection
+                        .findOneAndUpdate(
+                            findFilter,
+                            {
+                                $set: {
+                                    _id: key,
+                                    'value.deleted': true,
+                                },
+                            },
+                            {
+                                includeResultMetadata: true,
+                                upsert: false,
+                            },
+                        )
+                        .then(doc => {
+                            if (!doc.value) {
+                                log.error('internalDeleteObject: unable to find target object to delete', {
+                                    bucket: bucketName,
+                                    object: key,
+                                });
+                                return next(errors.NoSuchKey);
+                            }
+                            const obj = doc.value;
+                            const objMetadata = new ObjectMD(obj.value);
+                            objMetadata.setOriginOp(originOp);
+                            objMetadata.setDeleted(true);
+                            return next(null, objMetadata.getValue());
+                        })
+                        .catch(err => {
+                            log.error('internalDeleteObject: error getting object', {
+                                bucket: bucketName,
+                                object: key,
+                                error: err.message,
+                            });
+                            return next(errors.InternalError);
+                        }),
+                // We update the full object to get the whole object metadata
+                // in the oplog update event
+                (objMetadata, next) =>
+                    collection
+                        .bulkWrite(
+                            [
+                                {
+                                    updateOne: {
+                                        filter: updateDeleteFilter,
+                                        update: {
+                                            $set: { _id: key, value: objMetadata },
+                                        },
+                                        upsert: false,
+                                    },
+                                },
+                                {
+                                    deleteOne: {
+                                        filter: updateDeleteFilter,
+                                    },
+                                },
+                            ],
+                            { ordered: true },
+                        )
+                        .then(result => {
+                            // in case of race conditions, the bulk operation might fail
+                            // in this case we return a DeleteConflict error
+                            if (!result || !result.ok) {
+                                log.debug('internalDeleteObject: bulk operation failed', {
+                                    bucket: bucketName,
+                                    object: key,
+                                });
+                                return next(errors.DeleteConflict);
+                            }
+                            if (result.deletedCount === 0) {
+                                log.debug('internalDeleteObject: object not found or already deleted', {
+                                    bucket: bucketName,
+                                    object: key,
+                                });
+                                return next(errors.DeleteConflict);
+                            }
+                            return next(null);
+                        })
+                        .catch(err => next(err)),
+            ],
+            (err, res) => {
+                if (err) {
+                    if (err instanceof ArsenalError) {
+                        return cb(err);
+                    }
+                    log.error('internalDeleteObject: error deleting object', {
+                        bucket: bucketName,
+                        object: key,
+                        error: err.message,
+                    });
+                    return cb(errors.InternalError);
                 }
-                const obj = doc.value;
-                const objMetadata = new ObjectMD(obj.value);
-                objMetadata.setOriginOp(originOp);
-                objMetadata.setDeleted(true);
-                return next(null, objMetadata.getValue());
-            }).catch(err => {
-                log.error('internalDeleteObject: error getting object',
-                    { bucket: bucketName, object: key, error: err.message });
-                return next(errors.InternalError);
-            }),
-            // We update the full object to get the whole object metadata
-            // in the oplog update event
-            (objMetadata, next) => collection.bulkWrite([
-                {
-                    updateOne: {
-                        filter: updateDeleteFilter,
-                        update: {
-                            $set: { _id: key, value: objMetadata },
-                        },
-                        upsert: false,
-                    },
-                }, {
-                    deleteOne: {
-                        filter: updateDeleteFilter,
-                    },
-                },
-            ], { ordered: true }).then(result => {
-                // in case of race conditions, the bulk operation might fail
-                // in this case we return a DeleteConflict error
-                if (!result || !result.ok) {
-                    log.debug('internalDeleteObject: bulk operation failed', 
-                        { bucket: bucketName, object: key });
-                    return next(errors.DeleteConflict);
-                }
-                if (result.deletedCount === 0) {
-                    log.debug('internalDeleteObject: object not found or already deleted', 
-                        { bucket: bucketName, object: key });
-                    return next(errors.DeleteConflict);
-                }
-                return next(null);
-            }).catch(err => next(err)),
-        ], (err, res) => {
-            if (err) {
-                if (err instanceof ArsenalError) {
-                    return cb(err);
-                }
-                log.error('internalDeleteObject: error deleting object',
-                    { bucket: bucketName, object: key, error: err.message });
-                return cb(errors.InternalError);
-            }
-            return cb(null, res);
-        });
+                return cb(null, res);
+            },
+        );
     }
 
     /**
@@ -2151,11 +2336,9 @@ class MongoClientInterface {
             }
             _params.vFormat = vFormat;
             if (_params && _params.versionId) {
-                return this.deleteObjectVer(c, bucketName, objName,
-                    _params, log, cb, originOp);
+                return this.deleteObjectVer(c, bucketName, objName, _params, log, cb, originOp);
             }
-            return this.deleteObjectNoVer(c, bucketName, objName,
-                _params, log, cb, originOp);
+            return this.deleteObjectNoVer(c, bucketName, objName, _params, log, cb, originOp);
         });
     }
 
@@ -2177,7 +2360,7 @@ class MongoClientInterface {
     internalListObject(
         bucketName: string,
         params: InternalListObjectParams,
-        extension: { compareObjects: Function, result: Function },
+        extension: { compareObjects: Function; result: Function },
         vFormat: string,
         log: werelogs.Logger,
         cb: ArsenalCallback<void>,
@@ -2234,9 +2417,9 @@ class MongoClientInterface {
                                     if (err.is.NoSuchKey) {
                                         return callback(null);
                                     }
-                                    log.error(
-                                        'internalListObjectV1: error while getting latest version of PHD key',
-                                        { error: err.message });
+                                    log.error('internalListObjectV1: error while getting latest version of PHD key', {
+                                        error: err.message,
+                                    });
                                     return callback(errors.InternalError);
                                 }
                                 MongoUtils.unserialize(version);
@@ -2264,8 +2447,7 @@ class MongoClientInterface {
                         error: err.message,
                         errorStack: err.stack,
                     };
-                    log.error(
-                        'internalListObjectV1: error listing objects', logObj);
+                    log.error('internalListObjectV1: error listing objects', logObj);
                     return cbOnce(err);
                 });
             }
@@ -2273,11 +2455,11 @@ class MongoClientInterface {
             // listing both master and version keys (delimiterVersion Algo)
             const masterStream = new MongoReadStream(c, params.mainStreamParams, params.mongifiedSearch);
             const versionStream = new MongoReadStream(c, params.secondaryStreamParams, params.mongifiedSearch);
-            stream = new MergeStream(
-                versionStream, masterStream, extension.compareObjects.bind(extension));
+            stream = new MergeStream(versionStream, masterStream, extension.compareObjects.bind(extension));
         }
-        const gteParams = params.secondaryStreamParams ?
-            [params.mainStreamParams.gte, params.secondaryStreamParams.gte] : params.mainStreamParams.gte;
+        const gteParams = params.secondaryStreamParams
+            ? [params.mainStreamParams.gte, params.secondaryStreamParams.gte]
+            : params.mainStreamParams.gte;
         const skip = new Skip({
             extension,
             gte: gteParams,
@@ -2313,8 +2495,7 @@ class MongoClientInterface {
                     error: err.message,
                     errorStack: err.stack,
                 };
-                log.error(
-                    'internalListObjectV1: error listing objects', logObj);
+                log.error('internalListObjectV1: error listing objects', logObj);
                 cbOnce(err);
             })
             .on('end', () => {
@@ -2337,11 +2518,7 @@ class MongoClientInterface {
      * @param {Function} cb callback
      * @return {undefined}
      */
-    listObject(
-        bucketName: string,
-        params: InternalListObjectParams,
-        log: werelogs.Logger,
-        cb: ArsenalCallback<void>) {
+    listObject(bucketName: string, params: InternalListObjectParams, log: werelogs.Logger, cb: ArsenalCallback<void>) {
         return this.getBucketVFormat(bucketName, log, (err, vFormat?) => {
             if (err) {
                 return cb(err);
@@ -2360,8 +2537,7 @@ class MongoClientInterface {
                 secondaryStreamParams: Array.isArray(extensionParams) ? extensionParams[1] : null,
                 mongifiedSearch: params.mongifiedSearch,
             };
-            return this.internalListObject(bucketName, internalParams, extension,
-                vFormat, log, cb);
+            return this.internalListObject(bucketName, internalParams, extension, vFormat, log, cb);
         });
     }
 
@@ -2427,8 +2603,7 @@ class MongoClientInterface {
             mainStreamParams: extensionParams,
             mongifiedSearch: params.mongifiedSearch,
         };
-        return this.internalListObject(bucketName, internalParams, extension,
-            BUCKET_VERSIONS.v0, log, cb);
+        return this.internalListObject(bucketName, internalParams, extension, BUCKET_VERSIONS.v0, log, cb);
     }
 
     checkHealth(implName, log, cb) {
@@ -2451,18 +2626,22 @@ class MongoClientInterface {
             log.error('readUUID: error getting infostore collection');
             return;
         }
-        i.findOne({
-            _id: __UUID,
-        }, {}).then(doc => {
-            if (!doc) {
-                return cb(errors.NoSuchKey);
-            }
-            return cb(null, doc.value!);
-        }).catch(err => {
-            log.error('readUUID: error reading UUID',
-                { error: err.message });
-            return cb(errors.InternalError);
-        });
+        i.findOne(
+            {
+                _id: __UUID,
+            },
+            {},
+        )
+            .then(doc => {
+                if (!doc) {
+                    return cb(errors.NoSuchKey);
+                }
+                return cb(null, doc.value!);
+            })
+            .catch(err => {
+                log.error('readUUID: error reading UUID', { error: err.message });
+                return cb(errors.InternalError);
+            });
     }
 
     writeUUIDIfNotExists(uuid: string, log: werelogs.Logger, cb: ArsenalCallback<void>) {
@@ -2471,23 +2650,27 @@ class MongoClientInterface {
             log.error('writeUUIDIfNotExists: error getting infostore collection');
             return cb(errors.InternalError);
         }
-        return i.insertOne(<InfostoreDocument>{
-            _id: __UUID,
-            value: uuid,
-        }, {}).then(result => {
-            if (!result || !result.acknowledged) {
-                log.debug('writeUUIDIfNotExists: insertion failed');
-                return cb(errors.InternalError);
-            }
-            return cb(null);
-        })
+        return i
+            .insertOne(
+                <InfostoreDocument>{
+                    _id: __UUID,
+                    value: uuid,
+                },
+                {},
+            )
+            .then(result => {
+                if (!result || !result.acknowledged) {
+                    log.debug('writeUUIDIfNotExists: insertion failed');
+                    return cb(errors.InternalError);
+                }
+                return cb(null);
+            })
             .catch(err => {
                 if (err.code === 11000) {
                     // duplicate key error
                     return cb(errors.KeyAlreadyExists);
                 }
-                log.error('writeUUIDIfNotExists: error writing UUID',
-                    { error: err.message });
+                log.error('writeUUIDIfNotExists: error writing UUID', { error: err.message });
                 return cb(errors.InternalError);
             });
     }
@@ -2501,8 +2684,7 @@ class MongoClientInterface {
         this.writeUUIDIfNotExists(_uuid, log, err => {
             if (err) {
                 if (err.is.InternalError) {
-                    log.error('getUUID: error getting UUID',
-                        { error: err.message });
+                    log.error('getUUID: error getting UUID', { error: err.message });
                     return cb(err);
                 }
                 return this.readUUID(log, cb);
@@ -2518,38 +2700,35 @@ class MongoClientInterface {
      */
     getDiskUsage(cb: ArsenalCallback<{ available: number; free: number; total: number }>) {
         if (!this.db || !this.client) {
-            return cb(errors.InternalError.customizeDescription(
-                'Cannot get disk usage: database not connected'));
+            return cb(errors.InternalError.customizeDescription('Cannot get disk usage: database not connected'));
         }
 
-        return this.db.command({ dbStats: 1, scale: 1 })
+        return this.db
+            .command({ dbStats: 1, scale: 1 })
             .then(stats => {
                 if (stats.fsTotalSize === undefined || stats.fsUsedSize === undefined) {
-                    this.logger.error('unexpected dbStats response: missing fsTotalSize or fsUsedSize',
-                        { stats });
+                    this.logger.error('unexpected dbStats response: missing fsTotalSize or fsUsedSize', { stats });
                     return cb(errors.InternalError);
                 }
                 const free = stats.fsTotalSize - stats.fsUsedSize;
                 return cb(null, { available: free, free, total: stats.fsTotalSize });
             })
             .catch(err => {
-                this.logger.error('Error getting MongoDB disk stats',
-                    { error: err.message });
+                this.logger.error('Error getting MongoDB disk stats', { error: err.message });
                 return cb(errors.InternalError);
             });
     }
 
     getCollectionStats(bucketName: string, log: werelogs.Logger, cb: ArsenalCallback<any>) {
         if (!this.db || !this.client) {
-            return cb(errors.InternalError.customizeDescription(
-                'Cannot get collection stats: database not connected'));
+            return cb(errors.InternalError.customizeDescription('Cannot get collection stats: database not connected'));
         }
         const c = this.getCollection(bucketName);
-        return this.db.command({ collStats: c.collectionName })
+        return this.db
+            .command({ collStats: c.collectionName })
             .then(stats => cb(null, stats))
             .catch(err => {
-                log.error('error getting collection stats',
-                    { error: err.message, bucketName });
+                log.error('error getting collection stats', { error: err.message, bucketName });
                 return cb(errors.InternalError);
             });
     }
@@ -2560,31 +2739,37 @@ class MongoClientInterface {
             log.error('readCountItems: error getting infostore collection');
             return cb(errors.InternalError);
         }
-        return i.findOne({
-            _id: __COUNT_ITEMS,
-        }, {}).then(doc => {
-            if (!doc) {
-                // defaults
-                const res = {
-                    objects: 0,
-                    versions: 0,
-                    buckets: 0,
-                    bucketList: [],
-                    dataManaged: {
-                        total: { curr: 0, prev: 0 },
-                        byLocation: {},
-                    },
-                    stalled: 0,
-                };
-                return cb(null, res);
-            }
-            return cb(null, doc.value!);
-        }).catch(err => {
-            log.error('readCountItems: error reading count items', {
-                error: err.message,
+        return i
+            .findOne(
+                {
+                    _id: __COUNT_ITEMS,
+                },
+                {},
+            )
+            .then(doc => {
+                if (!doc) {
+                    // defaults
+                    const res = {
+                        objects: 0,
+                        versions: 0,
+                        buckets: 0,
+                        bucketList: [],
+                        dataManaged: {
+                            total: { curr: 0, prev: 0 },
+                            byLocation: {},
+                        },
+                        stalled: 0,
+                    };
+                    return cb(null, res);
+                }
+                return cb(null, doc.value!);
+            })
+            .catch(err => {
+                log.error('readCountItems: error reading count items', {
+                    error: err.message,
+                });
+                return cb(errors.InternalError);
             });
-            return cb(errors.InternalError);
-        });
     }
 
     /*
@@ -2592,12 +2777,14 @@ class MongoClientInterface {
      * does not need to be collected for infos
      */
     _isSpecialCollection(name: string) {
-        return name === METASTORE ||
+        return (
+            name === METASTORE ||
             name === INFOSTORE ||
             name === USERSBUCKET ||
             name === PENSIEVE ||
             name.startsWith(constants.mpuBucketPrefix) ||
-            name.startsWith('__');
+            name.startsWith('__')
+        );
     }
 
     /*
@@ -2621,63 +2808,70 @@ class MongoClientInterface {
      * @param { function(error, BucketInfos): void } cb - callback
      * @return { undefined }
      */
-    getBucketInfos(log: werelogs.Logger, cb: ArsenalCallback<{ bucketCount: number, bucketInfos: BucketInfo[] }>) {
+    getBucketInfos(log: werelogs.Logger, cb: ArsenalCallback<{ bucketCount: number; bucketInfos: BucketInfo[] }>) {
         let bucketCount = 0;
         const bucketInfos: BucketInfo[] = [];
 
-        this.db!.listCollections({ type: 'collection' }).toArray().then(collInfos =>
-            async.eachLimit(collInfos, 10, (value, next) => {
-                if (this._isSystemCollection(value.name) || this._isSpecialCollection(value.name)) {
-                    // skip
-                    return next();
-                }
-                const bucketName = value.name;
-                // FIXME: there is currently no way of distinguishing
-                // master from versions and searching for VID_SEP
-                // does not work because there cannot be null bytes
-                // in $regex
-                return this.getBucketAttributes(bucketName, log,
-                    (err, bucketInfo?) => {
-                        if (err?.is?.NoSuchBucket) {
-                            // Skip bucket if not found: can happen if bucket has just been removed
+        this.db!.listCollections({ type: 'collection' })
+            .toArray()
+            .then(collInfos =>
+                async.eachLimit(
+                    collInfos,
+                    10,
+                    (value, next) => {
+                        if (this._isSystemCollection(value.name) || this._isSpecialCollection(value.name)) {
+                            // skip
                             return next();
                         }
-                        if (err) {
-                            log.error('failed to get bucket attributes', {
-                                bucketName,
+                        const bucketName = value.name;
+                        // FIXME: there is currently no way of distinguishing
+                        // master from versions and searching for VID_SEP
+                        // does not work because there cannot be null bytes
+                        // in $regex
+                        return this.getBucketAttributes(bucketName, log, (err, bucketInfo?) => {
+                            if (err?.is?.NoSuchBucket) {
+                                // Skip bucket if not found: can happen if bucket has just been removed
+                                return next();
+                            }
+                            if (err) {
+                                log.error('failed to get bucket attributes', {
+                                    bucketName,
+                                    error: err,
+                                });
+                                return next(errors.InternalError);
+                            }
+                            bucketCount++;
+                            bucketInfos!.push(bucketInfo!);
+                            return next();
+                        });
+                    },
+                    err => {
+                        if (err && err instanceof ArsenalError) {
+                            return cb(err);
+                        } else if (err) {
+                            log.error('could not get list of collections', {
+                                method: 'getBucketInfos',
                                 error: err,
                             });
-                            return next(errors.InternalError);
+                            return cb(errors.InternalError);
                         }
-                        bucketCount++;
-                        bucketInfos!.push(bucketInfo!);
-                        return next();
-                    });
-            }, err => {
+                        return cb(null, {
+                            bucketCount,
+                            bucketInfos,
+                        });
+                    },
+                ),
+            )
+            .catch(err => {
+                log.error('could not get list of collections', {
+                    method: 'getBucketInfos',
+                    error: err,
+                });
                 if (err && err instanceof ArsenalError) {
                     return cb(err);
-                } else if (err) {
-                    log.error('could not get list of collections', {
-                        method: 'getBucketInfos',
-                        error: err,
-                    });
-                    return cb(errors.InternalError);
                 }
-                return cb(null, {
-                    bucketCount,
-                    bucketInfos,
-                });
-            })
-        ).catch(err => {
-            log.error('could not get list of collections', {
-                method: 'getBucketInfos',
-                error: err,
+                return cb(errors.InternalError);
             });
-            if (err && err instanceof ArsenalError) {
-                return cb(err);
-            }
-            return cb(errors.InternalError);
-        });
     }
 
     countItems(log: werelogs.Logger, cb: ArsenalCallback<ObjectMDStats>) {
@@ -2751,18 +2945,26 @@ class MongoClientInterface {
     getIngestionBuckets(log: werelogs.Logger, cb: ArsenalCallback<BucketInfo[]>) {
         const m = this.getCollection<BucketMetastoreDocument>(METASTORE);
         m.find({
-            '_id': {
+            _id: {
                 $nin: [PENSIEVE, USERSBUCKET],
             },
             'value.ingestion': {
                 $type: 'object',
             },
-        }).project({
-            'value.name': 1,
-            'value.ingestion': 1,
-            'value.locationConstraint': 1,
-        }).toArray()
-            .then(doc => cb(null, doc.map(i => i.value))).catch(err => {
+        })
+            .project({
+                'value.name': 1,
+                'value.ingestion': 1,
+                'value.locationConstraint': 1,
+            })
+            .toArray()
+            .then(doc =>
+                cb(
+                    null,
+                    doc.map(i => i.value),
+                ),
+            )
+            .catch(err => {
                 log.error('error getting ingestion buckets', {
                     error: err.message,
                     method: 'MongoClientInterface.getIngestionBuckets',
@@ -2776,8 +2978,13 @@ class MongoClientInterface {
      * @warning this method only work on master keys, and will thus break
      * when the object is versionned
      */
-    deleteObjectWithCond(bucketName: string, objName: string, params: ObjectMDOperationParams,
-        log: werelogs.Logger, cb: ArsenalCallback<void>) {
+    deleteObjectWithCond(
+        bucketName: string,
+        objName: string,
+        params: ObjectMDOperationParams,
+        log: werelogs.Logger,
+        cb: ArsenalCallback<void>,
+    ) {
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
         const method = 'deleteObjectWithCond';
         this.getBucketVFormat(bucketName, log, (err, vFormat?) => {
@@ -2787,33 +2994,31 @@ class MongoClientInterface {
             const masterKey = formatMasterKey(objName, vFormat);
             const filter = {};
             try {
-                MongoUtils.translateConditions(0, 'value', filter,
-                    params.conditions);
+                MongoUtils.translateConditions(0, 'value', filter, params.conditions);
             } catch (err) {
                 log.error('error creating mongodb filter', {
                     error: reshapeExceptionError(err as ErrorLike),
                 });
                 return cb(errors.InternalError);
             }
-            return this.internalDeleteObject(c, bucketName, masterKey, filter, null, log,
-                err => {
-                    if (err) {
-                        // unable to find an object that matches the conditions
-                        if (err.is.NoSuchKey) {
-                            log.error('unable to find target object to delete', {
-                                method,
-                                filter,
-                            });
-                            return cb(errors.NoSuchKey);
-                        }
-                        log.error('error occurred when attempting to delete object', {
+            return this.internalDeleteObject(c, bucketName, masterKey, filter, null, log, err => {
+                if (err) {
+                    // unable to find an object that matches the conditions
+                    if (err.is.NoSuchKey) {
+                        log.error('unable to find target object to delete', {
                             method,
-                            error: err.message,
+                            filter,
                         });
-                        return cb(errors.InternalError);
+                        return cb(errors.NoSuchKey);
                     }
-                    return cb(null);
-                });
+                    log.error('error occurred when attempting to delete object', {
+                        method,
+                        error: err.message,
+                    });
+                    return cb(errors.InternalError);
+                }
+                return cb(null);
+            });
         });
     }
 
@@ -2831,42 +3036,47 @@ class MongoClientInterface {
             const masterKey = formatMasterKey(objName, vFormat);
             const filter = { _id: masterKey };
             try {
-                MongoUtils.translateConditions(0, 'value', filter,
-                    params.conditions);
+                MongoUtils.translateConditions(0, 'value', filter, params.conditions);
             } catch (err) {
                 log.error('error creating mongodb filter', {
                     error: reshapeExceptionError(err as ErrorLike),
                 });
                 return cb(errors.InternalError);
             }
-            return c.findOneAndUpdate(filter, {
-                $set: {
-                    _id: masterKey,
-                    value: objVal,
-                },
-            }, {
-                includeResultMetadata: true,
-                upsert: true,
-            }).then(res => {
-                if (res.ok !== 1) {
-                    log.error('failed to update object', {
-                        method,
-                    });
-                    return cb(errors.InternalError);
-                }
-                if (!res.value) {
-                    log.debug('object not found...upserted object', {
+            return c
+                .findOneAndUpdate(
+                    filter,
+                    {
+                        $set: {
+                            _id: masterKey,
+                            value: objVal,
+                        },
+                    },
+                    {
+                        includeResultMetadata: true,
+                        upsert: true,
+                    },
+                )
+                .then(res => {
+                    if (res.ok !== 1) {
+                        log.error('failed to update object', {
+                            method,
+                        });
+                        return cb(errors.InternalError);
+                    }
+                    if (!res.value) {
+                        log.debug('object not found...upserted object', {
+                            method,
+                            filter,
+                        });
+                        return cb();
+                    }
+                    log.debug('Object found...updated object', {
                         method,
                         filter,
                     });
                     return cb();
-                }
-                log.debug('Object found...updated object', {
-                    method,
-                    filter,
-                });
-                return cb();
-            })
+                })
                 .catch(err => {
                     log.error('error occurred when attempting to update object', {
                         method,
@@ -2888,16 +3098,16 @@ class MongoClientInterface {
     putBucketIndexes(bucketName: string, indexSpecs, log: werelogs.Logger, cb: ArsenalCallback<void>) {
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
         const indexes = MongoUtils.indexFormatObjectToMongoArray(indexSpecs);
-        c.createIndexes(indexes).then(() => cb(null)).catch(err => {
-            if (err.codeName === 'NamespaceNotFound') {
-                return cb(errors.NoSuchBucket);
-            }
+        c.createIndexes(indexes)
+            .then(() => cb(null))
+            .catch(err => {
+                if (err.codeName === 'NamespaceNotFound') {
+                    return cb(errors.NoSuchBucket);
+                }
 
-            log.error(
-                'putBucketIndexes: error creating bucket indexes',
-                { error: err });
-            return cb(errors.InternalError);
-        });
+                log.error('putBucketIndexes: error creating bucket indexes', { error: err });
+                return cb(errors.InternalError);
+            });
     }
 
     /**
@@ -2908,30 +3118,38 @@ class MongoClientInterface {
      * @param {Function} cb callback
      * @return {undefined}
      */
-    deleteBucketIndexes(bucketName: string, indexSpecs: { name: string }[],
-        log: werelogs.Logger, cb: ArsenalCallback<void>) {
+    deleteBucketIndexes(
+        bucketName: string,
+        indexSpecs: { name: string }[],
+        log: werelogs.Logger,
+        cb: ArsenalCallback<void>,
+    ) {
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
-        async.each(indexSpecs,
-            (spec, next) => c.dropIndex(spec.name).then(result => {
-                if (!result || !result.ok) {
-                    log.debug('deleteBucketIndexes: failed to drop index', { indexName: spec.name });
-                    return next(errors.DeleteConflict);
-                }
-                return next();
-            }).catch(err => next(err)),
+        async.each(
+            indexSpecs,
+            (spec, next) =>
+                c
+                    .dropIndex(spec.name)
+                    .then(result => {
+                        if (!result || !result.ok) {
+                            log.debug('deleteBucketIndexes: failed to drop index', { indexName: spec.name });
+                            return next(errors.DeleteConflict);
+                        }
+                        return next();
+                    })
+                    .catch(err => next(err)),
             err => {
                 if (err) {
                     if (err instanceof MongoServerError && err.codeName === 'NamespaceNotFound') {
                         return cb(errors.NoSuchBucket);
                     }
 
-                    log.error(
-                        'deleteBucketIndexes: error deleting bucket indexes',
-                        { error: err });
+                    log.error('deleteBucketIndexes: error deleting bucket indexes', { error: err });
                     return cb(errors.InternalError);
                 }
                 return cb(null);
-            });
+            },
+        );
     }
 
     /**
@@ -2941,13 +3159,19 @@ class MongoClientInterface {
      * @param {Function} cb callback
      * @return {undefined}
      */
-    getBucketIndexes(bucketName: string, log: werelogs.Logger, cb: ArsenalCallback<{
-        name: string;
-        keys: {
-            key: string;
-            order: number;
-        }[];
-    }[]>) {
+    getBucketIndexes(
+        bucketName: string,
+        log: werelogs.Logger,
+        cb: ArsenalCallback<
+            {
+                name: string;
+                keys: {
+                    key: string;
+                    order: number;
+                }[];
+            }[]
+        >,
+    ) {
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
         c.listIndexes()
             .toArray()
@@ -2969,29 +3193,31 @@ class MongoClientInterface {
         this.adminDb!.command({
             currentOp: true,
             $or: [
-                { 'op': 'command', 'command.createIndexes': { $exists: true } },
+                { op: 'command', 'command.createIndexes': { $exists: true } },
                 { op: 'none', msg: /^Index Build/ },
             ],
-        }).then(res => {
-            const jobs: {
-                bucket: string, indexes: {
-                    name: any;
-                    keys: {
-                        key: any;
-                        order: any;
-                    }[];
-                }[]
-            }[] = [];
-
-            for (const j of res.inprog) {
-                jobs.push({
-                    bucket: j.command.createIndexes,
-                    indexes: MongoUtils.indexFormatMongoArrayToObject(j.command.indexes),
-                });
-            }
-
-            return cb(null, jobs);
         })
+            .then(res => {
+                const jobs: {
+                    bucket: string;
+                    indexes: {
+                        name: any;
+                        keys: {
+                            key: any;
+                            order: any;
+                        }[];
+                    }[];
+                }[] = [];
+
+                for (const j of res.inprog) {
+                    jobs.push({
+                        bucket: j.command.createIndexes,
+                        indexes: MongoUtils.indexFormatMongoArrayToObject(j.command.indexes),
+                    });
+                }
+
+                return cb(null, jobs);
+            })
             .catch(err => {
                 log.error('getIndexingJobs: error retrieving current index jobs', {
                     error: err,
