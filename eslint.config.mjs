@@ -4,6 +4,7 @@ import js from '@eslint/js';
 import { FlatCompat } from '@eslint/eslintrc';
 import tseslint from 'typescript-eslint';
 import { includeIgnoreFile } from '@eslint/compat';
+import eslintConfigPrettier from 'eslint-config-prettier';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -31,4 +32,7 @@ export default tseslint.config(
             '@typescript-eslint/no-unsafe-function-type': 'off',
         },
     },
+    // Must be last: turns off ESLint formatting rules that conflict with
+    // Prettier (indent, max-len, …) so Prettier owns formatting.
+    eslintConfigPrettier,
 );
