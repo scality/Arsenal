@@ -28,6 +28,10 @@ type AuthenticationOptions = {
     logger?: RequestLogger;
     requestContext?: RequestContextType;
     securityToken?: string;
+    // Canonical id of the account that owns the resource being targeted by
+    // the request (e.g. the bucket owner). Passed to Vault as a hint;
+    // resolved by the caller from a local cache when available.
+    targetAccount?: string;
 };
 
 let vault: Vault | null = null;
