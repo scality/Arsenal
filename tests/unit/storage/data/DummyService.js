@@ -6,13 +6,15 @@ const assert = require('assert');
 const DummyObjectStream = require('./DummyObjectStream');
 const { parseRange } = require('../../../../lib/network/http/utils');
 const errors = require('../../../../lib/errors').default;
-const { 
-    PutObjectCommand, 
-    CopyObjectCommand, 
+const {
+    PutObjectCommand,
+    CopyObjectCommand,
     HeadObjectCommand,
-    PutObjectTaggingCommand, 
+    HeadBucketCommand,
+    GetBucketVersioningCommand,
+    PutObjectTaggingCommand,
     DeleteObjectTaggingCommand,
-    CompleteMultipartUploadCommand, 
+    CompleteMultipartUploadCommand,
     GetObjectCommand,
     DeleteObjectCommand,
     CreateMultipartUploadCommand,
@@ -102,6 +104,8 @@ class DummyService {
         this.putObjectAsync = promisify(this.putObject.bind(this));
         this.copyObjectAsync = promisify(this.copyObject.bind(this));
         this.headObjectAsync = promisify(this.headObject.bind(this));
+        this.headBucketAsync = promisify(this.headBucket.bind(this));
+        this.getBucketVersioningAsync = promisify(this.getBucketVersioning.bind(this));
         this.putObjectTaggingAsync = promisify(this.putObjectTagging.bind(this));
         this.deleteObjectTaggingAsync = promisify(this.deleteObjectTagging.bind(this));
         this.completeMultipartUploadAsync = promisify(this.completeMultipartUpload.bind(this));
@@ -110,11 +114,13 @@ class DummyService {
         this.uploadPartAsync = promisify(this.uploadPart.bind(this));
         this.listPartsAsync = promisify(this.listParts.bind(this));
         this.abortMultipartUploadAsync = promisify(this.abortMultipartUpload.bind(this));
-        
+
         this.commandHandlers = new Map([
             [PutObjectCommand, cmd => this.putObjectAsync(cmd.input)],
             [CopyObjectCommand, cmd => this.copyObjectAsync(cmd.input)],
             [HeadObjectCommand, cmd => this.headObjectAsync(cmd.input)],
+            [HeadBucketCommand, cmd => this.headBucketAsync(cmd.input)],
+            [GetBucketVersioningCommand, cmd => this.getBucketVersioningAsync(cmd.input)],
             [PutObjectTaggingCommand, cmd => this.putObjectTaggingAsync(cmd.input)],
             [DeleteObjectTaggingCommand, cmd => this.deleteObjectTaggingAsync(cmd.input)],
             [CompleteMultipartUploadCommand, cmd => this.completeMultipartUploadAsync(cmd.input)],

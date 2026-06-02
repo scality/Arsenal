@@ -10,6 +10,7 @@ const AzureClient =
 const DummyService = require('../DummyService');
 const { DummyRequestLogger } = require('../../../helpers');
 const BucketInfo = require('../../../../../lib/models/BucketInfo').default;
+const { HeadBucketCommand } = require('@aws-sdk/client-s3');
 
 const backendClients = [
     {
@@ -149,6 +150,28 @@ describe('external backend clients', () => {
                 assert(err);
                 assert(err.is.LocationNotFound);
             }
+        });
+
+        const itIfAws = backend.config.type === 'aws' ? it : it.skip;
+
+        itIfAws(`${backend.name} healthcheck should respond ok when the bucket is reachable`, async () => {
+            const sendStub = sandbox.stub(testClient._client, 'send').resolves({});
+            const healthcheckAsync = promisify(testClient.healthcheck.bind(testClient));
+            await healthcheckAsync(backend.config.dataStoreName);
+
+            const cmd = sendStub.firstCall.args[0];
+            assert.strictEqual(cmd.constructor.name, HeadBucketCommand.name);
+            assert.strictEqual(cmd.input.Bucket, backend.config.bucketName);
+        });
+
+        itIfAws(`${backend.name} healthcheck should mark response external on bucket failure`, async () => {
+            sandbox.stub(testClient._client, 'send').rejects(new Error('bucket unreachable'));
+            const healthcheckAsync = promisify(testClient.healthcheck.bind(testClient));
+            const resp = await healthcheckAsync(backend.config.dataStoreName);
+
+            const entry = resp[backend.config.dataStoreName];
+            assert.ok(entry.error);
+            assert.strictEqual(entry.external, true);
         });
 
         it(`${backend.name} get() should stream a range of data`, async () => {
