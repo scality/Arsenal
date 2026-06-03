@@ -57,6 +57,10 @@
         "xml2js": "^0.6.2"
     },
     "optionalDependencies": {
+        "@opentelemetry/exporter-trace-otlp-http": "^0.218.0",
+        "@opentelemetry/resources": "^2.7.1",
+        "@opentelemetry/sdk-node": "^0.218.0",
+        "@opentelemetry/sdk-trace-base": "^2.7.1",
         "ioctl": "^2.0.2"
     },
     "devDependencies": {
@@ -64,6 +68,8 @@
         "@babel/preset-typescript": "^7.27.1",
         "@eslint/compat": "^1.4.0",
         "@eslint/plugin-kit": "^0.4.0",
+        "@opentelemetry/context-async-hooks": "^2.7.1",
+        "@opentelemetry/core": "^2.7.1",
         "@scality/eslint-config-scality": "scality/Guidelines#8.3.2",
         "@sinonjs/fake-timers": "^15.0.0",
         "@types/async": "^3.2.24",
