@@ -109,6 +109,44 @@ describe('v4 headerAuthCheck', () => {
         done();
     });
 
+    it('should return error if content-md5 header is not included as ' +
+        'signed header but is in request', done => {
+        const alteredRequest = createAlteredRequest({
+            'content-md5': 'lHP90NiApDwht3eNNIchVw==' }, 'headers',
+        request, headers);
+        const res = headerAuthCheck(alteredRequest, log);
+        assert.deepStrictEqual(res.err, errors.AccessDenied);
+        done();
+    });
+
+    it('should NOT return error if content-md5 header is included as ' +
+        'signed header and is in request', done => {
+        const clock = fakeTimers.install({ now: 1454962445000 });
+        const alteredRequest = createAlteredRequest({
+            'content-md5': 'lHP90NiApDwht3eNNIchVw==',
+            authorization: 'AWS4-HMAC-SHA256 Credential=accessKey1/20160208' +
+                '/us-east-1/s3/aws4_request, SignedHeaders=content-md5;host;' +
+                'x-amz-content-sha256;x-amz-date, Signature=abed924c06abf877' +
+                '2c670064d22eacd6ccb85c06befa15f4a789b0bae19307bc' },
+        'headers', request, headers);
+        const res = headerAuthCheck(alteredRequest, log);
+        clock.uninstall();
+        assert.strictEqual(res.err, null);
+        done();
+    });
+
+    it('should NOT return error if content-type header is not included as ' +
+        'signed header but is in request', done => {
+        // AWS does not require content-type to be signed, unlike content-md5
+        const clock = fakeTimers.install({ now: 1454962445000 });
+        const alteredRequest = createAlteredRequest({
+            'content-type': 'text/plain' }, 'headers', request, headers);
+        const res = headerAuthCheck(alteredRequest, log);
+        clock.uninstall();
+        assert.strictEqual(res.err, null);
+        done();
+    });
+
     it('should return error if an x-scal header is not included as signed ' +
         'header but is in request', done => {
         const alteredRequest = createAlteredRequest({

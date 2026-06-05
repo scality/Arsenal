@@ -122,6 +122,42 @@ describe('v4 queryAuthCheck', () => {
         done();
     });
 
+    it('should return error if content-md5 header is not included as ' +
+        'signed header but is in request', done => {
+        const alteredRequest = createAlteredRequest({
+            'content-md5': 'lHP90NiApDwht3eNNIchVw==' }, 'headers',
+        request, headers);
+        const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
+        assert.deepStrictEqual(res.err, errors.AccessDenied);
+        done();
+    });
+
+    it('should NOT return error if content-md5 header is included as ' +
+        'signed header and is in request', done => {
+        const clock = fakeTimers.install({ now: 1454974984001 });
+        const alteredRequest = createAlteredRequest({
+            'content-md5': 'lHP90NiApDwht3eNNIchVw==' }, 'headers',
+        request, headers);
+        alteredRequest.query = Object.assign({}, query,
+            { 'X-Amz-SignedHeaders': 'content-md5;host' });
+        const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
+        clock.uninstall();
+        assert.deepStrictEqual(res.err, null);
+        done();
+    });
+
+    it('should NOT return error if content-type header is not included as ' +
+        'signed header but is in request', done => {
+        // AWS does not require content-type to be signed, unlike content-md5
+        const clock = fakeTimers.install({ now: 1454974984001 });
+        const alteredRequest = createAlteredRequest({
+            'content-type': 'text/plain' }, 'headers', request, headers);
+        const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
+        clock.uninstall();
+        assert.deepStrictEqual(res.err, null);
+        done();
+    });
+
     it('should return error if undefined X-Amz-Date param', done => {
         const alteredRequest = createAlteredRequest({ 'X-Amz-Date':
         undefined }, 'query', request, query);

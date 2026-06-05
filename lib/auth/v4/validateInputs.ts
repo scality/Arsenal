@@ -184,15 +184,22 @@ export function extractAuthItems(authHeader: string, log: RequestLogger) {
 }
 
 /**
- * Checks whether the signed headers include the host header
- * and all x-amz- and x-scal- headers in request
+ * Checks whether the signed headers include the host header, the
+ * content-md5 header if present, and all x-amz- and x-scal- headers
+ * in request.
  * @param signedHeaders - signed headers sent with request
  * @param allHeaders - request.headers
- * @return true if all x-amz-headers included and false if not
+ * @return true if all required headers are included and false if not
  */
 export function areSignedHeadersComplete(signedHeaders: string, allHeaders: ArsenalRequestHeaders) {
     const signedHeadersList = signedHeaders.split(';');
     if (signedHeadersList.indexOf('host') === -1) {
+        return false;
+    }
+    // AWS requires the content-md5 header to be signed when present in
+    // the request, for both header-based auth and presigned URLs.
+    if (allHeaders['content-md5'] !== undefined
+        && signedHeadersList.indexOf('content-md5') === -1) {
         return false;
     }
     const headers = Object.keys(allHeaders);
