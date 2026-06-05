@@ -4,6 +4,11 @@
         "node": ">=20"
     },
     "version": "8.4.7",
+    "config": {
+        "mongodbMemoryServer": {
+            "version": "8.0.23"
+        }
+    },
     "description": "Common utilities for the S3 project components",
     "main": "build/index.js",
     "repository": {
