@@ -103,7 +103,7 @@ export default class AuthLoader {
                 'account must have a valid AWS ARN, legacy examples ' +
                     "starting with 'aws:' are not supported anymore. " +
                     'Please convert to a proper account entry (see ' +
-                    'examples at https://github.com/scality/S3/blob/' +
+                    'examples at https://github.com/scality/cloudserver/blob/' +
                     'master/conf/authdata.json). Also note that support ' +
                     'for account users has been dropped.',
                 { accountName, accountArn, filePath }
@@ -119,7 +119,7 @@ export default class AuthLoader {
             this.#log.error(
                 'support for account users has been dropped, consider ' +
                     'turning users into account entries (see examples at ' +
-                    'https://github.com/scality/S3/blob/master/conf/' +
+                    'https://github.com/scality/cloudserver/blob/HEAD/conf/' +
                     'authdata.json)',
                 { accountName, accountArn, filePath }
             );
