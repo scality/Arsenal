@@ -40,7 +40,9 @@ function compileArnMatcher(policyArn: string, caseSensitive: boolean): ArnMatche
             literal: caseSensitive ? policyArnArr[5] : policyArnArr[5].toLowerCase(),
         };
     } else {
-        const source = policyArnArr.slice(5).map(handleWildcards).join(':');
+        // Translate the joined relative-id as one anchored unit so an embedded
+        // ':' (legal in S3 keys) matches; <6-portion ARNs have none, match any.
+        const source = policyArnArr.length >= 6 ? handleWildcards(policyArnArr.slice(5).join(':')) : '';
         relativeId = {
             regExp: new RegExp(caseSensitive ? source : source.toLowerCase()),
         };

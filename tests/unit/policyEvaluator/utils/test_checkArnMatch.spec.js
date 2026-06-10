@@ -144,6 +144,43 @@ const tests = [
         caseSensitive: true,
         isMatch: true,
     },
+    // relative-ids may legally contain ':' (e.g. S3 object keys)
+    {
+        policyArn: 'arn:aws:s3:::bucket/a:b',
+        requestArn: 'arn:aws:s3:::bucket/a:b',
+        caseSensitive: true,
+        isMatch: true,
+    },
+    {
+        policyArn: 'arn:aws:s3:::bucket/data:2024/*',
+        requestArn: 'arn:aws:s3:::bucket/data:2024/report.csv',
+        caseSensitive: true,
+        isMatch: true,
+    },
+    {
+        policyArn: 'arn:aws:s3:::bucket/a:b:c',
+        requestArn: 'arn:aws:s3:::bucket/a:b:c',
+        caseSensitive: true,
+        isMatch: true,
+    },
+    {
+        policyArn: 'arn:aws:s3:::bucket/A:B',
+        requestArn: 'arn:aws:s3:::bucket/a:b',
+        caseSensitive: false,
+        isMatch: true,
+    },
+    {
+        policyArn: 'arn:aws:s3:::bucket/a:b',
+        requestArn: 'arn:aws:s3:::bucket/a:c',
+        caseSensitive: true,
+        isMatch: false,
+    },
+    {
+        policyArn: 'arn:aws:s3:::bucket/a:b',
+        requestArn: 'arn:aws:s3:::bucket/ab',
+        caseSensitive: true,
+        isMatch: false,
+    },
 ];
 
 describe('checkArnMatch matcher memoization', () => {
