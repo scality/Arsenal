@@ -90,7 +90,7 @@ array entirely inside the thunk so packages resolve from the consumer's
   handler in an `api.<methodName>` span (scope `arsenal.api`, `err.code` →
   `error.type`); returns the handler unchanged when OTEL is off.
 - `kafka.*` — trace-context propagation over node-rdkafka headers (scope
-  `arsenal.kafka`): `traceHeadersFromEntry`, `traceHeadersFromCurrentContext`,
+  `arsenal.kafka`): `traceHeadersFromEntry`, `stampTraceHeaders`,
   `contextFromKafkaHeaders`, `startLinkedSpanFromKafkaEntry`.
 
 ## Examples
@@ -111,8 +111,9 @@ an oplog entry; consumer starts a new trace linked to the upstream span:
 ```js
 const { kafka } = require('arsenal/build/lib/tracing');
 
-// producer side
-producer.send(payload, kafka.traceHeadersFromCurrentContext());
+// producer side: stamp the active span onto the entry (no-op when OTEL is off)
+producer.send(kafka.stampTraceHeaders({ key, message }));
+// or propagate from a stored oplog entry's trace context:
 producer.send(payload, kafka.traceHeadersFromEntry(objectMd));
 
 // consumer side

@@ -82,7 +82,7 @@ export function startLinkedSpanFromKafkaEntry(
 }
 
 // Serialize the active OTEL context into node-rdkafka traceparent/tracestate headers.
-export function traceHeadersFromCurrentContext(): KafkaHeader[] | undefined {
+function traceHeadersFromCurrentContext(): KafkaHeader[] | undefined {
     const { trace, context, propagation } = getApi();
     const span = trace.getSpan(context.active());
     if (!span) {
@@ -103,4 +103,13 @@ export function traceHeadersFromCurrentContext(): KafkaHeader[] | undefined {
         headers.push({ tracestate: carrier.tracestate });
     }
     return headers.length > 0 ? headers : undefined;
+}
+
+// Attach the active span's trace headers to a kafka entry, returning a copy with
+// `headers` set. Returns the entry unchanged when tracing is off / no span is
+// active, so the OTEL-off path keeps its original message shape (no
+// `headers: undefined`).
+export function stampTraceHeaders<T extends object>(entry: T): T {
+    const headers = traceHeadersFromCurrentContext();
+    return headers ? { ...entry, headers } : entry;
 }

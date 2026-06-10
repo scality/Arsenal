@@ -7,7 +7,7 @@ const { AsyncLocalStorageContextManager } = require('@opentelemetry/context-asyn
 
 const {
     traceHeadersFromEntry,
-    traceHeadersFromCurrentContext,
+    stampTraceHeaders,
     contextFromKafkaHeaders,
     startLinkedSpanFromKafkaEntry,
 } = require('../../../lib/tracing/kafkaTraceContext');
@@ -99,9 +99,10 @@ describe('kafkaTraceContext', () => {
         });
     });
 
-    describe('traceHeadersFromCurrentContext', () => {
-        it('returns undefined when no active span', () => {
-            assert.strictEqual(traceHeadersFromCurrentContext(), undefined);
+    describe('stampTraceHeaders', () => {
+        it('returns the entry unchanged when no active span', () => {
+            const entry = { message: 'm' };
+            assert.strictEqual(stampTraceHeaders(entry), entry);
         });
     });
 
@@ -128,20 +129,23 @@ describe('kafkaTraceContext', () => {
             span.end();
         });
 
-        it('traceHeadersFromCurrentContext serializes the active span to a traceparent header', () => {
+        it('stampTraceHeaders attaches the active span traceparent to the entry', () => {
             const span = trace.wrapSpanContext({ traceId, spanId, traceFlags: 1 });
-            const headers = context.with(trace.setSpan(context.active(), span), () => traceHeadersFromCurrentContext());
-            assert(Array.isArray(headers));
-            const tp = headers.find(h => h.traceparent);
+            const entry = { message: 'm' };
+            const stamped = context.with(trace.setSpan(context.active(), span), () => stampTraceHeaders(entry));
+            assert(Array.isArray(stamped.headers));
+            const tp = stamped.headers.find(h => h.traceparent);
             assert(tp && tp.traceparent.startsWith(`00-${traceId}-`));
+            assert.strictEqual(stamped.message, 'm');
+            // original entry is not mutated
+            assert.strictEqual(entry.headers, undefined);
         });
 
-        it('traceHeadersFromCurrentContext returns undefined for an invalid (all-zero) span context', () => {
+        it('stampTraceHeaders returns the entry unchanged for an invalid (all-zero) span context', () => {
             const invalid = trace.wrapSpanContext({ traceId: '0'.repeat(32), spanId: '0'.repeat(16), traceFlags: 0 });
-            const headers = context.with(trace.setSpan(context.active(), invalid), () =>
-                traceHeadersFromCurrentContext(),
-            );
-            assert.strictEqual(headers, undefined);
+            const entry = { message: 'm' };
+            const stamped = context.with(trace.setSpan(context.active(), invalid), () => stampTraceHeaders(entry));
+            assert.strictEqual(stamped, entry);
         });
     });
 });
