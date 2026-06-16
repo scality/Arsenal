@@ -466,21 +466,28 @@ class MongoClientInterface {
                 // "constants.usersBucket" and "PENSIEVE" since it has already
                 // been created
                 if (bucketName !== constants.usersBucket && bucketName !== PENSIEVE) {
-                    return this.db!.createCollection(bucketName).then(() => {
-                        if (this.shardCollections) {
-                            const cmd = {
-                                shardCollection: `${this.database}.${bucketName}`,
-                                key: { _id: 1 },
-                            };
-                            return this.adminDb!.command(cmd, {})
-                                .then(() => cb(null))
-                                .catch(err => {
-                                    log.error('createBucket: enabling sharding', { error: err });
-                                    return cb(errors.InternalError);
-                                });
-                        }
-                        return cb(null);
-                    });
+                    return this.db!.createCollection(bucketName)
+                        .catch(err => {
+                            if (err.codeName === 'NamespaceExists') {
+                                return;
+                            }
+                            throw err;
+                        })
+                        .then(() => {
+                            if (this.shardCollections) {
+                                const cmd = {
+                                    shardCollection: `${this.database}.${bucketName}`,
+                                    key: { _id: 1 },
+                                };
+                                return this.adminDb!.command(cmd, {})
+                                    .then(() => cb(null))
+                                    .catch(err => {
+                                        log.error('createBucket: enabling sharding', { error: err });
+                                        return cb(errors.InternalError);
+                                    });
+                            }
+                            return cb(null);
+                        });
                 }
                 return cb(null);
             })
