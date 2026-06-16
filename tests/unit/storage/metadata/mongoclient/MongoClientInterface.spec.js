@@ -1900,6 +1900,26 @@ describe('MongoClientInterface, createBucket', () => {
         });
     });
 
+    it('should succeed when createCollection returns NamespaceExists', done => {
+        const bucketName = 'test-bucket-namespace-exists';
+        const nsExistsError = Object.assign(
+            new Error('Collection already exists. NS: metadata.mpuShadowBucketbucket1'),
+            { codeName: 'NamespaceExists', code: 48 },
+        );
+        const originalCreateCollection = client.db.createCollection;
+        client.db.createCollection = () => Promise.reject(nsExistsError);
+
+        client.createBucket(bucketName, baseBucket, logger, err => {
+            client.db.createCollection = originalCreateCollection;
+            try {
+                assert.ifError(err);
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
+    });
+
     it('should handle modifiedCount 0 and upsertedCount 0 in createBucket', done => {
         const bucketName = 'test-bucket-createbucket';
 
