@@ -119,3 +119,31 @@ export function instrumentApiMethod<T extends (...args: any[]) => any>(apiMethod
         return instrumentAsyncHandler(this, apiMethod, spanName, args);
     } as T;
 }
+
+// Manual span lifecycle for consumers whose dispatch owns the start + end sites
+// directly (e.g. a centralized Router method). Prefer `instrumentApiMethod` for
+// flat dispatch tables where wrap-once-at-module-load fits naturally.
+export interface ApiSpan {
+    // `end()` marks the span OK; `end(err)` marks it ERROR + records the
+    // exception (same err-as-optional shape as `endSpan` above).
+    end(err?: any): void;
+    // Runs `fn` with the span set as the active context so child auto-spans
+    // (mongo, ioredis, http) nest underneath.
+    withContext<T>(fn: () => T): T;
+}
+
+export function startApiSpan(action: string): ApiSpan {
+    if (!isEnabled()) {
+        return {
+            end: () => {},
+            withContext: fn => fn(),
+        };
+    }
+    const { trace, context, SpanKind } = getApi();
+    const span = getTracer().startSpan(`${SPAN_PREFIX}${action}`, { kind: SpanKind.INTERNAL });
+    const ctx = trace.setSpan(context.active(), span);
+    return {
+        end: err => endSpan(span, err),
+        withContext: fn => context.with(ctx, fn),
+    };
+}
