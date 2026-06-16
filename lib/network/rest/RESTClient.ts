@@ -6,6 +6,7 @@ import * as utils from './utils';
 import errors, { ArsenalError } from '../../errors';
 import { http as HttpAgent } from 'httpagent';
 import * as stream from 'stream';
+import { once } from '../../jsutil';
 
 function setRequestUids(reqHeaders: http.IncomingHttpHeaders, reqUids: string) {
     // inhibit 'assignment to property of function parameter' -
@@ -156,6 +157,9 @@ export default class RESTClient {
         reqUids: string,
         callback: (error: Error | null, key?: string) => void,
     ) {
+        // Guarantee a single callback invocation across the response and
+        // request 'error' paths (see get()).
+        const cbOnce = once(callback);
         const log = this.createLogger(reqUids);
         const headers = {};
         setRequestUids(headers, reqUids);
@@ -166,22 +170,22 @@ export default class RESTClient {
             response.once('readable', () => {
                 // expects '201 Created'
                 if (response.statusCode !== 201) {
-                    return callback(makeErrorFromHTTPResponse(response));
+                    return cbOnce(makeErrorFromHTTPResponse(response));
                 }
                 // retrieve the key from the Location response header
                 // containing the complete URL to the object, like
                 // /DataFile/abcdef.
                 const location = response.headers.location;
                 if (location === undefined) {
-                    return callback(new Error(
+                    return cbOnce(new Error(
                         'missing Location header in the response'));
                 }
                 const locationInfo = utils.explodePath(location);
                 if (!locationInfo) {
-                    return callback(new Error(
+                    return cbOnce(new Error(
                         `bad Location response header: ${location}`));
                 }
-                return callback(null, locationInfo.key);
+                return cbOnce(null, locationInfo.key);
             });
         }).on('finish', () => {
             log.debug('finished sending PUT data to the REST server', {
@@ -189,7 +193,7 @@ export default class RESTClient {
                 method: 'put',
                 contentLength: size,
             });
-        }).on('error', callback);
+        }).on('error', cbOnce);
 
         stream.pipe(request);
         stream.on('error', err => {
@@ -217,6 +221,10 @@ export default class RESTClient {
         reqUids: string,
         callback: (error: Error | null, stream?: stream.Readable) => void,
     ) {
+        // The success path (response received) and the request 'error' path
+        // are independent; a socket error after the response would otherwise
+        // invoke the callback a second time. Guarantee a single invocation.
+        const cbOnce = once(callback);
         const log = this.createLogger(reqUids);
         const headers = {};
         setRequestUids(headers, reqUids);
@@ -227,11 +235,11 @@ export default class RESTClient {
             response.once('readable', () => {
                 if (response.statusCode !== 200 &&
                     response.statusCode !== 206) {
-                    return callback(makeErrorFromHTTPResponse(response));
+                    return cbOnce(makeErrorFromHTTPResponse(response));
                 }
-                return callback(null, response);
+                return cbOnce(null, response);
             });
-        }).on('error', callback);
+        }).on('error', cbOnce);
 
         request.end();
     }
@@ -250,6 +258,9 @@ export default class RESTClient {
         reqUids: string,
         callback: (error: Error | null, stream?: stream.Readable) => void,
     ) {
+        // Guarantee a single callback invocation across the response and
+        // request 'error' paths (see get()).
+        const cbOnce = once(callback);
         const log = this.createLogger(reqUids);
         const headers = {};
         setRequestUids(headers, reqUids);
@@ -271,11 +282,11 @@ export default class RESTClient {
             response.once('readable', () => {
                 if (response.statusCode !== 200 &&
                     response.statusCode !== 206) {
-                    return callback(makeErrorFromHTTPResponse(response));
+                    return cbOnce(makeErrorFromHTTPResponse(response));
                 }
-                return callback(null, response.read().toString());
+                return cbOnce(null, response.read().toString());
             });
-        }).on('error', callback);
+        }).on('error', cbOnce);
 
         request.end();
     }
@@ -291,6 +302,9 @@ export default class RESTClient {
         reqUids: string,
         callback: (error: Error | null) => void,
     ) {
+        // Guarantee a single callback invocation across the response and
+        // request 'error' paths (see get()).
+        const cbOnce = once(callback);
         const log = this.createLogger(reqUids);
         const headers = {};
         setRequestUids(headers, reqUids);
@@ -300,11 +314,11 @@ export default class RESTClient {
                 response.once('readable', () => {
                     if (response.statusCode !== 200 &&
                         response.statusCode !== 204) {
-                        return callback(makeErrorFromHTTPResponse(response));
+                        return cbOnce(makeErrorFromHTTPResponse(response));
                     }
-                    return callback(null);
+                    return cbOnce(null);
                 });
-            }).on('error', callback);
+            }).on('error', cbOnce);
         request.end();
     }
 }
