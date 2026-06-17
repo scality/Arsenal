@@ -146,6 +146,34 @@ const tests = [
     },
 ];
 
+describe('checkArnMatch matcher memoization', () => {
+    it('returns consistent results on repeated calls', () => {
+        const policyArn = 'arn:aws:s3:::bucket/prefix/*';
+        for (let i = 0; i < 3; i++) {
+            const requestArn = 'arn:aws:s3:::bucket/prefix/obj';
+            const arr = requestArn.split(':');
+            assert.strictEqual(checkArnMatch(policyArn, arr.slice(5).join(':'), arr, true), true);
+            const miss = 'arn:aws:s3:::bucket/other/obj'.split(':');
+            assert.strictEqual(checkArnMatch(policyArn, miss.slice(5).join(':'), miss, true), false);
+        }
+    });
+
+    it('keeps matching correctly across cache eviction', () => {
+        const first = 'arn:aws:s3:::bucket-0/key';
+        const firstArr = first.split(':');
+        assert.strictEqual(checkArnMatch(first, firstArr.slice(5).join(':'), firstArr, true), true);
+        // overflow the 10000-entry LRU so `first` gets evicted
+        for (let i = 0; i < 10001; i++) {
+            const arn = `arn:aws:s3:::bucket-${i}/key`;
+            const arr = arn.split(':');
+            checkArnMatch(arn, arr.slice(5).join(':'), arr, true);
+        }
+        assert.strictEqual(checkArnMatch(first, firstArr.slice(5).join(':'), firstArr, true), true);
+        const other = 'arn:aws:s3:::bucket-x/other'.split(':');
+        assert.strictEqual(checkArnMatch(first, other.slice(5).join(':'), other, true), false);
+    });
+});
+
 describe('policyEvaluator checkArnMatch utility function', () => {
     tests.forEach(test => {
         it(

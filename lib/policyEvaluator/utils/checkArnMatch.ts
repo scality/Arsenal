@@ -1,5 +1,12 @@
+import LRUCache from '../../algos/cache/LRUCache';
 import { handleWildcards } from './wildcards';
 import { policyArnAllowedEmptyAccountId } from '../../constants';
+
+// Compiled matchers are pure functions of (policyArn, caseSensitive), so the
+// cache needs no invalidation; the LRU cap bounds the cardinality introduced
+// by policy-variable substitution (per-request values in the policy arn).
+const ARN_MATCHER_CACHE_ENTRIES = 10000;
+const arnMatcherCache = new LRUCache(ARN_MATCHER_CACHE_ENTRIES);
 
 // A wildcard-free portion translates to a fully-escaped, anchored regExp,
 // so testing it is equivalent to comparing for string equality: keep the
@@ -73,7 +80,12 @@ export default function checkArnMatch(
     requestArnArr: string[],
     caseSensitive: boolean,
 ): boolean {
-    const matcher = compileArnMatcher(policyArn, caseSensitive);
+    const cacheKey = `${caseSensitive ? 'cs' : 'ci'}:${policyArn}`;
+    let matcher: ArnMatcher = arnMatcherCache.get(cacheKey);
+    if (matcher === undefined) {
+        matcher = compileArnMatcher(policyArn, caseSensitive);
+        arnMatcherCache.add(cacheKey, matcher);
+    }
     // Check to see if the relative-id matches first since most likely
     // to diverge.  If not a match, the resource is not applicable so return
     // false
