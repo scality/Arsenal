@@ -4,7 +4,6 @@
 // TODO: Note that there are special rules for * in Principal.
 // Handle when working with bucket policies.
 
-
 // Replace all '*' with '.*' (allow any combo of letters)
 // and all '?' with '.{1}' (allow for any one character)
 // If *, ? or $ are enclosed in ${}, keep literal *, ?, or $
@@ -29,10 +28,9 @@ function characterMap(char: string) {
 export const handleWildcards = (string: string) => {
     // Escape all regExp special characters
     // Then replace the AWS special characters with regExp equivalents
-    const regExStr = string.replace(/[\\^$*+?.()|[\]{}]/g, '\\$&').replace(
-        /(\\\*)|(\\\?)|(\\\$\\\{\\\*\\\})|(\\\$\\\{\\\?\\\})|(\\\$\\\{\\\$\\\})/g,
-        characterMap
-    );
+    const regExStr = string
+        .replace(/[\\^$*+?.()|[\]{}]/g, '\\$&')
+        .replace(/(\\\*)|(\\\?)|(\\\$\\\{\\\*\\\})|(\\\$\\\{\\\?\\\})|(\\\$\\\{\\\$\\\})/g, characterMap);
     return `^${regExStr}$`;
 };
 
@@ -43,8 +41,8 @@ export const handleWildcards = (string: string) => {
  * @return array of strings to be used for regEx comparisons
  */
 export const handleWildcardInResource = (arn: string) => {
-// Wildcards can be part of the resource ARN.
-// Wildcards do NOT span segments of the ARN (separated by ":")
+    // Wildcards can be part of the resource ARN.
+    // Wildcards do NOT span segments of the ARN (separated by ":")
 
     // Example: all elements in specific bucket:
     // "Resource": "arn:aws:s3:::my_corporate_bucket/*"

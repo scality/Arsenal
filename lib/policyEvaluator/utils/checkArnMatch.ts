@@ -21,27 +21,25 @@ export default function checkArnMatch(
     // object name in S3)
     // Join on ":" in case there were ":" in the relativeID at the end
     // of the arn
-    const policyRelativeId = caseSensitive ? regExofArn.slice(5).join(':') :
-        regExofArn.slice(5).join(':').toLowerCase();
+    const policyRelativeId = caseSensitive
+        ? regExofArn.slice(5).join(':')
+        : regExofArn.slice(5).join(':').toLowerCase();
     const policyRelativeIdRegEx = new RegExp(policyRelativeId);
     // Check to see if the relative-id matches first since most likely
     // to diverge.  If not a match, the resource is not applicable so return
     // false
-    if (!policyRelativeIdRegEx.test(caseSensitive ?
-        requestRelativeId : requestRelativeId.toLowerCase())) {
+    if (!policyRelativeIdRegEx.test(caseSensitive ? requestRelativeId : requestRelativeId.toLowerCase())) {
         return false;
     }
     // Check the other parts of the ARN to make sure they match.  If not,
     // return false.
     for (let j = 0; j < 5; j++) {
         const segmentRegEx = new RegExp(regExofArn[j]);
-        const requestSegment = caseSensitive ? requestArnArr[j] :
-            requestArnArr[j].toLowerCase();
+        const requestSegment = caseSensitive ? requestArnArr[j] : requestArnArr[j].toLowerCase();
         const policyArnArr = policyArn.split(':');
         // We want to allow an empty account ID for utapi and SUR service ARNs to not
         // break compatibility.
-        if (j === 4 && policyArnAllowedEmptyAccountId.includes(policyArnArr[2])
-            && policyArnArr[4] === '') {
+        if (j === 4 && policyArnAllowedEmptyAccountId.includes(policyArnArr[2]) && policyArnArr[4] === '') {
             continue;
         } else if (!segmentRegEx.test(requestSegment)) {
             return false;
