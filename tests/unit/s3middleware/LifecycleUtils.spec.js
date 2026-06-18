@@ -51,13 +51,10 @@ describe('LifecycleUtils::getApplicableRules', () => {
 
     it('should return earliest applicable expirations', () => {
         const filteredRules = [
-            new LifecycleRule().addID('task-1').addExpiration('Date', FUTURE)
-                .build(),
+            new LifecycleRule().addID('task-1').addExpiration('Date', FUTURE).build(),
             new LifecycleRule().addID('task-2').addExpiration('Days', 10).build(),
-            new LifecycleRule().addID('task-3').addExpiration('Date', PAST)
-                .build(),
-            new LifecycleRule().addID('task-4').addExpiration('Date', CURRENT)
-                .build(),
+            new LifecycleRule().addID('task-3').addExpiration('Date', PAST).build(),
+            new LifecycleRule().addID('task-4').addExpiration('Date', CURRENT).build(),
             new LifecycleRule().addID('task-5').addExpiration('Days', 5).build(),
         ];
 
@@ -73,15 +70,12 @@ describe('LifecycleUtils::getApplicableRules', () => {
 
     it('should return earliest applicable rules', () => {
         const filteredRules = [
-            new LifecycleRule().addID('task-1').addExpiration('Date', FUTURE)
-                .build(),
+            new LifecycleRule().addID('task-1').addExpiration('Date', FUTURE).build(),
             new LifecycleRule().addID('task-2').addAbortMPU(18).build(),
-            new LifecycleRule().addID('task-3').addExpiration('Date', PAST)
-                .build(),
+            new LifecycleRule().addID('task-3').addExpiration('Date', PAST).build(),
             new LifecycleRule().addID('task-4').addNCVExpiration('NoncurrentDays', 3).build(),
             new LifecycleRule().addID('task-5').addNCVExpiration('NoncurrentDays', 12).build(),
-            new LifecycleRule().addID('task-6').addExpiration('Date', CURRENT)
-                .build(),
+            new LifecycleRule().addID('task-6').addExpiration('Date', CURRENT).build(),
             new LifecycleRule().addID('task-7').addNCVExpiration(7).build(),
             new LifecycleRule().addID('task-8').addAbortMPU(4).build(),
             new LifecycleRule().addID('task-9').addAbortMPU(22).build(),
@@ -90,27 +84,26 @@ describe('LifecycleUtils::getApplicableRules', () => {
         const res = lutils.getApplicableRules(filteredRules);
         assert.deepStrictEqual(Object.keys(res.Expiration), ['ID', 'Date']);
         assert.deepStrictEqual(res.Expiration, { ID: 'task-3', Date: PAST });
-        assert.strictEqual(
-            res.AbortIncompleteMultipartUpload.DaysAfterInitiation, 4);
-        assert.strictEqual(
-            res.NoncurrentVersionExpiration.NoncurrentDays, 3);
+        assert.strictEqual(res.AbortIncompleteMultipartUpload.DaysAfterInitiation, 4);
+        assert.strictEqual(res.NoncurrentVersionExpiration.NoncurrentDays, 3);
     });
 
     it('should return earliest applicable rules with NewerNoncurrentVersions', () => {
         const filteredRules = [
-            new LifecycleRule().addID('task-1').addExpiration('Date', FUTURE)
-                .build(),
+            new LifecycleRule().addID('task-1').addExpiration('Date', FUTURE).build(),
             new LifecycleRule().addID('task-2').addAbortMPU(18).build(),
-            new LifecycleRule().addID('task-3').addExpiration('Date', PAST)
-                .build(),
-            new LifecycleRule().addID('task-4')
+            new LifecycleRule().addID('task-3').addExpiration('Date', PAST).build(),
+            new LifecycleRule()
+                .addID('task-4')
                 .addNCVExpiration('NoncurrentDays', 3)
-                .addNCVExpiration('NewerNoncurrentVersions', 5).build(),
-            new LifecycleRule().addID('task-5')
-                .addNCVExpiration('NoncurrentDays', 12)
-                .addNCVExpiration('NewerNoncurrentVersions', 10).build(),
-            new LifecycleRule().addID('task-6').addExpiration('Date', CURRENT)
+                .addNCVExpiration('NewerNoncurrentVersions', 5)
                 .build(),
+            new LifecycleRule()
+                .addID('task-5')
+                .addNCVExpiration('NoncurrentDays', 12)
+                .addNCVExpiration('NewerNoncurrentVersions', 10)
+                .build(),
+            new LifecycleRule().addID('task-6').addExpiration('Date', CURRENT).build(),
             new LifecycleRule().addID('task-7').addNCVExpiration(7).build(),
             new LifecycleRule().addID('task-8').addAbortMPU(4).build(),
             new LifecycleRule().addID('task-9').addAbortMPU(22).build(),
@@ -119,12 +112,9 @@ describe('LifecycleUtils::getApplicableRules', () => {
         const res = lutils.getApplicableRules(filteredRules);
         assert.deepStrictEqual(Object.keys(res.Expiration), ['ID', 'Date']);
         assert.deepStrictEqual(res.Expiration, { ID: 'task-3', Date: PAST });
-        assert.strictEqual(
-            res.AbortIncompleteMultipartUpload.DaysAfterInitiation, 4);
-        assert.strictEqual(
-            res.NoncurrentVersionExpiration.NoncurrentDays, 3);
-        assert.strictEqual(
-            res.NoncurrentVersionExpiration.NewerNoncurrentVersions, 5);
+        assert.strictEqual(res.AbortIncompleteMultipartUpload.DaysAfterInitiation, 4);
+        assert.strictEqual(res.NoncurrentVersionExpiration.NoncurrentDays, 3);
+        assert.strictEqual(res.NoncurrentVersionExpiration.NewerNoncurrentVersions, 5);
     });
 
     it('should return Transition with Days', () => {
@@ -178,10 +168,12 @@ describe('LifecycleUtils::getApplicableRules', () => {
     it('should return Transition with Date', () => {
         const applicableRules = [
             new LifecycleRule()
-                .addTransitions([{
-                    Date: 0,
-                    StorageClass: 'zenko',
-                }])
+                .addTransitions([
+                    {
+                        Date: 0,
+                        StorageClass: 'zenko',
+                    },
+                ])
                 .build(),
         ];
         const lastModified = getDate({ numberOfDaysFromNow: -1 });
@@ -198,16 +190,20 @@ describe('LifecycleUtils::getApplicableRules', () => {
     it('should return Transition across many rules: first rule', () => {
         const applicableRules = [
             new LifecycleRule()
-                .addTransitions([{
-                    Days: 1,
-                    StorageClass: 'zenko-1',
-                }])
+                .addTransitions([
+                    {
+                        Days: 1,
+                        StorageClass: 'zenko-1',
+                    },
+                ])
                 .build(),
             new LifecycleRule()
-                .addTransitions([{
-                    Days: 3,
-                    StorageClass: 'zenko-3',
-                }])
+                .addTransitions([
+                    {
+                        Days: 3,
+                        StorageClass: 'zenko-3',
+                    },
+                ])
                 .build(),
         ];
         const lastModified = getDate({ numberOfDaysFromNow: -2 });
@@ -224,16 +220,20 @@ describe('LifecycleUtils::getApplicableRules', () => {
     it('should return Transition across many rules: second rule', () => {
         const applicableRules = [
             new LifecycleRule()
-                .addTransitions([{
-                    Days: 1,
-                    StorageClass: 'zenko-1',
-                }])
+                .addTransitions([
+                    {
+                        Days: 1,
+                        StorageClass: 'zenko-1',
+                    },
+                ])
                 .build(),
             new LifecycleRule()
-                .addTransitions([{
-                    Days: 3,
-                    StorageClass: 'zenko-3',
-                }])
+                .addTransitions([
+                    {
+                        Days: 3,
+                        StorageClass: 'zenko-3',
+                    },
+                ])
                 .build(),
         ];
         const lastModified = getDate({ numberOfDaysFromNow: -4 });
@@ -247,23 +247,27 @@ describe('LifecycleUtils::getApplicableRules', () => {
         });
     });
 
-    it('should return Transition across many rules: first rule with ' +
-    'multiple transitions', () => {
+    it('should return Transition across many rules: first rule with ' + 'multiple transitions', () => {
         const applicableRules = [
             new LifecycleRule()
-                .addTransitions([{
-                    Days: 1,
-                    StorageClass: 'zenko-1',
-                }, {
-                    Days: 3,
-                    StorageClass: 'zenko-3',
-                }])
+                .addTransitions([
+                    {
+                        Days: 1,
+                        StorageClass: 'zenko-1',
+                    },
+                    {
+                        Days: 3,
+                        StorageClass: 'zenko-3',
+                    },
+                ])
                 .build(),
             new LifecycleRule()
-                .addTransitions([{
-                    Days: 4,
-                    StorageClass: 'zenko-4',
-                }])
+                .addTransitions([
+                    {
+                        Days: 4,
+                        StorageClass: 'zenko-4',
+                    },
+                ])
                 .build(),
         ];
         const lastModified = getDate({ numberOfDaysFromNow: -2 });
@@ -277,26 +281,31 @@ describe('LifecycleUtils::getApplicableRules', () => {
         });
     });
 
-    it('should return Transition across many rules: second rule with ' +
-    'multiple transitions', () => {
+    it('should return Transition across many rules: second rule with ' + 'multiple transitions', () => {
         const applicableRules = [
             new LifecycleRule()
-                .addTransitions([{
-                    Days: 1,
-                    StorageClass: 'zenko-1',
-                }, {
-                    Days: 3,
-                    StorageClass: 'zenko-3',
-                }])
+                .addTransitions([
+                    {
+                        Days: 1,
+                        StorageClass: 'zenko-1',
+                    },
+                    {
+                        Days: 3,
+                        StorageClass: 'zenko-3',
+                    },
+                ])
                 .build(),
             new LifecycleRule()
-                .addTransitions([{
-                    Days: 4,
-                    StorageClass: 'zenko-4',
-                }, {
-                    Days: 6,
-                    StorageClass: 'zenko-6',
-                }])
+                .addTransitions([
+                    {
+                        Days: 4,
+                        StorageClass: 'zenko-4',
+                    },
+                    {
+                        Days: 6,
+                        StorageClass: 'zenko-6',
+                    },
+                ])
                 .build(),
         ];
         const lastModified = getDate({ numberOfDaysFromNow: -5 });
@@ -310,21 +319,24 @@ describe('LifecycleUtils::getApplicableRules', () => {
         });
     });
 
-    it('should return Transition across many rules: combination of Date ' +
-    'and Days gets Date result', () => {
+    it('should return Transition across many rules: combination of Date ' + 'and Days gets Date result', () => {
         const applicableDate = getDate({ numberOfDaysFromNow: -1 });
         const applicableRules = [
             new LifecycleRule()
-                .addTransitions([{
-                    Days: 1,
-                    StorageClass: 'zenko-1',
-                }])
+                .addTransitions([
+                    {
+                        Days: 1,
+                        StorageClass: 'zenko-1',
+                    },
+                ])
                 .build(),
             new LifecycleRule()
-                .addTransitions([{
-                    Date: applicableDate,
-                    StorageClass: 'zenko-3',
-                }])
+                .addTransitions([
+                    {
+                        Date: applicableDate,
+                        StorageClass: 'zenko-3',
+                    },
+                ])
                 .build(),
         ];
         const lastModified = getDate({ numberOfDaysFromNow: -4 });
@@ -338,20 +350,23 @@ describe('LifecycleUtils::getApplicableRules', () => {
         });
     });
 
-    it('should return Transition across many rules: combination of Date ' +
-    'and Days gets Days result', () => {
+    it('should return Transition across many rules: combination of Date ' + 'and Days gets Days result', () => {
         const applicableRules = [
             new LifecycleRule()
-                .addTransitions([{
-                    Days: 3,
-                    StorageClass: 'zenko-1',
-                }])
+                .addTransitions([
+                    {
+                        Days: 3,
+                        StorageClass: 'zenko-1',
+                    },
+                ])
                 .build(),
             new LifecycleRule()
-                .addTransitions([{
-                    Date: getDate({ numberOfDaysFromNow: -4 }),
-                    StorageClass: 'zenko-3',
-                }])
+                .addTransitions([
+                    {
+                        Date: getDate({ numberOfDaysFromNow: -4 }),
+                        StorageClass: 'zenko-3',
+                    },
+                ])
                 .build(),
         ];
         const lastModified = getDate({ numberOfDaysFromNow: -4 });
@@ -365,8 +380,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
         });
     });
 
-    it('should not return transition when Transitions has no applicable ' +
-    'rule: Days', () => {
+    it('should not return transition when Transitions has no applicable ' + 'rule: Days', () => {
         const applicableRules = [
             new LifecycleRule()
                 .addTransitions([
@@ -383,14 +397,15 @@ describe('LifecycleUtils::getApplicableRules', () => {
         assert.strictEqual(rules.Transition, undefined);
     });
 
-    it('should not return transition when Transitions has no applicable ' +
-    'rule: Date', () => {
+    it('should not return transition when Transitions has no applicable ' + 'rule: Date', () => {
         const applicableRules = [
             new LifecycleRule()
-                .addTransitions([{
-                    Date: new Date(getDate({ numberOfDaysFromNow: 1 })),
-                    StorageClass: 'zenko',
-                }])
+                .addTransitions([
+                    {
+                        Date: new Date(getDate({ numberOfDaysFromNow: 1 })),
+                        StorageClass: 'zenko',
+                    },
+                ])
                 .build(),
         ];
         const lastModified = getDate({ numberOfDaysFromNow: 0 });
@@ -399,23 +414,14 @@ describe('LifecycleUtils::getApplicableRules', () => {
         assert.strictEqual(rules.Transition, undefined);
     });
 
-    it('should not return transition when Transitions is an empty ' +
-    'array', () => {
-        const applicableRules = [
-            new LifecycleRule()
-                .addTransitions([])
-                .build(),
-        ];
+    it('should not return transition when Transitions is an empty ' + 'array', () => {
+        const applicableRules = [new LifecycleRule().addTransitions([]).build()];
         const rules = lutils.getApplicableRules(applicableRules, {});
         assert.strictEqual(rules.Transition, undefined);
     });
 
     it('should not return transition when Transitions is undefined', () => {
-        const applicableRules = [
-            new LifecycleRule()
-                .addExpiration('Days', 1)
-                .build(),
-        ];
+        const applicableRules = [new LifecycleRule().addExpiration('Days', 1).build()];
         const rules = lutils.getApplicableRules(applicableRules, {});
         assert.strictEqual(rules.Transition, undefined);
     });
@@ -471,16 +477,20 @@ describe('LifecycleUtils::getApplicableRules', () => {
     it('should return Transition across many rules: first rule', () => {
         const applicableRules = [
             new LifecycleRule()
-                .addNCVTransitions([{
-                    NoncurrentDays: 1,
-                    StorageClass: 'zenko-1',
-                }])
+                .addNCVTransitions([
+                    {
+                        NoncurrentDays: 1,
+                        StorageClass: 'zenko-1',
+                    },
+                ])
                 .build(),
             new LifecycleRule()
-                .addNCVTransitions([{
-                    NoncurrentDays: 3,
-                    StorageClass: 'zenko-3',
-                }])
+                .addNCVTransitions([
+                    {
+                        NoncurrentDays: 3,
+                        StorageClass: 'zenko-3',
+                    },
+                ])
                 .build(),
         ];
         const lastModified = getDate({ numberOfDaysFromNow: -2 });
@@ -497,16 +507,20 @@ describe('LifecycleUtils::getApplicableRules', () => {
     it('should return Transition across many rules: second rule', () => {
         const applicableRules = [
             new LifecycleRule()
-                .addNCVTransitions([{
-                    NoncurrentDays: 1,
-                    StorageClass: 'zenko-1',
-                }])
+                .addNCVTransitions([
+                    {
+                        NoncurrentDays: 1,
+                        StorageClass: 'zenko-1',
+                    },
+                ])
                 .build(),
             new LifecycleRule()
-                .addNCVTransitions([{
-                    NoncurrentDays: 3,
-                    StorageClass: 'zenko-3',
-                }])
+                .addNCVTransitions([
+                    {
+                        NoncurrentDays: 3,
+                        StorageClass: 'zenko-3',
+                    },
+                ])
                 .build(),
         ];
         const lastModified = getDate({ numberOfDaysFromNow: -4 });
@@ -520,23 +534,27 @@ describe('LifecycleUtils::getApplicableRules', () => {
         });
     });
 
-    it('should return Transition across many rules: first rule with ' +
-    'multiple transitions', () => {
+    it('should return Transition across many rules: first rule with ' + 'multiple transitions', () => {
         const applicableRules = [
             new LifecycleRule()
-                .addNCVTransitions([{
-                    NoncurrentDays: 1,
-                    StorageClass: 'zenko-1',
-                }, {
-                    NoncurrentDays: 3,
-                    StorageClass: 'zenko-3',
-                }])
+                .addNCVTransitions([
+                    {
+                        NoncurrentDays: 1,
+                        StorageClass: 'zenko-1',
+                    },
+                    {
+                        NoncurrentDays: 3,
+                        StorageClass: 'zenko-3',
+                    },
+                ])
                 .build(),
             new LifecycleRule()
-                .addNCVTransitions([{
-                    NoncurrentDays: 4,
-                    StorageClass: 'zenko-4',
-                }])
+                .addNCVTransitions([
+                    {
+                        NoncurrentDays: 4,
+                        StorageClass: 'zenko-4',
+                    },
+                ])
                 .build(),
         ];
         const lastModified = getDate({ numberOfDaysFromNow: -2 });
@@ -550,26 +568,31 @@ describe('LifecycleUtils::getApplicableRules', () => {
         });
     });
 
-    it('should return Transition across many rules: second rule with ' +
-    'multiple transitions', () => {
+    it('should return Transition across many rules: second rule with ' + 'multiple transitions', () => {
         const applicableRules = [
             new LifecycleRule()
-                .addNCVTransitions([{
-                    NoncurrentDays: 1,
-                    StorageClass: 'zenko-1',
-                }, {
-                    NoncurrentDays: 3,
-                    StorageClass: 'zenko-3',
-                }])
+                .addNCVTransitions([
+                    {
+                        NoncurrentDays: 1,
+                        StorageClass: 'zenko-1',
+                    },
+                    {
+                        NoncurrentDays: 3,
+                        StorageClass: 'zenko-3',
+                    },
+                ])
                 .build(),
             new LifecycleRule()
-                .addNCVTransitions([{
-                    NoncurrentDays: 4,
-                    StorageClass: 'zenko-4',
-                }, {
-                    NoncurrentDays: 6,
-                    StorageClass: 'zenko-6',
-                }])
+                .addNCVTransitions([
+                    {
+                        NoncurrentDays: 4,
+                        StorageClass: 'zenko-4',
+                    },
+                    {
+                        NoncurrentDays: 6,
+                        StorageClass: 'zenko-6',
+                    },
+                ])
                 .build(),
         ];
         const lastModified = getDate({ numberOfDaysFromNow: -5 });
@@ -583,8 +606,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
         });
     });
 
-    it('should not return transition when Transitions has no applicable ' +
-    'rule: Days', () => {
+    it('should not return transition when Transitions has no applicable ' + 'rule: Days', () => {
         const applicableRules = [
             new LifecycleRule()
                 .addNCVTransitions([
@@ -601,30 +623,20 @@ describe('LifecycleUtils::getApplicableRules', () => {
         assert.strictEqual(rules.Transition, undefined);
     });
 
-    it('should not return transition when Transitions is an empty ' +
-    'array', () => {
-        const applicableRules = [
-            new LifecycleRule()
-                .addNCVTransitions([])
-                .build(),
-        ];
+    it('should not return transition when Transitions is an empty ' + 'array', () => {
+        const applicableRules = [new LifecycleRule().addNCVTransitions([]).build()];
         const rules = lutils.getApplicableRules(applicableRules, {});
         assert.strictEqual(rules.Transition, undefined);
     });
 
     it('should not return noncurrentTransition when undefined', () => {
-        const applicableRules = [
-            new LifecycleRule()
-                .addExpiration('Days', 1)
-                .build(),
-        ];
+        const applicableRules = [new LifecycleRule().addExpiration('Days', 1).build()];
         const rules = lutils.getApplicableRules(applicableRules, {});
         assert.strictEqual(rules.Transition, undefined);
     });
 
     describe('transitioning to the same storage class', () => {
-        it('should not return transition when applicable transition is ' +
-        'already stored at the destination', () => {
+        it('should not return transition when applicable transition is ' + 'already stored at the destination', () => {
             const applicableRules = [
                 new LifecycleRule()
                     .addTransitions([
@@ -641,34 +653,36 @@ describe('LifecycleUtils::getApplicableRules', () => {
             assert.strictEqual(rules.Transition, undefined);
         });
 
-        it('should not return transition when applicable transition is ' +
-        'already stored at the destination: multiple rules', () => {
-            const applicableRules = [
-                new LifecycleRule()
-                    .addTransitions([
-                        {
-                            Days: 2,
-                            StorageClass: 'zenko',
-                        },
-                    ])
-                    .build(),
-                new LifecycleRule()
-                    .addTransitions([
-                        {
-                            Days: 1,
-                            StorageClass: 'STANDARD',
-                        },
-                    ])
-                    .build(),
-            ];
-            const lastModified = getDate({ numberOfDaysFromNow: -3 });
-            const object = getMetadataObject(lastModified, 'zenko');
-            const rules = lutils.getApplicableRules(applicableRules, object);
-            assert.strictEqual(rules.Transition, undefined);
-        });
+        it(
+            'should not return transition when applicable transition is ' +
+                'already stored at the destination: multiple rules',
+            () => {
+                const applicableRules = [
+                    new LifecycleRule()
+                        .addTransitions([
+                            {
+                                Days: 2,
+                                StorageClass: 'zenko',
+                            },
+                        ])
+                        .build(),
+                    new LifecycleRule()
+                        .addTransitions([
+                            {
+                                Days: 1,
+                                StorageClass: 'STANDARD',
+                            },
+                        ])
+                        .build(),
+                ];
+                const lastModified = getDate({ numberOfDaysFromNow: -3 });
+                const object = getMetadataObject(lastModified, 'zenko');
+                const rules = lutils.getApplicableRules(applicableRules, object);
+                assert.strictEqual(rules.Transition, undefined);
+            },
+        );
 
-        it('should not return transition when applicable transition is ' +
-        'already stored at the destination', () => {
+        it('should not return transition when applicable transition is ' + 'already stored at the destination', () => {
             const applicableRules = [
                 new LifecycleRule()
                     .addNCVTransitions([
@@ -685,31 +699,34 @@ describe('LifecycleUtils::getApplicableRules', () => {
             assert.strictEqual(rules.Transition, undefined);
         });
 
-        it('should not return transition when applicable transition is ' +
-        'already stored at the destination: multiple rules', () => {
-            const applicableRules = [
-                new LifecycleRule()
-                    .addNCVTransitions([
-                        {
-                            Days: 2,
-                            StorageClass: 'zenko',
-                        },
-                    ])
-                    .build(),
-                new LifecycleRule()
-                    .addNCVTransitions([
-                        {
-                            Days: 1,
-                            StorageClass: 'STANDARD',
-                        },
-                    ])
-                    .build(),
-            ];
-            const lastModified = getDate({ numberOfDaysFromNow: -3 });
-            const object = getMetadataObject(lastModified, 'zenko');
-            const rules = lutils.getApplicableRules(applicableRules, object);
-            assert.strictEqual(rules.Transition, undefined);
-        });
+        it(
+            'should not return transition when applicable transition is ' +
+                'already stored at the destination: multiple rules',
+            () => {
+                const applicableRules = [
+                    new LifecycleRule()
+                        .addNCVTransitions([
+                            {
+                                Days: 2,
+                                StorageClass: 'zenko',
+                            },
+                        ])
+                        .build(),
+                    new LifecycleRule()
+                        .addNCVTransitions([
+                            {
+                                Days: 1,
+                                StorageClass: 'STANDARD',
+                            },
+                        ])
+                        .build(),
+                ];
+                const lastModified = getDate({ numberOfDaysFromNow: -3 });
+                const object = getMetadataObject(lastModified, 'zenko');
+                const rules = lutils.getApplicableRules(applicableRules, object);
+                assert.strictEqual(rules.Transition, undefined);
+            },
+        );
     });
 });
 
@@ -735,8 +752,7 @@ describe('LifecycleUtils::filterRules', () => {
         const objTags = { TagSet: [] };
 
         const res = lutils.filterRules(mBucketRules, item, objTags);
-        const expected = mBucketRules.filter(rule =>
-            rule.Status === 'Enabled');
+        const expected = mBucketRules.filter(rule => rule.Status === 'Enabled');
         assert.deepStrictEqual(getRuleIDs(res), getRuleIDs(expected));
     });
 
@@ -763,36 +779,40 @@ describe('LifecycleUtils::filterRules', () => {
 
         const res1 = lutils.filterRules(mBucketRules, item1, objTags);
         assert.strictEqual(res1.length, 3);
-        const expRes1 = getRuleIDs(mBucketRules.filter(rule => {
-            if (!rule.Filter || !rule.Filter.Prefix) {
-                return true;
-            }
-            if (item1.Key.startsWith(rule.Filter.Prefix)) {
-                return true;
-            }
-            return false;
-        }));
+        const expRes1 = getRuleIDs(
+            mBucketRules.filter(rule => {
+                if (!rule.Filter || !rule.Filter.Prefix) {
+                    return true;
+                }
+                if (item1.Key.startsWith(rule.Filter.Prefix)) {
+                    return true;
+                }
+                return false;
+            }),
+        );
         assert.deepStrictEqual(expRes1, getRuleIDs(res1));
 
         const res2 = lutils.filterRules(mBucketRules, item2, objTags);
         assert.strictEqual(res2.length, 2);
-        const expRes2 = getRuleIDs(mBucketRules.filter(rule =>
-            (rule.Filter && rule.Filter.Prefix && rule.Filter.Prefix.startsWith('cat-'))
-            || (!rule.Filter || !rule.Filter.Prefix)));
+        const expRes2 = getRuleIDs(
+            mBucketRules.filter(
+                rule =>
+                    (rule.Filter && rule.Filter.Prefix && rule.Filter.Prefix.startsWith('cat-')) ||
+                    !rule.Filter ||
+                    !rule.Filter.Prefix,
+            ),
+        );
         assert.deepStrictEqual(expRes2, getRuleIDs(res2));
     });
 
     it('should filter out unmatched single tags', () => {
         const mBucketRules = [
             new LifecycleRule().addID('task-1').addTag('tag1', 'val1').build(),
-            new LifecycleRule().addID('task-2').addTag('tag3-1', 'val3')
-                .addTag('tag3-2', 'val3').build(),
+            new LifecycleRule().addID('task-2').addTag('tag3-1', 'val3').addTag('tag3-2', 'val3').build(),
             new LifecycleRule().addID('task-3').addTag('tag3-1', 'val3').build(),
             new LifecycleRule().addID('task-4').addTag('tag1', 'val1').build(),
-            new LifecycleRule().addID('task-5').addTag('tag3-2', 'val3')
-                .addTag('tag3-1', 'false').build(),
-            new LifecycleRule().addID('task-6').addTag('tag3-2', 'val3')
-                .addTag('tag3-1', 'val3').build(),
+            new LifecycleRule().addID('task-5').addTag('tag3-2', 'val3').addTag('tag3-1', 'false').build(),
+            new LifecycleRule().addID('task-6').addTag('tag3-2', 'val3').addTag('tag3-1', 'val3').build(),
         ];
         const item = {
             Key: 'example-item',
@@ -801,87 +821,105 @@ describe('LifecycleUtils::filterRules', () => {
         const objTags1 = { TagSet: [{ Key: 'tag1', Value: 'val1' }] };
         const res1 = lutils.filterRules(mBucketRules, item, objTags1);
         assert.strictEqual(res1.length, 2);
-        const expRes1 = getRuleIDs(mBucketRules.filter(rule =>
-            (rule.Filter && rule.Filter.Tag &&
-            rule.Filter.Tag.Key === 'tag1' &&
-            rule.Filter.Tag.Value === 'val1'),
-        ));
+        const expRes1 = getRuleIDs(
+            mBucketRules.filter(
+                rule =>
+                    rule.Filter &&
+                    rule.Filter.Tag &&
+                    rule.Filter.Tag.Key === 'tag1' &&
+                    rule.Filter.Tag.Value === 'val1',
+            ),
+        );
         assert.deepStrictEqual(expRes1, getRuleIDs(res1));
 
         const objTags2 = { TagSet: [{ Key: 'tag3-1', Value: 'val3' }] };
         const res2 = lutils.filterRules(mBucketRules, item, objTags2);
         assert.strictEqual(res2.length, 1);
-        const expRes2 = getRuleIDs(mBucketRules.filter(rule =>
-            rule.Filter && rule.Filter.Tag &&
-            rule.Filter.Tag.Key === 'tag3-1' &&
-            rule.Filter.Tag.Value === 'val3',
-        ));
+        const expRes2 = getRuleIDs(
+            mBucketRules.filter(
+                rule =>
+                    rule.Filter &&
+                    rule.Filter.Tag &&
+                    rule.Filter.Tag.Key === 'tag3-1' &&
+                    rule.Filter.Tag.Value === 'val3',
+            ),
+        );
         assert.deepStrictEqual(expRes2, getRuleIDs(res2));
     });
 
     it('should filter out unmatched multiple tags', () => {
         const mBucketRules = [
-            new LifecycleRule().addID('task-1').addTag('tag1', 'val1')
-                .addTag('tag2', 'val1').build(),
+            new LifecycleRule().addID('task-1').addTag('tag1', 'val1').addTag('tag2', 'val1').build(),
             new LifecycleRule().addID('task-2').addTag('tag1', 'val1').build(),
             new LifecycleRule().addID('task-3').addTag('tag2', 'val1').build(),
             new LifecycleRule().addID('task-4').addTag('tag2', 'false').build(),
-            new LifecycleRule().addID('task-5').addTag('tag2', 'val1')
-                .addTag('tag1', 'false').build(),
-            new LifecycleRule().addID('task-6').addTag('tag2', 'val1')
-                .addTag('tag1', 'val1').build(),
-            new LifecycleRule().addID('task-7').addTag('tag2', 'val1')
-                .addTag('tag1', 'val1').addTag('tag3', 'val1').build(),
-            new LifecycleRule().addID('task-8').addTag('tag2', 'val1')
-                .addTag('tag1', 'val1').addTag('tag3', 'false').build(),
+            new LifecycleRule().addID('task-5').addTag('tag2', 'val1').addTag('tag1', 'false').build(),
+            new LifecycleRule().addID('task-6').addTag('tag2', 'val1').addTag('tag1', 'val1').build(),
+            new LifecycleRule()
+                .addID('task-7')
+                .addTag('tag2', 'val1')
+                .addTag('tag1', 'val1')
+                .addTag('tag3', 'val1')
+                .build(),
+            new LifecycleRule()
+                .addID('task-8')
+                .addTag('tag2', 'val1')
+                .addTag('tag1', 'val1')
+                .addTag('tag3', 'false')
+                .build(),
             new LifecycleRule().addID('task-9').build(),
         ];
         const item = {
             Key: 'example-item',
             LastModified: CURRENT,
         };
-        const objTags1 = { TagSet: [
-            { Key: 'tag1', Value: 'val1' },
-            { Key: 'tag2', Value: 'val1' },
-        ] };
+        const objTags1 = {
+            TagSet: [
+                { Key: 'tag1', Value: 'val1' },
+                { Key: 'tag2', Value: 'val1' },
+            ],
+        };
         const res1 = lutils.filterRules(mBucketRules, item, objTags1);
         assert.strictEqual(res1.length, 5);
-        assert.deepStrictEqual(getRuleIDs(res1), ['task-1', 'task-2',
-            'task-3', 'task-6', 'task-9']);
+        assert.deepStrictEqual(getRuleIDs(res1), ['task-1', 'task-2', 'task-3', 'task-6', 'task-9']);
 
-        const objTags2 = { TagSet: [
-            { Key: 'tag2', Value: 'val1' },
-        ] };
+        const objTags2 = { TagSet: [{ Key: 'tag2', Value: 'val1' }] };
         const res2 = lutils.filterRules(mBucketRules, item, objTags2);
         assert.strictEqual(res2.length, 2);
         assert.deepStrictEqual(getRuleIDs(res2), ['task-3', 'task-9']);
 
-        const objTags3 = { TagSet: [
-            { Key: 'tag2', Value: 'val1' },
-            { Key: 'tag1', Value: 'val1' },
-            { Key: 'tag3', Value: 'val1' },
-        ] };
+        const objTags3 = {
+            TagSet: [
+                { Key: 'tag2', Value: 'val1' },
+                { Key: 'tag1', Value: 'val1' },
+                { Key: 'tag3', Value: 'val1' },
+            ],
+        };
         const res3 = lutils.filterRules(mBucketRules, item, objTags3);
         assert.strictEqual(res3.length, 6);
-        assert.deepStrictEqual(getRuleIDs(res3), ['task-1', 'task-2',
-            'task-3', 'task-6', 'task-7', 'task-9']);
+        assert.deepStrictEqual(getRuleIDs(res3), ['task-1', 'task-2', 'task-3', 'task-6', 'task-7', 'task-9']);
     });
 
     it('should filter correctly for an object with no tags', () => {
         const mBucketRules = [
-            new LifecycleRule().addID('task-1').addTag('tag1', 'val1')
-                .addTag('tag2', 'val1').build(),
+            new LifecycleRule().addID('task-1').addTag('tag1', 'val1').addTag('tag2', 'val1').build(),
             new LifecycleRule().addID('task-2').addTag('tag1', 'val1').build(),
             new LifecycleRule().addID('task-3').addTag('tag2', 'val1').build(),
             new LifecycleRule().addID('task-4').addTag('tag2', 'false').build(),
-            new LifecycleRule().addID('task-5').addTag('tag2', 'val1')
-                .addTag('tag1', 'false').build(),
-            new LifecycleRule().addID('task-6').addTag('tag2', 'val1')
-                .addTag('tag1', 'val1').build(),
-            new LifecycleRule().addID('task-7').addTag('tag2', 'val1')
-                .addTag('tag1', 'val1').addTag('tag3', 'val1').build(),
-            new LifecycleRule().addID('task-8').addTag('tag2', 'val1')
-                .addTag('tag1', 'val1').addTag('tag3', 'false').build(),
+            new LifecycleRule().addID('task-5').addTag('tag2', 'val1').addTag('tag1', 'false').build(),
+            new LifecycleRule().addID('task-6').addTag('tag2', 'val1').addTag('tag1', 'val1').build(),
+            new LifecycleRule()
+                .addID('task-7')
+                .addTag('tag2', 'val1')
+                .addTag('tag1', 'val1')
+                .addTag('tag3', 'val1')
+                .build(),
+            new LifecycleRule()
+                .addID('task-8')
+                .addTag('tag2', 'val1')
+                .addTag('tag1', 'val1')
+                .addTag('tag3', 'false')
+                .build(),
             new LifecycleRule().addID('task-9').build(),
         ];
         const item = {
@@ -1183,7 +1221,7 @@ describe('LifecycleUtils::compareTransitions', () => {
     });
 
     it('should return undefined if no rules given', () => {
-        const result = lutils.compareTransitions({ });
+        const result = lutils.compareTransitions({});
         assert.strictEqual(result, undefined);
     });
 

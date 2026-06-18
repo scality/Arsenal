@@ -34,29 +34,17 @@ export default class LifecycleUtils {
     }
 
     /**
-    * Compare two transition rules and return the one that is most recent.
-    * @param params - The function parameters
-    * @param params.transition1 - A transition from the current rule
-    * @param params.transition2 - A transition from the previous rule
-    * @param params.lastModified - The object's last modified
-    * date
-    * @return The most applicable transition rule
-    */
-    compareTransitions(params: {
-        lastModified: string;
-        transition1: Transition;
-        transition2?: Transition;
-    }): Transition;
-    compareTransitions(params: {
-        lastModified: string;
-        transition1?: Transition;
-        transition2: Transition;
-    }): Transition;
-    compareTransitions(params: {
-        lastModified: string;
-        transition1?: Transition;
-        transition2?: Transition;
-    }) {
+     * Compare two transition rules and return the one that is most recent.
+     * @param params - The function parameters
+     * @param params.transition1 - A transition from the current rule
+     * @param params.transition2 - A transition from the previous rule
+     * @param params.lastModified - The object's last modified
+     * date
+     * @return The most applicable transition rule
+     */
+    compareTransitions(params: { lastModified: string; transition1: Transition; transition2?: Transition }): Transition;
+    compareTransitions(params: { lastModified: string; transition1?: Transition; transition2: Transition }): Transition;
+    compareTransitions(params: { lastModified: string; transition1?: Transition; transition2?: Transition }) {
         const { transition1, transition2, lastModified } = params;
         if (transition1 === undefined) {
             return transition2;
@@ -70,14 +58,14 @@ export default class LifecycleUtils {
     }
 
     /**
-    * Compare two non-current version transition rules and return the one that is most recent.
-    * @param params - The function parameters
-    * @param params.transition1 - A non-current version transition from the current rule
-    * @param params.transition2 - A non-current version transition from the previous rule
-    * @param params.lastModified - The object's last modified
-    * date
-    * @return The most applicable transition rule
-    */
+     * Compare two non-current version transition rules and return the one that is most recent.
+     * @param params - The function parameters
+     * @param params.transition1 - A non-current version transition from the current rule
+     * @param params.transition2 - A non-current version transition from the previous rule
+     * @param params.lastModified - The object's last modified
+     * date
+     * @return The most applicable transition rule
+     */
     compareNCVTransitions(params: {
         lastModified: string;
         transition1?: NoncurrentVersionTransition;
@@ -107,20 +95,15 @@ export default class LifecycleUtils {
 
     // TODO Fix This
     /**
-    * Find the most relevant trantition rule for the given transitions array
-    * and any previously stored transition from another rule.
-    * @param params - The function parameters
-    * @param params.transitions - Array of lifecycle rule transitions
-    * @param params.lastModified - The object's last modified
-    * date
-    * @return The most applicable transition rule
-    */
-    getApplicableTransition(params: {
-        store: Store;
-        currentDate: Date;
-        transitions: any[];
-        lastModified: string;
-    }) {
+     * Find the most relevant trantition rule for the given transitions array
+     * and any previously stored transition from another rule.
+     * @param params - The function parameters
+     * @param params.transitions - Array of lifecycle rule transitions
+     * @param params.lastModified - The object's last modified
+     * date
+     * @return The most applicable transition rule
+     */
+    getApplicableTransition(params: { store: Store; currentDate: Date; transitions: any[]; lastModified: string }) {
         const { transitions, store, lastModified, currentDate } = params;
         const transition = transitions.reduce((result, transition) => {
             const isApplicable = // Is the transition time in the past?
@@ -143,24 +126,19 @@ export default class LifecycleUtils {
     }
 
     /**
-    * Find the most relevant non-current version transition rule for the given transitions array
-    * and any previously stored non-current version transition from another rule.
-    * @param params - The function parameters
-    * @param params.transitions - Array of lifecycle non-current version transitions
-    * @param params.lastModified - The object's last modified
-    * date
-    * @return The most applicable non-current version transition rule
-    */
-    getApplicableNCVTransition(params: {
-        store: Store;
-        currentDate: Date;
-        transitions: any[];
-        lastModified: string;
-    }) {
+     * Find the most relevant non-current version transition rule for the given transitions array
+     * and any previously stored non-current version transition from another rule.
+     * @param params - The function parameters
+     * @param params.transitions - Array of lifecycle non-current version transitions
+     * @param params.lastModified - The object's last modified
+     * date
+     * @return The most applicable non-current version transition rule
+     */
+    getApplicableNCVTransition(params: { store: Store; currentDate: Date; transitions: any[]; lastModified: string }) {
         const { transitions, store, lastModified, currentDate } = params;
         const transition = transitions.reduce((result, transition) => {
             const isApplicable = // Is the transition time in the past?
-            this._datetime.getTimestamp(currentDate) >=
+                this._datetime.getTimestamp(currentDate) >=
                 this._datetime.getNCVTransitionTimestamp(transition, lastModified)!;
             if (!isApplicable) {
                 return result;
@@ -180,12 +158,12 @@ export default class LifecycleUtils {
 
     // TODO
     /**
-    * Filter out all rules based on `Status` and `Filter` (Prefix and Tags)
-    * @param bucketLCRules - array of bucket lifecycle rules
-    * @param item - represents a single object, version, or upload
-    * @param objTags - all tags for given `item`
-    * @return list of all filtered rules that apply to `item`
-    */
+     * Filter out all rules based on `Status` and `Filter` (Prefix and Tags)
+     * @param bucketLCRules - array of bucket lifecycle rules
+     * @param item - represents a single object, version, or upload
+     * @param objTags - all tags for given `item`
+     * @return list of all filtered rules that apply to `item`
+     */
     filterRules(bucketLCRules: any[], item: any, objTags: any) {
         /*
             Bucket Tags must be included in the list of object tags.
@@ -220,19 +198,15 @@ export default class LifecycleUtils {
             // console.log(rule.Prefix);
             // console.log(rule.Filter);
             // console.log(rule.Filter.And);
-            const prefix = rule.Prefix
-                    || (rule.Filter && (rule.Filter.And
-                        ? rule.Filter.And.Prefix
-                        : rule.Filter.Prefix));
+            const prefix =
+                rule.Prefix || (rule.Filter && (rule.Filter.And ? rule.Filter.And.Prefix : rule.Filter.Prefix));
             if (prefix && !item.Key.startsWith(prefix)) {
                 return false;
             }
             if (!rule.Filter) {
                 return true;
             }
-            const tags = rule.Filter.And
-                ? rule.Filter.And.Tags
-                : (rule.Filter.Tag && [rule.Filter.Tag]);
+            const tags = rule.Filter.And ? rule.Filter.And.Tags : rule.Filter.Tag && [rule.Filter.Tag];
             if (tags && !deepCompare(tags, objTags.TagSet || [])) {
                 return false;
             }
@@ -242,14 +216,14 @@ export default class LifecycleUtils {
 
     // TODO
     /**
-    * For all filtered rules, get rules that apply the earliest
-    * @param rules - list of filtered rules that apply to a specific
-    *   object, version, or upload
-    * @param metadata - metadata about the object to transition
-    * @return all applicable rules with earliest dates of action
-    *  i.e. { Expiration: { Date: <DateObject>, Days: 10 },
-    *         NoncurrentVersionExpiration: { NoncurrentDays: 5 } }
-    */
+     * For all filtered rules, get rules that apply the earliest
+     * @param rules - list of filtered rules that apply to a specific
+     *   object, version, or upload
+     * @param metadata - metadata about the object to transition
+     * @return all applicable rules with earliest dates of action
+     *  i.e. { Expiration: { Date: <DateObject>, Days: 10 },
+     *         NoncurrentVersionExpiration: { NoncurrentDays: 5 } }
+     */
     getApplicableRules(rules: LifecycleRuleData[], metadata: any) {
         // Declare the current date before the reducing function so that all
         // rule comparisons use the same date.
@@ -305,8 +279,10 @@ export default class LifecycleUtils {
                 }
             }
 
-            if (rule.AbortIncompleteMultipartUpload
-            && this._supportedRules.includes('AbortIncompleteMultipartUpload')) {
+            if (
+                rule.AbortIncompleteMultipartUpload &&
+                this._supportedRules.includes('AbortIncompleteMultipartUpload')
+            ) {
                 // Names are long, so obscuring a bit
                 const aimu = 'AbortIncompleteMultipartUpload';
                 const dai = 'DaysAfterInitiation';
@@ -345,13 +321,14 @@ export default class LifecycleUtils {
         }, {});
 
         // Do not transition to a location where the object is already stored.
-        if (applicableRules.Transition
-            && applicableRules.Transition.StorageClass === metadata.StorageClass) {
+        if (applicableRules.Transition && applicableRules.Transition.StorageClass === metadata.StorageClass) {
             applicableRules.Transition = undefined;
         }
 
-        if (applicableRules.NoncurrentVersionTransition
-            && applicableRules.NoncurrentVersionTransition.StorageClass === metadata.StorageClass) {
+        if (
+            applicableRules.NoncurrentVersionTransition &&
+            applicableRules.NoncurrentVersionTransition.StorageClass === metadata.StorageClass
+        ) {
             applicableRules.NoncurrentVersionTransition = undefined;
         }
 

@@ -2,8 +2,7 @@ const assert = require('assert');
 const { parseString } = require('xml2js');
 const { ValidLifecycleRules } = require('../../../lib/models/LifecycleConfiguration');
 
-const LifecycleConfiguration =
-    require('../../../lib/models/LifecycleConfiguration').default;
+const LifecycleConfiguration = require('../../../lib/models/LifecycleConfiguration').default;
 
 const days = {
     AbortIncompleteMultipartUpload: 'DaysAfterInitiation',
@@ -12,15 +11,11 @@ const days = {
 };
 
 const mockConfig = {
-    replicationEndpoints: [
-        { site: 'a' },
-        { site: 'b' },
-        { site: 'aCrrLocation' }
-    ],
+    replicationEndpoints: [{ site: 'a' }, { site: 'b' }, { site: 'aCrrLocation' }],
     locationConstraints: {
-        'a': { isCRR: false },
-        'b': { isCRR: false },
-        'aCrrLocation': { isCRR: true }, // true => 'aCrrLocation' will be filtered out from storageClasses
+        a: { isCRR: false },
+        b: { isCRR: false },
+        aCrrLocation: { isCRR: true }, // true => 'aCrrLocation' will be filtered out from storageClasses
     },
     supportedLifecycleRules: ValidLifecycleRules,
 };
@@ -62,71 +57,138 @@ date.setUTCHours(0, 0, 0, 0);
  */
 
 const requiredTags = [
-    { tag: 'LifecycleConfiguration', error: 'MalformedXML',
-        errMessage: 'request xml is undefined or empty' },
-    { tag: 'Rule', error: 'MissingRequiredParameter',
-        errMessage: 'missing required key \'Rules\' in ' +
-        'LifecycleConfiguration' },
-    { tag: 'Status', error: 'MissingRequiredParameter',
-        errMessage: 'Rule xml does not include Status' },
-    { tag: 'Filter', error: 'MalformedXML',
-        errMessage: 'Rule xml does not include valid Filter or Prefix' },
-    { tag: 'Action', error: 'InvalidRequest',
-        errMessage: 'Rule does not include valid action' }];
+    { tag: 'LifecycleConfiguration', error: 'MalformedXML', errMessage: 'request xml is undefined or empty' },
+    {
+        tag: 'Rule',
+        error: 'MissingRequiredParameter',
+        errMessage: "missing required key 'Rules' in " + 'LifecycleConfiguration',
+    },
+    { tag: 'Status', error: 'MissingRequiredParameter', errMessage: 'Rule xml does not include Status' },
+    { tag: 'Filter', error: 'MalformedXML', errMessage: 'Rule xml does not include valid Filter or Prefix' },
+    { tag: 'Action', error: 'InvalidRequest', errMessage: 'Rule does not include valid action' },
+];
 
 const invalidActions = [
-    { tag: 'AbortIncompleteMultipartUpload', label: 'no-time',
+    {
+        tag: 'AbortIncompleteMultipartUpload',
+        label: 'no-time',
         error: 'MalformedXML',
-        errMessage: 'AbortIncompleteMultipartUpload action does not ' +
-        'include DaysAfterInitiation' },
-    { tag: 'AbortIncompleteMultipartUpload', label: 'no-tags',
-        error: 'InvalidRequest', errMessage: 'Tag-based filter cannot be ' +
-        'used with AbortIncompleteMultipartUpload action' },
-    { tag: 'AbortIncompleteMultipartUpload', label: 'invalid-days',
-        error: 'InvalidArgument',
-        errMessage: 'DaysAfterInitiation is not a positive integer' },
-    { tag: 'Expiration', label: 'no-time', error: 'MalformedXML',
-        errMessage: 'Expiration action does not include an action time' },
-    { tag: 'Expiration', label: 'mult-times', error: 'MalformedXML',
-        errMessage: 'Expiration action includes more than one time' },
-    { tag: 'Expiration', label: 'non-iso', error: 'InvalidArgument',
-        errMessage: 'Date must be in ISO 8601 format' },
-    { tag: 'Expiration', label: 'invalid-days', error: 'InvalidArgument',
-        errMessage: 'Expiration days is not a positive integer' },
-    { tag: 'Expiration', label: 'no-tags', inTag: 'ExpiredObjectDeleteMarker',
+        errMessage: 'AbortIncompleteMultipartUpload action does not ' + 'include DaysAfterInitiation',
+    },
+    {
+        tag: 'AbortIncompleteMultipartUpload',
+        label: 'no-tags',
         error: 'InvalidRequest',
-        errMessage: 'Tag-based filter cannot be used with ' +
-        'ExpiredObjectDeleteMarker action' },
-    { tag: 'Expiration', label: 'invalid-eodm', error: 'MalformedXML',
-        errMessage: 'ExpiredObjDeleteMarker is not true or false' },
-    { tag: 'NoncurrentVersionExpiration', label: 'no-time',
-        error: 'MalformedXML',
-        errMessage: 'NoncurrentVersionExpiration action does not include ' +
-        'NoncurrentDays' },
-    { tag: 'NoncurrentVersionExpiration', label: 'invalid-days',
+        errMessage: 'Tag-based filter cannot be ' + 'used with AbortIncompleteMultipartUpload action',
+    },
+    {
+        tag: 'AbortIncompleteMultipartUpload',
+        label: 'invalid-days',
         error: 'InvalidArgument',
-        errMessage: 'NoncurrentDays is not a positive integer' }];
+        errMessage: 'DaysAfterInitiation is not a positive integer',
+    },
+    {
+        tag: 'Expiration',
+        label: 'no-time',
+        error: 'MalformedXML',
+        errMessage: 'Expiration action does not include an action time',
+    },
+    {
+        tag: 'Expiration',
+        label: 'mult-times',
+        error: 'MalformedXML',
+        errMessage: 'Expiration action includes more than one time',
+    },
+    { tag: 'Expiration', label: 'non-iso', error: 'InvalidArgument', errMessage: 'Date must be in ISO 8601 format' },
+    {
+        tag: 'Expiration',
+        label: 'invalid-days',
+        error: 'InvalidArgument',
+        errMessage: 'Expiration days is not a positive integer',
+    },
+    {
+        tag: 'Expiration',
+        label: 'no-tags',
+        inTag: 'ExpiredObjectDeleteMarker',
+        error: 'InvalidRequest',
+        errMessage: 'Tag-based filter cannot be used with ' + 'ExpiredObjectDeleteMarker action',
+    },
+    {
+        tag: 'Expiration',
+        label: 'invalid-eodm',
+        error: 'MalformedXML',
+        errMessage: 'ExpiredObjDeleteMarker is not true or false',
+    },
+    {
+        tag: 'NoncurrentVersionExpiration',
+        label: 'no-time',
+        error: 'MalformedXML',
+        errMessage: 'NoncurrentVersionExpiration action does not include ' + 'NoncurrentDays',
+    },
+    {
+        tag: 'NoncurrentVersionExpiration',
+        label: 'invalid-days',
+        error: 'InvalidArgument',
+        errMessage: 'NoncurrentDays is not a positive integer',
+    },
+];
 
 const invalidFilters = [
-    { tag: 'Filter', label: 'also-prefix', error: 'MalformedXML',
-        errMessage: 'Rule xml should not include both Filter and Prefix' },
-    { tag: 'Filter', label: 'and-prefix-tag', error: 'MalformedXML',
-        errMessage: 'Filter should only include one of And, Prefix, or ' +
-        'Tag key' },
-    { tag: 'And', label: 'only-prefix', error: 'MalformedXML',
-        errMessage: 'And should include Prefix and Tags or more than one Tag' },
-    { tag: 'And', label: 'single-tag', error: 'MalformedXML',
-        errMessage: 'And should include Prefix and Tags or more than one Tag' },
-    { tag: 'Tag', label: 'no-key', error: 'MissingRequiredParameter',
-        errMessage: 'Tag XML does not contain both Key and Value' },
-    { tag: 'Tag', label: 'no-value', error: 'MissingRequiredParameter',
-        errMessage: 'Tag XML does not contain both Key and Value' },
-    { tag: 'Tag', label: 'key-too-long', error: 'InvalidRequest',
-        errMessage: 'A Tag\'s Key must be a length between 1 and 128' },
-    { tag: 'Tag', label: 'value-too-long', error: 'InvalidRequest',
-        errMessage: 'A Tag\'s Value must be a length between 0 and 256' },
-    { tag: 'Tag', label: 'prefix-too-long', error: 'InvalidRequest',
-        errMessage: 'The maximum size of a prefix is 1024' }];
+    {
+        tag: 'Filter',
+        label: 'also-prefix',
+        error: 'MalformedXML',
+        errMessage: 'Rule xml should not include both Filter and Prefix',
+    },
+    {
+        tag: 'Filter',
+        label: 'and-prefix-tag',
+        error: 'MalformedXML',
+        errMessage: 'Filter should only include one of And, Prefix, or ' + 'Tag key',
+    },
+    {
+        tag: 'And',
+        label: 'only-prefix',
+        error: 'MalformedXML',
+        errMessage: 'And should include Prefix and Tags or more than one Tag',
+    },
+    {
+        tag: 'And',
+        label: 'single-tag',
+        error: 'MalformedXML',
+        errMessage: 'And should include Prefix and Tags or more than one Tag',
+    },
+    {
+        tag: 'Tag',
+        label: 'no-key',
+        error: 'MissingRequiredParameter',
+        errMessage: 'Tag XML does not contain both Key and Value',
+    },
+    {
+        tag: 'Tag',
+        label: 'no-value',
+        error: 'MissingRequiredParameter',
+        errMessage: 'Tag XML does not contain both Key and Value',
+    },
+    {
+        tag: 'Tag',
+        label: 'key-too-long',
+        error: 'InvalidRequest',
+        errMessage: "A Tag's Key must be a length between 1 and 128",
+    },
+    {
+        tag: 'Tag',
+        label: 'value-too-long',
+        error: 'InvalidRequest',
+        errMessage: "A Tag's Value must be a length between 0 and 256",
+    },
+    {
+        tag: 'Tag',
+        label: 'prefix-too-long',
+        error: 'InvalidRequest',
+        errMessage: 'The maximum size of a prefix is 1024',
+    },
+];
 
 function generateAction(errorTag, tagObj) {
     const xmlObj = {};
@@ -136,11 +198,10 @@ function generateAction(errorTag, tagObj) {
             middleTags = '';
         }
         if (tagObj.label === 'no-tags') {
-            middleTags = tagObj.inTag ?
-                `<${tagObj.inTag}>true</${tagObj.inTag}>` :
-                `<${days[tagObj.tag]}>1</${days[tagObj.tag]}>`;
-            xmlObj.filter = '<Filter><Tag><Key>key</Key>' +
-            '<Value></Value></Tag></Filter>';
+            middleTags = tagObj.inTag
+                ? `<${tagObj.inTag}>true</${tagObj.inTag}>`
+                : `<${days[tagObj.tag]}>1</${days[tagObj.tag]}>`;
+            xmlObj.filter = '<Filter><Tag><Key>key</Key>' + '<Value></Value></Tag></Filter>';
         }
         if (tagObj.label === 'invalid-days') {
             middleTags = `<${days[tagObj.tag]}>0</${days[tagObj.tag]}>`;
@@ -152,8 +213,7 @@ function generateAction(errorTag, tagObj) {
             middleTags = '<Date>03-08-2018</Date>';
         }
         if (tagObj.label === 'invalid-eodm') {
-            middleTags = '<ExpiredObjectDeleteMarker>foo' +
-                '</ExpiredObjectDeleteMarker>';
+            middleTags = '<ExpiredObjectDeleteMarker>foo' + '</ExpiredObjectDeleteMarker>';
         }
         xmlObj.actions = `<${tagObj.tag}>${middleTags}</${tagObj.tag}>`;
     } else {
@@ -197,15 +257,16 @@ function generateFilter(errorTag, tagObj) {
             middleTags = `<Prefix>${longValue}</Prefix>`;
         }
         if (tagObj.label === 'mult-prefixes') {
-            middleTags = '<Prefix>foo</Prefix><Prefix>bar</Prefix>' +
-                `<Prefix>${tagObj.lastPrefix}</Prefix>`;
+            middleTags = '<Prefix>foo</Prefix><Prefix>bar</Prefix>' + `<Prefix>${tagObj.lastPrefix}</Prefix>`;
         }
         if (tagObj.label === 'mult-tags') {
-            middleTags = '<And><Tag><Key>color</Key><Value>blue</Value></Tag>' +
+            middleTags =
+                '<And><Tag><Key>color</Key><Value>blue</Value></Tag>' +
                 '<Tag><Key>shape</Key><Value>circle</Value></Tag></And>';
         }
         if (tagObj.label === 'not-unique-key-tag') {
-            middleTags = '<And><Tag><Key>color</Key><Value>blue</Value></Tag>' +
+            middleTags =
+                '<And><Tag><Key>color</Key><Value>blue</Value></Tag>' +
                 '<Tag><Key>color</Key><Value>red</Value></Tag></And>';
         }
         Filter = `<Filter>${middleTags}</Filter>`;
@@ -221,8 +282,7 @@ function generateFilter(errorTag, tagObj) {
 function generateRule(errorTag, tagObj, ID, Status, Filter, Action) {
     let Rule;
     if (tagObj && tagObj.rule === 'not-unique-id') {
-        Rule = `<Rule>${ID + Status + Filter + Action}</Rule>` +
-        `<Rule>${ID + Status + Filter + Action}</Rule>`;
+        Rule = `<Rule>${ID + Status + Filter + Action}</Rule>` + `<Rule>${ID + Status + Filter + Action}</Rule>`;
     } else if (tagObj && tagObj.rule === 'too-many-rules') {
         for (let i = 0; i <= 1000; i++) {
             // eslint-disable-next-line no-param-reassign
@@ -247,8 +307,7 @@ function generateXml(errorTag, tagObj) {
         ID = '<ID>foo</ID>';
     }
     if (errorTag === 'Status') {
-        Status = tagObj && tagObj.status ?
-            `<Status>${tagObj.status}</Status>` : '';
+        Status = tagObj && tagObj.status ? `<Status>${tagObj.status}</Status>` : '';
     } else {
         Status = '<Status>Enabled</Status>';
     }
@@ -269,9 +328,8 @@ function generateXml(errorTag, tagObj) {
     } else {
         Rule = `<Rule>${ID + Status + Filter + Action}</Rule>`;
     }
-    const Lifecycle = errorTag === 'LifecycleConfiguration' ? '' :
-        `<LifecycleConfiguration>${Rule}` +
-        '</LifecycleConfiguration>';
+    const Lifecycle =
+        errorTag === 'LifecycleConfiguration' ? '' : `<LifecycleConfiguration>${Rule}` + '</LifecycleConfiguration>';
     return Lifecycle;
 }
 
@@ -284,8 +342,7 @@ function generateParsedXml(errorTag, tagObj, cb) {
 }
 
 function checkError(parsedXml, error, errMessage, cb) {
-    const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig)
-        .getLifecycleConfiguration();
+    const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig).getLifecycleConfiguration();
     assert.strictEqual(lcConfig.error.is[error], true);
     assert.strictEqual(lcConfig.error.description, errMessage);
     cb();
@@ -304,30 +361,27 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
     });
 
     requiredTags.forEach(t => {
-        it(`should return ${t.error} error if ${t.tag} tag is missing`,
-            done => {
-                generateParsedXml(t.tag, null, parsedXml => {
-                    checkError(parsedXml, t.error, t.errMessage, done);
-                });
+        it(`should return ${t.error} error if ${t.tag} tag is missing`, done => {
+            generateParsedXml(t.tag, null, parsedXml => {
+                checkError(parsedXml, t.error, t.errMessage, done);
             });
+        });
     });
 
     invalidActions.forEach(a => {
-        it(`should return ${a.error} for ${a.label} action error`,
-            done => {
-                generateParsedXml('Action', a, parsedXml => {
-                    checkError(parsedXml, a.error, a.errMessage, done);
-                });
+        it(`should return ${a.error} for ${a.label} action error`, done => {
+            generateParsedXml('Action', a, parsedXml => {
+                checkError(parsedXml, a.error, a.errMessage, done);
             });
+        });
     });
 
     invalidFilters.forEach(filter => {
-        it(`should return ${filter.error} for ${filter.label} filter error`,
-            done => {
-                generateParsedXml('Filter', filter, parsedXml => {
-                    checkError(parsedXml, filter.error, filter.errMessage, done);
-                });
+        it(`should return ${filter.error} for ${filter.label} filter error`, done => {
+            generateParsedXml('Filter', filter, parsedXml => {
+                checkError(parsedXml, filter.error, filter.errMessage, done);
             });
+        });
     });
 
     it('should return MalformedXML error if invalid status', done => {
@@ -365,10 +419,11 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
     it('should apply all unique Key tags if multiple tags included', done => {
         tagObj.label = 'mult-tags';
         generateParsedXml('Filter', tagObj, parsedXml => {
-            const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig)
-                .getLifecycleConfiguration();
-            const expected = [{ key: 'color', val: 'blue' },
-                { key: 'shape', val: 'circle' }];
+            const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig).getLifecycleConfiguration();
+            const expected = [
+                { key: 'color', val: 'blue' },
+                { key: 'shape', val: 'circle' },
+            ];
             assert.deepStrictEqual(expected, lcConfig.rules[0].filter.tags);
             done();
         });
@@ -386,10 +441,8 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
         tagObj.label = 'empty-prefix';
         const expectedPrefix = '';
         generateParsedXml('Filter', tagObj, parsedXml => {
-            const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig).
-                getLifecycleConfiguration();
-            assert.strictEqual(expectedPrefix,
-                lcConfig.rules[0].filter.rulePrefix);
+            const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig).getLifecycleConfiguration();
+            assert.strictEqual(expectedPrefix, lcConfig.rules[0].filter.rulePrefix);
             done();
         });
     });
@@ -410,8 +463,7 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
             </LifecycleConfiguration>`;
         parseString(xml, (err, parsedXml) => {
             assert.equal(err, null, 'Error parsing xml');
-            const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig)
-                .getLifecycleConfiguration();
+            const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig).getLifecycleConfiguration();
             assert.strictEqual(lcConfig.error.is.NotImplemented, true);
             assert.strictEqual(lcConfig.error.description, 'Transition lifecycle action not implemented');
             done();
@@ -437,8 +489,7 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
             </LifecycleConfiguration>`;
         parseString(xml, (err, parsedXml) => {
             assert.equal(err, null, 'Error parsing xml');
-            const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig)
-                .getLifecycleConfiguration();
+            const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig).getLifecycleConfiguration();
             assert.strictEqual(lcConfig.error.is.NotImplemented, true);
             assert.strictEqual(lcConfig.error.description, 'Transition lifecycle action not implemented');
             done();
@@ -464,8 +515,7 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
             </LifecycleConfiguration>`;
         parseString(xml, (err, parsedXml) => {
             assert.equal(err, null, 'Error parsing xml');
-            const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig)
-                .getLifecycleConfiguration();
+            const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig).getLifecycleConfiguration();
             assert.strictEqual(lcConfig.error, undefined);
             done();
         });
@@ -487,11 +537,12 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
             </LifecycleConfiguration>`;
         parseString(xml, (err, parsedXml) => {
             assert.equal(err, null, 'Error parsing xml');
-            const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig)
-                .getLifecycleConfiguration();
+            const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig).getLifecycleConfiguration();
             assert.strictEqual(lcConfig.error.is.MalformedXML, true);
-            assert.strictEqual(lcConfig.error.description,
-                    "'StorageClass' must be one of 'a', 'b', but provided: aCrrLocation");
+            assert.strictEqual(
+                lcConfig.error.description,
+                "'StorageClass' must be one of 'a', 'b', but provided: aCrrLocation",
+            );
             done();
         });
     });
@@ -502,14 +553,18 @@ describe('LifecycleConfiguration', () => {
     function getParsedXML() {
         return {
             LifecycleConfiguration: {
-                Rule: [{
-                    ID: ['test-id'],
-                    Prefix: [''],
-                    Status: ['Enabled'],
-                    Expiration: [{
-                        Days: 1,
-                    }],
-                }],
+                Rule: [
+                    {
+                        ID: ['test-id'],
+                        Prefix: [''],
+                        Status: ['Enabled'],
+                        Expiration: [
+                            {
+                                Days: 1,
+                            },
+                        ],
+                    },
+                ],
             },
         };
     }
@@ -540,51 +595,63 @@ describe('LifecycleConfiguration', () => {
         it('should get Filter.And', () => {
             const rule = getParsedXML().LifecycleConfiguration.Rule[0];
             delete rule.Prefix;
-            rule.Filter = [{
-                And: [{
-                    Prefix: [''],
-                    Tag: [{
-                        Key: ['a'],
-                        Value: ['b'],
-                    },
-                    {
-                        Key: ['c'],
-                        Value: ['d'],
-                    }],
-                }],
-            }];
+            rule.Filter = [
+                {
+                    And: [
+                        {
+                            Prefix: [''],
+                            Tag: [
+                                {
+                                    Key: ['a'],
+                                    Value: ['b'],
+                                },
+                                {
+                                    Key: ['c'],
+                                    Value: ['d'],
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ];
             const ruleFilter = lifecycleConfiguration._getRuleFilterDesc(rule);
-            assert.strictEqual(ruleFilter, 'filter ' +
-                "'(prefix= and tag: key=a, value=b and tag: key=c, value=d)'");
+            assert.strictEqual(ruleFilter, 'filter ' + "'(prefix= and tag: key=a, value=b and tag: key=c, value=d)'");
         });
 
         it('should get Filter.And without Prefix', () => {
             const rule = getParsedXML().LifecycleConfiguration.Rule[0];
             delete rule.Prefix;
-            rule.Filter = [{
-                And: [{
-                    Tag: [{
-                        Key: ['a'],
-                        Value: ['b'],
-                    },
-                    {
-                        Key: ['c'],
-                        Value: ['d'],
-                    }],
-                }],
-            }];
+            rule.Filter = [
+                {
+                    And: [
+                        {
+                            Tag: [
+                                {
+                                    Key: ['a'],
+                                    Value: ['b'],
+                                },
+                                {
+                                    Key: ['c'],
+                                    Value: ['d'],
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ];
             const ruleFilter = lifecycleConfiguration._getRuleFilterDesc(rule);
-            assert.strictEqual(ruleFilter,
-                "filter '(tag: key=a, value=b and tag: key=c, value=d)'");
+            assert.strictEqual(ruleFilter, "filter '(tag: key=a, value=b and tag: key=c, value=d)'");
         });
 
         it('should get Filter with empty object', () => {
             const rule = {
                 ID: ['test-id'],
                 Status: ['Enabled'],
-                Expiration: [{
-                    Days: 1,
-                }],
+                Expiration: [
+                    {
+                        Days: 1,
+                    },
+                ],
             };
             rule.Filter = [{}];
             const ruleFilter = lifecycleConfiguration._getRuleFilterDesc(rule);
@@ -595,9 +662,11 @@ describe('LifecycleConfiguration', () => {
             const rule = {
                 ID: ['test-id'],
                 Status: ['Enabled'],
-                Expiration: [{
-                    Days: 1,
-                }],
+                Expiration: [
+                    {
+                        Days: 1,
+                    },
+                ],
             };
             rule.Filter = [];
             const ruleFilter = lifecycleConfiguration._getRuleFilterDesc(rule);
@@ -670,8 +739,7 @@ describe('LifecycleConfiguration', () => {
                 ancestor: 'b',
                 rule: getParsedXML().LifecycleConfiguration.Rule[0],
             });
-            const msg = "'StorageClass' must be different for 'b' actions " +
-                "in same 'Rule' with prefix ''";
+            const msg = "'StorageClass' must be different for 'b' actions " + "in same 'Rule' with prefix ''";
             expect(error.is.InvalidRequest).toBeTruthy();
             expect(error.description).toEqual(msg);
         });
@@ -702,24 +770,23 @@ describe('LifecycleConfiguration', () => {
                 currentTimeType: 'Days',
                 rule: getParsedXML().LifecycleConfiguration.Rule[0],
             });
-            const msg = "Found mixed 'Date' and 'Days' based Transition " +
-                "actions in lifecycle rule for prefix ''";
+            const msg = "Found mixed 'Date' and 'Days' based Transition " + "actions in lifecycle rule for prefix ''";
             expect(error.is.InvalidRequest).toBeTruthy();
             expect(error.description).toEqual(msg);
         });
 
-        it('should return error when time type differs across expiration',
-            () => {
-                const error = lifecycleConfiguration._checkTimeType({
-                    usedTimeType: 'Date',
-                    currentTimeType: 'Date',
-                    rule: getParsedXML().LifecycleConfiguration.Rule[0],
-                });
-                const msg = "Found mixed 'Date' and 'Days' based Expiration and " +
-                "Transition actions in lifecycle rule for prefix ''";
-                expect(error.is.InvalidRequest).toBeTruthy();
-                expect(error.description).toEqual(msg);
+        it('should return error when time type differs across expiration', () => {
+            const error = lifecycleConfiguration._checkTimeType({
+                usedTimeType: 'Date',
+                currentTimeType: 'Date',
+                rule: getParsedXML().LifecycleConfiguration.Rule[0],
             });
+            const msg =
+                "Found mixed 'Date' and 'Days' based Expiration and " +
+                "Transition actions in lifecycle rule for prefix ''";
+            expect(error.is.InvalidRequest).toBeTruthy();
+            expect(error.description).toEqual(msg);
+        });
     });
 
     describe('::_checkDate', () => {
@@ -768,7 +835,7 @@ describe('LifecycleConfiguration', () => {
         it('should return an error with a date that is not set to midnight', () => {
             const date = '2024-01-04T15:22:40Z';
             const error = lifecycleConfiguration._checkDate(date);
-            const msg = '\'Date\' must be at midnight GMT';
+            const msg = "'Date' must be at midnight GMT";
             expect(error.is.InvalidArgument).toBeTruthy();
             expect(error.description).toEqual(msg);
         });
@@ -776,7 +843,7 @@ describe('LifecycleConfiguration', () => {
         it('should return an error with a date that is not set to midnight', () => {
             const date = '2024-01-08T00:00:00.123Z';
             const error = lifecycleConfiguration._checkDate(date);
-            const msg = '\'Date\' must be at midnight GMT';
+            const msg = "'Date' must be at midnight GMT";
             expect(error.is.InvalidArgument).toBeTruthy();
             expect(error.description).toEqual(msg);
         });
@@ -800,8 +867,7 @@ describe('LifecycleConfiguration', () => {
 
         it('should return correctly parsed result object', () => {
             const rule = getRule();
-            const result =
-                lifecycleConfiguration._parseNoncurrentVersionTransition(rule);
+            const result = lifecycleConfiguration._parseNoncurrentVersionTransition(rule);
             assert.deepStrictEqual(result, {
                 nonCurrentVersionTransition: [
                     {
@@ -819,10 +885,8 @@ describe('LifecycleConfiguration', () => {
         it('should return parsed result object with error', () => {
             const rule = getRule();
             rule.NoncurrentVersionTransition[0].NoncurrentDays[0] = '-1';
-            const result =
-                lifecycleConfiguration._parseNoncurrentVersionTransition(rule);
-            const msg = "'NoncurrentDays' in NoncurrentVersionTransition " +
-                'action must be nonnegative';
+            const result = lifecycleConfiguration._parseNoncurrentVersionTransition(rule);
+            const msg = "'NoncurrentDays' in NoncurrentVersionTransition " + 'action must be nonnegative';
             expect(result.error.is.InvalidArgument).toBeTruthy();
             expect(result.error.description).toEqual(msg);
         });
@@ -861,8 +925,7 @@ describe('LifecycleConfiguration', () => {
             });
         });
 
-        it('should return parsed result object with error when days is ' +
-        'negative', () => {
+        it('should return parsed result object with error when days is ' + 'negative', () => {
             const rule = getRule();
             rule.Transition[0].Days[0] = '-1';
             const result = lifecycleConfiguration._parseTransition(rule);
@@ -871,13 +934,13 @@ describe('LifecycleConfiguration', () => {
             expect(result.error.description).toEqual(msg);
         });
 
-        it('should return parsed result object with error when two ' +
-        'transition days are the same', () => {
+        it('should return parsed result object with error when two ' + 'transition days are the same', () => {
             const rule = getRule();
             rule.Prefix = ['prefix'];
             rule.Transition[1].Days[0] = '0';
             const result = lifecycleConfiguration._parseTransition(rule);
-            const msg = "'Days' in the 'Transition' action for StorageClass " +
+            const msg =
+                "'Days' in the 'Transition' action for StorageClass " +
                 "'a' for prefix 'prefix' must be at least one day apart from " +
                 "prefix 'prefix' in the 'Transition' action for StorageClass " +
                 "'b'";
@@ -887,8 +950,7 @@ describe('LifecycleConfiguration', () => {
     });
 
     describe('::_parseTransition with Date', () => {
-        it('should return parsed result object with error when dates are not ' +
-        'more than one day apart', () => {
+        it('should return parsed result object with error when dates are not ' + 'more than one day apart', () => {
             const rule = {
                 Prefix: ['prefix'],
                 Transition: [
@@ -903,7 +965,8 @@ describe('LifecycleConfiguration', () => {
                 ],
             };
             const result = lifecycleConfiguration._parseTransition(rule);
-            const msg = "'Date' in the 'Transition' action for StorageClass " +
+            const msg =
+                "'Date' in the 'Transition' action for StorageClass " +
                 "'a' for prefix 'prefix' must be at least one day apart from " +
                 "prefix 'prefix' in the 'Transition' action for StorageClass " +
                 "'b'";
@@ -916,10 +979,12 @@ describe('LifecycleConfiguration', () => {
         it('should not return error when only one transition', () => {
             const params = {
                 rule: {
-                    Transition: [{
-                        Days: ['0'],
-                        StorageClass: ['a'],
-                    }],
+                    Transition: [
+                        {
+                            Days: ['0'],
+                            StorageClass: ['a'],
+                        },
+                    ],
                 },
                 days: 0,
                 storageClass: 'a',
@@ -928,17 +993,19 @@ describe('LifecycleConfiguration', () => {
             assert.strictEqual(error, null);
         });
 
-        it('should not return error when transitions have days greater than ' +
-        '24 hours apart', () => {
+        it('should not return error when transitions have days greater than ' + '24 hours apart', () => {
             const params = {
                 rule: {
-                    Transition: [{
-                        Days: ['0'],
-                        StorageClass: ['a'],
-                    }, {
-                        Days: ['1'],
-                        StorageClass: ['b'],
-                    }],
+                    Transition: [
+                        {
+                            Days: ['0'],
+                            StorageClass: ['a'],
+                        },
+                        {
+                            Days: ['1'],
+                            StorageClass: ['b'],
+                        },
+                    ],
                 },
                 days: 0,
                 storageClass: 'a',
@@ -951,13 +1018,16 @@ describe('LifecycleConfiguration', () => {
             const params = {
                 rule: {
                     Prefix: 'prefix',
-                    Transition: [{
-                        Days: ['0'],
-                        StorageClass: ['a'],
-                    }, {
-                        Days: ['0'],
-                        StorageClass: ['b'],
-                    }],
+                    Transition: [
+                        {
+                            Days: ['0'],
+                            StorageClass: ['a'],
+                        },
+                        {
+                            Days: ['0'],
+                            StorageClass: ['b'],
+                        },
+                    ],
                 },
                 days: 0,
                 storageClass: 'a',
@@ -966,17 +1036,19 @@ describe('LifecycleConfiguration', () => {
             expect(error.is.InvalidArgument).toBeTruthy();
         });
 
-        it('should not return error when transitions have dates greater than ' +
-        '24 hours apart', () => {
+        it('should not return error when transitions have dates greater than ' + '24 hours apart', () => {
             const params = {
                 rule: {
-                    Transition: [{
-                        Date: ['2019-01-01T00:00:00.000Z'],
-                        StorageClass: ['a'],
-                    }, {
-                        Date: ['2019-01-02T00:00:00.000Z'],
-                        StorageClass: ['b'],
-                    }],
+                    Transition: [
+                        {
+                            Date: ['2019-01-01T00:00:00.000Z'],
+                            StorageClass: ['a'],
+                        },
+                        {
+                            Date: ['2019-01-02T00:00:00.000Z'],
+                            StorageClass: ['b'],
+                        },
+                    ],
                 },
                 date: '2019-01-01T00:00:00.000Z',
                 storageClass: 'a',
@@ -985,18 +1057,20 @@ describe('LifecycleConfiguration', () => {
             assert.strictEqual(error, null);
         });
 
-        it('should return error when transitions have dates less than 24 ' +
-        'hours apart', () => {
+        it('should return error when transitions have dates less than 24 ' + 'hours apart', () => {
             const params = {
                 rule: {
                     Prefix: 'prefix',
-                    Transition: [{
-                        Date: ['2019-01-01T00:00:00.000Z'],
-                        StorageClass: ['a'],
-                    }, {
-                        Date: ['2019-01-01T23:59:59.999Z'],
-                        StorageClass: ['b'],
-                    }],
+                    Transition: [
+                        {
+                            Date: ['2019-01-01T00:00:00.000Z'],
+                            StorageClass: ['a'],
+                        },
+                        {
+                            Date: ['2019-01-01T23:59:59.999Z'],
+                            StorageClass: ['b'],
+                        },
+                    ],
                 },
                 date: '2019-01-01T00:00:00.000Z',
                 storageClass: 'a',
@@ -1016,9 +1090,7 @@ describe('LifecycleConfiguration::getConfigJson', () => {
                     {
                         ruleID: 'test-id',
                         ruleStatus: 'Enabled',
-                        actions: [
-                            { actionName: 'Expiration', days: 1 },
-                        ],
+                        actions: [{ actionName: 'Expiration', days: 1 }],
                     },
                 ],
             },
@@ -1040,9 +1112,7 @@ describe('LifecycleConfiguration::getConfigJson', () => {
                     {
                         ruleID: 'test-id',
                         ruleStatus: 'Enabled',
-                        actions: [
-                            { actionName: 'Expiration', days: 1 },
-                        ],
+                        actions: [{ actionName: 'Expiration', days: 1 }],
                         prefix: 'prefix',
                     },
                 ],
@@ -1065,9 +1135,7 @@ describe('LifecycleConfiguration::getConfigJson', () => {
                     {
                         ruleID: 'test-id',
                         ruleStatus: 'Enabled',
-                        actions: [
-                            { actionName: 'Expiration', days: 1 },
-                        ],
+                        actions: [{ actionName: 'Expiration', days: 1 }],
                         filter: { rulePrefix: 'prefix' },
                     },
                 ],
@@ -1090,13 +1158,9 @@ describe('LifecycleConfiguration::getConfigJson', () => {
                     {
                         ruleID: 'test-id',
                         ruleStatus: 'Enabled',
-                        actions: [
-                            { actionName: 'Expiration', days: 1 },
-                        ],
+                        actions: [{ actionName: 'Expiration', days: 1 }],
                         filter: {
-                            tags: [
-                                { key: 'key', val: 'val' },
-                            ],
+                            tags: [{ key: 'key', val: 'val' }],
                         },
                         prefix: 'prefix',
                     },
@@ -1110,9 +1174,7 @@ describe('LifecycleConfiguration::getConfigJson', () => {
                         Filter: {
                             And: {
                                 Prefix: 'prefix',
-                                Tags: [
-                                    { Key: 'key', Value: 'val' },
-                                ],
+                                Tags: [{ Key: 'key', Value: 'val' }],
                             },
                         },
                         Expiration: { Days: 1 },
@@ -1127,14 +1189,10 @@ describe('LifecycleConfiguration::getConfigJson', () => {
                     {
                         ruleID: 'test-id',
                         ruleStatus: 'Enabled',
-                        actions: [
-                            { actionName: 'Expiration', days: 1 },
-                        ],
+                        actions: [{ actionName: 'Expiration', days: 1 }],
                         filter: {
                             rulePrefix: 'prefix',
-                            tags: [
-                                { key: 'key', val: 'val' },
-                            ],
+                            tags: [{ key: 'key', val: 'val' }],
                         },
                     },
                 ],
@@ -1147,9 +1205,7 @@ describe('LifecycleConfiguration::getConfigJson', () => {
                         Filter: {
                             And: {
                                 Prefix: 'prefix',
-                                Tags: [
-                                    { Key: 'key', Value: 'val' },
-                                ],
+                                Tags: [{ Key: 'key', Value: 'val' }],
                             },
                         },
                         Expiration: { Days: 1 },
@@ -1164,9 +1220,7 @@ describe('LifecycleConfiguration::getConfigJson', () => {
                     {
                         ruleID: 'test-id',
                         ruleStatus: 'Enabled',
-                        actions: [
-                            { actionName: 'Expiration', days: 1 },
-                        ],
+                        actions: [{ actionName: 'Expiration', days: 1 }],
                         filter: {
                             tags: [
                                 { key: 'key1', val: 'val' },
@@ -1201,9 +1255,7 @@ describe('LifecycleConfiguration::getConfigJson', () => {
                     {
                         ruleID: 'test-id',
                         ruleStatus: 'Enabled',
-                        actions: [
-                            { actionName: 'Expiration', deleteMarker: 'true' },
-                        ],
+                        actions: [{ actionName: 'Expiration', deleteMarker: 'true' }],
                         prefix: '',
                     },
                 ],
@@ -1226,9 +1278,7 @@ describe('LifecycleConfiguration::getConfigJson', () => {
                     {
                         ruleID: 'test-id',
                         ruleStatus: 'Enabled',
-                        actions: [
-                            { actionName: 'Expiration', days: 10 },
-                        ],
+                        actions: [{ actionName: 'Expiration', days: 10 }],
                         prefix: '',
                     },
                 ],
@@ -1279,9 +1329,7 @@ describe('LifecycleConfiguration::getConfigJson', () => {
                     {
                         ruleID: 'test-id',
                         ruleStatus: 'Enabled',
-                        actions: [
-                            { actionName: 'NoncurrentVersionExpiration', days: 10 },
-                        ],
+                        actions: [{ actionName: 'NoncurrentVersionExpiration', days: 10 }],
                         prefix: '',
                     },
                 ],
@@ -1339,9 +1387,7 @@ describe('LifecycleConfiguration::getConfigJson', () => {
                     {
                         ruleID: 'test-id',
                         ruleStatus: 'Enabled',
-                        actions: [
-                            { actionName: 'AbortIncompleteMultipartUpload', days: 10 },
-                        ],
+                        actions: [{ actionName: 'AbortIncompleteMultipartUpload', days: 10 }],
                         prefix: '',
                     },
                 ],
@@ -1388,13 +1434,11 @@ describe('LifecycleConfiguration::getConfigJson', () => {
         ],
     ];
 
-    tests.forEach(([msg, input, expected]) => it(
-        `should return correct configuration: ${msg}`, () => {
-            assert.deepStrictEqual(
-                LifecycleConfiguration.getConfigJson(input),
-                expected,
-            );
-        }));
+    tests.forEach(([msg, input, expected]) =>
+        it(`should return correct configuration: ${msg}`, () => {
+            assert.deepStrictEqual(LifecycleConfiguration.getConfigJson(input), expected);
+        }),
+    );
 });
 
 describe('LifecycleConfiguration.getConfigXml - XML escaping for special characters', () => {
@@ -1403,15 +1447,19 @@ describe('LifecycleConfiguration.getConfigXml - XML escaping for special charact
     specialCharacters.forEach(char => {
         it(`should escape \`${char}\` in rule ID and generate valid XML`, done => {
             const config = {
-                rules: [{
-                    ruleID: `test-id${char}value`,
-                    ruleStatus: 'Enabled',
-                    prefix: 'logs/',
-                    actions: [{
-                        actionName: 'Expiration',
-                        days: 90,
-                    }],
-                }],
+                rules: [
+                    {
+                        ruleID: `test-id${char}value`,
+                        ruleStatus: 'Enabled',
+                        prefix: 'logs/',
+                        actions: [
+                            {
+                                actionName: 'Expiration',
+                                days: 90,
+                            },
+                        ],
+                    },
+                ],
             };
 
             const xml = LifecycleConfiguration.getConfigXml(config);
@@ -1426,15 +1474,19 @@ describe('LifecycleConfiguration.getConfigXml - XML escaping for special charact
 
         it(`should escape \`${char}\` in prefix`, done => {
             const config = {
-                rules: [{
-                    ruleID: 'test-id',
-                    ruleStatus: 'Enabled',
-                    prefix: `logs/${char}path/`,
-                    actions: [{
-                        actionName: 'Expiration',
-                        days: 90,
-                    }],
-                }],
+                rules: [
+                    {
+                        ruleID: 'test-id',
+                        ruleStatus: 'Enabled',
+                        prefix: `logs/${char}path/`,
+                        actions: [
+                            {
+                                actionName: 'Expiration',
+                                days: 90,
+                            },
+                        ],
+                    },
+                ],
             };
 
             const xml = LifecycleConfiguration.getConfigXml(config);
@@ -1449,20 +1501,26 @@ describe('LifecycleConfiguration.getConfigXml - XML escaping for special charact
 
         it(`should escape \`${char}\` in tag key and value`, done => {
             const config = {
-                rules: [{
-                    ruleID: 'test-id',
-                    ruleStatus: 'Enabled',
-                    filter: {
-                        tags: [{
-                            key: `env${char}key`,
-                            val: `value${char}data`,
-                        }],
+                rules: [
+                    {
+                        ruleID: 'test-id',
+                        ruleStatus: 'Enabled',
+                        filter: {
+                            tags: [
+                                {
+                                    key: `env${char}key`,
+                                    val: `value${char}data`,
+                                },
+                            ],
+                        },
+                        actions: [
+                            {
+                                actionName: 'Expiration',
+                                days: 90,
+                            },
+                        ],
                     },
-                    actions: [{
-                        actionName: 'Expiration',
-                        days: 90,
-                    }],
-                }],
+                ],
             };
 
             const xml = LifecycleConfiguration.getConfigXml(config);
