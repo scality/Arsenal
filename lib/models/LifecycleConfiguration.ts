@@ -584,8 +584,22 @@ export default class LifecycleConfiguration {
      */
     _checkDays(params: { days: number; field: string; ancestor: string }) {
         const { days, field, ancestor } = params;
+        if (Number.isNaN(days)) {
+            return errorInstances.MalformedXML.customizeDescription(
+                `'${field}' in ${ancestor} action must be an integer`,
+            );
+        }
         if (days < 0) {
-            const msg = `'${field}' in ${ancestor} action must be nonnegative`;
+            // Match AWS wording: expiration and abort actions report "must be a
+            // positive integer", transitions report "must be nonnegative".
+            const positiveIntegerActions = [
+                'Expiration',
+                'NoncurrentVersionExpiration',
+                'AbortIncompleteMultipartUpload',
+            ];
+            const msg = positiveIntegerActions.includes(ancestor)
+                ? `'${field}' for ${ancestor} action must be a positive integer`
+                : `'${field}' in ${ancestor} action must be nonnegative`;
             return errorInstances.InvalidArgument.customizeDescription(msg);
         }
         if (days > MAX_DAYS) {
@@ -966,7 +980,7 @@ export default class LifecycleConfiguration {
                     'newerNoncurrentVersions',
                 ];
                 actionTimes.forEach(t => {
-                    if (action[t]) {
+                    if (action[t] != null) {
                         a[t] = action[t];
                     }
                 });
@@ -999,22 +1013,25 @@ export default class LifecycleConfiguration {
         }
         if (filter && filter.Tag) {
             abortObj.error = errorInstances.InvalidRequest.customizeDescription(
-                'Tag-based filter cannot be used with ' + 'AbortIncompleteMultipartUpload action',
+                'Tag-based filter cannot be used with AbortIncompleteMultipartUpload action',
             );
             return abortObj;
         }
         const subAbort = rule.AbortIncompleteMultipartUpload[0];
         if (!subAbort.DaysAfterInitiation) {
             abortObj.error = errorInstances.MalformedXML.customizeDescription(
-                'AbortIncompleteMultipartUpload action does not ' + 'include DaysAfterInitiation',
+                'AbortIncompleteMultipartUpload action does not include DaysAfterInitiation',
             );
             return abortObj;
         }
         const daysInt = parseInt(subAbort.DaysAfterInitiation[0], 10);
-        if (daysInt < 1) {
-            abortObj.error = errorInstances.InvalidArgument.customizeDescription(
-                'DaysAfterInitiation is not a positive integer',
-            );
+        const error = this._checkDays({
+            days: daysInt,
+            field: 'DaysAfterInitiation',
+            ancestor: 'AbortIncompleteMultipartUpload',
+        });
+        if (error) {
+            abortObj.error = error;
             return abortObj;
         }
         abortObj.days = daysInt;
@@ -1064,10 +1081,9 @@ export default class LifecycleConfiguration {
         }
         if (subExp.Days) {
             const daysInt = parseInt(subExp.Days[0], 10);
-            if (daysInt < 1) {
-                expObj.error = errorInstances.InvalidArgument.customizeDescription(
-                    'Expiration days is not a positive integer',
-                );
+            const error = this._checkDays({ days: daysInt, field: 'Days', ancestor: 'Expiration' });
+            if (error) {
+                expObj.error = error;
             } else {
                 expObj.days = daysInt;
             }
@@ -1083,7 +1099,7 @@ export default class LifecycleConfiguration {
             }
             if (filter && filter.Tag) {
                 expObj.error = errorInstances.InvalidRequest.customizeDescription(
-                    'Tag-based filter cannot be used with ' + 'ExpiredObjectDeleteMarker action',
+                    'Tag-based filter cannot be used with ExpiredObjectDeleteMarker action',
                 );
                 return expObj;
             }
@@ -1116,7 +1132,7 @@ export default class LifecycleConfiguration {
         const subNVExp = rule.NoncurrentVersionExpiration[0];
         if (!subNVExp.NoncurrentDays) {
             const error = errorInstances.MalformedXML.customizeDescription(
-                'NoncurrentVersionExpiration action does not include ' + 'NoncurrentDays',
+                'NoncurrentVersionExpiration action does not include NoncurrentDays',
             );
             return { error };
         }
@@ -1124,20 +1140,21 @@ export default class LifecycleConfiguration {
         const actionParams: {
             error?: ArsenalError;
             days: number;
-            newerNoncurrentVersions: number;
+            newerNoncurrentVersions?: number;
         } = {
             days: 0,
-            newerNoncurrentVersions: 0,
         };
 
         const daysInt = parseInt(subNVExp.NoncurrentDays[0], 10);
-        if (daysInt < 1) {
-            const msg = 'NoncurrentDays is not a positive integer';
-            const error = errorInstances.InvalidArgument.customizeDescription(msg);
+        const error = this._checkDays({
+            days: daysInt,
+            field: 'NoncurrentDays',
+            ancestor: 'NoncurrentVersionExpiration',
+        });
+        if (error) {
             return { error };
-        } else {
-            actionParams.days = daysInt;
         }
+        actionParams.days = daysInt;
 
         if (subNVExp.NewerNoncurrentVersions) {
             const newerVersionsInt = parseInt(subNVExp.NewerNoncurrentVersions[0], 10);
@@ -1149,8 +1166,6 @@ export default class LifecycleConfiguration {
             }
 
             actionParams.newerNoncurrentVersions = newerVersionsInt;
-        } else {
-            actionParams.newerNoncurrentVersions = 0;
         }
 
         return actionParams;
@@ -1187,7 +1202,7 @@ export default class LifecycleConfiguration {
             }
             actions.forEach((a: any) => {
                 assert.strictEqual(typeof a.actionName, 'string');
-                if (a.days) {
+                if (a.days !== undefined) {
                     assert.strictEqual(typeof a.days, 'number');
                 }
                 if (a.date) {
@@ -1291,7 +1306,7 @@ export default class LifecycleConfiguration {
                                 : '';
                             Action = `<${actionName}>${Days}${NewerVersions}</${actionName}>`;
                         } else if (actionName === 'Expiration') {
-                            const Days = days ? `<Days>${days}</Days>` : '';
+                            const Days = days !== undefined ? `<Days>${days}</Days>` : '';
                             const Date = date ? `<Date>${date}</Date>` : '';
                             const DelMarker = deleteMarker
                                 ? `<ExpiredObjectDeleteMarker>${deleteMarker}` + '</ExpiredObjectDeleteMarker>'

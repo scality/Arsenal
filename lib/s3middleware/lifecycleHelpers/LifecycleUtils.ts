@@ -231,8 +231,8 @@ export default class LifecycleUtils {
         const applicableRules = rules.reduce((store: Store, rule) => {
             // filter and find earliest dates
             if (rule.Expiration && this._supportedRules.includes('Expiration')) {
-                if (rule.Expiration.Days) {
-                    if (!store.Expiration?.Days || rule.Expiration.Days < store.Expiration.Days) {
+                if (rule.Expiration.Days !== undefined) {
+                    if (store.Expiration?.Days === undefined || rule.Expiration.Days < store.Expiration.Days) {
                         store.Expiration = {
                             ...store.Expiration,
                             ID: rule.ID,
@@ -267,8 +267,8 @@ export default class LifecycleUtils {
                 const ncd = 'NoncurrentDays';
                 const nncv = 'NewerNoncurrentVersions';
 
-                if (ncvExpiration[ncd]) {
-                    if (!store[ncve]?.[ncd] || ncvExpiration[ncd] < store[ncve][ncd]) {
+                if (ncvExpiration[ncd] != null) {
+                    if (store[ncve]?.[ncd] == null || ncvExpiration[ncd] < store[ncve][ncd]) {
                         store[ncve] = {
                             ...store[ncve],
                             ID: rule.ID,
@@ -287,7 +287,7 @@ export default class LifecycleUtils {
                 const aimu = 'AbortIncompleteMultipartUpload';
                 const dai = 'DaysAfterInitiation';
 
-                if (!store[aimu]?.[dai] || rule[aimu][dai] < store[aimu][dai]) {
+                if (store[aimu]?.[dai] === undefined || rule[aimu][dai] < store[aimu][dai]) {
                     store[aimu] = {
                         ...store[aimu],
                         ID: rule.ID,

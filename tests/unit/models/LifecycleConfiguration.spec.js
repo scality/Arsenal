@@ -85,7 +85,13 @@ const invalidActions = [
         tag: 'AbortIncompleteMultipartUpload',
         label: 'invalid-days',
         error: 'InvalidArgument',
-        errMessage: 'DaysAfterInitiation is not a positive integer',
+        errMessage: "'DaysAfterInitiation' for AbortIncompleteMultipartUpload action must be a positive integer",
+    },
+    {
+        tag: 'AbortIncompleteMultipartUpload',
+        label: 'exceed-max-days',
+        error: 'MalformedXML',
+        errMessage: "'DaysAfterInitiation' in AbortIncompleteMultipartUpload " + 'action must not exceed 2147483647',
     },
     {
         tag: 'Expiration',
@@ -104,7 +110,13 @@ const invalidActions = [
         tag: 'Expiration',
         label: 'invalid-days',
         error: 'InvalidArgument',
-        errMessage: 'Expiration days is not a positive integer',
+        errMessage: "'Days' for Expiration action must be a positive integer",
+    },
+    {
+        tag: 'Expiration',
+        label: 'exceed-max-days',
+        error: 'MalformedXML',
+        errMessage: "'Days' in Expiration action must not exceed 2147483647",
     },
     {
         tag: 'Expiration',
@@ -129,7 +141,13 @@ const invalidActions = [
         tag: 'NoncurrentVersionExpiration',
         label: 'invalid-days',
         error: 'InvalidArgument',
-        errMessage: 'NoncurrentDays is not a positive integer',
+        errMessage: "'NoncurrentDays' for NoncurrentVersionExpiration action must be a positive integer",
+    },
+    {
+        tag: 'NoncurrentVersionExpiration',
+        label: 'exceed-max-days',
+        error: 'MalformedXML',
+        errMessage: "'NoncurrentDays' in NoncurrentVersionExpiration " + 'action must not exceed 2147483647',
     },
 ];
 
@@ -204,7 +222,10 @@ function generateAction(errorTag, tagObj) {
             xmlObj.filter = '<Filter><Tag><Key>key</Key>' + '<Value></Value></Tag></Filter>';
         }
         if (tagObj.label === 'invalid-days') {
-            middleTags = `<${days[tagObj.tag]}>0</${days[tagObj.tag]}>`;
+            middleTags = `<${days[tagObj.tag]}>-1</${days[tagObj.tag]}>`;
+        }
+        if (tagObj.label === 'exceed-max-days') {
+            middleTags = `<${days[tagObj.tag]}>${MAX_DAYS + 1}</${days[tagObj.tag]}>`;
         }
         if (tagObj.label === 'mult-times') {
             middleTags = `<Days>1</Days><Date>${date}</Date>`;
@@ -544,6 +565,126 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
                 "'StorageClass' must be one of 'a', 'b', but provided: aCrrLocation",
             );
             done();
+        });
+    });
+
+    it('should accept Expiration Days=0 (explicit bucket-emptying intent)', done => {
+        const xml = `
+            <LifecycleConfiguration>
+                <Rule>
+                    <ID>empty-bucket</ID>
+                    <Status>Enabled</Status>
+                    <Filter></Filter>
+                    <Expiration>
+                        <Days>0</Days>
+                    </Expiration>
+                </Rule>
+            </LifecycleConfiguration>`;
+        parseString(xml, (err, parsedXml) => {
+            assert.equal(err, null, 'Error parsing xml');
+            const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig).getLifecycleConfiguration();
+            assert.strictEqual(lcConfig.error, undefined);
+            const action = lcConfig.rules[0].actions[0];
+            assert.strictEqual(action.actionName, 'Expiration');
+            assert.strictEqual(action.days, 0);
+            done();
+        });
+    });
+
+    it('should accept NoncurrentVersionExpiration NoncurrentDays=0', done => {
+        const xml = `
+            <LifecycleConfiguration>
+                <Rule>
+                    <ID>empty-bucket</ID>
+                    <Status>Enabled</Status>
+                    <Filter></Filter>
+                    <NoncurrentVersionExpiration>
+                        <NoncurrentDays>0</NoncurrentDays>
+                    </NoncurrentVersionExpiration>
+                </Rule>
+            </LifecycleConfiguration>`;
+        parseString(xml, (err, parsedXml) => {
+            assert.equal(err, null, 'Error parsing xml');
+            const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig).getLifecycleConfiguration();
+            assert.strictEqual(lcConfig.error, undefined);
+            const action = lcConfig.rules[0].actions[0];
+            assert.strictEqual(action.actionName, 'NoncurrentVersionExpiration');
+            assert.strictEqual(action.days, 0);
+            done();
+        });
+    });
+
+    it('should accept AbortIncompleteMultipartUpload DaysAfterInitiation=0', done => {
+        const xml = `
+            <LifecycleConfiguration>
+                <Rule>
+                    <ID>empty-bucket</ID>
+                    <Status>Enabled</Status>
+                    <Filter></Filter>
+                    <AbortIncompleteMultipartUpload>
+                        <DaysAfterInitiation>0</DaysAfterInitiation>
+                    </AbortIncompleteMultipartUpload>
+                </Rule>
+            </LifecycleConfiguration>`;
+        parseString(xml, (err, parsedXml) => {
+            assert.equal(err, null, 'Error parsing xml');
+            const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig).getLifecycleConfiguration();
+            assert.strictEqual(lcConfig.error, undefined);
+            const action = lcConfig.rules[0].actions[0];
+            assert.strictEqual(action.actionName, 'AbortIncompleteMultipartUpload');
+            assert.strictEqual(action.days, 0);
+            done();
+        });
+    });
+
+    it('should round-trip Expiration Days=0 through getConfigXml', done => {
+        const xml = `
+            <LifecycleConfiguration>
+                <Rule>
+                    <ID>empty-bucket</ID>
+                    <Status>Enabled</Status>
+                    <Filter></Filter>
+                    <Expiration>
+                        <Days>0</Days>
+                    </Expiration>
+                </Rule>
+            </LifecycleConfiguration>`;
+        parseString(xml, (err, parsedXml) => {
+            assert.equal(err, null, 'Error parsing xml');
+            const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig).getLifecycleConfiguration();
+            assert.strictEqual(lcConfig.error, undefined);
+            const outXml = LifecycleConfiguration.getConfigXml(lcConfig);
+            assert(outXml.includes('<Days>0</Days>'), `expected <Days>0</Days> in output: ${outXml}`);
+            done();
+        });
+    });
+
+    ['Days', 'NoncurrentDays', 'DaysAfterInitiation'].forEach(field => {
+        const action =
+            field === 'Days'
+                ? 'Expiration'
+                : field === 'NoncurrentDays'
+                  ? 'NoncurrentVersionExpiration'
+                  : 'AbortIncompleteMultipartUpload';
+        it(`should reject an empty <${field}></${field}> (not treat it as 0/NaN)`, done => {
+            const xml = `
+                <LifecycleConfiguration>
+                    <Rule>
+                        <ID>empty-day</ID>
+                        <Status>Enabled</Status>
+                        <Filter></Filter>
+                        <${action}>
+                            <${field}></${field}>
+                        </${action}>
+                    </Rule>
+                </LifecycleConfiguration>`;
+            parseString(xml, (err, parsedXml) => {
+                assert.equal(err, null, 'Error parsing xml');
+                const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig).getLifecycleConfiguration();
+                assert.notStrictEqual(lcConfig.error, undefined);
+                assert.strictEqual(lcConfig.error.description, `'${field}' in ${action} action must be an integer`);
+                done();
+            });
         });
     });
 });

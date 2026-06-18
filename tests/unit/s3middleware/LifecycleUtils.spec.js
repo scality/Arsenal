@@ -68,6 +68,31 @@ describe('LifecycleUtils::getApplicableRules', () => {
         assert.strictEqual(res2.Expiration.Date, CURRENT);
     });
 
+    it('should select Expiration Days=0 and prefer it over a larger Days', () => {
+        const filteredRules = [
+            new LifecycleRule().addID('task-1').addExpiration('Days', 10).build(),
+            new LifecycleRule().addID('task-2').addExpiration('Days', 0).build(),
+        ];
+
+        const res = lutils.getApplicableRules(filteredRules);
+        assert.strictEqual(res.Expiration.Days, 0);
+        assert.strictEqual(res.Expiration.ID, 'task-2');
+    });
+
+    it('should select NoncurrentVersionExpiration NoncurrentDays=0', () => {
+        const filteredRules = [new LifecycleRule().addID('task-1').addNCVExpiration('NoncurrentDays', 0).build()];
+
+        const res = lutils.getApplicableRules(filteredRules);
+        assert.strictEqual(res.NoncurrentVersionExpiration.NoncurrentDays, 0);
+    });
+
+    it('should select AbortIncompleteMultipartUpload DaysAfterInitiation=0', () => {
+        const filteredRules = [new LifecycleRule().addID('task-1').addAbortMPU(0).build()];
+
+        const res = lutils.getApplicableRules(filteredRules);
+        assert.strictEqual(res.AbortIncompleteMultipartUpload.DaysAfterInitiation, 0);
+    });
+
     it('should return earliest applicable rules', () => {
         const filteredRules = [
             new LifecycleRule().addID('task-1').addExpiration('Date', FUTURE).build(),
