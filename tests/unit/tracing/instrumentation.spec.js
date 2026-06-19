@@ -1,7 +1,8 @@
 'use strict';
 
 const assert = require('assert');
-const { trace, SpanStatusCode } = require('@opentelemetry/api');
+const { trace, context, SpanStatusCode } = require('@opentelemetry/api');
+const { AsyncLocalStorageContextManager } = require('@opentelemetry/context-async-hooks');
 const {
     BasicTracerProvider,
     InMemorySpanExporter,
@@ -9,7 +10,7 @@ const {
     AlwaysOnSampler,
 } = require('@opentelemetry/sdk-trace-base');
 
-const { instrumentApiMethod, resetTracer } = require('../../../lib/tracing/instrumentation');
+const { instrumentApiMethod, startApiSpan, resetTracer } = require('../../../lib/tracing/instrumentation');
 
 describe('instrumentApiMethod', () => {
     let exporter;
@@ -152,6 +153,109 @@ describe('instrumentApiMethod', () => {
             process.env.ENABLE_OTEL = 'false';
             const handler = () => 'identity';
             assert.strictEqual(instrumentApiMethod(handler, 'foo'), handler);
+        });
+    });
+});
+
+describe('startApiSpan', () => {
+    let exporter;
+    let provider;
+    let contextManager;
+
+    beforeAll(() => {
+        process.env.ENABLE_OTEL = 'true';
+        exporter = new InMemorySpanExporter();
+        provider = new BasicTracerProvider({
+            sampler: new AlwaysOnSampler(),
+            spanProcessors: [new SimpleSpanProcessor(exporter)],
+        });
+        trace.setGlobalTracerProvider(provider);
+        // Default ContextManager is a no-op (returns ROOT), so context.with
+        // wouldn't actually propagate. Real-world NodeSDK installs one;
+        // mirror that for the withContext assertion below.
+        contextManager = new AsyncLocalStorageContextManager().enable();
+        context.setGlobalContextManager(contextManager);
+        resetTracer();
+    });
+
+    afterAll(async () => {
+        delete process.env.ENABLE_OTEL;
+        resetTracer();
+        contextManager.disable();
+        context.disable();
+        await provider.shutdown();
+        trace.disable();
+    });
+
+    describe('OTEL on', () => {
+        afterEach(() => exporter.reset());
+
+        it('should end with status OK on end() with no error', () => {
+            const span = startApiSpan('AuthV4');
+            span.end();
+
+            const spans = exporter.getFinishedSpans();
+            assert.strictEqual(spans.length, 1);
+            assert.strictEqual(spans[0].name, 'api.AuthV4');
+            assert.strictEqual(spans[0].status.code, SpanStatusCode.OK);
+        });
+
+        it('should end with status ERROR + error.type on end(err)', () => {
+            const span = startApiSpan('AssumeRole');
+            const err = Object.assign(new Error('denied'), { code: 'AccessDenied' });
+            span.end(err);
+
+            const spans = exporter.getFinishedSpans();
+            assert.strictEqual(spans.length, 1);
+            assert.strictEqual(spans[0].status.code, SpanStatusCode.ERROR);
+            assert.strictEqual(spans[0].attributes['error.type'], 'AccessDenied');
+        });
+
+        it('should set the started span as the active context inside withContext(fn)', () => {
+            // Run inside an outer span so the active span is not the same as
+            // ours before withContext fires — that's how we tell the inner
+            // span is the one that propagated through context.with.
+            const outerSpan = trace.getTracer('outer').startSpan('outer');
+            context.with(trace.setSpan(context.active(), outerSpan), () => {
+                const before = trace.getActiveSpan();
+                const span = startApiSpan('CheckPolicies');
+                let inside;
+                span.withContext(() => {
+                    inside = trace.getActiveSpan();
+                });
+                const after = trace.getActiveSpan();
+                span.end();
+
+                assert.strictEqual(before, outerSpan);
+                assert.ok(inside, 'expected an active span inside withContext');
+                assert.notStrictEqual(inside, outerSpan);
+                assert.strictEqual(after, outerSpan);
+            });
+            outerSpan.end();
+        });
+
+        it('should return the value `fn` returns from withContext', () => {
+            const span = startApiSpan('GetCallerIdentity');
+            const value = span.withContext(() => 42);
+            span.end();
+            assert.strictEqual(value, 42);
+        });
+    });
+
+    describe('OTEL off', () => {
+        afterEach(() => {
+            process.env.ENABLE_OTEL = 'true';
+        });
+
+        it('returns a no-op span — end()/end(err)/withContext do not throw', () => {
+            process.env.ENABLE_OTEL = 'false';
+            const span = startApiSpan('AuthV4');
+            assert.doesNotThrow(() => span.end());
+            assert.doesNotThrow(() => span.end(new Error('boom')));
+            assert.strictEqual(
+                span.withContext(() => 'value'),
+                'value',
+            );
         });
     });
 });
