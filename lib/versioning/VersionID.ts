@@ -53,8 +53,7 @@ export const S3_VERSION_ID_ENCODING_TYPE = process.env.S3_VERSION_ID_ENCODING_TY
 //   - Uses old format: timestamp + sequential_position + rep_group_id (legacy 27-char format)
 // Falls back to hex encoding if S3_VERSION_ID_ENCODING_TYPE is 'hex' or unset
 export const ENABLE_FORMATTED_VERSION_ID =
-    process.env.ENABLE_FORMATTED_VERSION_ID === 'true' ||
-    process.env.ENABLE_FORMATTED_VERSION_ID === '1';
+    process.env.ENABLE_FORMATTED_VERSION_ID === 'true' || process.env.ENABLE_FORMATTED_VERSION_ID === '1';
 
 // version ID format added to the end of the version ID
 const VERSION_ID_FORMAT_VERSION = '1';
@@ -101,11 +100,7 @@ const MAX_SEQ = Math.pow(10, LENGTH_SEQ) - 1; // good for 1 billion ops
  */
 export function getInfVid(replicationGroupId: string) {
     const repGroupId = padRight(replicationGroupId, TEMPLATE_RG);
-    return (
-        padLeft(MAX_TS, TEMPLATE_TS) +
-        padLeft(MAX_SEQ, TEMPLATE_SEQ) +
-        repGroupId
-    );
+    return padLeft(MAX_TS, TEMPLATE_TS) + padLeft(MAX_SEQ, TEMPLATE_SEQ) + repGroupId;
 }
 
 // internal state of the module
@@ -232,9 +227,7 @@ export function hexDecode(str: string): string | Error {
  */
 const B62V_TOTAL = LENGTH_TS + LENGTH_SEQ;
 const B62V_HALF = B62V_TOTAL / 2;
-const B62V_EPAD = '0'.repeat(
-    Math.ceil(B62V_HALF * (Math.log(10) / Math.log(62)))
-);
+const B62V_EPAD = '0'.repeat(Math.ceil(B62V_HALF * (Math.log(10) / Math.log(62))));
 const B62V_DPAD = '0'.repeat(B62V_HALF);
 const B62V_STRING_EPAD = '0'.repeat(32 - 2 * B62V_EPAD.length);
 
@@ -355,11 +348,14 @@ export function decode(str: string): string | Error {
         const decoded: string | Error = base62Decode(str);
         // Legacy base62 version IDs (without 'info' field) are always 27 characters long.
         // The new base62 format is always 35 characters long.
-        if (typeof decoded === 'string' &&
+        if (
+            typeof decoded === 'string' &&
             decoded.length !== LEGACY_BASE62_DECODED_LENGTH &&
-            decoded.length !== BASE62_DECODED_LENGTH) {
-            return new Error(`decoded ${str} is not length ` +
-                `${LEGACY_BASE62_DECODED_LENGTH} or ${BASE62_DECODED_LENGTH}`);
+            decoded.length !== BASE62_DECODED_LENGTH
+        ) {
+            return new Error(
+                `decoded ${str} is not length ` + `${LEGACY_BASE62_DECODED_LENGTH} or ${BASE62_DECODED_LENGTH}`,
+            );
         }
         return decoded;
     }

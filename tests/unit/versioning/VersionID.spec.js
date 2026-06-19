@@ -8,7 +8,8 @@ function randkey(length) {
         // Generate ASCII characters from 32-125, excluding '?' (63)
         // as '?' is reserved for the version ID format marker
         let charCode = Math.floor(Math.random() * 94 + 32);
-        if (charCode === 63) { // Skip '?' character
+        if (charCode === 63) {
+            // Skip '?' character
             charCode = 126; // Use '~' instead
         }
         key += String.fromCharCode(charCode);
@@ -46,8 +47,7 @@ describe('test generating versionIds', () => {
 
         it('sorted in reversed chronological and alphabetical order', () => {
             for (let i = 1; i < count; i++) {
-                assert(vids[i - 1] > vids[i],
-                    'previous VersionID is higher than its next');
+                assert(vids[i - 1] > vids[i], 'previous VersionID is higher than its next');
             }
         });
 
@@ -67,8 +67,14 @@ describe('test generating versionIds', () => {
         it('should encode and decode correctly with legacy format', () => {
             const encoded = vids.map(VID.encode);
             const decoded = encoded.map(VID.decode);
-            assert.strictEqual(vids.every(x => x.length > 27), true);
-            assert.strictEqual(encoded.every(x => x.length > 32), true);
+            assert.strictEqual(
+                vids.every(x => x.length > 27),
+                true,
+            );
+            assert.strictEqual(
+                encoded.every(x => x.length > 32),
+                true,
+            );
             assert.deepStrictEqual(vids, decoded);
         });
 
@@ -115,8 +121,7 @@ describe('test generating versionIds', () => {
 
             it('sorted in reversed chronological and alphabetical order', () => {
                 for (let i = 1; i < count; i++) {
-                    assert(vids[i - 1] > vids[i],
-                        'previous VersionID is higher than its next');
+                    assert(vids[i - 1] > vids[i], 'previous VersionID is higher than its next');
                 }
             });
 
