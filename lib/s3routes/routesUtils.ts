@@ -917,9 +917,8 @@ export function redirectRequest(
         redirectLocationHeader?: boolean;
     },
     objectKey: string,
-    encrypted: boolean,
+    request: http.IncomingMessage,
     response: http.ServerResponse,
-    hostHeader: string,
     corsHeaders: Record<string, string>,
     log: RequestLogger,
 ) {
@@ -927,9 +926,13 @@ export function redirectRequest(
         httpRedirectCode, replaceKeyPrefixWith,
         replaceKeyWith, prefixFromRule } = routingInfo;
 
+    // TODO ARSN-217 encrypted does not exists in request.connection
+    // @ts-ignore
+    const encrypted = request.socket.encrypted;
+
     const redirectProtocol = protocol || encrypted ? 'https' : 'http';
     const redirectCode = httpRedirectCode || 301;
-    const redirectHostName = hostName || hostHeader;
+    const redirectHostName = hostName || request.headers.host!;
 
     setCommonResponseHeaders(corsHeaders, response, log);
 
@@ -951,21 +954,28 @@ export function redirectRequest(
             redirectKey = replaceKeyPrefixWith + objectKey;
         }
     }
-    let redirectLocation = justPath ? `/${redirectKey}` :
-        `${redirectProtocol}://${redirectHostName}/${redirectKey}`;
+
+    const { gotBucketNameFromHost, bucketName } = request as any;
+    const redirectPath = gotBucketNameFromHost ? `/${redirectKey}` : `/${bucketName}/${redirectKey}`;
+
+    let redirectLocation = justPath ? redirectPath : `${redirectProtocol}://${redirectHostName}${redirectPath}`;
+
     if (!redirectKey && redirectLocationHeader && redirectLocation !== '/') {
         // remove hanging slash
         redirectLocation = redirectLocation.slice(0, -1);
     }
+
     log.end().info('redirecting request', {
         httpCode: redirectCode,
         redirectLocation: hostName,
     });
+
     response.writeHead(redirectCode, {
         Location: redirectLocation,
     });
     storeServerAccessLogFields(response, process.hrtime.bigint());
     response.end();
+
     return undefined;
 }
 
