@@ -3,6 +3,9 @@ const { parseString } = require('xml2js');
 const { ValidLifecycleRules } = require('../../../lib/models/LifecycleConfiguration');
 
 const LifecycleConfiguration = require('../../../lib/models/LifecycleConfiguration').default;
+const DummyRequestLogger = require('../helpers').DummyRequestLogger;
+
+const log = new DummyRequestLogger();
 
 const days = {
     AbortIncompleteMultipartUpload: 'DaysAfterInitiation',
@@ -363,7 +366,7 @@ function generateParsedXml(errorTag, tagObj, cb) {
 }
 
 function checkError(parsedXml, error, errMessage, cb) {
-    const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig).getLifecycleConfiguration();
+    const lcConfig = new LifecycleConfiguration(parsedXml, log, mockConfig).getLifecycleConfiguration();
     assert.strictEqual(lcConfig.error.is[error], true);
     assert.strictEqual(lcConfig.error.description, errMessage);
     cb();
@@ -440,7 +443,7 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
     it('should apply all unique Key tags if multiple tags included', done => {
         tagObj.label = 'mult-tags';
         generateParsedXml('Filter', tagObj, parsedXml => {
-            const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig).getLifecycleConfiguration();
+            const lcConfig = new LifecycleConfiguration(parsedXml, log, mockConfig).getLifecycleConfiguration();
             const expected = [
                 { key: 'color', val: 'blue' },
                 { key: 'shape', val: 'circle' },
@@ -462,7 +465,7 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
         tagObj.label = 'empty-prefix';
         const expectedPrefix = '';
         generateParsedXml('Filter', tagObj, parsedXml => {
-            const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig).getLifecycleConfiguration();
+            const lcConfig = new LifecycleConfiguration(parsedXml, log, mockConfig).getLifecycleConfiguration();
             assert.strictEqual(expectedPrefix, lcConfig.rules[0].filter.rulePrefix);
             done();
         });
@@ -484,7 +487,7 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
             </LifecycleConfiguration>`;
         parseString(xml, (err, parsedXml) => {
             assert.equal(err, null, 'Error parsing xml');
-            const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig).getLifecycleConfiguration();
+            const lcConfig = new LifecycleConfiguration(parsedXml, log, mockConfig).getLifecycleConfiguration();
             assert.strictEqual(lcConfig.error.is.NotImplemented, true);
             assert.strictEqual(lcConfig.error.description, 'Transition lifecycle action not implemented');
             done();
@@ -510,7 +513,7 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
             </LifecycleConfiguration>`;
         parseString(xml, (err, parsedXml) => {
             assert.equal(err, null, 'Error parsing xml');
-            const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig).getLifecycleConfiguration();
+            const lcConfig = new LifecycleConfiguration(parsedXml, log, mockConfig).getLifecycleConfiguration();
             assert.strictEqual(lcConfig.error.is.NotImplemented, true);
             assert.strictEqual(lcConfig.error.description, 'Transition lifecycle action not implemented');
             done();
@@ -536,7 +539,7 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
             </LifecycleConfiguration>`;
         parseString(xml, (err, parsedXml) => {
             assert.equal(err, null, 'Error parsing xml');
-            const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig).getLifecycleConfiguration();
+            const lcConfig = new LifecycleConfiguration(parsedXml, log, mockConfig).getLifecycleConfiguration();
             assert.strictEqual(lcConfig.error, undefined);
             done();
         });
@@ -558,7 +561,7 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
             </LifecycleConfiguration>`;
         parseString(xml, (err, parsedXml) => {
             assert.equal(err, null, 'Error parsing xml');
-            const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig).getLifecycleConfiguration();
+            const lcConfig = new LifecycleConfiguration(parsedXml, log, mockConfig).getLifecycleConfiguration();
             assert.strictEqual(lcConfig.error.is.MalformedXML, true);
             assert.strictEqual(
                 lcConfig.error.description,
@@ -582,7 +585,7 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
             </LifecycleConfiguration>`;
         parseString(xml, (err, parsedXml) => {
             assert.equal(err, null, 'Error parsing xml');
-            const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig).getLifecycleConfiguration();
+            const lcConfig = new LifecycleConfiguration(parsedXml, log, mockConfig).getLifecycleConfiguration();
             assert.strictEqual(lcConfig.error, undefined);
             const action = lcConfig.rules[0].actions[0];
             assert.strictEqual(action.actionName, 'Expiration');
@@ -605,7 +608,7 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
             </LifecycleConfiguration>`;
         parseString(xml, (err, parsedXml) => {
             assert.equal(err, null, 'Error parsing xml');
-            const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig).getLifecycleConfiguration();
+            const lcConfig = new LifecycleConfiguration(parsedXml, log, mockConfig).getLifecycleConfiguration();
             assert.strictEqual(lcConfig.error, undefined);
             const action = lcConfig.rules[0].actions[0];
             assert.strictEqual(action.actionName, 'NoncurrentVersionExpiration');
@@ -628,7 +631,7 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
             </LifecycleConfiguration>`;
         parseString(xml, (err, parsedXml) => {
             assert.equal(err, null, 'Error parsing xml');
-            const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig).getLifecycleConfiguration();
+            const lcConfig = new LifecycleConfiguration(parsedXml, log, mockConfig).getLifecycleConfiguration();
             assert.strictEqual(lcConfig.error, undefined);
             const action = lcConfig.rules[0].actions[0];
             assert.strictEqual(action.actionName, 'AbortIncompleteMultipartUpload');
@@ -651,10 +654,96 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
             </LifecycleConfiguration>`;
         parseString(xml, (err, parsedXml) => {
             assert.equal(err, null, 'Error parsing xml');
-            const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig).getLifecycleConfiguration();
+            const lcConfig = new LifecycleConfiguration(parsedXml, log, mockConfig).getLifecycleConfiguration();
             assert.strictEqual(lcConfig.error, undefined);
             const outXml = LifecycleConfiguration.getConfigXml(lcConfig);
             assert(outXml.includes('<Days>0</Days>'), `expected <Days>0</Days> in output: ${outXml}`);
+            done();
+        });
+    });
+
+    it('should log a warning when a 0-day action time is configured', done => {
+        const xml = `
+            <LifecycleConfiguration>
+                <Rule>
+                    <ID>empty-bucket</ID>
+                    <Status>Enabled</Status>
+                    <Filter></Filter>
+                    <Expiration>
+                        <Days>0</Days>
+                    </Expiration>
+                </Rule>
+            </LifecycleConfiguration>`;
+        parseString(xml, (err, parsedXml) => {
+            assert.equal(err, null, 'Error parsing xml');
+            const auditLog = new DummyRequestLogger();
+            new LifecycleConfiguration(parsedXml, auditLog, mockConfig).getLifecycleConfiguration();
+            assert.strictEqual(auditLog.counts.warn, 1);
+            assert.deepStrictEqual(auditLog.ops[0], ['warn', ['lifecycle rule configured with a 0-day action time']]);
+            done();
+        });
+    });
+
+    it('should warn for NoncurrentVersionExpiration NoncurrentDays=0', done => {
+        const xml = `
+            <LifecycleConfiguration>
+                <Rule>
+                    <ID>empty-noncurrent</ID>
+                    <Status>Enabled</Status>
+                    <Filter></Filter>
+                    <NoncurrentVersionExpiration>
+                        <NoncurrentDays>0</NoncurrentDays>
+                    </NoncurrentVersionExpiration>
+                </Rule>
+            </LifecycleConfiguration>`;
+        parseString(xml, (err, parsedXml) => {
+            assert.equal(err, null, 'Error parsing xml');
+            const auditLog = new DummyRequestLogger();
+            new LifecycleConfiguration(parsedXml, auditLog, mockConfig).getLifecycleConfiguration();
+            assert.strictEqual(auditLog.counts.warn, 1);
+            done();
+        });
+    });
+
+    it('should not warn for a non-deleting 0-day action (AbortIncompleteMultipartUpload)', done => {
+        const xml = `
+            <LifecycleConfiguration>
+                <Rule>
+                    <ID>abort-now</ID>
+                    <Status>Enabled</Status>
+                    <Filter></Filter>
+                    <AbortIncompleteMultipartUpload>
+                        <DaysAfterInitiation>0</DaysAfterInitiation>
+                    </AbortIncompleteMultipartUpload>
+                </Rule>
+            </LifecycleConfiguration>`;
+        parseString(xml, (err, parsedXml) => {
+            assert.equal(err, null, 'Error parsing xml');
+            const auditLog = new DummyRequestLogger();
+            const lcConfig = new LifecycleConfiguration(parsedXml, auditLog, mockConfig).getLifecycleConfiguration();
+            assert.strictEqual(lcConfig.error, undefined);
+            assert.strictEqual(auditLog.counts.warn, 0);
+            done();
+        });
+    });
+
+    it('should not log for a positive day action time', done => {
+        const xml = `
+            <LifecycleConfiguration>
+                <Rule>
+                    <ID>retain</ID>
+                    <Status>Enabled</Status>
+                    <Filter></Filter>
+                    <Expiration>
+                        <Days>1</Days>
+                    </Expiration>
+                </Rule>
+            </LifecycleConfiguration>`;
+        parseString(xml, (err, parsedXml) => {
+            assert.equal(err, null, 'Error parsing xml');
+            const auditLog = new DummyRequestLogger();
+            new LifecycleConfiguration(parsedXml, auditLog, mockConfig).getLifecycleConfiguration();
+            assert.strictEqual(auditLog.counts.warn, 0);
             done();
         });
     });
@@ -680,7 +769,7 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
                 </LifecycleConfiguration>`;
             parseString(xml, (err, parsedXml) => {
                 assert.equal(err, null, 'Error parsing xml');
-                const lcConfig = new LifecycleConfiguration(parsedXml, mockConfig).getLifecycleConfiguration();
+                const lcConfig = new LifecycleConfiguration(parsedXml, log, mockConfig).getLifecycleConfiguration();
                 assert.notStrictEqual(lcConfig.error, undefined);
                 assert.strictEqual(lcConfig.error.description, `'${field}' in ${action} action must be an integer`);
                 done();
@@ -690,7 +779,7 @@ describe('LifecycleConfiguration class getLifecycleConfiguration', () => {
 });
 
 describe('LifecycleConfiguration', () => {
-    const lifecycleConfiguration = new LifecycleConfiguration({}, mockConfig);
+    const lifecycleConfiguration = new LifecycleConfiguration({}, log, mockConfig);
     function getParsedXML() {
         return {
             LifecycleConfiguration: {

@@ -6,6 +6,7 @@ import type { ArsenalError } from '../errors';
 import LifecycleRule from './LifecycleRule';
 import escapeForXml from '../s3middleware/escapeForXml';
 import { Status } from './LifecycleRule';
+import type { RequestLogger } from 'werelogs';
 
 const MAX_DAYS = 2147483647; // Max 32-bit signed binary integer.
 
@@ -122,15 +123,18 @@ export default class LifecycleConfiguration {
         error?: ArsenalError;
         rules?: Rule[];
     };
+    _log: RequestLogger;
 
     /**
      * Create a Lifecycle Configuration instance
      * @param xml - the parsed xml
+     * @param log - werelogs logger
      * @param config - the CloudServer config
      * @return - LifecycleConfiguration instance
      */
     constructor(
         xml: any,
+        log: RequestLogger,
         config: {
             replicationEndpoints: { site: string }[];
             locationConstraints?: Record<string, { isCRR: boolean }>;
@@ -138,6 +142,7 @@ export default class LifecycleConfiguration {
         },
     ) {
         this._parsedXML = xml;
+        this._log = log;
         this._storageClasses = this._buildStorageClasses(config);
         this._supportedLifecycleRules = config.supportedLifecycleRules;
         this._ruleIDs = [];
@@ -606,6 +611,12 @@ export default class LifecycleConfiguration {
             return errorInstances.MalformedXML.customizeDescription(
                 `'${field}' in ${ancestor} action must not exceed ${MAX_DAYS}`,
             );
+        }
+        if (days === 0 && (ancestor === 'Expiration' || ancestor === 'NoncurrentVersionExpiration')) {
+            this._log.warn('lifecycle rule configured with a 0-day action time', {
+                field,
+                ancestor,
+            });
         }
         return null;
     }
