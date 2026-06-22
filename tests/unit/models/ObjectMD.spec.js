@@ -2,7 +2,8 @@ const assert = require('assert');
 const ObjectMD = require('../../../lib/models/ObjectMD').default;
 const ObjectMDChecksum = require('../../../lib/models/ObjectMDChecksum').default;
 const constants = require('../../../lib/constants');
-const ExternalNullVersionId = require('../../../lib/versioning/constants').VersioningConstants.ExternalNullVersionId;
+const ExternalNullVersionId = require('../../../lib/versioning/constants')
+    .VersioningConstants.ExternalNullVersionId;
 
 const retainDate = new Date();
 retainDate.setDate(retainDate.getDate() + 1);
@@ -52,27 +53,20 @@ describe('ObjectMD class setters/getters', () => {
         ['AmzEncryptionKeyId', 'encryption-key-id'],
         ['AmzEncryptionCustomerAlgorithm', null, ''],
         ['AmzEncryptionCustomerAlgorithm', 'customer-algorithm'],
-        [
-            'Acl',
-            null,
-            {
-                Canned: 'private',
-                FULL_CONTROL: [],
-                WRITE_ACP: [],
-                READ: [],
-                READ_ACP: [],
-            },
-        ],
-        [
-            'Acl',
-            {
-                Canned: 'public',
-                FULL_CONTROL: ['id'],
-                WRITE_ACP: ['id'],
-                READ: ['id'],
-                READ_ACP: ['id'],
-            },
-        ],
+        ['Acl', null, {
+            Canned: 'private',
+            FULL_CONTROL: [],
+            WRITE_ACP: [],
+            READ: [],
+            READ_ACP: [],
+        }],
+        ['Acl', {
+            Canned: 'public',
+            FULL_CONTROL: ['id'],
+            WRITE_ACP: ['id'],
+            READ: ['id'],
+            READ_ACP: ['id'],
+        }],
         ['Key', null, ''],
         ['Key', 'key'],
         ['Location', null, []],
@@ -90,69 +84,55 @@ describe('ObjectMD class setters/getters', () => {
         ['VersionId', null, undefined],
         ['VersionId', '111111'],
         ['Tags', null, {}],
-        [
-            'Tags',
-            {
-                key: 'value',
-            },
-        ],
+        ['Tags', {
+            key: 'value',
+        }],
         ['Tags', null, {}],
         ['UploadId', null, undefined],
         ['UploadId', 'abcdefghi'],
-        [
-            'ReplicationInfo',
-            null,
-            {
-                status: '',
-                backends: [],
-                content: [],
-                destination: '',
-                storageClass: '',
-                role: '',
-                storageType: '',
-                dataStoreVersionId: '',
-                isNFS: undefined,
-            },
-        ],
-        [
-            'ReplicationInfo',
-            {
+        ['ReplicationInfo', null, {
+            status: '',
+            backends: [],
+            content: [],
+            destination: '',
+            storageClass: '',
+            role: '',
+            storageType: '',
+            dataStoreVersionId: '',
+            isNFS: undefined,
+        }],
+        ['ReplicationInfo', {
+            status: 'PENDING',
+            backends: [{
+                site: 'zenko',
                 status: 'PENDING',
-                backends: [
-                    {
-                        site: 'zenko',
-                        status: 'PENDING',
-                        dataStoreVersionId: 'a',
-                    },
-                ],
-                content: ['DATA', 'METADATA'],
-                destination: 'destination-bucket',
-                storageClass: 'STANDARD',
-                role: 'arn:aws:iam::account-id:role/src-resource,' + 'arn:aws:iam::account-id:role/dest-resource',
-                storageType: 'aws_s3',
-                dataStoreVersionId: '',
-                isNFS: undefined,
-            },
-        ],
+                dataStoreVersionId: 'a',
+            }],
+            content: ['DATA', 'METADATA'],
+            destination: 'destination-bucket',
+            storageClass: 'STANDARD',
+            role: 'arn:aws:iam::account-id:role/src-resource,' +
+                'arn:aws:iam::account-id:role/dest-resource',
+            storageType: 'aws_s3',
+            dataStoreVersionId: '',
+            isNFS: undefined,
+        }],
         ['DataStoreName', null, ''],
         ['ReplicationIsNFS', null, false],
         ['ReplicationIsNFS', true],
-        [
-            'AzureInfo',
-            {
-                containerPublicAccess: 'container',
-                containerStoredAccessPolicies: [],
-                containerImmutabilityPolicy: {},
-                containerLegalHoldStatus: false,
-                containerDeletionInProgress: false,
-                blobType: 'BlockBlob',
-                blobContentMD5: 'ABCDEF==',
-                blobCopyInfo: {},
-                blobSequenceNumber: 42,
-                blobAccessTierChangeTime: 'abcdef',
-                blobUncommitted: false,
-            },
-        ],
+        ['AzureInfo', {
+            containerPublicAccess: 'container',
+            containerStoredAccessPolicies: [],
+            containerImmutabilityPolicy: {},
+            containerLegalHoldStatus: false,
+            containerDeletionInProgress: false,
+            blobType: 'BlockBlob',
+            blobContentMD5: 'ABCDEF==',
+            blobCopyInfo: {},
+            blobSequenceNumber: 42,
+            blobAccessTierChangeTime: 'abcdef',
+            blobUncommitted: false,
+        }],
         ['LegalHold', null, false],
         ['LegalHold', true],
         ['RetentionMode', 'GOVERNANCE'],
@@ -173,7 +153,8 @@ describe('ObjectMD class setters/getters', () => {
                 md[`set${property}`](testValue);
             }
             const value = md[`get${property}`]();
-            if ((testValue !== null && typeof testValue === 'object') || typeof defaultValue === 'object') {
+            if ((testValue !== null && typeof testValue === 'object') ||
+                typeof defaultValue === 'object') {
                 assert.deepStrictEqual(value, testValue || defaultValue);
             } else if (testValue !== null) {
                 assert.strictEqual(value, testValue);
@@ -185,39 +166,31 @@ describe('ObjectMD class setters/getters', () => {
 
     it('ObjectMD::setReplicationSiteStatus', () => {
         md.setReplicationInfo({
-            backends: [
-                {
-                    site: 'zenko',
-                    status: 'PENDING',
-                    dataStoreVersionId: 'a',
-                },
-            ],
+            backends: [{
+                site: 'zenko',
+                status: 'PENDING',
+                dataStoreVersionId: 'a',
+            }],
         });
         md.setReplicationSiteStatus('zenko', 'COMPLETED');
-        assert.deepStrictEqual(md.getReplicationInfo().backends, [
-            {
-                site: 'zenko',
-                status: 'COMPLETED',
-                dataStoreVersionId: 'a',
-            },
-        ]);
+        assert.deepStrictEqual(md.getReplicationInfo().backends, [{
+            site: 'zenko',
+            status: 'COMPLETED',
+            dataStoreVersionId: 'a',
+        }]);
     });
 
     it('ObjectMD::setReplicationBackends', () => {
-        md.setReplicationBackends([
-            {
-                site: 'a',
-                status: 'b',
-                dataStoreVersionId: 'c',
-            },
-        ]);
-        assert.deepStrictEqual(md.getReplicationBackends(), [
-            {
-                site: 'a',
-                status: 'b',
-                dataStoreVersionId: 'c',
-            },
-        ]);
+        md.setReplicationBackends([{
+            site: 'a',
+            status: 'b',
+            dataStoreVersionId: 'c',
+        }]);
+        assert.deepStrictEqual(md.getReplicationBackends(), [{
+            site: 'a',
+            status: 'b',
+            dataStoreVersionId: 'c',
+        }]);
     });
 
     it('ObjectMD::setReplicationStorageType', () => {
@@ -244,48 +217,41 @@ describe('ObjectMD class setters/getters', () => {
 
     it('ObjectMD::getReplicationSiteStatus', () => {
         md.setReplicationInfo({
-            backends: [
-                {
-                    site: 'zenko',
-                    status: 'PENDING',
-                    dataStoreVersionId: 'a',
-                },
-            ],
+            backends: [{
+                site: 'zenko',
+                status: 'PENDING',
+                dataStoreVersionId: 'a',
+            }],
         });
         assert.strictEqual(md.getReplicationSiteStatus('zenko'), 'PENDING');
     });
 
     it('ObjectMD::setReplicationSiteDataStoreVersionId', () => {
         md.setReplicationInfo({
-            backends: [
-                {
-                    site: 'zenko',
-                    status: 'PENDING',
-                    dataStoreVersionId: 'a',
-                },
-            ],
-        });
-        md.setReplicationSiteDataStoreVersionId('zenko', 'b');
-        assert.deepStrictEqual(md.getReplicationInfo().backends, [
-            {
+            backends: [{
                 site: 'zenko',
                 status: 'PENDING',
-                dataStoreVersionId: 'b',
-            },
-        ]);
+                dataStoreVersionId: 'a',
+            }],
+        });
+        md.setReplicationSiteDataStoreVersionId('zenko', 'b');
+        assert.deepStrictEqual(md.getReplicationInfo().backends, [{
+            site: 'zenko',
+            status: 'PENDING',
+            dataStoreVersionId: 'b',
+        }]);
     });
 
     it('ObjectMD::getReplicationSiteDataStoreVersionId', () => {
         md.setReplicationInfo({
-            backends: [
-                {
-                    site: 'zenko',
-                    status: 'PENDING',
-                    dataStoreVersionId: 'a',
-                },
-            ],
+            backends: [{
+                site: 'zenko',
+                status: 'PENDING',
+                dataStoreVersionId: 'a',
+            }],
         });
-        assert.strictEqual(md.getReplicationSiteDataStoreVersionId('zenko'), 'a');
+        assert.strictEqual(
+            md.getReplicationSiteDataStoreVersionId('zenko'), 'a');
     });
 
     it('ObjectMd::isMultipartUpload', () => {
@@ -306,7 +272,7 @@ describe('ObjectMD class setters/getters', () => {
             // This one should be changed to 'x-amz-meta-foobar'
             'x-ms-meta-foobar': 'bar',
             // ACLs are updated
-            acl: {
+            'acl': {
                 FULL_CONTROL: ['john'],
             },
         });
@@ -454,8 +420,10 @@ describe('ObjectMD import from stored blob', () => {
         assert.strictEqual(importedRes.error, undefined);
         const importedMd = importedRes.result;
         const valueImported = importedMd.getValue();
-        assert.strictEqual(valueImported['md-model-version'], constants.mdModelVersion);
-        assert.deepStrictEqual(valueImported.location, [{ key: 'stringLocation' }]);
+        assert.strictEqual(valueImported['md-model-version'],
+            constants.mdModelVersion);
+        assert.deepStrictEqual(valueImported.location,
+            [{ key: 'stringLocation' }]);
     });
 
     it('should keep null location as is', () => {
@@ -482,19 +450,21 @@ describe('ObjectMD import from stored blob', () => {
         assert.strictEqual(importedRes.error, undefined);
         const importedMd = importedRes.result;
         const valueImported = importedMd.getValue();
-        assert.strictEqual(valueImported['md-model-version'], constants.mdModelVersion);
+        assert.strictEqual(valueImported['md-model-version'],
+            constants.mdModelVersion);
         assert.notStrictEqual(valueImported.dataStoreName, undefined);
     });
 
-    it('should return undefined for dataStoreVersionId if no object location', () => {
-        const md = new ObjectMD();
-        const value = md.getValue();
-        const jsonMd = JSON.stringify(value);
-        const importedRes = ObjectMD.createFromBlob(jsonMd);
-        assert.strictEqual(importedRes.error, undefined);
-        const importedMd = importedRes.result;
-        assert.strictEqual(importedMd.getDataStoreVersionId(), undefined);
-    });
+    it('should return undefined for dataStoreVersionId if no object location',
+        () => {
+            const md = new ObjectMD();
+            const value = md.getValue();
+            const jsonMd = JSON.stringify(value);
+            const importedRes = ObjectMD.createFromBlob(jsonMd);
+            assert.strictEqual(importedRes.error, undefined);
+            const importedMd = importedRes.result;
+            assert.strictEqual(importedMd.getDataStoreVersionId(), undefined);
+        });
 
     it('should get dataStoreVersionId if saved in object location', () => {
         const md = new ObjectMD();
@@ -507,7 +477,8 @@ describe('ObjectMD import from stored blob', () => {
         const importedRes = ObjectMD.createFromBlob(jsonMd);
         assert.strictEqual(importedRes.error, undefined);
         const importedMd = importedRes.result;
-        assert.strictEqual(importedMd.getDataStoreVersionId(), dummyLocation.dataStoreVersionId);
+        assert.strictEqual(importedMd.getDataStoreVersionId(),
+            dummyLocation.dataStoreVersionId);
     });
 
     it('should return an error if blob is malformed JSON', () => {
@@ -526,7 +497,7 @@ describe('getAttributes static method', () => {
             'cache-control': true,
             'content-disposition': true,
             'content-encoding': true,
-            expires: true,
+            'expires': true,
             'content-length': true,
             'content-type': true,
             'content-md5': true,
@@ -540,25 +511,25 @@ describe('getAttributes static method', () => {
             'x-amz-server-side-encryption-customer-algorithm': true,
             'x-amz-website-redirect-location': true,
             'x-amz-scal-transition-in-progress': true,
-            acl: true,
-            key: true,
-            location: true,
-            azureInfo: true,
-            isNull: true,
-            isNull2: true,
-            nullVersionId: true,
-            nullUploadId: true,
-            isDeleteMarker: true,
-            versionId: true,
-            tags: true,
-            uploadId: true,
-            replicationInfo: true,
-            dataStoreName: true,
+            'acl': true,
+            'key': true,
+            'location': true,
+            'azureInfo': true,
+            'isNull': true,
+            'isNull2': true,
+            'nullVersionId': true,
+            'nullUploadId': true,
+            'isDeleteMarker': true,
+            'versionId': true,
+            'tags': true,
+            'uploadId': true,
+            'replicationInfo': true,
+            'dataStoreName': true,
             'last-modified': true,
             'md-model-version': true,
-            originOp: true,
-            deleted: true,
-            isPHD: true,
+            'originOp': true,
+            'deleted': true,
+            'isPHD': true,
         };
         assert.deepStrictEqual(attributes, expectedResult);
     });
@@ -956,4 +927,5 @@ describe('ObjectMD checksum', () => {
         assert.strictEqual(c.checksumValue, `${sha256Digest}-3`);
         assert.strictEqual(c.checksumType, 'COMPOSITE');
     });
+
 });

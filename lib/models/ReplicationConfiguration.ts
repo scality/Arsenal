@@ -55,10 +55,10 @@ export type XMLRule = {
 };
 
 export type ReplicationConfigurationMetadata = {
-    role: string;
-    destination: string;
-    rules: Rule[];
-    preferredReadLocation?: string | null;
+    role: string,
+    destination: string,
+    rules: Rule[],
+    preferredReadLocation?: string | null,
 };
 
 export default class ReplicationConfiguration {
@@ -161,7 +161,10 @@ export default class ReplicationConfiguration {
         const obj: Rule = { ...base };
         // ID is an optional property, but create one if not provided or is ''.
         // We generate a 48-character alphanumeric, unique ID for the rule.
-        obj.id = rule.ID && rule.ID[0] !== '' ? rule.ID[0] : Buffer.from(uuid()).toString('base64');
+        obj.id =
+            rule.ID && rule.ID[0] !== ''
+                ? rule.ID[0]
+                : Buffer.from(uuid()).toString('base64');
         // StorageClass is an optional property.
         if (rule.Destination[0].StorageClass) {
             obj.storageClass = rule.Destination[0].StorageClass[0];
@@ -202,18 +205,19 @@ export default class ReplicationConfiguration {
         if (this._hasScalityDestination && rolesArr.length !== 2) {
             return errorInstances.InvalidArgument.customizeDescription(
                 'Invalid Role specified in replication configuration: ' +
-                    'Role must be a comma-separated list of two IAM roles',
+                    'Role must be a comma-separated list of two IAM roles'
             );
         }
         if (!this._hasScalityDestination && rolesArr.length > 1) {
             return errorInstances.InvalidArgument.customizeDescription(
-                'Invalid Role specified in replication configuration: ' + 'Role may not contain a comma separator',
+                'Invalid Role specified in replication configuration: ' +
+                    'Role may not contain a comma separator'
             );
         }
         const invalidRole = rolesArr.find(r => !this._isValidRoleARN(r));
         if (invalidRole !== undefined) {
             return errorInstances.InvalidArgument.customizeDescription(
-                `Invalid Role specified in replication configuration: '${invalidRole}'`,
+                `Invalid Role specified in replication configuration: '${invalidRole}'`
             );
         }
         this._role = role;
@@ -231,7 +235,7 @@ export default class ReplicationConfiguration {
         }
         if (Rule.length > MAX_RULES) {
             return errorInstances.InvalidRequest.customizeDescription(
-                'Number of defined replication rules cannot exceed 1000',
+                'Number of defined replication rules cannot exceed 1000'
             );
         }
 
@@ -294,10 +298,10 @@ export default class ReplicationConfiguration {
 
         if (prefix.length > 1024) {
             return errorInstances.InvalidArgument.customizeDescription(
-                'Rule prefix cannot be longer than maximum allowed key length of 1024',
+                'Rule prefix cannot be longer than maximum allowed key length of 1024'
             );
         }
-
+    
         // Each Prefix in a list of rules must not overlap. For example, two
         // prefixes 'TaxDocs' and 'TaxDocs/2015' are overlapping. An empty
         // string prefix is expected to overlap with any other prefix.
@@ -305,7 +309,7 @@ export default class ReplicationConfiguration {
             const used = this._configPrefixes[i];
             if (prefix.startsWith(used) || used.startsWith(prefix)) {
                 return errorInstances.InvalidRequest.customizeDescription(
-                    `Found overlapping prefixes '${used}' and '${prefix}'`,
+                    `Found overlapping prefixes '${used}' and '${prefix}'`
                 );
             }
         }
@@ -321,11 +325,15 @@ export default class ReplicationConfiguration {
     _parseID(rule: XMLRule) {
         const id = rule.ID && rule.ID[0];
         if (id && id.length > RULE_ID_LIMIT) {
-            return errorInstances.InvalidArgument.customizeDescription('Rule ID length cannot be greater than 255');
+            return errorInstances.InvalidArgument.customizeDescription(
+                'Rule ID length cannot be greater than 255'
+            );
         }
         // Each ID in a list of rules must be unique.
         if (id && this._configIDs.includes(id)) {
-            return errorInstances.InvalidRequest.customizeDescription('Duplicate Rule ID');
+            return errorInstances.InvalidRequest.customizeDescription(
+                'Duplicate Rule ID'
+            );
         }
         if (id !== undefined) {
             this._configIDs.push(id);
@@ -342,14 +350,16 @@ export default class ReplicationConfiguration {
         // The only condition where the default endpoint is possibly undefined
         // is if there is only a single replication endpoint.
         const defaultEndpoint =
-            replicationEndpoints.find((endpoint: any) => endpoint.default) || replicationEndpoints[0];
+            replicationEndpoints.find((endpoint: any) => endpoint.default) ||
+            replicationEndpoints[0];
         // StorageClass is optional.
         if (destination.StorageClass === undefined) {
-            this._hasScalityDestination = defaultEndpoint && defaultEndpoint.type === undefined;
+            this._hasScalityDestination = (defaultEndpoint && defaultEndpoint.type === undefined);
             return undefined;
         }
         const storageClasses = destination.StorageClass[0].split(',');
-        const prefReadIndex = storageClasses.findIndex(storageClass => storageClass.endsWith(':preferred_read'));
+        const prefReadIndex = storageClasses.findIndex(storageClass =>
+            storageClass.endsWith(':preferred_read'));
         if (prefReadIndex !== -1) {
             const prefRead = storageClasses[prefReadIndex].split(':')[0];
             // remove :preferred_read tag from storage class name
@@ -358,12 +368,14 @@ export default class ReplicationConfiguration {
         }
         const isValidStorageClass = storageClasses.every(storageClass => {
             if (validStorageClasses.includes(storageClass)) {
-                this._hasScalityDestination = defaultEndpoint && defaultEndpoint.type === undefined;
+                this._hasScalityDestination = (defaultEndpoint && defaultEndpoint.type === undefined);
                 return true;
             }
-            const endpoint = replicationEndpoints.find((endpoint: any) => endpoint.site === storageClass);
+            const endpoint = replicationEndpoints.find(
+                (endpoint: any) => endpoint.site === storageClass
+            );
             if (endpoint) {
-                // We do not support replication to cold location.
+                // We do not support replication to cold location. 
                 // Only transition to cold location is supported.
                 if (endpoint.site && this._config.locationConstraints[endpoint.site]?.isCold) {
                     return false;
@@ -374,7 +386,7 @@ export default class ReplicationConfiguration {
                 if (!this._hasScalityDestination) {
                     // If any endpoint does not have a type, then we know it is
                     // a Scality destination.
-                    this._hasScalityDestination = endpoint.type === undefined;
+                    this._hasScalityDestination = (endpoint.type === undefined);
                 }
                 return true;
             }
@@ -402,20 +414,31 @@ export default class ReplicationConfiguration {
         }
         const bucketARN = parsedBucketARN[0];
         if (!bucketARN) {
-            return errorInstances.InvalidArgument.customizeDescription('Destination bucket cannot be null or empty');
+            return errorInstances.InvalidArgument.customizeDescription(
+                'Destination bucket cannot be null or empty'
+            );
         }
         const arr = bucketARN.split(':');
-        const isValidARN = arr[0] === 'arn' && arr[1] === 'aws' && arr[2] === 's3' && arr[3] === '' && arr[4] === '';
+        const isValidARN =
+            arr[0] === 'arn' &&
+            arr[1] === 'aws' &&
+            arr[2] === 's3' &&
+            arr[3] === '' &&
+            arr[4] === '';
         if (!isValidARN) {
-            return errorInstances.InvalidArgument.customizeDescription('Invalid bucket ARN');
+            return errorInstances.InvalidArgument.customizeDescription(
+                'Invalid bucket ARN'
+            );
         }
         if (!isValidBucketName(arr[5], [])) {
-            return errorInstances.InvalidArgument.customizeDescription('The specified bucket is not valid');
+            return errorInstances.InvalidArgument.customizeDescription(
+                'The specified bucket is not valid'
+            );
         }
         // We can replicate objects only to one destination bucket.
         if (this._destination && this._destination !== bucketARN) {
             return errorInstances.InvalidRequest.customizeDescription(
-                'The destination bucket must be the same for all rules',
+                'The destination bucket must be the same for all rules'
             );
         }
         this._destination = bucketARN;
@@ -448,7 +471,8 @@ export default class ReplicationConfiguration {
         }
         const { replicationEndpoints } = this._config;
         if (replicationEndpoints.length === 0) {
-            return errors.InvalidRequest.customizeDescription('No configured replication endpoint');
+            return errors.InvalidRequest.customizeDescription(
+                'No configured replication endpoint');
         }
         return this._parseRole();
     }
@@ -465,9 +489,16 @@ export default class ReplicationConfiguration {
         const rulesXML = rules
             .map(rule => {
                 const { prefix, enabled, storageClass, id } = rule;
-                const Prefix = prefix === '' ? '<Prefix/>' : `<Prefix>${escapeForXml(prefix)}</Prefix>`;
-                const Status = `<Status>${enabled ? 'Enabled' : 'Disabled'}</Status>`;
-                const StorageClass = storageClass ? `<StorageClass>${storageClass}</StorageClass>` : '';
+                const Prefix =
+                    prefix === ''
+                        ? '<Prefix/>'
+                        : `<Prefix>${escapeForXml(prefix)}</Prefix>`;
+                const Status = `<Status>${
+                    enabled ? 'Enabled' : 'Disabled'
+                }</Status>`;
+                const StorageClass = storageClass
+                    ? `<StorageClass>${storageClass}</StorageClass>`
+                    : '';
                 const Destination = `<Destination>${Bucket}${StorageClass}</Destination>`;
                 // If the ID property was omitted in the configuration object, we
                 // create an ID for the rule. Hence it is always defined.
