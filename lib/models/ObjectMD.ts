@@ -20,34 +20,17 @@ export type Backend = {
     site: string;
     status: string;
     dataStoreVersionId: string;
-    destination?: string;
-    role?: string;
-};
-
-/**
- * Identifies one backend in `replicationInfo.backends`. Matches
- * `ReplicationConfiguration.resolveBackends` dedup key.
- */
-export type BackendKey = {
-    site: string;
-    destination?: string;
-    role?: string;
 };
 
 export type ReplicationInfo = {
     status: string;
     backends: Backend[];
     content: string[];
-    /** @deprecated in favor of per-backend destination for multi-destination CRR. */
-    destination?: string;
-    /** @deprecated in favor of per-backend storageClass for multi-destination CRR. */
-    storageClass?: string;
-    /** @deprecated in favor of per-backend role for multi-destination CRR. */
-    role?: string;
-    /** @deprecated in favor of per-backend storageType for multi-destination CRR. */
-    storageType?: string;
-    /** @deprecated in favor of per-backend dataStoreVersionId for multi-destination. */
-    dataStoreVersionId?: string;
+    destination: string;
+    storageClass: string;
+    role: string;
+    storageType: string;
+    dataStoreVersionId: string;
     isNFS?: boolean;
 };
 
@@ -254,11 +237,11 @@ export default class ObjectMD {
                 status: '',
                 backends: [],
                 content: [],
-                destination: undefined,
-                storageClass: undefined,
-                role: undefined,
-                storageType: undefined,
-                dataStoreVersionId: undefined,
+                destination: '',
+                storageClass: '',
+                role: '',
+                storageType: '',
+                dataStoreVersionId: '',
                 isNFS: undefined,
             },
             dataStoreName: '',
@@ -1109,8 +1092,30 @@ export default class ObjectMD {
      * @param replicationInfo - replication information object
      * @return itself
      */
-    setReplicationInfo(replicationInfo: ReplicationInfo) {
-        this._data.replicationInfo = { ...replicationInfo };
+    setReplicationInfo(replicationInfo: {
+        status: string;
+        backends: Backend[];
+        content: string[];
+        destination: string;
+        storageClass?: string;
+        role: string;
+        storageType?: string;
+        dataStoreVersionId?: string;
+        isNFS?: boolean;
+    }) {
+        const { status, backends, content, destination, storageClass, role, storageType, dataStoreVersionId, isNFS } =
+            replicationInfo;
+        this._data.replicationInfo = {
+            status,
+            backends,
+            content,
+            destination,
+            storageClass: storageClass || '',
+            role,
+            storageType: storageType || '',
+            dataStoreVersionId: dataStoreVersionId || '',
+            isNFS,
+        };
         return this;
     }
 
@@ -1146,48 +1151,41 @@ export default class ObjectMD {
         return !!this._data.replicationInfo.isNFS;
     }
 
-    /**
-     * With just `{ site }`, returns the first match. With
-     * `{ site, destination, role }`, uniquely identifies one backend
-     * among multiple sharing a site.
-     */
-    _findBackend(key: BackendKey): Backend | undefined {
-        return this._data.replicationInfo.backends.find(
-            b =>
-                b.site === key.site &&
-                (key.destination === undefined || b.destination === key.destination) &&
-                (key.role === undefined || b.role === key.role),
-        );
-    }
-
-    setReplicationSiteStatus(key: BackendKey, status: string) {
-        const backend = this._findBackend(key);
+    setReplicationSiteStatus(site: string, status: string) {
+        const backend = this._data.replicationInfo.backends.find(o => o.site === site);
         if (backend) {
             backend.status = status;
         }
         return this;
     }
 
-    getReplicationSiteStatus(key: BackendKey): string | undefined {
-        return this._findBackend(key)?.status;
+    getReplicationSiteStatus(site: string) {
+        const backend = this._data.replicationInfo.backends.find(o => o.site === site);
+        if (backend) {
+            return backend.status;
+        }
+        return undefined;
     }
 
-    /** @deprecated in favor of per-backend dataStoreVersionId for multi-destination CRR. */
     setReplicationDataStoreVersionId(versionId: string) {
         this._data.replicationInfo.dataStoreVersionId = versionId;
         return this;
     }
 
-    setReplicationSiteDataStoreVersionId(key: BackendKey, versionId: string) {
-        const backend = this._findBackend(key);
+    setReplicationSiteDataStoreVersionId(site: string, versionId: string) {
+        const backend = this._data.replicationInfo.backends.find(o => o.site === site);
         if (backend) {
             backend.dataStoreVersionId = versionId;
         }
         return this;
     }
 
-    getReplicationSiteDataStoreVersionId(key: BackendKey): string | undefined {
-        return this._findBackend(key)?.dataStoreVersionId;
+    getReplicationSiteDataStoreVersionId(site: string) {
+        const backend = this._data.replicationInfo.backends.find(o => o.site === site);
+        if (backend) {
+            return backend.dataStoreVersionId;
+        }
+        return undefined;
     }
 
     setReplicationBackends(backends: Backend[]) {
@@ -1195,10 +1193,28 @@ export default class ObjectMD {
         return this;
     }
 
-    /** @deprecated in favor of per-backend role for multi-destination CRR. */
+    setReplicationStorageType(storageType: string) {
+        this._data.replicationInfo.storageType = storageType;
+        return this;
+    }
+
+    setReplicationStorageClass(storageClass: string) {
+        this._data.replicationInfo.storageClass = storageClass;
+        return this;
+    }
+
+    setReplicationTargetBucket(destination: string) {
+        this._data.replicationInfo.destination = destination;
+        return this;
+    }
+
     setReplicationRoles(role: string) {
         this._data.replicationInfo.role = role;
         return this;
+    }
+
+    getReplicationDataStoreVersionId() {
+        return this._data.replicationInfo.dataStoreVersionId;
     }
 
     getReplicationStatus() {
@@ -1213,57 +1229,20 @@ export default class ObjectMD {
         return this._data.replicationInfo.content;
     }
 
-    /**
-     * Composes `<source-role>,<per-backend-role>` for the given backend,
-     * or falls back to the top-level role string when the backend
-     * has no role of its own. With no backend `key`, returns the top-level
-     * value untouched.
-     *
-     * @example
-     * // replicationInfo: {
-     * //   role: 'arn:aws:iam::src:role/src-role,arn:aws:iam::dst:role/top-dst-role',
-     * //   backends: [{ site: 'us-east', role: 'arn:aws:iam::dst:role/per-backend-role' }],
-     * // }
-     * md.getReplicationRoles();
-     * // => 'arn:aws:iam::src:role/src-role,arn:aws:iam::dst:role/top-dst-role'
-     * md.getReplicationRoles({ site: 'us-east' });
-     * // => 'arn:aws:iam::src:role/src-role,arn:aws:iam::dst:role/per-backend-role'
-     */
-    getReplicationRoles(key?: BackendKey): string | undefined {
-        const top = this._data.replicationInfo.role;
-        if (key !== undefined && top) {
-            const backend = this._findBackend(key);
-            if (backend?.role) {
-                return `${top.split(',')[0]},${backend.role}`;
-            }
-        }
-        return top;
+    getReplicationRoles() {
+        return this._data.replicationInfo.role;
     }
 
-    /** @deprecated in favor of per-backend storageType for multi-destination CRR. */
     getReplicationStorageType() {
         return this._data.replicationInfo.storageType;
     }
 
-    /** @deprecated in favor of per-backend storageClass for multi-destination CRR. */
     getReplicationStorageClass() {
         return this._data.replicationInfo.storageClass;
     }
 
-    /**
-     * Return the destination bucket name (not ARN) for replication.
-     * With a backend `key`, returns the per-backend destination if set,
-     * otherwise falls back to the top-level value (legacy entries).
-     * With no backend `key`, returns the top-level value untouched.
-     */
-    getReplicationTargetBucket(key?: BackendKey): string {
-        if (key !== undefined) {
-            const backend = this._findBackend(key);
-            if (backend?.destination) {
-                return backend.destination.split(':').slice(-1)[0];
-            }
-        }
-        const destBucketArn = this._data.replicationInfo.destination ?? '';
+    getReplicationTargetBucket() {
+        const destBucketArn = this._data.replicationInfo.destination;
         return destBucketArn.split(':').slice(-1)[0];
     }
 

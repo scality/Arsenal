@@ -106,11 +106,11 @@ describe('ObjectMD class setters/getters', () => {
                 status: '',
                 backends: [],
                 content: [],
-                destination: undefined,
-                storageClass: undefined,
-                role: undefined,
-                storageType: undefined,
-                dataStoreVersionId: undefined,
+                destination: '',
+                storageClass: '',
+                role: '',
+                storageType: '',
+                dataStoreVersionId: '',
                 isNFS: undefined,
             },
         ],
@@ -193,7 +193,7 @@ describe('ObjectMD class setters/getters', () => {
                 },
             ],
         });
-        md.setReplicationSiteStatus({ site: 'zenko' }, 'COMPLETED');
+        md.setReplicationSiteStatus('zenko', 'COMPLETED');
         assert.deepStrictEqual(md.getReplicationInfo().backends, [
             {
                 site: 'zenko',
@@ -220,83 +220,26 @@ describe('ObjectMD class setters/getters', () => {
         ]);
     });
 
+    it('ObjectMD::setReplicationStorageType', () => {
+        md.setReplicationStorageType('a');
+        assert.strictEqual(md.getReplicationStorageType(), 'a');
+    });
+
+    it('ObjectMD::setReplicationStorageClass', () => {
+        md.setReplicationStorageClass('a');
+        assert.strictEqual(md.getReplicationStorageClass(), 'a');
+    });
+
+    it('ObjectMD::setReplicationTargetBucket', () => {
+        const bucketName = 'bucket0';
+        md.setReplicationTargetBucket(bucketName);
+        assert.strictEqual(md.getReplicationTargetBucket(), bucketName);
+    });
+
     it('ObjectMD::setReplicationRoles', () => {
         const roles = 'arn:aws:iam::123456789012:role/src-resource,arn:aws:iam::123456789012:role/dest-resource';
         md.setReplicationRoles(roles);
         assert.strictEqual(md.getReplicationRoles(), roles);
-    });
-
-    it('getReplicationRoles(site) composes source + per-backend role', () => {
-        md.setReplicationInfo({
-            status: 'PENDING',
-            content: [],
-            role: 'arn:aws:iam::111:role/src',
-            backends: [
-                {
-                    site: 'crr-a',
-                    status: 'PENDING',
-                    dataStoreVersionId: '',
-                    role: 'arn:aws:iam::222:role/dst',
-                },
-            ],
-        });
-        assert.strictEqual(
-            md.getReplicationRoles({ site: 'crr-a' }),
-            'arn:aws:iam::111:role/src,arn:aws:iam::222:role/dst',
-        );
-    });
-
-    it('getReplicationRoles(site) falls back to top-level when backend has no role', () => {
-        md.setReplicationInfo({
-            status: 'PENDING',
-            content: [],
-            role: 'arn:aws:iam::111:role/src,arn:aws:iam::222:role/dst',
-            backends: [
-                {
-                    site: 'crr-a',
-                    status: 'PENDING',
-                    dataStoreVersionId: '',
-                },
-            ],
-        });
-        assert.strictEqual(
-            md.getReplicationRoles({ site: 'crr-a' }),
-            'arn:aws:iam::111:role/src,arn:aws:iam::222:role/dst',
-        );
-    });
-
-    it('getReplicationTargetBucket(site) returns per-backend destination', () => {
-        md.setReplicationInfo({
-            status: 'PENDING',
-            content: [],
-            role: 'arn:aws:iam::111:role/src',
-            backends: [
-                {
-                    site: 'crr-a',
-                    status: 'PENDING',
-                    dataStoreVersionId: '',
-                    destination: 'arn:aws:s3:::bucket-a',
-                },
-            ],
-        });
-        assert.strictEqual(md.getReplicationTargetBucket({ site: 'crr-a' }), 'bucket-a');
-    });
-
-    it('getReplicationTargetBucket(site) falls back to top-level destination', () => {
-        md.setReplicationInfo({
-            status: 'PENDING',
-            content: [],
-            role: 'arn:aws:iam::111:role/src',
-            destination: 'arn:aws:s3:::legacy',
-            backends: [
-                {
-                    site: 'crr-a',
-                    status: 'PENDING',
-                    dataStoreVersionId: '',
-                },
-            ],
-        });
-        assert.strictEqual(md.getReplicationTargetBucket({ site: 'crr-a' }), 'legacy');
     });
 
     it('ObjectMD::getReplicationSiteStatus', () => {
@@ -309,7 +252,7 @@ describe('ObjectMD class setters/getters', () => {
                 },
             ],
         });
-        assert.strictEqual(md.getReplicationSiteStatus({ site: 'zenko' }), 'PENDING');
+        assert.strictEqual(md.getReplicationSiteStatus('zenko'), 'PENDING');
     });
 
     it('ObjectMD::setReplicationSiteDataStoreVersionId', () => {
@@ -322,7 +265,7 @@ describe('ObjectMD class setters/getters', () => {
                 },
             ],
         });
-        md.setReplicationSiteDataStoreVersionId({ site: 'zenko' }, 'b');
+        md.setReplicationSiteDataStoreVersionId('zenko', 'b');
         assert.deepStrictEqual(md.getReplicationInfo().backends, [
             {
                 site: 'zenko',
@@ -342,7 +285,7 @@ describe('ObjectMD class setters/getters', () => {
                 },
             ],
         });
-        assert.strictEqual(md.getReplicationSiteDataStoreVersionId({ site: 'zenko' }), 'a');
+        assert.strictEqual(md.getReplicationSiteDataStoreVersionId('zenko'), 'a');
     });
 
     it('ObjectMd::isMultipartUpload', () => {
