@@ -564,6 +564,12 @@ export const WrongFormat: ErrorFormat = {
     description: 'Data entered by the user has a wrong format.',
 };
 
+export const XAmzContentSHA256Mismatch: ErrorFormat = {
+    code: 400,
+    description:
+        "The provided 'x-amz-content-sha256' header does not match what was computed.",
+};
+
 export const Forbidden: ErrorFormat = {
     code: 403,
     description: 'Authentication failed.',
