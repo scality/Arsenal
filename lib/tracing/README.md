@@ -127,8 +127,8 @@ try {
 
 ## Dependencies
 
-`@opentelemetry/api` is a hard dependency (inert until an SDK is registered).
-The SDK-core packages (`sdk-node`, `sdk-trace-base`, `resources`,
-`exporter-trace-otlp-http`) are **optional** dependencies, required lazily in
-`init()`. The `instrumentation-*` packages are **not** arsenal dependencies —
-consumers bring their own and pass them via the `instrumentations` thunk.
+`@opentelemetry/api` plus the SDK-core packages (`sdk-node`, `sdk-trace-base`,
+`resources`, `exporter-trace-otlp-http`) are hard dependencies, lazy-required
+inside `init()` so OTEL-off processes never load them. The `instrumentation-*`
+packages are **not** arsenal dependencies — consumers bring their own and pass
+them via the `instrumentations` thunk.
