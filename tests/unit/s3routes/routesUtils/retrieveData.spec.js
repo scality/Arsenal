@@ -7,12 +7,13 @@ const DataWrapper = require('../../../../lib/storage/data/DataWrapper');
 const HttpResponseMock = require('../../../utils/HttpResponseMock');
 
 const logger = new werelogs.Logger('retrieveData', 'debug', 'debug');
-const log = logger.newRequestLogger();
 
 describe('retrieveData', () => {
+    let log;
     let responseMock;
 
     beforeEach(() => {
+        log = logger.newRequestLogger();
         responseMock = new HttpResponseMock();
         sinon.spy(responseMock, 'writeHead');
         sinon.spy(responseMock, 'end');
