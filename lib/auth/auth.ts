@@ -202,7 +202,9 @@ function generateContentMD5Header(
  * @param [proxyPath] - path that gets proxied by reverse proxy
  * @param [sessionToken] - security token if the access/secret keys
  *                                are temporary credentials from STS
- * @param [payload] - body of the request if any
+ * @param [payload] - body of the request if any. When omitted for a POST
+ *                    request, the querystring-encoded `data` is signed instead
+ *                    (backward-compatible behavior).
  */
 function generateV4Headers(
     request: ArsenalClientRequest,
@@ -227,12 +229,18 @@ function generateV4Headers(
     const timestamp = amzDate;
     const algorithm = 'AWS4-HMAC-SHA256';
 
-    payload = payload || '';
-    if (request.method === 'POST') {
+    // For POST requests, fall back to signing the querystring-encoded `data`
+    // only when no explicit payload is provided, preserving backward
+    // compatibility for callers (e.g. utapi, form POSTs) that rely on this.
+    // When a payload is explicitly passed, sign the real body instead so the
+    // x-amz-content-sha256 header matches what is actually sent (e.g. S3
+    // sub-resource POSTs such as CreateMultipartUpload or DeleteObjects).
+    if (payload === undefined && request.method === 'POST') {
         payload = queryString.stringify(data, undefined, undefined, {
             encodeURIComponent,
         });
     }
+    payload = payload || '';
     const payloadChecksum = crypto.createHash('sha256')
         .update(payload, 'binary').digest('hex');
     request.setHeader('host', request.getHeader('host') || '');
