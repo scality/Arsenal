@@ -1,0 +1,23 @@
+{
+  "name": "arsenal-workflow-tests",
+  "version": "1.0.0",
+  "description": "Tests for arsenal GitHub Actions workflows",
+  "private": true,
+  "license": "Apache-2.0",
+  "scripts": {
+    "test": "jest"
+  },
+  "devDependencies": {
+    "@kie/act-js": "^2.6.2",
+    "@kie/mock-github": "^2.0.2",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.13.2",
+    "jest": "^30.4.2",
+    "ts-jest": "^29.4.11",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3"
+  },
+  "resolutions": {
+    "tar": "^7.5.19"
+  }
+}

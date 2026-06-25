@@ -88,7 +88,7 @@
   "scripts": {
     "build": "tsc",
     "build_doc": "cd documentation/listingAlgos/pics; dot -Tsvg delimiterStateChart.dot > delimiterStateChart.svg; dot -Tsvg delimiterMasterV0StateChart.dot > delimiterMasterV0StateChart.svg; dot -Tsvg delimiterVersionsStateChart.dot > delimiterVersionsStateChart.svg",
-    "coverage": "export NODE_OPTIONS=\"--tls-max-v1.2\" && nyc --clean jest tests --coverage --testTimeout=120000 --forceExit --testPathIgnorePatterns tests/functional/pykmip",
+    "coverage": "export NODE_OPTIONS=\"--tls-max-v1.2\" && nyc --clean jest tests --coverage --testTimeout=120000 --forceExit --testPathIgnorePatterns 'tests/functional/pykmip|tests/workflows'",
     "dev": "nodemon --ext ts --ignore build --exec \"yarn build\"",
     "ft_pykmip_test": "jest tests/functional/pykmip",
     "ft_test": "jest tests/functional --testTimeout=120000 --forceExit --testPathIgnorePatterns tests/functional/pykmip",
