@@ -20,7 +20,7 @@ import Vault, { AuthV2RequestParams, AuthV4RequestParams } from './Vault';
 import RequestContext, { RequestContextType } from '../policyEvaluator/RequestContext';
 import { type ArsenalRequest, type ArsenalClientRequest } from '../types/ArsenalRequest';
 
-export type AuthResult<T> = { err: ArsenalError } | { err: null, params: T };
+export type AuthResult<T> = { err: ArsenalError } | { err: null; params: T };
 
 type AuthenticationOptions = {
     algo?: 'sha1' | 'sha256'; // for v2 auth
@@ -75,10 +75,10 @@ function extractParams(
     request: ArsenalRequest,
     log: RequestLogger,
     awsService: string,
-    data: Record<string, string>
+    data: Record<string, string>,
 ): AuthResult<AuthV2RequestParams | AuthV4RequestParams | AuthInfo> {
     const authHeader = request.headers.authorization;
-    let version: 'v2' |'v4' | null = null;
+    let version: 'v2' | 'v4' | null = null;
     let method: 'query' | 'headers' | null = null;
 
     // Identify auth version and method to dispatch to the right check function
@@ -91,8 +91,7 @@ function extractParams(
         } else if (authHeader.startsWith('AWS4')) {
             version = 'v4';
         } else {
-            log.trace('invalid authorization security header',
-                { header: authHeader });
+            log.trace('invalid authorization security header', { header: authHeader });
             return { err: errors.AccessDenied };
         }
     } else if (data.Signature) {
@@ -106,8 +105,7 @@ function extractParams(
     // Here, either both values are set, or none is set
     if (version !== null && method !== null) {
         if (!checkFunctions[version] || !checkFunctions[version][method]) {
-            log.trace('invalid auth version or method',
-                { version, authMethod: method });
+            log.trace('invalid auth version or method', { version, authMethod: method });
             return { err: errors.NotImplemented };
         }
         return checkFunctions[version][method](request, log, data, awsService);
@@ -183,10 +181,7 @@ function doAuth(
  * @param path - the request path
  * @param payload - the request payload to hash
  */
-function generateContentMD5Header(
-    path: string,
-    payload: string,
-) {
+function generateContentMD5Header(path: string, payload: string) {
     const encoding = path && path.startsWith('/_/backbeat/') ? 'hex' : 'base64';
     return crypto.createHash('md5').update(payload, 'binary').digest(encoding);
 }
@@ -224,8 +219,7 @@ function generateV4Headers(
     const scopeDate = amzDate.slice(0, amzDate.indexOf('T'));
     const region = 'us-east-1';
     const service = awsService || 'iam';
-    const credentialScope =
-        `${scopeDate}/${region}/${service}/aws4_request`;
+    const credentialScope = `${scopeDate}/${region}/${service}/aws4_request`;
     const timestamp = amzDate;
     const algorithm = 'AWS4-HMAC-SHA256';
 
@@ -241,8 +235,7 @@ function generateV4Headers(
         });
     }
     payload = payload || '';
-    const payloadChecksum = crypto.createHash('sha256')
-        .update(payload, 'binary').digest('hex');
+    const payloadChecksum = crypto.createHash('sha256').update(payload, 'binary').digest('hex');
     request.setHeader('host', request.getHeader('host') || '');
     request.setHeader('x-amz-date', amzDate);
     request.setHeader('x-amz-content-sha256', payloadChecksum);
@@ -255,23 +248,33 @@ function generateV4Headers(
     const currentHeaders = request.getHeaders();
     Object.assign(request.headers, currentHeaders);
     const signedHeaders = Object.keys(currentHeaders)
-        .filter(headerName =>
-            headerName.startsWith('x-amz-')
-            || headerName.startsWith('x-scal-')
-            || headerName === 'content-md5'
-            || headerName === 'host',
-        ).sort().join(';');
-    const params = { request, signedHeaders, payloadChecksum,
-        credentialScope, timestamp, query: data,
-        awsService: service, proxyPath };
+        .filter(
+            headerName =>
+                headerName.startsWith('x-amz-') ||
+                headerName.startsWith('x-scal-') ||
+                headerName === 'content-md5' ||
+                headerName === 'host',
+        )
+        .sort()
+        .join(';');
+    const params = {
+        request,
+        signedHeaders,
+        payloadChecksum,
+        credentialScope,
+        timestamp,
+        query: data,
+        awsService: service,
+        proxyPath,
+    };
     const stringToSign = constructStringToSignV4(params);
-    const signingKey = vaultUtilities.calculateSigningKey(secretKeyValue,
-        region,
-        scopeDate,
-        service);
-    const signature = crypto.createHmac('sha256', signingKey)
-        .update(stringToSign as string, 'binary').digest('hex');
-    const authorizationHeader = `${algorithm} Credential=${accessKey}` +
+    const signingKey = vaultUtilities.calculateSigningKey(secretKeyValue, region, scopeDate, service);
+    const signature = crypto
+        .createHmac('sha256', signingKey)
+        .update(stringToSign as string, 'binary')
+        .digest('hex');
+    const authorizationHeader =
+        `${algorithm} Credential=${accessKey}` +
         `/${credentialScope}, SignedHeaders=${signedHeaders}, ` +
         `Signature=${signature}`;
     request.setHeader('authorization', authorizationHeader);
@@ -282,8 +285,4 @@ export const server = { extractParams, doAuth };
 export const client = { generateV4Headers, constructStringToSignV2 };
 export const inMemory = { backend: inMemoryBackend, validateAuthConfig, AuthLoader };
 export const backends = { baseBackend, chainBackend };
-export {
-    setAuthHandler as setHandler,
-    AuthInfo,
-    Vault
-};
+export { setAuthHandler as setHandler, AuthInfo, Vault };

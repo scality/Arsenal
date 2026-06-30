@@ -1,9 +1,9 @@
 import { allowedKmsErrors } from './kmsErrors';
 
 export type ErrorFormat = {
-    code: number,
-    description: string,
-}
+    code: number;
+    description: string;
+};
 
 // ------------------- Amazon errors ------------------
 export const AccessDenied: ErrorFormat = {
@@ -25,14 +25,12 @@ export const AccountProblem: ErrorFormat = {
 
 export const AmbiguousGrantByEmailAddress: ErrorFormat = {
     code: 400,
-    description:
-        'The email address you provided is associated with more than one account.',
+    description: 'The email address you provided is associated with more than one account.',
 };
 
 export const BadDigest: ErrorFormat = {
     code: 400,
-    description:
-        'The Content-MD5 you specified did not match what we received.',
+    description: 'The Content-MD5 you specified did not match what we received.',
 };
 
 export const BucketAlreadyExists: ErrorFormat = {
@@ -45,8 +43,7 @@ export const BucketAlreadyExists: ErrorFormat = {
 export const BucketAlreadyOwnedByYou: ErrorFormat = {
     code: 409,
 
-    description:
-        'Your previous request to create the named bucket succeeded and you already own it.',
+    description: 'Your previous request to create the named bucket succeeded and you already own it.',
 };
 
 export const BucketNotEmpty: ErrorFormat = {
@@ -76,14 +73,12 @@ export const DeleteConflict: ErrorFormat = {
 
 export const EntityTooSmall: ErrorFormat = {
     code: 400,
-    description:
-        'Your proposed upload is smaller than the minimum allowed object size.',
+    description: 'Your proposed upload is smaller than the minimum allowed object size.',
 };
 
 export const EntityTooLarge: ErrorFormat = {
     code: 400,
-    description:
-        'Your proposed upload exceeds the maximum allowed object size.',
+    description: 'Your proposed upload exceeds the maximum allowed object size.',
 };
 
 export const ExpiredToken: ErrorFormat = {
@@ -93,20 +88,17 @@ export const ExpiredToken: ErrorFormat = {
 
 export const HttpHeadersTooLarge: ErrorFormat = {
     code: 400,
-    description:
-        'Your http headers exceed the maximum allowed http headers size.',
+    description: 'Your http headers exceed the maximum allowed http headers size.',
 };
 
 export const IllegalVersioningConfigurationException: ErrorFormat = {
     code: 400,
-    description:
-        'Indicates that the versioning configuration specified in the request is invalid.',
+    description: 'Indicates that the versioning configuration specified in the request is invalid.',
 };
 
 export const IncompleteBody: ErrorFormat = {
     code: 400,
-    description:
-        'You did not provide the number of bytes specified by the Content-Length HTTP header.',
+    description: 'You did not provide the number of bytes specified by the Content-Length HTTP header.',
 };
 
 export const IncorrectNumberOfFilesInPostRequest: ErrorFormat = {
@@ -126,8 +118,7 @@ export const InternalError: ErrorFormat = {
 
 export const InvalidAccessKeyId: ErrorFormat = {
     code: 403,
-    description:
-        'The AWS access key Id you provided does not exist in our records.',
+    description: 'The AWS access key Id you provided does not exist in our records.',
 };
 
 export const InvalidAddressingHeader: ErrorFormat = {
@@ -147,8 +138,7 @@ export const InvalidBucketName: ErrorFormat = {
 
 export const InvalidBucketState: ErrorFormat = {
     code: 409,
-    description:
-        'The request is not valid with the current state of the bucket.',
+    description: 'The request is not valid with the current state of the bucket.',
 };
 
 export const InvalidDigest: ErrorFormat = {
@@ -158,8 +148,7 @@ export const InvalidDigest: ErrorFormat = {
 
 export const InvalidEncryptionAlgorithmError: ErrorFormat = {
     code: 400,
-    description:
-        'The encryption request you specified is not valid. The valid value is AES256.',
+    description: 'The encryption request you specified is not valid. The valid value is AES256.',
 };
 
 export const InvalidLocationConstraint: ErrorFormat = {
@@ -169,21 +158,19 @@ export const InvalidLocationConstraint: ErrorFormat = {
 
 export const InvalidObjectState: ErrorFormat = {
     code: 403,
-    description:
-        'The operation is not valid for the current state of the object.',
+    description: 'The operation is not valid for the current state of the object.',
 };
 
 export const InvalidPart: ErrorFormat = {
     code: 400,
     description:
         'One or more of the specified parts could not be found. The part might not have been uploaded, ' +
-        'or the specified entity tag might not have matched the part\'s entity tag.',
+        "or the specified entity tag might not have matched the part's entity tag.",
 };
 
 export const InvalidPartOrder: ErrorFormat = {
     code: 400,
-    description:
-        'The list of parts was not in ascending order.Parts list must specified in order by part number.',
+    description: 'The list of parts was not in ascending order.Parts list must specified in order by part number.',
 };
 
 export const InvalidPartNumber: ErrorFormat = {
@@ -198,8 +185,7 @@ export const InvalidPayer: ErrorFormat = {
 
 export const InvalidPolicyDocument: ErrorFormat = {
     code: 400,
-    description:
-        'The content of the form does not meet the conditions specified in the policy document.',
+    description: 'The content of the form does not meet the conditions specified in the policy document.',
 };
 
 export const InvalidRange: ErrorFormat = {
@@ -209,8 +195,7 @@ export const InvalidRange: ErrorFormat = {
 
 export const InvalidRedirectLocation: ErrorFormat = {
     code: 400,
-    description:
-        "The website redirect location must have a prefix of 'http://' or 'https://' or '/'.",
+    description: "The website redirect location must have a prefix of 'http://' or 'https://' or '/'.",
 };
 
 export const InvalidRequest: ErrorFormat = {
@@ -241,7 +226,7 @@ export const InvalidTag: ErrorFormat = {
 export const InvalidTargetBucketForLogging: ErrorFormat = {
     code: 400,
     description:
-        'The target bucket for logging does not exist, is not owned by you, '+
+        'The target bucket for logging does not exist, is not owned by you, ' +
         'or does not have the appropriate grants for the log-delivery group.',
 };
 
@@ -269,25 +254,22 @@ export const LimitExceeded: ErrorFormat = {
 
 export const MalformedACLError: ErrorFormat = {
     code: 400,
-    description:
-        'The XML you provided was not well-formed or did not validate against our published schema.',
+    description: 'The XML you provided was not well-formed or did not validate against our published schema.',
 };
 
 export const MalformedPOSTRequest: ErrorFormat = {
     code: 400,
-    description:
-        'The body of your POST request is not well-formed multipart/form-data.',
+    description: 'The body of your POST request is not well-formed multipart/form-data.',
 };
 
 export const MalformedXML: ErrorFormat = {
     code: 400,
-    description:
-        'The XML you provided was not well-formed or did not validate against our published schema.',
+    description: 'The XML you provided was not well-formed or did not validate against our published schema.',
 };
 
 export const MalformedTrailerError: ErrorFormat = {
     code: 400,
-    description: 
+    description:
         'The request contained trailing data that was not well-formed or did not conform to our published schema.',
 };
 
@@ -298,14 +280,12 @@ export const MaxMessageLengthExceeded: ErrorFormat = {
 
 export const MaxPostPreDataLengthExceededError: ErrorFormat = {
     code: 400,
-    description:
-        'Your POST request fields preceding the upload file were too large.',
+    description: 'Your POST request fields preceding the upload file were too large.',
 };
 
 export const MetadataTooLarge: ErrorFormat = {
     code: 400,
-    description:
-        'Your metadata headers exceed the maximum allowed metadata size.',
+    description: 'Your metadata headers exceed the maximum allowed metadata size.',
 };
 
 export const MethodNotAllowed: ErrorFormat = {
@@ -345,8 +325,7 @@ export const MissingSecurityHeader: ErrorFormat = {
 
 export const NoLoggingStatusForKey: ErrorFormat = {
     code: 400,
-    description:
-        'There is no such thing as a logging status subresource for a key.',
+    description: 'There is no such thing as a logging status subresource for a key.',
 };
 
 export const NoSuchBucket: ErrorFormat = {
@@ -371,8 +350,7 @@ export const NoSuchLifecycleConfiguration: ErrorFormat = {
 
 export const NoSuchObjectLockConfiguration: ErrorFormat = {
     code: 404,
-    description:
-        'The specified object does not have a ObjectLock configuration.',
+    description: 'The specified object does not have a ObjectLock configuration.',
 };
 
 export const NoSuchWebsiteConfiguration: ErrorFormat = {
@@ -394,8 +372,7 @@ export const NoSuchUpload: ErrorFormat = {
 
 export const NoSuchVersion: ErrorFormat = {
     code: 404,
-    description:
-        'Indicates that the version ID specified in the request does not match an existing version.',
+    description: 'Indicates that the version ID specified in the request does not match an existing version.',
 };
 
 export const ReplicationConfigurationNotFoundError: ErrorFormat = {
@@ -407,7 +384,6 @@ export const ObjectLockConfigurationNotFoundError: ErrorFormat = {
     code: 404,
     description: 'The object lock configuration was not found',
 };
-
 
 export const ServerSideEncryptionConfigurationNotFoundError: ErrorFormat = {
     code: 404,
@@ -421,8 +397,7 @@ export const NoSuchRateLimitConfig: ErrorFormat = {
 
 export const NotImplemented: ErrorFormat = {
     code: 501,
-    description:
-        'A header you provided implies functionality that is not implemented.',
+    description: 'A header you provided implies functionality that is not implemented.',
 };
 
 export const NotModified: ErrorFormat = {
@@ -432,8 +407,7 @@ export const NotModified: ErrorFormat = {
 
 export const NotSignedUp: ErrorFormat = {
     code: 403,
-    description:
-        'Your account is not signed up for the S3 service. You must sign up before you can use S3. ',
+    description: 'Your account is not signed up for the S3 service. You must sign up before you can use S3. ',
 };
 
 export const NoSuchBucketPolicy: ErrorFormat = {
@@ -442,8 +416,7 @@ export const NoSuchBucketPolicy: ErrorFormat = {
 };
 export const OperationAborted: ErrorFormat = {
     code: 409,
-    description:
-        'A conflicting conditional operation is currently in progress against this resource. Try again.',
+    description: 'A conflicting conditional operation is currently in progress against this resource. Try again.',
 };
 export const PermanentRedirect: ErrorFormat = {
     code: 301,
@@ -454,8 +427,7 @@ export const PermanentRedirect: ErrorFormat = {
 
 export const PreconditionFailed: ErrorFormat = {
     code: 412,
-    description:
-        'At least one of the preconditions you specified did not hold.',
+    description: 'At least one of the preconditions you specified did not hold.',
 };
 
 export const Redirect: ErrorFormat = {
@@ -470,19 +442,16 @@ export const RestoreAlreadyInProgress: ErrorFormat = {
 
 export const RequestIsNotMultiPartContent: ErrorFormat = {
     code: 400,
-    description:
-        'Bucket POST must be of the enclosure-type multipart/form-data.',
+    description: 'Bucket POST must be of the enclosure-type multipart/form-data.',
 };
 export const RequestTimeout: ErrorFormat = {
     code: 400,
-    description:
-        'Your socket connection to the server was not read from or written to within the timeout period.',
+    description: 'Your socket connection to the server was not read from or written to within the timeout period.',
 };
 
 export const RequestTimeTooSkewed: ErrorFormat = {
     code: 403,
-    description:
-        "The difference between the request time and the server's time is too large.",
+    description: "The difference between the request time and the server's time is too large.",
 };
 
 export const RequestTorrentOfBucketError: ErrorFormat = {
@@ -492,8 +461,7 @@ export const RequestTorrentOfBucketError: ErrorFormat = {
 
 export const SignatureDoesNotMatch: ErrorFormat = {
     code: 403,
-    description:
-        'The request signature we calculated does not match the signature you provided.',
+    description: 'The request signature we calculated does not match the signature you provided.',
 };
 // "This is an AWS S3 specific error. We are opting to use the more general 'ServiceUnavailable'
 // error used throughout AWS (IAM/EC2) to have uniformity of error messages even though we are
@@ -506,8 +474,7 @@ export const SignatureDoesNotMatch: ErrorFormat = {
 
 export const ServiceUnavailable: ErrorFormat = {
     code: 503,
-    description:
-        'The request has failed due to a temporary failure of the server.',
+    description: 'The request has failed due to a temporary failure of the server.',
 };
 
 export const SlowDown: ErrorFormat = {
@@ -542,8 +509,7 @@ export const UnexpectedContent: ErrorFormat = {
 
 export const UnresolvableGrantByEmailAddress: ErrorFormat = {
     code: 400,
-    description:
-        'The email address you provided does not match any account on record.',
+    description: 'The email address you provided does not match any account on record.',
 };
 
 export const UserKeyMustBeSpecified: ErrorFormat = {
@@ -566,8 +532,7 @@ export const WrongFormat: ErrorFormat = {
 
 export const XAmzContentSHA256Mismatch: ErrorFormat = {
     code: 400,
-    description:
-        "The provided 'x-amz-content-sha256' header does not match what was computed.",
+    description: "The provided 'x-amz-content-sha256' header does not match what was computed.",
 };
 
 export const Forbidden: ErrorFormat = {
@@ -582,20 +547,17 @@ export const EntityDoesNotExist: ErrorFormat = {
 
 export const EntityAlreadyExists: ErrorFormat = {
     code: 409,
-    description:
-        'The request was rejected because it attempted to create a resource that already exists.',
+    description: 'The request was rejected because it attempted to create a resource that already exists.',
 };
 
 export const KeyAlreadyExists: ErrorFormat = {
     code: 409,
-    description:
-        'The request was rejected because it attempted to create a resource that already exists.',
+    description: 'The request was rejected because it attempted to create a resource that already exists.',
 };
 
 export const ServiceFailure: ErrorFormat = {
     code: 500,
-    description:
-        'Server error: the request processing has failed because of an unknown error, exception or failure.',
+    description: 'Server error: the request processing has failed because of an unknown error, exception or failure.',
 };
 
 export const IncompleteSignature: ErrorFormat = {
@@ -605,38 +567,32 @@ export const IncompleteSignature: ErrorFormat = {
 
 export const InternalFailure: ErrorFormat = {
     code: 500,
-    description:
-        'The request processing has failed because of an unknown error, exception or failure.',
+    description: 'The request processing has failed because of an unknown error, exception or failure.',
 };
 
 export const InvalidAction: ErrorFormat = {
     code: 400,
-    description:
-        'The action or operation requested is invalid. Verify that the action is typed correctly.',
+    description: 'The action or operation requested is invalid. Verify that the action is typed correctly.',
 };
 
 export const InvalidClientTokenId: ErrorFormat = {
     code: 403,
-    description:
-        'The X.509 certificate or AWS access key ID provided does not exist in our records.',
+    description: 'The X.509 certificate or AWS access key ID provided does not exist in our records.',
 };
 
 export const InvalidParameterCombination: ErrorFormat = {
     code: 400,
-    description:
-        'Parameters that must not be used together were used together.',
+    description: 'Parameters that must not be used together were used together.',
 };
 
 export const InvalidParameterValue: ErrorFormat = {
     code: 400,
-    description:
-        'An invalid or out-of-range value was supplied for the input parameter.',
+    description: 'An invalid or out-of-range value was supplied for the input parameter.',
 };
 
 export const InvalidQueryParameter: ErrorFormat = {
     code: 400,
-    description:
-        'The AWS query string is malformed or does not adhere to AWS standards.',
+    description: 'The AWS query string is malformed or does not adhere to AWS standards.',
 };
 
 export const MalformedQueryString: ErrorFormat = {
@@ -651,14 +607,12 @@ export const MissingAction: ErrorFormat = {
 
 export const MissingAuthenticationToken: ErrorFormat = {
     code: 403,
-    description:
-        'The request must contain either a valid (registered) AWS access key ID or X.509 certificate.',
+    description: 'The request must contain either a valid (registered) AWS access key ID or X.509 certificate.',
 };
 
 export const MissingParameter: ErrorFormat = {
     code: 400,
-    description:
-        'A required parameter for the specified action is not supplied.',
+    description: 'A required parameter for the specified action is not supplied.',
 };
 
 export const OptInRequired: ErrorFormat = {
@@ -682,8 +636,7 @@ export const Throttling: ErrorFormat = {
 
 export const AccountNotFound: ErrorFormat = {
     code: 404,
-    description:
-        'No account was found in Vault, please contact your system administrator.',
+    description: 'No account was found in Vault, please contact your system administrator.',
 };
 
 export const ValidationError: ErrorFormat = {
@@ -715,8 +668,7 @@ export const ReportExpired: ErrorFormat = {
 
 export const ReportInProgress: ErrorFormat = {
     code: 404,
-    description:
-        'The request was rejected because the credential report is still being generated.',
+    description: 'The request was rejected because the credential report is still being generated.',
 };
 
 export const ReportNotPresent: ErrorFormat = {
@@ -728,15 +680,14 @@ export const ReportNotPresent: ErrorFormat = {
 
 export const Found: ErrorFormat = {
     code: 302,
-    description: 'Resource Found'
+    description: 'Resource Found',
 };
 
 // ------------- Special non-AWS S3 errors -------------
 
 export const MPUinProgress: ErrorFormat = {
     code: 409,
-    description:
-        'The bucket you tried to delete has an ongoing multipart upload.',
+    description: 'The bucket you tried to delete has an ongoing multipart upload.',
 };
 
 export const LocationNotFound: ErrorFormat = {

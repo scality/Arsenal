@@ -11,8 +11,7 @@ const host = 'localhost:8000';
 const token = 'token';
 const data = 'data';
 
-const sha256hex = payload =>
-    crypto.createHash('sha256').update(payload, 'binary').digest('hex');
+const sha256hex = payload => crypto.createHash('sha256').update(payload, 'binary').digest('hex');
 
 describe('v4 header generation', () => {
     it('should add x-amz-security-token if needed', done => {
@@ -51,9 +50,11 @@ describe('v4 header generation', () => {
 
         generateV4Headers(req, postData, 'accessKey', 'secretKey', 's3');
 
-        const expected = sha256hex(querystring.stringify(postData, undefined, undefined, {
-            encodeURIComponent,
-        }));
+        const expected = sha256hex(
+            querystring.stringify(postData, undefined, undefined, {
+                encodeURIComponent,
+            }),
+        );
         assert.strictEqual(req.getHeader('x-amz-content-sha256'), expected);
     });
 
@@ -63,8 +64,7 @@ describe('v4 header generation', () => {
         req.setHeader('host', host);
         const body = '<Delete><Object><Key>foo</Key></Object></Delete>';
 
-        generateV4Headers(req, { delete: '' }, 'accessKey', 'secretKey', 's3',
-            null, null, body);
+        generateV4Headers(req, { delete: '' }, 'accessKey', 'secretKey', 's3', null, null, body);
 
         assert.strictEqual(req.getHeader('x-amz-content-sha256'), sha256hex(body));
     });
@@ -74,8 +74,7 @@ describe('v4 header generation', () => {
         req.method = 'POST';
         req.setHeader('host', host);
 
-        generateV4Headers(req, { uploads: '' }, 'accessKey', 'secretKey', 's3',
-            null, null, '');
+        generateV4Headers(req, { uploads: '' }, 'accessKey', 'secretKey', 's3', null, null, '');
 
         assert.strictEqual(req.getHeader('x-amz-content-sha256'), sha256hex(''));
     });
@@ -86,8 +85,7 @@ describe('v4 header generation', () => {
         req.setHeader('host', host);
         const body = 'some-object-body';
 
-        generateV4Headers(req, {}, 'accessKey', 'secretKey', 's3',
-            null, null, body);
+        generateV4Headers(req, {}, 'accessKey', 'secretKey', 's3', null, null, body);
 
         assert.strictEqual(req.getHeader('x-amz-content-sha256'), sha256hex(body));
     });
