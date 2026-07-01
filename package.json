@@ -44,7 +44,7 @@
     "simple-glob": "^0.2.0",
     "socket.io": "^4.8.0",
     "socket.io-client": "^4.8.0",
-    "sproxydclient": "github:scality/sproxydclient#8.2.0",
+    "sproxydclient": "github:scality/sproxydclient#8.2.1",
     "utf8": "^3.0.0",
     "uuid": "^10.0.0",
     "werelogs": "scality/werelogs#8.2.2",
