@@ -139,7 +139,7 @@
         }
     },
     "resolutions": {
-        "tar": "^7.5.6",
+        "tar": "^7.5.19",
         "werelogs": "scality/werelogs#8.2.4"
     },
     "nyc": {
