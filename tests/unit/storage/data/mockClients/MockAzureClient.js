@@ -41,6 +41,16 @@ class MockAzureClient {
         assert.strictEqual(typeof callback, 'function');
         return callback();
     }
+
+    head(objectGetInfo, reqUids, callback) {
+        assert.strictEqual(typeof objectGetInfo, 'object');
+        const { key, bucketName } = objectGetInfo;
+        assert.strictEqual(typeof key, 'string');
+        assert.strictEqual(typeof bucketName, 'string');
+        assert.strictEqual(typeof reqUids, 'string');
+        assert.strictEqual(typeof callback, 'function');
+        return callback(null, {});
+    }
 }
 
 module.exports = MockAzureClient;
