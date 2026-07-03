@@ -4,10 +4,8 @@ const crypto = require('crypto');
 const BackendInfo = require('../../../../lib/models/BackendInfo').default;
 const DataWrapper = require('../../../../lib/storage/data/DataWrapper');
 const DummyRequestLogger = require('../../helpers').DummyRequestLogger;
-const MetadataWrapper =
-    require('../../../../lib/storage/metadata/MetadataWrapper');
-const MultipleBackendGateway =
-    require('../../../../lib/storage/data/MultipleBackendGateway');
+const MetadataWrapper = require('../../../../lib/storage/metadata/MetadataWrapper');
+const MultipleBackendGateway = require('../../../../lib/storage/data/MultipleBackendGateway');
 const errors = require('../../../../lib/errors').default;
 
 const clientName = 'mem';
@@ -66,9 +64,7 @@ function dummyStorageCheckFn(location, size, log, cb) {
 }
 
 function getDataWrapper(clients) {
-    const mbg = new MultipleBackendGateway(
-        clients,
-        new MetadataWrapper(clientName, {}));
+    const mbg = new MultipleBackendGateway(clients, new MetadataWrapper(clientName, {}));
     const implName = 'multipleBackends';
     const config = null;
     const kms = null;
@@ -78,73 +74,110 @@ function getDataWrapper(clients) {
     return new DataWrapper(mbg, implName, config, kms, metadata, fn, vault);
 }
 
+let clients;
+let failingClients;
 let dw;
 let fdw;
 
 describe('Routes from DataWrapper to backend client', () => {
     beforeAll(() => {
-        const clients = genExternalClients(sproxydLocation, azureLocation);
+        clients = genExternalClients(sproxydLocation, azureLocation);
         dw = getDataWrapper(clients);
 
-        const failingClients = genFailingClients(sproxydLocation);
+        failingClients = genFailingClients(sproxydLocation);
         fdw = getDataWrapper(failingClients);
     });
 
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
+
     it('should follow object put path successfully for sproxyd backend', () => {
+        const putSpy = jest.spyOn(clients[sproxydLocation], 'put');
         const backendInfo = new BackendInfo(null, null, sproxydLocation);
-        dw.put(cipherBundle, value, size, keyContext, backendInfo, log,
-            (err, data) => {
-                assert.ifError(err);
-                assert(typeof data, 'object');
-            });
+        dw.put(cipherBundle, value, size, keyContext, backendInfo, log, (err, data) => {
+            assert.ifError(err);
+            assert(typeof data, 'object');
+        });
+        expect(putSpy).toHaveBeenCalled();
     });
 
     it('should follow object get path successfully for sproxyd backend', () => {
+        const getSpy = jest.spyOn(clients[sproxydLocation], 'get');
         const objectGetInfo = genObjGetInfo('sproxyd');
-        const response = null;
-        dw.get(objectGetInfo, response, log, err => {
+        dw.get(objectGetInfo, null, log, err => {
             assert.ifError(err);
+        });
+        expect(getSpy).toHaveBeenCalled();
+    });
+
+    it('should follow object delete path successfully for sproxyd backend', () => {
+        const deleteSpy = jest.spyOn(clients[sproxydLocation], 'delete');
+        const objectGetInfo = genObjGetInfo('sproxyd');
+        dw.delete(objectGetInfo, log, err => {
+            assert.ifError(err);
+        });
+        expect(deleteSpy).toHaveBeenCalled();
+    });
+
+    it('should handle failing sproxyd request', () => {
+        const deleteSpy = jest.spyOn(failingClients[sproxydLocation], 'delete');
+        const objectGetInfo = genObjGetInfo('sproxyd');
+        fdw.delete(objectGetInfo, log, err => {
+            assert.deepStrictEqual(err, errors.ObjNotFound);
+        });
+        expect(deleteSpy).toHaveBeenCalled();
+    });
+
+    // ARSN-607: the head-check only verifies external cloud backend data
+    // state. sproxydclient's head() expects a 40-char string key, but the
+    // gateway holds the objectGetInfo object; it must skip scality backends
+    // rather than pass them the object (which crashed object GET).
+    it('should not send a head request to a sproxyd (scality) backend', done => {
+        const headSpy = jest.spyOn(clients[sproxydLocation], 'head');
+        const objectGetInfo = genObjGetInfo('sproxyd');
+        dw.head([objectGetInfo], log, err => {
+            assert.ifError(err);
+            expect(headSpy).not.toHaveBeenCalled();
+            done();
         });
     });
 
-    it('should follow object delete path successfully for sproxyd backend',
-        () => {
-            const objectGetInfo = genObjGetInfo('sproxyd');
-            dw.delete(objectGetInfo, log, err => {
-                assert.ifError(err);
-            });
-        });
-
-    it('should handle failing sproxyd request',
-        () => {
-            const objectGetInfo = genObjGetInfo('sproxyd');
-            fdw.delete(objectGetInfo, log, err => {
-                assert.deepStrictEqual(err, errors.ObjNotFound);
-            });
-        });
-
     it('should follow object put path successfully for Azure backend', () => {
+        const putSpy = jest.spyOn(clients[azureLocation], 'put');
         const backendInfo = new BackendInfo(null, null, azureLocation);
-        dw.put(cipherBundle, value, size, keyContext, backendInfo, log,
-            (err, data) => {
-                assert.ifError(err);
-                assert(typeof data, 'object');
-            });
+        dw.put(cipherBundle, value, size, keyContext, backendInfo, log, (err, data) => {
+            assert.ifError(err);
+            assert(typeof data, 'object');
+        });
+        expect(putSpy).toHaveBeenCalled();
     });
 
     it('should follow object get path successfully for Azure backend', () => {
+        const getSpy = jest.spyOn(clients[azureLocation], 'get');
         const objectGetInfo = genObjGetInfo('azure', objectKey);
-        const response = null;
-        dw.get(objectGetInfo, response, log, err => {
+        dw.get(objectGetInfo, null, log, err => {
             assert.ifError(err);
         });
+        expect(getSpy).toHaveBeenCalled();
     });
 
-    it('should follow object delete path successfully for Azure backend',
-        () => {
-            const objectGetInfo = genObjGetInfo('azure', objectKey);
-            dw.delete(objectGetInfo, log, err => {
-                assert.ifError(err);
-            });
+    it('should follow object delete path successfully for Azure backend', () => {
+        const deleteSpy = jest.spyOn(clients[azureLocation], 'delete');
+        const objectGetInfo = genObjGetInfo('azure', objectKey);
+        dw.delete(objectGetInfo, log, err => {
+            assert.ifError(err);
         });
+        expect(deleteSpy).toHaveBeenCalled();
+    });
+
+    it('should send a head request to an external (Azure) backend', done => {
+        const headSpy = jest.spyOn(clients[azureLocation], 'head');
+        const objectGetInfo = genObjGetInfo('azure', objectKey);
+        dw.head([objectGetInfo], log, err => {
+            assert.ifError(err);
+            expect(headSpy).toHaveBeenCalled();
+            done();
+        });
+    });
 });

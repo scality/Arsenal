@@ -1,7 +1,6 @@
 const assert = require('assert');
 const http = require('http');
-const MetadataWrapper =
-    require('../../../../../lib/storage/metadata/MetadataWrapper');
+const MetadataWrapper = require('../../../../../lib/storage/metadata/MetadataWrapper');
 
 class MockAzureClient {
     put(stream, size, keyContext, reqUids, callback, skey, metadata) {
@@ -41,6 +40,16 @@ class MockAzureClient {
         assert.strictEqual(typeof reqUids, 'string');
         assert.strictEqual(typeof callback, 'function');
         return callback();
+    }
+
+    head(objectGetInfo, reqUids, callback) {
+        assert.strictEqual(typeof objectGetInfo, 'object');
+        const { key, bucketName } = objectGetInfo;
+        assert.strictEqual(typeof key, 'string');
+        assert.strictEqual(typeof bucketName, 'string');
+        assert.strictEqual(typeof reqUids, 'string');
+        assert.strictEqual(typeof callback, 'function');
+        return callback(null, {});
     }
 }
 
