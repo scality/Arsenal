@@ -28,8 +28,8 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
+      uses: actions/checkout@v6
+    - uses: actions/setup-node@v6
       with:
         node-version: '22'
         cache: 'yarn'
@@ -53,7 +53,7 @@ jobs:
     - name: run kmip ClusterClient functional tests on pykmip
       run: yarn ft_pykmip_test
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       with:
         name: pykmip_logs
         path: /tmp/artifacts/
