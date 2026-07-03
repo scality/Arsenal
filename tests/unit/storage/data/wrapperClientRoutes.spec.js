@@ -4,10 +4,8 @@ const crypto = require('crypto');
 const BackendInfo = require('../../../../lib/models/BackendInfo').default;
 const DataWrapper = require('../../../../lib/storage/data/DataWrapper');
 const DummyRequestLogger = require('../../helpers').DummyRequestLogger;
-const MetadataWrapper =
-    require('../../../../lib/storage/metadata/MetadataWrapper');
-const MultipleBackendGateway =
-    require('../../../../lib/storage/data/MultipleBackendGateway');
+const MetadataWrapper = require('../../../../lib/storage/metadata/MetadataWrapper');
+const MultipleBackendGateway = require('../../../../lib/storage/data/MultipleBackendGateway');
 const errors = require('../../../../lib/errors').default;
 
 const clientName = 'mem';
@@ -66,9 +64,7 @@ function dummyStorageCheckFn(location, size, log, cb) {
 }
 
 function getDataWrapper(clients) {
-    const mbg = new MultipleBackendGateway(
-        clients,
-        new MetadataWrapper(clientName, {}));
+    const mbg = new MultipleBackendGateway(clients, new MetadataWrapper(clientName, {}));
     const implName = 'multipleBackends';
     const config = null;
     const kms = null;
@@ -92,11 +88,10 @@ describe('Routes from DataWrapper to backend client', () => {
 
     it('should follow object put path successfully for sproxyd backend', () => {
         const backendInfo = new BackendInfo(null, null, sproxydLocation);
-        dw.put(cipherBundle, value, size, keyContext, backendInfo, log,
-            (err, data) => {
-                assert.ifError(err);
-                assert(typeof data, 'object');
-            });
+        dw.put(cipherBundle, value, size, keyContext, backendInfo, log, (err, data) => {
+            assert.ifError(err);
+            assert(typeof data, 'object');
+        });
     });
 
     it('should follow object get path successfully for sproxyd backend', () => {
@@ -107,29 +102,26 @@ describe('Routes from DataWrapper to backend client', () => {
         });
     });
 
-    it('should follow object delete path successfully for sproxyd backend',
-        () => {
-            const objectGetInfo = genObjGetInfo('sproxyd');
-            dw.delete(objectGetInfo, log, err => {
-                assert.ifError(err);
-            });
+    it('should follow object delete path successfully for sproxyd backend', () => {
+        const objectGetInfo = genObjGetInfo('sproxyd');
+        dw.delete(objectGetInfo, log, err => {
+            assert.ifError(err);
         });
+    });
 
-    it('should handle failing sproxyd request',
-        () => {
-            const objectGetInfo = genObjGetInfo('sproxyd');
-            fdw.delete(objectGetInfo, log, err => {
-                assert.deepStrictEqual(err, errors.ObjNotFound);
-            });
+    it('should handle failing sproxyd request', () => {
+        const objectGetInfo = genObjGetInfo('sproxyd');
+        fdw.delete(objectGetInfo, log, err => {
+            assert.deepStrictEqual(err, errors.ObjNotFound);
         });
+    });
 
     it('should follow object put path successfully for Azure backend', () => {
         const backendInfo = new BackendInfo(null, null, azureLocation);
-        dw.put(cipherBundle, value, size, keyContext, backendInfo, log,
-            (err, data) => {
-                assert.ifError(err);
-                assert(typeof data, 'object');
-            });
+        dw.put(cipherBundle, value, size, keyContext, backendInfo, log, (err, data) => {
+            assert.ifError(err);
+            assert(typeof data, 'object');
+        });
     });
 
     it('should follow object get path successfully for Azure backend', () => {
@@ -140,11 +132,10 @@ describe('Routes from DataWrapper to backend client', () => {
         });
     });
 
-    it('should follow object delete path successfully for Azure backend',
-        () => {
-            const objectGetInfo = genObjGetInfo('azure', objectKey);
-            dw.delete(objectGetInfo, log, err => {
-                assert.ifError(err);
-            });
+    it('should follow object delete path successfully for Azure backend', () => {
+        const objectGetInfo = genObjGetInfo('azure', objectKey);
+        dw.delete(objectGetInfo, log, err => {
+            assert.ifError(err);
         });
+    });
 });
