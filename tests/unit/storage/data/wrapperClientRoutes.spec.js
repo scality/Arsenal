@@ -116,6 +116,18 @@ describe('Routes from DataWrapper to backend client', () => {
         });
     });
 
+    // ARSN-607: the head-check only verifies external cloud backend data
+    // state. sproxydclient's head() expects a 40-char string key, but the
+    // gateway holds the objectGetInfo object; it must skip scality backends
+    // rather than pass them the object (which crashed object GET).
+    it('should not send a head request to a sproxyd (scality) backend', done => {
+        const objectGetInfo = genObjGetInfo('sproxyd');
+        dw.head([objectGetInfo], log, err => {
+            assert.ifError(err);
+            done();
+        });
+    });
+
     it('should follow object put path successfully for Azure backend', () => {
         const backendInfo = new BackendInfo(null, null, azureLocation);
         dw.put(cipherBundle, value, size, keyContext, backendInfo, log, (err, data) => {
@@ -136,6 +148,14 @@ describe('Routes from DataWrapper to backend client', () => {
         const objectGetInfo = genObjGetInfo('azure', objectKey);
         dw.delete(objectGetInfo, log, err => {
             assert.ifError(err);
+        });
+    });
+
+    it('should send a head request to an external (Azure) backend', done => {
+        const objectGetInfo = genObjGetInfo('azure', objectKey);
+        dw.head([objectGetInfo], log, err => {
+            assert.ifError(err);
+            done();
         });
     });
 });

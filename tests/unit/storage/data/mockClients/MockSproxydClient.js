@@ -44,6 +44,14 @@ class MockSproxydclient {
         assert.strictEqual(typeof callback, 'function');
         return callback();
     }
+
+    head(key, reqUids, callback) {
+        assert.strictEqual(typeof key, 'string');
+        assert.strictEqual(key.length, 40);
+        assert.strictEqual(typeof reqUids, 'string');
+        assert.strictEqual(typeof callback, 'function');
+        return callback(null, {});
+    }
 }
 
 module.exports = MockSproxydclient;
