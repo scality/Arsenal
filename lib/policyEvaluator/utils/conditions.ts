@@ -178,14 +178,14 @@ export function findConditionKey(
 
 
 // Wildcards are allowed in certain string comparison and arn comparisons
-// Permitted in StringLike, StringNotLike, ArnLike and ArnNotLike
+// Permitted in StringLike, StringNotLike and all four Arn operators
+// (ArnEquals and ArnLike behave identically in AWS, wildcards included)
 // This restriction almost matches up with where variables can be used in
 // conditions so converting ${*}, ${?} and ${$} as part of the wildcard
 // transformation instead of the variable substitution works
-// (except for the StringEquals, StringNotEquals, ArnEquals and
-// ArnNotEquals conditions where wildcards
-// not allowed but variables are allowed).  For those 4 operators, we switch
-// out ${*}, ${?} and ${$} in the convertConditionOperator function.
+// (except for the StringEquals and StringNotEquals conditions where wildcards
+// are not allowed but variables are allowed).  For those 2 operators, we
+// switch out ${*}, ${?} and ${$} in the convertConditionOperator function.
 function convertSpecialChars(string: string) {
     function characterMap(char: string) {
         const map = {
@@ -398,13 +398,16 @@ export function convertConditionOperator(operator: string): boolean {
         NotIpAddress: function notIpAddress(key: ipaddr.IPv4 | ipaddr.IPv6, value: string[]) {
             return !operatorMap.IpAddress(key, value);
         },
-        // Note that ARN operators are for comparing a source ARN
-        // against a given value (such as an EC2 instance) so N/A here.
+        // AWS's four ARN condition operators are all case-sensitive, match
+        // the six colon-delimited ARN components separately, and support the
+        // * / ? wildcards: ArnEquals behaves identically to ArnLike, and each
+        // Not variant is the negation of its counterpart.
+        // https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_condition_operators.html#Conditions_ARN
         ArnEquals: function ArnEquals(key: string, value: string[]) {
-            return operatorMap.StringEquals(key, value);
+            return operatorMap.ArnLike(key, value);
         },
         ArnNotEquals: function ArnNotEquals(key: string, value: string[]) {
-            return !operatorMap.StringEquals(key, value);
+            return !operatorMap.ArnLike(key, value);
         },
         ArnLike: function ArnLike(key: string, value: string[]) {
             // ARN format:
@@ -414,7 +417,7 @@ export function convertConditionOperator(operator: string): boolean {
             // does not contain ":"
             const requestRelativeId = requestArnArr.slice(5).join(':');
             return value.some(policyArn => checkArnMatch(policyArn,
-                requestRelativeId, requestArnArr, false));
+                requestRelativeId, requestArnArr, true));
         },
         ArnNotLike: function ArnNotLike(key: string, value: string[]) {
             return !operatorMap.ArnLike(key, value);

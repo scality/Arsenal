@@ -1109,6 +1109,149 @@ describe('policyEvaluator', () => {
                     check(requestContext, rcModifiers, policy, 'Neutral');
                 });
 
+            it('should be neutral for ArnLike if the relative-id case ' +
+                'does not match',
+            () => {
+                policy.Statement.Condition = {
+                    ArnLike: { 'iam:PolicyArn':
+                        ['arn:aws:iam::012345678901:policy/dev/*'] },
+                };
+                requestContext.setRequesterInfo(
+                    { accountid: '012345678901' });
+                const rcModifiers = {
+                    _policyArn:
+                        'arn:aws:iam::012345678901:policy/Dev/AdminAccess',
+                };
+                check(requestContext, rcModifiers, policy, 'Neutral');
+            });
+
+            it('should be neutral for ArnLike if a leading segment case ' +
+                'does not match',
+            () => {
+                policy.Statement.Condition = {
+                    ArnLike: { 'iam:PolicyArn':
+                        ['arn:aws:IAM::012345678901:policy/dev/*'] },
+                };
+                requestContext.setRequesterInfo(
+                    { accountid: '012345678901' });
+                const rcModifiers = {
+                    _policyArn:
+                        'arn:aws:iam::012345678901:policy/dev/devMachine1',
+                };
+                check(requestContext, rcModifiers, policy, 'Neutral');
+            });
+
+            it('should allow access for ArnEquals with a * wildcard in ' +
+                'the relative-id',
+            () => {
+                policy.Statement.Condition = {
+                    ArnEquals: { 'iam:PolicyArn':
+                        ['arn:aws:iam::012345678901:policy/dev/*'] },
+                };
+                requestContext.setRequesterInfo(
+                    { accountid: '012345678901' });
+                const rcModifiers = {
+                    _policyArn:
+                        'arn:aws:iam::012345678901:policy/dev/devMachine1',
+                };
+                check(requestContext, rcModifiers, policy, 'Allow');
+            });
+
+            it('should allow access for ArnEquals with a * wildcard in ' +
+                'a leading segment',
+            () => {
+                policy.Statement.Condition = {
+                    ArnEquals: { 'iam:PolicyArn':
+                        ['arn:aws:iam::*:policy/dev/devMachine1'] },
+                };
+                requestContext.setRequesterInfo(
+                    { accountid: '012345678901' });
+                const rcModifiers = {
+                    _policyArn:
+                        'arn:aws:iam::012345678901:policy/dev/devMachine1',
+                };
+                check(requestContext, rcModifiers, policy, 'Allow');
+            });
+
+            it('should allow access for ArnEquals with a ? wildcard',
+                () => {
+                    policy.Statement.Condition = {
+                        ArnEquals: { 'iam:PolicyArn':
+                            ['arn:aws:iam::012345678901:policy/dev/machine-?'] },
+                    };
+                    requestContext.setRequesterInfo(
+                        { accountid: '012345678901' });
+                    const rcModifiers = {
+                        _policyArn:
+                            'arn:aws:iam::012345678901:policy/dev/machine-1',
+                    };
+                    check(requestContext, rcModifiers, policy, 'Allow');
+                });
+
+            it('should be neutral for ArnEquals if the relative-id case ' +
+                'does not match',
+            () => {
+                policy.Statement.Condition = {
+                    ArnEquals: { 'iam:PolicyArn':
+                        ['arn:aws:iam::012345678901:policy/dev/devMachine1'] },
+                };
+                requestContext.setRequesterInfo(
+                    { accountid: '012345678901' });
+                const rcModifiers = {
+                    _policyArn:
+                        'arn:aws:iam::012345678901:policy/dev/devmachine1',
+                };
+                check(requestContext, rcModifiers, policy, 'Neutral');
+            });
+
+            it('should not let an ArnNotLike carve-out match an arn that ' +
+                'differs only by case',
+            () => {
+                policy.Statement.Condition = {
+                    ArnNotLike: { 'iam:PolicyArn':
+                        ['arn:aws:iam::012345678901:policy/dev/*'] },
+                };
+                requestContext.setRequesterInfo(
+                    { accountid: '012345678901' });
+                const rcModifiers = {
+                    _policyArn:
+                        'arn:aws:iam::012345678901:policy/Dev/AdminAccess',
+                };
+                check(requestContext, rcModifiers, policy, 'Allow');
+            });
+
+            it('should be neutral for ArnNotLike if the arn is within the ' +
+                'carve-out',
+            () => {
+                policy.Statement.Condition = {
+                    ArnNotLike: { 'iam:PolicyArn':
+                        ['arn:aws:iam::012345678901:policy/dev/*'] },
+                };
+                requestContext.setRequesterInfo(
+                    { accountid: '012345678901' });
+                const rcModifiers = {
+                    _policyArn:
+                        'arn:aws:iam::012345678901:policy/dev/devMachine1',
+                };
+                check(requestContext, rcModifiers, policy, 'Neutral');
+            });
+
+            it('should be neutral for ArnNotEquals if the arn matches a ' +
+                'wildcard value',
+            () => {
+                policy.Statement.Condition = {
+                    ArnNotEquals: { 'iam:PolicyArn':
+                        ['arn:aws:iam::012345678901:policy/dev/*'] },
+                };
+                requestContext.setRequesterInfo(
+                    { accountid: '012345678901' });
+                const rcModifiers = {
+                    _policyArn:
+                        'arn:aws:iam::012345678901:policy/dev/devMachine1',
+                };
+                check(requestContext, rcModifiers, policy, 'Neutral');
+            });
+
             it('should allow access with multiple operator conditions ' +
             'and multiple conditions under an operator',
             () => {
