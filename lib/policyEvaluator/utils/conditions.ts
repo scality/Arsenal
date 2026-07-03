@@ -417,7 +417,7 @@ export function convertConditionOperator(operator: string): boolean {
             // does not contain ":"
             const requestRelativeId = requestArnArr.slice(5).join(':');
             return value.some(policyArn => checkArnMatch(policyArn,
-                requestRelativeId, requestArnArr, true));
+                requestRelativeId, requestArnArr));
         },
         ArnNotLike: function ArnNotLike(key: string, value: string[]) {
             return !operatorMap.ArnLike(key, value);

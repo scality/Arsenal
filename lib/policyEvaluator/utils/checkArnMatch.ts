@@ -2,8 +2,8 @@ import LRUCache from '../../algos/cache/LRUCache';
 import { handleWildcards } from './wildcards';
 import { policyArnAllowedEmptyAccountId } from '../../constants';
 
-// Compiled matchers are pure functions of (policyArn, caseSensitive), so the
-// cache needs no invalidation; the LRU cap bounds the cardinality introduced
+// Compiled matchers are pure functions of the policy arn, so the cache
+// needs no invalidation; the LRU cap bounds the cardinality introduced
 // by policy-variable substitution (per-request values in the policy arn).
 const ARN_MATCHER_CACHE_ENTRIES = 10000;
 const arnMatcherCache = new LRUCache(ARN_MATCHER_CACHE_ENTRIES);
@@ -28,7 +28,7 @@ function hasWildcards(portion: string): boolean {
     return WILDCARD_RE.test(portion);
 }
 
-function compileArnMatcher(policyArn: string, caseSensitive: boolean): ArnMatcher {
+function compileArnMatcher(policyArn: string): ArnMatcher {
     const policyArnArr = policyArn.split(':');
     // The relativeId is the last part of the ARN (for instance, a bucket and
     // object name in S3)
@@ -36,16 +36,12 @@ function compileArnMatcher(policyArn: string, caseSensitive: boolean): ArnMatche
     // of the arn
     let relativeId: PortionMatcher;
     if (policyArnArr.length === 6 && !hasWildcards(policyArnArr[5])) {
-        relativeId = {
-            literal: caseSensitive ? policyArnArr[5] : policyArnArr[5].toLowerCase(),
-        };
+        relativeId = { literal: policyArnArr[5] };
     } else {
         // Translate the joined relative-id as one anchored unit so an embedded
         // ':' (legal in S3 keys) matches; <6-portion ARNs have none, match any.
         const source = policyArnArr.length >= 6 ? handleWildcards(policyArnArr.slice(5).join(':')) : '';
-        relativeId = {
-            regExp: new RegExp(caseSensitive ? source : source.toLowerCase()),
-        };
+        relativeId = { regExp: new RegExp(source) };
     }
     const segments: PortionMatcher[] = [];
     for (let j = 0; j < 5; j++) {
@@ -68,40 +64,36 @@ function portionMatches(matcher: PortionMatcher, value: string): boolean {
 
 /**
  * Checks whether an ARN from a request matches an ARN in a policy
- * to compare against each portion of the ARN from the request
+ * to compare against each portion of the ARN from the request.
+ * The comparison is case-sensitive, as on AWS.
  * @param policyArn - arn from policy
  * @param requestRelativeId - last part of the arn from the request
  * @param requestArnArr - all parts of request arn split on ":"
- * @param caseSensitive - whether the comparison should be
- * case sensitive
  * @return true if match, false if not
  */
 export default function checkArnMatch(
     policyArn: string,
     requestRelativeId: string,
     requestArnArr: string[],
-    caseSensitive: boolean,
 ): boolean {
-    const cacheKey = `${caseSensitive ? 'cs' : 'ci'}:${policyArn}`;
-    let matcher: ArnMatcher = arnMatcherCache.get(cacheKey);
+    let matcher: ArnMatcher = arnMatcherCache.get(policyArn);
     if (matcher === undefined) {
-        matcher = compileArnMatcher(policyArn, caseSensitive);
-        arnMatcherCache.add(cacheKey, matcher);
+        matcher = compileArnMatcher(policyArn);
+        arnMatcherCache.add(policyArn, matcher);
     }
     // Check to see if the relative-id matches first since most likely
     // to diverge.  If not a match, the resource is not applicable so return
     // false
-    if (!portionMatches(matcher.relativeId, caseSensitive ? requestRelativeId : requestRelativeId.toLowerCase())) {
+    if (!portionMatches(matcher.relativeId, requestRelativeId)) {
         return false;
     }
     // Check the other parts of the ARN to make sure they match.  If not,
     // return false.
     for (let j = 0; j < 5; j++) {
-        const requestSegment = caseSensitive ? requestArnArr[j] : requestArnArr[j].toLowerCase();
         if (j === 4 && matcher.skipAccountIdCheck) {
             continue;
         }
-        if (!portionMatches(matcher.segments[j], requestSegment)) {
+        if (!portionMatches(matcher.segments[j], requestArnArr[j])) {
             return false;
         }
     }

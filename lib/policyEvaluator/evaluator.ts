@@ -50,7 +50,7 @@ export function isResourceApplicable(
         // Handle wildcards
         const arnSegmentsMatch =
             checkArnMatch(policyResource, requestRelativeId,
-                requestResourceArr, true);
+                requestResourceArr);
         if (arnSegmentsMatch) {
             log.trace('policy resource is applicable to request',
                 { requestResource: resource, policyResource });
