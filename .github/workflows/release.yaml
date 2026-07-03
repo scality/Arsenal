@@ -5,12 +5,17 @@ run-name: release ${{ github.ref_name }}
 on:
   workflow_dispatch:
 
-permissions:
-  contents: write
+permissions: {}
 
 jobs:
-  release:
+  build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - name: Reject disallowed branch
         if: >-
@@ -60,12 +65,108 @@ jobs:
             exit 1
           fi
 
+      - name: Install NodeJS
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile --prefer-offline
+
+      - name: Build
+        run: yarn build
+
+      - name: Pack tarball
+        run: npm pack --ignore-scripts
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: '*.tgz'
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: package
+          path: '*.tgz'
+          if-no-files-found: error
+          retention-days: 7
+
+  publish-github:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - name: Download package artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: package
+
+      - name: Install NodeJS
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@scality'
+
+      - name: Publish to GitHub Packages
+        env:
+          NODE_AUTH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          if [ -n "$(npm view "@scality/arsenal@$VERSION" version 2>/dev/null)" ]; then
+            echo "::notice::@scality/arsenal@$VERSION already on GitHub Packages; skipping"
+          else
+            npm publish *.tgz --tag "v${VERSION%.*}"
+          fi
+
+  publish-npm:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Download package artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: package
+
+      - name: Install NodeJS
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+          scope: '@scality'
+
+      - name: Publish to npm
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          if [ -n "$(npm view "@scality/arsenal@$VERSION" version 2>/dev/null)" ]; then
+            echo "::notice::@scality/arsenal@$VERSION already on npm; skipping"
+          else
+            npm publish *.tgz --provenance --tag "v${VERSION%.*}"
+          fi
+
+  release:
+    needs: [build, publish-github, publish-npm]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
       - name: Create Release
         uses: softprops/action-gh-release@v3
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
-          name: ${{ steps.version.outputs.version }}
-          tag_name: ${{ steps.version.outputs.version }}
+          name: ${{ needs.build.outputs.version }}
+          tag_name: ${{ needs.build.outputs.version }}
           generate_release_notes: true
+          append_body: true
+          body: |
+            GitHub Packages: https://github.com/${{ github.repository }}/pkgs/npm/arsenal
+            npm: https://www.npmjs.com/package/@scality/arsenal
           target_commitish: ${{ github.sha }}

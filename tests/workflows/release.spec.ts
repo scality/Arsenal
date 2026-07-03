@@ -42,10 +42,26 @@ async function createTag(tag: string) {
 }
 
 const mockSteps = {
-    release: [
+    build: [
         { name: 'Fail if release already exists', mockWith: 'echo no-release-found' },
-        { name: 'Create Release', mockWith: 'echo skip-create-release' },
+        { name: 'Install NodeJS', mockWith: 'echo skip-setup-node' },
+        { name: 'Install dependencies', mockWith: 'echo skip-install' },
+        { name: 'Build', mockWith: 'echo skip-build' },
+        { name: 'Pack tarball', mockWith: 'echo skip-pack' },
+        { name: 'Attest build provenance', mockWith: 'echo skip-attest' },
+        { name: 'Upload package artifact', mockWith: 'echo skip-upload' },
     ],
+    'publish-github': [
+        { name: 'Download package artifact', mockWith: 'echo skip-download' },
+        { name: 'Install NodeJS', mockWith: 'echo skip-setup-node' },
+        { name: 'Publish to GitHub Packages', mockWith: 'echo skip-publish' },
+    ],
+    'publish-npm': [
+        { name: 'Download package artifact', mockWith: 'echo skip-download' },
+        { name: 'Install NodeJS', mockWith: 'echo skip-setup-node' },
+        { name: 'Publish to npm', mockWith: 'echo skip-publish' },
+    ],
+    release: [{ name: 'Create Release', mockWith: 'echo skip-create-release' }],
 };
 
 function run(act: Act) {
