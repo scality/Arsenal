@@ -71,11 +71,7 @@ function portionMatches(matcher: PortionMatcher, value: string): boolean {
  * @param requestArnArr - all parts of request arn split on ":"
  * @return true if match, false if not
  */
-export default function checkArnMatch(
-    policyArn: string,
-    requestRelativeId: string,
-    requestArnArr: string[],
-): boolean {
+export default function checkArnMatch(policyArn: string, requestRelativeId: string, requestArnArr: string[]): boolean {
     let matcher: ArnMatcher = arnMatcherCache.get(policyArn);
     if (matcher === undefined) {
         matcher = compileArnMatcher(policyArn);
