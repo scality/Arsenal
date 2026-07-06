@@ -5,8 +5,7 @@ const { MongoMemoryReplSet } = require('mongodb-memory-server');
 const sinon = require('sinon');
 const errors = require('../../../../../lib/errors').default;
 
-const MongoClientInterface = require(
-    '../../../../../lib/storage/metadata/mongoclient/MongoClientInterface');
+const MongoClientInterface = require('../../../../../lib/storage/metadata/mongoclient/MongoClientInterface');
 const DummyConfigObject = require('./utils/DummyConfigObject');
 const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
 const BucketInfo = require('../../../../../lib/models/BucketInfo').default;
@@ -61,9 +60,7 @@ function setupMongoDB(done) {
 
     _mongoServer = new MongoMemoryReplSet({
         debug: false,
-        instanceOpts: [
-            { port: 27021 },
-        ],
+        instanceOpts: [{ port: 27021 }],
         replSet: {
             name: 'customSetName',
             count: 1,
@@ -72,7 +69,8 @@ function setupMongoDB(done) {
         },
     });
 
-    _mongoServer.start()
+    _mongoServer
+        .start()
         .then(() => _mongoServer.waitUntilRunning())
         .then(() => {
             done();
@@ -107,7 +105,8 @@ function createClient() {
  */
 function teardownMongoDB(done) {
     if (_mongoServer) {
-        _mongoServer.stop()
+        _mongoServer
+            .stop()
             .then(() => done())
             .catch(done);
     } else {
@@ -149,7 +148,7 @@ describe('MongoClientInterface::_isReplicationEntryStalled', () => {
                 _id: 'testkey',
                 value: {
                     'last-modified': new Date(testDate.getTime() - hr),
-                    'replicationInfo': {
+                    replicationInfo: {
                         status: 'FAILED',
                         backends: [
                             {
@@ -165,11 +164,10 @@ describe('MongoClientInterface::_isReplicationEntryStalled', () => {
                         dataStoreVersionId: '',
                         isNFS: null,
                     },
-                    'dataStoreName': 'us-east-1',
+                    dataStoreName: 'us-east-1',
                     'content-length': 42,
-                    'versionId': '0123456789abcdefg',
+                    versionId: '0123456789abcdefg',
                 },
-
             },
             false,
         ],
@@ -179,7 +177,7 @@ describe('MongoClientInterface::_isReplicationEntryStalled', () => {
                 _id: 'testkey',
                 value: {
                     'last-modified': new Date(testDate.getTime() + hr),
-                    'replicationInfo': {
+                    replicationInfo: {
                         status: 'PENDING',
                         backends: [
                             {
@@ -195,11 +193,10 @@ describe('MongoClientInterface::_isReplicationEntryStalled', () => {
                         dataStoreVersionId: '',
                         isNFS: null,
                     },
-                    'dataStoreName': 'us-east-1',
+                    dataStoreName: 'us-east-1',
                     'content-length': 42,
-                    'versionId': '0123456789abcdefg',
+                    versionId: '0123456789abcdefg',
                 },
-
             },
             false,
         ],
@@ -209,7 +206,7 @@ describe('MongoClientInterface::_isReplicationEntryStalled', () => {
                 _id: 'testkey',
                 value: {
                     'last-modified': new Date(testDate.getTime() - hr),
-                    'replicationInfo': {
+                    replicationInfo: {
                         status: 'PENDING',
                         backends: [
                             {
@@ -225,36 +222,31 @@ describe('MongoClientInterface::_isReplicationEntryStalled', () => {
                         dataStoreVersionId: '',
                         isNFS: null,
                     },
-                    'dataStoreName': 'us-east-1',
+                    dataStoreName: 'us-east-1',
                     'content-length': 42,
-                    'versionId': '0123456789abcdefg',
+                    versionId: '0123456789abcdefg',
                 },
-
             },
             true,
         ],
     ];
-    tests.forEach(([msg, params, expected]) => it(msg, () => {
-        assert.deepStrictEqual(
-            mongoTestClient._isReplicationEntryStalled(params, testDate),
-            expected,
-        );
-    }));
+    tests.forEach(([msg, params, expected]) =>
+        it(msg, () => {
+            assert.deepStrictEqual(mongoTestClient._isReplicationEntryStalled(params, testDate), expected);
+        }),
+    );
 });
 
 describe('MongoClientInterface::getDiskUsage', () => {
     it('should return error if database is not connected', done => {
         // Create a client with no db/client initialized
         const testClient = new MongoClientInterface({});
-        
+
         testClient.getDiskUsage((err, result) => {
             assert.strictEqual(result, undefined);
             assert(err);
             assert(err.is.InternalError);
-            assert.strictEqual(
-                err.description,
-                'Cannot get disk usage: database not connected'
-            );
+            assert.strictEqual(err.description, 'Cannot get disk usage: database not connected');
             done();
         });
     });
@@ -273,13 +265,13 @@ describe('MongoClientInterface::getDiskUsage', () => {
             isLocationTransient: () => false,
             shardCollections: false,
         });
-        
+
         // Mock the database and command
         testClient.db = {
-            command: sinon.stub().rejects(new Error('DB command error'))
+            command: sinon.stub().rejects(new Error('DB command error')),
         };
         testClient.client = {}; // Just to pass the initial check
-        
+
         testClient.getDiskUsage((err, result) => {
             assert.strictEqual(result, undefined);
             assert(err);
@@ -304,16 +296,16 @@ describe('MongoClientInterface::getDiskUsage', () => {
             isLocationTransient: () => false,
             shardCollections: false,
         });
-        
+
         // Mock MongoDB stats response
         const mockStats = {
             fsUsedSize: 4000000,
-            fsTotalSize: 5000000
+            fsTotalSize: 5000000,
         };
 
         // Mock the database and command
         testClient.db = {
-            command: sinon.stub().resolves(mockStats)
+            command: sinon.stub().resolves(mockStats),
         };
         testClient.client = {}; // Just to pass the initial check
 
@@ -322,7 +314,7 @@ describe('MongoClientInterface::getDiskUsage', () => {
             assert.deepStrictEqual(result, {
                 available: 1000000,
                 free: 1000000,
-                total: mockStats.fsTotalSize
+                total: mockStats.fsTotalSize,
             });
             assert(testClient.db.command.calledOnce);
             assert(testClient.db.command.calledWith({ dbStats: 1, scale: 1 }));
@@ -348,12 +340,12 @@ describe('MongoClientInterface::getDiskUsage', () => {
         // Mock MongoDB stats response with missing properties
         const mockStats = {
             db: 'test',
-            collections: 5
+            collections: 5,
         };
 
         // Mock the database and command
         testClient.db = {
-            command: sinon.stub().resolves(mockStats)
+            command: sinon.stub().resolves(mockStats),
         };
         testClient.client = {}; // Just to pass the initial check
 
@@ -384,9 +376,7 @@ function createBucket(client, bucketName, isVersioned, callback) {
         _transient: false,
         _deleted: false,
         _serverSideEncryption: null,
-        _versioningConfiguration: isVersioned
-            ? { Status: 'Enabled' }
-            : null,
+        _versioningConfiguration: isVersioned ? { Status: 'Enabled' } : null,
         _locationConstraint: 'us-east-1',
         _readLocationConstraint: null,
         _cors: null,
@@ -419,55 +409,61 @@ describe('MongoClientInterface, tests', () => {
         const bucketName = 'foo';
         const objectName = 'bar';
         const tags = {
-            'tag1': 'value1',
-            'tag2': 'value.2',
+            tag1: 'value1',
+            tag2: 'value.2',
             'tag.3': 'value3',
             'tag.4': 'value.4',
-            'tag6': 'value6',
-            'tag7': 'value$7',
-            'tag$8': 'value8',
-            'tag$9': 'value$9',
+            tag6: 'value6',
+            tag7: 'value$7',
+            tag$8: 'value8',
+            tag$9: 'value$9',
         };
-        async.waterfall([
-            next => createBucket(
-                client, bucketName, false, err => next(err)),
-            next => {
-                const objMD = new ObjectMD()
-                    .setKey(objectName)
-                    .setDataStoreName('us-east-1')
-                    .setContentLength(100)
-                    .setTags(tags)
-                    .setLastModified(new Date(Date.now()));
-                client.putObject(bucketName, objectName, objMD.getValue(), {},
-                    logger, err => next(err));
-            },
-            next => {
-                const c = client.getCollection(bucketName);
-                const mObjectName = formatMasterKey(objectName, BucketVersioningKeyFormat.v1);
-                c.findOne({
-                    _id: mObjectName,
-                }, {}).then(doc => {
-                    if (!doc) {
-                        return next(new Error('key not found'));
-                    }
-                    assert.deepStrictEqual(doc.value.tags, {
-                        'tag1': 'value1',
-                        'tag2': 'value.2',
-                        'tag\uFF0E3': 'value3',
-                        'tag\uFF0E4': 'value.4',
-                        'tag6': 'value6',
-                        'tag7': 'value$7',
-                        'tag\uFF048': 'value8',
-                        'tag\uFF049': 'value$9',
-                    });
-                    MongoUtils.unserialize(doc.value);
-                    assert.deepStrictEqual(doc.value.tags, tags);
-                    return next();
-                }).catch(err => next(err));
-            },
-            next => client.deleteObject(bucketName, objectName, {}, logger, next),
-            next => client.deleteBucket(bucketName, logger, next),
-        ], done);
+        async.waterfall(
+            [
+                next => createBucket(client, bucketName, false, err => next(err)),
+                next => {
+                    const objMD = new ObjectMD()
+                        .setKey(objectName)
+                        .setDataStoreName('us-east-1')
+                        .setContentLength(100)
+                        .setTags(tags)
+                        .setLastModified(new Date(Date.now()));
+                    client.putObject(bucketName, objectName, objMD.getValue(), {}, logger, err => next(err));
+                },
+                next => {
+                    const c = client.getCollection(bucketName);
+                    const mObjectName = formatMasterKey(objectName, BucketVersioningKeyFormat.v1);
+                    c.findOne(
+                        {
+                            _id: mObjectName,
+                        },
+                        {},
+                    )
+                        .then(doc => {
+                            if (!doc) {
+                                return next(new Error('key not found'));
+                            }
+                            assert.deepStrictEqual(doc.value.tags, {
+                                tag1: 'value1',
+                                tag2: 'value.2',
+                                'tag\uFF0E3': 'value3',
+                                'tag\uFF0E4': 'value.4',
+                                tag6: 'value6',
+                                tag7: 'value$7',
+                                'tag\uFF048': 'value8',
+                                'tag\uFF049': 'value$9',
+                            });
+                            MongoUtils.unserialize(doc.value);
+                            assert.deepStrictEqual(doc.value.tags, tags);
+                            return next();
+                        })
+                        .catch(err => next(err));
+                },
+                next => client.deleteObject(bucketName, objectName, {}, logger, next),
+                next => client.deleteBucket(bucketName, logger, next),
+            ],
+            done,
+        );
     });
 
     const bucketName = 'test-bucket';
@@ -482,58 +478,88 @@ describe('MongoClientInterface, tests', () => {
 
     it('should update the bucket with quota', done => {
         const quotaValue = 1099511627776000n;
-        async.waterfall([
-            next => createBucket(client, bucketName, false, err => next(err)),
-            next => {
-                const bucketMD = new BucketInfo(bucketName, 'testowner',
-                    'testdisplayname', new Date().toJSON(),
-                    BucketInfo.currentModelVersion());
-                bucketMD.setQuota(quotaValue);
-                client.putBucketAttributes(bucketName, bucketMD, logger, err => next(err));
-            },
-            next => client.getBucketAttributes(bucketName, logger, (err, bucketMd) => {
-                assert(!err);
-                assert.strictEqual(bucketMd._quotaMax, quotaValue);
-                return next();
-            }),
-            next => client.deleteBucket(bucketName, logger, err => next(err)),
-        ], done);
+        async.waterfall(
+            [
+                next => createBucket(client, bucketName, false, err => next(err)),
+                next => {
+                    const bucketMD = new BucketInfo(
+                        bucketName,
+                        'testowner',
+                        'testdisplayname',
+                        new Date().toJSON(),
+                        BucketInfo.currentModelVersion(),
+                    );
+                    bucketMD.setQuota(quotaValue);
+                    client.putBucketAttributes(bucketName, bucketMD, logger, err => next(err));
+                },
+                next =>
+                    client.getBucketAttributes(bucketName, logger, (err, bucketMd) => {
+                        assert(!err);
+                        assert.strictEqual(bucketMd._quotaMax, quotaValue);
+                        return next();
+                    }),
+                next => client.deleteBucket(bucketName, logger, err => next(err)),
+            ],
+            done,
+        );
     });
 
     it('should add a capability to a bucket', done => {
-        async.waterfall([
-            next => createBucket(client, bucketName, false, err => next(err)),
-            next => client.putBucketAttributesCapabilities(
-                bucketName, capabilityName, capabilityField, capabilityValue, logger, err => next(err)),
-            next => client.getBucketAttributes(bucketName, logger, (err, bucketInfo) => {
-                if (err) {
-                    return next(err);
-                }
-                const capabilities = bucketInfo._capabilities || {};
-                assert.deepStrictEqual(capabilities[capabilityName][capabilityField], capabilityValue);
-                return next();
-            }),
-            next => client.deleteBucket(bucketName, logger, err => next(err)),
-        ], done);
+        async.waterfall(
+            [
+                next => createBucket(client, bucketName, false, err => next(err)),
+                next =>
+                    client.putBucketAttributesCapabilities(
+                        bucketName,
+                        capabilityName,
+                        capabilityField,
+                        capabilityValue,
+                        logger,
+                        err => next(err),
+                    ),
+                next =>
+                    client.getBucketAttributes(bucketName, logger, (err, bucketInfo) => {
+                        if (err) {
+                            return next(err);
+                        }
+                        const capabilities = bucketInfo._capabilities || {};
+                        assert.deepStrictEqual(capabilities[capabilityName][capabilityField], capabilityValue);
+                        return next();
+                    }),
+                next => client.deleteBucket(bucketName, logger, err => next(err)),
+            ],
+            done,
+        );
     });
 
     it('should delete a capability from a bucket', done => {
-        async.waterfall([
-            next => createBucket(client, bucketName, false, err => next(err)),
-            next => client.putBucketAttributesCapabilities(
-                bucketName, capabilityName, capabilityField, capabilityValue, logger, err => next(err)),
-            next => client.deleteBucketAttributesCapability(
-                bucketName, capabilityName, '', logger, err => next(err)),
-            next => client.getBucketAttributes(bucketName, logger, (err, bucketInfo) => {
-                if (err) {
-                    return next(err);
-                }
-                const capabilities = bucketInfo._capabilities || {};
-                assert(!capabilities[capabilityName]);
-                return next();
-            }),
-            next => client.deleteBucket(bucketName, logger, err => next(err)),
-        ], done);
+        async.waterfall(
+            [
+                next => createBucket(client, bucketName, false, err => next(err)),
+                next =>
+                    client.putBucketAttributesCapabilities(
+                        bucketName,
+                        capabilityName,
+                        capabilityField,
+                        capabilityValue,
+                        logger,
+                        err => next(err),
+                    ),
+                next =>
+                    client.deleteBucketAttributesCapability(bucketName, capabilityName, '', logger, err => next(err)),
+                next =>
+                    client.getBucketAttributes(bucketName, logger, (err, bucketInfo) => {
+                        if (err) {
+                            return next(err);
+                        }
+                        const capabilities = bucketInfo._capabilities || {};
+                        assert(!capabilities[capabilityName]);
+                        return next();
+                    }),
+                next => client.deleteBucket(bucketName, logger, err => next(err)),
+            ],
+            done,
+        );
     });
 
     describe('MongoClientInterface, putObjectVerCase3 error handling', () => {
@@ -558,7 +584,6 @@ describe('MongoClientInterface, tests', () => {
                 done();
             });
         });
-
 
         it('should handle MongoDB find error in putObjectVerCase3 directly', done => {
             const objName = 'test-object';
@@ -611,46 +636,50 @@ describe('MongoClientInterface, tests', () => {
     it('should create a bucket with a very large quota and retrieve it correctly', done => {
         const bucketName = 'test-bucket-large-quota';
         const largeQuota = '9223372036854775807'; // Max signed 64-bit integer (2^63 - 1)
-    
-        async.waterfall([
-            next => {
-                const bucketMD = BucketInfo.fromObj({
-                    _name: bucketName,
-                    _owner: 'testowner',
-                    _ownerDisplayName: 'testdisplayname',
-                    _creationDate: new Date().toJSON(),
-                    _acl: {
-                        Canned: 'private',
-                        FULL_CONTROL: [],
-                        WRITE: [],
-                        WRITE_ACP: [],
-                        READ: [],
-                        READ_ACP: [],
-                    },
-                    _mdBucketModelVersion: 10,
-                    _transient: false,
-                    _deleted: false,
-                    _serverSideEncryption: null,
-                    _versioningConfiguration: null,
-                    _locationConstraint: 'us-east-1',
-                    _quotaMax: largeQuota,
-                });
-                client.createBucket(bucketName, bucketMD, logger, err => next(err));
-            },
-            next => client.getBucketAttributes(bucketName, logger, (err, bucketMd) => {
-                if (err) {
-                    return next(err);
-                }
-                const retrievedQuota = bucketMd._quotaMax;
-                assert.strictEqual(
-                    retrievedQuota.toString(), 
-                    largeQuota, 
-                    'Quota should match the large value set during creation',
-                );
-                return next();
-            }),
-            next => client.deleteBucket(bucketName, logger, err => next(err)),
-        ], done);
+
+        async.waterfall(
+            [
+                next => {
+                    const bucketMD = BucketInfo.fromObj({
+                        _name: bucketName,
+                        _owner: 'testowner',
+                        _ownerDisplayName: 'testdisplayname',
+                        _creationDate: new Date().toJSON(),
+                        _acl: {
+                            Canned: 'private',
+                            FULL_CONTROL: [],
+                            WRITE: [],
+                            WRITE_ACP: [],
+                            READ: [],
+                            READ_ACP: [],
+                        },
+                        _mdBucketModelVersion: 10,
+                        _transient: false,
+                        _deleted: false,
+                        _serverSideEncryption: null,
+                        _versioningConfiguration: null,
+                        _locationConstraint: 'us-east-1',
+                        _quotaMax: largeQuota,
+                    });
+                    client.createBucket(bucketName, bucketMD, logger, err => next(err));
+                },
+                next =>
+                    client.getBucketAttributes(bucketName, logger, (err, bucketMd) => {
+                        if (err) {
+                            return next(err);
+                        }
+                        const retrievedQuota = bucketMd._quotaMax;
+                        assert.strictEqual(
+                            retrievedQuota.toString(),
+                            largeQuota,
+                            'Quota should match the large value set during creation',
+                        );
+                        return next();
+                    }),
+                next => client.deleteBucket(bucketName, logger, err => next(err)),
+            ],
+            done,
+        );
     });
 
     it('should create a bucket with VeeamSOSApi CapacityInfo and retrieve it correctly', done => {
@@ -670,70 +699,73 @@ describe('MongoClientInterface, tests', () => {
             READ_ACP: [],
         };
 
-        async.waterfall([
-            next => {
-                const bucketMD = BucketInfo.fromObj({
-                    _name: bucketName,
-                    _owner: 'testowner',
-                    _ownerDisplayName: 'testdisplayname',
-                    _creationDate: new Date().toJSON(),
-                    _acl: expectedACL,
-                    _mdBucketModelVersion: 10,
-                    _transient: false,
-                    _deleted: false,
-                    _serverSideEncryption: null,
-                    _versioningConfiguration: null,
-                    _locationConstraint: 'us-east-1',
-                    _capabilities: {
-                        VeeamSOSApi: {
-                            SOSApiMode: 'enabled',
-                            CapacityInfo: veeamCapacity,
+        async.waterfall(
+            [
+                next => {
+                    const bucketMD = BucketInfo.fromObj({
+                        _name: bucketName,
+                        _owner: 'testowner',
+                        _ownerDisplayName: 'testdisplayname',
+                        _creationDate: new Date().toJSON(),
+                        _acl: expectedACL,
+                        _mdBucketModelVersion: 10,
+                        _transient: false,
+                        _deleted: false,
+                        _serverSideEncryption: null,
+                        _versioningConfiguration: null,
+                        _locationConstraint: 'us-east-1',
+                        _capabilities: {
+                            VeeamSOSApi: {
+                                SOSApiMode: 'enabled',
+                                CapacityInfo: veeamCapacity,
+                            },
                         },
-                    },
-                    _quotaMax: '0',
-                });
-                client.createBucket(bucketName, bucketMD, logger, err => next(err));
+                        _quotaMax: '0',
+                    });
+                    client.createBucket(bucketName, bucketMD, logger, err => next(err));
+                },
+                next => {
+                    client.getBucketAttributes(bucketName, logger, (err, bucketInfo) => {
+                        next(err, bucketInfo);
+                    });
+                },
+            ],
+            (err, bucketInfo) => {
+                assert.ifError(err);
+                assert.ok(bucketInfo, 'BucketInfo should be retrieved');
+
+                const retrievedCapabilities = bucketInfo.getCapabilities();
+                assert.ok(retrievedCapabilities, 'Capabilities should exist');
+                assert.ok(retrievedCapabilities.VeeamSOSApi, 'VeeamSOSApi capabilities should exist');
+
+                const retrievedCapacityInfo = retrievedCapabilities.VeeamSOSApi.CapacityInfo;
+                assert.ok(retrievedCapacityInfo, 'VeeamSOSApi.CapacityInfo should exist');
+
+                assert.strictEqual(typeof retrievedCapacityInfo.Capacity, 'bigint', 'Capacity should be a bigint');
+                assert.strictEqual(
+                    retrievedCapacityInfo.Capacity.toString(),
+                    veeamCapacity.Capacity,
+                    'Capacity value mismatch',
+                );
+
+                assert.strictEqual(typeof retrievedCapacityInfo.Available, 'bigint', 'Available should be a bigint');
+                assert.strictEqual(
+                    retrievedCapacityInfo.Available.toString(),
+                    veeamCapacity.Available,
+                    'Available value mismatch',
+                );
+
+                assert.strictEqual(typeof retrievedCapacityInfo.Used, 'bigint', 'Used should be a bigint');
+                assert.strictEqual(retrievedCapacityInfo.Used.toString(), veeamCapacity.Used, 'Used value mismatch');
+
+                assert.strictEqual(
+                    retrievedCapacityInfo.LastModified,
+                    veeamCapacity.LastModified,
+                    'LastModified value mismatch',
+                );
+                done();
             },
-            next => {
-                client.getBucketAttributes(bucketName, logger, (err, bucketInfo) => {
-                    next(err, bucketInfo);
-                });
-            },
-        ], (err, bucketInfo) => {
-            assert.ifError(err);
-            assert.ok(bucketInfo, 'BucketInfo should be retrieved');
-
-            const retrievedCapabilities = bucketInfo.getCapabilities();
-            assert.ok(retrievedCapabilities, 'Capabilities should exist');
-            assert.ok(retrievedCapabilities.VeeamSOSApi, 'VeeamSOSApi capabilities should exist');
-
-            const retrievedCapacityInfo = retrievedCapabilities.VeeamSOSApi.CapacityInfo;
-            assert.ok(retrievedCapacityInfo, 'VeeamSOSApi.CapacityInfo should exist');
-
-            assert.strictEqual(typeof retrievedCapacityInfo.Capacity, 'bigint', 'Capacity should be a bigint');
-            assert.strictEqual(
-                retrievedCapacityInfo.Capacity.toString(),
-                veeamCapacity.Capacity,
-                'Capacity value mismatch',
-            );
-
-            assert.strictEqual(typeof retrievedCapacityInfo.Available, 'bigint', 'Available should be a bigint');
-            assert.strictEqual(
-                retrievedCapacityInfo.Available.toString(),
-                veeamCapacity.Available,
-                'Available value mismatch',
-            );
-
-            assert.strictEqual(typeof retrievedCapacityInfo.Used, 'bigint', 'Used should be a bigint');
-            assert.strictEqual(retrievedCapacityInfo.Used.toString(), veeamCapacity.Used, 'Used value mismatch');
-
-            assert.strictEqual(
-                retrievedCapacityInfo.LastModified,
-                veeamCapacity.LastModified,
-                'LastModified value mismatch',
-            );
-            done();
-        });
+        );
     });
 });
 
@@ -868,24 +900,16 @@ describe('MongoClientInterface, putObjectVerCase2', () => {
             conditions: {},
         };
 
-        client.putObjectVerCase2(
-            collection,
-            bucketName,
-            objName,
-            objMD.getValue(),
-            params,
-            logger,
-            (err, result) => {
-                try {
-                    assert(err, 'Expected an error to be returned');
-                    assert.strictEqual(err.code, 500, 'Expected 500 error code');
-                    assert(!result, 'Expected no result on error');
-                    done();
-                } catch (assertionError) {
-                    done(assertionError);
-                }
-            },
-        );
+        client.putObjectVerCase2(collection, bucketName, objName, objMD.getValue(), params, logger, (err, result) => {
+            try {
+                assert(err, 'Expected an error to be returned');
+                assert.strictEqual(err.code, 500, 'Expected 500 error code');
+                assert(!result, 'Expected no result on error');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
     });
 });
 
@@ -947,24 +971,16 @@ describe('MongoClientInterface, putObjectVerCase4', () => {
             conditions: {},
         };
 
-        client.putObjectVerCase4(
-            collection,
-            bucketName,
-            objName,
-            objMD.getValue(),
-            params,
-            logger,
-            (err, result) => {
-                try {
-                    assert(err, 'Expected an error to be returned');
-                    assert.strictEqual(err.code, 500, 'Expected 500 error code');
-                    assert(!result, 'Expected no result on error');
-                    done();
-                } catch (assertionError) {
-                    done(assertionError);
-                }
-            },
-        );
+        client.putObjectVerCase4(collection, bucketName, objName, objMD.getValue(), params, logger, (err, result) => {
+            try {
+                assert(err, 'Expected an error to be returned');
+                assert.strictEqual(err.code, 500, 'Expected 500 error code');
+                assert(!result, 'Expected no result on error');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
     });
 
     it('should handle getLatestVersion error in putObjectVerCase4', done => {
@@ -990,24 +1006,16 @@ describe('MongoClientInterface, putObjectVerCase4', () => {
             conditions: {},
         };
 
-        client.putObjectVerCase4(
-            collection,
-            bucketName,
-            objName,
-            objMD.getValue(),
-            params,
-            logger,
-            (err, result) => {
-                try {
-                    assert(err, 'Expected an error to be returned');
-                    assert.strictEqual(err.code, 500, 'Expected 500 error code');
-                    assert(!result, 'Expected no result on error');
-                    done();
-                } catch (assertionError) {
-                    done(assertionError);
-                }
-            },
-        );
+        client.putObjectVerCase4(collection, bucketName, objName, objMD.getValue(), params, logger, (err, result) => {
+            try {
+                assert(err, 'Expected an error to be returned');
+                assert.strictEqual(err.code, 500, 'Expected 500 error code');
+                assert(!result, 'Expected no result on error');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
     });
 
     it('should handle bulkWrite error in putObjectVerCase4', done => {
@@ -1037,25 +1045,17 @@ describe('MongoClientInterface, putObjectVerCase4', () => {
             conditions: {},
         };
 
-        client.putObjectVerCase4(
-            collection,
-            bucketName,
-            objName,
-            objMD.getValue(),
-            params,
-            logger,
-            (err, result) => {
-                try {
-                    assert(err, 'Expected an error to be returned');
-                    assert.strictEqual(err.code, 500, 'Expected 500 error code');
-                    assert(!result, 'Expected no result on error');
-                    assert(updateOneStub.calledOnce, 'Expected updateOne to be called');
-                    done();
-                } catch (assertionError) {
-                    done(assertionError);
-                }
-            },
-        );
+        client.putObjectVerCase4(collection, bucketName, objName, objMD.getValue(), params, logger, (err, result) => {
+            try {
+                assert(err, 'Expected an error to be returned');
+                assert.strictEqual(err.code, 500, 'Expected 500 error code');
+                assert(!result, 'Expected no result on error');
+                assert(updateOneStub.calledOnce, 'Expected updateOne to be called');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
     });
 
     it('should handle duplicate key error in putObjectVerCase4 bulkWrite gracefully', done => {
@@ -1089,28 +1089,16 @@ describe('MongoClientInterface, putObjectVerCase4', () => {
             conditions: {},
         };
 
-        client.putObjectVerCase4(
-            collection,
-            bucketName,
-            objName,
-            objMD.getValue(),
-            params,
-            logger,
-            (err, result) => {
-                try {
-                    assert(!err, 'Expected no error for duplicate key');
-                    assert(result, 'Expected result for duplicate key');
-                    assert.strictEqual(
-                        result,
-                        `{"versionId": "${versionId}"}`,
-                        'Expected versionId in result',
-                    );
-                    done();
-                } catch (assertionError) {
-                    done(assertionError);
-                }
-            },
-        );
+        client.putObjectVerCase4(collection, bucketName, objName, objMD.getValue(), params, logger, (err, result) => {
+            try {
+                assert(!err, 'Expected no error for duplicate key');
+                assert(result, 'Expected result for duplicate key');
+                assert.strictEqual(result, `{"versionId": "${versionId}"}`, 'Expected versionId in result');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
     });
 
     it('should handle missing versionId ($exists: false) in putObjectVerCase4 to update master', async () => {
@@ -1154,21 +1142,17 @@ describe('MongoClientInterface, putObjectVerCase4', () => {
         );
 
         assert(result, 'Expected result on success');
-        assert.strictEqual(
-            result,
-            `{"versionId": "undefined"}`,
-            'Expected versionId in result',
-        );
+        assert.strictEqual(result, `{"versionId": "undefined"}`, 'Expected versionId in result');
         assert(updateOneStub.calledOnce, 'Expected updateOne to be called');
         assert(bulkWriteStub.calledOnce, 'Expected bulkWrite to be called');
         const bulkOps = bulkWriteStub.firstCall.args[0];
         const masterUpdateOp = bulkOps.find(
-            op => op.updateOne && op.updateOne.filter._id === formatMasterKey(objName, BucketVersioningKeyFormat.v1)
+            op => op.updateOne && op.updateOne.filter._id === formatMasterKey(objName, BucketVersioningKeyFormat.v1),
         );
         assert(masterUpdateOp, 'Expected master update operation');
         assert(
             masterUpdateOp.updateOne.filter.$or[0]['value.versionId'].$exists === false,
-            'Expected filter to check for non-existing versionId'
+            'Expected filter to check for non-existing versionId',
         );
     });
 });
@@ -1223,23 +1207,15 @@ describe('MongoClientInterface, putObjectNoVer', () => {
             conditions: {},
         };
 
-        client.putObjectNoVer(
-            collection,
-            bucketName,
-            objName,
-            objMD.getValue(),
-            params,
-            logger,
-            err => {
-                try {
-                    assert(err, 'Expected an error to be returned');
-                    assert.strictEqual(err.code, 500, 'Expected 500 error code');
-                    done();
-                } catch (assertionError) {
-                    done(assertionError);
-                }
-            },
-        );
+        client.putObjectNoVer(collection, bucketName, objName, objMD.getValue(), params, logger, err => {
+            try {
+                assert(err, 'Expected an error to be returned');
+                assert.strictEqual(err.code, 500, 'Expected 500 error code');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
     });
 });
 
@@ -1414,23 +1390,15 @@ describe('MongoClientInterface, putObjectNoVerWithOplogUpdate', () => {
             conditions: {},
         };
 
-        client.putObjectNoVerWithOplogUpdate(
-            collection,
-            bucketName,
-            objName,
-            objMD.getValue(),
-            params,
-            logger,
-            err => {
-                try {
-                    assert(err, 'Expected an error to be returned');
-                    assert.strictEqual(err.code, 500, 'Expected error code to be 500');
-                    done();
-                } catch (assertionError) {
-                    done(assertionError);
-                }
-            },
-        );
+        client.putObjectNoVerWithOplogUpdate(collection, bucketName, objName, objMD.getValue(), params, logger, err => {
+            try {
+                assert(err, 'Expected an error to be returned');
+                assert.strictEqual(err.code, 500, 'Expected error code to be 500');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
     });
 });
 
@@ -1804,11 +1772,7 @@ describe('MongoClientInterface, getBucketInfos errors', () => {
 
 describe('MongoClientInterface, getBucketInfos', () => {
     let client;
-    const testBuckets = [
-        'test-bucket-info-1',
-        'test-bucket-info-2',
-        'test-bucket-info-3',
-    ];
+    const testBuckets = ['test-bucket-info-1', 'test-bucket-info-2', 'test-bucket-info-3'];
 
     beforeEach(done => {
         client = createClient();
@@ -1817,19 +1781,27 @@ describe('MongoClientInterface, getBucketInfos', () => {
                 return done(err);
             }
 
-            return async.eachSeries(testBuckets, (bucketName, next) => {
-                createBucket(client, bucketName, bucketName.endsWith('3'), next);
-            }, done);
+            return async.eachSeries(
+                testBuckets,
+                (bucketName, next) => {
+                    createBucket(client, bucketName, bucketName.endsWith('3'), next);
+                },
+                done,
+            );
         });
     });
 
     afterEach(done => {
         if (client) {
-            async.eachSeries(testBuckets, (bucketName, next) => {
-                client.deleteBucket(bucketName, logger, next);
-            }, err => {
-                client.close(() => done(err));
-            });
+            async.eachSeries(
+                testBuckets,
+                (bucketName, next) => {
+                    client.deleteBucket(bucketName, logger, next);
+                },
+                err => {
+                    client.close(() => done(err));
+                },
+            );
         } else {
             done();
         }
@@ -1840,8 +1812,10 @@ describe('MongoClientInterface, getBucketInfos', () => {
             try {
                 assert.ifError(err);
                 assert(result, 'Expected result to be returned');
-                assert(result.bucketCount >= testBuckets.length,
-                    `Expected at least ${testBuckets.length} buckets, got ${result.bucketCount}`);
+                assert(
+                    result.bucketCount >= testBuckets.length,
+                    `Expected at least ${testBuckets.length} buckets, got ${result.bucketCount}`,
+                );
                 assert(Array.isArray(result.bucketInfos), 'Expected bucketInfos to be an array');
 
                 const foundBuckets = result.bucketInfos
@@ -1853,9 +1827,7 @@ describe('MongoClientInterface, getBucketInfos', () => {
                     testBuckets.length,
                     `Expected all ${testBuckets.length} test buckets to be found`,
                 );
-                const versionedBucket = result.bucketInfos.find(
-                    info => info.getName() === 'test-bucket-info-3',
-                );
+                const versionedBucket = result.bucketInfos.find(info => info.getName() === 'test-bucket-info-3');
                 assert(versionedBucket, 'Expected to find the versioned bucket');
                 assert(versionedBucket.isVersioningOn(), 'Expected versioning to be enabled');
 
@@ -1973,7 +1945,6 @@ describe('MongoClientInterface, putBucketAttributes', () => {
             }
         });
     });
-
 
     it('should handle MongoDB modifiedCount === 0 and upsertedCount === 0 in putBucketAttributes', done => {
         const bucketName = 'test-bucket-putbucketattributes';
@@ -2100,21 +2071,15 @@ describe('MongoClientInterface, bucket capabilities', () => {
 
         sandbox.stub(client, 'getCollection').returns(mockCollection);
 
-        client.deleteBucketAttributesCapability(
-            bucketName,
-            capabilityName,
-            capabilityField,
-            logger,
-            err => {
-                try {
-                    assert(err, 'Expected an error to be returned');
-                    assert(err.is && err.is.InternalError, 'Expected InternalError');
-                    done();
-                } catch (assertionError) {
-                    done(assertionError);
-                }
-            },
-        );
+        client.deleteBucketAttributesCapability(bucketName, capabilityName, capabilityField, logger, err => {
+            try {
+                assert(err, 'Expected an error to be returned');
+                assert(err.is && err.is.InternalError, 'Expected InternalError');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
     });
 
     it('should handle MongoDB modifiedCount === 0 & upsertedCount === 0 in deleteBucketAttributesCapability', done => {
@@ -2132,21 +2097,15 @@ describe('MongoClientInterface, bucket capabilities', () => {
 
         sandbox.stub(client, 'getCollection').returns(mockCollection);
 
-        client.deleteBucketAttributesCapability(
-            bucketName,
-            capabilityName,
-            capabilityField,
-            logger,
-            err => {
-                try {
-                    assert(err, 'Expected an error to be returned');
-                    assert(err.is && err.is.NoSuchBucket, 'Expected NoSuchBucket');
-                    done();
-                } catch (assertionError) {
-                    done(assertionError);
-                }
-            },
-        );
+        client.deleteBucketAttributesCapability(bucketName, capabilityName, capabilityField, logger, err => {
+            try {
+                assert(err, 'Expected an error to be returned');
+                assert(err.is && err.is.NoSuchBucket, 'Expected NoSuchBucket');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
     });
 
     // happy case for deleteBucketAttributesCapability
@@ -2164,20 +2123,14 @@ describe('MongoClientInterface, bucket capabilities', () => {
 
         sandbox.stub(client, 'getCollection').returns(mockCollection);
 
-        client.deleteBucketAttributesCapability(
-            bucketName,
-            capabilityName,
-            capabilityField,
-            logger,
-            err => {
-                try {
-                    assert.ifError(err, 'Expected no error to be returned');
-                    done();
-                } catch (assertionError) {
-                    done(assertionError);
-                }
-            },
-        );
+        client.deleteBucketAttributesCapability(bucketName, capabilityName, capabilityField, logger, err => {
+            try {
+                assert.ifError(err, 'Expected no error to be returned');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
     });
 });
 
@@ -2246,23 +2199,15 @@ describe('MongoClientInterface, internalDeleteObject', () => {
             conditions: {},
         };
 
-        client.internalDeleteObject(
-            collection,
-            bucketName,
-            key,
-            {},
-            params,
-            logger,
-            err => {
-                try {
-                    assert(err, 'Expected an error to be returned');
-                    assert(err.is.DeleteConflict, 'Expected DeleteConflict error');
-                    done();
-                } catch (assertionError) {
-                    done(assertionError);
-                }
-            },
-        );
+        client.internalDeleteObject(collection, bucketName, key, {}, params, logger, err => {
+            try {
+                assert(err, 'Expected an error to be returned');
+                assert(err.is.DeleteConflict, 'Expected DeleteConflict error');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
     });
 
     it('should handle failures in bulkWrite operation', done => {
@@ -2296,23 +2241,15 @@ describe('MongoClientInterface, internalDeleteObject', () => {
             conditions: {},
         };
 
-        client.internalDeleteObject(
-            collection,
-            bucketName,
-            key,
-            {},
-            params,
-            logger,
-            err => {
-                try {
-                    assert(err, 'Expected an error to be returned');
-                    assert(err.is.DeleteConflict, 'Expected DeleteConflict error');
-                    done();
-                } catch (assertionError) {
-                    done(assertionError);
-                }
-            },
-        );
+        client.internalDeleteObject(collection, bucketName, key, {}, params, logger, err => {
+            try {
+                assert(err, 'Expected an error to be returned');
+                assert(err.is.DeleteConflict, 'Expected DeleteConflict error');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
     });
 
     it('should handle error in bulkWrite operation', done => {
@@ -2341,23 +2278,15 @@ describe('MongoClientInterface, internalDeleteObject', () => {
             conditions: {},
         };
 
-        client.internalDeleteObject(
-            collection,
-            bucketName,
-            key,
-            {},
-            params,
-            logger,
-            err => {
-                try {
-                    assert(err, 'Expected an error to be returned');
-                    assert(err.is.InternalError, 'Expected InternalError');
-                    done();
-                } catch (assertionError) {
-                    done(assertionError);
-                }
-            },
-        );
+        client.internalDeleteObject(collection, bucketName, key, {}, params, logger, err => {
+            try {
+                assert(err, 'Expected an error to be returned');
+                assert(err.is.InternalError, 'Expected InternalError');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
     });
 
     it('should handle findOneAndUpdate returning no object', done => {
@@ -2377,23 +2306,15 @@ describe('MongoClientInterface, internalDeleteObject', () => {
             conditions: {},
         };
 
-        client.internalDeleteObject(
-            collection,
-            bucketName,
-            key,
-            {},
-            params,
-            logger,
-            err => {
-                try {
-                    assert(err, 'Expected an error to be returned');
-                    assert(err.is.NoSuchKey, 'Expected NoSuchKey error');
-                    done();
-                } catch (assertionError) {
-                    done(assertionError);
-                }
-            },
-        );
+        client.internalDeleteObject(collection, bucketName, key, {}, params, logger, err => {
+            try {
+                assert(err, 'Expected an error to be returned');
+                assert(err.is.NoSuchKey, 'Expected NoSuchKey error');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
     });
 
     it('should handle findOneAndUpdate error', done => {
@@ -2411,23 +2332,15 @@ describe('MongoClientInterface, internalDeleteObject', () => {
             conditions: {},
         };
 
-        client.internalDeleteObject(
-            collection,
-            bucketName,
-            key,
-            {},
-            params,
-            logger,
-            err => {
-                try {
-                    assert(err, 'Expected an error to be returned');
-                    assert(err.is.InternalError, 'Expected InternalError');
-                    done();
-                } catch (assertionError) {
-                    done(assertionError);
-                }
-            },
-        );
+        client.internalDeleteObject(collection, bucketName, key, {}, params, logger, err => {
+            try {
+                assert(err, 'Expected an error to be returned');
+                assert(err.is.InternalError, 'Expected InternalError');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
     });
 
     it('should handle deleteOne with deletedCount=0 when doesNotNeedOpogUpdate is true', done => {
@@ -2448,23 +2361,15 @@ describe('MongoClientInterface, internalDeleteObject', () => {
             conditions: {},
         };
 
-        client.internalDeleteObject(
-            collection,
-            bucketName,
-            key,
-            {},
-            params,
-            logger,
-            err => {
-                try {
-                    assert(err, 'Expected an error to be returned');
-                    assert(err.is.NoSuchKey, 'Expected NoSuchKey error');
-                    done();
-                } catch (assertionError) {
-                    done(assertionError);
-                }
-            },
-        );
+        client.internalDeleteObject(collection, bucketName, key, {}, params, logger, err => {
+            try {
+                assert(err, 'Expected an error to be returned');
+                assert(err.is.NoSuchKey, 'Expected NoSuchKey error');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
     });
 
     it('should handle error in deleteOne when doesNotNeedOpogUpdate is true', done => {
@@ -2483,23 +2388,15 @@ describe('MongoClientInterface, internalDeleteObject', () => {
             conditions: {},
         };
 
-        client.internalDeleteObject(
-            collection,
-            bucketName,
-            key,
-            {},
-            params,
-            logger,
-            err => {
-                try {
-                    assert(err, 'Expected an error to be returned');
-                    assert(err.is.InternalError, 'Expected InternalError');
-                    done();
-                } catch (assertionError) {
-                    done(assertionError);
-                }
-            },
-        );
+        client.internalDeleteObject(collection, bucketName, key, {}, params, logger, err => {
+            try {
+                assert(err, 'Expected an error to be returned');
+                assert(err.is.InternalError, 'Expected InternalError');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
     });
 
     it('should successfully delete object when bulkWrite returns proper values', done => {
@@ -2533,23 +2430,15 @@ describe('MongoClientInterface, internalDeleteObject', () => {
             conditions: {},
         };
 
-        client.internalDeleteObject(
-            collection,
-            bucketName,
-            key,
-            {},
-            params,
-            logger,
-            (err, result) => {
-                try {
-                    assert.ifError(err);
-                    assert.strictEqual(result, undefined, 'Expected  result');
-                    done();
-                } catch (assertionError) {
-                    done(assertionError);
-                }
-            },
-        );
+        client.internalDeleteObject(collection, bucketName, key, {}, params, logger, (err, result) => {
+            try {
+                assert.ifError(err);
+                assert.strictEqual(result, undefined, 'Expected  result');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
     });
 
     it('should successfully delete object when doesNotNeedOpogUpdate is true', done => {
@@ -2570,23 +2459,15 @@ describe('MongoClientInterface, internalDeleteObject', () => {
             conditions: {},
         };
 
-        client.internalDeleteObject(
-            collection,
-            bucketName,
-            key,
-            {},
-            params,
-            logger,
-            (err, result) => {
-                try {
-                    assert.ifError(err);
-                    assert.strictEqual(result, undefined, 'Expected undefined result');
-                    done();
-                } catch (assertionError) {
-                    done(assertionError);
-                }
-            },
-        );
+        client.internalDeleteObject(collection, bucketName, key, {}, params, logger, (err, result) => {
+            try {
+                assert.ifError(err);
+                assert.strictEqual(result, undefined, 'Expected undefined result');
+                done();
+            } catch (assertionError) {
+                done(assertionError);
+            }
+        });
     });
 });
 
@@ -2790,9 +2671,7 @@ describe('MongoClientInterface, deleteBucketIndexes', () => {
 
         sandbox.stub(client, 'getCollection').returns(mockCollection);
 
-        const indexSpecs = [
-            { name: 'testIndex' },
-        ];
+        const indexSpecs = [{ name: 'testIndex' }];
 
         client.deleteBucketIndexes(bucketName, indexSpecs, logger, err => {
             try {
@@ -2813,9 +2692,7 @@ describe('MongoClientInterface, deleteBucketIndexes', () => {
 
         sandbox.stub(client, 'getCollection').returns(mockCollection);
 
-        const indexSpecs = [
-            { name: 'testIndex' },
-        ];
+        const indexSpecs = [{ name: 'testIndex' }];
 
         client.deleteBucketIndexes(bucketName, indexSpecs, logger, err => {
             try {
@@ -2836,9 +2713,7 @@ describe('MongoClientInterface, deleteBucketIndexes', () => {
 
         sandbox.stub(client, 'getCollection').returns(mockCollection);
 
-        const indexSpecs = [
-            { name: 'testIndex' },
-        ];
+        const indexSpecs = [{ name: 'testIndex' }];
 
         client.deleteBucketIndexes(bucketName, indexSpecs, logger, err => {
             try {
