@@ -6,19 +6,27 @@ import { transformTagKeyValue } from './utils/objectTags';
 import RequestContext from './RequestContext';
 import { Logger } from 'werelogs';
 
-const operatorsWithVariables = ['StringEquals', 'StringNotEquals',
-    'StringEqualsIgnoreCase', 'StringNotEqualsIgnoreCase',
-    'StringLike', 'StringNotLike', 'ArnEquals', 'ArnNotEquals',
-    'ArnLike', 'ArnNotLike'];
-const operatorsWithNegation = ['StringNotEquals',
-    'StringNotEqualsIgnoreCase', 'StringNotLike', 'ArnNotEquals',
-    'ArnNotLike', 'NumericNotEquals'];
-const tagConditions = new Set([
-    's3:ExistingObjectTag',
-    's3:RequestObjectTagKey',
-    's3:RequestObjectTagKeys',
-]);
-
+const operatorsWithVariables = [
+    'StringEquals',
+    'StringNotEquals',
+    'StringEqualsIgnoreCase',
+    'StringNotEqualsIgnoreCase',
+    'StringLike',
+    'StringNotLike',
+    'ArnEquals',
+    'ArnNotEquals',
+    'ArnLike',
+    'ArnNotLike',
+];
+const operatorsWithNegation = [
+    'StringNotEquals',
+    'StringNotEqualsIgnoreCase',
+    'StringNotLike',
+    'ArnNotEquals',
+    'ArnNotLike',
+    'NumericNotEquals',
+];
+const tagConditions = new Set(['s3:ExistingObjectTag', 's3:RequestObjectTagKey', 's3:RequestObjectTagKeys']);
 
 /**
  * Check whether resource in policy statement applies to request resource
@@ -45,21 +53,16 @@ export function isResourceApplicable(
     const requestRelativeId = requestResourceArr.slice(5).join(':');
     for (let i = 0; i < statementResource.length; i++) {
         // Handle variables (must handle BEFORE wildcards)
-        const policyResource =
-            substituteVariables(statementResource[i], requestContext);
+        const policyResource = substituteVariables(statementResource[i], requestContext);
         // Handle wildcards
-        const arnSegmentsMatch =
-            checkArnMatch(policyResource, requestRelativeId,
-                requestResourceArr, true);
+        const arnSegmentsMatch = checkArnMatch(policyResource, requestRelativeId, requestResourceArr);
         if (arnSegmentsMatch) {
-            log.trace('policy resource is applicable to request',
-                { requestResource: resource, policyResource });
+            log.trace('policy resource is applicable to request', { requestResource: resource, policyResource });
             return true;
         }
         continue;
     }
-    log.trace('no policy resource is applicable to request',
-        { requestResource: resource });
+    log.trace('no policy resource is applicable to request', { requestResource: resource });
     // If no match found, no resource is applicable
     return false;
 }
@@ -72,29 +75,24 @@ export function isResourceApplicable(
  * @param log - logger
  * @return true if applicable, false if not
  */
-export function isActionApplicable(
-    requestAction: string,
-    statementAction: string | string[],
-    log: Logger,
-): boolean {
+export function isActionApplicable(requestAction: string, statementAction: string | string[], log: Logger): boolean {
     if (!Array.isArray(statementAction)) {
         statementAction = [statementAction];
     }
     const length = statementAction.length;
     for (let i = 0; i < length; i++) {
         // No variables in actions so no need to handle
-        const regExStrOfStatementAction =
-            handleWildcards(statementAction[i]);
+        const regExStrOfStatementAction = handleWildcards(statementAction[i]);
         const actualRegEx = new RegExp(regExStrOfStatementAction, 'i');
         if (actualRegEx.test(requestAction)) {
             log.trace('policy action is applicable to request action', {
-                requestAction, policyAction: statementAction[i],
+                requestAction,
+                policyAction: statementAction[i],
             });
             return true;
         }
     }
-    log.trace('no action in policy applicable to request action',
-        { requestAction });
+    log.trace('no action in policy applicable to request action', { requestAction });
     // If no match found, return false
     return false;
 }
@@ -111,11 +109,7 @@ export function isActionApplicable(
  *   provided (namely, for tag conditions, request tags and/or object
  *   tags have to be provided to evaluate the condition)
  */
-export function meetConditions(
-    requestContext: RequestContext,
-    statementCondition: any,
-    log: Logger,
-): boolean | null {
+export function meetConditions(requestContext: RequestContext, statementCondition: any, log: Logger): boolean | null {
     let hasTagConditions = false;
     // The Condition portion of a policy is an object with different
     // operators as keys
@@ -124,16 +118,13 @@ export function meetConditions(
         const hasIfExistsCondition = operator.endsWith('IfExists');
         // If has "IfExists" added to operator name, or operator has "ForAnyValue" or
         // "ForAllValues" prefix, find operator name without "IfExists" or prefix
-        let bareOperator = hasIfExistsCondition ? operator.slice(0, -8) :
-            operator;
+        let bareOperator = hasIfExistsCondition ? operator.slice(0, -8) : operator;
         let prefix: string | undefined;
         if (hasPrefix) {
             [prefix, bareOperator] = bareOperator.split(':');
         }
-        const operatorCanHaveVariables =
-            operatorsWithVariables.indexOf(bareOperator) > -1;
-        const isNegationOperator =
-            operatorsWithNegation.indexOf(bareOperator) > -1;
+        const operatorCanHaveVariables = operatorsWithVariables.indexOf(bareOperator) > -1;
+        const isNegationOperator = operatorsWithNegation.indexOf(bareOperator) > -1;
         // Loop through conditions with the same operator
         // Note: this should be the actual operator name, not the bareOperator
         const conditionsWithSameOperator = statementCondition[operator];
@@ -147,8 +138,7 @@ export function meetConditions(
             }
             // Handle variables
             if (operatorCanHaveVariables) {
-                value = value.map((item: any) =>
-                    substituteVariables(item, requestContext));
+                value = value.map((item: any) => substituteVariables(item, requestContext));
             }
             // if condition key is RequestObjectTag or ExistingObjectTag,
             // tag key is included in condition key and needs to be
@@ -164,25 +154,29 @@ export function meetConditions(
             // condition has "ForAnyValue" or "ForAllValues".
             // (see http://docs.aws.amazon.com/IAM/latest/UserGuide/
             // reference_policies_multi-value-conditions.html)
-            let keyBasedOnRequestContext =
-                findConditionKey(transformedKey, requestContext);
+            let keyBasedOnRequestContext = findConditionKey(transformedKey, requestContext);
             // Handle IfExists and negation operators
-            if ((keyBasedOnRequestContext === undefined ||
-                keyBasedOnRequestContext === null) &&
-                (hasIfExistsCondition || isNegationOperator)) {
-                log.trace('satisfies condition due to IfExists operator or ' +
-                'negation operator', { method: 'evaluators.evaluatePolicy' });
+            if (
+                (keyBasedOnRequestContext === undefined || keyBasedOnRequestContext === null) &&
+                (hasIfExistsCondition || isNegationOperator)
+            ) {
+                log.trace('satisfies condition due to IfExists operator or ' + 'negation operator', {
+                    method: 'evaluators.evaluatePolicy',
+                });
                 continue;
             }
             // If no IfExists qualifier, the key does not exist and the
             // condition operator is not Null, the
             // condition is not met so return false.
-            if ((keyBasedOnRequestContext === null ||
-                keyBasedOnRequestContext === undefined) &&
-                bareOperator !== 'Null') {
-                log.trace('condition not satisfied due to ' +
-                'missing info', { operator,
-                    conditionKey: transformedKey, policyValue: transformedValue });
+            if (
+                (keyBasedOnRequestContext === null || keyBasedOnRequestContext === undefined) &&
+                bareOperator !== 'Null'
+            ) {
+                log.trace('condition not satisfied due to ' + 'missing info', {
+                    operator,
+                    conditionKey: transformedKey,
+                    policyValue: transformedValue,
+                });
                 return false;
             }
             // If condition operator prefix is included, the key should be an array
@@ -196,8 +190,11 @@ export function meetConditions(
             // are the only operators where wildcards are allowed
             // @ts-expect-error
             if (!operatorFunction(keyBasedOnRequestContext, transformedValue, prefix)) {
-                log.trace('did not satisfy condition', { operator: bareOperator,
-                    keyBasedOnRequestContext, policyValue: transformedValue });
+                log.trace('did not satisfy condition', {
+                    operator: bareOperator,
+                    keyBasedOnRequestContext,
+                    policyValue: transformedValue,
+                });
                 return false;
             }
         }
@@ -220,11 +217,7 @@ export function meetConditions(
  * @return Allow if permitted, Deny if not permitted or Neutral
  * if not applicable
  */
-export function evaluatePolicy(
-    requestContext: RequestContext,
-    policy: any,
-    log: Logger,
-): string {
+export function evaluatePolicy(requestContext: RequestContext, policy: any, log: Logger): string {
     // TODO: For bucket policies need to add Principal evaluation
     let allow = false;
     let allowWithTagCondition = false;
@@ -237,34 +230,30 @@ export function evaluatePolicy(
         const currentStatement = policy.Statement[i];
         // If affirmative resource is in policy and request resource is
         // not applicable, move on to next statement
-        if (currentStatement.Resource && !isResourceApplicable(requestContext,
-            currentStatement.Resource, log)) {
+        if (currentStatement.Resource && !isResourceApplicable(requestContext, currentStatement.Resource, log)) {
             continue;
         }
         // If NotResource is in policy and resource matches NotResource
         // in policy, move on to next statement
-        if (currentStatement.NotResource &&
-            isResourceApplicable(requestContext,
-                currentStatement.NotResource, log)) {
+        if (currentStatement.NotResource && isResourceApplicable(requestContext, currentStatement.NotResource, log)) {
             continue;
         }
         // If affirmative action is in policy and request action is not
         // applicable, move on to next statement
-        if (currentStatement.Action &&
-            !isActionApplicable(requestContext.getAction(),
-                currentStatement.Action, log)) {
+        if (currentStatement.Action && !isActionApplicable(requestContext.getAction(), currentStatement.Action, log)) {
             continue;
         }
         // If NotAction is in policy and action matches NotAction in policy,
         // move on to next statement
-        if (currentStatement.NotAction &&
-            isActionApplicable(requestContext.getAction(),
-                currentStatement.NotAction, log)) {
+        if (
+            currentStatement.NotAction &&
+            isActionApplicable(requestContext.getAction(), currentStatement.NotAction, log)
+        ) {
             continue;
         }
-        const conditionEval = currentStatement.Condition ?
-            meetConditions(requestContext, currentStatement.Condition, log) :
-            true;
+        const conditionEval = currentStatement.Condition
+            ? meetConditions(requestContext, currentStatement.Condition, log)
+            : true;
         // If do not meet conditions move on to next statement
         if (conditionEval === false) {
             continue;
@@ -318,11 +307,7 @@ export function evaluatePolicy(
  * @return Allow if permitted, Deny if not permitted.
  * Default is to Deny. Deny overrides an Allow
  */
-export function evaluateAllPolicies(
-    requestContext: RequestContext,
-    allPolicies: any[],
-    log: Logger,
-): string {
+export function evaluateAllPolicies(requestContext: RequestContext, allPolicies: any[], log: Logger): string {
     return standardEvaluateAllPolicies(requestContext, allPolicies, log).verdict;
 }
 export function standardEvaluateAllPolicies(
