@@ -466,21 +466,54 @@ class MongoClientInterface {
                 // "constants.usersBucket" and "PENSIEVE" since it has already
                 // been created
                 if (bucketName !== constants.usersBucket && bucketName !== PENSIEVE) {
-                    return this.db!.createCollection(bucketName).then(() => {
-                        if (this.shardCollections) {
-                            const cmd = {
-                                shardCollection: `${this.database}.${bucketName}`,
-                                key: { _id: 1 },
-                            };
-                            return this.adminDb!.command(cmd, {})
-                                .then(() => cb(null))
-                                .catch(err => {
-                                    log.error('createBucket: enabling sharding', { error: err });
-                                    return cb(errors.InternalError);
-                                });
-                        }
-                        return cb(null);
-                    });
+                    return this.db!.createCollection(bucketName)
+                        .catch(err => {
+                            // MongoDB returns NamespaceExists (code 48) when
+                            // the collection already exists, e.g. on
+                            // concurrent create/drop/create sequences on MPU
+                            // shadow buckets. The collection being there is
+                            // the desired outcome, so treat it as success:
+                            // this mirrors deleteBucket, which ignores
+                            // NamespaceNotFound when dropping the collection.
+                            if (err.codeName !== 'NamespaceExists') {
+                                throw err;
+                            }
+                            log.debug('createBucket: collection already exists', { bucketName });
+                        })
+                        .then(() => {
+                            if (this.shardCollections) {
+                                const cmd = {
+                                    shardCollection: `${this.database}.${bucketName}`,
+                                    key: { _id: 1 },
+                                };
+                                return this.adminDb!.command(cmd, {})
+                                    .catch(err => {
+                                        // Concurrent createBucket calls may
+                                        // race on shardCollection: sharding
+                                        // an already-sharded collection fails
+                                        // with AlreadyInitialized. The
+                                        // collection is sharded (with the
+                                        // same {_id: 1} key) either way.
+                                        if (err.codeName !== 'AlreadyInitialized') {
+                                            throw err;
+                                        }
+                                        log.debug('createBucket: collection already sharded', { bucketName });
+                                    })
+                                    .then(() => cb(null))
+                                    .catch(err => {
+                                        log.error('createBucket: enabling sharding', { error: err });
+                                        return cb(errors.InternalError);
+                                    });
+                            }
+                            return cb(null);
+                        })
+                        .catch(err => {
+                            log.error('createBucket: error creating collection', {
+                                bucketName,
+                                error: err.message,
+                            });
+                            return cb(errors.InternalError);
+                        });
                 }
                 return cb(null);
             })
