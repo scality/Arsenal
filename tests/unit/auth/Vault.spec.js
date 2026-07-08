@@ -126,7 +126,7 @@ describe('Vault class', () => {
             const mockError = new Error('V2 Auth failed');
             mockClient.verifySignatureV2.callsFake((_, __, ___, ____, cb) => cb(mockError));
 
-            vault.authenticateV2Request(mockParams, [], (err) => {
+            vault.authenticateV2Request(mockParams, [], err => {
                 assert.strictEqual(err, mockError);
                 done();
             });
@@ -165,26 +165,26 @@ describe('Vault class', () => {
                     message: 'Success',
                     body: {
                         userInfo: mockUserInfo,
-                        authorizationResults: [{
-                            isAllowed: true,
-                            isImplicit: false,
-                            arn: mockUserInfo.arn,
-                            action: 'testAction',
-                        }],
+                        authorizationResults: [
+                            {
+                                isAllowed: true,
+                                isImplicit: false,
+                                arn: mockUserInfo.arn,
+                                action: 'testAction',
+                            },
+                        ],
                         accountQuota: mockAccountQuota,
                     },
                 },
             };
 
             mockClient.verifySignatureV4.callsFake(
-                (_stringToSign, _signature, _accessKey, _region, _scopeDate,
-                    _options, callback) => {
+                (_stringToSign, _signature, _accessKey, _region, _scopeDate, _options, callback) => {
                     callback(null, mockResponse);
                 },
             );
 
-            vault.authenticateV4Request(mockParams, [], {}, (err, data, results,
-                _params, infos) => {
+            vault.authenticateV4Request(mockParams, [], {}, (err, data, results, _params, infos) => {
                 assert.strictEqual(err, null);
                 assert(data instanceof AuthInfo);
                 assert.strictEqual(data.getCanonicalID(), mockUserInfo.canonicalID);
@@ -199,25 +199,25 @@ describe('Vault class', () => {
                     message: 'Success',
                     body: {
                         userInfo: mockUserInfo,
-                        authorizationResults: [{
-                            isAllowed: true,
-                            isImplicit: false,
-                            arn: mockUserInfo.arn,
-                            action: 'testAction',
-                        }],
+                        authorizationResults: [
+                            {
+                                isAllowed: true,
+                                isImplicit: false,
+                                arn: mockUserInfo.arn,
+                                action: 'testAction',
+                            },
+                        ],
                     },
                 },
             };
 
             mockClient.verifySignatureV4.callsFake(
-                (_stringToSign, _signature, _accessKey, _region, _scopeDate,
-                    _options, callback) => {
+                (_stringToSign, _signature, _accessKey, _region, _scopeDate, _options, callback) => {
                     callback(null, mockResponse);
                 },
             );
 
-            vault.authenticateV4Request(mockParams, [], {}, (err, data, results,
-                _params, infos) => {
+            vault.authenticateV4Request(mockParams, [], {}, (err, data, results, _params, infos) => {
                 assert.strictEqual(err, null);
                 assert(data instanceof AuthInfo);
                 assert.deepStrictEqual(infos.accountQuota, {});
@@ -228,8 +228,7 @@ describe('Vault class', () => {
         it('should handle authentication failure', done => {
             const mockError = new Error('Authentication failed');
             mockClient.verifySignatureV4.callsFake(
-                (_stringToSign, _signature, _accessKey, _region, _scopeDate,
-                    _options, callback) => {
+                (_stringToSign, _signature, _accessKey, _region, _scopeDate, _options, callback) => {
                     callback(mockError);
                 },
             );
@@ -241,40 +240,41 @@ describe('Vault class', () => {
         });
 
         it('should properly serialize request contexts', done => {
-            const mockRequestContexts = [{
-                serialize: () => ({ serialized: 'context' }),
-            }];
+            const mockRequestContexts = [
+                {
+                    serialize: () => ({ serialized: 'context' }),
+                },
+            ];
 
             const mockResponse = {
                 message: {
                     message: 'Success',
                     body: {
                         userInfo: mockUserInfo,
-                        authorizationResults: [{
-                            isAllowed: true,
-                            isImplicit: false,
-                            arn: mockUserInfo.arn,
-                            action: 'testAction',
-                        }],
+                        authorizationResults: [
+                            {
+                                isAllowed: true,
+                                isImplicit: false,
+                                arn: mockUserInfo.arn,
+                                action: 'testAction',
+                            },
+                        ],
                     },
                 },
             };
 
             mockClient.verifySignatureV4.callsFake(
-                (_stringToSign, _signature, _accessKey, _region, _scopeDate,
-                    options, callback) => {
-                    assert.deepStrictEqual(options.requestContext,
-                        [{ serialized: 'context' }]);
+                (_stringToSign, _signature, _accessKey, _region, _scopeDate, options, callback) => {
+                    assert.deepStrictEqual(options.requestContext, [{ serialized: 'context' }]);
                     callback(null, mockResponse);
                 },
             );
 
-            vault.authenticateV4Request(mockParams, mockRequestContexts, {},
-                (err, data) => {
-                    assert.strictEqual(err, null);
-                    assert(data instanceof AuthInfo);
-                    done();
-                });
+            vault.authenticateV4Request(mockParams, mockRequestContexts, {}, (err, data) => {
+                assert.strictEqual(err, null);
+                assert(data instanceof AuthInfo);
+                done();
+            });
         });
 
         it('should handle quota with large numbers', done => {
@@ -288,29 +288,28 @@ describe('Vault class', () => {
                     message: 'Success',
                     body: {
                         userInfo: mockUserInfo,
-                        authorizationResults: [{
-                            isAllowed: true,
-                            isImplicit: false,
-                            arn: mockUserInfo.arn,
-                            action: 'testAction',
-                        }],
+                        authorizationResults: [
+                            {
+                                isAllowed: true,
+                                isImplicit: false,
+                                arn: mockUserInfo.arn,
+                                action: 'testAction',
+                            },
+                        ],
                         accountQuota: largeQuota,
                     },
                 },
             };
 
             mockClient.verifySignatureV4.callsFake(
-                (_stringToSign, _signature, _accessKey, _region, _scopeDate,
-                    _options, callback) => {
+                (_stringToSign, _signature, _accessKey, _region, _scopeDate, _options, callback) => {
                     callback(null, mockResponse);
                 },
             );
 
-            vault.authenticateV4Request(mockParams, [], {}, (err, _data, _results,
-                _params, infos) => {
+            vault.authenticateV4Request(mockParams, [], {}, (err, _data, _results, _params, infos) => {
                 assert.strictEqual(err, null);
-                assert.strictEqual(infos.accountQuota.quota.toString(),
-                    '9007199254740992');
+                assert.strictEqual(infos.accountQuota.quota.toString(), '9007199254740992');
                 done();
             });
         });
@@ -325,20 +324,57 @@ describe('Vault class', () => {
                     message: 'Success',
                     body: {
                         userInfo: mockUserInfo,
-                        authorizationResults: [{
-                            isAllowed: true,
-                            isImplicit: false,
-                            arn: mockUserInfo.arn,
-                            action: 'testAction',
-                        }],
+                        authorizationResults: [
+                            {
+                                isAllowed: true,
+                                isImplicit: false,
+                                arn: mockUserInfo.arn,
+                                action: 'testAction',
+                            },
+                        ],
                     },
                 },
             };
 
             mockClient.verifySignatureV4.callsFake(
-                (_stringToSign, _signature, _accessKey, _region, _scopeDate,
-                    _options, callback) => {
+                (_stringToSign, _signature, _accessKey, _region, _scopeDate, _options, callback) => {
                     assert.strictEqual(_options.get, true);
+                    callback(null, mockResponse);
+                },
+            );
+
+            vault.authenticateV4Request(mockParams, [], mockOptions, (err, data) => {
+                assert.strictEqual(err, null);
+                assert(data instanceof AuthInfo);
+                done();
+            });
+        });
+
+        it('should pass targetAccount option to the vault client', done => {
+            const mockOptions = {
+                targetAccount: '123456789012',
+            };
+
+            const mockResponse = {
+                message: {
+                    message: 'Success',
+                    body: {
+                        userInfo: mockUserInfo,
+                        authorizationResults: [
+                            {
+                                isAllowed: true,
+                                isImplicit: false,
+                                arn: mockUserInfo.arn,
+                                action: 'testAction',
+                            },
+                        ],
+                    },
+                },
+            };
+
+            mockClient.verifySignatureV4.callsFake(
+                (_stringToSign, _signature, _accessKey, _region, _scopeDate, _options, callback) => {
+                    assert.strictEqual(_options.targetAccount, '123456789012');
                     callback(null, mockResponse);
                 },
             );
@@ -361,26 +397,26 @@ describe('Vault class', () => {
                     message: 'Success',
                     body: {
                         userInfo: mockUserInfo,
-                        authorizationResults: [{
-                            isAllowed: true,
-                            isImplicit: false,
-                            arn: mockUserInfo.arn,
-                            action: 'testAction',
-                        }],
+                        authorizationResults: [
+                            {
+                                isAllowed: true,
+                                isImplicit: false,
+                                arn: mockUserInfo.arn,
+                                action: 'testAction',
+                            },
+                        ],
                         limits: limitConfig,
                     },
                 },
             };
 
             mockClient.verifySignatureV4.callsFake(
-                (_stringToSign, _signature, _accessKey, _region, _scopeDate,
-                    _options, callback) => {
+                (_stringToSign, _signature, _accessKey, _region, _scopeDate, _options, callback) => {
                     callback(null, mockResponse);
                 },
             );
 
-            vault.authenticateV4Request(mockParams, [], {}, (err, data, results,
-                _params, infos) => {
+            vault.authenticateV4Request(mockParams, [], {}, (err, data, results, _params, infos) => {
                 assert.strictEqual(err, null);
                 assert(data instanceof AuthInfo);
                 assert.strictEqual(data.getCanonicalID(), mockUserInfo.canonicalID);
@@ -395,25 +431,25 @@ describe('Vault class', () => {
                     message: 'Success',
                     body: {
                         userInfo: mockUserInfo,
-                        authorizationResults: [{
-                            isAllowed: true,
-                            isImplicit: false,
-                            arn: mockUserInfo.arn,
-                            action: 'testAction',
-                        }],
+                        authorizationResults: [
+                            {
+                                isAllowed: true,
+                                isImplicit: false,
+                                arn: mockUserInfo.arn,
+                                action: 'testAction',
+                            },
+                        ],
                     },
                 },
             };
 
             mockClient.verifySignatureV4.callsFake(
-                (_stringToSign, _signature, _accessKey, _region, _scopeDate,
-                    _options, callback) => {
+                (_stringToSign, _signature, _accessKey, _region, _scopeDate, _options, callback) => {
                     callback(null, mockResponse);
                 },
             );
 
-            vault.authenticateV4Request(mockParams, [], {}, (err, data, results,
-                _params, infos) => {
+            vault.authenticateV4Request(mockParams, [], {}, (err, data, results, _params, infos) => {
                 assert.strictEqual(err, null);
                 assert(data instanceof AuthInfo);
                 assert.deepStrictEqual(infos.limits, {});
@@ -432,10 +468,12 @@ describe('Vault class', () => {
 
             vault.getCanonicalIds(mockEmails, log, (err, data) => {
                 assert.strictEqual(err, null);
-                assert.deepStrictEqual(data, [{
-                    email: 'test@example.com',
-                    canonicalID: 'canonical123',
-                }]);
+                assert.deepStrictEqual(data, [
+                    {
+                        email: 'test@example.com',
+                        canonicalID: 'canonical123',
+                    },
+                ]);
                 done();
             });
         });
@@ -447,7 +485,7 @@ describe('Vault class', () => {
             };
             mockClient.getCanonicalIds.callsFake((_, __, cb) => cb(null, mockResponse));
 
-            vault.getCanonicalIds(mockEmails, log, (err) => {
+            vault.getCanonicalIds(mockEmails, log, err => {
                 assert(err instanceof Error);
                 done();
             });
@@ -534,7 +572,7 @@ describe('Vault class', () => {
             const mockError = new Error('Client error');
             mockClient.getCanonicalIdsByAccountIds.callsFake((_, __, cb) => cb(mockError));
 
-            vault.getCanonicalIdsByAccountIds(mockIds, log, (err) => {
+            vault.getCanonicalIdsByAccountIds(mockIds, log, err => {
                 assert.strictEqual(err, mockError);
                 done();
             });
@@ -560,7 +598,7 @@ describe('Vault class', () => {
             const mockError = new Error('Policy check failed');
             mockClient.checkPolicies.callsFake((_, __, ___, cb) => cb(mockError));
 
-            vault.checkPolicies([], 'userArn', log, (err) => {
+            vault.checkPolicies([], 'userArn', log, err => {
                 assert.strictEqual(err, mockError);
                 done();
             });
@@ -640,7 +678,7 @@ describe('Vault class', () => {
             const mockError = new Error('Key operation failed');
             mockClient.getOrCreateEncryptionKeyId.callsFake((_, __, cb) => cb(mockError));
 
-            vault.getOrCreateEncryptionKeyId('canonical123', log, (err) => {
+            vault.getOrCreateEncryptionKeyId('canonical123', log, err => {
                 assert.strictEqual(err, mockError);
                 done();
             });
