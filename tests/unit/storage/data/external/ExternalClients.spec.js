@@ -10,6 +10,7 @@ const DummyService = require('../DummyService');
 const { DummyRequestLogger } = require('../../../helpers');
 const BucketInfo = require('../../../../../lib/models/BucketInfo').default;
 const { HeadBucketCommand } = require('@aws-sdk/client-s3');
+const { externalBackendHealthCheckTimeout } = require('../../../../../lib/constants');
 
 const backendClients = [
     {
@@ -179,6 +180,36 @@ describe('external backend clients', () => {
 
             const entry = resp[backend.config.dataStoreName];
             assert.ok(entry.error);
+            assert.strictEqual(entry.external, true);
+        });
+
+        itIfAws(`${backend.name} healthcheck should pass an abort signal to bound the probe`, async () => {
+            const sendStub = sandbox.stub(testClient._client, 'send').resolves({});
+            await promisify(testClient.healthcheck.bind(testClient))(backend.config.dataStoreName);
+
+            const opts = sendStub.firstCall.args[1];
+            assert.ok(
+                opts && opts.abortSignal instanceof AbortSignal,
+                'expected healthcheck to pass an AbortSignal to send',
+            );
+        });
+
+        itIfAws(`${backend.name} healthcheck should abort a hanging probe and report an error`, async () => {
+            const clock = sandbox.useFakeTimers();
+            // unreachable endpoint: settles only when aborted
+            sandbox.stub(testClient._client, 'send').callsFake(
+                (_cmd, opts) =>
+                    new Promise((_resolve, reject) => {
+                        opts.abortSignal.addEventListener('abort', () => reject(new Error('aborted')));
+                    }),
+            );
+            const healthcheckPromise = promisify(testClient.healthcheck.bind(testClient))(backend.config.dataStoreName);
+
+            await clock.tickAsync(externalBackendHealthCheckTimeout);
+            const resp = await healthcheckPromise;
+
+            const entry = resp[backend.config.dataStoreName];
+            assert.ok(entry.error, 'expected the aborted probe to report an error');
             assert.strictEqual(entry.external, true);
         });
 

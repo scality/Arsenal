@@ -119,6 +119,8 @@ export const legacyLocations = ['sproxyd', 'legacy'];
 // for external backends, don't call unless at least 1 minute
 // (60,000 milliseconds) since last call
 export const externalBackendHealthCheckInterval = 60000;
+// bound each healthcheck probe so an unreachable endpoint can't hang startup
+export const externalBackendHealthCheckTimeout = 5000;
 // some of the available data backends  (if called directly rather
 // than through the multiple backend gateway) need a key provided
 // as a string as first parameter of the get/delete methods.
