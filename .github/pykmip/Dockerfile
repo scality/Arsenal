@@ -15,7 +15,7 @@ RUN apk add --no-cache \
         git && \
     git clone https://github.com/openkmip/pykmip.git && \
     cd pykmip && \
-    python3 setup.py install && \
+    pip install . && \
     apk del .build-deps && \
     rm -rf /pykmip && \
     mkdir /pykmip
