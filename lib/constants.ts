@@ -105,8 +105,7 @@ export const zenkoSeparator = ':';
 export const externalBackends = { aws_s3: true, azure: true, gcp: true, pfs: true };
 export const replicationBackends = { aws_s3: true, azure: true, gcp: true };
 // hex digest of sha256 hash of empty string:
-export const emptyStringHash = crypto.createHash('sha256')
-    .update('', 'binary').digest('hex');
+export const emptyStringHash = crypto.createHash('sha256').update('', 'binary').digest('hex');
 export const mpuMDStoredExternallyBackend = { aws_s3: true, gcp: true };
 // AWS sets a minimum size limit for parts except for the last part.
 // http://docs.aws.amazon.com/AmazonS3/latest/API/mpUploadComplete.html
@@ -170,8 +169,9 @@ export const notificationArnPrefix = 'arn:scality:bucketnotif';
 export const httpServerKeepAliveTimeout = 60000;
 export const httpClientFreeSocketTimeout = 55000;
 // Maximum number of buckets to cache (bucket metadata)
-export const maxCachedBuckets = process.env.METADATA_MAX_CACHED_BUCKETS ?
-    Number(process.env.METADATA_MAX_CACHED_BUCKETS) : 1000;
+export const maxCachedBuckets = process.env.METADATA_MAX_CACHED_BUCKETS
+    ? Number(process.env.METADATA_MAX_CACHED_BUCKETS)
+    : 1000;
 
 export const validRestoreObjectTiers = new Set(['Expedited', 'Standard', 'Bulk']);
 export const maxBatchingConcurrentOperations = 5;

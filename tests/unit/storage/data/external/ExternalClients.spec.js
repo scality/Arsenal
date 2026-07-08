@@ -5,8 +5,7 @@ const { promisify } = require('util');
 
 const AwsClient = require('../../../../../lib/storage/data/external/AwsClient');
 const GcpClient = require('../../../../../lib/storage/data/external/GcpClient');
-const AzureClient =
-    require('../../../../../lib/storage/data/external/AzureClient');
+const AzureClient = require('../../../../../lib/storage/data/external/AzureClient');
 const DummyService = require('../DummyService');
 const { DummyRequestLogger } = require('../../../helpers');
 const BucketInfo = require('../../../../../lib/models/BucketInfo').default;
@@ -71,13 +70,20 @@ describe('external backend clients', () => {
 
     backendClients.forEach(backend => {
         let testClient;
-        let headAsync, getAsync, deleteAsync, objectPutTaggingAsync, objectDeleteTaggingAsync,
-            createMPUAsync, uploadPartAsync, abortMPUAsync, listPartsAsync;
+        let headAsync,
+            getAsync,
+            deleteAsync,
+            objectPutTaggingAsync,
+            objectDeleteTaggingAsync,
+            createMPUAsync,
+            uploadPartAsync,
+            abortMPUAsync,
+            listPartsAsync;
 
         beforeAll(() => {
             testClient = new backend.Class(backend.config);
             testClient._client = new DummyService({ versioning: true });
-            
+
             // Promisify the client methods
             headAsync = promisify(testClient.head.bind(testClient));
             getAsync = promisify(testClient.get.bind(testClient));
@@ -115,17 +121,16 @@ describe('external backend clients', () => {
                 const key = 'externalBackendTestKey';
                 const bucketName = 'externalBackendTestBucket';
                 const uploadId = 'externalBackendTestUploadId';
-                testClient.completeMPU(jsonList, null, key,
-                    uploadId, bucketName, log, (err, res) => {
-                        if (err) {
-                            return done(err);
-                        }
-                        assert.strictEqual(typeof res.key, 'string');
-                        assert.strictEqual(typeof res.eTag, 'string');
-                        assert.strictEqual(typeof res.dataStoreVersionId, 'string');
-                        assert.strictEqual(typeof res.contentLength, 'number');
-                        return done();
-                    });
+                testClient.completeMPU(jsonList, null, key, uploadId, bucketName, log, (err, res) => {
+                    if (err) {
+                        return done(err);
+                    }
+                    assert.strictEqual(typeof res.key, 'string');
+                    assert.strictEqual(typeof res.eTag, 'string');
+                    assert.strictEqual(typeof res.dataStoreVersionId, 'string');
+                    assert.strictEqual(typeof res.contentLength, 'number');
+                    return done();
+                });
             });
         }
 
@@ -141,10 +146,13 @@ describe('external backend clients', () => {
 
         it(`${backend.name} head() should return HTTP 424 if location does not exist`, async () => {
             try {
-                await headAsync({
-                    key: 'externalBackendTestBucket/externalBackendMissingKey',
-                    dataStoreName: backend.config.dataStoreName,
-                }, null);
+                await headAsync(
+                    {
+                        key: 'externalBackendTestBucket/externalBackendMissingKey',
+                        dataStoreName: backend.config.dataStoreName,
+                    },
+                    null,
+                );
                 assert.fail('Expected an error to be thrown');
             } catch (err) {
                 assert(err);
@@ -175,15 +183,19 @@ describe('external backend clients', () => {
         });
 
         it(`${backend.name} get() should stream a range of data`, async () => {
-            const readable = await getAsync({
-                key: 'externalBackendTestBucket/externalBackendTestKey',
-                dataStoreName: backend.config.dataStoreName,
-                response: new stream.PassThrough(),
-            }, [10000000, 10000050], '');
+            const readable = await getAsync(
+                {
+                    key: 'externalBackendTestBucket/externalBackendTestKey',
+                    dataStoreName: backend.config.dataStoreName,
+                    response: new stream.PassThrough(),
+                },
+                [10000000, 10000050],
+                '',
+            );
             let data = '';
             const streamToRead = readable;
             await new Promise((resolve, reject) => {
-                streamToRead.on('data', (chunk) => {
+                streamToRead.on('data', chunk => {
                     data += chunk.toString();
                 });
                 streamToRead.on('end', () => {
@@ -195,12 +207,16 @@ describe('external backend clients', () => {
         });
 
         it(`${backend.name} get() should not call the callback again on stream error`, async () => {
-            const result = await getAsync({
-                key: 'externalBackendTestBucket/externalBackendTestKey',
-                dataStoreName: backend.config.dataStoreName,
-                response: new stream.PassThrough(),
-            }, [10000000, 10000050], '');
-            const readable = result
+            const result = await getAsync(
+                {
+                    key: 'externalBackendTestBucket/externalBackendTestKey',
+                    dataStoreName: backend.config.dataStoreName,
+                    response: new stream.PassThrough(),
+                },
+                [10000000, 10000050],
+                '',
+            );
+            const readable = result;
             let errorHandled = false;
             await new Promise(resolve => {
                 readable
@@ -211,16 +227,19 @@ describe('external backend clients', () => {
                         resolve();
                     });
             });
-            
+
             assert.strictEqual(errorHandled, true);
         });
 
         it(`${backend.name} delete() should delete the requested key without error`, async () => {
             const key = 'externalBackendTestKey';
             const bucketName = 'externalBackendTestBucket';
-            const objectInfo = Object.assign({
-                deleteVersion: false,
-            }, testClient.toObjectGetInfo(key, bucketName));
+            const objectInfo = Object.assign(
+                {
+                    deleteVersion: false,
+                },
+                testClient.toObjectGetInfo(key, bucketName),
+            );
             const result = await deleteAsync(objectInfo, '');
             assert.strictEqual(result, undefined);
         });
@@ -283,9 +302,17 @@ describe('external backend clients', () => {
             it(`${backend.name} uploadPart() should return sanitized data retrieval info`, async () => {
                 const key = 'externalBackendTestKey';
                 const bucketName = 'externalBackendTestBucket';
-                const result = await uploadPartAsync(null, null,
+                const result = await uploadPartAsync(
+                    null,
+                    null,
                     stream.Readable.from(['part data']),
-                    9, key, 'uploadId-123', 1, bucketName, log);
+                    9,
+                    key,
+                    'uploadId-123',
+                    1,
+                    bucketName,
+                    log,
+                );
 
                 assert.strictEqual(result.key, `${bucketName}/${key}`);
                 assert.strictEqual(result.dataStoreName, backend.config.dataStoreName);
