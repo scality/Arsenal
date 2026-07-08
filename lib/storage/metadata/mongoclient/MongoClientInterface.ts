@@ -151,62 +151,74 @@ export type InternalListObjectParams = {
     gt?: undefined;
 };
 
+export interface UsedCapacityMetrics {
+    current: Long | number;
+    nonCurrent: Long | number;
+    _currentCold: Long | number;
+    _nonCurrentCold: Long | number;
+    _currentRestored: Long | number;
+    _currentRestoring: Long | number;
+    _nonCurrentRestored: Long | number;
+    _nonCurrentRestoring: Long | number;
+    _incompleteMPUParts: Long | number;
+    // present on per-location and inflight-tagged bucket entries
+    _inflightsPreScan?: Long | number;
+}
+
+export interface ObjectCountMetrics {
+    current: Long | number;
+    nonCurrent: Long | number;
+    deleteMarker: Long | number;
+    _currentCold: Long | number;
+    _nonCurrentCold: Long | number;
+    _currentRestored: Long | number;
+    _currentRestoring: Long | number;
+    _nonCurrentRestored: Long | number;
+    _nonCurrentRestoring: Long | number;
+    _incompleteMPUUploads: Long | number;
+}
+
 export interface InfostoreDocument extends Document {
     _id: string | 'uuid';
     value?: string | ObjectMDStats;
     measuredOn?: string;
-    objectCount?: {
-        current: Long | number;
-        _currentCold: Long | number;
-        deleteMarker: Long | number;
-        nonCurrent: Long | number;
-        _nonCurrentCold: Long | number;
-        _currentRestored: Long | number;
-        _currentRestoring: Long | number;
-        _nonCurrentRestored: Long | number;
-        _nonCurrentRestoring: Long | number;
-        _incompleteMPUUploads: Long | number;
-    };
-    usedCapacity?: {
-        current: Long | number;
-        _currentCold: Long | number;
-        nonCurrent: Long | number;
-        _nonCurrentCold: Long | number;
-        _currentRestored: Long | number;
-        _currentRestoring: Long | number;
-        _nonCurrentRestored: Long | number;
-        _nonCurrentRestoring: Long | number;
-        _incompleteMPUParts: Long | number;
-    };
+    objectCount?: ObjectCountMetrics;
+    usedCapacity?: UsedCapacityMetrics;
     locations: {
         [key: string]: {
-            usedCapacity: {
-                current: Long | number;
-                nonCurrent: Long | number;
-                _currentCold: Long | number;
-                _nonCurrentCold: Long | number;
-                _currentRestored: Long | number;
-                _currentRestoring: Long | number;
-                _nonCurrentRestored: Long | number;
-                _nonCurrentRestoring: Long | number;
-                _inflightsPreScan: Long | number;
-                _incompleteMPUParts: Long | number;
-            };
-            objectCount: {
-                current: Long | number;
-                nonCurrent: Long | number;
-                _currentCold: Long | number;
-                _nonCurrentCold: Long | number;
-                _currentRestored: Long | number;
-                _currentRestoring: Long | number;
-                _nonCurrentRestored: Long | number;
-                _nonCurrentRestoring: Long | number;
-                _incompleteMPUUploads: Long | number;
-                deleteMarker: Long | number;
-            };
+            usedCapacity: UsedCapacityMetrics;
+            objectCount: ObjectCountMetrics;
         };
     };
 }
+
+// Canonical zero-value capacity/count metrics for an empty bucket, matching the
+// structure downstream metric readers expect.
+const emptyBucketCapacityMetrics: { usedCapacity: UsedCapacityMetrics; objectCount: ObjectCountMetrics } = {
+    usedCapacity: {
+        current: 0,
+        nonCurrent: 0,
+        _currentCold: 0,
+        _nonCurrentCold: 0,
+        _currentRestored: 0,
+        _currentRestoring: 0,
+        _nonCurrentRestored: 0,
+        _nonCurrentRestoring: 0,
+        _incompleteMPUParts: 0,
+    },
+    objectCount: {
+        current: 0,
+        nonCurrent: 0,
+        deleteMarker: 0,
+        _currentCold: 0,
+        _nonCurrentCold: 0,
+        _currentRestored: 0,
+        _currentRestoring: 0,
+        _nonCurrentRestored: 0,
+        _nonCurrentRestoring: 0,
+        _incompleteMPUUploads: 0,
+    },
+};
 
 export type ObjectMDStats = {
     versions: number;
@@ -2707,6 +2719,57 @@ class MongoClientInterface {
                     return cb(errors.KeyAlreadyExists);
                 }
                 log.error('writeUUIDIfNotExists: error writing UUID', { error: err.message });
+                return cb(errors.InternalError);
+            });
+    }
+
+    /**
+     * Initialize a zero-value bucket capacity metric document in the
+     * `__infostore` collection, unless one already exists. This lets quota
+     * checks be served for a freshly created (or newly quota-enabled empty)
+     * bucket before the periodic metrics job has produced real values.
+     *
+     * Idempotent: an existing document (e.g. one already holding real metrics)
+     * is never overwritten, thanks to `$setOnInsert`.
+     *
+     * @param bucketName - name of the bucket
+     * @param creationDate - bucket creation date used to build the metric id;
+     *   must match the id the metrics job uses so lookups resolve to the same
+     *   document
+     * @param log - logger instance
+     * @param cb - callback
+     * @returns undefined
+     */
+    initializeBucketCapacity(
+        bucketName: string,
+        creationDate: string,
+        log: werelogs.Logger,
+        cb: ArsenalCallback<void>,
+    ) {
+        const i = this.getCollection<InfostoreDocument>(INFOSTORE);
+        if (!i) {
+            log.error('initializeBucketCapacity: error getting infostore collection');
+            return cb(errors.InternalError);
+        }
+        const timestamp = new Date(creationDate).getTime();
+        if (Number.isNaN(timestamp)) {
+            log.error('initializeBucketCapacity: invalid creationDate', { bucketName, creationDate });
+            return cb(errors.InternalError);
+        }
+        const _id = `bucket_${bucketName}_${timestamp}`;
+        const doc = <InfostoreDocument>{
+            _id,
+            measuredOn: new Date().toJSON(),
+            ...emptyBucketCapacityMetrics,
+        };
+        return i
+            .updateOne({ _id }, { $setOnInsert: doc }, { upsert: true })
+            .then(() => cb(null))
+            .catch(err => {
+                log.error('initializeBucketCapacity: error initializing bucket capacity', {
+                    error: err.message,
+                    bucketName,
+                });
                 return cb(errors.InternalError);
             });
     }

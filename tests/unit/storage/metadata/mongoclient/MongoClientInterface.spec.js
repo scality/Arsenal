@@ -1609,6 +1609,81 @@ describe('MongoClientInterface, readUUID', () => {
     });
 });
 
+describe('MongoClientInterface, initializeBucketCapacity', () => {
+    let client;
+    let sandbox;
+
+    beforeEach(async () => {
+        sandbox = sinon.createSandbox();
+        client = createClient();
+        await promisify(client.setup).bind(client)();
+    });
+
+    afterEach(async () => {
+        sandbox.restore();
+        if (client) {
+            await promisify(client.close).bind(client)();
+        }
+    });
+
+    it('should insert a zero-value bucket capacity document', async () => {
+        const bucketName = 'init-capacity-bucket';
+        const creationDate = new Date('2023-03-08T14:13:28.000Z').toJSON();
+        const expectedId = `bucket_${bucketName}_${new Date(creationDate).getTime()}`;
+        await promisify(client.initializeBucketCapacity).bind(client)(bucketName, creationDate, logger);
+        const doc = await client.getCollection('__infostore').findOne({ _id: expectedId });
+        assert(doc, 'Expected the capacity document to be inserted');
+        assert.strictEqual(doc.usedCapacity.current, 0);
+        assert.strictEqual(doc.usedCapacity.nonCurrent, 0);
+        assert.strictEqual(doc.objectCount.current, 0);
+        assert.strictEqual(doc.objectCount.deleteMarker, 0);
+        assert(doc.measuredOn, 'Expected measuredOn to be set');
+    });
+
+    it('should not overwrite an existing capacity document (idempotent)', async () => {
+        const bucketName = 'existing-capacity-bucket';
+        const creationDate = new Date('2023-03-08T14:13:28.000Z').toJSON();
+        const expectedId = `bucket_${bucketName}_${new Date(creationDate).getTime()}`;
+        const coll = client.getCollection('__infostore');
+        await coll.insertOne({
+            _id: expectedId,
+            measuredOn: new Date().toJSON(),
+            usedCapacity: { current: 12345, nonCurrent: 0 },
+            objectCount: { current: 7, deleteMarker: 0 },
+        });
+        await promisify(client.initializeBucketCapacity).bind(client)(bucketName, creationDate, logger);
+        const doc = await coll.findOne({ _id: expectedId });
+        assert.strictEqual(doc.usedCapacity.current, 12345, 'Existing capacity must not be overwritten');
+        assert.strictEqual(doc.objectCount.current, 7);
+    });
+
+    it('should return InternalError when the update fails', async () => {
+        const mockCollection = {
+            updateOne: sandbox.stub().rejects(new Error('Simulated MongoDB error')),
+        };
+        sandbox.stub(client, 'getCollection').returns(mockCollection);
+        await assert.rejects(
+            promisify(client.initializeBucketCapacity).bind(client)('b', new Date().toJSON(), logger),
+            err => err.code === 500,
+        );
+    });
+
+    it('should return InternalError when creationDate is invalid', async () => {
+        await assert.rejects(
+            promisify(client.initializeBucketCapacity).bind(client)('b', 'not-a-date', logger),
+            err => err.code === 500,
+        );
+    });
+
+    it('should return InternalError when the infostore collection is unavailable', async () => {
+        sandbox.stub(client, 'getCollection').returns(null);
+        await assert.rejects(
+            promisify(client.initializeBucketCapacity).bind(client)('b', new Date().toJSON(), logger),
+            err => err.code === 500,
+        );
+    });
+});
+
 describe('MongoClientInterface, writeUUIDIfNotExists', () => {
     let client;
     let sandbox;
