@@ -16,11 +16,11 @@ describe('auth.doAuth', () => {
 
     const method = 'PUT';
     const path = '/mybucket';
-    const xAMZcontentSha256 = '771df8abbecb2265e9724e5dc4510dcc160' +
-        '60c0513ae669baf35b255d465b63f';
+    const xAMZcontentSha256 = '771df8abbecb2265e9724e5dc4510dcc160' + '60c0513ae669baf35b255d465b63f';
     const host = 'localhost:8000';
     const xAmzDate = '2027-02-08T20:14:05Z';
-    const authorization = 'AWS4-HMAC-SHA256 Credential=accessKey1/20270208' +
+    const authorization =
+        'AWS4-HMAC-SHA256 Credential=accessKey1/20270208' +
         '/us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;' +
         'x-amz-date, Signature=abed924c06abf8772c670064d22eacd6ccb85c06befa15f' +
         '4a789b0bae19307bc';
@@ -50,15 +50,15 @@ describe('auth.doAuth', () => {
     it('should return AccessDenied error for invalid authorization header', () => {
         const request = {
             headers: {
-                authorization: 'Invalid Auth Header'
+                authorization: 'Invalid Auth Header',
             },
-            query: {}
+            query: {},
         };
         const log = { trace: sinon.spy() };
-        
+
         const cb = sinon.spy();
         authServer.doAuth(request, log, cb, 'service', null);
-        
+
         sinon.assert.calledOnce(cb);
         sinon.assert.calledWith(cb, sinon.match.instanceOf(Error));
         const error = cb.firstCall.args[0];
@@ -70,16 +70,15 @@ describe('auth.doAuth', () => {
             headers: {},
             query: {},
             _headers: {},
-            setHeader: function(name, value) {
+            setHeader: function (name, value) {
                 this._headers[name] = value;
                 this.headers[name] = value;
-            }
+            },
         };
         authServer.doAuth(request, log, cb, 's3', null);
-        
+
         sinon.assert.calledWith(cb, null, sinon.match.instanceOf(AuthInfo));
     });
-    
 
     it('should call authenticateV4Request for version 4 auth', () => {
         const request = {
@@ -91,7 +90,6 @@ describe('auth.doAuth', () => {
         // Mock the v4 authentication method
         const clock = fakeTimers.install({ now: new Date(xAmzDate).getTime() });
 
-        
         const authenticateV4RequestStub = sandbox.stub(vault, 'authenticateV4Request');
         authenticateV4RequestStub.callsFake((params, requestContexts, options, callback) => {
             callback(null, new AuthInfo({ canonicalID: 'testCanonicalID' }));
@@ -101,7 +99,7 @@ describe('auth.doAuth', () => {
             setAuthType: sandbox.stub(),
             setSignatureVersion: sandbox.stub(),
             setSecurityToken: sandbox.stub(),
-            setSignatureAge: sandbox.stub()
+            setSignatureAge: sandbox.stub(),
         };
 
         authServer.doAuth(request, log, cb, 's3', [requestContext]);
@@ -124,19 +122,28 @@ describe('auth.doAuth', () => {
         // Mock the v4 authentication method
         const clock = fakeTimers.install({ now: new Date(xAmzDate).getTime() });
         mockOptions = { get: true };
-                
+
         const authenticateV4RequestStub = sandbox.stub(vault, 'authenticateV4Request');
         authenticateV4RequestStub.callsFake((params, requestContexts, options, callback) => {
             sinon.assert.match(options, mockOptions);
             callback(null, new AuthInfo({ canonicalID: 'testCanonicalID' }));
         });
 
-        authServer.doAuth(request, log, cb, 's3', [{ 
-            setAuthType: sandbox.stub(),
-            setSignatureVersion: sandbox.stub(),
-            setSecurityToken: sandbox.stub(),
-            setSignatureAge: sandbox.stub()
-        }], mockOptions);
+        authServer.doAuth(
+            request,
+            log,
+            cb,
+            's3',
+            [
+                {
+                    setAuthType: sandbox.stub(),
+                    setSignatureVersion: sandbox.stub(),
+                    setSecurityToken: sandbox.stub(),
+                    setSignatureAge: sandbox.stub(),
+                },
+            ],
+            mockOptions,
+        );
 
         sinon.assert.calledOnce(authenticateV4RequestStub);
         sinon.assert.calledWith(cb, null, sinon.match.instanceOf(AuthInfo));

@@ -1,7 +1,12 @@
 import { RequestLogger } from 'werelogs';
 import errors from '../errors';
-import AuthInfo, { AccountInfos, AuthInfoType, AuthorizationResults,
-    AuthV4Results, AccountCanonicalInfo } from './AuthInfo';
+import AuthInfo, {
+    AccountInfos,
+    AuthInfoType,
+    AuthorizationResults,
+    AuthV4Results,
+    AccountCanonicalInfo,
+} from './AuthInfo';
 import { ArsenalCallback } from '../types';
 import RequestContext from '../policyEvaluator/RequestContext';
 
@@ -17,9 +22,9 @@ export function vaultSignatureCb(
     err: Error | null,
     authInfo: {
         message: {
-            message: string,
-            body: AuthV4Results,
-        },
+            message: string;
+            body: AuthV4Results;
+        };
     },
     log: RequestLogger,
     callback: (
@@ -38,8 +43,7 @@ export function vaultSignatureCb(
     // - or `err == null` and `info` is an object with `message.code` and
     //   `message.message` properties set.
     if (err) {
-        log.debug('received error message from auth provider',
-            { errorMessage: err });
+        log.debug('received error message from auth provider', { errorMessage: err });
         return callback(err);
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -53,11 +57,11 @@ export function vaultSignatureCb(
     });
 
     const info = authInfo.message.body as AuthV4Results;
-    const userInfo = new AuthInfo(info.userInfo,
-        streamingV4Params ? 'SigV4' : 'SigV2', authType, accessKey);
+    const userInfo = new AuthInfo(info.userInfo, streamingV4Params ? 'SigV4' : 'SigV2', authType, accessKey);
     const authorizationResults = info.authorizationResults;
-    const auditLog: { accountDisplayName: string, IAMdisplayName?: string } =
-        { accountDisplayName: userInfo.getAccountDisplayName() };
+    const auditLog: { accountDisplayName: string; IAMdisplayName?: string } = {
+        accountDisplayName: userInfo.getAccountDisplayName(),
+    };
     const iamDisplayName = userInfo.getIAMdisplayName();
     if (iamDisplayName) {
         auditLog.IAMdisplayName = iamDisplayName;
@@ -158,7 +162,7 @@ export default class Vault {
     authenticateV2Request(
         params: AuthV2RequestParams,
         requestContexts: RequestContext[] | null,
-        callback: (err: Error | null, data?: any) => void
+        callback: (err: Error | null, data?: any) => void,
     ) {
         params.log.debug('authenticating V2 request');
         let serializedRCsArr;
@@ -177,9 +181,16 @@ export default class Vault {
                 securityToken: params.data.securityToken,
                 requestContext: serializedRCsArr,
             },
-            (err: Error | null, userInfo?: any) => vaultSignatureCb(err,
-                userInfo, params.log, callback, undefined,
-                params.data.authType, params.data.accessKey),
+            (err: Error | null, userInfo?: any) =>
+                vaultSignatureCb(
+                    err,
+                    userInfo,
+                    params.log,
+                    callback,
+                    undefined,
+                    params.data.authType,
+                    params.data.accessKey,
+                ),
         );
     }
 
@@ -207,7 +218,7 @@ export default class Vault {
      * instances which contain information for policy authorization check
      * @param options - options for authentication
      * @param callback - callback with either error or user info
-    */
+     */
     authenticateV4Request(
         params: AuthV4RequestParams,
         requestContexts: RequestContext[] | null,
@@ -225,7 +236,8 @@ export default class Vault {
             region: params.data.region,
             scopeDate: params.data.scopeDate,
             timestamp: params.data.timestamp,
-            credentialScope: params.data.credentialScope };
+            credentialScope: params.data.credentialScope,
+        };
         this.client.verifySignatureV4(
             params.data.stringToSign,
             params.data.signatureFromRequest,
@@ -240,10 +252,16 @@ export default class Vault {
                 securityToken: params.data.securityToken,
                 requestContext: serializedRCs,
             },
-            (err: Error | null, userInfo?: any) => vaultSignatureCb(err,
-                userInfo, params.log, callback,
-                streamingV4Params,
-                params.data.authType, params.data.accessKey),
+            (err: Error | null, userInfo?: any) =>
+                vaultSignatureCb(
+                    err,
+                    userInfo,
+                    params.log,
+                    callback,
+                    streamingV4Params,
+                    params.data.authType,
+                    params.data.accessKey,
+                ),
         );
     }
 
@@ -254,23 +272,20 @@ export default class Vault {
      * @param callback - callback with either error or an array
      * of objects with each object containing the canonicalID and emailAddress
      * of an account as properties
-    */
+     */
     getCanonicalIds(
         emailAddresses: string[],
         log: RequestLogger,
-        callback: (
-            err: Error | null,
-            data?: { canonicalID: string; email: string }[]
-        ) => void
+        callback: (err: Error | null, data?: { canonicalID: string; email: string }[]) => void,
     ) {
         log.trace('getting canonicalIDs from Vault based on emailAddresses');
-        this.client.getCanonicalIds(emailAddresses,
+        this.client.getCanonicalIds(
+            emailAddresses,
             // @ts-ignore
             { reqUid: log.getSerializedUids() },
             (err: Error | null, info?: any) => {
                 if (err) {
-                    log.debug('received error message from auth provider',
-                        { errorMessage: err });
+                    log.debug('received error message from auth provider', { errorMessage: err });
                     return callback(err);
                 }
                 const infoFromVault = info.message.body;
@@ -278,8 +293,7 @@ export default class Vault {
                 const foundIds: { canonicalID: string; email: string }[] = [];
                 for (let i = 0; i < Object.keys(infoFromVault).length; i++) {
                     const key = Object.keys(infoFromVault)[i];
-                    if (infoFromVault[key] === 'WrongFormat'
-                    || infoFromVault[key] === 'NotFound') {
+                    if (infoFromVault[key] === 'WrongFormat' || infoFromVault[key] === 'NotFound') {
                         return callback(errors.UnresolvableGrantByEmailAddress);
                     }
                     foundIds.push({
@@ -288,7 +302,8 @@ export default class Vault {
                     });
                 }
                 return callback(null, foundIds);
-            });
+            },
+        );
     }
 
     /** getEmailAddresses -- call Vault to get email addresses based on
@@ -297,21 +312,20 @@ export default class Vault {
      * @param log - log object
      * @param callback - callback with either error or an object
      * with canonicalID keys and email address values
-    */
+     */
     getEmailAddresses(
         canonicalIDs: string[],
         log: RequestLogger,
-        callback: (err: Error | null, data?: Record<string, any>) => void
+        callback: (err: Error | null, data?: Record<string, any>) => void,
     ) {
-        log.trace('getting emailAddresses from Vault based on canonicalIDs',
-            { canonicalIDs });
-        this.client.getEmailAddresses(canonicalIDs,
+        log.trace('getting emailAddresses from Vault based on canonicalIDs', { canonicalIDs });
+        this.client.getEmailAddresses(
+            canonicalIDs,
             // @ts-ignore
             { reqUid: log.getSerializedUids() },
             (err: Error | null, info?: any) => {
                 if (err) {
-                    log.debug('received error message from vault',
-                        { errorMessage: err });
+                    log.debug('received error message from vault', { errorMessage: err });
                     return callback(err);
                 }
                 const infoFromVault = info.message.body;
@@ -320,13 +334,13 @@ export default class Vault {
                 /* If the email address was not found in Vault, do not
                 send the canonicalID back to the API */
                 Object.keys(infoFromVault).forEach(key => {
-                    if (infoFromVault[key] !== 'NotFound' &&
-                    infoFromVault[key] !== 'WrongFormat') {
+                    if (infoFromVault[key] !== 'NotFound' && infoFromVault[key] !== 'WrongFormat') {
                         result[key] = infoFromVault[key];
                     }
                 });
                 return callback(null, result);
-            });
+            },
+        );
     }
 
     /** getAccountIds -- call Vault to get accountIds based on
@@ -335,20 +349,19 @@ export default class Vault {
      * @param log - log object
      * @param callback - callback with either error or an object
      * with canonicalID keys and accountId values
-    */
+     */
     getAccountIds(
         canonicalIDs: string[],
         log: RequestLogger,
-        callback: (err: Error | null, data?: Record<string, string>) => void
+        callback: (err: Error | null, data?: Record<string, string>) => void,
     ) {
-        log.trace('getting accountIds from Vault based on canonicalIDs',
-            { canonicalIDs });
-        this.client.getAccountIds(canonicalIDs,
+        log.trace('getting accountIds from Vault based on canonicalIDs', { canonicalIDs });
+        this.client.getAccountIds(
+            canonicalIDs,
             { reqUid: log.getSerializedUids() },
             (err: Error | null, info?: any) => {
                 if (err) {
-                    log.debug('received error message from vault',
-                        { errorMessage: err });
+                    log.debug('received error message from vault', { errorMessage: err });
                     return callback(err);
                 }
                 const infoFromVault = info.message.body;
@@ -357,13 +370,13 @@ export default class Vault {
                 /* If the accountId was not found in Vault, do not
             send the canonicalID back to the API */
                 Object.keys(infoFromVault).forEach(key => {
-                    if (infoFromVault[key] !== 'NotFound' &&
-                infoFromVault[key] !== 'WrongFormat') {
+                    if (infoFromVault[key] !== 'NotFound' && infoFromVault[key] !== 'WrongFormat') {
                         result[key] = infoFromVault[key];
                     }
                 });
                 return callback(null, result);
-            });
+            },
+        );
     }
 
     /**
@@ -408,27 +421,30 @@ export default class Vault {
      * @param {object} log - log object
      * @param {function} callback - callback with either error or an array
      * of authorization results
-    */
+     */
     checkPolicies(
         requestContextParams: any[],
         userArn: string,
         log: RequestLogger,
-        callback: (err: Error | null, data?: any[]) => void
+        callback: (err: Error | null, data?: any[]) => void,
     ) {
-        log.trace('sending request context params to vault to evaluate' +
-        'policies');
-        this.client.checkPolicies(requestContextParams, userArn, {
-            // @ts-ignore
-            reqUid: log.getSerializedUids(),
-        }, (err: Error | null, info?: any) => {
-            if (err) {
-                log.debug('received error message from auth provider',
-                    { error: err });
-                return callback(err);
-            }
-            const result = info.message.body;
-            return callback(null, result);
-        });
+        log.trace('sending request context params to vault to evaluate policies');
+        this.client.checkPolicies(
+            requestContextParams,
+            userArn,
+            {
+                // @ts-ignore
+                reqUid: log.getSerializedUids(),
+            },
+            (err: Error | null, info?: any) => {
+                if (err) {
+                    log.debug('received error message from auth provider', { error: err });
+                    return callback(err);
+                }
+                const result = info.message.body;
+                return callback(null, result);
+            },
+        );
     }
 
     checkHealth(log: RequestLogger, callback: (err: Error | null, data?: any) => void) {
@@ -489,28 +505,34 @@ export default class Vault {
      *   - action: Describes if the key was 'retrieved' or 'created'.
      *
      * @returns {void}
-    */
+     */
     getOrCreateEncryptionKeyId(
         canonicalID: string,
         log: RequestLogger,
-        callback: (err: Error | null, data?: {
-            canonicalId: string,
-            encryptionKeyId: string,
-            action: 'retrieved' | 'created'
-        }) => void
+        callback: (
+            err: Error | null,
+            data?: {
+                canonicalId: string;
+                encryptionKeyId: string;
+                action: 'retrieved' | 'created';
+            },
+        ) => void,
     ) {
         log.trace('sending request context params to vault to get or create encryption key id');
-        this.client.getOrCreateEncryptionKeyId(canonicalID, {
-            // @ts-ignore
-            reqUid: log.getSerializedUids(),
-        }, (err: Error | null, info?: any) => {
-            if (err) {
-                log.debug('received error message from auth provider',
-                    { error: err });
-                return callback(err);
-            }
-            const result = info.message.body;
-            return callback(null, result);
-        });
+        this.client.getOrCreateEncryptionKeyId(
+            canonicalID,
+            {
+                // @ts-ignore
+                reqUid: log.getSerializedUids(),
+            },
+            (err: Error | null, info?: any) => {
+                if (err) {
+                    log.debug('received error message from auth provider', { error: err });
+                    return callback(err);
+                }
+                const result = info.message.body;
+                return callback(null, result);
+            },
+        );
     }
 }
