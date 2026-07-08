@@ -142,4 +142,58 @@ describe('auth.doAuth', () => {
         sinon.assert.calledWith(cb, null, sinon.match.instanceOf(AuthInfo));
         clock.uninstall();
     });
+
+    it('should pass targetAccount option through to the vault client', () => {
+        const request = {
+            method,
+            path,
+            headers,
+            query: {},
+        };
+        const clock = fakeTimers.install({ now: new Date(xAmzDate).getTime() });
+        const mockOptions = { targetAccount: '123456789012' };
+
+        const mockResponse = {
+            message: {
+                message: 'Success',
+                body: {
+                    userInfo: {
+                        arn: 'arn:aws:iam::123456789012:user/testUser',
+                        canonicalID: 'testCanonicalID',
+                        shortid: '123456789012',
+                        email: 'test@example.com',
+                        accountDisplayName: 'TestAccount',
+                    },
+                },
+            },
+        };
+
+        mockClient.verifySignatureV4.callsFake(
+            (stringToSign, signature, accessKey, region, scopeDate, options, callback) => {
+                assert.strictEqual(options.targetAccount, '123456789012');
+                callback(null, mockResponse);
+            },
+        );
+
+        authServer.doAuth(
+            request,
+            log,
+            cb,
+            's3',
+            [
+                {
+                    setAuthType: sandbox.stub(),
+                    setSignatureVersion: sandbox.stub(),
+                    setSecurityToken: sandbox.stub(),
+                    setSignatureAge: sandbox.stub(),
+                    serialize: sandbox.stub().returns({ serialized: 'context' }),
+                },
+            ],
+            mockOptions,
+        );
+
+        sinon.assert.calledOnce(mockClient.verifySignatureV4);
+        sinon.assert.calledWith(cb, null, sinon.match.instanceOf(AuthInfo));
+        clock.uninstall();
+    });
 });
