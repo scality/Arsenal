@@ -350,6 +350,42 @@ describe('Vault class', () => {
             });
         });
 
+        it('should pass targetAccount option to the vault client', done => {
+            const mockOptions = {
+                targetAccount: '123456789012',
+            };
+
+            const mockResponse = {
+                message: {
+                    message: 'Success',
+                    body: {
+                        userInfo: mockUserInfo,
+                        authorizationResults: [
+                            {
+                                isAllowed: true,
+                                isImplicit: false,
+                                arn: mockUserInfo.arn,
+                                action: 'testAction',
+                            },
+                        ],
+                    },
+                },
+            };
+
+            mockClient.verifySignatureV4.callsFake(
+                (_stringToSign, _signature, _accessKey, _region, _scopeDate, _options, callback) => {
+                    assert.strictEqual(_options.targetAccount, '123456789012');
+                    callback(null, mockResponse);
+                },
+            );
+
+            vault.authenticateV4Request(mockParams, [], mockOptions, (err, data) => {
+                assert.strictEqual(err, null);
+                assert(data instanceof AuthInfo);
+                done();
+            });
+        });
+
         it('should handle successful authentication with account limits', done => {
             const limitConfig = {
                 RequestsPerSecond: {

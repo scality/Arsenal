@@ -111,6 +111,7 @@ export type AuthenticationOptions = {
     logger?: RequestLogger;
     requestContext?: RequestContext;
     securityToken?: string;
+    targetAccount?: string;
 };
 
 /**

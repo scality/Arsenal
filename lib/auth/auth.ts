@@ -29,6 +29,7 @@ type AuthenticationOptions = {
     logger?: RequestLogger;
     requestContext?: RequestContextType;
     securityToken?: string;
+    targetAccount?: string;
 };
 
 let vault: Vault | null = null;
