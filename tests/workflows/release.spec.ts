@@ -110,3 +110,26 @@ test('fails when the tag already exists', async () => {
     const result = await run(act);
     expect(step(result, 'Fail if tag already exists')?.status).toBe(1);
 });
+
+test('publishes on a release event without the manual-dispatch guards', async () => {
+    const act = await setup('package-versioned.json', 'development/8.3');
+    act.setEvent({ action: 'published', release: { tag_name: '8.3.12' } });
+    const result = await act.runEvent('release', { mockSteps });
+    // the dispatch-only guards and the Create Release job are skipped on a release event
+    expect(step(result, 'Reject disallowed branch')).toBeUndefined();
+    expect(step(result, 'Fail if release already exists')).toBeUndefined();
+    expect(step(result, 'Fail if tag already exists')).toBeUndefined();
+    expect(step(result, 'Create Release')).toBeUndefined();
+    // the tag/version check runs and the package is published
+    expect(step(result, 'Verify tag matches package.json version')?.status).toBe(0);
+    expect(step(result, 'Publish to GitHub Packages')?.status).toBe(0);
+    expect(step(result, 'Publish to npm')?.status).toBe(0);
+    expect(result.every(r => r.status === 0)).toBe(true);
+});
+
+test('fails a release event whose tag does not match the version', async () => {
+    const act = await setup('package-versioned.json', 'development/8.3');
+    act.setEvent({ action: 'published', release: { tag_name: '9.9.9' } });
+    const result = await act.runEvent('release', { mockSteps });
+    expect(step(result, 'Verify tag matches package.json version')?.status).toBe(1);
+});
