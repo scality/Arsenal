@@ -1,9 +1,9 @@
 {
-    "name": "arsenal",
+    "name": "@scality/arsenal",
     "engines": {
         "node": ">=20"
     },
-    "version": "8.5.8",
+    "version": "8.5.9",
     "config": {
         "mongodbMemoryServer": {
             "version": "8.0.23"
@@ -11,6 +11,13 @@
     },
     "description": "Common utilities for the S3 project components",
     "main": "build/index.js",
+    "types": "build/index.d.ts",
+    "files": [
+        "build"
+    ],
+    "publishConfig": {
+        "access": "public"
+    },
     "repository": {
         "type": "git",
         "url": "git+https://github.com/scality/Arsenal.git"
@@ -114,7 +121,6 @@
         "prepare": "yarn build",
         "test": "export NODE_OPTIONS=\"--tls-max-v1.2\" && jest tests/unit --detectOpenHandles"
     },
-    "private": true,
     "jest": {
         "maxWorkers": 1,
         "coverageReporters": [
