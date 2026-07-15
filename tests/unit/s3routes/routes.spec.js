@@ -107,8 +107,7 @@ describe('routes', () => {
 
         routes(req, res, params, logger, s3config);
 
-        assert.strictEqual(typeof res, 'object',
-            'bad routes param: res must be an object');
+        assert.strictEqual(typeof res, 'object', 'bad routes param: res must be an object');
         expect(params.api.callApiMethod.calledOnce).toBe(true);
 
         routesUtils.isValidBucketName.restore();
@@ -124,13 +123,11 @@ describe('routes', () => {
 
         routes(req, res, params, logger, s3config);
 
-        assert.strictEqual(typeof res, 'object',
-            'bad routes param: res must be an object');
+        assert.strictEqual(typeof res, 'object', 'bad routes param: res must be an object');
         expect(params.api.callApiMethod.calledOnce).toBe(true);
 
         routesUtils.isValidBucketName.restore();
     });
-
 
     it('should call the appropriate route method', () => {
         req.method = 'GET';
@@ -140,8 +137,7 @@ describe('routes', () => {
 
         routes(req, res, params, logger, s3config);
 
-        assert.strictEqual(typeof res, 'object',
-            'bad routes param: res must be an object');
+        assert.strictEqual(typeof res, 'object', 'bad routes param: res must be an object');
         expect(params.api.callApiMethod.calledOnce).toBe(true);
 
         routesUtils.isValidBucketName.restore();
