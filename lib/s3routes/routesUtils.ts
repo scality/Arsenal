@@ -2,7 +2,7 @@ import * as url from 'url';
 import * as http from 'http';
 import { eachSeries } from 'async';
 
-import type { RequestLogger } from 'werelogs';
+import type { Logger, RequestLogger } from 'werelogs';
 
 import * as ipCheck from '../ipCheck';
 import errors, { ArsenalError, errorInstances } from '../errors';
@@ -19,6 +19,18 @@ let serverHeaderValue = 'S3 Server';
 
 export function setServerHeader(value: string) {
     serverHeaderValue = value;
+}
+
+/**
+ * Build a request logger for an incoming request, seeding the werelogs UID
+ * chain from the `x-scal-request-uids` header when it carries a usable value.
+ */
+export function newRequestLoggerFromRequest(logger: Logger, req: http.IncomingMessage): RequestLogger {
+    const reqUids = req.headers['x-scal-request-uids'];
+    if (typeof reqUids !== 'string' || reqUids.length === 0 || reqUids.length >= constants.maxRequestUidsLength) {
+        return logger.newRequestLogger();
+    }
+    return logger.newRequestLoggerFromSerializedUids(reqUids);
 }
 
 function storeServerAccessLogFields(

@@ -15,6 +15,8 @@ export const fifteenMinutesInMilliseconds = 900_000;
 
 export const authChecksumUnsignedPayload = 'UNSIGNED-PAYLOAD';
 
+export const maxRequestUidsLength = 128;
+
 // info about the iam security token
 export const iamSecurityToken = {
     min: vaultGeneratedIamSecurityTokenSizeMin,

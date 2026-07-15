@@ -1,6 +1,6 @@
 import assert from 'assert';
 
-import type { RequestLogger } from 'werelogs';
+import type { Logger, RequestLogger } from 'werelogs';
 
 import errors, { errorInstances } from '../errors';
 import routeGET from './routes/routeGET';
@@ -27,12 +27,6 @@ const routeMap = {
 };
 
 const isDevMode = process.env.NODE_ENV !== 'production';
-
-function isValidReqUids(reqUids: string | string[]) {
-    // baseline check, to avoid the risk of running into issues if
-    // users craft a large x-scal-request-uids header
-    return reqUids.length < 128;
-}
 
 function checkUnsupportedRoutes(reqMethod: keyof typeof routeMap) {
     const method = routeMap[reqMethod];
@@ -223,18 +217,9 @@ export default function routes(
         bodyLength: parseInt(req.headers['content-length'] || '0', 10) || 0,
     };
 
-    let reqUids = req.headers['x-scal-request-uids'];
-    if (reqUids !== undefined && !isValidReqUids(reqUids)) {
-        // simply ignore invalid id (any user can provide an
-        // invalid request ID through a crafted header)
-        reqUids = undefined;
-    }
-    const log =
-        reqUids !== undefined
-            ? // @ts-ignore
-              logger.newRequestLoggerFromSerializedUids(reqUids)
-            : // @ts-ignore
-              logger.newRequestLogger();
+    // logger is typed RequestLogger in this signature but is actually the
+    // parent Logger at runtime (it exposes newRequestLogger*).
+    const log = routesUtils.newRequestLoggerFromRequest(logger as unknown as Logger, req);
 
     // @ts-expect-error
     if (res.serverAccessLog) {
