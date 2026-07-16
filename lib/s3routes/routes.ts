@@ -82,7 +82,7 @@ function checkTypes(
     req: http.IncomingMessage,
     res: http.ServerResponse,
     params: Params,
-    logger: RequestLogger,
+    logger: Logger,
     s3config?: any,
 ) {
     // In production mode, no need to dynamically assert all types
@@ -190,7 +190,7 @@ export default function routes(
     req: ArsenalRequest,
     res: http.ServerResponse,
     params: Params,
-    logger: RequestLogger,
+    logger: Logger,
     s3config?: any,
 ) {
     checkTypes(req, res, params, logger);
@@ -217,9 +217,7 @@ export default function routes(
         bodyLength: parseInt(req.headers['content-length'] || '0', 10) || 0,
     };
 
-    // logger is typed RequestLogger in this signature but is actually the
-    // parent Logger at runtime (it exposes newRequestLogger*).
-    const log = routesUtils.newRequestLoggerFromRequest(logger as unknown as Logger, req);
+    const log = routesUtils.newRequestLoggerFromRequest(logger, req);
 
     // @ts-expect-error
     if (res.serverAccessLog) {
