@@ -137,7 +137,7 @@ jobs:
           if [ -n "$(npm view "@scality/arsenal@$VERSION" version 2>/dev/null)" ]; then
             echo "::notice::@scality/arsenal@$VERSION already on GitHub Packages; skipping"
           else
-            npm publish *.tgz --tag "v${VERSION%.*}"
+            npm publish *.tgz --tag "latest-${VERSION%.*}"
           fi
 
   publish-npm:
@@ -166,7 +166,7 @@ jobs:
           if [ -n "$(npm view "@scality/arsenal@$VERSION" version 2>/dev/null)" ]; then
             echo "::notice::@scality/arsenal@$VERSION already on npm; skipping"
           else
-            npm publish *.tgz --provenance --tag "v${VERSION%.*}"
+            npm publish *.tgz --provenance --tag "latest-${VERSION%.*}"
           fi
 
   release:
