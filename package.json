@@ -3,7 +3,7 @@
     "engines": {
         "node": ">=20"
     },
-    "version": "8.5.9",
+    "version": "8.5.10",
     "config": {
         "mongodbMemoryServer": {
             "version": "8.0.23"
