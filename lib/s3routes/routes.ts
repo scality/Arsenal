@@ -1,6 +1,6 @@
 import assert from 'assert';
 
-import type { RequestLogger } from 'werelogs';
+import type { Logger, RequestLogger } from 'werelogs';
 
 import errors, { errorInstances } from '../errors';
 import routeGET from './routes/routeGET';
@@ -28,12 +28,6 @@ const routeMap = {
 
 const isDevMode = process.env.NODE_ENV !== 'production';
 
-function isValidReqUids(reqUids: string | string[]) {
-    // baseline check, to avoid the risk of running into issues if
-    // users craft a large x-scal-request-uids header
-    return reqUids.length < 128;
-}
-
 function checkUnsupportedRoutes(reqMethod: keyof typeof routeMap) {
     const method = routeMap[reqMethod];
     if (!method) {
@@ -53,12 +47,11 @@ function checkBucketAndKey(
     // if empty name and request not a List Buckets
     if (!bucketName && !(method === 'GET' && !objectKey)) {
         log.debug('empty bucket name', { method: 'routes' });
-        return (method !== 'OPTIONS') ?
-            errors.MethodNotAllowed : errorInstances.AccessForbidden
-                .customizeDescription('CORSResponse: Bucket not found');
+        return method !== 'OPTIONS'
+            ? errors.MethodNotAllowed
+            : errorInstances.AccessForbidden.customizeDescription('CORSResponse: Bucket not found');
     }
-    if (bucketName !== undefined && routesUtils.isValidBucketName(bucketName,
-        blacklistedPrefixes.bucket) === false) {
+    if (bucketName !== undefined && routesUtils.isValidBucketName(bucketName, blacklistedPrefixes.bucket) === false) {
         log.debug('invalid bucket name', { bucketName });
         if (method === 'DELETE') {
             return errors.NoSuchBucket;
@@ -66,24 +59,21 @@ function checkBucketAndKey(
         return errors.InvalidBucketName;
     }
     if (objectKey !== undefined) {
-        const result = routesUtils.isValidObjectKey(objectKey,
-            blacklistedPrefixes.object);
+        const result = routesUtils.isValidObjectKey(objectKey, blacklistedPrefixes.object);
         if (!result.isValid) {
             log.debug('invalid object key', { objectKey });
             if (result.invalidPrefix) {
-                return errorInstances.InvalidArgument.customizeDescription('Invalid ' +
-                    'prefix - object key cannot start with ' +
-                    `"${result.invalidPrefix}".`);
+                return errorInstances.InvalidArgument.customizeDescription(
+                    'Invalid ' + 'prefix - object key cannot start with ' + `"${result.invalidPrefix}".`,
+                );
             }
-            return errorInstances.KeyTooLong.customizeDescription('Object key is too ' +
-                'long. Maximum number of bytes allowed in keys is ' +
-                `${objectKeyByteLimit}.`);
+            return errorInstances.KeyTooLong.customizeDescription(
+                'Object key is too ' + 'long. Maximum number of bytes allowed in keys is ' + `${objectKeyByteLimit}.`,
+            );
         }
     }
-    if ((reqQuery.partNumber || reqQuery.uploadId)
-        && objectKey === undefined) {
-        return errorInstances.InvalidRequest
-            .customizeDescription('A key must be specified');
+    if ((reqQuery.partNumber || reqQuery.uploadId) && objectKey === undefined) {
+        return errorInstances.InvalidRequest.customizeDescription('A key must be specified');
     }
     return undefined;
 }
@@ -92,7 +82,7 @@ function checkTypes(
     req: http.IncomingMessage,
     res: http.ServerResponse,
     params: Params,
-    logger: RequestLogger,
+    logger: Logger,
     s3config?: any,
 ) {
     // In production mode, no need to dynamically assert all types
@@ -102,52 +92,60 @@ function checkTypes(
     if (!isDevMode) {
         return;
     }
-    assert.strictEqual(typeof req, 'object',
-        'bad routes param: req must be an object');
-    assert.strictEqual(typeof res, 'object',
-        'bad routes param: res must be an object');
-    assert.strictEqual(typeof logger, 'object',
-        'bad routes param: logger must be an object');
-    assert.strictEqual(typeof params.api, 'object',
-        'bad routes param: api must be an object');
-    assert.strictEqual(typeof params.api.callApiMethod, 'function',
-        'bad routes param: api.callApiMethod must be a defined function');
-    assert.strictEqual(typeof params.internalHandlers, 'object',
-        'bad routes param: internalHandlers must be an object');
+    assert.strictEqual(typeof req, 'object', 'bad routes param: req must be an object');
+    assert.strictEqual(typeof res, 'object', 'bad routes param: res must be an object');
+    assert.strictEqual(typeof logger, 'object', 'bad routes param: logger must be an object');
+    assert.strictEqual(typeof params.api, 'object', 'bad routes param: api must be an object');
+    assert.strictEqual(
+        typeof params.api.callApiMethod,
+        'function',
+        'bad routes param: api.callApiMethod must be a defined function',
+    );
+    assert.strictEqual(
+        typeof params.internalHandlers,
+        'object',
+        'bad routes param: internalHandlers must be an object',
+    );
     if (params.statsClient) {
-        assert.strictEqual(typeof params.statsClient, 'object',
-            'bad routes param: statsClient must be an object');
+        assert.strictEqual(typeof params.statsClient, 'object', 'bad routes param: statsClient must be an object');
     }
-    assert(Array.isArray(params.allEndpoints),
-        'bad routes param: allEndpoints must be an array');
-    assert(params.allEndpoints.length > 0,
-        'bad routes param: allEndpoints must have at least one endpoint');
+    assert(Array.isArray(params.allEndpoints), 'bad routes param: allEndpoints must be an array');
+    assert(params.allEndpoints.length > 0, 'bad routes param: allEndpoints must have at least one endpoint');
     params.allEndpoints.forEach(endpoint => {
-        assert.strictEqual(typeof endpoint, 'string',
-            'bad routes param: each item in allEndpoints must be a string');
+        assert.strictEqual(typeof endpoint, 'string', 'bad routes param: each item in allEndpoints must be a string');
     });
-    assert(Array.isArray(params.websiteEndpoints),
-        'bad routes param: allEndpoints must be an array');
+    assert(Array.isArray(params.websiteEndpoints), 'bad routes param: allEndpoints must be an array');
     params.websiteEndpoints.forEach(endpoint => {
-        assert.strictEqual(typeof endpoint, 'string',
-            'bad routes param: each item in websiteEndpoints must be a string');
+        assert.strictEqual(
+            typeof endpoint,
+            'string',
+            'bad routes param: each item in websiteEndpoints must be a string',
+        );
     });
-    assert.strictEqual(typeof params.blacklistedPrefixes, 'object',
-        'bad routes param: blacklistedPrefixes must be an object');
-    assert(Array.isArray(params.blacklistedPrefixes.bucket),
-        'bad routes param: blacklistedPrefixes.bucket must be an array');
+    assert.strictEqual(
+        typeof params.blacklistedPrefixes,
+        'object',
+        'bad routes param: blacklistedPrefixes must be an object',
+    );
+    assert(
+        Array.isArray(params.blacklistedPrefixes.bucket),
+        'bad routes param: blacklistedPrefixes.bucket must be an array',
+    );
     params.blacklistedPrefixes.bucket.forEach(pre => {
-        assert.strictEqual(typeof pre, 'string',
-            'bad routes param: each blacklisted bucket prefix must be a string');
+        assert.strictEqual(typeof pre, 'string', 'bad routes param: each blacklisted bucket prefix must be a string');
     });
-    assert(Array.isArray(params.blacklistedPrefixes.object),
-        'bad routes param: blacklistedPrefixes.object must be an array');
+    assert(
+        Array.isArray(params.blacklistedPrefixes.object),
+        'bad routes param: blacklistedPrefixes.object must be an array',
+    );
     params.blacklistedPrefixes.object.forEach(pre => {
-        assert.strictEqual(typeof pre, 'string',
-            'bad routes param: each blacklisted object prefix must be a string');
+        assert.strictEqual(typeof pre, 'string', 'bad routes param: each blacklisted object prefix must be a string');
     });
-    assert.strictEqual(typeof params.dataRetrievalParams, 'object',
-        'bad routes param: dataRetrievalParams must be a defined object');
+    assert.strictEqual(
+        typeof params.dataRetrievalParams,
+        'object',
+        'bad routes param: dataRetrievalParams must be a defined object',
+    );
     if (s3config) {
         assert.strictEqual(typeof s3config, 'object', 'bad routes param: s3config must be an object');
     }
@@ -165,7 +163,7 @@ export type Params = {
     };
     unsupportedQueries: any;
     api: { callApiMethod: routesUtils.CallApiMethod };
-}
+};
 
 /** routes - route request to appropriate method
  * @param req - http request object
@@ -192,7 +190,7 @@ export default function routes(
     req: ArsenalRequest,
     res: http.ServerResponse,
     params: Params,
-    logger: RequestLogger,
+    logger: Logger,
     s3config?: any,
 ) {
     checkTypes(req, res, params, logger);
@@ -219,18 +217,7 @@ export default function routes(
         bodyLength: parseInt(req.headers['content-length'] || '0', 10) || 0,
     };
 
-    let reqUids = req.headers['x-scal-request-uids'];
-    if (reqUids !== undefined && !isValidReqUids(reqUids)) {
-        // simply ignore invalid id (any user can provide an
-        // invalid request ID through a crafted header)
-        reqUids = undefined;
-    }
-    const log = (reqUids !== undefined ?
-        // @ts-ignore
-        logger.newRequestLoggerFromSerializedUids(reqUids) :
-        // @ts-ignore
-        logger.newRequestLogger());
-
+    const log = routesUtils.newRequestLoggerFromRequest(logger, req);
 
     // @ts-expect-error
     if (res.serverAccessLog) {
@@ -238,8 +225,7 @@ export default function routes(
         res.serverAccessLog.requestID = log.getSerializedUids();
     }
 
-    if (!req.url!.startsWith('/_/healthcheck') &&
-        !req.url!.startsWith('/_/report')) {
+    if (!req.url!.startsWith('/_/healthcheck') && !req.url!.startsWith('/_/report')) {
         log.debug('received request', clientInfo);
     }
 
@@ -253,11 +239,9 @@ export default function routes(
         }
         log.addDefaultFields({ internalServiceName });
         if (internalHandlers[internalServiceName] === undefined) {
-            return routesUtils.responseXMLBody(
-                errors.InvalidURI, null, res, log);
+            return routesUtils.responseXMLBody(errors.InvalidURI, null, res, log);
         }
-        return internalHandlers[internalServiceName](
-            clientInfo.clientIP, req, res, log, statsClient);
+        return internalHandlers[internalServiceName](clientInfo.clientIP, req, res, log, statsClient);
     }
 
     if (statsClient) {
@@ -272,9 +256,13 @@ export default function routes(
     } catch (err: any) {
         log.debug('could not normalize request', { error: err.stack });
         return routesUtils.responseXMLBody(
-            errorInstances.InvalidURI.customizeDescription('Could not parse the ' +
-                'specified URI. Check your restEndpoints configuration.'),
-            null, res, log);
+            errorInstances.InvalidURI.customizeDescription(
+                'Could not parse the ' + 'specified URI. Check your restEndpoints configuration.',
+            ),
+            null,
+            res,
+            log,
+        );
     }
 
     const { error, method } = checkUnsupportedRoutes(req.method);
@@ -284,12 +272,17 @@ export default function routes(
         return routesUtils.responseXMLBody(error, '', res, log);
     }
 
-    const bucketOrKeyError = checkBucketAndKey(req.bucketName, req.objectKey,
-        req.method, req.query, blacklistedPrefixes, log);
+    const bucketOrKeyError = checkBucketAndKey(
+        req.bucketName,
+        req.objectKey,
+        req.method,
+        req.query,
+        blacklistedPrefixes,
+        log,
+    );
 
     if (bucketOrKeyError) {
-        log.trace('error with bucket or key value',
-            { error: bucketOrKeyError });
+        log.trace('error with bucket or key value', { error: bucketOrKeyError });
         return routesUtils.responseXMLBody(bucketOrKeyError, null, res, log);
     }
 

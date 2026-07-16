@@ -2,7 +2,7 @@ import * as url from 'url';
 import * as http from 'http';
 import { eachSeries } from 'async';
 
-import type { RequestLogger } from 'werelogs';
+import type { Logger, RequestLogger } from 'werelogs';
 
 import * as ipCheck from '../ipCheck';
 import errors, { ArsenalError, errorInstances } from '../errors';
@@ -19,6 +19,18 @@ let serverHeaderValue = 'S3 Server';
 
 export function setServerHeader(value: string) {
     serverHeaderValue = value;
+}
+
+/**
+ * Build a request logger for an incoming request, seeding the werelogs UID
+ * chain from the `x-scal-request-uids` header when it carries a usable value.
+ */
+export function newRequestLoggerFromRequest(logger: Logger, req: http.IncomingMessage): RequestLogger {
+    const reqUids = req.headers['x-scal-request-uids'];
+    if (typeof reqUids !== 'string' || reqUids.length === 0 || reqUids.length >= constants.maxRequestUidsLength) {
+        return logger.newRequestLogger();
+    }
+    return logger.newRequestLoggerFromSerializedUids(reqUids);
 }
 
 function storeServerAccessLogFields(
@@ -63,12 +75,12 @@ export function toArsenalError(err: ArsenalError | VaultClientError | Error): Ar
     // For known error types, return the error instance as-is; otherwise, wrap it in an InternalError.
     // - VaultClient errors identify their type via the `code` property.
     // - ArsenalErrors received from external services (e.g., Metadata) use the `message` property for the error type.
-    return errorInstances[(err as Error).message || (err as VaultClientError).code] ||
+    return (
+        errorInstances[(err as Error).message || (err as VaultClientError).code] ||
         errorInstances.InternalError.customizeDescription(
-            (err as Error).message ||
-            (err as VaultClientError).description ||
-            errorInstances.InternalError.description,
-        );
+            (err as Error).message || (err as VaultClientError).description || errorInstances.InternalError.description,
+        )
+    );
 }
 
 /**
@@ -92,7 +104,8 @@ export function setCommonResponseHeaders(
                 } catch (e: any) {
                     log.debug('header can not be added to the response', {
                         header: headers[key],
-                        error: e.stack, method: 'setCommonResponseHeaders'
+                        error: e.stack,
+                        method: 'setCommonResponseHeaders',
                     });
                 }
             }
@@ -130,7 +143,6 @@ export function okHeaderResponse(
 }
 
 export const XMLResponseBackend = {
-
     /**
      * okXMLResponse - Response with XML body
      * @param xml - XML body as string
@@ -206,11 +218,7 @@ export const XMLResponseBackend = {
             xml.push(`<ArgumentName${counter}>${ArgumentName}</ArgumentName${counter}>`);
             xml.push(`<ArgumentValue${counter}>${ArgumentValue}</ArgumentValue${counter}>`);
         });
-        xml.push(
-            '<Resource></Resource>',
-            `<RequestId>${log.getSerializedUids()}</RequestId>`,
-            '</Error>',
-        );
+        xml.push('<Resource></Resource>', `<RequestId>${log.getSerializedUids()}</RequestId>`, '</Error>');
         const xmlStr = xml.join('');
         const bytesSent = Buffer.byteLength(xmlStr);
         log.addDefaultFields({ bytesSent });
@@ -228,7 +236,6 @@ export const XMLResponseBackend = {
 };
 
 export const JSONResponseBackend = {
-
     /**
      * okJSONResponse - Response with JSON body
      * @param json - JSON body as string
@@ -331,8 +338,7 @@ function okContentHeadersResponse(
             const headerName = headersArr[i];
             if (headerName.startsWith('x-amz-')) {
                 const translatedHeaderName = headerName.replace(/\//g, '|+2f');
-                resHeaders[translatedHeaderName] =
-                    resHeaders[headerName];
+                resHeaders[translatedHeaderName] = resHeaders[headerName];
                 if (translatedHeaderName !== headerName) {
                     delete resHeaders[headerName];
                 }
@@ -346,8 +352,7 @@ function okContentHeadersResponse(
         addHeaders['Content-Type'] = overrideParams['response-content-type'];
     }
     if (overrideParams['response-content-language']) {
-        addHeaders['Content-Language'] =
-            overrideParams['response-content-language'];
+        addHeaders['Content-Language'] = overrideParams['response-content-language'];
     }
     if (overrideParams['response-expires']) {
         addHeaders.Expires = overrideParams['response-expires'];
@@ -356,12 +361,10 @@ function okContentHeadersResponse(
         addHeaders['Cache-Control'] = overrideParams['response-cache-control'];
     }
     if (overrideParams['response-content-disposition']) {
-        addHeaders['Content-Disposition'] =
-            overrideParams['response-content-disposition'];
+        addHeaders['Content-Disposition'] = overrideParams['response-content-disposition'];
     }
     if (overrideParams['response-content-encoding']) {
-        addHeaders['Content-Encoding'] =
-            overrideParams['response-content-encoding'];
+        addHeaders['Content-Encoding'] = overrideParams['response-content-encoding'];
     }
     setCommonResponseHeaders(addHeaders, response, log);
     return response;
@@ -375,24 +378,17 @@ function retrieveDataAzure(
     response: http.ServerResponse,
     logger: RequestLogger,
 ) {
-    const errorHandlerFn = () => { response.socket?.destroy(); };
+    const errorHandlerFn = () => {
+        response.socket?.destroy();
+    };
     const current = locations.shift();
 
     response.on('error', () => {
         logger.error('error piping data from source');
         errorHandlerFn();
     });
-    const {
-        client,
-        implName,
-        config,
-        kms,
-        metadata,
-        locStorageCheckFn,
-        vault,
-    } = retrieveDataParams;
-    const data = new DataWrapper(
-        client, implName, config, kms, metadata, locStorageCheckFn, vault);
+    const { client, implName, config, kms, metadata, locStorageCheckFn, vault } = retrieveDataParams;
+    const data = new DataWrapper(client, implName, config, kms, metadata, locStorageCheckFn, vault);
     return data.get(current, response, logger, (err: Error | null) => {
         if (err) {
             logger.error('failed to get object from source', {
@@ -449,20 +445,12 @@ export function retrieveData(
 
     let first_byte_sent_timestamp: bigint = process.hrtime.bigint();
 
-    const {
-        client,
-        implName,
-        config,
-        kms,
-        metadata,
-        locStorageCheckFn,
-        vault,
-    } = retrieveDataParams;
-    const data = new DataWrapper(
-        client, implName, config, kms, metadata, locStorageCheckFn, vault);
-    return eachSeries(locations,
-        (current, next) => data.get(current, response, log,
-            (err: Error, readable: http.IncomingMessage) => {
+    const { client, implName, config, kms, metadata, locStorageCheckFn, vault } = retrieveDataParams;
+    const data = new DataWrapper(client, implName, config, kms, metadata, locStorageCheckFn, vault);
+    return eachSeries(
+        locations,
+        (current, next) =>
+            data.get(current, response, log, (err: Error, readable: http.IncomingMessage) => {
                 const cbOnce = jsutil.once(next);
                 // NB: readable is of IncomingMessage type
                 if (err) {
@@ -481,8 +469,7 @@ export function retrieveData(
                 // to the backend is started.
                 // @ts-expect-error
                 if (responseDestroyed || response.isclosed) {
-                    log.debug(
-                        'response destroyed before readable could stream');
+                    log.debug('response destroyed before readable could stream');
                     _destroyReadable(readable);
                     const responseErr = new Error();
                     // @ts-ignore
@@ -517,8 +504,8 @@ export function retrieveData(
                 currentStream = readable;
 
                 return readable.pipe(response, { end: false });
-            }
-        ), err => {
+            }),
+        err => {
             currentStream = null;
             storeServerAccessLogFields(
                 response,
@@ -555,19 +542,15 @@ function _responseBody(
     additionalHeaders?: Record<string, string> | null,
 ) {
     if (errCode && !response.headersSent) {
-        return responseBackend.errorResponse(errCode, response, log,
-            additionalHeaders);
+        return responseBackend.errorResponse(errCode, response, log, additionalHeaders);
     }
     if (!response.headersSent && payload) {
-        return responseBackend.okResponse(payload, response, log,
-            additionalHeaders);
+        return responseBackend.okResponse(payload, response, log, additionalHeaders);
     }
     return undefined;
 }
 
-function _computeContentLengthFromLocation(
-    dataLocations: { size: string | number }[],
-) {
+function _computeContentLengthFromLocation(dataLocations: { size: string | number }[]) {
     return dataLocations.reduce<number | undefined>((sum, location) => {
         if (sum !== undefined) {
             if (typeof location.size === 'number') {
@@ -580,13 +563,9 @@ function _computeContentLengthFromLocation(
     }, 0);
 }
 
-function _contentLengthMatchesLocations(
-    contentLength: string,
-    dataLocations: { size: string | number }[],
-) {
+function _contentLengthMatchesLocations(contentLength: string, dataLocations: { size: string | number }[]) {
     const sumSizes = _computeContentLengthFromLocation(dataLocations);
-    return sumSizes === undefined ||
-        sumSizes === Number.parseInt(contentLength, 10);
+    return sumSizes === undefined || sumSizes === Number.parseInt(contentLength, 10);
 }
 
 /**
@@ -605,8 +584,7 @@ export function responseXMLBody(
     log: RequestLogger,
     additionalHeaders?: Record<string, string>,
 ) {
-    return _responseBody(XMLResponseBackend, errCode, xml, response,
-        log, additionalHeaders);
+    return _responseBody(XMLResponseBackend, errCode, xml, response, log, additionalHeaders);
 }
 
 /**
@@ -625,8 +603,7 @@ export function responseJSONBody(
     log: RequestLogger,
     additionalHeaders?: Record<string, string> | null,
 ) {
-    return _responseBody(JSONResponseBackend, errCode, json, response,
-        log, additionalHeaders);
+    return _responseBody(JSONResponseBackend, errCode, json, response, log, additionalHeaders);
 }
 
 /**
@@ -646,8 +623,7 @@ export function responseNoBody(
     log: RequestLogger,
 ) {
     if (errCode && !response.headersSent) {
-        return XMLResponseBackend.errorResponse(errCode, response, log,
-            resHeaders);
+        return XMLResponseBackend.errorResponse(errCode, response, log, resHeaders);
     }
     if (!response.headersSent) {
         return okHeaderResponse(resHeaders, response, httpCode, log);
@@ -673,14 +649,12 @@ export function responseContentHeaders(
     log: RequestLogger,
 ) {
     if (errCode && !response.headersSent) {
-        return XMLResponseBackend.errorResponse(errCode, response, log,
-            resHeaders);
+        return XMLResponseBackend.errorResponse(errCode, response, log, resHeaders);
     }
     if (!response.headersSent) {
         // Undefined added as an argument since need to send range to
         // okContentHeadersResponse in responseStreamData
-        okContentHeadersResponse(overrideParams, resHeaders, response,
-            undefined, log);
+        okContentHeadersResponse(overrideParams, resHeaders, response, undefined, log);
         log.debug('response http code', { httpCode: 200 });
         response.writeHead(200);
     }
@@ -719,33 +693,26 @@ export function responseStreamData(
     log: RequestLogger,
 ) {
     if (errCode && !response.headersSent) {
-        return XMLResponseBackend.errorResponse(errCode, response, log,
-            resHeaders);
+        return XMLResponseBackend.errorResponse(errCode, response, log, resHeaders);
     }
     if (dataLocations !== null && !response.headersSent) {
         // sanity check of content length against individual data
         // locations to fetch
         const contentLength = resHeaders && resHeaders['Content-Length'];
-        if (contentLength !== undefined &&
-            !_contentLengthMatchesLocations(contentLength,
-                dataLocations)) {
+        if (contentLength !== undefined && !_contentLengthMatchesLocations(contentLength, dataLocations)) {
             log.error(
-                'logic error: total length of fetched data ' +
-                'locations does not match returned content-length',
-                { contentLength, dataLocations });
-            return XMLResponseBackend.errorResponse(errors.InternalError,
-                response, log,
-                resHeaders);
+                'logic error: total length of fetched data ' + 'locations does not match returned content-length',
+                { contentLength, dataLocations },
+            );
+            return XMLResponseBackend.errorResponse(errors.InternalError, response, log, resHeaders);
         }
     }
     if (!response.headersSent) {
         // Prepare the headers, but do not send them
         // as errors might still happen when retrieving the data
-        okContentHeadersResponse(overrideParams, resHeaders, response,
-            range, log);
+        okContentHeadersResponse(overrideParams, resHeaders, response, range, log);
     }
     if (dataLocations === null || _computeContentLengthFromLocation(dataLocations) === 0) {
-
         storeServerAccessLogFields(response, process.hrtime.bigint());
         return response.end(() => {
             log.end().info('responded with only metadata', {
@@ -840,11 +807,7 @@ export function errorHtmlResponse(
             '</ul>',
         );
     }
-    html.push(
-        '<hr/>',
-        '</body>',
-        '</html>',
-    );
+    html.push('<hr/>', '</body>', '</html>');
 
     const body = html.join('');
     storeServerAccessLogFields(response, process.hrtime.bigint(), error.message, body.length);
@@ -924,9 +887,16 @@ export function redirectRequest(
     corsHeaders: Record<string, string>,
     log: RequestLogger,
 ) {
-    const { justPath, redirectLocationHeader, hostName, protocol,
-        httpRedirectCode, replaceKeyPrefixWith,
-        replaceKeyWith, prefixFromRule } = routingInfo;
+    const {
+        justPath,
+        redirectLocationHeader,
+        hostName,
+        protocol,
+        httpRedirectCode,
+        replaceKeyPrefixWith,
+        replaceKeyWith,
+        prefixFromRule,
+    } = routingInfo;
 
     const redirectProtocol = protocol || encrypted ? 'https' : 'http';
     const redirectCode = httpRedirectCode || 301;
@@ -946,14 +916,12 @@ export function redirectRequest(
             // passed condition
             // and objectKey starts with this prefix.  replace just first
             // instance in objectKey with the replaceKeyPrefixWith value
-            redirectKey = objectKey.replace(prefixFromRule,
-                replaceKeyPrefixWith);
+            redirectKey = objectKey.replace(prefixFromRule, replaceKeyPrefixWith);
         } else {
             redirectKey = replaceKeyPrefixWith + objectKey;
         }
     }
-    let redirectLocation = justPath ? `/${redirectKey}` :
-        `${redirectProtocol}://${redirectHostName}/${redirectKey}`;
+    let redirectLocation = justPath ? `/${redirectKey}` : `${redirectProtocol}://${redirectHostName}/${redirectKey}`;
     if (!redirectKey && redirectLocationHeader && redirectLocation !== '/') {
         // remove hanging slash
         redirectLocation = redirectLocation.slice(0, -1);
@@ -1013,8 +981,14 @@ export function redirectRequestOnError(
     // This is reached only for website error document (GET only)
     const overrideErrorCode = error.flatten();
     overrideErrorCode.code = 301;
-    return streamUserErrorPage(ArsenalError.unflatten(overrideErrorCode)!,
-        dataLocations || [], retrieveDataParams, response, corsHeaders, log);
+    return streamUserErrorPage(
+        ArsenalError.unflatten(overrideErrorCode)!,
+        dataLocations || [],
+        retrieveDataParams,
+        response,
+        corsHeaders,
+        log,
+    );
 }
 
 /**
@@ -1025,13 +999,8 @@ export function redirectRequestOnError(
  * @returns result - returns object containing bucket
  * name and objectKey as key
  */
-export function getResourceNames(
-    request: http.IncomingMessage,
-    pathname: string,
-    validHosts: string[],
-) {
-    return getNamesFromReq(request, pathname,
-        getBucketNameFromHost(request, validHosts)!);
+export function getResourceNames(request: http.IncomingMessage, pathname: string, validHosts: string[]) {
+    return getNamesFromReq(request, pathname, getBucketNameFromHost(request, validHosts)!);
 }
 
 /**
@@ -1041,11 +1010,7 @@ export function getResourceNames(
  * @param bucketNameFromHost - name of bucket from host name
  * @returns resources - returns object w. bucket and object as keys
  */
-export function getNamesFromReq(
-    request: http.IncomingMessage,
-    pathname: string,
-    bucketNameFromHost: string,
-) {
+export function getNamesFromReq(request: http.IncomingMessage, pathname: string, bucketNameFromHost: string) {
     const resources = {
         bucket: undefined as string | undefined,
         object: undefined as string | undefined,
@@ -1065,8 +1030,7 @@ export function getNamesFromReq(
         const reqHost = request.headers.host;
         const bracketIndex = reqHost.indexOf(']');
         const colonIndex = reqHost.lastIndexOf(':');
-        const hostLength = colonIndex > bracketIndex ?
-            colonIndex : reqHost.length;
+        const hostLength = colonIndex > bracketIndex ? colonIndex : reqHost.length;
         fullHost = reqHost.slice(0, hostLength);
     } else {
         fullHost = undefined;
@@ -1107,10 +1071,7 @@ export function getNamesFromReq(
  * @param validHosts - all region endpoints + websiteEndpoints
  * @throws in case the type of query could not be infered
  */
-export function getBucketNameFromHost(
-    request: http.IncomingMessage,
-    validHosts: string[],
-) {
+export function getBucketNameFromHost(request: http.IncomingMessage, validHosts: string[]) {
     const headers = request.headers;
     if (headers === undefined || headers.host === undefined) {
         throw new Error('bad request: no host in headers');
@@ -1119,12 +1080,10 @@ export function getBucketNameFromHost(
     const bracketIndex = reqHost.indexOf(']');
     const colonIndex = reqHost.lastIndexOf(':');
 
-    const hostLength = colonIndex > bracketIndex ?
-        colonIndex : reqHost.length;
+    const hostLength = colonIndex > bracketIndex ? colonIndex : reqHost.length;
     // If request is made using IPv6 (indicated by presence of brackets),
     // surrounding brackets should not be included in host var
-    const host = bracketIndex > -1 ?
-        reqHost.slice(1, hostLength - 1) : reqHost.slice(0, hostLength);
+    const host = bracketIndex > -1 ? reqHost.slice(1, hostLength - 1) : reqHost.slice(0, hostLength);
     // parseIp returns empty object if host is not valid IP
     // If host is an IP address, it's path-style
     if (Object.keys(ipCheck.parseIp(host)).length !== 0) {
@@ -1143,18 +1102,14 @@ export function getBucketNameFromHost(
             } else {
                 // bucketName should be shortest so that takes into account
                 // most specific potential hostname
-                bucketName =
-                    potentialBucketName.length < bucketName.length ?
-                        potentialBucketName : bucketName;
+                bucketName = potentialBucketName.length < bucketName.length ? potentialBucketName : bucketName;
             }
         }
     }
     if (bucketName) {
         return bucketName;
     }
-    throw new Error(
-        `bad request: hostname ${host} is not in valid endpoints`,
-    );
+    throw new Error(`bad request: hostname ${host} is not in valid endpoints`);
 }
 
 /**
@@ -1163,17 +1118,13 @@ export function getBucketNameFromHost(
  * @param validHosts - all region endpoints + websiteEndpoints
  * @return request object with additional attributes
  */
-export function normalizeRequest(
-    request: ArsenalRequest,
-    validHosts: string[],
-) {
+export function normalizeRequest(request: ArsenalRequest, validHosts: string[]) {
     const parsedUrl = url.parse(request.url!, true);
     request.query = parsedUrl.query as Record<string, string>;
     // TODO: make the namespace come from a config variable.
     request.namespace = 'default';
     // Parse bucket and/or object names from request
-    const resources = getResourceNames(request, parsedUrl.pathname!,
-        validHosts);
+    const resources = getResourceNames(request, parsedUrl.pathname!, validHosts);
     request.gotBucketNameFromHost = resources.gotBucketNameFromHost ?? false;
     request.bucketName = resources.bucket;
     request.objectKey = resources.object;
@@ -1182,11 +1133,10 @@ export function normalizeRequest(
     // For streaming v4 auth, the total body content length
     // without the chunk metadata is sent as
     // the x-amz-decoded-content-length
-    const contentLength = request.headers['x-amz-decoded-content-length'] ?
-        request.headers['x-amz-decoded-content-length'] :
-        request.headers['content-length'];
-    request.parsedContentLength =
-        Number.parseInt(contentLength?.toString() ?? '', 10);
+    const contentLength = request.headers['x-amz-decoded-content-length']
+        ? request.headers['x-amz-decoded-content-length']
+        : request.headers['content-length'];
+    request.parsedContentLength = Number.parseInt(contentLength?.toString() ?? '', 10);
 
     if (ALLOW_INVALID_META_HEADERS) {
         const headersArr = Object.keys(request.headers);
@@ -1195,10 +1145,8 @@ export function normalizeRequest(
             for (let i = 0; i < length; i++) {
                 const headerName = headersArr[i];
                 if (headerName.startsWith('x-amz-')) {
-                    const translatedHeaderName =
-                        headerName.replace(/\|\+2f/g, '/');
-                    request.headers[translatedHeaderName] =
-                        request.headers[headerName];
+                    const translatedHeaderName = headerName.replace(/\|\+2f/g, '/');
+                    request.headers[translatedHeaderName] = request.headers[headerName];
                     if (translatedHeaderName !== headerName) {
                         delete request.headers[headerName];
                     }
@@ -1217,8 +1165,7 @@ export function normalizeRequest(
  *  if false
  */
 export function isValidObjectKey(objectKey: string, prefixBlacklist: string[]) {
-    const invalidPrefix = prefixBlacklist.find(prefix =>
-        objectKey.startsWith(prefix));
+    const invalidPrefix = prefixBlacklist.find(prefix => objectKey.startsWith(prefix));
     if (invalidPrefix) {
         return { isValid: false, invalidPrefix };
     }
@@ -1228,9 +1175,11 @@ export function isValidObjectKey(objectKey: string, prefixBlacklist: string[]) {
 // To be validated only for key creation, such as PutObject, CopyObject, MPU
 export function validateObjectKeyLength(objectKey: string, maxByteLength?: number) {
     if (maxByteLength !== 0 && Buffer.byteLength(objectKey, 'utf8') > (maxByteLength || objectKeyByteLimit)) {
-        return errorInstances.KeyTooLong.customizeDescription('Object key is too ' +
-            'long. Maximum number of bytes allowed in keys is ' +
-            `${maxByteLength || objectKeyByteLimit}.`);
+        return errorInstances.KeyTooLong.customizeDescription(
+            'Object key is too ' +
+                'long. Maximum number of bytes allowed in keys is ' +
+                `${maxByteLength || objectKeyByteLimit}.`,
+        );
     }
     return null;
 }
@@ -1241,10 +1190,7 @@ export function validateObjectKeyLength(objectKey: string, maxByteLength?: numbe
  * @param prefixBlacklist - prefixes reserved for internal use
  * @return - returns true/false by testing bucket name against validation rules
  */
-export function isValidBucketName(
-    bucketname: string,
-    prefixBlacklist: string[],
-) {
+export function isValidBucketName(bucketname: string, prefixBlacklist: string[]) {
     if (constants.permittedCapitalizedBuckets[bucketname]) {
         return true;
     }
@@ -1292,10 +1238,10 @@ export function parseContentMD5(headers: http.IncomingHttpHeaders) {
 }
 
 /**
-* Report 500 to stats when an Internal Error occurs
-* @param err - Arsenal error
-* @param statsClient - StatsClient instance
-*/
+ * Report 500 to stats when an Internal Error occurs
+ * @param err - Arsenal error
+ * @param statsClient - StatsClient instance
+ */
 export function statsReport500(err?: ArsenalError | Error | null, statsClient?: StatsClient | null) {
     if (statsClient && err instanceof ArsenalError && err?.code === 500) {
         statsClient.report500('s3');

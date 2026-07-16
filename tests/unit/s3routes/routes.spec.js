@@ -3,6 +3,7 @@ const assert = require('assert');
 const sinon = require('sinon');
 const { routesUtils, routes } = require('../../../lib/s3routes');
 const { errorInstances } = require('../../../lib/errors');
+const { maxRequestUidsLength } = require('../../../lib/constants');
 
 const logger = new werelogs.Logger('routePut', 'debug', 'debug');
 
@@ -107,8 +108,7 @@ describe('routes', () => {
 
         routes(req, res, params, logger, s3config);
 
-        assert.strictEqual(typeof res, 'object',
-            'bad routes param: res must be an object');
+        assert.strictEqual(typeof res, 'object', 'bad routes param: res must be an object');
         expect(params.api.callApiMethod.calledOnce).toBe(true);
 
         routesUtils.isValidBucketName.restore();
@@ -124,13 +124,11 @@ describe('routes', () => {
 
         routes(req, res, params, logger, s3config);
 
-        assert.strictEqual(typeof res, 'object',
-            'bad routes param: res must be an object');
+        assert.strictEqual(typeof res, 'object', 'bad routes param: res must be an object');
         expect(params.api.callApiMethod.calledOnce).toBe(true);
 
         routesUtils.isValidBucketName.restore();
     });
-
 
     it('should call the appropriate route method', () => {
         req.method = 'GET';
@@ -140,10 +138,84 @@ describe('routes', () => {
 
         routes(req, res, params, logger, s3config);
 
-        assert.strictEqual(typeof res, 'object',
-            'bad routes param: res must be an object');
+        assert.strictEqual(typeof res, 'object', 'bad routes param: res must be an object');
         expect(params.api.callApiMethod.calledOnce).toBe(true);
 
         routesUtils.isValidBucketName.restore();
+    });
+});
+
+describe('routesUtils.newRequestLoggerFromRequest', () => {
+    const parentLogger = new werelogs.Logger('reqUids', 'debug', 'debug');
+
+    const reqWith = headers => ({ headers });
+
+    it('seeds the chain from a valid x-scal-request-uids header', () => {
+        const fromUids = sinon.spy(parentLogger, 'newRequestLoggerFromSerializedUids');
+
+        routesUtils.newRequestLoggerFromRequest(parentLogger, reqWith({ 'x-scal-request-uids': 'parent-uid' }));
+
+        expect(fromUids.calledOnceWithExactly('parent-uid')).toBe(true);
+
+        fromUids.restore();
+    });
+
+    it('starts a fresh chain when the header is absent', () => {
+        const fromUids = sinon.spy(parentLogger, 'newRequestLoggerFromSerializedUids');
+        const fresh = sinon.spy(parentLogger, 'newRequestLogger');
+
+        routesUtils.newRequestLoggerFromRequest(parentLogger, reqWith({}));
+
+        expect(fromUids.called).toBe(false);
+        expect(fresh.calledOnce).toBe(true);
+
+        fromUids.restore();
+        fresh.restore();
+    });
+
+    it('starts a fresh chain when the header is empty', () => {
+        const fromUids = sinon.spy(parentLogger, 'newRequestLoggerFromSerializedUids');
+        const fresh = sinon.spy(parentLogger, 'newRequestLogger');
+
+        routesUtils.newRequestLoggerFromRequest(parentLogger, reqWith({ 'x-scal-request-uids': '' }));
+
+        expect(fromUids.called).toBe(false);
+        expect(fresh.calledOnce).toBe(true);
+
+        fromUids.restore();
+        fresh.restore();
+    });
+
+    it('ignores a header sent multiple times (array value)', () => {
+        const fromUids = sinon.spy(parentLogger, 'newRequestLoggerFromSerializedUids');
+        const fresh = sinon.spy(parentLogger, 'newRequestLogger');
+
+        routesUtils.newRequestLoggerFromRequest(parentLogger, reqWith({ 'x-scal-request-uids': ['a', 'b'] }));
+
+        expect(fromUids.called).toBe(false);
+        expect(fresh.calledOnce).toBe(true);
+
+        fromUids.restore();
+        fresh.restore();
+    });
+
+    it('seeds just under maxRequestUidsLength but ignores at/above it', () => {
+        const fromUids = sinon.spy(parentLogger, 'newRequestLoggerFromSerializedUids');
+        const fresh = sinon.spy(parentLogger, 'newRequestLogger');
+
+        routesUtils.newRequestLoggerFromRequest(
+            parentLogger,
+            reqWith({ 'x-scal-request-uids': 'x'.repeat(maxRequestUidsLength - 1) }),
+        );
+        routesUtils.newRequestLoggerFromRequest(
+            parentLogger,
+            reqWith({ 'x-scal-request-uids': 'x'.repeat(maxRequestUidsLength) }),
+        );
+
+        expect(fromUids.calledOnce).toBe(true);
+        expect(fresh.calledOnce).toBe(true);
+
+        fromUids.restore();
+        fresh.restore();
     });
 });
