@@ -12,6 +12,7 @@ jest.mock('@opentelemetry/api', () => ({
 }));
 
 const assert = require('assert');
+const { promisify } = require('util');
 const werelogs = require('werelogs');
 const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
 const errors = require('../../../../../lib/errors').default;
@@ -518,6 +519,51 @@ describe('MongoClientInterface:putObjectVerCase3', () => {
             assert(res.includes('{"versionId": '));
             return done();
         });
+    });
+
+    it('should apply params.conditions to the version filter', async () => {
+        let capturedOps;
+        const collection = {
+            findOne: () => Promise.resolve({}),
+            bulkWrite: ops => {
+                capturedOps = ops;
+                return Promise.resolve();
+            },
+        };
+        const params = { conditions: { number: { $gt: 42 }, string: 'forty-two' } };
+        const putObjectVerCase3 = promisify(client.putObjectVerCase3.bind(client));
+        await putObjectVerCase3(collection, 'example-bucket', 'example-object', {}, params, logger);
+        assert.deepStrictEqual(capturedOps[0].updateOne.filter, {
+            _id: 'example-version-key',
+            'value.number': { $gt: 42 },
+            'value.string': 'forty-two',
+        });
+    });
+
+    it('should return PreconditionFailed when the existing version does not satisfy params.conditions', async () => {
+        const error = { code: 11000, writeErrors: [{ index: 0 }] };
+        const collection = {
+            findOne: () => Promise.resolve({}),
+            bulkWrite: () => Promise.reject(error),
+        };
+        const params = { conditions: { number: { $gt: 42 } } };
+        const putObjectVerCase3 = promisify(client.putObjectVerCase3.bind(client));
+        await assert.rejects(
+            putObjectVerCase3(collection, 'example-bucket', 'example-object', {}, params, logger),
+            err => err.is.PreconditionFailed);
+    });
+
+    it('should return a retryable InternalError when the master op races, even with params.conditions', async () => {
+        const error = { code: 11000, writeErrors: [{ index: 1 }] };
+        const collection = {
+            findOne: () => Promise.resolve({}),
+            bulkWrite: () => Promise.reject(error),
+        };
+        const params = { conditions: { number: { $gt: 42 } } };
+        const putObjectVerCase3 = promisify(client.putObjectVerCase3.bind(client));
+        await assert.rejects(
+            putObjectVerCase3(collection, 'example-bucket', 'example-object', {}, params, logger),
+            err => err.is.InternalError);
     });
 });
 

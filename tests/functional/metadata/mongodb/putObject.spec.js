@@ -1,5 +1,6 @@
 const async = require('async');
 const assert = require('assert');
+const { promisify } = require('util');
 const sinon = require('sinon');
 const werelogs = require('werelogs');
 const { MongoMemoryReplSet } = require('mongodb-memory-server');
@@ -8,6 +9,7 @@ const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
 const BucketInfo = require('../../../../lib/models/BucketInfo').default;
 const MetadataWrapper =
     require('../../../../lib/storage/metadata/MetadataWrapper');
+const { formatVersionKey } = require('../../../../lib/storage/metadata/mongoclient/utils');
 const { VersionID } = require('../../../../lib/versioning');
 const { BucketVersioningKeyFormat } = versioning.VersioningConstants;
 
@@ -524,6 +526,113 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
                         return next();
                     }),
                 ], done);
+            });
+
+            describe(`params.conditions on a version put ${variation.it}`, () => {
+                let putObjectMD;
+                let getObjectP;
+                let versionKey;
+                const baseParams = {
+                    versioning: true,
+                    versionId: VERSION_ID,
+                    repairMaster: null,
+                };
+
+                beforeEach(() => {
+                    putObjectMD = promisify(metadata.putObjectMD.bind(metadata));
+                    getObjectP = promisify(getObject);
+                    versionKey = formatVersionKey(OBJECT_NAME, VERSION_ID, variation.vFormat);
+                });
+
+                [
+                    { desc: 'a comparison', conditions: { number: { $gt: 42 } } },
+                    { desc: 'an equality', conditions: { string: 'forty-two' } },
+                    { desc: 'a nested field', conditions: { 'nested.field': { $lte: 10 } } },
+                ].forEach(({ desc, conditions }) => {
+                    it(`should keep the stored version when ${desc} condition is not met ${variation.it}`, async () => {
+                        const objVal = {
+                            key: OBJECT_NAME, versionId: VERSION_ID,
+                            number: 24, string: 'twenty-four', nested: { field: 24 },
+                        };
+                        await putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, baseParams, logger);
+                        const newVal = { ...objVal, updated: true };
+                        await assert.rejects(
+                            putObjectMD(BUCKET_NAME, OBJECT_NAME, newVal,
+                                { ...baseParams, conditions }, logger),
+                            err => err.is.PreconditionFailed);
+                        const object = await getObjectP(versionKey);
+                        assert.strictEqual(object.updated, undefined);
+                    });
+                });
+
+                it(`should update the version when the condition holds ${variation.it}`, async () => {
+                    const objVal = {
+                        key: OBJECT_NAME, versionId: VERSION_ID,
+                        number: 24, string: 'twenty-four',
+                    };
+                    await putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, baseParams, logger);
+                    const params = {
+                        ...baseParams,
+                        conditions: { number: { $lt: 42 }, string: 'twenty-four' },
+                    };
+                    const newVal = { ...objVal, updated: true };
+                    await putObjectMD(BUCKET_NAME, OBJECT_NAME, newVal, params, logger);
+                    const object = await getObjectP(versionKey);
+                    assert.strictEqual(object.updated, true);
+                });
+
+                it(`should insert a missing version despite the condition ${variation.it}`, async () => {
+                    const params = { ...baseParams, conditions: { number: { $gt: 42 } } };
+                    const objVal = { key: OBJECT_NAME, versionId: VERSION_ID, number: 24 };
+                    await putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger);
+                    const object = await getObjectP(versionKey);
+                    assert.strictEqual(object.number, 24);
+                });
+
+                it(`should keep the stored version when the condition references a missing field ${variation.it}`, async () => {
+                    const objVal = { key: OBJECT_NAME, versionId: VERSION_ID };
+                    await putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, baseParams, logger);
+                    const params = { ...baseParams, conditions: { number: { $gt: 42 } } };
+                    const newVal = { ...objVal, updated: true };
+                    await assert.rejects(
+                        putObjectMD(BUCKET_NAME, OBJECT_NAME, newVal, params, logger),
+                        err => err.is.PreconditionFailed,
+                    );
+                    const object = await getObjectP(versionKey);
+                    assert.strictEqual(object.updated, undefined);
+                });
+
+                it(`should allow write and then reject on same field with $or + $exists ${variation.it}`, async () => {
+                    // Object stored without the tracked field
+                    const initialVal = { key: OBJECT_NAME, versionId: VERSION_ID };
+                    await putObjectMD(BUCKET_NAME, OBJECT_NAME, initialVal, baseParams, logger);
+
+                    // First conditional write: $exists: false matches, so it goes through
+                    const incoming = 'test-micro-version-id';
+                    const firstParams = {
+                        ...baseParams,
+                        conditions: {
+                            $or: [
+                                { microVersionId: { $exists: false } },
+                                { microVersionId: { $gt: incoming } },
+                            ],
+                        },
+                    };
+                    const firstVal = { ...initialVal, microVersionId: incoming };
+                    await putObjectMD(BUCKET_NAME, OBJECT_NAME, firstVal, firstParams, logger);
+                    const afterFirst = await getObjectP(versionKey);
+                    assert.strictEqual(afterFirst.microVersionId, incoming);
+
+                    // Second write with same condition: field now exists and is not > incoming,
+                    // so both $or arms fail → PreconditionFailed
+                    const secondVal = { ...initialVal, microVersionId: incoming, secondWrite: true };
+                    await assert.rejects(
+                        putObjectMD(BUCKET_NAME, OBJECT_NAME, secondVal, firstParams, logger),
+                        err => err.is.PreconditionFailed,
+                    );
+                    const afterSecond = await getObjectP(versionKey);
+                    assert.strictEqual(afterSecond.secondWrite, undefined);
+                });
             });
         });
     });

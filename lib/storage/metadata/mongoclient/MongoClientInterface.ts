@@ -1072,28 +1072,48 @@ class MongoClientInterface {
             })
                 .then(() => callback(null, `{"versionId": "${objVal.versionId}"}`))
                 .catch(err => {
-                    log.error('putObjectVerCase3: error putting object version', { error: err.message });
                     if (err.code === 11000) {
+                        // Failed condition turns the version upsert into an insert of an existing
+                        // _id (dup-key). index 0 = version op in the ordered bulkWrite, so it's
+                        // the version write that failed the condition.
+                        if (params.conditions && err.writeErrors?.[0]?.index === 0) {
+                            log.info('putObjectVerCase3: version condition not met, rejecting write', {
+                                versionKey,
+                            });
+                            return callback(errors.PreconditionFailed);
+                        }
                         // We want duplicate key error logged however in
                         // case of the race condition mentioned above, the
                         // InternalError will allow for automatic retries
                         log.error('putObjectVerCase3:', errors.KeyAlreadyExists);
                         return callback(errors.InternalError);
                     }
+                    log.error('putObjectVerCase3: error putting object version', { error: err.message });
                     return callback(errors.NoSuchVersion);
                 });
         };
 
-        c.findOne({ _id: masterKey })
+        // a version failing the condition degenerates the upsert into an insert, raising a duplicate key error
+        const versionFilter: Record<string, any> = { _id: versionKey };
+        if (params.conditions && Object.keys(params.conditions).length > 0) {
+            try {
+                MongoUtils.translateConditions(0, 'value', versionFilter, params.conditions);
+            } catch (err) {
+                log.error('putObjectVerCase3: error creating mongodb filter', {
+                    error: reshapeExceptionError(err as ErrorLike),
+                });
+                return cb(errors.InternalError);
+            }
+        }
+
+        return c.findOne({ _id: masterKey })
             .then(checkObj => {
                 const objUpsert = !checkObj;
                 // initiating array of operations with version creation/update
                 const ops: AnyBulkWriteOperation<ObjectMetastoreDocument>[] = [
                     {
                         updateOne: {
-                            filter: {
-                                _id: versionKey,
-                            },
+                            filter: versionFilter,
                             update: {
                                 $set: {
                                     _id: versionKey,
