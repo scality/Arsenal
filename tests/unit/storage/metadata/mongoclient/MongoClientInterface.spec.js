@@ -367,7 +367,7 @@ describe('MongoClientInterface::createBucket', () => {
         return Object.assign(new Error(codeName), { code, codeName });
     }
 
-    function setupMockClient(shardCollections) {
+    function setupMockClient(shardCollections, updateOneResult) {
         client = new MongoClientInterface({
             logger,
             replicaSetHosts: 'localhost:27017',
@@ -384,11 +384,13 @@ describe('MongoClientInterface::createBucket', () => {
         commandStub = sinon.stub().resolves({});
         client.db = {
             collection: sinon.stub().returns({
-                updateOne: sinon.stub().resolves({
-                    matchedCount: 0,
-                    modifiedCount: 0,
-                    upsertedCount: 1,
-                }),
+                updateOne: sinon.stub().resolves(
+                    updateOneResult || {
+                        matchedCount: 0,
+                        modifiedCount: 0,
+                        upsertedCount: 1,
+                    },
+                ),
             }),
             createCollection: createCollectionStub,
         };
@@ -396,58 +398,101 @@ describe('MongoClientInterface::createBucket', () => {
         client.client = {};
     }
 
-    it('should succeed when the collection already exists (NamespaceExists)', done => {
-        setupMockClient(false);
-        createCollectionStub.rejects(makeMongoError('NamespaceExists', 48));
-        client.createBucket('test-bucket', baseBucket, logger, err => {
-            assert.ifError(err);
-            assert(createCollectionStub.calledOnceWith('test-bucket'));
-            done();
+    function createBucketPromised(bucketName, bucketMD = baseBucket) {
+        return new Promise((resolve, reject) => {
+            client.createBucket(bucketName, bucketMD, logger, err => {
+                if (err) {
+                    return reject(err);
+                }
+                return resolve();
+            });
         });
+    }
+
+    it('should return BucketAlreadyExists when metastore entry already exists', async () => {
+        setupMockClient(false, {
+            matchedCount: 1,
+            modifiedCount: 0,
+            upsertedCount: 0,
+        });
+        await assert.rejects(
+            () => createBucketPromised('test-bucket'),
+            err => err?.is?.BucketAlreadyExists,
+        );
+        assert.strictEqual(createCollectionStub.called, false);
+        const updateOne = client.db.collection().updateOne;
+        assert(updateOne.calledOnce);
+        assert(updateOne.firstCall.args[1].$setOnInsert);
+        assert.strictEqual(updateOne.firstCall.args[1].$set, undefined);
     });
 
-    it('should return InternalError on other createCollection errors', done => {
+    it('should succeed when the backing collection already exists (NamespaceExists)', async () => {
+        setupMockClient(false);
+        createCollectionStub.rejects(makeMongoError('NamespaceExists', 48));
+        await createBucketPromised('test-bucket');
+        assert(createCollectionStub.calledOnceWith('test-bucket'));
+        assert.strictEqual(commandStub.called, false);
+    });
+
+    it('should shard when the backing collection already exists (NamespaceExists)', async () => {
+        setupMockClient(true);
+        createCollectionStub.rejects(makeMongoError('NamespaceExists', 48));
+        await createBucketPromised('test-bucket');
+        assert(createCollectionStub.calledOnceWith('test-bucket'));
+        assert(
+            commandStub.calledOnceWith({
+                shardCollection: 'test.test-bucket',
+                key: { _id: 1 },
+            }),
+        );
+    });
+
+    it('should return InternalError on other createCollection errors', async () => {
         setupMockClient(false);
         createCollectionStub.rejects(makeMongoError('HostUnreachable', 6));
-        client.createBucket('test-bucket', baseBucket, logger, err => {
-            assert(err);
-            assert(err.is.InternalError);
-            done();
-        });
+        await assert.rejects(
+            () => createBucketPromised('test-bucket'),
+            err => err?.is?.InternalError,
+        );
     });
 
-    it('should still shard the collection when it already exists', done => {
+    it('should shard the collection after a successful createCollection', async () => {
         setupMockClient(true);
-        createCollectionStub.rejects(makeMongoError('NamespaceExists', 48));
-        client.createBucket('test-bucket', baseBucket, logger, err => {
-            assert.ifError(err);
-            assert(
-                commandStub.calledOnceWith({
-                    shardCollection: 'test.test-bucket',
-                    key: { _id: 1 },
-                }),
-            );
-            done();
-        });
+        await createBucketPromised('test-bucket');
+        assert(createCollectionStub.calledOnceWith('test-bucket'));
+        assert(
+            commandStub.calledOnceWith({
+                shardCollection: 'test.test-bucket',
+                key: { _id: 1 },
+            }),
+        );
     });
 
-    it('should succeed when the collection is already sharded (AlreadyInitialized)', done => {
+    it('should succeed when the collection is already sharded (AlreadyInitialized)', async () => {
         setupMockClient(true);
         commandStub.rejects(makeMongoError('AlreadyInitialized', 23));
-        client.createBucket('test-bucket', baseBucket, logger, err => {
-            assert.ifError(err);
-            done();
-        });
+        await createBucketPromised('test-bucket');
     });
 
-    it('should return InternalError on other shardCollection errors', done => {
+    it('should return InternalError on other shardCollection errors', async () => {
         setupMockClient(true);
         commandStub.rejects(makeMongoError('HostUnreachable', 6));
-        client.createBucket('test-bucket', baseBucket, logger, err => {
-            assert(err);
-            assert(err.is.InternalError);
-            done();
-        });
+        await assert.rejects(
+            () => createBucketPromised('test-bucket'),
+            err => err?.is?.InternalError,
+        );
+    });
+
+    it('should not invoke the callback again when it throws', async () => {
+        setupMockClient(false);
+        const callbackError = new Error('callback failure');
+        const callback = sinon.stub().throws(callbackError);
+
+        await assert.rejects(
+            () => client.createBucket('test-bucket', baseBucket, logger, callback),
+            err => err === callbackError,
+        );
+        assert(callback.calledOnce);
     });
 });
 
@@ -626,7 +671,7 @@ describe('MongoClientInterface, tests', () => {
     });
 
     it('should create a bucket whose backing collection already exists', done => {
-        const bucketName = 'test-bucket-collection-exists';
+        const bucketName = `test-bucket-collection-exists-${Date.now()}`;
         async.waterfall(
             [
                 next => {
@@ -648,13 +693,22 @@ describe('MongoClientInterface, tests', () => {
         );
     });
 
-    it('should succeed on concurrent createBucket calls for the same bucket', done => {
+    it('should return BucketAlreadyExists on concurrent createBucket calls', done => {
         const bucketName = 'test-bucket-concurrent-create';
+        const results = [];
         async.times(
             5,
-            (n, next) => createBucket(client, bucketName, false, next),
+            (n, next) =>
+                createBucket(client, bucketName, false, err => {
+                    results.push(err);
+                    next();
+                }),
             err => {
                 assert.ifError(err);
+                const successes = results.filter(e => !e).length;
+                const alreadyExists = results.filter(e => e?.is?.BucketAlreadyExists).length;
+                assert.strictEqual(successes, 1);
+                assert.strictEqual(alreadyExists, 4);
                 client.deleteBucket(bucketName, logger, done);
             },
         );
