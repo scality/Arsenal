@@ -373,6 +373,7 @@ class MongoClientInterface {
            usersBucket to have attributes, we pre-create the
            usersBucket attributes here (see bucketCreation.js line
            36)*/
+        const log = this.logger;
         const usersBucketAttr = new BucketInfo(
             constants.usersBucket,
             'admin',
@@ -380,9 +381,12 @@ class MongoClientInterface {
             new Date().toJSON(),
             BucketInfo.currentModelVersion(),
         );
-        return this.createBucket(constants.usersBucket, usersBucketAttr, this.logger, err => {
-            if (err) {
-                this.logger.fatal('error writing usersBucket ' + 'attributes to metastore', { error: err });
+        return this.createBucket(constants.usersBucket, usersBucketAttr, log, createErr => {
+            if (createErr?.is?.BucketAlreadyExists) {
+                return cb();
+            }
+            if (createErr) {
+                log.fatal('error writing usersBucket attributes to metastore', { error: createErr });
                 throw errors.InternalError;
             }
             return cb();
@@ -424,8 +428,17 @@ class MongoClientInterface {
         ).makeSerializable();
         const m = this.getCollection<BucketMetastoreDocument>(METASTORE);
 
+        let vFormat = this.defaultBucketKeyFormat;
+        if (
+            bucketName === constants.usersBucket ||
+            bucketName === PENSIEVE ||
+            bucketName.startsWith(constants.mpuBucketPrefix)
+        ) {
+            vFormat = BUCKET_VERSIONS.v0;
+        }
+
         const payload = {
-            $set: {
+            $setOnInsert: {
                 _id: bucketName,
                 value: {
                     ...newBucketMD,
@@ -443,96 +456,80 @@ class MongoClientInterface {
                         },
                     },
                 },
-                vFormat: this.defaultBucketKeyFormat,
+                vFormat,
             },
         };
-        if (
-            bucketName !== constants.usersBucket &&
-            bucketName !== PENSIEVE &&
-            !bucketName.startsWith(constants.mpuBucketPrefix)
-        ) {
-            payload.$set.vFormat = this.defaultBucketKeyFormat;
-        } else {
-            payload.$set.vFormat = BUCKET_VERSIONS.v0;
-        }
 
         // we don't have to test bucket existence here as it is done
         // on the upper layers
-        m.updateOne(
-            {
-                _id: bucketName,
-            },
-            payload,
-            {
-                upsert: true,
-            },
-        )
+        return m
+            .updateOne(
+                {
+                    _id: bucketName,
+                },
+                payload,
+                {
+                    upsert: true,
+                },
+            )
             .then(result => {
                 if (result.matchedCount === 0 && result.modifiedCount === 0 && result.upsertedCount === 0) {
                     log.debug('createBucket: failed to create bucket', { bucketName, result });
-                    return cb(errors.InternalError);
+                    throw errors.InternalError;
+                }
+                if (result.matchedCount > 0 && result.upsertedCount === 0) {
+                    log.debug('createBucket: bucket already exists in metastore', { bucketName, result });
+                    throw errors.BucketAlreadyExists;
                 }
                 // caching bucket vFormat
-                this.bucketVFormatCache.add(bucketName, payload.$set.vFormat);
+                this.bucketVFormatCache.add(bucketName, vFormat);
                 // NOTE: We do not need to create a collection for
                 // "constants.usersBucket" and "PENSIEVE" since it has already
                 // been created
                 if (bucketName !== constants.usersBucket && bucketName !== PENSIEVE) {
                     return this.db!.createCollection(bucketName)
                         .catch(err => {
-                            // MongoDB returns NamespaceExists (code 48) when
-                            // the collection already exists, e.g. on
-                            // concurrent create/drop/create sequences on MPU
-                            // shadow buckets. The collection being there is
-                            // the desired outcome, so treat it as success:
-                            // this mirrors deleteBucket, which ignores
-                            // NamespaceNotFound when dropping the collection.
                             if (err.codeName !== 'NamespaceExists') {
-                                throw err;
+                                log.error('createBucket: error creating collection', {
+                                    bucketName,
+                                    error: err.message,
+                                });
+                                throw errors.InternalError;
                             }
+                            // Metastore insert succeeded: an orphaned backing
+                            // collection is not a bucket-level duplicate.
                             log.debug('createBucket: collection already exists', { bucketName });
                         })
                         .then(() => {
-                            if (this.shardCollections) {
-                                const cmd = {
-                                    shardCollection: `${this.database}.${bucketName}`,
-                                    key: { _id: 1 },
-                                };
-                                return this.adminDb!.command(cmd, {})
-                                    .catch(err => {
-                                        // Concurrent createBucket calls may
-                                        // race on shardCollection: sharding
-                                        // an already-sharded collection fails
-                                        // with AlreadyInitialized. The
-                                        // collection is sharded (with the
-                                        // same {_id: 1} key) either way.
-                                        if (err.codeName !== 'AlreadyInitialized') {
-                                            throw err;
-                                        }
-                                        log.debug('createBucket: collection already sharded', { bucketName });
-                                    })
-                                    .then(() => cb(null))
-                                    .catch(err => {
-                                        log.error('createBucket: enabling sharding', { error: err });
-                                        return cb(errors.InternalError);
-                                    });
+                            if (!this.shardCollections) {
+                                return undefined;
                             }
-                            return cb(null);
-                        })
-                        .catch(err => {
-                            log.error('createBucket: error creating collection', {
-                                bucketName,
-                                error: err.message,
+                            const cmd = {
+                                shardCollection: `${this.database}.${bucketName}`,
+                                key: { _id: 1 },
+                            };
+                            return this.adminDb!.command(cmd, {}).catch(err => {
+                                if (err.codeName !== 'AlreadyInitialized') {
+                                    log.error('createBucket: enabling sharding', { error: err });
+                                    throw errors.InternalError;
+                                }
+                                log.debug('createBucket: collection already sharded', { bucketName });
+                                return undefined;
                             });
-                            return cb(errors.InternalError);
                         });
                 }
-                return cb(null);
+                return undefined;
             })
-            .catch(err => {
-                log.error('createBucket: error creating bucket', { error: err.message });
-                return cb(errors.InternalError);
-            });
+            .then(
+                () => cb(null),
+                err => {
+                    if (err?.is) {
+                        return cb(err);
+                    }
+                    log.error('createBucket: error creating bucket', { error: err.message });
+                    return cb(errors.InternalError);
+                },
+            );
     }
 
     /**
