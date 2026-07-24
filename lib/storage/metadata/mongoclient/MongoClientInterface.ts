@@ -62,6 +62,7 @@ const __UUID = 'uuid';
 const PENSIEVE = 'PENSIEVE';
 const __COUNT_ITEMS = 'countitems';
 const ASYNC_REPAIR_TIMEOUT = 15000;
+const MONGODB_DUPLICATE_KEY_ERROR = 11000;
 
 const MONGO_CONNECT_TIMEOUT_MS = process.env.MONGO_CONNECT_TIMEOUT_MS;
 const MONGO_SOCKET_TIMEOUT_MS = process.env.MONGO_SOCKET_TIMEOUT_MS;
@@ -952,7 +953,7 @@ class MongoClientInterface {
                  * are the same (affecting the first operation), or if the master
                  * version is updated concurrently.
                  */
-                if (err.code === 11000) {
+                if (err.code === MONGODB_DUPLICATE_KEY_ERROR) {
                     log.debug('putObjectVerCase1: error putting object version', {
                         code: err.code,
                         error: err.errmsg,
@@ -1072,7 +1073,7 @@ class MongoClientInterface {
             })
                 .then(() => callback(null, `{"versionId": "${objVal.versionId}"}`))
                 .catch(err => {
-                    if (err.code === 11000) {
+                    if (err.code === MONGODB_DUPLICATE_KEY_ERROR) {
                         // Failed condition turns the version upsert into an insert of an existing
                         // _id (dup-key). index 0 = version op in the ordered bulkWrite, so it's
                         // the version write that failed the condition.
@@ -1270,7 +1271,7 @@ class MongoClientInterface {
                             // we accept that the update fails if
                             // condition is not met, meaning that a more
                             // recent master was already in place
-                            if (err.code === 11000) {
+                            if (err.code === MONGODB_DUPLICATE_KEY_ERROR) {
                                 return cb(null, `{"versionId": "${objVal.versionId}"}`);
                             }
                             log.error('putObjectVerCase4: error upserting master', { error: err.message });
@@ -2731,7 +2732,7 @@ class MongoClientInterface {
                 return cb(null);
             })
             .catch(err => {
-                if (err.code === 11000) {
+                if (err.code === MONGODB_DUPLICATE_KEY_ERROR) {
                     // duplicate key error
                     return cb(errors.KeyAlreadyExists);
                 }
