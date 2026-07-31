@@ -77,6 +77,7 @@ describe('Vault class', () => {
             getEmailAddresses: sandbox.stub(),
             getAccountIds: sandbox.stub(),
             getCanonicalIdsByAccountIds: sandbox.stub(),
+            getAccountLimitsByCanonicalIds: sandbox.stub(),
             checkPolicies: sandbox.stub(),
             getOrCreateEncryptionKeyId: sandbox.stub(),
         };
@@ -574,6 +575,73 @@ describe('Vault class', () => {
 
             vault.getCanonicalIdsByAccountIds(mockIds, log, err => {
                 assert.strictEqual(err, mockError);
+                done();
+            });
+        });
+    });
+
+    describe('getAccountLimitsByCanonicalId', () => {
+        const limitConfig = { RequestsPerSecond: { Limit: 1500 } };
+
+        it('should return the limit config for the canonical ID', done => {
+            const mockResponse = {
+                message: { body: { canonical123: limitConfig } },
+            };
+            mockClient.getAccountLimitsByCanonicalIds.callsFake((_, __, cb) => cb(null, mockResponse));
+
+            vault.getAccountLimitsByCanonicalId('canonical123', log, (err, data) => {
+                assert.strictEqual(err, null);
+                assert.deepStrictEqual(data, limitConfig);
+                done();
+            });
+        });
+
+        it('should pass the canonical ID as a single-item list and the log options', done => {
+            const mockResponse = {
+                message: { body: { canonical123: limitConfig } },
+            };
+            mockClient.getAccountLimitsByCanonicalIds.callsFake((canonicalIds, options, cb) => {
+                assert.deepStrictEqual(canonicalIds, ['canonical123']);
+                assert.strictEqual(options.reqUid, log.getSerializedUids());
+                assert.strictEqual(options.logger, log);
+                cb(null, mockResponse);
+            });
+
+            vault.getAccountLimitsByCanonicalId('canonical123', log, err => {
+                assert.strictEqual(err, null);
+                assert(mockClient.getAccountLimitsByCanonicalIds.calledOnce);
+                done();
+            });
+        });
+
+        it('should return undefined when the canonical ID is absent from the response', done => {
+            const mockResponse = { message: { body: {} } };
+            mockClient.getAccountLimitsByCanonicalIds.callsFake((_, __, cb) => cb(null, mockResponse));
+
+            vault.getAccountLimitsByCanonicalId('canonical123', log, (err, data) => {
+                assert.strictEqual(err, null);
+                assert.strictEqual(data, undefined);
+                done();
+            });
+        });
+
+        it('should return undefined when the client does not implement the method', done => {
+            delete mockClient.getAccountLimitsByCanonicalIds;
+
+            vault.getAccountLimitsByCanonicalId('canonical123', log, (err, data) => {
+                assert.strictEqual(err, null);
+                assert.strictEqual(data, undefined);
+                done();
+            });
+        });
+
+        it('should return error when client fails', done => {
+            const mockError = new Error('Client error');
+            mockClient.getAccountLimitsByCanonicalIds.callsFake((_, __, cb) => cb(mockError));
+
+            vault.getAccountLimitsByCanonicalId('canonical123', log, (err, data) => {
+                assert.strictEqual(err, mockError);
+                assert.strictEqual(data, undefined);
                 done();
             });
         });
