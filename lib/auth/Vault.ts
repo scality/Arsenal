@@ -6,6 +6,7 @@ import AuthInfo, {
     AuthorizationResults,
     AuthV4Results,
     AccountCanonicalInfo,
+    AccountLimits,
 } from './AuthInfo';
 import { ArsenalCallback } from '../types';
 import RequestContext from '../policyEvaluator/RequestContext';
@@ -406,6 +407,41 @@ export default class Vault {
                 return callback(err);
             }
             return callback(null, res.message.body);
+        });
+    }
+
+    /**
+     * A getter for rate limit config given an account canonical ID
+     * @param canonicalId - account canonicalId
+     * @param log - log object
+     * @param callback - callback function
+     * @returns callback with either error or an object from Vault
+     * containing the rate limit config for the account
+     */
+    getAccountLimitsByCanonicalId(
+        canonicalId: string,
+        log: RequestLogger,
+        callback: ArsenalCallback<AccountLimits | undefined>,
+    ) {
+        if (typeof this.client.getAccountLimitsByCanonicalIds !== 'function') {
+            callback(null, undefined);
+            return;
+        }
+
+        log.trace('getting rate limit config from Vault based on canonicalId');
+        const options = {
+            reqUid: log.getSerializedUids(),
+            logger: log,
+        };
+        this.client.getAccountLimitsByCanonicalIds([canonicalId], options, (err, res) => {
+            if (err) {
+                log.debug('received error message from vault', {
+                    error: err,
+                    canonicalId,
+                });
+                return callback(err);
+            }
+            return callback(null, res.message.body[canonicalId]);
         });
     }
 
