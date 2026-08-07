@@ -122,7 +122,6 @@ export const storage = {
         },
         mongoclient: {
             MongoClientInterface: require('./lib/storage/metadata/mongoclient/' + 'MongoClientInterface'),
-            LogConsumer: require('./lib/storage/metadata/mongoclient/LogConsumer'),
         },
         proxy: {
             Server: require('./lib/storage/metadata/proxy/Server'),
