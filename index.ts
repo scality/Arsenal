@@ -3,7 +3,8 @@ import evaluatePrincipal from './lib/policyEvaluator/principal';
 import RequestContext, {
     actionNeedQuotaCheck,
     actionNeedQuotaCheckCopy,
-    actionWithDataDeletion } from './lib/policyEvaluator/RequestContext';
+    actionWithDataDeletion,
+} from './lib/policyEvaluator/RequestContext';
 import * as requestUtils from './lib/policyEvaluator/requestUtils';
 import * as actionMaps from './lib/policyEvaluator/utils/actionMaps';
 import { validateUserPolicy } from './lib/policy/policyValidator';
@@ -106,33 +107,22 @@ export const storage = {
     metadata: {
         MetadataWrapper: require('./lib/storage/metadata/MetadataWrapper'),
         bucketclient: {
-            BucketClientInterface:
-            require('./lib/storage/metadata/bucketclient/' +
-                'BucketClientInterface'),
-            LogConsumer:
-            require('./lib/storage/metadata/bucketclient/LogConsumer'),
+            BucketClientInterface: require('./lib/storage/metadata/bucketclient/' + 'BucketClientInterface'),
+            LogConsumer: require('./lib/storage/metadata/bucketclient/LogConsumer'),
         },
         file: {
-            BucketFileInterface:
-            require('./lib/storage/metadata/file/BucketFileInterface'),
-            MetadataFileServer:
-            require('./lib/storage/metadata/file/MetadataFileServer'),
-            MetadataFileClient:
-            require('./lib/storage/metadata/file/MetadataFileClient'),
+            BucketFileInterface: require('./lib/storage/metadata/file/BucketFileInterface'),
+            MetadataFileServer: require('./lib/storage/metadata/file/MetadataFileServer'),
+            MetadataFileClient: require('./lib/storage/metadata/file/MetadataFileClient'),
         },
         inMemory: {
-            metastore:
-            require('./lib/storage/metadata/in_memory/metastore'),
+            metastore: require('./lib/storage/metadata/in_memory/metastore'),
             metadata: require('./lib/storage/metadata/in_memory/metadata'),
-            bucketUtilities:
-            require('./lib/storage/metadata/in_memory/bucket_utilities'),
+            bucketUtilities: require('./lib/storage/metadata/in_memory/bucket_utilities'),
         },
         mongoclient: {
-            MongoClientInterface:
-            require('./lib/storage/metadata/mongoclient/' +
-                'MongoClientInterface'),
-            LogConsumer:
-            require('./lib/storage/metadata/mongoclient/LogConsumer'),
+            MongoClientInterface: require('./lib/storage/metadata/mongoclient/' + 'MongoClientInterface'),
+            LogConsumer: require('./lib/storage/metadata/mongoclient/LogConsumer'),
         },
         proxy: {
             Server: require('./lib/storage/metadata/proxy/Server'),
@@ -140,14 +130,11 @@ export const storage = {
     },
     data: {
         DataWrapper: require('./lib/storage/data/DataWrapper'),
-        MultipleBackendGateway:
-        require('./lib/storage/data/MultipleBackendGateway'),
+        MultipleBackendGateway: require('./lib/storage/data/MultipleBackendGateway'),
         parseLC: require('./lib/storage/data/LocationConstraintParser'),
         file: {
-            DataFileStore:
-            require('./lib/storage/data/file/DataFileStore'),
-            DataFileInterface:
-            require('./lib/storage/data/file/DataFileInterface'),
+            DataFileStore: require('./lib/storage/data/file/DataFileStore'),
+            DataFileInterface: require('./lib/storage/data/file/DataFileInterface'),
         },
         external: {
             AwsClient: require('./lib/storage/data/external/AwsClient'),
