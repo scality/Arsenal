@@ -215,6 +215,127 @@ describe('translate query object', () => {
                 },
             },
         ],
+        [
+            'should throw when $exists value is not a boolean',
+            {
+                depth: 0,
+                prefix: 'value',
+                query: { microVersionId: { $exists: 'yes' } },
+                error: errors.InternalError,
+                result: null,
+            },
+        ],
+        [
+            'should translate $exists operator',
+            {
+                depth: 0,
+                prefix: 'value',
+                query: { microVersionId: { $exists: false } },
+                error: null,
+                result: { 'value.microVersionId': { $exists: false } },
+            },
+        ],
+        [
+            'should translate $or with $exists and $gt',
+            {
+                depth: 0,
+                prefix: 'value',
+                query: {
+                    $or: [
+                        { microVersionId: { $exists: false } },
+                        { microVersionId: { $gt: 'abc' } },
+                    ],
+                },
+                error: null,
+                result: {
+                    $or: [
+                        { 'value.microVersionId': { $exists: false } },
+                        { 'value.microVersionId': { $gt: 'abc' } },
+                    ],
+                },
+            },
+        ],
+        [
+            'should translate nested $or',
+            {
+                depth: 0,
+                prefix: 'value',
+                query: {
+                    $or: [
+                        { $or: [{ microVersionId: { $exists: false } }] },
+                    ],
+                },
+                error: null,
+                result: {
+                    $or: [{ $or: [{ 'value.microVersionId': { $exists: false } }] }],
+                },
+            },
+        ],
+        [
+            'should translate $or with mixed plain and nested $or items',
+            {
+                depth: 0,
+                prefix: 'value',
+                query: {
+                    $or: [
+                        { fieldA: { $gt: 1 } },
+                        { $or: [
+                            { fieldB: { $exists: false } },
+                            { fieldC: { $lte: 'xyz' } },
+                        ] },
+                    ],
+                },
+                error: null,
+                result: {
+                    $or: [
+                        { 'value.fieldA': { $gt: 1 } },
+                        { $or: [
+                            { 'value.fieldB': { $exists: false } },
+                            { 'value.fieldC': { $lte: 'xyz' } },
+                        ] },
+                    ],
+                },
+            },
+        ],
+        [
+            'should throw when two sibling fields both contain a structural operator of the same type',
+            {
+                depth: 0,
+                prefix: 'value',
+                query: {
+                    fieldA: { $or: [{ x: 1 }] },
+                    fieldB: { $or: [{ y: 2 }] },
+                },
+                error: errors.InternalError,
+                result: null,
+            },
+        ],
+        [
+            'should throw on empty $or array',
+            {
+                depth: 0,
+                prefix: 'value',
+                query: { $or: [] },
+                error: errors.InternalError,
+                result: null,
+            },
+        ],
+        [
+            'should translate $or nested under a field',
+            {
+                depth: 0,
+                prefix: 'value',
+                query: {
+                    $or: [
+                        { foo: { $or: [{ microVersionId: { $exists: false } }] } },
+                    ],
+                },
+                error: null,
+                result: {
+                    $or: [{ $or: [{ 'value.foo.microVersionId': { $exists: false } }] }],
+                },
+            },
+        ],
     ];
     tests.forEach(([msg, params]) => it(msg, () => {
         const { depth, prefix, query, error, result } = params;

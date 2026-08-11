@@ -1,4 +1,4 @@
-import { supportedOperators, validateConditionsObject } from '../conditions';
+import { supportedOperators, supportedStructuralOperators, validateConditionsObject } from '../conditions';
 import { VersioningConstants } from '../../../versioning/constants';
 import errors from '../../../errors';
 import { stampActiveTraceContext } from '../captureTraceContext';
@@ -76,6 +76,25 @@ function _assignCondition(prefix: string, object: Record<string, any>, cond: Con
 }
 
 /*
+ * Translates a structural operator into a mongodb filter.
+ * Each item is translated on its own, sharing the parent prefix.
+ */
+function _assignStructuralOperator(depth: number, prefix: string, object: Record<string, any>, op: string,
+    items: Condition): void {
+    if (!Array.isArray(items) || items.length === 0) {
+        throw errors.InternalError;
+    }
+    if (object[op] !== undefined) {
+        throw errors.InternalError;
+    }
+    object[op] = items.map((item: Condition) => {
+        const subFilter: Record<string, any> = {};
+        translateConditions(depth + 1, prefix, subFilter, item);
+        return subFilter;
+    });
+}
+
+/*
  * converts conditions object into mongodb-usable filters
  * Ex:
  *  {                              {
@@ -116,6 +135,10 @@ function translateConditions(depth: number, prefix: string, object: Record<strin
 
     if (opFields.length === 0) {
         for (const f of fields) {
+            if (supportedStructuralOperators[f]) {
+                _assignStructuralOperator(depth, prefix, object, f, (cond as Record<string, any>)[f]);
+                continue;
+            }
             if (f.startsWith('$')) {
                 throw errors.InternalError;
             }
