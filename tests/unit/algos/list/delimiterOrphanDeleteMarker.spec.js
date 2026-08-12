@@ -4,13 +4,8 @@ const assert = require('assert');
 
 const DelimiterOrphanDeleteMarker =
     require('../../../../lib/algos/list/delimiterOrphanDeleteMarker').DelimiterOrphanDeleteMarker;
-const {
-    FILTER_ACCEPT,
-    FILTER_END,
-    inc,
-} = require('../../../../lib/algos/list/tools');
-const VSConst =
-    require('../../../../lib/versioning/constants').VersioningConstants;
+const { FILTER_ACCEPT, FILTER_END, inc } = require('../../../../lib/algos/list/tools');
+const VSConst = require('../../../../lib/versioning/constants').VersioningConstants;
 const { DbPrefixes } = VSConst;
 
 const VID_SEP = VSConst.VersionId.Separator;
@@ -33,8 +28,7 @@ function getListingKey(key, vFormat) {
         return key;
     }
     if (vFormat === 'v1') {
-        const keyPrefix = key.includes(VID_SEP) ?
-            DbPrefixes.Version : DbPrefixes.Master;
+        const keyPrefix = key.includes(VID_SEP) ? DbPrefixes.Version : DbPrefixes.Master;
         return `${keyPrefix}${key}`;
     }
     return assert.fail(`bad format ${vFormat}`);
@@ -46,11 +40,15 @@ function getListingKey(key, vFormat) {
             const prefix = 'pre';
             const marker = 'premark';
             const maxScannedLifecycleListingEntries = 2;
-            const delimiter = new DelimiterOrphanDeleteMarker({
-                prefix,
-                marker,
-                maxScannedLifecycleListingEntries,
-            }, fakeLogger, v);
+            const delimiter = new DelimiterOrphanDeleteMarker(
+                {
+                    prefix,
+                    marker,
+                    maxScannedLifecycleListingEntries,
+                },
+                fakeLogger,
+                v,
+            );
 
             let expectedParams;
             if (v === 'v0') {
@@ -80,7 +78,7 @@ function getListingKey(key, vFormat) {
         });
 
         it('should accept a version and return an empty content', () => {
-            const delimiter = new DelimiterOrphanDeleteMarker({ }, fakeLogger, v);
+            const delimiter = new DelimiterOrphanDeleteMarker({}, fakeLogger, v);
 
             const masterKey = 'key';
 
@@ -89,16 +87,19 @@ function getListingKey(key, vFormat) {
             const date1 = '1970-01-01T00:00:00.001Z';
             const value1 = `{"versionId":"${versionId1}","last-modified":"${date1}"}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(versionKey1, v),
-                value: value1,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(versionKey1, v),
+                    value: value1,
+                }),
+                FILTER_ACCEPT,
+            );
 
             assert.deepStrictEqual(delimiter.result(), EmptyResult);
         });
 
         it('should accept an orphan delete marker and return it from the content', () => {
-            const delimiter = new DelimiterOrphanDeleteMarker({ }, fakeLogger, v);
+            const delimiter = new DelimiterOrphanDeleteMarker({}, fakeLogger, v);
 
             const masterKey = 'key';
 
@@ -107,10 +108,13 @@ function getListingKey(key, vFormat) {
             const date1 = '1970-01-01T00:00:00.001Z';
             const value1 = `{"versionId":"${versionId1}","last-modified":"${date1}","isDeleteMarker":true}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(versionKey1, v),
-                value: value1,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(versionKey1, v),
+                    value: value1,
+                }),
+                FILTER_ACCEPT,
+            );
 
             const expectedResult = {
                 Contents: [
@@ -126,7 +130,7 @@ function getListingKey(key, vFormat) {
         });
 
         it('should accept two orphan delete markers and return them from the content', () => {
-            const delimiter = new DelimiterOrphanDeleteMarker({ }, fakeLogger, v);
+            const delimiter = new DelimiterOrphanDeleteMarker({}, fakeLogger, v);
 
             // filter the first orphan delete marker
             const masterKey1 = 'key1';
@@ -135,10 +139,13 @@ function getListingKey(key, vFormat) {
             const date1 = '1970-01-01T00:00:00.002Z';
             const value1 = `{"versionId":"${versionId1}","last-modified":"${date1}","isDeleteMarker":true}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(versionKey1, v),
-                value: value1,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(versionKey1, v),
+                    value: value1,
+                }),
+                FILTER_ACCEPT,
+            );
 
             // filter the second orphan delete marker
             const masterKey2 = 'key2';
@@ -147,10 +154,13 @@ function getListingKey(key, vFormat) {
             const date2 = '1970-01-01T00:00:00.001Z';
             const value2 = `{"versionId":"${versionId2}","last-modified":"${date2}","isDeleteMarker":true}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(versionKey2, v),
-                value: value2,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(versionKey2, v),
+                    value: value2,
+                }),
+                FILTER_ACCEPT,
+            );
 
             const expectedResult = {
                 Contents: [
@@ -179,10 +189,13 @@ function getListingKey(key, vFormat) {
             const date1 = '1970-01-01T00:00:00.002Z';
             const value1 = `{"versionId":"${versionId1}","last-modified":"${date1}","isDeleteMarker":true}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(versionKey1, v),
-                value: value1,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(versionKey1, v),
+                    value: value1,
+                }),
+                FILTER_ACCEPT,
+            );
 
             // filter the second orphan delete marker
             const masterKey2 = 'key2';
@@ -191,10 +204,13 @@ function getListingKey(key, vFormat) {
             const date2 = '1970-01-01T00:00:00.001Z';
             const value2 = `{"versionId":"${versionId2}","last-modified":"${date2}","isDeleteMarker":true}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(versionKey2, v),
-                value: value2,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(versionKey2, v),
+                    value: value2,
+                }),
+                FILTER_ACCEPT,
+            );
 
             const expectedResult = {
                 Contents: [
@@ -220,10 +236,13 @@ function getListingKey(key, vFormat) {
             const versionKey1 = `${masterKey1}${VID_SEP}${versionId1}`;
             const value1 = `{"versionId":"${versionId1}","last-modified":"${date1}","isDeleteMarker":true}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(versionKey1, v),
-                value: value1,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(versionKey1, v),
+                    value: value1,
+                }),
+                FILTER_ACCEPT,
+            );
 
             // filter the second orphan delete marker
             const masterKey2 = 'key2';
@@ -232,10 +251,13 @@ function getListingKey(key, vFormat) {
             const date2 = '1970-01-01T00:00:00.001Z';
             const value2 = `{"versionId":"${versionId2}","last-modified":"${date2}","isDeleteMarker":true}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(versionKey2, v),
-                value: value2,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(versionKey2, v),
+                    value: value2,
+                }),
+                FILTER_ACCEPT,
+            );
 
             const expectedResult = {
                 Contents: [
@@ -260,10 +282,13 @@ function getListingKey(key, vFormat) {
             const date1 = '1970-01-01T00:00:00.002Z';
             const value1 = `{"versionId":"${versionId1}","last-modified":"${date1}","isDeleteMarker":true}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(versionKey1, v),
-                value: value1,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(versionKey1, v),
+                    value: value1,
+                }),
+                FILTER_ACCEPT,
+            );
 
             // filter the second orphan delete marker
             const masterKey2 = 'key2';
@@ -272,10 +297,13 @@ function getListingKey(key, vFormat) {
             const date2 = '1970-01-01T00:00:00.001Z';
             const value2 = `{"versionId":"${versionId2}","last-modified":"${date2}","isDeleteMarker":true}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(versionKey2, v),
-                value: value2,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(versionKey2, v),
+                    value: value2,
+                }),
+                FILTER_ACCEPT,
+            );
 
             // filter the third orphan delete marker
             const masterKey3 = 'key3';
@@ -284,10 +312,13 @@ function getListingKey(key, vFormat) {
             const date3 = '1970-01-01T00:00:00.000Z';
             const value3 = `{"versionId":"${versionId3}","last-modified":"${date3}","isDeleteMarker":true}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(versionKey3, v),
-                value: value3,
-            }), FILTER_END);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(versionKey3, v),
+                    value: value3,
+                }),
+                FILTER_END,
+            );
 
             const expectedResult = {
                 Contents: [
@@ -314,10 +345,13 @@ function getListingKey(key, vFormat) {
             const date1 = '1970-01-01T00:00:00.002Z';
             const value1 = `{"versionId":"${versionId1}","last-modified":"${date1}","isDeleteMarker":true}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(versionKey1, v),
-                value: value1,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(versionKey1, v),
+                    value: value1,
+                }),
+                FILTER_ACCEPT,
+            );
 
             // filter the second orphan delete marker
             const masterKey2 = 'key2';
@@ -326,10 +360,13 @@ function getListingKey(key, vFormat) {
             const date2 = '1970-01-01T00:00:00.001Z';
             const value2 = `{"versionId":"${versionId2}","last-modified":"${date2}","isDeleteMarker":true}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(versionKey2, v),
-                value: value2,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(versionKey2, v),
+                    value: value2,
+                }),
+                FILTER_ACCEPT,
+            );
 
             // filter the third orphan delete marker
             const masterKey3 = 'key3';
@@ -338,10 +375,13 @@ function getListingKey(key, vFormat) {
             const date3 = '1970-01-01T00:00:00.001Z';
             const value3 = `{"versionId":"${versionId3}","last-modified":"${date3}","isDeleteMarker":true}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(versionKey3, v),
-                value: value3,
-            }), FILTER_END);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(versionKey3, v),
+                    value: value3,
+                }),
+                FILTER_END,
+            );
 
             const expectedResult = {
                 Contents: [
@@ -368,20 +408,26 @@ function getListingKey(key, vFormat) {
             const date1 = '1970-01-01T00:00:00.001Z';
             const value1 = `{"versionId":"${versionId1}","last-modified":"${date1}","isDeleteMarker":true}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(versionKey1, v),
-                value: value1,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(versionKey1, v),
+                    value: value1,
+                }),
+                FILTER_ACCEPT,
+            );
 
             const versionId2 = 'version2';
             const versionKey2 = `${masterKey1}${VID_SEP}${versionId2}`;
             const date2 = '1970-01-01T00:00:00.002Z';
             const value2 = `{"versionId":"${versionId2}","last-modified":"${date2}","isDeleteMarker":true}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(versionKey2, v),
-                value: value2,
-            }), FILTER_END);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(versionKey2, v),
+                    value: value2,
+                }),
+                FILTER_END,
+            );
 
             const expectedResult = {
                 Contents: [],
@@ -403,10 +449,13 @@ function getListingKey(key, vFormat) {
             const date1 = '1970-01-01T00:00:00.002Z';
             const value1 = `{"versionId":"${versionId1}","last-modified":"${date1}"}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(versionKey1, v),
-                value: value1,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(versionKey1, v),
+                    value: value1,
+                }),
+                FILTER_ACCEPT,
+            );
 
             // not a delete marker
             const masterKey2 = 'key2';
@@ -415,10 +464,13 @@ function getListingKey(key, vFormat) {
             const date2 = '1970-01-01T00:00:00.001Z';
             const value2 = `{"versionId":"${versionId2}","last-modified":"${date2}"}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(versionKey2, v),
-                value: value2,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(versionKey2, v),
+                    value: value2,
+                }),
+                FILTER_ACCEPT,
+            );
 
             // orphan delete marker
             const masterKey3 = 'key3';
@@ -427,10 +479,13 @@ function getListingKey(key, vFormat) {
             const date3 = '1970-01-01T00:00:00.000Z';
             const value3 = `{"versionId":"${versionId3}","last-modified":"${date3}","isDeleteMarker":true}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(versionKey3, v),
-                value: value3,
-            }), FILTER_END);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(versionKey3, v),
+                    value: value3,
+                }),
+                FILTER_END,
+            );
 
             const expectedResult = {
                 Contents: [],
@@ -442,8 +497,8 @@ function getListingKey(key, vFormat) {
         });
 
         it('should return NextMarker when the max scanned entries is reached while processing a non-orphan key', () => {
-        // This approach prevents us from starting the next listing from the non-orphan key and, as a result,
-        // avoids the need to revisit all its versions unnecessarily.
+            // This approach prevents us from starting the next listing from the non-orphan key and, as a result,
+            // avoids the need to revisit all its versions unnecessarily.
             const maxScannedLifecycleListingEntries = 2;
             const delimiter = new DelimiterOrphanDeleteMarker({ maxScannedLifecycleListingEntries }, fakeLogger, v);
 
@@ -454,20 +509,26 @@ function getListingKey(key, vFormat) {
             const date1 = '1970-01-01T00:00:00.002Z';
             const value1 = `{"versionId":"${versionId1}","last-modified":"${date1}","isDeleteMarker":true}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(versionKey1, v),
-                value: value1,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(versionKey1, v),
+                    value: value1,
+                }),
+                FILTER_ACCEPT,
+            );
 
             const versionId2 = 'version2';
             const versionKey2 = `${masterKey1}${VID_SEP}${versionId2}`;
             const date2 = '1970-01-01T00:00:00.001Z';
             const value2 = `{"versionId":"${versionId2}","last-modified":"${date2}"}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(versionKey2, v),
-                value: value2,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(versionKey2, v),
+                    value: value2,
+                }),
+                FILTER_ACCEPT,
+            );
 
             // orphan delete marker
             const masterKey3 = 'key3';
@@ -476,10 +537,13 @@ function getListingKey(key, vFormat) {
             const date3 = '1970-01-01T00:00:00.000Z';
             const value3 = `{"versionId":"${versionId3}","last-modified":"${date3}","isDeleteMarker":true}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(versionKey3, v),
-                value: value3,
-            }), FILTER_END);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(versionKey3, v),
+                    value: value3,
+                }),
+                FILTER_END,
+            );
 
             const expectedResult = {
                 Contents: [],
@@ -488,6 +552,274 @@ function getListingKey(key, vFormat) {
             };
 
             assert.deepStrictEqual(delimiter.result(), expectedResult);
+        });
+    });
+});
+
+describe('DelimiterOrphanDeleteMarker over PHD master keys', () => {
+    const valuePHD = '{"isPHD":true,"versionId":"phd-vid"}';
+
+    ['v0', 'v1'].forEach(v => {
+        describe(`with ${v} bucket format`, () => {
+            it('should return a NextMarker when truncation happens inside a run of dangling PHD masters', () => {
+                const maxScannedLifecycleListingEntries = 5;
+                const delimiter = new DelimiterOrphanDeleteMarker({ maxScannedLifecycleListingEntries }, fakeLogger, v);
+
+                // 8 dangling PHD masters: a single raw key each, no version keys
+                for (let i = 1; i <= 5; i++) {
+                    assert.strictEqual(
+                        delimiter.filter({
+                            key: getListingKey(`img-00${i}`, v),
+                            value: valuePHD,
+                        }),
+                        FILTER_ACCEPT,
+                    );
+                }
+                assert.strictEqual(
+                    delimiter.filter({
+                        key: getListingKey('img-006', v),
+                        value: valuePHD,
+                    }),
+                    FILTER_END,
+                );
+
+                const result = delimiter.result();
+                assert.strictEqual(result.IsTruncated, true);
+                // the resume marker trails one key behind the last processed PHD;
+                // before the fix it was null and the next listing restarted from
+                // scratch, looping forever on a desert longer than the scan limit
+                assert.strictEqual(result.NextMarker, 'img-004');
+                assert.deepStrictEqual(result.Contents, []);
+            });
+
+            it('should never list a dangling PHD master as an orphan delete marker', () => {
+                const delimiter = new DelimiterOrphanDeleteMarker({}, fakeLogger, v);
+
+                for (let i = 1; i <= 8; i++) {
+                    assert.strictEqual(
+                        delimiter.filter({
+                            key: getListingKey(`img-00${i}`, v),
+                            value: valuePHD,
+                        }),
+                        FILTER_ACCEPT,
+                    );
+                }
+
+                assert.deepStrictEqual(delimiter.result(), EmptyResult);
+            });
+
+            it('should list a lone delete marker under a PHD master as an orphan', () => {
+                const delimiter = new DelimiterOrphanDeleteMarker({}, fakeLogger, v);
+
+                const masterKey = 'img-001';
+                const versionId = 'version1';
+                const date = '1970-01-01T00:00:00.000Z';
+                const value = `{"versionId":"${versionId}",` + `"last-modified":"${date}","isDeleteMarker":true}`;
+
+                // the master still holds a PHD placeholder: the repair job has
+                // not promoted the surviving version back to master yet
+                assert.strictEqual(
+                    delimiter.filter({
+                        key: getListingKey(masterKey, v),
+                        value: valuePHD,
+                    }),
+                    FILTER_ACCEPT,
+                );
+
+                // the only surviving version is a delete marker, so it is an
+                // orphan. The PHD must not take the key slot and swallow it.
+                assert.strictEqual(
+                    delimiter.filter({
+                        key: getListingKey(`${masterKey}${VID_SEP}${versionId}`, v),
+                        value,
+                    }),
+                    FILTER_ACCEPT,
+                );
+
+                assert.deepStrictEqual(delimiter.result(), {
+                    Contents: [{ key: masterKey, value }],
+                    IsTruncated: false,
+                });
+            });
+
+            it('should not list a delete marker under a PHD master that has a second version', () => {
+                const delimiter = new DelimiterOrphanDeleteMarker({}, fakeLogger, v);
+
+                const masterKey = 'img-001';
+                const date = '1970-01-01T00:00:00.000Z';
+                const dmValue = `{"versionId":"version1",` + `"last-modified":"${date}","isDeleteMarker":true}`;
+                const value2 = `{"versionId":"version2","last-modified":"${date}"}`;
+
+                assert.strictEqual(
+                    delimiter.filter({
+                        key: getListingKey(masterKey, v),
+                        value: valuePHD,
+                    }),
+                    FILTER_ACCEPT,
+                );
+
+                assert.strictEqual(
+                    delimiter.filter({
+                        key: getListingKey(`${masterKey}${VID_SEP}version1`, v),
+                        value: dmValue,
+                    }),
+                    FILTER_ACCEPT,
+                );
+
+                // a second surviving version: the delete marker is not an orphan
+                assert.strictEqual(
+                    delimiter.filter({
+                        key: getListingKey(`${masterKey}${VID_SEP}version2`, v),
+                        value: value2,
+                    }),
+                    FILTER_ACCEPT,
+                );
+
+                assert.deepStrictEqual(delimiter.result(), EmptyResult);
+            });
+
+            it('should keep the marker behind a PHD whose version is still undecided', () => {
+                const maxScannedLifecycleListingEntries = 3;
+                const delimiter = new DelimiterOrphanDeleteMarker({ maxScannedLifecycleListingEntries }, fakeLogger, v);
+
+                const date = '1970-01-01T00:00:00.000Z';
+                const dmValue = `{"versionId":"v1",` + `"last-modified":"${date}","isDeleteMarker":true}`;
+
+                // aaa's delete marker is held as a candidate
+                assert.strictEqual(
+                    delimiter.filter({
+                        key: getListingKey(`aaa${VID_SEP}v1`, v),
+                        value: dmValue,
+                    }),
+                    FILTER_ACCEPT,
+                );
+
+                // a PHD for another key: aaa is proven orphan and emitted
+                assert.strictEqual(
+                    delimiter.filter({
+                        key: getListingKey('apple', v),
+                        value: valuePHD,
+                    }),
+                    FILTER_ACCEPT,
+                );
+
+                // apple's only version, held as a candidate. It is still
+                // undecided, so prevKeyName must NOT move onto apple.
+                assert.strictEqual(
+                    delimiter.filter({
+                        key: getListingKey(`apple${VID_SEP}v1`, v),
+                        value: dmValue,
+                    }),
+                    FILTER_ACCEPT,
+                );
+
+                assert.strictEqual(
+                    delimiter.filter({
+                        key: getListingKey('zebra', v),
+                        value: valuePHD,
+                    }),
+                    FILTER_END,
+                );
+
+                const result = delimiter.result();
+                assert.strictEqual(result.IsTruncated, true);
+                // 'apple', not 'aaa', would make the next listing skip apple
+                // entirely and lose its delete marker for good
+                assert.strictEqual(result.NextMarker, 'aaa');
+                assert.deepStrictEqual(result.Contents, [{ key: 'aaa', value: dmValue }]);
+            });
+        });
+    });
+
+    describe('crawling a v0 keyspace with marker feedback', () => {
+        // replays the pagination loop of a lifecycle bucket processor: each page
+        // is a fresh listing resumed from the previous page's NextMarker, over a
+        // static raw v0 keyspace filtered by genMDParams
+        function crawlOrphanListing(keyspace, maxScannedLifecycleListingEntries, maxPages) {
+            const pages = [];
+            let marker;
+            for (let i = 0; i < maxPages; i++) {
+                const delimiter = new DelimiterOrphanDeleteMarker(
+                    { marker, maxScannedLifecycleListingEntries },
+                    fakeLogger,
+                    'v0',
+                );
+                const params = delimiter.genMDParams();
+                for (const entry of keyspace) {
+                    if (params.gt !== undefined && entry.key <= params.gt) {
+                        continue;
+                    }
+                    if (params.gte !== undefined && entry.key < params.gte) {
+                        continue;
+                    }
+                    if (delimiter.filter(entry) === FILTER_END) {
+                        break;
+                    }
+                }
+                const result = delimiter.result();
+                pages.push(result);
+                if (!result.IsTruncated) {
+                    return pages;
+                }
+                assert(
+                    result.NextMarker,
+                    `truncated page ${pages.length} returned no NextMarker: ` +
+                        'the next listing would restart from scratch',
+                );
+                if (marker !== undefined) {
+                    assert(result.NextMarker > marker, `NextMarker did not advance: ${marker} -> ${result.NextMarker}`);
+                }
+                marker = result.NextMarker;
+            }
+            throw new Error(
+                `listing did not terminate within ${maxPages} pages: ` +
+                    'markerless truncation restarts it from scratch',
+            );
+        }
+
+        it('should cross a PHD desert longer than the scan limit and list the orphan DM beyond it', () => {
+            const dmVersionId = 'vid-dm';
+            const dmValue =
+                `{"versionId":"${dmVersionId}","last-modified":"1970-01-01T00:00:00.001Z",` + '"isDeleteMarker":true}';
+            const keyspace = [];
+            for (let i = 1; i <= 8; i++) {
+                keyspace.push({ key: `img-00${i}`, value: valuePHD });
+            }
+            keyspace.push({ key: 'zebra', value: dmValue });
+            keyspace.push({ key: `zebra${VID_SEP}${dmVersionId}`, value: dmValue });
+
+            const pages = crawlOrphanListing(keyspace, 5, 10);
+
+            assert.strictEqual(pages.length, 3);
+            const listedKeys = pages.reduce((acc, page) => acc.concat(page.Contents.map(c => c.key)), []);
+            assert.deepStrictEqual(listedKeys, ['zebra']);
+        });
+
+        it('should emit an orphan DM held as candidate when the desert begins', () => {
+            const dmVersionId = 'vid-dm';
+            const dmValue =
+                `{"versionId":"${dmVersionId}","last-modified":"1970-01-01T00:00:00.001Z",` + '"isDeleteMarker":true}';
+            const keyspace = [
+                { key: 'banana', value: dmValue },
+                { key: `banana${VID_SEP}${dmVersionId}`, value: dmValue },
+            ];
+            for (let i = 1; i <= 8; i++) {
+                keyspace.push({ key: `phd-00${i}`, value: valuePHD });
+            }
+
+            const pages = crawlOrphanListing(keyspace, 5, 10);
+
+            // the first PHD key proves the held candidate belongs to another key,
+            // so the orphan DM must be emitted on the very page that scanned past
+            // it; bookmarking the PHDs without that emission would strand the DM
+            // behind the marker forever
+            assert.deepStrictEqual(
+                pages[0].Contents.map(c => c.key),
+                ['banana'],
+            );
+            const listedKeys = pages.reduce((acc, page) => acc.concat(page.Contents.map(c => c.key)), []);
+            assert.deepStrictEqual(listedKeys, ['banana']);
+            assert.strictEqual(pages.length, 3);
         });
     });
 });
