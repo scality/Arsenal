@@ -272,6 +272,26 @@ describe('translate query object', () => {
             },
         ],
         [
+            'should translate $and',
+            {
+                depth: 0,
+                prefix: 'value',
+                query: {
+                    $and: [
+                        { fieldA: { $gt: 1 } },
+                        { fieldB: { $exists: true } },
+                    ],
+                },
+                error: null,
+                result: {
+                    $and: [
+                        { 'value.fieldA': { $gt: 1 } },
+                        { 'value.fieldB': { $exists: true } },
+                    ],
+                },
+            },
+        ],
+        [
             'should translate $or with mixed plain and nested $or items',
             {
                 depth: 0,
