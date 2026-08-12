@@ -1491,3 +1491,33 @@ function getTestListing(mdParams, data, vFormat) {
         }
     });
 });
+
+describe('DelimiterVersions PHD master handling stays inert', () => {
+    // The capped lifecycle listings (DelimiterOrphanDeleteMarker,
+    // DelimiterNonCurrent) override handlePHDMaster to advance their resume
+    // marker over PHD masters. The base class hook must stay a strict no-op:
+    // moving the marker advance into the base class would change the
+    // S3-visible ListObjectVersions pagination semantics.
+    const { FILTER_END } = require('../../../../lib/algos/list/tools');
+
+    ['v0', 'v1'].forEach(v => {
+        it(`with ${v} bucket format: a PHD master is not listed and does not advance the marker`, () => {
+            const delimiter = new DelimiterVersions({ maxKeys: 1 }, logger, v);
+            const getKey = key => (v === 'v0' ? key : `${DbPrefixes.Master}${key}`);
+
+            assert.strictEqual(delimiter.filter({ key: getKey('key1'), value: foo }), FILTER_ACCEPT);
+            assert.strictEqual(delimiter.filter({ key: getKey('key2'), value: valuePHD }), FILTER_ACCEPT);
+            assert.strictEqual(delimiter.filter({ key: getKey('key3'), value: foo }), FILTER_END);
+
+            const result = delimiter.result();
+            assert.strictEqual(result.IsTruncated, true);
+            // the PHD master 'key2' was scanned after 'key1' but must appear
+            // neither in the listing nor in the resume marker
+            assert.deepStrictEqual(result.Versions, [
+                { key: 'key1', versionId: 'foo', value: foo },
+            ]);
+            assert.strictEqual(result.NextKeyMarker, 'key1');
+            assert.strictEqual(result.NextVersionIdMarker, 'foo');
+        });
+    });
+});

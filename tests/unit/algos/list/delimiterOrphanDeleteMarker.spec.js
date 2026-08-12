@@ -491,3 +491,133 @@ function getListingKey(key, vFormat) {
         });
     });
 });
+
+describe('DelimiterOrphanDeleteMarker over PHD master keys', () => {
+    const valuePHD = '{"isPHD":true,"versionId":"phd-vid"}';
+
+    ['v0', 'v1'].forEach(v => {
+        describe(`with ${v} bucket format`, () => {
+            it('should return a NextMarker when truncation happens inside a run of dangling PHD masters', () => {
+                const maxScannedLifecycleListingEntries = 5;
+                const delimiter = new DelimiterOrphanDeleteMarker(
+                    { maxScannedLifecycleListingEntries }, fakeLogger, v);
+
+                // 8 dangling PHD masters: a single raw key each, no version keys
+                for (let i = 1; i <= 5; i++) {
+                    assert.strictEqual(delimiter.filter({
+                        key: getListingKey(`img-00${i}`, v),
+                        value: valuePHD,
+                    }), FILTER_ACCEPT);
+                }
+                assert.strictEqual(delimiter.filter({
+                    key: getListingKey('img-006', v),
+                    value: valuePHD,
+                }), FILTER_END);
+
+                const result = delimiter.result();
+                assert.strictEqual(result.IsTruncated, true);
+                // the resume marker trails one key behind the last processed PHD;
+                // before the fix it was null and the next listing restarted from
+                // scratch, looping forever on a desert longer than the scan limit
+                assert.strictEqual(result.NextMarker, 'img-004');
+                assert.deepStrictEqual(result.Contents, []);
+            });
+
+            it('should never list a dangling PHD master as an orphan delete marker', () => {
+                const delimiter = new DelimiterOrphanDeleteMarker({}, fakeLogger, v);
+
+                for (let i = 1; i <= 8; i++) {
+                    assert.strictEqual(delimiter.filter({
+                        key: getListingKey(`img-00${i}`, v),
+                        value: valuePHD,
+                    }), FILTER_ACCEPT);
+                }
+
+                assert.deepStrictEqual(delimiter.result(), EmptyResult);
+            });
+        });
+    });
+
+    describe('crawling a v0 keyspace with marker feedback', () => {
+        // replays the pagination loop of a lifecycle bucket processor: each page
+        // is a fresh listing resumed from the previous page's NextMarker, over a
+        // static raw v0 keyspace filtered by genMDParams
+        function crawlOrphanListing(keyspace, maxScannedLifecycleListingEntries, maxPages) {
+            const pages = [];
+            let marker;
+            for (let i = 0; i < maxPages; i++) {
+                const delimiter = new DelimiterOrphanDeleteMarker(
+                    { marker, maxScannedLifecycleListingEntries }, fakeLogger, 'v0');
+                const params = delimiter.genMDParams();
+                for (const entry of keyspace) {
+                    if (params.gt !== undefined && entry.key <= params.gt) {
+                        continue;
+                    }
+                    if (params.gte !== undefined && entry.key < params.gte) {
+                        continue;
+                    }
+                    if (delimiter.filter(entry) === FILTER_END) {
+                        break;
+                    }
+                }
+                const result = delimiter.result();
+                pages.push(result);
+                if (!result.IsTruncated) {
+                    return pages;
+                }
+                assert(result.NextMarker,
+                    `truncated page ${pages.length} returned no NextMarker: ` +
+                    'the next listing would restart from scratch');
+                if (marker !== undefined) {
+                    assert(result.NextMarker > marker,
+                        `NextMarker did not advance: ${marker} -> ${result.NextMarker}`);
+                }
+                marker = result.NextMarker;
+            }
+            throw new Error(`listing did not terminate within ${maxPages} pages: ` +
+                'markerless truncation restarts it from scratch');
+        }
+
+        it('should cross a PHD desert longer than the scan limit and list the orphan DM beyond it', () => {
+            const dmVersionId = 'vid-dm';
+            const dmValue = `{"versionId":"${dmVersionId}","last-modified":"1970-01-01T00:00:00.001Z",` +
+                '"isDeleteMarker":true}';
+            const keyspace = [];
+            for (let i = 1; i <= 8; i++) {
+                keyspace.push({ key: `img-00${i}`, value: valuePHD });
+            }
+            keyspace.push({ key: 'zebra', value: dmValue });
+            keyspace.push({ key: `zebra${VID_SEP}${dmVersionId}`, value: dmValue });
+
+            const pages = crawlOrphanListing(keyspace, 5, 10);
+
+            assert.strictEqual(pages.length, 3);
+            const listedKeys = pages.reduce((acc, page) => acc.concat(page.Contents.map(c => c.key)), []);
+            assert.deepStrictEqual(listedKeys, ['zebra']);
+        });
+
+        it('should emit an orphan DM held as candidate when the desert begins', () => {
+            const dmVersionId = 'vid-dm';
+            const dmValue = `{"versionId":"${dmVersionId}","last-modified":"1970-01-01T00:00:00.001Z",` +
+                '"isDeleteMarker":true}';
+            const keyspace = [
+                { key: 'banana', value: dmValue },
+                { key: `banana${VID_SEP}${dmVersionId}`, value: dmValue },
+            ];
+            for (let i = 1; i <= 8; i++) {
+                keyspace.push({ key: `phd-00${i}`, value: valuePHD });
+            }
+
+            const pages = crawlOrphanListing(keyspace, 5, 10);
+
+            // the first PHD key proves the held candidate belongs to another key,
+            // so the orphan DM must be emitted on the very page that scanned past
+            // it; bookmarking the PHDs without that emission would strand the DM
+            // behind the marker forever
+            assert.deepStrictEqual(pages[0].Contents.map(c => c.key), ['banana']);
+            const listedKeys = pages.reduce((acc, page) => acc.concat(page.Contents.map(c => c.key)), []);
+            assert.deepStrictEqual(listedKeys, ['banana']);
+            assert.strictEqual(pages.length, 3);
+        });
+    });
+});
