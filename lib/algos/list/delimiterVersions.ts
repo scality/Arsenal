@@ -1,16 +1,12 @@
-'use strict';  
+'use strict';
 
 const Extension = require('./Extension').default;
 
-import {
-    FilterState,
-    FilterReturnValue,
-} from './delimiter';
+import { FilterState, FilterReturnValue } from './delimiter';
 
 const Version = require('../../versioning/Version').Version;
 const VSConst = require('../../versioning/constants').VersioningConstants;
-const { inc, FILTER_END, FILTER_ACCEPT, FILTER_SKIP, SKIP_NONE } =
-    require('./tools');
+const { inc, FILTER_END, FILTER_ACCEPT, FILTER_SKIP, SKIP_NONE } = require('./tools');
 
 const VID_SEP = VSConst.VersionId.Separator;
 const { DbPrefixes, BucketVersioningKeyFormat } = VSConst;
@@ -19,41 +15,41 @@ export const enum DelimiterVersionsFilterStateId {
     NotSkipping = 1,
     SkippingPrefix = 2,
     SkippingVersions = 3,
-};
+}
 
 export interface DelimiterVersionsFilterState_NotSkipping extends FilterState {
-    id: DelimiterVersionsFilterStateId.NotSkipping,
-};
+    id: DelimiterVersionsFilterStateId.NotSkipping;
+}
 
 export interface DelimiterVersionsFilterState_SkippingPrefix extends FilterState {
-    id: DelimiterVersionsFilterStateId.SkippingPrefix,
+    id: DelimiterVersionsFilterStateId.SkippingPrefix;
     prefix: string;
-};
+}
 
 export interface DelimiterVersionsFilterState_SkippingVersions extends FilterState {
-    id: DelimiterVersionsFilterStateId.SkippingVersions,
+    id: DelimiterVersionsFilterStateId.SkippingVersions;
     gt: string;
-};
+}
 
 type KeyHandler = (key: string, versionId: string | undefined, value: string) => FilterReturnValue;
 
 type ResultObject = {
-    CommonPrefixes: string[],
+    CommonPrefixes: string[];
     Versions: {
         key: string;
         value: string;
         versionId: string;
     }[];
     IsTruncated: boolean;
-    Delimiter ?: string;
-    NextKeyMarker ?: string;
-    NextVersionIdMarker ?: string;
+    Delimiter?: string;
+    NextKeyMarker?: string;
+    NextVersionIdMarker?: string;
 };
 
 type GenMDParamsItem = {
-    gt ?: string,
-    gte ?: string,
-    lt ?: string,
+    gt?: string;
+    gte?: string;
+    lt?: string;
 };
 
 /**
@@ -69,7 +65,6 @@ type GenMDParamsItem = {
  * @prop {Number} maxKeys              - number of keys to list
  */
 export class DelimiterVersions extends Extension {
-
     state: FilterState;
     keyHandlers: { [id: number]: KeyHandler };
 
@@ -96,43 +91,41 @@ export class DelimiterVersions extends Extension {
 
         this.keyHandlers = {};
 
-        Object.assign(this, {
-            [BucketVersioningKeyFormat.v0]: {
-                genMDParams: this.genMDParamsV0,
-                getObjectKey: this.getObjectKeyV0,
-                skipping: this.skippingV0,
-            },
-            [BucketVersioningKeyFormat.v1]: {
-                genMDParams: this.genMDParamsV1,
-                getObjectKey: this.getObjectKeyV1,
-                skipping: this.skippingV1,
-            },
-        }[this.vFormat]);
+        Object.assign(
+            this,
+            {
+                [BucketVersioningKeyFormat.v0]: {
+                    genMDParams: this.genMDParamsV0,
+                    getObjectKey: this.getObjectKeyV0,
+                    skipping: this.skippingV0,
+                },
+                [BucketVersioningKeyFormat.v1]: {
+                    genMDParams: this.genMDParamsV1,
+                    getObjectKey: this.getObjectKeyV1,
+                    skipping: this.skippingV1,
+                },
+            }[this.vFormat],
+        );
 
         if (this.vFormat === BucketVersioningKeyFormat.v0) {
-            this.setKeyHandler(
-                DelimiterVersionsFilterStateId.NotSkipping,
-                this.keyHandler_NotSkippingV0.bind(this));
+            this.setKeyHandler(DelimiterVersionsFilterStateId.NotSkipping, this.keyHandler_NotSkippingV0.bind(this));
         } else {
-            this.setKeyHandler(
-                DelimiterVersionsFilterStateId.NotSkipping,
-                this.keyHandler_NotSkippingV1.bind(this));
+            this.setKeyHandler(DelimiterVersionsFilterStateId.NotSkipping, this.keyHandler_NotSkippingV1.bind(this));
         }
-        this.setKeyHandler(
-            DelimiterVersionsFilterStateId.SkippingPrefix,
-            this.keyHandler_SkippingPrefix.bind(this));
+        this.setKeyHandler(DelimiterVersionsFilterStateId.SkippingPrefix, this.keyHandler_SkippingPrefix.bind(this));
 
         this.setKeyHandler(
             DelimiterVersionsFilterStateId.SkippingVersions,
-            this.keyHandler_SkippingVersions.bind(this));
+            this.keyHandler_SkippingVersions.bind(this),
+        );
 
         if (this.versionIdMarker) {
-            this.state = <DelimiterVersionsFilterState_SkippingVersions> {
+            this.state = <DelimiterVersionsFilterState_SkippingVersions>{
                 id: DelimiterVersionsFilterStateId.SkippingVersions,
                 gt: `${this.keyMarker}${VID_SEP}${this.versionIdMarker}`,
             };
         } else {
-            this.state = <DelimiterVersionsFilterState_NotSkipping> {
+            this.state = <DelimiterVersionsFilterState_NotSkipping>{
                 id: DelimiterVersionsFilterStateId.NotSkipping,
             };
         }
@@ -233,7 +226,7 @@ export class DelimiterVersions extends Extension {
      * @return {string} obj.key - nonversioned part of key
      * @return {string} [obj.versionId] - version ID in the key
      */
-    parseKey(fullKey: string): { key: string, versionId ?: string } {
+    parseKey(fullKey: string): { key: string; versionId?: string } {
         const versionIdIndex = fullKey.indexOf(VID_SEP);
         if (versionIdIndex === -1) {
             return { key: fullKey };
@@ -258,7 +251,7 @@ export class DelimiterVersions extends Extension {
             this.addCommonPrefix(commonPrefix);
             // transition into SkippingPrefix state to skip all following keys
             // while they start with the same prefix
-            this.setState(<DelimiterVersionsFilterState_SkippingPrefix> {
+            this.setState(<DelimiterVersionsFilterState_SkippingPrefix>{
                 id: DelimiterVersionsFilterStateId.SkippingPrefix,
                 prefix: commonPrefix,
             });
@@ -344,16 +337,14 @@ export class DelimiterVersions extends Extension {
      *  @param {String} obj.value - The value of the element
      *  @return {number}          - indicates if iteration should continue
      */
-    filter(obj: { key: string, value: string }): FilterReturnValue {
+    filter(obj: { key: string; value: string }): FilterReturnValue {
         const key = this.getObjectKey(obj);
         const value = obj.value;
 
         const { key: nonversionedKey, versionId: keyVersionId } = this.parseKey(key);
         if (this.nullKey) {
-            if (this.nullKey.key !== nonversionedKey
-                || this.nullKey.versionId < <string> keyVersionId) {
-                this.handleKey(
-                    this.nullKey.key, this.nullKey.versionId, this.nullKey.value);
+            if (this.nullKey.key !== nonversionedKey || this.nullKey.versionId < <string>keyVersionId) {
+                this.handleKey(this.nullKey.key, this.nullKey.versionId, this.nullKey.value);
                 this.nullKey = null;
             }
         }
@@ -380,17 +371,41 @@ export class DelimiterVersions extends Extension {
         return this.keyHandlers[this.state.id](key, versionId, value);
     }
 
+    /**
+     * Hook called when a PHD master key is scanned. The default behavior
+     * is to accept and skip it without any effect on the listing state.
+     *
+     * Bounded lifecycle listings (DelimiterOrphanDeleteMarker,
+     * DelimiterNonCurrent) override this hook to record the PHD key as
+     * the resume position: without it, a contiguous run of dangling PHD
+     * masters longer than maxScannedLifecycleListingEntries exhausts the
+     * scan budget without ever advancing the marker, so the truncated
+     * listing carries no resume position and the next one restarts from
+     * scratch, forever.
+     *
+     * Only the key is passed. A master key embeds no version ID, and the PHD
+     * placeholder value is internal to metadata, so neither tells a listing
+     * anything it can use.
+     *
+     * @param {string} key - master key holding the PHD placeholder
+     * @return {number} - filter return value
+     */
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- no-op default
+    handlePHDMaster(key: string): FilterReturnValue {
+        return FILTER_ACCEPT;
+    }
+
     keyHandler_NotSkippingV0(key: string, versionId: string | undefined, value: string): FilterReturnValue {
         if (key.startsWith(DbPrefixes.Replay)) {
             // skip internal replay prefix entirely
-            this.setState(<DelimiterVersionsFilterState_SkippingPrefix> {
+            this.setState(<DelimiterVersionsFilterState_SkippingPrefix>{
                 id: DelimiterVersionsFilterStateId.SkippingPrefix,
                 prefix: DbPrefixes.Replay,
             });
             return FILTER_SKIP;
         }
         if (Version.isPHD(value)) {
-            return FILTER_ACCEPT;
+            return this.handlePHDMaster(key);
         }
         return this.filter_onNewKey(key, versionId, value);
     }
@@ -399,7 +414,7 @@ export class DelimiterVersions extends Extension {
         // NOTE: this check on PHD is only useful for Artesca, S3C
         // does not use PHDs in V1 format
         if (Version.isPHD(value)) {
-            return FILTER_ACCEPT;
+            return this.handlePHDMaster(key);
         }
         return this.filter_onNewKey(key, versionId, value);
     }
@@ -423,11 +438,11 @@ export class DelimiterVersions extends Extension {
     }
 
     keyHandler_SkippingPrefix(key: string, versionId: string | undefined, value: string): FilterReturnValue {
-        const { prefix } = <DelimiterVersionsFilterState_SkippingPrefix> this.state;
+        const { prefix } = <DelimiterVersionsFilterState_SkippingPrefix>this.state;
         if (key.startsWith(prefix)) {
             return FILTER_SKIP;
         }
-        this.setState(<DelimiterVersionsFilterState_NotSkipping> {
+        this.setState(<DelimiterVersionsFilterState_NotSkipping>{
             id: DelimiterVersionsFilterStateId.NotSkipping,
         });
         return this.handleKey(key, versionId, value);
@@ -437,7 +452,7 @@ export class DelimiterVersions extends Extension {
         if (key === this.keyMarker) {
             // since the nonversioned key equals the marker, there is
             // necessarily a versionId in this key
-            const _versionId = <string> versionId;
+            const _versionId = <string>versionId;
             if (_versionId < this.versionIdMarker) {
                 // skip all versions until marker
                 return FILTER_SKIP;
@@ -447,7 +462,7 @@ export class DelimiterVersions extends Extension {
                 return FILTER_ACCEPT;
             }
         }
-        this.setState(<DelimiterVersionsFilterState_NotSkipping> {
+        this.setState(<DelimiterVersionsFilterState_NotSkipping>{
             id: DelimiterVersionsFilterStateId.NotSkipping,
         });
         return this.handleKey(key, versionId, value);
@@ -455,21 +470,21 @@ export class DelimiterVersions extends Extension {
 
     skippingBase(): string | undefined {
         switch (this.state.id) {
-        case DelimiterVersionsFilterStateId.SkippingPrefix: {
-            const { prefix } = <DelimiterVersionsFilterState_SkippingPrefix> this.state;
-            return inc(prefix);
-        }
+            case DelimiterVersionsFilterStateId.SkippingPrefix: {
+                const { prefix } = <DelimiterVersionsFilterState_SkippingPrefix>this.state;
+                return inc(prefix);
+            }
 
-        case DelimiterVersionsFilterStateId.SkippingVersions: {
-            const { gt } = <DelimiterVersionsFilterState_SkippingVersions> this.state;
-            // the contract of skipping() is to return the first key
-            // that can be skipped to, so adding a null byte to skip
-            // over the existing versioned key set in 'gt'
-            return `${gt}\0`;
-        }
+            case DelimiterVersionsFilterStateId.SkippingVersions: {
+                const { gt } = <DelimiterVersionsFilterState_SkippingVersions>this.state;
+                // the contract of skipping() is to return the first key
+                // that can be skipped to, so adding a null byte to skip
+                // over the existing versioned key set in 'gt'
+                return `${gt}\0`;
+            }
 
-        default:
-            return SKIP_NONE;
+            default:
+                return SKIP_NONE;
         }
     }
 
@@ -483,10 +498,7 @@ export class DelimiterVersions extends Extension {
             return SKIP_NONE;
         }
         // skip to the same object key in both M and V range listings
-        return [
-            `${DbPrefixes.Master}${skipTo}`,
-            `${DbPrefixes.Version}${skipTo}`,
-        ];
+        return [`${DbPrefixes.Master}${skipTo}`, `${DbPrefixes.Version}${skipTo}`];
     }
 
     /**
@@ -529,7 +541,7 @@ export class DelimiterVersions extends Extension {
             if (this.nextVersionIdMarker) {
                 result.NextVersionIdMarker = this.nextVersionIdMarker;
             }
-        };
+        }
         return result;
     }
 }

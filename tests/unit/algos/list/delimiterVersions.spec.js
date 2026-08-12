@@ -1,14 +1,8 @@
 'use strict'; // eslint-disable-line strict
 
 const assert = require('assert');
-const DelimiterVersions =
-    require('../../../../lib/algos/list/delimiterVersions').DelimiterVersions;
-const {
-    FILTER_ACCEPT,
-    FILTER_SKIP,
-    SKIP_NONE,
-    inc,
-} = require('../../../../lib/algos/list/tools');
+const DelimiterVersions = require('../../../../lib/algos/list/delimiterVersions').DelimiterVersions;
+const { FILTER_ACCEPT, FILTER_SKIP, SKIP_NONE, inc } = require('../../../../lib/algos/list/tools');
 const Werelogs = require('werelogs').Logger;
 const logger = new Werelogs('listTest');
 const zpad = require('../../helpers').zpad;
@@ -59,8 +53,7 @@ const dataVersioned = {
         { key: 'notes/spring/2.txt', value: valuePHD },
         { key: `notes/spring/2.txt${VID_SEP}bar`, value: barDM },
         { key: `notes/spring/2.txt${VID_SEP}foo`, value: foo },
-        { key: 'notes/spring/march/1.txt',
-            value: '{"versionId":"null","isNull":true}' },
+        { key: 'notes/spring/march/1.txt', value: '{"versionId":"null","isNull":true}' },
         { key: `notes/spring/march/1.txt${VID_SEP}bar`, value: bar },
         { key: `notes/spring/march/1.txt${VID_SEP}foo`, value: foo },
         { key: 'notes/summer/1.txt', value: bar },
@@ -102,7 +95,8 @@ const dataVersioned = {
         { key: 'nullkey3/1.txt', value: nullDMMD }, // current version
         { key: `nullkey3/1.txt${VID_SEP}foo`, value: fooDM },
     ],
-    v1: [ // we add M and V prefixes in getTestListing() due to the
+    v1: [
+        // we add M and V prefixes in getTestListing() due to the
         // test cases needing the original key to filter
         { key: 'Pâtisserie=中文-español-English', value: bar },
         { key: `Pâtisserie=中文-español-English${VID_SEP}bar`, value: bar },
@@ -113,8 +107,7 @@ const dataVersioned = {
         { key: `notes/spring/1.txt${VID_SEP}qux`, value: qux },
         { key: `notes/spring/2.txt${VID_SEP}bar`, value: barDM },
         { key: `notes/spring/2.txt${VID_SEP}foo`, value: foo },
-        { key: 'notes/spring/march/1.txt',
-            value: '{"versionId":"null","isNull":true}' },
+        { key: 'notes/spring/march/1.txt', value: '{"versionId":"null","isNull":true}' },
         { key: `notes/spring/march/1.txt${VID_SEP}bar`, value: bar },
         { key: `notes/spring/march/1.txt${VID_SEP}foo`, value: foo },
         { key: 'notes/summer/1.txt', value: bar },
@@ -160,8 +153,7 @@ const receivedData = [
     { key: 'notes/spring/1.txt', value: qux, versionId: 'qux' },
     { key: 'notes/spring/2.txt', value: barDM, versionId: 'bar' },
     { key: 'notes/spring/2.txt', value: foo, versionId: 'foo' },
-    { key: 'notes/spring/march/1.txt',
-        value: '{"versionId":"null","isNull":true}', versionId: 'null' },
+    { key: 'notes/spring/march/1.txt', value: '{"versionId":"null","isNull":true}', versionId: 'null' },
     { key: 'notes/spring/march/1.txt', value: bar, versionId: 'bar' },
     { key: 'notes/spring/march/1.txt', value: foo, versionId: 'foo' },
     { key: 'notes/summer/1.txt', value: bar, versionId: 'bar' },
@@ -193,617 +185,778 @@ const receivedData = [
     { key: 'nullkey3/1.txt', value: fooDM, versionId: 'foo' },
 ];
 const tests = [
-    new Test('all versions', {}, {
-        v0: {},
-        v1: [{ gte: DbPrefixes.Master, lt: inc(DbPrefixes.Master) },
-            { gte: DbPrefixes.Version, lt: inc(DbPrefixes.Version) }],
-    }, {
-        Versions: receivedData,
-        CommonPrefixes: [],
-        IsTruncated: false,
-    }),
-    new Test('with valid key marker', {
-        keyMarker: receivedData[3].key,
-    }, {
-        v0: {
-            gt: `${receivedData[3].key}${inc(VID_SEP)}`,
+    new Test(
+        'all versions',
+        {},
+        {
+            v0: {},
+            v1: [
+                { gte: DbPrefixes.Master, lt: inc(DbPrefixes.Master) },
+                { gte: DbPrefixes.Version, lt: inc(DbPrefixes.Version) },
+            ],
         },
-        v1: [{
-            gt: `${DbPrefixes.Master}${receivedData[3].key}${inc(VID_SEP)}`,
-            lt: inc(DbPrefixes.Master),
-        }, {
-            gt: `${DbPrefixes.Version}${receivedData[3].key}${inc(VID_SEP)}`,
-            lt: inc(DbPrefixes.Version),
-        }],
-    }, {
-        Versions: receivedData.slice(5),
-        CommonPrefixes: [],
-        IsTruncated: false,
-    }),
-    new Test('with bad key marker', {
-        keyMarker: 'zzzz',
-        delimiter: '/',
-    }, {
-        v0: {
-            gt: `zzzz${inc(VID_SEP)}`,
+        {
+            Versions: receivedData,
+            CommonPrefixes: [],
+            IsTruncated: false,
         },
-        v1: [{
-            gt: `${DbPrefixes.Master}zzzz${inc(VID_SEP)}`,
-            lt: inc(DbPrefixes.Master),
-        }, {
-            gt: `${DbPrefixes.Version}zzzz${inc(VID_SEP)}`,
-            lt: inc(DbPrefixes.Version),
-        }],
-    }, {
-        Versions: [],
-        CommonPrefixes: [],
-        Delimiter: '/',
-        IsTruncated: false,
-    }),
-    new Test('with maxKeys', {
-        maxKeys: 3,
-    }, {
-        v0: {},
-        v1: [{
-            gte: DbPrefixes.Master,
-            lt: inc(DbPrefixes.Master),
-        }, {
-            gte: DbPrefixes.Version,
-            lt: inc(DbPrefixes.Version),
-        }],
-    }, {
-        Versions: receivedData.slice(0, 3),
-        CommonPrefixes: [],
-        IsTruncated: true,
-        NextKeyMarker: 'notes/spring/1.txt',
-        NextVersionIdMarker: 'bar',
-    }),
-    new Test('with big maxKeys', {
-        maxKeys: 15000,
-    }, {
-        v0: {},
-        v1: [{
-            gte: DbPrefixes.Master,
-            lt: inc(DbPrefixes.Master),
-        }, {
-            gte: DbPrefixes.Version,
-            lt: inc(DbPrefixes.Version),
-        }],
-    }, {
-        Versions: receivedData,
-        CommonPrefixes: [],
-        IsTruncated: false,
-    }),
-    new Test('with delimiter', {
-        delimiter: '/',
-    }, {
-        v0: {},
-        v1: [{
-            gte: DbPrefixes.Master,
-            lt: inc(DbPrefixes.Master),
-        }, {
-            gte: DbPrefixes.Version,
-            lt: inc(DbPrefixes.Version),
-        }],
-    }, {
-        Versions: [
-            receivedData[0],
-            receivedData[1],
-        ],
-        CommonPrefixes: [
-            'notes/',
-            'nullkey/',
-            'nullkey2/',
-            'nullkey3/',
-        ],
-        Delimiter: '/',
-        IsTruncated: false,
-    }),
-    new Test('with long delimiter', {
-        delimiter: 'notes/summer',
-    }, {
-        v0: {},
-        v1: [{
-            gte: DbPrefixes.Master,
-            lt: inc(DbPrefixes.Master),
-        }, {
-            gte: DbPrefixes.Version,
-            lt: inc(DbPrefixes.Version),
-        }],
-    }, {
-        Versions: receivedData.filter(entry =>
-            entry.key.indexOf('notes/summer') < 0),
-        CommonPrefixes: ['notes/summer'],
-        Delimiter: 'notes/summer',
-        IsTruncated: false,
-    }),
-    new Test('with bad key marker and good prefix', {
-        delimiter: '/',
-        prefix: 'notes/summer/',
-        keyMarker: 'notes/summer0',
-    }, {
-        v0: {
-            gt: `notes/summer0${inc(VID_SEP)}`,
-            lt: `notes/summer${inc('/')}`,
+    ),
+    new Test(
+        'with valid key marker',
+        {
+            keyMarker: receivedData[3].key,
         },
-        v1: [{
-            gt: `${DbPrefixes.Master}notes/summer0${inc(VID_SEP)}`,
-            lt: `${DbPrefixes.Master}notes/summer${inc('/')}`,
-        }, {
-            gt: `${DbPrefixes.Version}notes/summer0${inc(VID_SEP)}`,
-            lt: `${DbPrefixes.Version}notes/summer${inc('/')}`,
-        }],
-    }, {
-        Versions: [],
-        CommonPrefixes: [],
-        Delimiter: '/',
-        IsTruncated: false,
-    }),
-    new Test('with delimiter and prefix (related to #147)', {
-        delimiter: '/',
-        prefix: 'notes/',
-    }, {
-        v0: {
-            gte: 'notes/',
-            lt: `notes${inc('/')}`,
+        {
+            v0: {
+                gt: `${receivedData[3].key}${inc(VID_SEP)}`,
+            },
+            v1: [
+                {
+                    gt: `${DbPrefixes.Master}${receivedData[3].key}${inc(VID_SEP)}`,
+                    lt: inc(DbPrefixes.Master),
+                },
+                {
+                    gt: `${DbPrefixes.Version}${receivedData[3].key}${inc(VID_SEP)}`,
+                    lt: inc(DbPrefixes.Version),
+                },
+            ],
         },
-        v1: [{
-            gte: `${DbPrefixes.Master}notes/`,
-            lt: `${DbPrefixes.Master}notes${inc('/')}`,
-        }, {
-            gte: `${DbPrefixes.Version}notes/`,
-            lt: `${DbPrefixes.Version}notes${inc('/')}`,
-        }],
-    }, {
-        Versions: [
-            receivedData[19],
-            receivedData[20],
-        ],
-        CommonPrefixes: [
-            'notes/spring/',
-            'notes/summer/',
-            'notes/zaphod/',
-        ],
-        Delimiter: '/',
-        IsTruncated: false,
-    }),
-    new Test('with delimiter, prefix and marker (related to #147)', {
-        delimiter: '/',
-        prefix: 'notes/',
-        keyMarker: 'notes/year.txt',
-    }, {
-        v0: {
-            gt: `notes/year.txt${inc(VID_SEP)}`,
-            lt: `notes${inc('/')}`,
+        {
+            Versions: receivedData.slice(5),
+            CommonPrefixes: [],
+            IsTruncated: false,
         },
-        v1: [{
-            gt: `${DbPrefixes.Master}notes/year.txt${inc(VID_SEP)}`,
-            lt: `${DbPrefixes.Master}notes${inc('/')}`,
-        }, {
-            gt: `${DbPrefixes.Version}notes/year.txt${inc(VID_SEP)}`,
-            lt: `${DbPrefixes.Version}notes${inc('/')}`,
-        }],
-    }, {
-        Versions: [
-            receivedData[20],
-        ],
-        CommonPrefixes: [
-            'notes/zaphod/',
-        ],
-        Delimiter: '/',
-        IsTruncated: false,
-    }),
-    new Test('with all parameters 1/5', {
-        delimiter: '/',
-        prefix: 'notes/',
-        keyMarker: 'notes/',
-        maxKeys: 1,
-    }, {
-        v0: {
-            gt: `notes/${inc(VID_SEP)}`,
-            lt: `notes${inc('/')}`,
+    ),
+    new Test(
+        'with bad key marker',
+        {
+            keyMarker: 'zzzz',
+            delimiter: '/',
         },
-        v1: [{
-            gt: `${DbPrefixes.Master}notes/${inc(VID_SEP)}`,
-            lt: `${DbPrefixes.Master}notes${inc('/')}`,
-        }, {
-            gt: `${DbPrefixes.Version}notes/${inc(VID_SEP)}`,
-            lt: `${DbPrefixes.Version}notes${inc('/')}`,
-        }],
-    }, {
-        Versions: [],
-        CommonPrefixes: ['notes/spring/'],
-        Delimiter: '/',
-        IsTruncated: true,
-        NextKeyMarker: 'notes/spring/',
-    }),
+        {
+            v0: {
+                gt: `zzzz${inc(VID_SEP)}`,
+            },
+            v1: [
+                {
+                    gt: `${DbPrefixes.Master}zzzz${inc(VID_SEP)}`,
+                    lt: inc(DbPrefixes.Master),
+                },
+                {
+                    gt: `${DbPrefixes.Version}zzzz${inc(VID_SEP)}`,
+                    lt: inc(DbPrefixes.Version),
+                },
+            ],
+        },
+        {
+            Versions: [],
+            CommonPrefixes: [],
+            Delimiter: '/',
+            IsTruncated: false,
+        },
+    ),
+    new Test(
+        'with maxKeys',
+        {
+            maxKeys: 3,
+        },
+        {
+            v0: {},
+            v1: [
+                {
+                    gte: DbPrefixes.Master,
+                    lt: inc(DbPrefixes.Master),
+                },
+                {
+                    gte: DbPrefixes.Version,
+                    lt: inc(DbPrefixes.Version),
+                },
+            ],
+        },
+        {
+            Versions: receivedData.slice(0, 3),
+            CommonPrefixes: [],
+            IsTruncated: true,
+            NextKeyMarker: 'notes/spring/1.txt',
+            NextVersionIdMarker: 'bar',
+        },
+    ),
+    new Test(
+        'with big maxKeys',
+        {
+            maxKeys: 15000,
+        },
+        {
+            v0: {},
+            v1: [
+                {
+                    gte: DbPrefixes.Master,
+                    lt: inc(DbPrefixes.Master),
+                },
+                {
+                    gte: DbPrefixes.Version,
+                    lt: inc(DbPrefixes.Version),
+                },
+            ],
+        },
+        {
+            Versions: receivedData,
+            CommonPrefixes: [],
+            IsTruncated: false,
+        },
+    ),
+    new Test(
+        'with delimiter',
+        {
+            delimiter: '/',
+        },
+        {
+            v0: {},
+            v1: [
+                {
+                    gte: DbPrefixes.Master,
+                    lt: inc(DbPrefixes.Master),
+                },
+                {
+                    gte: DbPrefixes.Version,
+                    lt: inc(DbPrefixes.Version),
+                },
+            ],
+        },
+        {
+            Versions: [receivedData[0], receivedData[1]],
+            CommonPrefixes: ['notes/', 'nullkey/', 'nullkey2/', 'nullkey3/'],
+            Delimiter: '/',
+            IsTruncated: false,
+        },
+    ),
+    new Test(
+        'with long delimiter',
+        {
+            delimiter: 'notes/summer',
+        },
+        {
+            v0: {},
+            v1: [
+                {
+                    gte: DbPrefixes.Master,
+                    lt: inc(DbPrefixes.Master),
+                },
+                {
+                    gte: DbPrefixes.Version,
+                    lt: inc(DbPrefixes.Version),
+                },
+            ],
+        },
+        {
+            Versions: receivedData.filter(entry => entry.key.indexOf('notes/summer') < 0),
+            CommonPrefixes: ['notes/summer'],
+            Delimiter: 'notes/summer',
+            IsTruncated: false,
+        },
+    ),
+    new Test(
+        'with bad key marker and good prefix',
+        {
+            delimiter: '/',
+            prefix: 'notes/summer/',
+            keyMarker: 'notes/summer0',
+        },
+        {
+            v0: {
+                gt: `notes/summer0${inc(VID_SEP)}`,
+                lt: `notes/summer${inc('/')}`,
+            },
+            v1: [
+                {
+                    gt: `${DbPrefixes.Master}notes/summer0${inc(VID_SEP)}`,
+                    lt: `${DbPrefixes.Master}notes/summer${inc('/')}`,
+                },
+                {
+                    gt: `${DbPrefixes.Version}notes/summer0${inc(VID_SEP)}`,
+                    lt: `${DbPrefixes.Version}notes/summer${inc('/')}`,
+                },
+            ],
+        },
+        {
+            Versions: [],
+            CommonPrefixes: [],
+            Delimiter: '/',
+            IsTruncated: false,
+        },
+    ),
+    new Test(
+        'with delimiter and prefix (related to #147)',
+        {
+            delimiter: '/',
+            prefix: 'notes/',
+        },
+        {
+            v0: {
+                gte: 'notes/',
+                lt: `notes${inc('/')}`,
+            },
+            v1: [
+                {
+                    gte: `${DbPrefixes.Master}notes/`,
+                    lt: `${DbPrefixes.Master}notes${inc('/')}`,
+                },
+                {
+                    gte: `${DbPrefixes.Version}notes/`,
+                    lt: `${DbPrefixes.Version}notes${inc('/')}`,
+                },
+            ],
+        },
+        {
+            Versions: [receivedData[19], receivedData[20]],
+            CommonPrefixes: ['notes/spring/', 'notes/summer/', 'notes/zaphod/'],
+            Delimiter: '/',
+            IsTruncated: false,
+        },
+    ),
+    new Test(
+        'with delimiter, prefix and marker (related to #147)',
+        {
+            delimiter: '/',
+            prefix: 'notes/',
+            keyMarker: 'notes/year.txt',
+        },
+        {
+            v0: {
+                gt: `notes/year.txt${inc(VID_SEP)}`,
+                lt: `notes${inc('/')}`,
+            },
+            v1: [
+                {
+                    gt: `${DbPrefixes.Master}notes/year.txt${inc(VID_SEP)}`,
+                    lt: `${DbPrefixes.Master}notes${inc('/')}`,
+                },
+                {
+                    gt: `${DbPrefixes.Version}notes/year.txt${inc(VID_SEP)}`,
+                    lt: `${DbPrefixes.Version}notes${inc('/')}`,
+                },
+            ],
+        },
+        {
+            Versions: [receivedData[20]],
+            CommonPrefixes: ['notes/zaphod/'],
+            Delimiter: '/',
+            IsTruncated: false,
+        },
+    ),
+    new Test(
+        'with all parameters 1/5',
+        {
+            delimiter: '/',
+            prefix: 'notes/',
+            keyMarker: 'notes/',
+            maxKeys: 1,
+        },
+        {
+            v0: {
+                gt: `notes/${inc(VID_SEP)}`,
+                lt: `notes${inc('/')}`,
+            },
+            v1: [
+                {
+                    gt: `${DbPrefixes.Master}notes/${inc(VID_SEP)}`,
+                    lt: `${DbPrefixes.Master}notes${inc('/')}`,
+                },
+                {
+                    gt: `${DbPrefixes.Version}notes/${inc(VID_SEP)}`,
+                    lt: `${DbPrefixes.Version}notes${inc('/')}`,
+                },
+            ],
+        },
+        {
+            Versions: [],
+            CommonPrefixes: ['notes/spring/'],
+            Delimiter: '/',
+            IsTruncated: true,
+            NextKeyMarker: 'notes/spring/',
+        },
+    ),
 
-    new Test('with all parameters 2/5', {
-        delimiter: '/',
-        prefix: 'notes/',
-        keyMarker: 'notes/spring/',
-        maxKeys: 1,
-    }, {
-        v0: {
-            gte: `notes/spring${inc('/')}`,
-            lt: `notes${inc('/')}`,
+    new Test(
+        'with all parameters 2/5',
+        {
+            delimiter: '/',
+            prefix: 'notes/',
+            keyMarker: 'notes/spring/',
+            maxKeys: 1,
         },
-        v1: [{
-            gte: `${DbPrefixes.Master}notes/spring${inc('/')}`,
-            lt: `${DbPrefixes.Master}notes${inc('/')}`,
-        }, {
-            gte: `${DbPrefixes.Version}notes/spring${inc('/')}`,
-            lt: `${DbPrefixes.Version}notes${inc('/')}`,
-        }],
-    }, {
-        Versions: [],
-        CommonPrefixes: ['notes/summer/'],
-        Delimiter: '/',
-        IsTruncated: true,
-        NextKeyMarker: 'notes/summer/',
-    }),
+        {
+            v0: {
+                gte: `notes/spring${inc('/')}`,
+                lt: `notes${inc('/')}`,
+            },
+            v1: [
+                {
+                    gte: `${DbPrefixes.Master}notes/spring${inc('/')}`,
+                    lt: `${DbPrefixes.Master}notes${inc('/')}`,
+                },
+                {
+                    gte: `${DbPrefixes.Version}notes/spring${inc('/')}`,
+                    lt: `${DbPrefixes.Version}notes${inc('/')}`,
+                },
+            ],
+        },
+        {
+            Versions: [],
+            CommonPrefixes: ['notes/summer/'],
+            Delimiter: '/',
+            IsTruncated: true,
+            NextKeyMarker: 'notes/summer/',
+        },
+    ),
 
-    new Test('with all parameters 3/5', {
-        delimiter: '/',
-        prefix: 'notes/',
-        keyMarker: 'notes/summer/',
-        maxKeys: 1,
-    }, {
-        v0: {
-            gte: `notes/summer${inc('/')}`,
-            lt: `notes${inc('/')}`,
+    new Test(
+        'with all parameters 3/5',
+        {
+            delimiter: '/',
+            prefix: 'notes/',
+            keyMarker: 'notes/summer/',
+            maxKeys: 1,
         },
-        v1: [{
-            gte: `${DbPrefixes.Master}notes/summer${inc('/')}`,
-            lt: `${DbPrefixes.Master}notes${inc('/')}`,
-        }, {
-            gte: `${DbPrefixes.Version}notes/summer${inc('/')}`,
-            lt: `${DbPrefixes.Version}notes${inc('/')}`,
-        }],
-    }, {
-        Versions: [
-            receivedData[19],
-        ],
-        CommonPrefixes: [],
-        Delimiter: '/',
-        IsTruncated: true,
-        NextKeyMarker: 'notes/year.txt',
-        NextVersionIdMarker: receivedData[19].versionId,
-    }),
+        {
+            v0: {
+                gte: `notes/summer${inc('/')}`,
+                lt: `notes${inc('/')}`,
+            },
+            v1: [
+                {
+                    gte: `${DbPrefixes.Master}notes/summer${inc('/')}`,
+                    lt: `${DbPrefixes.Master}notes${inc('/')}`,
+                },
+                {
+                    gte: `${DbPrefixes.Version}notes/summer${inc('/')}`,
+                    lt: `${DbPrefixes.Version}notes${inc('/')}`,
+                },
+            ],
+        },
+        {
+            Versions: [receivedData[19]],
+            CommonPrefixes: [],
+            Delimiter: '/',
+            IsTruncated: true,
+            NextKeyMarker: 'notes/year.txt',
+            NextVersionIdMarker: receivedData[19].versionId,
+        },
+    ),
 
-    new Test('with all parameters 4/5', {
-        delimiter: '/',
-        prefix: 'notes/',
-        keyMarker: 'notes/year.txt',
-        maxKeys: 1,
-    }, {
-        v0: {
-            gt: `notes/year.txt${inc(VID_SEP)}`,
-            lt: `notes${inc('/')}`,
+    new Test(
+        'with all parameters 4/5',
+        {
+            delimiter: '/',
+            prefix: 'notes/',
+            keyMarker: 'notes/year.txt',
+            maxKeys: 1,
         },
-        v1: [{
-            gt: `${DbPrefixes.Master}notes/year.txt${inc(VID_SEP)}`,
-            lt: `${DbPrefixes.Master}notes${inc('/')}`,
-        }, {
-            gt: `${DbPrefixes.Version}notes/year.txt${inc(VID_SEP)}`,
-            lt: `${DbPrefixes.Version}notes${inc('/')}`,
-        }],
-    }, {
-        Versions: [
-            receivedData[20],
-        ],
-        CommonPrefixes: [],
-        Delimiter: '/',
-        IsTruncated: true,
-        NextKeyMarker: 'notes/yore.rs',
-        NextVersionIdMarker: receivedData[20].versionId,
-    }),
+        {
+            v0: {
+                gt: `notes/year.txt${inc(VID_SEP)}`,
+                lt: `notes${inc('/')}`,
+            },
+            v1: [
+                {
+                    gt: `${DbPrefixes.Master}notes/year.txt${inc(VID_SEP)}`,
+                    lt: `${DbPrefixes.Master}notes${inc('/')}`,
+                },
+                {
+                    gt: `${DbPrefixes.Version}notes/year.txt${inc(VID_SEP)}`,
+                    lt: `${DbPrefixes.Version}notes${inc('/')}`,
+                },
+            ],
+        },
+        {
+            Versions: [receivedData[20]],
+            CommonPrefixes: [],
+            Delimiter: '/',
+            IsTruncated: true,
+            NextKeyMarker: 'notes/yore.rs',
+            NextVersionIdMarker: receivedData[20].versionId,
+        },
+    ),
 
-    new Test('with all parameters 5/5', {
-        delimiter: '/',
-        prefix: 'notes/',
-        keyMarker: 'notes/yore.rs',
-        maxKeys: 1,
-    }, {
-        v0: {
-            gt: `notes/yore.rs${inc(VID_SEP)}`,
-            lt: `notes${inc('/')}`,
+    new Test(
+        'with all parameters 5/5',
+        {
+            delimiter: '/',
+            prefix: 'notes/',
+            keyMarker: 'notes/yore.rs',
+            maxKeys: 1,
         },
-        v1: [{
-            gt: `${DbPrefixes.Master}notes/yore.rs${inc(VID_SEP)}`,
-            lt: `${DbPrefixes.Master}notes${inc('/')}`,
-        }, {
-            gt: `${DbPrefixes.Version}notes/yore.rs${inc(VID_SEP)}`,
-            lt: `${DbPrefixes.Version}notes${inc('/')}`,
-        }],
-    }, {
-        Versions: [],
-        CommonPrefixes: ['notes/zaphod/'],
-        Delimiter: '/',
-        IsTruncated: false,
-    }),
-    new Test('with null key 1/11', {
-        prefix: 'nullkey/',
-        maxKeys: 1,
-    }, {
-        v0: {
-            gte: 'nullkey/',
-            lt: inc('nullkey/'),
+        {
+            v0: {
+                gt: `notes/yore.rs${inc(VID_SEP)}`,
+                lt: `notes${inc('/')}`,
+            },
+            v1: [
+                {
+                    gt: `${DbPrefixes.Master}notes/yore.rs${inc(VID_SEP)}`,
+                    lt: `${DbPrefixes.Master}notes${inc('/')}`,
+                },
+                {
+                    gt: `${DbPrefixes.Version}notes/yore.rs${inc(VID_SEP)}`,
+                    lt: `${DbPrefixes.Version}notes${inc('/')}`,
+                },
+            ],
         },
-        v1: [{
-            gte: `${DbPrefixes.Master}nullkey/`,
-            lt: `${DbPrefixes.Master}${inc('nullkey/')}`,
-        }, {
-            gte: `${DbPrefixes.Version}nullkey/`,
-            lt: `${DbPrefixes.Version}${inc('nullkey/')}`,
-        }],
-    }, {
-        Versions: [
-            receivedData[22],
-        ],
-        CommonPrefixes: [],
-        IsTruncated: true,
-        NextKeyMarker: 'nullkey/1.txt',
-        NextVersionIdMarker: 'bar',
-    }),
-    new Test('with null key 2/11', {
-        prefix: 'nullkey/',
-        keyMarker: 'nullkey/1.txt',
-        versionIdMarker: 'bar',
-        maxKeys: 1,
-    }, {
-        v0: {
-            gte: `nullkey/1.txt${VID_SEP}`,
-            lt: inc('nullkey/'),
+        {
+            Versions: [],
+            CommonPrefixes: ['notes/zaphod/'],
+            Delimiter: '/',
+            IsTruncated: false,
         },
-        v1: [{
-            gte: `${DbPrefixes.Master}nullkey/1.txt${VID_SEP}`,
-            lt: `${DbPrefixes.Master}${inc('nullkey/')}`,
-        }, {
-            gte: `${DbPrefixes.Version}nullkey/1.txt${VID_SEP}`,
-            lt: `${DbPrefixes.Version}${inc('nullkey/')}`,
-        }],
-    }, {
-        Versions: [
-            receivedData[23],
-        ],
-        CommonPrefixes: [],
-        IsTruncated: true,
-        NextKeyMarker: 'nullkey/1.txt',
-        NextVersionIdMarker: 'foo',
-    }),
-    new Test('with null key 3/11', {
-        prefix: 'nullkey/',
-        keyMarker: 'nullkey/1.txt',
-        versionIdMarker: 'foo',
-        maxKeys: 1,
-    }, {
-        v0: {
-            gte: `nullkey/1.txt${VID_SEP}`,
-            lt: inc('nullkey/'),
+    ),
+    new Test(
+        'with null key 1/11',
+        {
+            prefix: 'nullkey/',
+            maxKeys: 1,
         },
-        v1: [{
-            gte: `${DbPrefixes.Master}nullkey/1.txt${VID_SEP}`,
-            lt: `${DbPrefixes.Master}${inc('nullkey/')}`,
-        }, {
-            gte: `${DbPrefixes.Version}nullkey/1.txt${VID_SEP}`,
-            lt: `${DbPrefixes.Version}${inc('nullkey/')}`,
-        }],
-    }, {
-        Versions: [
-            receivedData[24],
-        ],
-        CommonPrefixes: [],
-        IsTruncated: true,
-        NextKeyMarker: 'nullkey/2.txt',
-        NextVersionIdMarker: 'qux',
-    }),
-    new Test('with null key 4/11', {
-        prefix: 'nullkey/',
-        keyMarker: 'nullkey/2.txt',
-        versionIdMarker: 'qux',
-        maxKeys: 1,
-    }, {
-        v0: {
-            gte: `nullkey/2.txt${VID_SEP}`,
-            lt: inc('nullkey/'),
+        {
+            v0: {
+                gte: 'nullkey/',
+                lt: inc('nullkey/'),
+            },
+            v1: [
+                {
+                    gte: `${DbPrefixes.Master}nullkey/`,
+                    lt: `${DbPrefixes.Master}${inc('nullkey/')}`,
+                },
+                {
+                    gte: `${DbPrefixes.Version}nullkey/`,
+                    lt: `${DbPrefixes.Version}${inc('nullkey/')}`,
+                },
+            ],
         },
-        v1: [{
-            gte: `${DbPrefixes.Master}nullkey/2.txt${VID_SEP}`,
-            lt: `${DbPrefixes.Master}${inc('nullkey/')}`,
-        }, {
-            gte: `${DbPrefixes.Version}nullkey/2.txt${VID_SEP}`,
-            lt: `${DbPrefixes.Version}${inc('nullkey/')}`,
-        }],
-    }, {
-        Versions: [
-            receivedData[25],
-        ],
-        CommonPrefixes: [],
-        IsTruncated: true,
-        NextKeyMarker: 'nullkey/3.txt',
-        NextVersionIdMarker: 'foo',
-    }),
-    new Test('with null key 5/11', {
-        prefix: 'nullkey/',
-        keyMarker: 'nullkey/3.txt',
-        versionIdMarker: 'foo',
-        maxKeys: 1,
-    }, {
-        v0: {
-            gte: `nullkey/3.txt${VID_SEP}`,
-            lt: inc('nullkey/'),
+        {
+            Versions: [receivedData[22]],
+            CommonPrefixes: [],
+            IsTruncated: true,
+            NextKeyMarker: 'nullkey/1.txt',
+            NextVersionIdMarker: 'bar',
         },
-        v1: [{
-            gte: `${DbPrefixes.Master}nullkey/3.txt${VID_SEP}`,
-            lt: `${DbPrefixes.Master}${inc('nullkey/')}`,
-        }, {
-            gte: `${DbPrefixes.Version}nullkey/3.txt${VID_SEP}`,
-            lt: `${DbPrefixes.Version}${inc('nullkey/')}`,
-        }],
-    }, {
-        Versions: [
-            receivedData[26],
-        ],
-        CommonPrefixes: [],
-        IsTruncated: true,
-        NextKeyMarker: 'nullkey/3.txt',
-        NextVersionIdMarker: 'qux',
-    }),
-    new Test('with null key 6/11', {
-        prefix: 'nullkey/',
-        keyMarker: 'nullkey/3.txt',
-        versionIdMarker: 'qux',
-        maxKeys: 1,
-    }, {
-        v0: {
-            gte: `nullkey/3.txt${VID_SEP}`,
-            lt: inc('nullkey/'),
+    ),
+    new Test(
+        'with null key 2/11',
+        {
+            prefix: 'nullkey/',
+            keyMarker: 'nullkey/1.txt',
+            versionIdMarker: 'bar',
+            maxKeys: 1,
         },
-        v1: [{
-            gte: `${DbPrefixes.Master}nullkey/3.txt${VID_SEP}`,
-            lt: `${DbPrefixes.Master}${inc('nullkey/')}`,
-        }, {
-            gte: `${DbPrefixes.Version}nullkey/3.txt${VID_SEP}`,
-            lt: `${DbPrefixes.Version}${inc('nullkey/')}`,
-        }],
-    }, {
-        Versions: [
-            receivedData[27],
-        ],
-        CommonPrefixes: [],
-        IsTruncated: true,
-        NextKeyMarker: 'nullkey/4.txt',
-        NextVersionIdMarker: 'bar',
-    }),
-    new Test('with null key 7/11', {
-        prefix: 'nullkey/',
-        keyMarker: 'nullkey/4.txt',
-        versionIdMarker: 'bar',
-        maxKeys: 1,
-    }, {
-        v0: {
-            gte: `nullkey/4.txt${VID_SEP}`,
-            lt: inc('nullkey/'),
+        {
+            v0: {
+                gte: `nullkey/1.txt${VID_SEP}`,
+                lt: inc('nullkey/'),
+            },
+            v1: [
+                {
+                    gte: `${DbPrefixes.Master}nullkey/1.txt${VID_SEP}`,
+                    lt: `${DbPrefixes.Master}${inc('nullkey/')}`,
+                },
+                {
+                    gte: `${DbPrefixes.Version}nullkey/1.txt${VID_SEP}`,
+                    lt: `${DbPrefixes.Version}${inc('nullkey/')}`,
+                },
+            ],
         },
-        v1: [{
-            gte: `${DbPrefixes.Master}nullkey/4.txt${VID_SEP}`,
-            lt: `${DbPrefixes.Master}${inc('nullkey/')}`,
-        }, {
-            gte: `${DbPrefixes.Version}nullkey/4.txt${VID_SEP}`,
-            lt: `${DbPrefixes.Version}${inc('nullkey/')}`,
-        }],
-    }, {
-        Versions: [
-            receivedData[28],
-        ],
-        CommonPrefixes: [],
-        IsTruncated: true,
-        NextKeyMarker: 'nullkey/4.txt',
-        NextVersionIdMarker: 'foo',
-    }),
-    new Test('with null key 8/11', {
-        prefix: 'nullkey/',
-        keyMarker: 'nullkey/4.txt',
-        versionIdMarker: 'foo',
-        maxKeys: 1,
-    }, {
-        v0: {
-            gte: `nullkey/4.txt${VID_SEP}`,
-            lt: inc('nullkey/'),
+        {
+            Versions: [receivedData[23]],
+            CommonPrefixes: [],
+            IsTruncated: true,
+            NextKeyMarker: 'nullkey/1.txt',
+            NextVersionIdMarker: 'foo',
         },
-        v1: [{
-            gte: `${DbPrefixes.Master}nullkey/4.txt${VID_SEP}`,
-            lt: `${DbPrefixes.Master}${inc('nullkey/')}`,
-        }, {
-            gte: `${DbPrefixes.Version}nullkey/4.txt${VID_SEP}`,
-            lt: `${DbPrefixes.Version}${inc('nullkey/')}`,
-        }],
-    }, {
-        Versions: [
-            receivedData[29],
-        ],
-        CommonPrefixes: [],
-        IsTruncated: true,
-        NextKeyMarker: 'nullkey/4.txt',
-        NextVersionIdMarker: 'qux',
-    }),
-    new Test('with null key 9/11', {
-        prefix: 'nullkey/',
-        keyMarker: 'nullkey/4.txt',
-        versionIdMarker: 'qux',
-        maxKeys: 1,
-    }, {
-        v0: {
-            gte: `nullkey/4.txt${VID_SEP}`,
-            lt: inc('nullkey/'),
+    ),
+    new Test(
+        'with null key 3/11',
+        {
+            prefix: 'nullkey/',
+            keyMarker: 'nullkey/1.txt',
+            versionIdMarker: 'foo',
+            maxKeys: 1,
         },
-        v1: [{
-            gte: `${DbPrefixes.Master}nullkey/4.txt${VID_SEP}`,
-            lt: `${DbPrefixes.Master}${inc('nullkey/')}`,
-        }, {
-            gte: `${DbPrefixes.Version}nullkey/4.txt${VID_SEP}`,
-            lt: `${DbPrefixes.Version}${inc('nullkey/')}`,
-        }],
-    }, {
-        Versions: [
-            receivedData[30],
-        ],
-        CommonPrefixes: [],
-        IsTruncated: true,
-        NextKeyMarker: 'nullkey/5.txt',
-        NextVersionIdMarker: 'bar',
-    }),
-    new Test('with null key 10/11', {
-        prefix: 'nullkey/',
-        keyMarker: 'nullkey/5.txt',
-        versionIdMarker: 'bar',
-        maxKeys: 1,
-    }, {
-        v0: {
-            gte: `nullkey/5.txt${VID_SEP}`,
-            lt: inc('nullkey/'),
+        {
+            v0: {
+                gte: `nullkey/1.txt${VID_SEP}`,
+                lt: inc('nullkey/'),
+            },
+            v1: [
+                {
+                    gte: `${DbPrefixes.Master}nullkey/1.txt${VID_SEP}`,
+                    lt: `${DbPrefixes.Master}${inc('nullkey/')}`,
+                },
+                {
+                    gte: `${DbPrefixes.Version}nullkey/1.txt${VID_SEP}`,
+                    lt: `${DbPrefixes.Version}${inc('nullkey/')}`,
+                },
+            ],
         },
-        v1: [{
-            gte: `${DbPrefixes.Master}nullkey/5.txt${VID_SEP}`,
-            lt: `${DbPrefixes.Master}${inc('nullkey/')}`,
-        }, {
-            gte: `${DbPrefixes.Version}nullkey/5.txt${VID_SEP}`,
-            lt: `${DbPrefixes.Version}${inc('nullkey/')}`,
-        }],
-    }, {
-        Versions: [
-            receivedData[31],
-        ],
-        CommonPrefixes: [],
-        IsTruncated: true,
-        NextKeyMarker: 'nullkey/5.txt',
-        NextVersionIdMarker: 'foo',
-    }),
-    new Test('with null key 11/11', {
-        prefix: 'nullkey/',
-        keyMarker: 'nullkey/5.txt',
-        versionIdMarker: 'foo',
-        maxKeys: 1,
-    }, {
-        v0: {
-            gte: `nullkey/5.txt${VID_SEP}`,
-            lt: inc('nullkey/'),
+        {
+            Versions: [receivedData[24]],
+            CommonPrefixes: [],
+            IsTruncated: true,
+            NextKeyMarker: 'nullkey/2.txt',
+            NextVersionIdMarker: 'qux',
         },
-        v1: [{
-            gte: `${DbPrefixes.Master}nullkey/5.txt${VID_SEP}`,
-            lt: `${DbPrefixes.Master}${inc('nullkey/')}`,
-        }, {
-            gte: `${DbPrefixes.Version}nullkey/5.txt${VID_SEP}`,
-            lt: `${DbPrefixes.Version}${inc('nullkey/')}`,
-        }],
-    }, {
-        Versions: [
-            receivedData[32],
-        ],
-        CommonPrefixes: [],
-        IsTruncated: false,
-    }),
+    ),
+    new Test(
+        'with null key 4/11',
+        {
+            prefix: 'nullkey/',
+            keyMarker: 'nullkey/2.txt',
+            versionIdMarker: 'qux',
+            maxKeys: 1,
+        },
+        {
+            v0: {
+                gte: `nullkey/2.txt${VID_SEP}`,
+                lt: inc('nullkey/'),
+            },
+            v1: [
+                {
+                    gte: `${DbPrefixes.Master}nullkey/2.txt${VID_SEP}`,
+                    lt: `${DbPrefixes.Master}${inc('nullkey/')}`,
+                },
+                {
+                    gte: `${DbPrefixes.Version}nullkey/2.txt${VID_SEP}`,
+                    lt: `${DbPrefixes.Version}${inc('nullkey/')}`,
+                },
+            ],
+        },
+        {
+            Versions: [receivedData[25]],
+            CommonPrefixes: [],
+            IsTruncated: true,
+            NextKeyMarker: 'nullkey/3.txt',
+            NextVersionIdMarker: 'foo',
+        },
+    ),
+    new Test(
+        'with null key 5/11',
+        {
+            prefix: 'nullkey/',
+            keyMarker: 'nullkey/3.txt',
+            versionIdMarker: 'foo',
+            maxKeys: 1,
+        },
+        {
+            v0: {
+                gte: `nullkey/3.txt${VID_SEP}`,
+                lt: inc('nullkey/'),
+            },
+            v1: [
+                {
+                    gte: `${DbPrefixes.Master}nullkey/3.txt${VID_SEP}`,
+                    lt: `${DbPrefixes.Master}${inc('nullkey/')}`,
+                },
+                {
+                    gte: `${DbPrefixes.Version}nullkey/3.txt${VID_SEP}`,
+                    lt: `${DbPrefixes.Version}${inc('nullkey/')}`,
+                },
+            ],
+        },
+        {
+            Versions: [receivedData[26]],
+            CommonPrefixes: [],
+            IsTruncated: true,
+            NextKeyMarker: 'nullkey/3.txt',
+            NextVersionIdMarker: 'qux',
+        },
+    ),
+    new Test(
+        'with null key 6/11',
+        {
+            prefix: 'nullkey/',
+            keyMarker: 'nullkey/3.txt',
+            versionIdMarker: 'qux',
+            maxKeys: 1,
+        },
+        {
+            v0: {
+                gte: `nullkey/3.txt${VID_SEP}`,
+                lt: inc('nullkey/'),
+            },
+            v1: [
+                {
+                    gte: `${DbPrefixes.Master}nullkey/3.txt${VID_SEP}`,
+                    lt: `${DbPrefixes.Master}${inc('nullkey/')}`,
+                },
+                {
+                    gte: `${DbPrefixes.Version}nullkey/3.txt${VID_SEP}`,
+                    lt: `${DbPrefixes.Version}${inc('nullkey/')}`,
+                },
+            ],
+        },
+        {
+            Versions: [receivedData[27]],
+            CommonPrefixes: [],
+            IsTruncated: true,
+            NextKeyMarker: 'nullkey/4.txt',
+            NextVersionIdMarker: 'bar',
+        },
+    ),
+    new Test(
+        'with null key 7/11',
+        {
+            prefix: 'nullkey/',
+            keyMarker: 'nullkey/4.txt',
+            versionIdMarker: 'bar',
+            maxKeys: 1,
+        },
+        {
+            v0: {
+                gte: `nullkey/4.txt${VID_SEP}`,
+                lt: inc('nullkey/'),
+            },
+            v1: [
+                {
+                    gte: `${DbPrefixes.Master}nullkey/4.txt${VID_SEP}`,
+                    lt: `${DbPrefixes.Master}${inc('nullkey/')}`,
+                },
+                {
+                    gte: `${DbPrefixes.Version}nullkey/4.txt${VID_SEP}`,
+                    lt: `${DbPrefixes.Version}${inc('nullkey/')}`,
+                },
+            ],
+        },
+        {
+            Versions: [receivedData[28]],
+            CommonPrefixes: [],
+            IsTruncated: true,
+            NextKeyMarker: 'nullkey/4.txt',
+            NextVersionIdMarker: 'foo',
+        },
+    ),
+    new Test(
+        'with null key 8/11',
+        {
+            prefix: 'nullkey/',
+            keyMarker: 'nullkey/4.txt',
+            versionIdMarker: 'foo',
+            maxKeys: 1,
+        },
+        {
+            v0: {
+                gte: `nullkey/4.txt${VID_SEP}`,
+                lt: inc('nullkey/'),
+            },
+            v1: [
+                {
+                    gte: `${DbPrefixes.Master}nullkey/4.txt${VID_SEP}`,
+                    lt: `${DbPrefixes.Master}${inc('nullkey/')}`,
+                },
+                {
+                    gte: `${DbPrefixes.Version}nullkey/4.txt${VID_SEP}`,
+                    lt: `${DbPrefixes.Version}${inc('nullkey/')}`,
+                },
+            ],
+        },
+        {
+            Versions: [receivedData[29]],
+            CommonPrefixes: [],
+            IsTruncated: true,
+            NextKeyMarker: 'nullkey/4.txt',
+            NextVersionIdMarker: 'qux',
+        },
+    ),
+    new Test(
+        'with null key 9/11',
+        {
+            prefix: 'nullkey/',
+            keyMarker: 'nullkey/4.txt',
+            versionIdMarker: 'qux',
+            maxKeys: 1,
+        },
+        {
+            v0: {
+                gte: `nullkey/4.txt${VID_SEP}`,
+                lt: inc('nullkey/'),
+            },
+            v1: [
+                {
+                    gte: `${DbPrefixes.Master}nullkey/4.txt${VID_SEP}`,
+                    lt: `${DbPrefixes.Master}${inc('nullkey/')}`,
+                },
+                {
+                    gte: `${DbPrefixes.Version}nullkey/4.txt${VID_SEP}`,
+                    lt: `${DbPrefixes.Version}${inc('nullkey/')}`,
+                },
+            ],
+        },
+        {
+            Versions: [receivedData[30]],
+            CommonPrefixes: [],
+            IsTruncated: true,
+            NextKeyMarker: 'nullkey/5.txt',
+            NextVersionIdMarker: 'bar',
+        },
+    ),
+    new Test(
+        'with null key 10/11',
+        {
+            prefix: 'nullkey/',
+            keyMarker: 'nullkey/5.txt',
+            versionIdMarker: 'bar',
+            maxKeys: 1,
+        },
+        {
+            v0: {
+                gte: `nullkey/5.txt${VID_SEP}`,
+                lt: inc('nullkey/'),
+            },
+            v1: [
+                {
+                    gte: `${DbPrefixes.Master}nullkey/5.txt${VID_SEP}`,
+                    lt: `${DbPrefixes.Master}${inc('nullkey/')}`,
+                },
+                {
+                    gte: `${DbPrefixes.Version}nullkey/5.txt${VID_SEP}`,
+                    lt: `${DbPrefixes.Version}${inc('nullkey/')}`,
+                },
+            ],
+        },
+        {
+            Versions: [receivedData[31]],
+            CommonPrefixes: [],
+            IsTruncated: true,
+            NextKeyMarker: 'nullkey/5.txt',
+            NextVersionIdMarker: 'foo',
+        },
+    ),
+    new Test(
+        'with null key 11/11',
+        {
+            prefix: 'nullkey/',
+            keyMarker: 'nullkey/5.txt',
+            versionIdMarker: 'foo',
+            maxKeys: 1,
+        },
+        {
+            v0: {
+                gte: `nullkey/5.txt${VID_SEP}`,
+                lt: inc('nullkey/'),
+            },
+            v1: [
+                {
+                    gte: `${DbPrefixes.Master}nullkey/5.txt${VID_SEP}`,
+                    lt: `${DbPrefixes.Master}${inc('nullkey/')}`,
+                },
+                {
+                    gte: `${DbPrefixes.Version}nullkey/5.txt${VID_SEP}`,
+                    lt: `${DbPrefixes.Version}${inc('nullkey/')}`,
+                },
+            ],
+        },
+        {
+            Versions: [receivedData[32]],
+            CommonPrefixes: [],
+            IsTruncated: false,
+        },
+    ),
 ];
 
 function getListingKey(key, vFormat) {
@@ -811,8 +964,7 @@ function getListingKey(key, vFormat) {
         return key;
     }
     if (vFormat === 'v1') {
-        const keyPrefix = key.includes(VID_SEP) ?
-            DbPrefixes.Version : DbPrefixes.Master;
+        const keyPrefix = key.includes(VID_SEP) ? DbPrefixes.Version : DbPrefixes.Master;
         return `${keyPrefix}${key}`;
     }
     return assert.fail(`bad format ${vFormat}`);
@@ -826,10 +978,11 @@ function getTestListing(mdParams, data, vFormat) {
         }))
         .filter(e => {
             const _mdParams = Array.isArray(mdParams) ? mdParams : [mdParams];
-            return _mdParams.some(mdParamsItem =>
-                (!mdParamsItem.gt || e.key > mdParamsItem.gt) &&
-                (!mdParamsItem.gte || e.key >= mdParamsItem.gte) &&
-                (!mdParamsItem.lt || e.key < mdParamsItem.lt),
+            return _mdParams.some(
+                mdParamsItem =>
+                    (!mdParamsItem.gt || e.key > mdParamsItem.gt) &&
+                    (!mdParamsItem.gte || e.key >= mdParamsItem.gte) &&
+                    (!mdParamsItem.lt || e.key < mdParamsItem.lt),
             );
         });
 }
@@ -845,10 +998,7 @@ function getTestListing(mdParams, data, vFormat) {
                 });
             }
             if (vFormat === 'v1') {
-                assert.deepStrictEqual(delimiter.skipping(), [
-                    `${DbPrefixes.Master}foo0`,
-                    `${DbPrefixes.Version}foo0`,
-                ]);
+                assert.deepStrictEqual(delimiter.skipping(), [`${DbPrefixes.Master}foo0`, `${DbPrefixes.Version}foo0`]);
             } else {
                 assert.strictEqual(delimiter.skipping(), 'foo0');
             }
@@ -869,7 +1019,8 @@ function getTestListing(mdParams, data, vFormat) {
                         key: `${DbPrefixes.Replay}xyz`,
                         value: 'abcdef',
                     }),
-                    FILTER_SKIP);
+                    FILTER_SKIP,
+                );
                 // ...it should skip the whole replay prefix
                 assert.strictEqual(delimiter.skipping(), inc(DbPrefixes.Replay));
 
@@ -880,7 +1031,8 @@ function getTestListing(mdParams, data, vFormat) {
                         key: `${inc(DbPrefixes.Replay)}foo/bar`,
                         value: '{}',
                     }),
-                    FILTER_ACCEPT);
+                    FILTER_ACCEPT,
+                );
                 // ...it should return to skipping by prefix as usual
                 assert.strictEqual(delimiter.skipping(), `${inc(DbPrefixes.Replay)}foo0`);
             });
@@ -912,11 +1064,9 @@ function getTestListing(mdParams, data, vFormat) {
             assert.strictEqual(delimiter.skipping(), SKIP_NONE);
         });
 
-        it('skipping() should return SKIP_NONE when marker is set and ' +
-        'does not contain the delimiter', () => {
+        it('skipping() should return SKIP_NONE when marker is set and ' + 'does not contain the delimiter', () => {
             const key = 'foo';
-            const delimiter = new DelimiterVersions({ delimiter: '/', marker: key },
-                logger, vFormat);
+            const delimiter = new DelimiterVersions({ delimiter: '/', marker: key }, logger, vFormat);
 
             /* Filter a master version to set NextMarker. */
             const listingKey = getListingKey(key, vFormat);
@@ -925,11 +1075,9 @@ function getTestListing(mdParams, data, vFormat) {
             assert.strictEqual(delimiter.skipping(), SKIP_NONE);
         });
 
-        it('skipping() should return prefix to skip when marker is set and ' +
-        'contains the delimiter', () => {
+        it('skipping() should return prefix to skip when marker is set and ' + 'contains the delimiter', () => {
             const key = 'foo/bar';
-            const delimiter = new DelimiterVersions({ delimiter: '/', marker: key },
-                logger, vFormat);
+            const delimiter = new DelimiterVersions({ delimiter: '/', marker: key }, logger, vFormat);
 
             /* Filter a master version to set NextMarker. */
             const listingKey = getListingKey(key, vFormat);
@@ -939,18 +1087,13 @@ function getTestListing(mdParams, data, vFormat) {
             if (vFormat === 'v0') {
                 assert.strictEqual(delimiter.skipping(), 'foo0');
             } else {
-                assert.deepStrictEqual(delimiter.skipping(), [
-                    `${DbPrefixes.Master}foo0`,
-                    `${DbPrefixes.Version}foo0`,
-                ]);
+                assert.deepStrictEqual(delimiter.skipping(), [`${DbPrefixes.Master}foo0`, `${DbPrefixes.Version}foo0`]);
             }
         });
 
-        it('skipping() should return prefix when marker is set and ' +
-        'ends with the delimiter', () => {
+        it('skipping() should return prefix when marker is set and ' + 'ends with the delimiter', () => {
             const key = 'foo/';
-            const delimiter = new DelimiterVersions({ delimiter: '/', marker: key },
-                logger, vFormat);
+            const delimiter = new DelimiterVersions({ delimiter: '/', marker: key }, logger, vFormat);
 
             /* Filter a master version to set NextMarker. */
             const listingKey = getListingKey(key, vFormat);
@@ -960,10 +1103,7 @@ function getTestListing(mdParams, data, vFormat) {
             if (vFormat === 'v0') {
                 assert.strictEqual(delimiter.skipping(), 'foo0');
             } else {
-                assert.deepStrictEqual(delimiter.skipping(), [
-                    `${DbPrefixes.Master}foo0`,
-                    `${DbPrefixes.Version}foo0`,
-                ]);
+                assert.deepStrictEqual(delimiter.skipping(), [`${DbPrefixes.Master}foo0`, `${DbPrefixes.Version}foo0`]);
             }
         });
 
@@ -977,26 +1117,29 @@ function getTestListing(mdParams, data, vFormat) {
             assert.strictEqual(delimiter.nextKeyMarker, key);
             assert.deepStrictEqual(delimiter.result(), {
                 CommonPrefixes: [],
-                Versions: [{
-                    key: 'key',
-                    value: '',
-                    versionId: 'null',
-                }],
+                Versions: [
+                    {
+                        key: 'key',
+                        value: '',
+                        versionId: 'null',
+                    },
+                ],
                 IsTruncated: false,
             });
         });
 
         it('should return good values for entries with different common prefixes', () => {
-            const delimiter = new DelimiterVersions({ delimiter: '/' },
-                logger, vFormat);
+            const delimiter = new DelimiterVersions({ delimiter: '/' }, logger, vFormat);
 
             /* Filter the first entry with a common prefix. It should be
              * accepted and added to the result. */
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey('commonPrefix1/key1', vFormat),
-                value: '',
-            }),
-            FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey('commonPrefix1/key1', vFormat),
+                    value: '',
+                }),
+                FILTER_ACCEPT,
+            );
             assert.deepStrictEqual(delimiter.result(), {
                 CommonPrefixes: ['commonPrefix1/'],
                 Versions: [],
@@ -1006,11 +1149,13 @@ function getTestListing(mdParams, data, vFormat) {
 
             /* Filter the second entry with the same common prefix than the
              * first entry. It should be skipped and not added to the result. */
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey('commonPrefix1/key2', vFormat),
-                value: '',
-            }),
-            FILTER_SKIP);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey('commonPrefix1/key2', vFormat),
+                    value: '',
+                }),
+                FILTER_SKIP,
+            );
             assert.deepStrictEqual(delimiter.result(), {
                 CommonPrefixes: ['commonPrefix1/'],
                 Versions: [],
@@ -1020,11 +1165,13 @@ function getTestListing(mdParams, data, vFormat) {
 
             /* Filter an entry with a new common prefix. It should be accepted
              * and not added to the result. */
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey('commonPrefix2/key1', vFormat),
-                value: '',
-            }),
-            FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey('commonPrefix2/key1', vFormat),
+                    value: '',
+                }),
+                FILTER_ACCEPT,
+            );
             assert.deepStrictEqual(delimiter.result(), {
                 CommonPrefixes: ['commonPrefix1/', 'commonPrefix2/'],
                 Versions: [],
@@ -1048,11 +1195,13 @@ function getTestListing(mdParams, data, vFormat) {
             assert.strictEqual(delimiter.nextKeyMarker, key);
             assert.deepStrictEqual(delimiter.result(), {
                 CommonPrefixes: [],
-                Versions: [{
-                    key: 'key',
-                    value: version.toString(),
-                    versionId: 'version',
-                }],
+                Versions: [
+                    {
+                        key: 'key',
+                        value: version.toString(),
+                        versionId: 'version',
+                    },
+                ],
                 IsTruncated: false,
             });
         });
@@ -1064,22 +1213,28 @@ function getTestListing(mdParams, data, vFormat) {
             const versionKey = `${key}${VID_SEP}version`;
 
             delimiter.filter({ key: getListingKey(key, vFormat), value: version.toString() });
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(versionKey, vFormat),
-                value: 'value',
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(versionKey, vFormat),
+                    value: 'value',
+                }),
+                FILTER_ACCEPT,
+            );
             assert.strictEqual(delimiter.nextKeyMarker, key);
             assert.deepStrictEqual(delimiter.result(), {
                 CommonPrefixes: [],
-                Versions: [{
-                    key: 'key',
-                    value: version.toString(),
-                    versionId: 'null',
-                }, {
-                    key: 'key',
-                    value: 'value',
-                    versionId: 'version',
-                }],
+                Versions: [
+                    {
+                        key: 'key',
+                        value: version.toString(),
+                        versionId: 'null',
+                    },
+                    {
+                        key: 'key',
+                        value: 'value',
+                        versionId: 'version',
+                    },
+                ],
                 IsTruncated: false,
             });
         });
@@ -1091,27 +1246,36 @@ function getTestListing(mdParams, data, vFormat) {
             const key2 = 'key2';
             const value2 = '{"versionId":"version"}';
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(key1, vFormat),
-                value: version.toString(),
-            }), FILTER_ACCEPT);
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(key2, vFormat),
-                value: value2,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(key1, vFormat),
+                    value: version.toString(),
+                }),
+                FILTER_ACCEPT,
+            );
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(key2, vFormat),
+                    value: value2,
+                }),
+                FILTER_ACCEPT,
+            );
             assert.strictEqual(delimiter.nextKeyMarker, key2);
             assert.deepStrictEqual(delimiter.result(), {
                 CommonPrefixes: [],
                 IsTruncated: false,
-                Versions: [{
-                    key: 'key1',
-                    value: '{"isDeleteMarker":true}',
-                    versionId: 'null',
-                }, {
-                    key: 'key2',
-                    value: '{"versionId":"version"}',
-                    versionId: 'version',
-                }],
+                Versions: [
+                    {
+                        key: 'key1',
+                        value: '{"isDeleteMarker":true}',
+                        versionId: 'null',
+                    },
+                    {
+                        key: 'key2',
+                        value: '{"versionId":"version"}',
+                        versionId: 'version',
+                    },
+                ],
             });
         });
 
@@ -1123,8 +1287,7 @@ function getTestListing(mdParams, data, vFormat) {
             const prefix2VersionKey1 = `commonPrefix2/key1${VID_SEP}version`;
             const value = '{"versionId":"version"}';
 
-            const delimiter = new DelimiterVersions({ delimiter: '/' },
-                logger, vFormat);
+            const delimiter = new DelimiterVersions({ delimiter: '/' }, logger, vFormat);
 
             /* Filter the two first entries with the same common prefix to add
              * it to the result and reach the state where an entry is skipped
@@ -1135,10 +1298,13 @@ function getTestListing(mdParams, data, vFormat) {
             /* Filter an object with a key containing a version part and a new
              * common prefix. It should be accepted and the new common prefix
              * added to the result. */
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(prefix2VersionKey1, vFormat),
-                value,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(prefix2VersionKey1, vFormat),
+                    value,
+                }),
+                FILTER_ACCEPT,
+            );
             assert.deepStrictEqual(delimiter.result(), {
                 CommonPrefixes: [commonPrefix1, commonPrefix2],
                 Versions: [],
@@ -1155,34 +1321,46 @@ function getTestListing(mdParams, data, vFormat) {
             const value2 = 'value2';
 
             /* Filter the master version for version1 */
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(masterKey, vFormat),
-                value: '{"versionId":"version1"}',
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(masterKey, vFormat),
+                    value: '{"versionId":"version1"}',
+                }),
+                FILTER_ACCEPT,
+            );
 
             /* Filter the version key for version1 */
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(versionKey1, vFormat),
-                value: '{"versionId":"version1"}',
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(versionKey1, vFormat),
+                    value: '{"versionId":"version1"}',
+                }),
+                FILTER_ACCEPT,
+            );
 
             /* Filter the version key for version2 */
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(versionKey2, vFormat),
-                value: value2,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(versionKey2, vFormat),
+                    value: value2,
+                }),
+                FILTER_ACCEPT,
+            );
 
             assert.deepStrictEqual(delimiter.result(), {
                 CommonPrefixes: [],
-                Versions: [{
-                    key: 'key',
-                    value: '{"versionId":"version1"}',
-                    versionId: 'version1',
-                }, {
-                    key: 'key',
-                    value: 'value2',
-                    versionId: 'version2',
-                }],
+                Versions: [
+                    {
+                        key: 'key',
+                        value: '{"versionId":"version1"}',
+                        versionId: 'version1',
+                    },
+                    {
+                        key: 'key',
+                        value: 'value2',
+                        versionId: 'version2',
+                    },
+                ],
                 IsTruncated: false,
             });
         });
@@ -1194,24 +1372,32 @@ function getTestListing(mdParams, data, vFormat) {
             const prefixVersionKey1 = `commonPrefix/key2${VID_SEP}version`;
             const value = '{"versionId":"version"}';
 
-            const delimiter = new DelimiterVersions({ delimiter: '/' },
-                logger, vFormat);
+            const delimiter = new DelimiterVersions({ delimiter: '/' }, logger, vFormat);
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(prefixKey1, vFormat),
-                value,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(prefixKey1, vFormat),
+                    value,
+                }),
+                FILTER_ACCEPT,
+            );
             /* The second master key of the same common prefix should be skipped */
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(prefixKey2, vFormat),
-                value,
-            }), FILTER_SKIP);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(prefixKey2, vFormat),
+                    value,
+                }),
+                FILTER_SKIP,
+            );
 
             /* The version key of the same common prefix should also be skipped */
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(prefixVersionKey1, vFormat),
-                value,
-            }), FILTER_SKIP);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(prefixVersionKey1, vFormat),
+                    value,
+                }),
+                FILTER_SKIP,
+            );
             assert.deepStrictEqual(delimiter.result(), {
                 CommonPrefixes: [commonPrefix1],
                 Versions: [],
@@ -1221,10 +1407,14 @@ function getTestListing(mdParams, data, vFormat) {
         });
 
         it('should skip versions of first key when VersionIdMarker is set before null key', () => {
-            const listing = new DelimiterVersions({
-                keyMarker: 'key',
-                versionIdMarker: 'version3',
-            }, logger, vFormat);
+            const listing = new DelimiterVersions(
+                {
+                    keyMarker: 'key',
+                    versionIdMarker: 'version3',
+                },
+                logger,
+                vFormat,
+            );
             const nullVersionKey = `key${VID_SEP}`;
             const nullVersion = 'version3.1';
             const versionKey1 = `key${VID_SEP}version1`;
@@ -1243,10 +1433,13 @@ function getTestListing(mdParams, data, vFormat) {
             }
 
             /* Filter the version key for null key */
-            assert.strictEqual(listing.filter({
-                key: getListingKey(nullVersionKey, vFormat),
-                value: `{"versionId":"${nullVersion}"}`,
-            }), FILTER_SKIP);
+            assert.strictEqual(
+                listing.filter({
+                    key: getListingKey(nullVersionKey, vFormat),
+                    value: `{"versionId":"${nullVersion}"}`,
+                }),
+                FILTER_SKIP,
+            );
 
             if (vFormat === 'v0') {
                 assert.deepStrictEqual(listing.skipping(), `key${VID_SEP}version3\0`);
@@ -1258,59 +1451,82 @@ function getTestListing(mdParams, data, vFormat) {
             }
 
             /* Filter the version key for version1 */
-            assert.strictEqual(listing.filter({
-                key: getListingKey(versionKey1, vFormat),
-                value: '{"versionId":"version1"}',
-            }), FILTER_SKIP);
+            assert.strictEqual(
+                listing.filter({
+                    key: getListingKey(versionKey1, vFormat),
+                    value: '{"versionId":"version1"}',
+                }),
+                FILTER_SKIP,
+            );
 
             /* Filter the version key for version2 */
-            assert.strictEqual(listing.filter({
-                key: getListingKey(versionKey2, vFormat),
-                value: '{"versionId":"version2"}',
-            }), FILTER_SKIP);
+            assert.strictEqual(
+                listing.filter({
+                    key: getListingKey(versionKey2, vFormat),
+                    value: '{"versionId":"version2"}',
+                }),
+                FILTER_SKIP,
+            );
 
             /* Filter the version key for version3 */
-            assert.strictEqual(listing.filter({
-                key: getListingKey(versionKey3, vFormat),
-                value: '{"versionId":"version3"}',
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                listing.filter({
+                    key: getListingKey(versionKey3, vFormat),
+                    value: '{"versionId":"version3"}',
+                }),
+                FILTER_ACCEPT,
+            );
 
             /* Filter the version key for version4 */
-            assert.strictEqual(listing.filter({
-                key: getListingKey(versionKey4, vFormat),
-                value: '{"versionId":"version4"}',
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                listing.filter({
+                    key: getListingKey(versionKey4, vFormat),
+                    value: '{"versionId":"version4"}',
+                }),
+                FILTER_ACCEPT,
+            );
 
             /* Filter the next master key */
-            assert.strictEqual(listing.filter({
-                key: getListingKey('key2', vFormat),
-                value: '{"versionId":"k2-version1"}',
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                listing.filter({
+                    key: getListingKey('key2', vFormat),
+                    value: '{"versionId":"k2-version1"}',
+                }),
+                FILTER_ACCEPT,
+            );
 
             assert.deepStrictEqual(listing.result(), {
                 CommonPrefixes: [],
-                Versions: [{
-                    key: 'key',
-                    value: `{"versionId":"${nullVersion}"}`,
-                    versionId: nullVersion,
-                }, {
-                    key: 'key',
-                    value: '{"versionId":"version4"}',
-                    versionId: 'version4',
-                }, {
-                    key: 'key2',
-                    value: '{"versionId":"k2-version1"}',
-                    versionId: 'k2-version1',
-                }],
+                Versions: [
+                    {
+                        key: 'key',
+                        value: `{"versionId":"${nullVersion}"}`,
+                        versionId: nullVersion,
+                    },
+                    {
+                        key: 'key',
+                        value: '{"versionId":"version4"}',
+                        versionId: 'version4',
+                    },
+                    {
+                        key: 'key2',
+                        value: '{"versionId":"k2-version1"}',
+                        versionId: 'k2-version1',
+                    },
+                ],
                 IsTruncated: false,
             });
         });
 
         it('should skip versions of first key when VersionIdMarker is set after null key', () => {
-            const listing = new DelimiterVersions({
-                keyMarker: 'key',
-                versionIdMarker: 'version3',
-            }, logger, vFormat);
+            const listing = new DelimiterVersions(
+                {
+                    keyMarker: 'key',
+                    versionIdMarker: 'version3',
+                },
+                logger,
+                vFormat,
+            );
             const nullVersionKey = `key${VID_SEP}`;
             const nullVersion = 'version2.1';
             const versionKey1 = `key${VID_SEP}version1`;
@@ -1329,10 +1545,13 @@ function getTestListing(mdParams, data, vFormat) {
             }
 
             /* Filter the version key for null key */
-            assert.strictEqual(listing.filter({
-                key: getListingKey(nullVersionKey, vFormat),
-                value: `{"versionId":"${nullVersion}"}`,
-            }), FILTER_SKIP);
+            assert.strictEqual(
+                listing.filter({
+                    key: getListingKey(nullVersionKey, vFormat),
+                    value: `{"versionId":"${nullVersion}"}`,
+                }),
+                FILTER_SKIP,
+            );
 
             if (vFormat === 'v0') {
                 assert.deepStrictEqual(listing.skipping(), `key${VID_SEP}version3\0`);
@@ -1344,46 +1563,64 @@ function getTestListing(mdParams, data, vFormat) {
             }
 
             /* Filter the version key for version1 */
-            assert.strictEqual(listing.filter({
-                key: getListingKey(versionKey1, vFormat),
-                value: '{"versionId":"version1"}',
-            }), FILTER_SKIP);
+            assert.strictEqual(
+                listing.filter({
+                    key: getListingKey(versionKey1, vFormat),
+                    value: '{"versionId":"version1"}',
+                }),
+                FILTER_SKIP,
+            );
 
             /* Filter the version key for version2 */
-            assert.strictEqual(listing.filter({
-                key: getListingKey(versionKey2, vFormat),
-                value: '{"versionId":"version2"}',
-            }), FILTER_SKIP);
+            assert.strictEqual(
+                listing.filter({
+                    key: getListingKey(versionKey2, vFormat),
+                    value: '{"versionId":"version2"}',
+                }),
+                FILTER_SKIP,
+            );
 
             /* Filter the version key for version3 */
-            assert.strictEqual(listing.filter({
-                key: getListingKey(versionKey3, vFormat),
-                value: '{"versionId":"version3"}',
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                listing.filter({
+                    key: getListingKey(versionKey3, vFormat),
+                    value: '{"versionId":"version3"}',
+                }),
+                FILTER_ACCEPT,
+            );
 
             /* Filter the version key for version4 */
-            assert.strictEqual(listing.filter({
-                key: getListingKey(versionKey4, vFormat),
-                value: '{"versionId":"version4"}',
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                listing.filter({
+                    key: getListingKey(versionKey4, vFormat),
+                    value: '{"versionId":"version4"}',
+                }),
+                FILTER_ACCEPT,
+            );
 
             /* Filter the next master key */
-            assert.strictEqual(listing.filter({
-                key: getListingKey('key2', vFormat),
-                value: '{"versionId":"k2-version1"}',
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                listing.filter({
+                    key: getListingKey('key2', vFormat),
+                    value: '{"versionId":"k2-version1"}',
+                }),
+                FILTER_ACCEPT,
+            );
 
             assert.deepStrictEqual(listing.result(), {
                 CommonPrefixes: [],
-                Versions: [{
-                    key: 'key',
-                    value: '{"versionId":"version4"}',
-                    versionId: 'version4',
-                }, {
-                    key: 'key2',
-                    value: '{"versionId":"k2-version1"}',
-                    versionId: 'k2-version1',
-                }],
+                Versions: [
+                    {
+                        key: 'key',
+                        value: '{"versionId":"version4"}',
+                        versionId: 'version4',
+                    },
+                    {
+                        key: 'key2',
+                        value: '{"versionId":"k2-version1"}',
+                        versionId: 'k2-version1',
+                    },
+                ],
                 IsTruncated: false,
             });
         });
@@ -1396,11 +1633,13 @@ function getTestListing(mdParams, data, vFormat) {
             assert.strictEqual(delimiter.filter({ key: listingKey, value }), FILTER_ACCEPT);
             assert.deepStrictEqual(delimiter.result(), {
                 CommonPrefixes: [],
-                Versions: [{
-                    key: 'undefinedfoo',
-                    value: '',
-                    versionId: 'null',
-                }],
+                Versions: [
+                    {
+                        key: 'undefinedfoo',
+                        value: '',
+                        versionId: 'null',
+                    },
+                ],
                 IsTruncated: false,
             });
         });
@@ -1449,11 +1688,13 @@ function getTestListing(mdParams, data, vFormat) {
                 assert.strictEqual(delimiter.nextKeyMarker, key);
                 assert.deepStrictEqual(delimiter.result(), {
                     CommonPrefixes: [],
-                    Versions: [{
-                        key: 'keyA',
-                        value: '',
-                        versionId: 'null',
-                    }],
+                    Versions: [
+                        {
+                            key: 'keyA',
+                            value: '',
+                            versionId: 'null',
+                        },
+                    ],
                     IsTruncated: false,
                 });
             });
@@ -1473,21 +1714,54 @@ function getTestListing(mdParams, data, vFormat) {
 
                 /* The filtering of the PHD object has no impact, the version is
                  * accepted and added to the result. */
-                assert.strictEqual(delimiter.filter({
-                    key: getListingKey(keyVersion, vFormat),
-                    value,
-                }), FILTER_ACCEPT);
+                assert.strictEqual(
+                    delimiter.filter({
+                        key: getListingKey(keyVersion, vFormat),
+                        value,
+                    }),
+                    FILTER_ACCEPT,
+                );
                 assert.strictEqual(delimiter.nextKeyMarker, masterKey);
                 assert.deepStrictEqual(delimiter.result(), {
                     CommonPrefixes: [],
-                    Versions: [{
-                        key: 'key',
-                        value: '',
-                        versionId: 'version',
-                    }],
+                    Versions: [
+                        {
+                            key: 'key',
+                            value: '',
+                            versionId: 'version',
+                        },
+                    ],
                     IsTruncated: false,
                 });
             });
         }
+    });
+});
+
+describe('DelimiterVersions PHD master handling stays inert', () => {
+    // The capped lifecycle listings (DelimiterOrphanDeleteMarker,
+    // DelimiterNonCurrent) override handlePHDMaster to advance their resume
+    // marker over PHD masters. The base class hook must stay a strict no-op:
+    // moving the marker advance into the base class would change the
+    // S3-visible ListObjectVersions pagination semantics.
+    const { FILTER_END } = require('../../../../lib/algos/list/tools');
+
+    ['v0', 'v1'].forEach(v => {
+        it(`with ${v} bucket format: a PHD master is not listed and does not advance the marker`, () => {
+            const delimiter = new DelimiterVersions({ maxKeys: 1 }, logger, v);
+            const getKey = key => (v === 'v0' ? key : `${DbPrefixes.Master}${key}`);
+
+            assert.strictEqual(delimiter.filter({ key: getKey('key1'), value: foo }), FILTER_ACCEPT);
+            assert.strictEqual(delimiter.filter({ key: getKey('key2'), value: valuePHD }), FILTER_ACCEPT);
+            assert.strictEqual(delimiter.filter({ key: getKey('key3'), value: foo }), FILTER_END);
+
+            const result = delimiter.result();
+            assert.strictEqual(result.IsTruncated, true);
+            // the PHD master 'key2' was scanned after 'key1' but must appear
+            // neither in the listing nor in the resume marker
+            assert.deepStrictEqual(result.Versions, [{ key: 'key1', versionId: 'foo', value: foo }]);
+            assert.strictEqual(result.NextKeyMarker, 'key1');
+            assert.strictEqual(result.NextVersionIdMarker, 'foo');
+        });
     });
 });
