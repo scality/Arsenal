@@ -550,7 +550,8 @@ describe('MongoClientInterface:putObjectVerCase3', () => {
         const putObjectVerCase3 = promisify(client.putObjectVerCase3.bind(client));
         await assert.rejects(
             putObjectVerCase3(collection, 'example-bucket', 'example-object', {}, params, logger),
-            err => err.is.PreconditionFailed);
+            err => err.is.PreconditionFailed,
+        );
     });
 
     it('should return a retryable InternalError when the master op races, even with params.conditions', async () => {
@@ -563,7 +564,8 @@ describe('MongoClientInterface:putObjectVerCase3', () => {
         const putObjectVerCase3 = promisify(client.putObjectVerCase3.bind(client));
         await assert.rejects(
             putObjectVerCase3(collection, 'example-bucket', 'example-object', {}, params, logger),
-            err => err.is.InternalError);
+            err => err.is.InternalError,
+        );
     });
 });
 

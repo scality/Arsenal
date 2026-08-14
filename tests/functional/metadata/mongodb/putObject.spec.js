@@ -7,8 +7,7 @@ const { MongoMemoryReplSet } = require('mongodb-memory-server');
 const { errors, versioning } = require('../../../../index');
 const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
 const BucketInfo = require('../../../../lib/models/BucketInfo').default;
-const MetadataWrapper =
-    require('../../../../lib/storage/metadata/MetadataWrapper');
+const MetadataWrapper = require('../../../../lib/storage/metadata/MetadataWrapper');
 const { formatVersionKey } = require('../../../../lib/storage/metadata/mongoclient/utils');
 const { VersionID } = require('../../../../lib/versioning');
 const { BucketVersioningKeyFormat } = versioning.VersioningConstants;
@@ -21,9 +20,7 @@ const VERSION_ID = '98451712418844999999RG001  22019.0';
 
 const mongoserver = new MongoMemoryReplSet({
     debug: false,
-    instanceOpts: [
-        { port: 27021 },
-    ],
+    instanceOpts: [{ port: 27021 }],
     replSet: {
         name: 'rs0',
         count: 1,
@@ -42,18 +39,25 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
     let collection;
 
     function getObject(key, cb) {
-        collection.findOne({
-            _id: key,
-        }, {}).then(doc => {
-            if (!doc) {
-                return cb(errors.NoSuchKey);
-            }
-            return cb(null, doc.value);
-        }).catch(err => cb(err));
+        collection
+            .findOne(
+                {
+                    _id: key,
+                },
+                {},
+            )
+            .then(doc => {
+                if (!doc) {
+                    return cb(errors.NoSuchKey);
+                }
+                return cb(null, doc.value);
+            })
+            .catch(err => cb(err));
     }
 
     function getObjectCount(cb) {
-        collection.countDocuments()
+        collection
+            .countDocuments()
             .then(count => cb(null, count))
             .catch(err => cb(err));
     }
@@ -77,12 +81,17 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
     });
 
     afterAll(done => {
-        async.series([
-            next => metadata.close(next),
-            next => mongoserver.stop()
-                .then(() => next())
-                .catch(next),
-        ], done);
+        async.series(
+            [
+                next => metadata.close(next),
+                next =>
+                    mongoserver
+                        .stop()
+                        .then(() => next())
+                        .catch(next),
+            ],
+            done,
+        );
     });
 
     variations.forEach(variation => {
@@ -116,19 +125,23 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
                     _isNFS: null,
                     ingestion: null,
                 });
-                async.series([
-                    next => {
-                        metadata.client.defaultBucketKeyFormat = variation.vFormat;
-                        return next();
-                    },
-                    next => metadata.createBucket(BUCKET_NAME, bucketMD, logger, err => {
-                        if (err) {
-                            return next(err);
-                        }
-                        collection = metadata.client.getCollection(BUCKET_NAME);
-                        return next();
-                    }),
-                ], done);
+                async.series(
+                    [
+                        next => {
+                            metadata.client.defaultBucketKeyFormat = variation.vFormat;
+                            return next();
+                        },
+                        next =>
+                            metadata.createBucket(BUCKET_NAME, bucketMD, logger, err => {
+                                if (err) {
+                                    return next(err);
+                                }
+                                collection = metadata.client.getCollection(BUCKET_NAME);
+                                return next();
+                            }),
+                    ],
+                    done,
+                );
             });
 
             afterEach(done => {
@@ -147,23 +160,27 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
                     versionId: null,
                     repairMaster: null,
                 };
-                async.series([
-                    next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
-                    next => {
-                        const key = variation.vFormat === 'v0' ? 'test-object' : '\x7fMtest-object';
-                        getObject(key, (err, object) => {
-                            assert.deepStrictEqual(err, null);
-                            assert.strictEqual(object.key, OBJECT_NAME);
-                            return next();
-                        });
-                    },
-                    // When versionning not active only one document is created (master)
-                    next => getObjectCount((err, count) => {
-                        assert.deepStrictEqual(err, null);
-                        assert.strictEqual(count, 1);
-                        return next();
-                    }),
-                ], done);
+                async.series(
+                    [
+                        next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
+                        next => {
+                            const key = variation.vFormat === 'v0' ? 'test-object' : '\x7fMtest-object';
+                            getObject(key, (err, object) => {
+                                assert.deepStrictEqual(err, null);
+                                assert.strictEqual(object.key, OBJECT_NAME);
+                                return next();
+                            });
+                        },
+                        // When versionning not active only one document is created (master)
+                        next =>
+                            getObjectCount((err, count) => {
+                                assert.deepStrictEqual(err, null);
+                                assert.strictEqual(count, 1);
+                                return next();
+                            }),
+                    ],
+                    done,
+                );
             });
 
             it(`Should update the metadata ${variation.it}`, done => {
@@ -177,29 +194,33 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
                     versionId: null,
                     repairMaster: null,
                 };
-                async.series([
-                    next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
-                    next => {
-                        objVal.updated = true;
-                        metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next);
-                    },
-                    // object metadata must be updated
-                    next => {
-                        const key = variation.vFormat === 'v0' ? 'test-object' : '\x7fMtest-object';
-                        getObject(key, (err, object) => {
-                            assert.deepStrictEqual(err, null);
-                            assert.strictEqual(object.key, OBJECT_NAME);
-                            assert.strictEqual(object.updated, true);
-                            return next();
-                        });
-                    },
-                    // Only a master version should be created
-                    next => getObjectCount((err, count) => {
-                        assert.deepStrictEqual(err, null);
-                        assert.strictEqual(count, 1);
-                        return next();
-                    }),
-                ], done);
+                async.series(
+                    [
+                        next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
+                        next => {
+                            objVal.updated = true;
+                            metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next);
+                        },
+                        // object metadata must be updated
+                        next => {
+                            const key = variation.vFormat === 'v0' ? 'test-object' : '\x7fMtest-object';
+                            getObject(key, (err, object) => {
+                                assert.deepStrictEqual(err, null);
+                                assert.strictEqual(object.key, OBJECT_NAME);
+                                assert.strictEqual(object.updated, true);
+                                return next();
+                            });
+                        },
+                        // Only a master version should be created
+                        next =>
+                            getObjectCount((err, count) => {
+                                assert.deepStrictEqual(err, null);
+                                assert.strictEqual(count, 1);
+                                return next();
+                            }),
+                    ],
+                    done,
+                );
             });
 
             it(`Should put versionned object with the specific versionId ${variation.it}`, done => {
@@ -213,25 +234,29 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
                     versionId: VERSION_ID,
                     repairMaster: null,
                 };
-                async.series([
-                    next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
-                    // checking if metadata corresponds to what was given to the function
-                    next => {
-                        const key = variation.vFormat === 'v0' ? 'test-object' : '\x7fMtest-object';
-                        getObject(key, (err, object) => {
-                            assert.deepStrictEqual(err, null);
-                            assert.strictEqual(object.key, OBJECT_NAME);
-                            assert.strictEqual(object.versionId, VERSION_ID);
-                            return next();
-                        });
-                    },
-                    // We'll have one master and one version
-                    next => getObjectCount((err, count) => {
-                        assert.deepStrictEqual(err, null);
-                        assert.strictEqual(count, 2);
-                        return next();
-                    }),
-                ], done);
+                async.series(
+                    [
+                        next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
+                        // checking if metadata corresponds to what was given to the function
+                        next => {
+                            const key = variation.vFormat === 'v0' ? 'test-object' : '\x7fMtest-object';
+                            getObject(key, (err, object) => {
+                                assert.deepStrictEqual(err, null);
+                                assert.strictEqual(object.key, OBJECT_NAME);
+                                assert.strictEqual(object.versionId, VERSION_ID);
+                                return next();
+                            });
+                        },
+                        // We'll have one master and one version
+                        next =>
+                            getObjectCount((err, count) => {
+                                assert.deepStrictEqual(err, null);
+                                assert.strictEqual(count, 2);
+                                return next();
+                            }),
+                    ],
+                    done,
+                );
             });
 
             it(`Should put new version and update master ${variation.it}`, done => {
@@ -247,32 +272,37 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
                 };
                 let versionId = null;
 
-                async.series([
-                    // We first create a master and a version
-                    next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, (err, data) => {
-                        assert.deepStrictEqual(err, null);
-                        versionId = JSON.parse(data).versionId;
-                        return next();
-                    }),
-                    // We put another version of the object
-                    next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
-                    // Master must be updated
-                    next => {
-                        const key = variation.vFormat === 'v0' ? 'test-object' : '\x7fMtest-object';
-                        getObject(key, (err, object) => {
-                            assert.deepStrictEqual(err, null);
-                            assert.strictEqual(object.key, OBJECT_NAME);
-                            assert.notStrictEqual(object.versionId, versionId);
-                            return next();
-                        });
-                    },
-                    // we'll have two versions and one master
-                    next => getObjectCount((err, count) => {
-                        assert.deepStrictEqual(err, null);
-                        assert.strictEqual(count, 3);
-                        return next();
-                    }),
-                ], done);
+                async.series(
+                    [
+                        // We first create a master and a version
+                        next =>
+                            metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, (err, data) => {
+                                assert.deepStrictEqual(err, null);
+                                versionId = JSON.parse(data).versionId;
+                                return next();
+                            }),
+                        // We put another version of the object
+                        next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
+                        // Master must be updated
+                        next => {
+                            const key = variation.vFormat === 'v0' ? 'test-object' : '\x7fMtest-object';
+                            getObject(key, (err, object) => {
+                                assert.deepStrictEqual(err, null);
+                                assert.strictEqual(object.key, OBJECT_NAME);
+                                assert.notStrictEqual(object.versionId, versionId);
+                                return next();
+                            });
+                        },
+                        // we'll have two versions and one master
+                        next =>
+                            getObjectCount((err, count) => {
+                                assert.deepStrictEqual(err, null);
+                                assert.strictEqual(count, 3);
+                                return next();
+                            }),
+                    ],
+                    done,
+                );
             });
 
             it(`Should update master when versionning is disabled ${variation.it}`, done => {
@@ -287,36 +317,41 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
                     repairMaster: null,
                 };
                 let versionId = null;
-                async.series([
-                    // We first create a new version and master
-                    next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, (err, data) => {
-                        assert.deepStrictEqual(err, null);
-                        versionId = JSON.parse(data).versionId;
-                        return next();
-                    }),
-                    next => {
-                        // Disabling versionning and putting new version
-                        params.versioning = false;
-                        params.versionId = '';
-                        return metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next);
-                    },
-                    // Master must be updated
-                    next => {
-                        const key = variation.vFormat === 'v0' ? 'test-object' : '\x7fMtest-object';
-                        getObject(key, (err, object) => {
-                            assert.deepStrictEqual(err, null);
-                            assert.strictEqual(object.key, OBJECT_NAME);
-                            assert.notStrictEqual(object.versionId, versionId);
-                            return next();
-                        });
-                    },
-                    // The second put shouldn't create a new version
-                    next => getObjectCount((err, count) => {
-                        assert.deepStrictEqual(err, null);
-                        assert.strictEqual(count, 2);
-                        return next();
-                    }),
-                ], done);
+                async.series(
+                    [
+                        // We first create a new version and master
+                        next =>
+                            metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, (err, data) => {
+                                assert.deepStrictEqual(err, null);
+                                versionId = JSON.parse(data).versionId;
+                                return next();
+                            }),
+                        next => {
+                            // Disabling versionning and putting new version
+                            params.versioning = false;
+                            params.versionId = '';
+                            return metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next);
+                        },
+                        // Master must be updated
+                        next => {
+                            const key = variation.vFormat === 'v0' ? 'test-object' : '\x7fMtest-object';
+                            getObject(key, (err, object) => {
+                                assert.deepStrictEqual(err, null);
+                                assert.strictEqual(object.key, OBJECT_NAME);
+                                assert.notStrictEqual(object.versionId, versionId);
+                                return next();
+                            });
+                        },
+                        // The second put shouldn't create a new version
+                        next =>
+                            getObjectCount((err, count) => {
+                                assert.deepStrictEqual(err, null);
+                                assert.strictEqual(count, 2);
+                                return next();
+                            }),
+                    ],
+                    done,
+                );
             });
 
             it(`Should update latest version and repair master ${variation.it}`, done => {
@@ -330,33 +365,37 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
                     versionId: VERSION_ID,
                     repairMaster: null,
                 };
-                async.series([
-                    // We first create a new version and master
-                    next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
-                    next => {
-                        // Updating the version and repairing master
-                        params.repairMaster = true;
-                        objVal.updated = true;
-                        return metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next);
-                    },
-                    // Master must be updated
-                    next => {
-                        const key = variation.vFormat === 'v0' ? 'test-object' : '\x7fMtest-object';
-                        getObject(key, (err, object) => {
-                            assert.deepStrictEqual(err, null);
-                            assert.strictEqual(object.key, OBJECT_NAME);
-                            assert.strictEqual(object.versionId, VERSION_ID);
-                            assert.strictEqual(object.updated, true);
-                            return next();
-                        });
-                    },
-                    // The second put shouldn't create a new version
-                    next => getObjectCount((err, count) => {
-                        assert.deepStrictEqual(err, null);
-                        assert.strictEqual(count, 2);
-                        return next();
-                    }),
-                ], done);
+                async.series(
+                    [
+                        // We first create a new version and master
+                        next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
+                        next => {
+                            // Updating the version and repairing master
+                            params.repairMaster = true;
+                            objVal.updated = true;
+                            return metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next);
+                        },
+                        // Master must be updated
+                        next => {
+                            const key = variation.vFormat === 'v0' ? 'test-object' : '\x7fMtest-object';
+                            getObject(key, (err, object) => {
+                                assert.deepStrictEqual(err, null);
+                                assert.strictEqual(object.key, OBJECT_NAME);
+                                assert.strictEqual(object.versionId, VERSION_ID);
+                                assert.strictEqual(object.updated, true);
+                                return next();
+                            });
+                        },
+                        // The second put shouldn't create a new version
+                        next =>
+                            getObjectCount((err, count) => {
+                                assert.deepStrictEqual(err, null);
+                                assert.strictEqual(count, 2);
+                                return next();
+                            }),
+                    ],
+                    done,
+                );
             });
 
             it(`should fail on versionID conflict when putting a new version ${variation.it}`, done => {
@@ -370,23 +409,28 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
                 };
 
                 // simulate a versionId collision by always generating the same versionId
-                const genVID = sinon.stub(VersionID, 'generateVersionId')
-                    .returns('test-version-id');
+                const genVID = sinon.stub(VersionID, 'generateVersionId').returns('test-version-id');
 
-                async.series([
-                    // We first create a master and a version
-                    next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
-                    // We put another version of the object with the same versionId
-                    next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
-                ], err => {
-                    assert(err.is.InternalError,
-                        `expected InternalError, got ${err.name} with message: ${err.message}`,
-                    );
-                    // make sure the retry triggered on the first collision detection
-                    assert(genVID.calledThrice,
-                        `expected generateVersionId to be called thrice, got ${genVID.callCount} times`);
-                    done();
-                });
+                async.series(
+                    [
+                        // We first create a master and a version
+                        next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
+                        // We put another version of the object with the same versionId
+                        next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
+                    ],
+                    err => {
+                        assert(
+                            err.is.InternalError,
+                            `expected InternalError, got ${err.name} with message: ${err.message}`,
+                        );
+                        // make sure the retry triggered on the first collision detection
+                        assert(
+                            genVID.calledThrice,
+                            `expected generateVersionId to be called thrice, got ${genVID.callCount} times`,
+                        );
+                        done();
+                    },
+                );
             });
 
             it(`should succeed on version creation after a versionId collision ${variation.it}`, done => {
@@ -400,28 +444,36 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
                 };
 
                 // simulate a versionId collision by always generating the same versionId
-                const genVID = sinon.stub(VersionID, 'generateVersionId')
-                    .onFirstCall().returns('test-version-id')
-                    .onSecondCall().returns('test-version-id') // trigger collision
-                    .onThirdCall().returns('test-version-id-retry'); // change versionId on retry
+                const genVID = sinon
+                    .stub(VersionID, 'generateVersionId')
+                    .onFirstCall()
+                    .returns('test-version-id')
+                    .onSecondCall()
+                    .returns('test-version-id') // trigger collision
+                    .onThirdCall()
+                    .returns('test-version-id-retry'); // change versionId on retry
 
-                async.series([
-                    // We first create a master and a version
-                    next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
-                    // We put another version of the object with the same versionId
-                    next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
-                ], (err, res) => {
-                    assert.ifError(err, `expected no error, got ${err}`);
-                    // make sure the retry triggered on the first collision detection
-                    assert(genVID.calledThrice,
-                        `expected generateVersionId to be called thrice, got ${genVID.callCount} times`);
-                    // make sure the last call returned a different versionId
-                    const vid1 = JSON.parse(res[0]).versionId;
-                    const vid2 = JSON.parse(res[1]).versionId;
-                    assert.notStrictEqual(vid1, vid2,
-                        `expected different versionIds, got ${vid1} and ${vid2}`);
-                    done();
-                });
+                async.series(
+                    [
+                        // We first create a master and a version
+                        next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
+                        // We put another version of the object with the same versionId
+                        next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
+                    ],
+                    (err, res) => {
+                        assert.ifError(err, `expected no error, got ${err}`);
+                        // make sure the retry triggered on the first collision detection
+                        assert(
+                            genVID.calledThrice,
+                            `expected generateVersionId to be called thrice, got ${genVID.callCount} times`,
+                        );
+                        // make sure the last call returned a different versionId
+                        const vid1 = JSON.parse(res[0]).versionId;
+                        const vid2 = JSON.parse(res[1]).versionId;
+                        assert.notStrictEqual(vid1, vid2, `expected different versionIds, got ${vid1} and ${vid2}`);
+                        done();
+                    },
+                );
             });
 
             itOnlyInV1(`Should delete master when last version is delete marker ${variation.it}`, done => {
@@ -436,21 +488,25 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
                     versionId: VERSION_ID,
                     repairMaster: null,
                 };
-                async.series([
-                    // We first create a new version and master
-                    next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
-                    // putting a delete marker as last version
-                    next => {
-                        objVal.isDeleteMarker = true;
-                        params.versionId = null;
-                        return metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next);
-                    },
-                    // master must be deleted
-                    next => getObject('\x7fMtest-object', err => {
-                        assert.deepStrictEqual(err, errors.NoSuchKey);
-                        return next();
-                    }),
-                ], done);
+                async.series(
+                    [
+                        // We first create a new version and master
+                        next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
+                        // putting a delete marker as last version
+                        next => {
+                            objVal.isDeleteMarker = true;
+                            params.versionId = null;
+                            return metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next);
+                        },
+                        // master must be deleted
+                        next =>
+                            getObject('\x7fMtest-object', err => {
+                                assert.deepStrictEqual(err, errors.NoSuchKey);
+                                return next();
+                            }),
+                    ],
+                    done,
+                );
             });
 
             itOnlyInV1(`Should create master when new version is put on top of delete marker ${variation.it}`, done => {
@@ -465,32 +521,36 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
                     versionId: VERSION_ID,
                     repairMaster: null,
                 };
-                async.series([
-                    // We first create a new version and master
-                    next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
-                    // putting a delete marker as last version
-                    next => {
-                        objVal.isDeleteMarker = true;
-                        params.versionId = null;
-                        return metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next);
-                    },
-                    // We put a new version on top of delete marker
-                    next => {
-                        objVal.isDeleteMarker = false;
-                        objVal.updated = true;
-                        objVal.versionId = null;
-                        return metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next);
-                    },
-                    // master must be created
-                    next => getObject('\x7fMtest-object', (err, object) => {
-                        assert.deepStrictEqual(err, null);
-                        assert.strictEqual(object.key, OBJECT_NAME);
-                        assert.strictEqual(object.updated, true);
-                        assert.strictEqual(object.isDeleteMarker, false);
-                        assert.notEqual(object.versionId, VERSION_ID);
-                        return next();
-                    }),
-                ], done);
+                async.series(
+                    [
+                        // We first create a new version and master
+                        next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
+                        // putting a delete marker as last version
+                        next => {
+                            objVal.isDeleteMarker = true;
+                            params.versionId = null;
+                            return metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next);
+                        },
+                        // We put a new version on top of delete marker
+                        next => {
+                            objVal.isDeleteMarker = false;
+                            objVal.updated = true;
+                            objVal.versionId = null;
+                            return metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next);
+                        },
+                        // master must be created
+                        next =>
+                            getObject('\x7fMtest-object', (err, object) => {
+                                assert.deepStrictEqual(err, null);
+                                assert.strictEqual(object.key, OBJECT_NAME);
+                                assert.strictEqual(object.updated, true);
+                                assert.strictEqual(object.isDeleteMarker, false);
+                                assert.notEqual(object.versionId, VERSION_ID);
+                                return next();
+                            }),
+                    ],
+                    done,
+                );
             });
 
             itOnlyInV1(`Should not create master when previous version is updated ${variation.it}`, done => {
@@ -505,27 +565,31 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
                     repairMaster: null,
                     versionId: VERSION_ID,
                 };
-                async.series([
-                    // We first create a new version and master
-                    next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
-                    // putting a delete marker as last version
-                    next => {
-                        objVal.isDeleteMarker = true;
-                        params.versionId = null;
-                        return metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next);
-                    },
-                    // update previous version
-                    next => {
-                        objVal.isDeleteMarker = false;
-                        objVal.updated = true;
-                        params.versionId = VERSION_ID;
-                        return metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next);
-                    },
-                    next => getObject('\x7fMtest-object', err => {
-                        assert.deepStrictEqual(err, errors.NoSuchKey);
-                        return next();
-                    }),
-                ], done);
+                async.series(
+                    [
+                        // We first create a new version and master
+                        next => metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next),
+                        // putting a delete marker as last version
+                        next => {
+                            objVal.isDeleteMarker = true;
+                            params.versionId = null;
+                            return metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next);
+                        },
+                        // update previous version
+                        next => {
+                            objVal.isDeleteMarker = false;
+                            objVal.updated = true;
+                            params.versionId = VERSION_ID;
+                            return metadata.putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, params, logger, next);
+                        },
+                        next =>
+                            getObject('\x7fMtest-object', err => {
+                                assert.deepStrictEqual(err, errors.NoSuchKey);
+                                return next();
+                            }),
+                    ],
+                    done,
+                );
             });
 
             describe(`params.conditions on a version put ${variation.it}`, () => {
@@ -551,15 +615,18 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
                 ].forEach(({ desc, conditions }) => {
                     it(`should keep the stored version when ${desc} condition is not met ${variation.it}`, async () => {
                         const objVal = {
-                            key: OBJECT_NAME, versionId: VERSION_ID,
-                            number: 24, string: 'twenty-four', nested: { field: 24 },
+                            key: OBJECT_NAME,
+                            versionId: VERSION_ID,
+                            number: 24,
+                            string: 'twenty-four',
+                            nested: { field: 24 },
                         };
                         await putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, baseParams, logger);
                         const newVal = { ...objVal, updated: true };
                         await assert.rejects(
-                            putObjectMD(BUCKET_NAME, OBJECT_NAME, newVal,
-                                { ...baseParams, conditions }, logger),
-                            err => err.is.PreconditionFailed);
+                            putObjectMD(BUCKET_NAME, OBJECT_NAME, newVal, { ...baseParams, conditions }, logger),
+                            err => err.is.PreconditionFailed,
+                        );
                         const object = await getObjectP(versionKey);
                         assert.strictEqual(object.updated, undefined);
                     });
@@ -567,8 +634,10 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
 
                 it(`should update the version when the condition holds ${variation.it}`, async () => {
                     const objVal = {
-                        key: OBJECT_NAME, versionId: VERSION_ID,
-                        number: 24, string: 'twenty-four',
+                        key: OBJECT_NAME,
+                        versionId: VERSION_ID,
+                        number: 24,
+                        string: 'twenty-four',
                     };
                     await putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, baseParams, logger);
                     const params = {
@@ -612,10 +681,7 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
                     const firstParams = {
                         ...baseParams,
                         conditions: {
-                            $or: [
-                                { microVersionId: { $exists: false } },
-                                { microVersionId: { $gt: incoming } },
-                            ],
+                            $or: [{ microVersionId: { $exists: false } }, { microVersionId: { $gt: incoming } }],
                         },
                     };
                     const firstVal = { ...initialVal, microVersionId: incoming };

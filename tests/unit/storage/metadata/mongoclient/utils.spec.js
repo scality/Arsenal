@@ -241,17 +241,11 @@ describe('translate query object', () => {
                 depth: 0,
                 prefix: 'value',
                 query: {
-                    $or: [
-                        { microVersionId: { $exists: false } },
-                        { microVersionId: { $gt: 'abc' } },
-                    ],
+                    $or: [{ microVersionId: { $exists: false } }, { microVersionId: { $gt: 'abc' } }],
                 },
                 error: null,
                 result: {
-                    $or: [
-                        { 'value.microVersionId': { $exists: false } },
-                        { 'value.microVersionId': { $gt: 'abc' } },
-                    ],
+                    $or: [{ 'value.microVersionId': { $exists: false } }, { 'value.microVersionId': { $gt: 'abc' } }],
                 },
             },
         ],
@@ -261,9 +255,7 @@ describe('translate query object', () => {
                 depth: 0,
                 prefix: 'value',
                 query: {
-                    $or: [
-                        { $or: [{ microVersionId: { $exists: false } }] },
-                    ],
+                    $or: [{ $or: [{ microVersionId: { $exists: false } }] }],
                 },
                 error: null,
                 result: {
@@ -277,17 +269,11 @@ describe('translate query object', () => {
                 depth: 0,
                 prefix: 'value',
                 query: {
-                    $and: [
-                        { fieldA: { $gt: 1 } },
-                        { fieldB: { $exists: true } },
-                    ],
+                    $and: [{ fieldA: { $gt: 1 } }, { fieldB: { $exists: true } }],
                 },
                 error: null,
                 result: {
-                    $and: [
-                        { 'value.fieldA': { $gt: 1 } },
-                        { 'value.fieldB': { $exists: true } },
-                    ],
+                    $and: [{ 'value.fieldA': { $gt: 1 } }, { 'value.fieldB': { $exists: true } }],
                 },
             },
         ],
@@ -299,20 +285,14 @@ describe('translate query object', () => {
                 query: {
                     $or: [
                         { fieldA: { $gt: 1 } },
-                        { $or: [
-                            { fieldB: { $exists: false } },
-                            { fieldC: { $lte: 'xyz' } },
-                        ] },
+                        { $or: [{ fieldB: { $exists: false } }, { fieldC: { $lte: 'xyz' } }] },
                     ],
                 },
                 error: null,
                 result: {
                     $or: [
                         { 'value.fieldA': { $gt: 1 } },
-                        { $or: [
-                            { 'value.fieldB': { $exists: false } },
-                            { 'value.fieldC': { $lte: 'xyz' } },
-                        ] },
+                        { $or: [{ 'value.fieldB': { $exists: false } }, { 'value.fieldC': { $lte: 'xyz' } }] },
                     ],
                 },
             },
@@ -346,9 +326,7 @@ describe('translate query object', () => {
                 depth: 0,
                 prefix: 'value',
                 query: {
-                    $or: [
-                        { foo: { $or: [{ microVersionId: { $exists: false } }] } },
-                    ],
+                    $or: [{ foo: { $or: [{ microVersionId: { $exists: false } }] } }],
                 },
                 error: null,
                 result: {
@@ -357,17 +335,19 @@ describe('translate query object', () => {
             },
         ],
     ];
-    tests.forEach(([msg, params]) => it(msg, () => {
-        const { depth, prefix, query, error, result } = params;
-        if (error) {
-            const thrower = () => translateConditions(depth, prefix, {}, query);
-            expect(thrower).toThrowError(error.message);
-            return;
-        }
-        const filter = {};
-        translateConditions(depth, prefix, filter, query);
-        assert.deepStrictEqual(filter, result);
-    }));
+    tests.forEach(([msg, params]) =>
+        it(msg, () => {
+            const { depth, prefix, query, error, result } = params;
+            if (error) {
+                const thrower = () => translateConditions(depth, prefix, {}, query);
+                expect(thrower).toThrowError(error.message);
+                return;
+            }
+            const filter = {};
+            translateConditions(depth, prefix, filter, query);
+            assert.deepStrictEqual(filter, result);
+        }),
+    );
 });
 
 describe('object key formating', () => {
@@ -428,7 +408,6 @@ describe('object key formating', () => {
     });
 });
 
-
 describe('Index object transforms', () => {
     const indexObjIn = [
         {
@@ -473,7 +452,7 @@ describe('Index object transforms', () => {
             name: 'index1',
             key: {
                 'value.last-modified': 1,
-                '_id': 1,
+                _id: 1,
             },
         },
         {
@@ -481,7 +460,7 @@ describe('Index object transforms', () => {
             key: {
                 'value.dataStoreName': 1,
                 'value.last-modified': 1,
-                '_id': 1,
+                _id: 1,
             },
         },
     ];
@@ -503,7 +482,6 @@ describe('Index object transforms', () => {
             name: 'index2',
         },
     ];
-
 
     it('should convert index object to mongo index object', done => {
         assert.deepStrictEqual(indexFormatObjectToMongoArray(indexObjIn), mongoIndexObjOut);

@@ -1107,7 +1107,8 @@ class MongoClientInterface {
             }
         }
 
-        return c.findOne({ _id: masterKey })
+        return c
+            .findOne({ _id: masterKey })
             .then(checkObj => {
                 const objUpsert = !checkObj;
                 // initiating array of operations with version creation/update

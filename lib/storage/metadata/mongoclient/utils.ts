@@ -79,8 +79,13 @@ function _assignCondition(prefix: string, object: Record<string, any>, cond: Con
  * Translates a structural operator into a mongodb filter.
  * Each item is translated on its own, sharing the parent prefix.
  */
-function _assignStructuralOperator(depth: number, prefix: string, object: Record<string, any>, op: string,
-    items: Condition): void {
+function _assignStructuralOperator(
+    depth: number,
+    prefix: string,
+    object: Record<string, any>,
+    op: string,
+    items: Condition,
+): void {
     if (!Array.isArray(items) || items.length === 0) {
         throw errors.InternalError;
     }
