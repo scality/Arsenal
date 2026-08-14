@@ -85,6 +85,9 @@ function _assignStructuralOperator(depth: number, prefix: string, object: Record
         throw errors.InternalError;
     }
     if (object[op] !== undefined) {
+        // Two sibling fields both containing the same structural operator cannot be
+        // merged into a single JS object without losing one. Use $and at the caller
+        // level to express this: { $and: [{ fieldA: { $or: [...] } }, { fieldB: { $or: [...] } }] }
         throw errors.InternalError;
     }
     object[op] = items.map((item: Condition) => {
