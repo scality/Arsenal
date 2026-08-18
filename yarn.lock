@@ -8172,9 +8172,9 @@ sprintf-js@~1.0.2:
   resolved "https://registry.yarnpkg.com/sprintf-js/-/sprintf-js-1.0.3.tgz#04e6926f662895354f3dd015203633b857297e2c"
   integrity sha512-D9cPgkvLlV3t3IzL0D0YLvGA9Ahk4PcvVwUbN0dSGr1aP0Nrt4AEnTUbuGvquEC0mA64Gqt1fzirlRs5ibXx8g==
 
-"sproxydclient@github:scality/sproxydclient#8.2.1":
-  version "8.2.1"
-  resolved "https://codeload.github.com/scality/sproxydclient/tar.gz/501829f5521787e7e946de6792f5806ffa6ec437"
+"sproxydclient@github:scality/sproxydclient#8.2.2":
+  version "8.2.2"
+  resolved "https://codeload.github.com/scality/sproxydclient/tar.gz/62d3aac1c844beda2286f33a1a7c7f2a31937579"
   dependencies:
     async "^3.2.6"
     httpagent "github:scality/httpagent#1.1.0"
