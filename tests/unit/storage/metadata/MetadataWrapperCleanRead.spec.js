@@ -42,8 +42,10 @@ describe('MetadataWrapper::cleanRead', () => {
     });
 
     it('should refuse to enable clean read on a backend not implementing it', () => {
-        assert.throws(() => new MetadataWrapper('mem', { cleanRead: true }, null, logger),
-            /clean read is not supported by the memorybucket backend/);
+        assert.throws(
+            () => new MetadataWrapper('mem', { cleanRead: true }, null, logger),
+            /clean read is not supported by the memorybucket backend/,
+        );
     });
 
     it('should set the flag on the read and listing calls', done => {

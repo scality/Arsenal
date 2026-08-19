@@ -5,8 +5,7 @@ const { MongoMemoryReplSet } = require('mongodb-memory-server');
 const { versioning } = require('../../../../index');
 const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
 const BucketInfo = require('../../../../lib/models/BucketInfo').default;
-const MetadataWrapper =
-    require('../../../../lib/storage/metadata/MetadataWrapper');
+const MetadataWrapper = require('../../../../lib/storage/metadata/MetadataWrapper');
 const genVID = versioning.VersionID.generateVersionId;
 const { BucketVersioningKeyFormat } = versioning.VersioningConstants;
 
@@ -25,9 +24,7 @@ const locationConstraints = {
 
 const mongoserver = new MongoMemoryReplSet({
     debug: false,
-    instanceOpts: [
-        { port: 27019 },
-    ],
+    instanceOpts: [{ port: 27019 }],
     replSet: {
         name: 'rs0',
         count: 1,
@@ -88,11 +85,14 @@ describe('MongoClientInterface::clean read', () => {
      * @return {undefined}
      */
     function putVersion(objName, dataStoreName, extraMD, cb) {
-        const objVal = Object.assign({
-            key: objName,
-            dataStoreName,
-            'last-modified': new Date().toJSON(),
-        }, extraMD);
+        const objVal = Object.assign(
+            {
+                key: objName,
+                dataStoreName,
+                'last-modified': new Date().toJSON(),
+            },
+            extraMD,
+        );
         const versionParams = {
             versioning: true,
             versionId: null,
@@ -144,12 +144,17 @@ describe('MongoClientInterface::clean read', () => {
     });
 
     afterAll(done => {
-        async.series([
-            next => metadata.close(next),
-            next => mongoserver.stop()
-                .then(() => next())
-                .catch(next),
-        ], done);
+        async.series(
+            [
+                next => metadata.close(next),
+                next =>
+                    mongoserver
+                        .stop()
+                        .then(() => next())
+                        .catch(next),
+            ],
+            done,
+        );
     });
 
     variations.forEach(variation => {
@@ -163,29 +168,35 @@ describe('MongoClientInterface::clean read', () => {
             let nonLocalizedVersionId;
 
             beforeEach(done => {
-                async.series([
-                    next => {
-                        metadata.client.defaultBucketKeyFormat = variation.vFormat;
-                        return next();
-                    },
-                    next => metadata.createBucket(BUCKET_NAME, bucketMD, logger, next),
-                    next => putVersion('pfx-localized', LOCAL_LOCATION, null, (err, versionId) => {
-                        localizedV1 = versionId;
-                        return next(err);
-                    }),
-                    next => putVersion('pfx-localized', LOCAL_LOCATION, null, next),
-                    next => putVersion('pfx-mixed', LOCAL_LOCATION, null, (err, versionId) => {
-                        mixedLocalizedVersionId = versionId;
-                        return next(err);
-                    }),
-                    next => putVersion('pfx-mixed', SOURCE_LOCATION, null, next),
-                    next => putVersion('pfx-nonlocalized', SOURCE_LOCATION, null, (err, versionId) => {
-                        nonLocalizedVersionId = versionId;
-                        return next(err);
-                    }),
-                    next => putVersion('pfx-deletemarker', LOCAL_LOCATION, null, next),
-                    next => putVersion('pfx-deletemarker', '', { isDeleteMarker: true }, next),
-                ], done);
+                async.series(
+                    [
+                        next => {
+                            metadata.client.defaultBucketKeyFormat = variation.vFormat;
+                            return next();
+                        },
+                        next => metadata.createBucket(BUCKET_NAME, bucketMD, logger, next),
+                        next =>
+                            putVersion('pfx-localized', LOCAL_LOCATION, null, (err, versionId) => {
+                                localizedV1 = versionId;
+                                return next(err);
+                            }),
+                        next => putVersion('pfx-localized', LOCAL_LOCATION, null, next),
+                        next =>
+                            putVersion('pfx-mixed', LOCAL_LOCATION, null, (err, versionId) => {
+                                mixedLocalizedVersionId = versionId;
+                                return next(err);
+                            }),
+                        next => putVersion('pfx-mixed', SOURCE_LOCATION, null, next),
+                        next =>
+                            putVersion('pfx-nonlocalized', SOURCE_LOCATION, null, (err, versionId) => {
+                                nonLocalizedVersionId = versionId;
+                                return next(err);
+                            }),
+                        next => putVersion('pfx-deletemarker', LOCAL_LOCATION, null, next),
+                        next => putVersion('pfx-deletemarker', '', { isDeleteMarker: true }, next),
+                    ],
+                    done,
+                );
             });
 
             afterEach(done => metadata.deleteBucket(BUCKET_NAME, logger, done));
@@ -204,7 +215,10 @@ describe('MongoClientInterface::clean read', () => {
             it('should hide the objects whose current version is not localized', done => {
                 listMasters(true, (err, data) => {
                     assert.ifError(err);
-                    assert.deepStrictEqual(data.Contents.map(entry => entry.key), ['pfx-localized']);
+                    assert.deepStrictEqual(
+                        data.Contents.map(entry => entry.key),
+                        ['pfx-localized'],
+                    );
                     return done();
                 });
             });

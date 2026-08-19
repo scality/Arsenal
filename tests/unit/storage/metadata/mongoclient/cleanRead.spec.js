@@ -2,10 +2,8 @@ const assert = require('assert');
 const werelogs = require('werelogs');
 const sinon = require('sinon');
 const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
-const MongoClientInterface =
-    require('../../../../../lib/storage/metadata/mongoclient/MongoClientInterface');
-const MongoReadStream =
-    require('../../../../../lib/storage/metadata/mongoclient/readStream');
+const MongoClientInterface = require('../../../../../lib/storage/metadata/mongoclient/MongoClientInterface');
+const MongoReadStream = require('../../../../../lib/storage/metadata/mongoclient/readStream');
 const utils = require('../../../../../lib/storage/metadata/mongoclient/utils');
 
 const locationConstraints = {
