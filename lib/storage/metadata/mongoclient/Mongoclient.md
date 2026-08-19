@@ -330,3 +330,46 @@ In non versioned buckets, master object events are the ones to be processed.
 In versioning suspended buckets, both master and version events should be processed,
 as the master object itself is considered a null version. No special case is present
 here as the master object is always present.
+
+## Clean Read
+
+In a clean-room D/R deployment, object metadata is replicated before the object
+data is copied locally: until the copy happens, the version's `location` and
+`dataStoreName` still refer to the remote source site. Such a version is
+**non-localized**, the condition being:
+
+```
+locations[objMD.dataStoreName].isCRR
+```
+
+Clean read hides those versions from the clients. It is a **per-call flag**
+(`cleanRead`) on the read and listing APIs — `getObject`, `getObjects`,
+`getBucketAndObject`, `listObject`, `listMultipartUploads` — so any metadata
+backend can implement the same contract. `MetadataWrapper` sets the flag on
+every such call when the deployment runs with clean read enabled (set on the
+user-facing Cloudserver only: Backbeat's internal Cloudserver must see all the
+entries), and refuses to start when the backend does not implement it.
+
+The location configuration is provided by the embedder through the
+`getLocationConstraints` parameter, evaluated on each call so that
+configuration updates are picked up.
+
+Implementation notes:
+
+- filtering happens in the MongoDB query (`value.dataStoreName: { $nin: [...] }`),
+  not after the fetch: listing cursors are limited by `maxKeys`, so filtering
+  documents after the limit would under-fill pages and report a complete
+  listing while entries remain;
+- in a metadata search, the filter is added as an `$and` element after the
+  search query has been merged, so that a search on `dataStoreName` neither
+  overwrites it nor is overwritten by it;
+- delete markers and PHD keys carry no `dataStoreName`, are matched by `$nin`,
+  and are therefore never hidden;
+- `getLatestVersion` applies the same filter, so a hidden master resolves to
+  the newest localized version, and PHD keys resolve likewise;
+- in the v0 format, master and version keys share the same key range: when the
+  master key of an object is hidden, `DelimiterMaster` skips its version keys
+  instead of exposing them as master entries.
+
+Write-time master-key handling — keeping the master pointing at the newest
+localized version — is data-driven and independent from this flag.
