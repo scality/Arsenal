@@ -1,14 +1,14 @@
 import assert from 'assert';
 
-import ObjectMDChecksum, { ChecksumAlgorithm } from '../../../lib/models/ObjectMDChecksum';
+import ObjectMDChecksum, { ChecksumAlgorithm, partCountFromSuffix } from '../../../lib/models/ObjectMDChecksum';
 
 // Valid base64 digest values of the correct length for each algorithm.
 const validDigest: Record<ChecksumAlgorithm, string> = {
-    crc32:     'AAAAAA==',                                           // 8 chars
-    crc32c:    'AAAAAA==',                                           // 8 chars
-    crc64nvme: 'AAAAAAAAAAA=',                                       // 12 chars
-    sha1:      'AAAAAAAAAAAAAAAAAAAAAAAAAAA=',                       // 28 chars
-    sha256:    'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',       // 44 chars
+    crc32: 'AAAAAA==', // 8 chars
+    crc32c: 'AAAAAA==', // 8 chars
+    crc64nvme: 'AAAAAAAAAAA=', // 12 chars
+    sha1: 'AAAAAAAAAAAAAAAAAAAAAAAAAAA=', // 28 chars
+    sha256: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=', // 44 chars
 };
 
 describe('ObjectMDChecksum', () => {
@@ -37,10 +37,7 @@ describe('ObjectMDChecksum', () => {
         });
 
         it('should throw on invalid checksumValue (wrong length)', () => {
-            assert.throws(
-                () => new ObjectMDChecksum('sha256', 'tooshort=', 'FULL_OBJECT'),
-                /invalid checksumValue/,
-            );
+            assert.throws(() => new ObjectMDChecksum('sha256', 'tooshort=', 'FULL_OBJECT'), /invalid checksumValue/);
         });
 
         it('should throw on invalid checksumValue (not base64)', () => {
@@ -73,11 +70,14 @@ describe('ObjectMDChecksum', () => {
 
     describe('isValid', () => {
         it('should return null for a valid checksum object', () => {
-            assert.strictEqual(ObjectMDChecksum.isValid({
-                checksumAlgorithm: 'sha256',
-                checksumValue: validDigest.sha256,
-                checksumType: 'FULL_OBJECT',
-            }), null);
+            assert.strictEqual(
+                ObjectMDChecksum.isValid({
+                    checksumAlgorithm: 'sha256',
+                    checksumValue: validDigest.sha256,
+                    checksumType: 'FULL_OBJECT',
+                }),
+                null,
+            );
         });
 
         it('should return an error string for an invalid checksumAlgorithm', () => {
@@ -110,11 +110,38 @@ describe('ObjectMDChecksum', () => {
         });
 
         it('should return null for a valid composite checksum object with a part-count suffix', () => {
-            assert.strictEqual(ObjectMDChecksum.isValid({
-                checksumAlgorithm: 'sha256',
-                checksumValue: `${validDigest.sha256}-12`,
-                checksumType: 'COMPOSITE',
-            }), null);
+            assert.strictEqual(
+                ObjectMDChecksum.isValid({
+                    checksumAlgorithm: 'sha256',
+                    checksumValue: `${validDigest.sha256}-12`,
+                    checksumType: 'COMPOSITE',
+                }),
+                null,
+            );
         });
+    });
+});
+
+describe('partCountFromSuffix', () => {
+    it('should extract the part count from a multipart ETag', () => {
+        assert.strictEqual(partCountFromSuffix('c763e901f8746cfdc1f21396ca9ce977-4'), 4);
+    });
+
+    it('should extract the part count from a COMPOSITE checksum value', () => {
+        assert.strictEqual(partCountFromSuffix(`${validDigest.sha256}-10000`), 10000);
+    });
+
+    it('should return null when there is no suffix', () => {
+        assert.strictEqual(partCountFromSuffix('c763e901f8746cfdc1f21396ca9ce977'), null);
+        assert.strictEqual(partCountFromSuffix(validDigest.sha256), null);
+        assert.strictEqual(partCountFromSuffix(''), null);
+    });
+
+    it('should return null for a malformed suffix', () => {
+        assert.strictEqual(partCountFromSuffix('abc-'), null);
+        assert.strictEqual(partCountFromSuffix('abc-0'), null);
+        assert.strictEqual(partCountFromSuffix('abc-01'), null);
+        assert.strictEqual(partCountFromSuffix('abc-1x'), null);
+        assert.strictEqual(partCountFromSuffix('abc-1-2'), 2);
     });
 });

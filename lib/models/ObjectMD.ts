@@ -5,7 +5,8 @@ import ObjectMDLocation, { ObjectMDLocationData, Location } from './ObjectMDLoca
 import ObjectMDAmzRestore from './ObjectMDAmzRestore';
 import ObjectMDArchive from './ObjectMDArchive';
 import { ObjectMDAzureInfoMetadata } from './ObjectMDAzureInfo';
-import ObjectMDChecksum, { ChecksumAlgorithm, ChecksumType } from './ObjectMDChecksum';
+import ObjectMDChecksum, { ChecksumAlgorithm, ChecksumType, partCountFromSuffix } from './ObjectMDChecksum';
+import { PartChecksum, isValidPartChecksums } from './ObjectMDPartChecksums';
 
 export type ACL = {
     Canned: string;
@@ -122,6 +123,10 @@ export type ObjectMDData = {
     // This is only set when it differs from `owner-id`.
     bucketOwnerId?: string;
     checksum?: ObjectMDChecksum;
+    // Checksum of each part of a completed COMPOSITE MPU, one entry per part.
+    // Part checksums must survive any location change so they are stored at the top level of the object
+    // and not in the location array.
+    partChecksums?: PartChecksum[];
 };
 
 /**
@@ -536,6 +541,53 @@ export default class ObjectMD {
      */
     getChecksum(): ObjectMDChecksum | null {
         return this._data.checksum ?? null;
+    }
+
+    /**
+     * Set the checksum of each part of a completed COMPOSITE MPU.
+     *
+     * Requires the COMPOSITE object-level checksum and the content length to be
+     * set first: the digests are validated against the checksum algorithm, and
+     * the part sizes must add up to the content length.
+     *
+     * @param parts - one entry per part, in part-number order
+     * @return itself
+     */
+    setPartChecksums(parts: PartChecksum[]) {
+        const checksum = this._data.checksum;
+        if (!checksum) {
+            throw new Error('partChecksums require an object-level checksum to be set first.');
+        }
+        if (checksum.checksumType !== 'COMPOSITE') {
+            throw new Error(`partChecksums are only valid for COMPOSITE checksums, not ${checksum.checksumType}.`);
+        }
+        const error = isValidPartChecksums(parts, checksum.checksumAlgorithm, this._data['content-length']);
+        if (error !== null) {
+            throw new Error(error);
+        }
+        const etagParts = partCountFromSuffix(this._data['content-md5']);
+        if (etagParts !== null && etagParts !== parts.length) {
+            throw new Error(
+                `got ${parts.length} part checksums, but the ETag ends in "-${etagParts}", ` +
+                    `meaning ${etagParts} parts: ${this._data['content-md5']}`,
+            );
+        }
+        const checksumParts = partCountFromSuffix(checksum.checksumValue);
+        if (checksumParts !== null && checksumParts !== parts.length) {
+            throw new Error(
+                `got ${parts.length} part checksums, but the object checksum ends in ` +
+                    `"-${checksumParts}", meaning ${checksumParts} parts: ${checksum.checksumValue}`,
+            );
+        }
+        this._data.partChecksums = parts;
+        return this;
+    }
+
+    /**
+     * Returns the checksum of each part, or null if not set.
+     */
+    getPartChecksums(): PartChecksum[] | null {
+        return this._data.partChecksums ?? null;
     }
 
     /**

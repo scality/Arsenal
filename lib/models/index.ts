@@ -12,6 +12,8 @@ export type { BackendKey } from './ObjectMD';
 export { default as ObjectMDAmzRestore } from './ObjectMDAmzRestore';
 export { default as ObjectMDChecksum, CHECKSUM_ALGORITHMS, CHECKSUM_TYPES } from './ObjectMDChecksum';
 export type { ChecksumAlgorithm, ChecksumType } from './ObjectMDChecksum';
+export { isValidPartChecksums, MAX_PART_NUMBER } from './ObjectMDPartChecksums';
+export type { PartChecksum } from './ObjectMDPartChecksums';
 export { default as ObjectMDArchive } from './ObjectMDArchive';
 export { default as ObjectMDAzureInfo } from './ObjectMDAzureInfo';
 export { default as ObjectMDLocation } from './ObjectMDLocation';

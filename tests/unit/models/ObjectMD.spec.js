@@ -1038,3 +1038,109 @@ describe('ObjectMD checksum', () => {
         assert.strictEqual(c.checksumType, 'COMPOSITE');
     });
 });
+
+describe('ObjectMD partChecksums', () => {
+    const part1 = '3AyUPBM2N2sY3QjN2J9wYUzQpOWWybOVJUp6LuJEMf0=';
+    const part2 = 'sgad/t6kdx5RjCEaYWRKlxFEJBzQE6Zz+cDhA72e3m4=';
+    const part3 = '6xvj56XlEPtCZATsAFHleo2Rw1/rC88oQoRzQTCbb24=';
+    const objectDigest = 'Tn0yg0fVZ7+nKLrkZLhCxRMKrI2y0P+6VlGTnC3gic8=';
+    const partSize = 5242880;
+    const parts = [
+        { partNumber: 1, size: partSize, checksumValue: part1 },
+        { partNumber: 2, size: partSize, checksumValue: part2 },
+        { partNumber: 3, size: partSize, checksumValue: part3 },
+    ];
+
+    // An ObjectMD in the state CompleteMPU leaves it in for a 3-part
+    // SHA256 COMPOSITE upload, minus the part checksums themselves.
+    function compositeMd() {
+        const md = new ObjectMD();
+        md.setContentLength(partSize * 3);
+        md.setChecksum(new ObjectMDChecksum('sha256', `${objectDigest}-3`, 'COMPOSITE'));
+        return md;
+    }
+
+    it('should return null when no part checksums are set', () => {
+        assert.strictEqual(new ObjectMD().getPartChecksums(), null);
+    });
+
+    it('should store and return the part checksums', () => {
+        const md = compositeMd().setPartChecksums(parts);
+        assert.deepStrictEqual(md.getPartChecksums(), parts);
+    });
+
+    it('should preserve the part checksums through a JSON round-trip', () => {
+        const md = compositeMd().setPartChecksums(parts);
+        const { result } = ObjectMD.createFromBlob(md.getSerialized());
+        assert(result !== undefined);
+        assert.deepStrictEqual(result.getPartChecksums(), parts);
+    });
+
+    it('should not appear in the model attributes when unset', () => {
+        assert.strictEqual(ObjectMD.getAttributes().partChecksums, undefined);
+    });
+
+    it('should throw when no object-level checksum is set', () => {
+        const md = new ObjectMD();
+        md.setContentLength(partSize * 3);
+        assert.throws(() => md.setPartChecksums(parts), /require an object-level checksum/);
+    });
+
+    it('should throw when the object-level checksum is not COMPOSITE', () => {
+        const md = new ObjectMD();
+        md.setContentLength(partSize * 3);
+        md.setChecksum(new ObjectMDChecksum('sha256', objectDigest, 'FULL_OBJECT'));
+        assert.throws(() => md.setPartChecksums(parts), /only valid for COMPOSITE checksums, not FULL_OBJECT/);
+    });
+
+    it('should throw when the part checksums are malformed', () => {
+        const md = compositeMd();
+        const gapped = [parts[0], { partNumber: 3, size: partSize, checksumValue: part3 }];
+        assert.throws(() => md.setPartChecksums(gapped), /expected 2, got 3/);
+    });
+
+    it('should throw when the sizes do not add up to the content length', () => {
+        const md = new ObjectMD();
+        md.setContentLength(partSize * 2);
+        md.setChecksum(new ObjectMDChecksum('sha256', `${objectDigest}-3`, 'COMPOSITE'));
+        assert.throws(() => md.setPartChecksums(parts), /part sizes add up to/);
+    });
+
+    it('should throw when the content length has not been set yet', () => {
+        const md = new ObjectMD();
+        md.setChecksum(new ObjectMDChecksum('sha256', `${objectDigest}-3`, 'COMPOSITE'));
+        assert.throws(() => md.setPartChecksums(parts), /but the object is 0 bytes/);
+    });
+
+    it('should throw when the part count disagrees with the ETag suffix', () => {
+        const md = compositeMd();
+        md.setContentMd5('c763e901f8746cfdc1f21396ca9ce977-4');
+        assert.throws(() => md.setPartChecksums(parts), /the ETag ends in "-4", meaning 4 parts/);
+    });
+
+    it('should accept a matching ETag suffix', () => {
+        const md = compositeMd();
+        md.setContentMd5('c763e901f8746cfdc1f21396ca9ce977-3');
+        assert.deepStrictEqual(md.setPartChecksums(parts).getPartChecksums(), parts);
+    });
+
+    it('should skip the ETag check when the ETag carries no suffix', () => {
+        const md = compositeMd();
+        md.setContentMd5('c763e901f8746cfdc1f21396ca9ce977');
+        assert.deepStrictEqual(md.setPartChecksums(parts).getPartChecksums(), parts);
+    });
+
+    it('should throw when the part count disagrees with the checksum suffix', () => {
+        const md = new ObjectMD();
+        md.setContentLength(partSize * 3);
+        md.setChecksum(new ObjectMDChecksum('sha256', `${objectDigest}-4`, 'COMPOSITE'));
+        assert.throws(() => md.setPartChecksums(parts), /the object checksum ends in "-4", meaning 4 parts/);
+    });
+
+    it('should skip the checksum check when the checksum carries no suffix', () => {
+        const md = new ObjectMD();
+        md.setContentLength(partSize * 3);
+        md.setChecksum(new ObjectMDChecksum('sha256', objectDigest, 'COMPOSITE'));
+        assert.deepStrictEqual(md.setPartChecksums(parts).getPartChecksums(), parts);
+    });
+});
