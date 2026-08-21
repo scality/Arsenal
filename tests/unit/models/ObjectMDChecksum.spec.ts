@@ -1,6 +1,6 @@
 import assert from 'assert';
 
-import ObjectMDChecksum, { ChecksumAlgorithm } from '../../../lib/models/ObjectMDChecksum';
+import ObjectMDChecksum, { ChecksumAlgorithm, partCountFromSuffix } from '../../../lib/models/ObjectMDChecksum';
 
 // Valid base64 digest values of the correct length for each algorithm.
 const validDigest: Record<ChecksumAlgorithm, string> = {
@@ -116,5 +116,29 @@ describe('ObjectMDChecksum', () => {
                 checksumType: 'COMPOSITE',
             }), null);
         });
+    });
+});
+
+describe('partCountFromSuffix', () => {
+    it('should extract the part count from a multipart ETag', () => {
+        assert.strictEqual(partCountFromSuffix('c763e901f8746cfdc1f21396ca9ce977-4'), 4);
+    });
+
+    it('should extract the part count from a COMPOSITE checksum value', () => {
+        assert.strictEqual(partCountFromSuffix(`${validDigest.sha256}-10000`), 10000);
+    });
+
+    it('should return null when there is no suffix', () => {
+        assert.strictEqual(partCountFromSuffix('c763e901f8746cfdc1f21396ca9ce977'), null);
+        assert.strictEqual(partCountFromSuffix(validDigest.sha256), null);
+        assert.strictEqual(partCountFromSuffix(''), null);
+    });
+
+    it('should return null for a malformed suffix', () => {
+        assert.strictEqual(partCountFromSuffix('abc-'), null);
+        assert.strictEqual(partCountFromSuffix('abc-0'), null);
+        assert.strictEqual(partCountFromSuffix('abc-01'), null);
+        assert.strictEqual(partCountFromSuffix('abc-1x'), null);
+        assert.strictEqual(partCountFromSuffix('abc-1-2'), 2);
     });
 });

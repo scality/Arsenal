@@ -22,9 +22,22 @@ const digestLengths: Record<ChecksumAlgorithm, number> = {
     sha256:    44,
 };
 
-function isValidDigestValue(algorithm: ChecksumAlgorithm, value: string): boolean {
+/**
+ * Validate a raw base64 digest for an algorithm.
+ */
+export function isValidDigestValue(algorithm: ChecksumAlgorithm, value: string): boolean {
     const digestLength = digestLengths[algorithm];
     return typeof value === 'string' && value.length === digestLength && base64Regex.test(value);
+}
+
+/**
+ * Extract the part count from a value ending in "-<partCount>". A multipart
+ * object carries that suffix on both its ETag and, for a COMPOSITE MPU, on its checksum
+ * value. Returns null when there is no such suffix.
+ */
+export function partCountFromSuffix(value: string): number | null {
+    const match = /-([1-9][0-9]*)$/.exec(value);
+    return match === null ? null : Number.parseInt(match[1], 10);
 }
 
 function isValidDigest(
