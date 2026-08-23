@@ -380,6 +380,28 @@ export class DelimiterVersions extends Extension {
         return this.keyHandlers[this.state.id](key, versionId, value);
     }
 
+    /**
+     * Hook called when a PHD master key is scanned. The default behavior
+     * is to accept and skip it without any effect on the listing state.
+     *
+     * Bounded lifecycle listings (DelimiterOrphanDeleteMarker,
+     * DelimiterNonCurrent) override this hook to record the PHD key as
+     * the resume position: without it, a contiguous run of dangling PHD
+     * masters longer than maxScannedLifecycleListingEntries exhausts the
+     * scan budget without ever advancing the marker, so the truncated
+     * listing carries no resume position and the next one restarts from
+     * scratch, forever.
+     *
+     * @param {string} key - master key holding the PHD placeholder
+     * @param {string} [versionId] - always undefined for a master key
+     * @param {string} value - PHD placeholder metadata value
+     * @return {number} - filter return value
+     */
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    handlePHDMaster(key: string, versionId: string | undefined, value: string): FilterReturnValue {
+        return FILTER_ACCEPT;
+    }
+
     keyHandler_NotSkippingV0(key: string, versionId: string | undefined, value: string): FilterReturnValue {
         if (key.startsWith(DbPrefixes.Replay)) {
             // skip internal replay prefix entirely
@@ -390,7 +412,7 @@ export class DelimiterVersions extends Extension {
             return FILTER_SKIP;
         }
         if (Version.isPHD(value)) {
-            return FILTER_ACCEPT;
+            return this.handlePHDMaster(key, versionId, value);
         }
         return this.filter_onNewKey(key, versionId, value);
     }
@@ -399,7 +421,7 @@ export class DelimiterVersions extends Extension {
         // NOTE: this check on PHD is only useful for Artesca, S3C
         // does not use PHDs in V1 format
         if (Version.isPHD(value)) {
-            return FILTER_ACCEPT;
+            return this.handlePHDMaster(key, versionId, value);
         }
         return this.filter_onNewKey(key, versionId, value);
     }
