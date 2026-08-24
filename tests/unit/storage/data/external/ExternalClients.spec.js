@@ -485,3 +485,75 @@ describe('external backend clients', () => {
         }
     });
 });
+
+describe('AwsClient versioned data operations', () => {
+    const key = 'versionedTestKey';
+    const keyContext = {
+        bucketName: 'versionedTestBucket',
+        objectKey: key,
+        metaHeaders: {},
+    };
+    // client.put calls back with (err, backendKey, dataStoreVersionId),
+    // which promisify would truncate to the first value
+    const putAsync = (c, ...args) => new Promise((resolve, reject) =>
+        c.put(...args, (err, backendKey, dataStoreVersionId) =>
+            (err ? reject(err) : resolve({ backendKey, dataStoreVersionId }))));
+    let client;
+
+    beforeEach(() => {
+        client = new GcpClient({
+            s3Params: {},
+            bucketName: 'gcpTestBucketName',
+            mpuBucket: 'gcpTestMpuBucketName',
+            dataStoreName: 'gcpDataStore',
+            type: 'gcp',
+            supportsVersioning: true,
+        });
+    });
+
+    it('put should accept a delete marker without a backend version id', async () => {
+        client._client = { send: sinon.stub().resolves({}) };
+        const { backendKey, dataStoreVersionId } = await putAsync(client,
+            null, 0, { ...keyContext, isDeleteMarker: true }, 'uids');
+        assert.strictEqual(backendKey, `${keyContext.bucketName}/${key}`);
+        assert.strictEqual(dataStoreVersionId, undefined);
+        assert(client._client.send.calledOnce);
+    });
+
+    it('put should stack a delete marker when the live version is already deleted', async () => {
+        const noSuchKey = Object.assign(new Error('The specified key does not exist.'),
+            { name: 'NoSuchKey' });
+        client._client = { send: sinon.stub().rejects(noSuchKey) };
+        const { backendKey, dataStoreVersionId } = await putAsync(client,
+            null, 0, { ...keyContext, isDeleteMarker: true }, 'uids');
+        assert.strictEqual(backendKey, `${keyContext.bucketName}/${key}`);
+        assert.strictEqual(dataStoreVersionId, undefined);
+    });
+
+    it('put should fail without a backend version id on a regular object', async () => {
+        client._client = { send: sinon.stub().resolves({}) };
+        await assert.rejects(putAsync(client, null, 0, keyContext, 'uids'),
+            err => err.is.InternalError);
+    });
+
+    it('put should return the backend version id on a regular object', async () => {
+        client._client = { send: sinon.stub().resolves({ VersionId: '1234' }) };
+        const { dataStoreVersionId } = await putAsync(client, null, 0, keyContext, 'uids');
+        assert.strictEqual(dataStoreVersionId, '1234');
+    });
+
+    it('delete should skip the backend for a version with no backend data', async () => {
+        client._client = { send: sinon.stub().resolves({}) };
+        await promisify(client.delete.bind(client))({ key, deleteVersion: true }, 'uids');
+        assert(client._client.send.notCalled);
+    });
+
+    it('delete should target the stored version id when present', async () => {
+        client._client = { send: sinon.stub().resolves({}) };
+        await promisify(client.delete.bind(client))(
+            { key, deleteVersion: true, dataStoreVersionId: '1234' }, 'uids');
+        assert(client._client.send.calledOnce);
+        const command = client._client.send.firstCall.args[0];
+        assert.strictEqual(command.input.VersionId, '1234');
+    });
+});

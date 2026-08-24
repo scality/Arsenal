@@ -1,7 +1,10 @@
 const assert = require('assert');
 const http = require('http');
+const { promisify } = require('util');
 const { GCP } = require('../../../../../lib/storage/data/external/GCP');
-const { ListObjectsCommand, ListObjectVersionsCommand, GetBucketVersioningCommand } = require('@aws-sdk/client-s3');
+const {
+    ListObjectsCommand, ListObjectVersionsCommand, GetBucketVersioningCommand, PutObjectCommand,
+} = require('@aws-sdk/client-s3');
 
 const httpPort = 8888;
 
@@ -592,5 +595,88 @@ describe('GcpService helper behavior', () => {
             assert(err.is.InvalidRequest);
             done();
         });
+    });
+});
+
+describe('GcpService generation translation', () => {
+    const generationPort = 8890;
+    let httpServer;
+    let client;
+    let sockets = [];
+    let lastRequestUrl;
+
+    beforeAll(done => {
+        client = new GCP({
+            s3Params: {
+                endpoint: `http://localhost:${generationPort}`,
+                maxAttempts: 1,
+                forcePathStyle: true,
+                region: 'us-east-1',
+                credentials: {
+                    accessKeyId,
+                    secretAccessKey,
+                },
+            },
+            bucketName: Bucket,
+            dataStoreName: 'test-location',
+        });
+        httpServer = http.createServer((req, res) => {
+            lastRequestUrl = req.url;
+            res.setHeader('x-goog-generation', '5678');
+            if (req.method === 'DELETE') {
+                res.writeHead(204);
+                return res.end();
+            }
+            if (req.method === 'HEAD') {
+                res.writeHead(200, { 'content-length': '0' });
+                return res.end();
+            }
+            res.writeHead(200, { 'content-type': 'application/octet-stream' });
+            return res.end('test-data');
+        });
+        httpServer.on('listening', done);
+        httpServer.on('connection', socket => {
+            sockets.push(socket);
+            socket.on('close', () => {
+                sockets = sockets.filter(s => s !== socket);
+            });
+        });
+        httpServer.listen(generationPort);
+    });
+
+    afterAll(async () => {
+        await cleanupServer(httpServer, sockets);
+    });
+
+    it('getObject should translate VersionId into the generation parameter', async () => {
+        const res = await promisify(client.getObject.bind(client))({ Bucket, Key, VersionId: '1234' });
+        assert(lastRequestUrl.includes('generation=1234'));
+        assert(!lastRequestUrl.includes('versionId'));
+        assert.strictEqual(res.VersionId, '5678');
+    });
+
+    it('deleteObject should translate VersionId into the generation parameter', async () => {
+        await promisify(client.deleteObject.bind(client))({ Bucket, Key, VersionId: '1234' });
+        assert(lastRequestUrl.includes('generation=1234'));
+        assert(!lastRequestUrl.includes('versionId'));
+    });
+
+    it('headObject should not add a generation parameter without VersionId', async () => {
+        const res = await promisify(client.headObject.bind(client))({ Bucket, Key });
+        assert(!lastRequestUrl.includes('generation='));
+        assert.strictEqual(res.VersionId, '5678');
+    });
+
+    it('send should return the generation as VersionId on the raw command path', async () => {
+        // AwsClient.put sends raw commands with no per-command capture:
+        // only the client-level middleware provides the VersionId there
+        const res = await client.send(new PutObjectCommand({ Bucket, Key, Body: Buffer.from('data') }));
+        assert.strictEqual(res.VersionId, '5678');
+    });
+
+    it('putObject should return the generation as VersionId', async () => {
+        const res = await promisify(client.putObject.bind(client))(
+            { Bucket, Key, Body: Buffer.from('data') });
+        assert.strictEqual(res.VersionId, '5678');
     });
 });
