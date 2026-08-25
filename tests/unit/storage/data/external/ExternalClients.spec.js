@@ -573,6 +573,66 @@ describe('AwsClient versioned data operations', () => {
             'srcBackendBucket/srcBucket/srcKey');
     });
 
+    it('uploadPartCopy should target the source version id when present', async () => {
+        client._client = {
+            uploadPartCopy: sinon.stub().yields(null, { CopyObjectResult: { ETag: '"abc"' } }),
+        };
+        const request = {
+            bucketName: 'destBucket',
+            objectKey: key,
+            query: { uploadId: 'id', partNumber: '1' },
+            headers: {},
+        };
+        const config = { getGcpBucketNames: () => ({ bucketName: 'srcBackendBucket' }) };
+        const eTag = await promisify(client.uploadPartCopy.bind(client))(request,
+            'srcBucket/srcKey', '1234', 'gcpDataStore', config, 'uids');
+        assert.strictEqual(eTag, 'abc');
+        const params = client._client.uploadPartCopy.firstCall.args[0];
+        assert.strictEqual(params.CopySource,
+            'srcBackendBucket/srcBucket/srcKey?versionId=1234');
+    });
+
+    it('uploadPartCopy should not add a versionId to the copy source without one', async () => {
+        client._client = {
+            uploadPartCopy: sinon.stub().yields(null, { CopyObjectResult: { ETag: '"abc"' } }),
+        };
+        const request = {
+            bucketName: 'destBucket',
+            objectKey: key,
+            query: { uploadId: 'id', partNumber: '1' },
+            headers: {},
+        };
+        const config = { getGcpBucketNames: () => ({ bucketName: 'srcBackendBucket' }) };
+        await promisify(client.uploadPartCopy.bind(client))(request,
+            'srcBucket/srcKey', undefined, 'gcpDataStore', config, 'uids');
+        const params = client._client.uploadPartCopy.firstCall.args[0];
+        assert.strictEqual(params.CopySource, 'srcBackendBucket/srcBucket/srcKey');
+    });
+
+    it('AwsClient uploadPartCopy should target the source version id when present', async () => {
+        const awsClient = new AwsClient({
+            s3Params: {},
+            bucketName: 'awsTestBucketName',
+            dataStoreName: 'awsDataStore',
+            type: 'aws',
+            supportsVersioning: true,
+        });
+        awsClient._client = { send: sinon.stub().resolves({ CopyPartResult: { ETag: '"abc"' } }) };
+        const request = {
+            bucketName: 'destBucket',
+            objectKey: key,
+            query: { uploadId: 'id', partNumber: '1' },
+            headers: {},
+        };
+        const config = { getAwsBucketName: () => 'srcBackendBucket' };
+        const eTag = await promisify(awsClient.uploadPartCopy.bind(awsClient))(request,
+            'srcBucket/srcKey', '1234', 'awsDataStore', config, 'uids');
+        assert.strictEqual(eTag, 'abc');
+        const command = awsClient._client.send.firstCall.args[0];
+        assert.strictEqual(command.input.CopySource,
+            'srcBackendBucket/srcBucket/srcKey?versionId=1234');
+    });
+
     it('objectPutTagging should succeed without calling the backend', async () => {
         client._client = { send: sinon.stub().resolves({}) };
         await promisify(client.objectPutTagging.bind(client))(key, 'bucket',
