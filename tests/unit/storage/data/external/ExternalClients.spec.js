@@ -301,7 +301,10 @@ describe('external backend clients', () => {
                 await objectDeleteTaggingAsync(key, bucket.getName(), objectMd, log);
             });
 
-            it(`${backend.name} should fail to set tag on missing key`, async () => {
+            // GCP no longer contacts the backend for tagging, so a
+            // missing backend key cannot fail there
+            const itOnAws = backend.config.type === 'aws' ? it : it.skip;
+            itOnAws(`${backend.name} should fail to set tag on missing key`, async () => {
                 const key = 'externalBackendMissingKey';
                 const bucketData = {
                     _name: 'externalBackendTestBucket',
@@ -568,6 +571,20 @@ describe('AwsClient versioned data operations', () => {
         const command = client._client.send.firstCall.args[0];
         assert.strictEqual(command.input.CopySource,
             'srcBackendBucket/srcBucket/srcKey');
+    });
+
+    it('objectPutTagging should succeed without calling the backend', async () => {
+        client._client = { send: sinon.stub().resolves({}) };
+        await promisify(client.objectPutTagging.bind(client))(key, 'bucket',
+            { tags: { k: 'v' }, location: [{}] }, 'uids');
+        assert(client._client.send.notCalled);
+    });
+
+    it('objectDeleteTagging should succeed without calling the backend', async () => {
+        client._client = { send: sinon.stub().resolves({}) };
+        await promisify(client.objectDeleteTagging.bind(client))(key, 'bucket',
+            { tags: {}, location: [{}] }, 'uids');
+        assert(client._client.send.notCalled);
     });
 
     it('delete should target the stored version id when present', async () => {
