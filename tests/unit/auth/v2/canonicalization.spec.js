@@ -170,6 +170,27 @@ describe('canonicalization', () => {
             '/?compose=yes,please&versioning=yes,please');
     });
 
+    it('should not sign uploadId or partNumber for GCP', () => {
+        const request = {
+            headers: { host: 'storage.googleapis.com:80' },
+            url: '/obj',
+            query: { partNumber: '1', uploadId: 'someUploadId' },
+        };
+        const canonicalizedResource = gcpCanonicalizedResource(request);
+        assert.strictEqual(canonicalizedResource, '/obj');
+    });
+
+    it('should include the multipart upload initiation subresource for GCP',
+        () => {
+            const request = {
+                headers: { host: 'storage.googleapis.com:80' },
+                url: '/obj',
+                query: { uploads: '' },
+            };
+            const canonicalizedResource = gcpCanonicalizedResource(request);
+            assert.strictEqual(canonicalizedResource, '/obj?uploads');
+        });
+
     it('should handle header values that are arrays (AWS SDK v3 compatibility) for AWS', () => {
         const headers = {
             'date': 'Mon, 21 Sep 2015 22:29:27 GMT',
