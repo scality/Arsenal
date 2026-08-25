@@ -548,6 +548,28 @@ describe('AwsClient versioned data operations', () => {
         assert(client._client.send.notCalled);
     });
 
+    it('copyObject should target the source version id when present', async () => {
+        client._client = { send: sinon.stub().resolves({ VersionId: '5678' }) };
+        const request = { bucketName: 'destBucket', objectKey: key, headers: {} };
+        const config = { getAwsBucketName: () => 'srcBackendBucket', isAWSServerSideEncryption: () => false };
+        await promisify(client.copyObject.bind(client))(request, 'gcpDataStore',
+            'srcBucket/srcKey', '1234', 'gcpDataStore', {}, config, 'uids');
+        const command = client._client.send.firstCall.args[0];
+        assert.strictEqual(command.input.CopySource,
+            'srcBackendBucket/srcBucket/srcKey?versionId=1234');
+    });
+
+    it('copyObject should not add a versionId to the copy source without one', async () => {
+        client._client = { send: sinon.stub().resolves({ VersionId: '5678' }) };
+        const request = { bucketName: 'destBucket', objectKey: key, headers: {} };
+        const config = { getAwsBucketName: () => 'srcBackendBucket', isAWSServerSideEncryption: () => false };
+        await promisify(client.copyObject.bind(client))(request, 'gcpDataStore',
+            'srcBucket/srcKey', undefined, 'gcpDataStore', {}, config, 'uids');
+        const command = client._client.send.firstCall.args[0];
+        assert.strictEqual(command.input.CopySource,
+            'srcBackendBucket/srcBucket/srcKey');
+    });
+
     it('delete should target the stored version id when present', async () => {
         client._client = { send: sinon.stub().resolves({}) };
         await promisify(client.delete.bind(client))(

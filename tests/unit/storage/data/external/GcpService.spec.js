@@ -604,6 +604,7 @@ describe('GcpService generation translation', () => {
     let client;
     let sockets = [];
     let lastRequestUrl;
+    let lastRequestHeaders;
 
     beforeAll(done => {
         client = new GCP({
@@ -622,6 +623,7 @@ describe('GcpService generation translation', () => {
         });
         httpServer = http.createServer((req, res) => {
             lastRequestUrl = req.url;
+            lastRequestHeaders = req.headers;
             res.setHeader('x-goog-generation', '5678');
             if (req.method === 'DELETE') {
                 res.writeHead(204);
@@ -630,6 +632,15 @@ describe('GcpService generation translation', () => {
             if (req.method === 'HEAD') {
                 res.writeHead(200, { 'content-length': '0' });
                 return res.end();
+            }
+            if (req.headers['x-goog-copy-source']) {
+                const xml = `<?xml version="1.0" encoding="UTF-8"?>
+                <CopyObjectResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                    <LastModified>2023-01-01T00:00:00.000Z</LastModified>
+                    <ETag>"d41d8cd98f00b204e9800998ecf8427e"</ETag>
+                </CopyObjectResult>`;
+                res.writeHead(200, { 'content-type': 'application/xml' });
+                return res.end(xml);
             }
             res.writeHead(200, { 'content-type': 'application/octet-stream' });
             return res.end('test-data');
@@ -665,6 +676,21 @@ describe('GcpService generation translation', () => {
         const res = await promisify(client.headObject.bind(client))({ Bucket, Key });
         assert(!lastRequestUrl.includes('generation='));
         assert.strictEqual(res.VersionId, '5678');
+    });
+
+    it('copyObject should move the source versionId into the generation header', async () => {
+        const res = await promisify(client.copyObject.bind(client))(
+            { Bucket, Key, CopySource: `${Bucket}/${Key}?versionId=1234` });
+        assert.strictEqual(lastRequestHeaders['x-goog-copy-source'], `${Bucket}/${Key}`);
+        assert.strictEqual(lastRequestHeaders['x-goog-copy-source-generation'], '1234');
+        assert.strictEqual(res.VersionId, '5678');
+    });
+
+    it('copyObject should not add a generation header without a source versionId', async () => {
+        await promisify(client.copyObject.bind(client))(
+            { Bucket, Key, CopySource: `${Bucket}/${Key}` });
+        assert.strictEqual(lastRequestHeaders['x-goog-copy-source'], `${Bucket}/${Key}`);
+        assert.strictEqual(lastRequestHeaders['x-goog-copy-source-generation'], undefined);
     });
 
     it('send should return the generation as VersionId on the raw command path', async () => {

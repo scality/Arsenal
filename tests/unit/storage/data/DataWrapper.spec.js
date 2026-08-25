@@ -443,8 +443,8 @@ describe('DataWrapper', () => {
                     assert.strictEqual(result[0].key, 'copiedKey');
                     assert.strictEqual(result[0].dataStoreVersionId, 'versionId');
                     assert(mockClient.copyObject.calledWith(
-                        request, 'destBackend', 'sourceKey', 'sourceBackend',
-                        storeMetadataParams, mockConfig, log));
+                        request, 'destBackend', 'sourceKey', undefined,
+                        'sourceBackend', storeMetadataParams, mockConfig, log));
                     done();
                 });
         });
