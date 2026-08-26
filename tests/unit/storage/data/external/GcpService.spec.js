@@ -1,5 +1,6 @@
 const assert = require('assert');
 const http = require('http');
+const { PassThrough } = require('stream');
 const { promisify } = require('util');
 const { GCP } = require('../../../../../lib/storage/data/external/GCP');
 const {
@@ -636,6 +637,7 @@ describe('GcpService generation translation', () => {
     let sockets = [];
     let lastRequestUrl;
     let lastRequestHeaders;
+    let lastRequestBody;
 
     beforeAll(done => {
         client = new GCP({
@@ -655,26 +657,33 @@ describe('GcpService generation translation', () => {
         httpServer = http.createServer((req, res) => {
             lastRequestUrl = req.url;
             lastRequestHeaders = req.headers;
-            res.setHeader('x-goog-generation', '5678');
-            if (req.method === 'DELETE') {
-                res.writeHead(204);
-                return res.end();
-            }
-            if (req.method === 'HEAD') {
-                res.writeHead(200, { 'content-length': '0' });
-                return res.end();
-            }
-            if (req.headers['x-goog-copy-source']) {
-                const xml = `<?xml version="1.0" encoding="UTF-8"?>
-                <CopyObjectResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-                    <LastModified>2023-01-01T00:00:00.000Z</LastModified>
-                    <ETag>"d41d8cd98f00b204e9800998ecf8427e"</ETag>
-                </CopyObjectResult>`;
-                res.writeHead(200, { 'content-type': 'application/xml' });
-                return res.end(xml);
-            }
-            res.writeHead(200, { 'content-type': 'application/octet-stream' });
-            return res.end('test-data');
+            const bodyChunks = [];
+            req.on('data', chunk => bodyChunks.push(chunk));
+            // reply only once the body is fully read, so tests can
+            // assert on lastRequestBody
+            req.on('end', () => {
+                lastRequestBody = Buffer.concat(bodyChunks);
+                res.setHeader('x-goog-generation', '5678');
+                if (req.method === 'DELETE') {
+                    res.writeHead(204);
+                    return res.end();
+                }
+                if (req.method === 'HEAD') {
+                    res.writeHead(200, { 'content-length': '0' });
+                    return res.end();
+                }
+                if (req.headers['x-goog-copy-source']) {
+                    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+                    <CopyObjectResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                        <LastModified>2023-01-01T00:00:00.000Z</LastModified>
+                        <ETag>"d41d8cd98f00b204e9800998ecf8427e"</ETag>
+                    </CopyObjectResult>`;
+                    res.writeHead(200, { 'content-type': 'application/xml' });
+                    return res.end(xml);
+                }
+                res.writeHead(200, { 'content-type': 'application/octet-stream' });
+                return res.end('test-data');
+            });
         });
         httpServer.on('listening', done);
         httpServer.on('connection', socket => {
@@ -731,6 +740,23 @@ describe('GcpService generation translation', () => {
         // only the client-level middleware provides the VersionId there
         const res = await client.send(new PutObjectCommand({ Bucket, Key, Body: Buffer.from('data') }));
         assert.strictEqual(res.VersionId, '5678');
+    });
+
+    it('putObject should send a stream body raw, without aws-chunked framing', async () => {
+        const payload = Buffer.from('raw-stream-body-payload');
+        const body = new PassThrough();
+        body.end(payload);
+        await promisify(client.putObject.bind(client))({ Bucket, Key, Body: body, ContentLength: payload.length });
+        assert.strictEqual(lastRequestBody.toString(), payload.toString());
+        assert.notStrictEqual(lastRequestHeaders['content-encoding'], 'aws-chunked');
+    });
+
+    it('should disable automatic request checksums, which would apply aws-chunked encoding', async () => {
+        // the SDK computes a default checksum on streaming bodies and
+        // wraps them in aws-chunked encoding, which GCS stores raw
+        // instead of decoding
+        assert.strictEqual(await client.config.requestChecksumCalculation(), 'WHEN_REQUIRED');
+        assert.strictEqual(await client.config.responseChecksumValidation(), 'WHEN_REQUIRED');
     });
 
     it('putObject should return the generation as VersionId', async () => {
