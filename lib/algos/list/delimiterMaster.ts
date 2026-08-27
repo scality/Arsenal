@@ -368,8 +368,9 @@ export class DelimiterMaster extends Delimiter {
             const versionIdIndex = key.indexOf(VID_SEP);
             if (versionIdIndex !== -1) {
                 // A version key is seen where a master key is expected: the
-                // master key was hidden as non-localized, so the object is not
-                // visible. Skip its versions instead of exposing a version key.
+                // master key was dropped, the object having no localized
+                // version at all. Skip its versions instead of exposing a
+                // version key as a master entry.
                 this.setState(<DelimiterMasterFilterState_SkippingVersionsV0>{
                     id: DelimiterMasterFilterStateId.SkippingVersionsV0,
                     masterKey: key.slice(0, versionIdIndex),

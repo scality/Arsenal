@@ -212,13 +212,57 @@ describe('MongoClientInterface::hideNonLocalizedVersions', () => {
                 });
             });
 
-            it('should hide the objects whose current version is not localized', done => {
+            it('should list the newest localized version as the current one', done => {
                 listMasters(true, (err, data) => {
                     assert.ifError(err);
                     assert.deepStrictEqual(
                         data.Contents.map(entry => entry.key),
-                        ['pfx-localized'],
+                        ['pfx-localized', 'pfx-mixed'],
                     );
+                    const mixed = JSON.parse(data.Contents.find(entry => entry.key === 'pfx-mixed').value);
+                    assert.strictEqual(mixed.versionId, mixedLocalizedVersionId);
+                    assert.strictEqual(mixed.dataStoreName, LOCAL_LOCATION);
+                    return done();
+                });
+            });
+
+            it('should hide the objects having no localized version', done => {
+                listMasters(true, (err, data) => {
+                    assert.ifError(err);
+                    assert(!data.Contents.some(entry => entry.key === 'pfx-nonlocalized'));
+                    return done();
+                });
+            });
+
+            it('should page the master listing consistently', done => {
+                const listed = [];
+                const listPage = (marker, next) => {
+                    metadata.client.listObject(
+                        BUCKET_NAME,
+                        {
+                            listingType: 'DelimiterMaster',
+                            maxKeys: 1,
+                            hideNonLocalizedVersions: true,
+                            marker,
+                        },
+                        logger,
+                        (err, data) => {
+                            if (err) {
+                                return next(err);
+                            }
+                            data.Contents.forEach(entry => listed.push(entry.key));
+                            if (!data.IsTruncated) {
+                                return next();
+                            }
+                            // without a delimiter, no NextMarker is returned:
+                            // the last listed key is the next marker
+                            return listPage(listed[listed.length - 1], next);
+                        },
+                    );
+                };
+                listPage(undefined, err => {
+                    assert.ifError(err);
+                    assert.deepStrictEqual(listed, ['pfx-localized', 'pfx-mixed']);
                     return done();
                 });
             });
@@ -339,9 +383,7 @@ describe('MongoClientInterface::hideNonLocalizedVersions', () => {
                 );
             });
 
-            it('should fall back to the newest localized version of a mixed object', done => {
-                // Until the master key is maintained at write time (ARSN-618),
-                // the hidden master falls back to the newest visible version.
+            it('should return the newest localized version of a mixed object', done => {
                 metadata.client.getObject(
                     BUCKET_NAME,
                     'pfx-mixed',

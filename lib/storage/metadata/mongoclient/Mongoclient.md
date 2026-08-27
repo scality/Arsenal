@@ -365,11 +365,16 @@ Implementation notes:
   overwrites it nor is overwritten by it;
 - delete markers and PHD keys carry no `dataStoreName`, are matched by `$nin`,
   and are therefore never hidden;
-- `getLatestVersion` applies the same filter, so a hidden master resolves to
-  the newest localized version, and PHD keys resolve likewise;
-- in the v0 format, master and version keys share the same key range: when the
-  master key of an object is hidden, `DelimiterMaster` skips its version keys
-  instead of exposing them as master entries.
+- a master listing (`DelimiterMaster`) keeps the objects whose current version
+  is not localized, and lists them with their newest localized version — the
+  master key is resolved through `getLatestVersion` on the way out of the
+  stream, the same way a PHD key is resolved. An object with no localized
+  version at all is dropped from the listing;
+- `getObject` resolves a hidden master the same way, so a listing and a `GET`
+  agree on which version is current;
+- in the v0 format, master and version keys share the same key range: when a
+  master key is dropped, `DelimiterMaster` skips the version keys of that
+  object instead of exposing them as master entries.
 
 Write-time master-key handling — keeping the master pointing at the newest
 localized version — is data-driven and independent from this flag.
