@@ -56,7 +56,7 @@ describe('MongoClientInterface:getObjectNoVer', () => {
         };
         sinon.stub(client, 'getCollection').callsFake(() => collection);
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null, 'v0'));
-        sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[4](errors.NoSuchKey));
+        sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[5](errors.NoSuchKey));
         client.getObject('example-bucket', 'example-object', {}, logger, err => {
             assert.deepStrictEqual(err, errors.NoSuchKey);
             return done();
@@ -74,7 +74,7 @@ describe('MongoClientInterface:getObjectNoVer', () => {
         };
         sinon.stub(client, 'getCollection').callsFake(() => collection);
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null, 'v0'));
-        sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[4](errors.InternalError));
+        sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[5](errors.InternalError));
         client.getObject('example-bucket', 'example-object', {}, logger, err => {
             assert.deepStrictEqual(err, errors.InternalError);
             return done();
@@ -94,7 +94,7 @@ describe('MongoClientInterface:getObjectNoVer', () => {
         sinon.stub(client, 'getCollection').callsFake(() => collection);
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null, 'v0'));
         doc.value.last = true;
-        sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[4](null, doc.value));
+        sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[5](null, doc.value));
         client.getObject('example-bucket', 'example-object', {}, logger, (err, res) => {
             assert.deepStrictEqual(err, null);
             assert.deepStrictEqual(res, doc.value);

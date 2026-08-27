@@ -1174,7 +1174,7 @@ describe('MongoClientInterface, putObjectVerCase4', () => {
             .setContentLength(100)
             .setLastModified(new Date());
 
-        sandbox.stub(client, 'getLatestVersion').callsFake((c, objName, vFormat, log, cb) => {
+        sandbox.stub(client, 'getLatestVersion').callsFake((c, objName, vFormat, nonLocalizedFilter, log, cb) => {
             cb(errors.InternalError);
         });
 
@@ -1211,7 +1211,7 @@ describe('MongoClientInterface, putObjectVerCase4', () => {
 
         const updateOneStub = sandbox.stub(collection, 'updateOne').resolves({ modifiedCount: 1 });
 
-        sandbox.stub(client, 'getLatestVersion').callsFake((c, objName, vFormat, log, cb) => {
+        sandbox.stub(client, 'getLatestVersion').callsFake((c, objName, vFormat, nonLocalizedFilter, log, cb) => {
             cb(null, objMD.getValue());
         });
 
@@ -1253,7 +1253,7 @@ describe('MongoClientInterface, putObjectVerCase4', () => {
 
         const objVal = objMD.getValue();
         objVal.versionId = versionId;
-        sandbox.stub(client, 'getLatestVersion').callsFake((c, objName, vFormat, log, cb) => {
+        sandbox.stub(client, 'getLatestVersion').callsFake((c, objName, vFormat, nonLocalizedFilter, log, cb) => {
             cb(null, objVal);
         });
 
@@ -1294,7 +1294,7 @@ describe('MongoClientInterface, putObjectVerCase4', () => {
 
         const updateOneStub = sandbox.stub(collection, 'updateOne').resolves({ modifiedCount: 1 });
 
-        sandbox.stub(client, 'getLatestVersion').callsFake((c, objName, vFormat, log, cb) => {
+        sandbox.stub(client, 'getLatestVersion').callsFake((c, objName, vFormat, nonLocalizedFilter, log, cb) => {
             cb(null, objMD.getValue());
         });
 

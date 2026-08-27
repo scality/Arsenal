@@ -128,7 +128,7 @@ export class DelimiterMaster extends Delimiter {
     _gapCaching: GapCachingInfo;
     _gapBuilding: GapBuildingInfo;
     _refreshedBuildingParams: GapBuildingParams | null;
-    cleanRead: boolean;
+    hideNonLocalizedVersions: boolean;
 
     /**
      * Delimiter listing of master versions.
@@ -140,15 +140,15 @@ export class DelimiterMaster extends Delimiter {
      * @param {Boolean} [parameters.v2]         - indicates whether v2 format
      * @param {String}  [parameters.startAfter] - marker per amazon v2 format
      * @param {String}  [parameters.continuationToken] - obfuscated amazon token
-     * @param {Boolean} [parameters.cleanRead] - metadata hides the versions
-     * whose data is not localized yet (clean room)
+     * @param {Boolean} [parameters.hideNonLocalizedVersions] - metadata hides
+     * the versions whose data is not localized yet
      * @param {RequestLogger} logger            - The logger of the request
      * @param {String}  [vFormat="v0"]          - versioning key format
      */
     constructor(parameters, logger, vFormat?: string) {
         super(parameters, logger, vFormat);
 
-        this.cleanRead = Boolean(parameters.cleanRead);
+        this.hideNonLocalizedVersions = Boolean(parameters.hideNonLocalizedVersions);
 
         if (this.vFormat === BucketVersioningKeyFormat.v0) {
             // override Delimiter's implementation of NotSkipping for
@@ -364,13 +364,12 @@ export class DelimiterMaster extends Delimiter {
     }
 
     filter_onNewMasterKeyV0(key: string, value: string): FilterReturnValue {
-        if (this.cleanRead) {
+        if (this.hideNonLocalizedVersions) {
             const versionIdIndex = key.indexOf(VID_SEP);
             if (versionIdIndex !== -1) {
                 // A version key is seen where a master key is expected: the
-                // master key of that object was hidden by the clean-read
-                // filter, hence the object itself is not visible. Skip its
-                // remaining versions rather than exposing a version key.
+                // master key was hidden as non-localized, so the object is not
+                // visible. Skip its versions instead of exposing a version key.
                 this.setState(<DelimiterMasterFilterState_SkippingVersionsV0>{
                     id: DelimiterMasterFilterStateId.SkippingVersionsV0,
                     masterKey: key.slice(0, versionIdIndex),

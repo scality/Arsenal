@@ -343,7 +343,7 @@ locations[objMD.dataStoreName].isCRR
 ```
 
 Clean read hides those versions from the clients. It is a **per-call flag**
-(`cleanRead`) on the read and listing APIs — `getObject`, `getObjects`,
+(`hideNonLocalizedVersions`) on the read and listing APIs — `getObject`, `getObjects`,
 `getBucketAndObject`, `listObject`, `listMultipartUploads` — so any metadata
 backend can implement the same contract. `MetadataWrapper` sets the flag on
 every such call when the deployment runs with clean read enabled (set on the

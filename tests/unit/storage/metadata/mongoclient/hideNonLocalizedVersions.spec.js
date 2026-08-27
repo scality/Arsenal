@@ -11,7 +11,7 @@ const locationConstraints = {
     'dr-source': { isCRR: true },
 };
 
-describe('MongoClientInterface::cleanRead', () => {
+describe('MongoClientInterface::hideNonLocalizedVersions', () => {
     let client;
 
     beforeEach(done => {
@@ -40,14 +40,14 @@ describe('MongoClientInterface::cleanRead', () => {
             sinon.stub(client, 'getCollection').callsFake(() => collection);
         }
 
-        it('should exclude the non-localized locations when clean read is set', done => {
+        it('should exclude the non-localized locations when the flag is set', done => {
             captureFilter(filter => {
                 assert.deepStrictEqual(filter['value.dataStoreName'], { $nin: ['dr-source'] });
             });
-            client.getObject('example-bucket', 'example-object', { cleanRead: true }, logger, done);
+            client.getObject('example-bucket', 'example-object', { hideNonLocalizedVersions: true }, logger, done);
         });
 
-        it('should not filter when clean read is not set', done => {
+        it('should not filter when the flag is not set', done => {
             captureFilter(filter => {
                 assert.strictEqual(filter['value.dataStoreName'], undefined);
             });
@@ -62,7 +62,7 @@ describe('MongoClientInterface::cleanRead', () => {
             captureFilter(filter => {
                 assert.strictEqual(filter['value.dataStoreName'], undefined);
             });
-            client.getObject('example-bucket', 'example-object', { cleanRead: true }, logger, done);
+            client.getObject('example-bucket', 'example-object', { hideNonLocalizedVersions: true }, logger, done);
         });
 
         it('should not filter when no location configuration is provided', done => {
@@ -71,7 +71,7 @@ describe('MongoClientInterface::cleanRead', () => {
             captureFilter(filter => {
                 assert.strictEqual(filter['value.dataStoreName'], undefined);
             });
-            client.getObject('example-bucket', 'example-object', { cleanRead: true }, logger, done);
+            client.getObject('example-bucket', 'example-object', { hideNonLocalizedVersions: true }, logger, done);
         });
 
         it('should pass the filter to getLatestVersion when the master is a PHD', done => {
@@ -79,16 +79,16 @@ describe('MongoClientInterface::cleanRead', () => {
                 findOne: () => Promise.resolve({ value: { isPHD: true } }),
             };
             sinon.stub(client, 'getCollection').callsFake(() => collection);
-            sinon.stub(client, 'getLatestVersion').callsFake((c, objName, vFormat, log, cb, cleanReadFilter) => {
-                assert.deepStrictEqual(cleanReadFilter, { 'value.dataStoreName': { $nin: ['dr-source'] } });
+            sinon.stub(client, 'getLatestVersion').callsFake((c, objName, vFormat, nonLocalizedFilter, log, cb) => {
+                assert.deepStrictEqual(nonLocalizedFilter, { 'value.dataStoreName': { $nin: ['dr-source'] } });
                 return cb(null, {});
             });
-            client.getObject('example-bucket', 'example-object', { cleanRead: true }, logger, done);
+            client.getObject('example-bucket', 'example-object', { hideNonLocalizedVersions: true }, logger, done);
         });
     });
 
     describe('getObjects', () => {
-        it('should exclude the non-localized locations when clean read is set', done => {
+        it('should exclude the non-localized locations when the flag is set', done => {
             const collection = {
                 find: filter => {
                     assert.deepStrictEqual(filter['value.dataStoreName'], { $nin: ['dr-source'] });
@@ -96,12 +96,12 @@ describe('MongoClientInterface::cleanRead', () => {
                 },
             };
             sinon.stub(client, 'getCollection').callsFake(() => collection);
-            sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[4](null, {}));
-            const objects = [{ key: 'example-object', params: { cleanRead: true } }];
+            sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[5](null, {}));
+            const objects = [{ key: 'example-object', params: { hideNonLocalizedVersions: true } }];
             client.getObjects('example-bucket', objects, logger, done);
         });
 
-        it('should not filter when clean read is not set', done => {
+        it('should not filter when the flag is not set', done => {
             const collection = {
                 find: filter => {
                     assert.strictEqual(filter['value.dataStoreName'], undefined);
@@ -109,7 +109,7 @@ describe('MongoClientInterface::cleanRead', () => {
                 },
             };
             sinon.stub(client, 'getCollection').callsFake(() => collection);
-            sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[4](null, {}));
+            sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[5](null, {}));
             const objects = [{ key: 'example-object', params: {} }];
             client.getObjects('example-bucket', objects, logger, done);
         });
@@ -117,10 +117,10 @@ describe('MongoClientInterface::cleanRead', () => {
 
     describe('getLatestVersion', () => {
         it('should add the filter to the versions query', done => {
-            const cleanReadFilter = { 'value.dataStoreName': { $nin: ['dr-source'] } };
+            const nonLocalizedFilter = { 'value.dataStoreName': { $nin: ['dr-source'] } };
             const collection = {
                 find: filter => {
-                    assert.deepStrictEqual(filter['value.dataStoreName'], cleanReadFilter['value.dataStoreName']);
+                    assert.deepStrictEqual(filter['value.dataStoreName'], nonLocalizedFilter['value.dataStoreName']);
                     return {
                         sort: () => ({
                             limit: () => ({
@@ -130,13 +130,13 @@ describe('MongoClientInterface::cleanRead', () => {
                     };
                 },
             };
-            client.getLatestVersion(collection, 'example-object', 'v0', logger, done, cleanReadFilter);
+            client.getLatestVersion(collection, 'example-object', 'v0', nonLocalizedFilter, logger, done);
         });
     });
 });
 
-describe('MongoReadStream::cleanRead', () => {
-    const cleanReadFilter = { 'value.dataStoreName': { $nin: ['dr-source'] } };
+describe('MongoReadStream::hideNonLocalizedVersions', () => {
+    const nonLocalizedFilter = { 'value.dataStoreName': { $nin: ['dr-source'] } };
 
     function buildQuery(searchOptions, filter) {
         let query;
@@ -156,20 +156,20 @@ describe('MongoReadStream::cleanRead', () => {
     });
 
     it('should add the filter as an $and element', () => {
-        const query = buildQuery(null, cleanReadFilter);
-        assert.deepStrictEqual(query.$and, [cleanReadFilter]);
+        const query = buildQuery(null, nonLocalizedFilter);
+        assert.deepStrictEqual(query.$and, [nonLocalizedFilter]);
     });
 
     it('should keep the filter when the search query targets the same field', () => {
         const searchOptions = { 'value.dataStoreName': { $eq: 'dr-source' } };
-        const query = buildQuery(searchOptions, cleanReadFilter);
+        const query = buildQuery(searchOptions, nonLocalizedFilter);
         assert.deepStrictEqual(query['value.dataStoreName'], { $eq: 'dr-source' });
-        assert.deepStrictEqual(query.$and, [cleanReadFilter]);
+        assert.deepStrictEqual(query.$and, [nonLocalizedFilter]);
     });
 
     it('should keep the $and elements of the search query', () => {
         const searchOptions = { $and: [{ 'value.key': { $eq: 'example-object' } }] };
-        const query = buildQuery(searchOptions, cleanReadFilter);
-        assert.deepStrictEqual(query.$and, [{ 'value.key': { $eq: 'example-object' } }, cleanReadFilter]);
+        const query = buildQuery(searchOptions, nonLocalizedFilter);
+        assert.deepStrictEqual(query.$and, [{ 'value.key': { $eq: 'example-object' } }, nonLocalizedFilter]);
     });
 });

@@ -43,7 +43,7 @@ const variations = [
     { it: '(v1)', vFormat: BucketVersioningKeyFormat.v1 },
 ];
 
-describe('MongoClientInterface::clean read', () => {
+describe('MongoClientInterface::hideNonLocalizedVersions', () => {
     let metadata;
 
     const bucketMD = BucketInfo.fromObj({
@@ -106,19 +106,19 @@ describe('MongoClientInterface::clean read', () => {
         });
     }
 
-    function listMasters(cleanRead, cb) {
+    function listMasters(hideNonLocalizedVersions, cb) {
         return metadata.client.listObject(
             BUCKET_NAME,
-            { listingType: 'DelimiterMaster', maxKeys: 100, cleanRead },
+            { listingType: 'DelimiterMaster', maxKeys: 100, hideNonLocalizedVersions },
             logger,
             cb,
         );
     }
 
-    function listVersions(cleanRead, cb) {
+    function listVersions(hideNonLocalizedVersions, cb) {
         return metadata.client.listObject(
             BUCKET_NAME,
-            { listingType: 'DelimiterVersions', maxKeys: 100, cleanRead },
+            { listingType: 'DelimiterVersions', maxKeys: 100, hideNonLocalizedVersions },
             logger,
             cb,
         );
@@ -201,7 +201,7 @@ describe('MongoClientInterface::clean read', () => {
 
             afterEach(done => metadata.deleteBucket(BUCKET_NAME, logger, done));
 
-            it('should list all the masters when clean read is not set', done => {
+            it('should list all the masters when the flag is not set', done => {
                 listMasters(false, (err, data) => {
                     assert.ifError(err);
                     assert.deepStrictEqual(
@@ -223,7 +223,7 @@ describe('MongoClientInterface::clean read', () => {
                 });
             });
 
-            it('should list all the versions when clean read is not set', done => {
+            it('should list all the versions when the flag is not set', done => {
                 listVersions(false, (err, data) => {
                     assert.ifError(err);
                     // 2 versions each for 'pfx-localized', 'pfx-mixed' and
@@ -269,7 +269,7 @@ describe('MongoClientInterface::clean read', () => {
                         {
                             listingType: 'DelimiterVersions',
                             maxKeys: 1,
-                            cleanRead: true,
+                            hideNonLocalizedVersions: true,
                             keyMarker,
                             versionIdMarker,
                         },
@@ -303,7 +303,7 @@ describe('MongoClientInterface::clean read', () => {
                 metadata.client.getObject(
                     BUCKET_NAME,
                     'pfx-nonlocalized',
-                    { versionId: nonLocalizedVersionId, cleanRead: true },
+                    { versionId: nonLocalizedVersionId, hideNonLocalizedVersions: true },
                     logger,
                     err => {
                         assert(err?.is.NoSuchKey);
@@ -312,11 +312,11 @@ describe('MongoClientInterface::clean read', () => {
                 );
             });
 
-            it('should return a localized version without clean read', done => {
+            it('should return a localized version with the flag set', done => {
                 metadata.client.getObject(
                     BUCKET_NAME,
                     'pfx-localized',
-                    { versionId: localizedV1, cleanRead: true },
+                    { versionId: localizedV1, hideNonLocalizedVersions: true },
                     logger,
                     (err, data) => {
                         assert.ifError(err);
@@ -327,27 +327,42 @@ describe('MongoClientInterface::clean read', () => {
             });
 
             it('should return NoSuchKey on the master of a fully non-localized object', done => {
-                metadata.client.getObject(BUCKET_NAME, 'pfx-nonlocalized', { cleanRead: true }, logger, err => {
-                    assert(err?.is.NoSuchKey);
-                    return done();
-                });
+                metadata.client.getObject(
+                    BUCKET_NAME,
+                    'pfx-nonlocalized',
+                    { hideNonLocalizedVersions: true },
+                    logger,
+                    err => {
+                        assert(err?.is.NoSuchKey);
+                        return done();
+                    },
+                );
             });
 
             it('should fall back to the newest localized version of a mixed object', done => {
                 // Until the master key is maintained at write time (ARSN-618),
                 // the hidden master falls back to the newest visible version.
-                metadata.client.getObject(BUCKET_NAME, 'pfx-mixed', { cleanRead: true }, logger, (err, data) => {
-                    assert.ifError(err);
-                    assert.strictEqual(data.versionId, mixedLocalizedVersionId);
-                    assert.strictEqual(data.dataStoreName, LOCAL_LOCATION);
-                    return done();
-                });
+                metadata.client.getObject(
+                    BUCKET_NAME,
+                    'pfx-mixed',
+                    { hideNonLocalizedVersions: true },
+                    logger,
+                    (err, data) => {
+                        assert.ifError(err);
+                        assert.strictEqual(data.versionId, mixedLocalizedVersionId);
+                        assert.strictEqual(data.dataStoreName, LOCAL_LOCATION);
+                        return done();
+                    },
+                );
             });
 
             it('should filter a batch of objects', done => {
                 const objects = [
-                    { key: 'pfx-localized', params: { cleanRead: true } },
-                    { key: 'pfx-nonlocalized', params: { versionId: nonLocalizedVersionId, cleanRead: true } },
+                    { key: 'pfx-localized', params: { hideNonLocalizedVersions: true } },
+                    {
+                        key: 'pfx-nonlocalized',
+                        params: { versionId: nonLocalizedVersionId, hideNonLocalizedVersions: true },
+                    },
                 ];
                 metadata.client.getObjects(BUCKET_NAME, objects, logger, (err, data) => {
                     assert.ifError(err);
@@ -358,7 +373,7 @@ describe('MongoClientInterface::clean read', () => {
                 });
             });
 
-            it('should not filter anything when clean read is not set', done => {
+            it('should not filter anything when the flag is not set', done => {
                 metadata.client.getObject(
                     BUCKET_NAME,
                     'pfx-nonlocalized',

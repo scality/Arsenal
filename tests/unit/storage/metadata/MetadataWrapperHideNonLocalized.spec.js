@@ -16,13 +16,18 @@ const mongoOpts = {
     },
 };
 
-describe('MetadataWrapper::cleanRead', () => {
+describe('MetadataWrapper::hideNonLocalizedVersions', () => {
     const bucketName = 'test-bucket';
     const objName = 'test-object';
     let client;
 
-    function buildWrapper(cleanRead) {
-        const wrapper = new MetadataWrapper('mongodb', Object.assign({ cleanRead }, mongoOpts), null, logger);
+    function buildWrapper(hideNonLocalizedVersions) {
+        const wrapper = new MetadataWrapper(
+            'mongodb',
+            Object.assign({ hideNonLocalizedVersions }, mongoOpts),
+            null,
+            logger,
+        );
         client = {
             getObject: sinon.stub().callsFake((bucket, key, params, log, cb) => cb(null, {})),
             getObjects: sinon.stub().callsFake((bucket, objects, log, cb) => cb(null, [])),
@@ -41,29 +46,32 @@ describe('MetadataWrapper::cleanRead', () => {
         sinon.restore();
     });
 
-    it('should refuse to enable clean read on a backend not implementing it', () => {
+    it('should refuse the flag on a backend not implementing it', () => {
         assert.throws(
-            () => new MetadataWrapper('mem', { cleanRead: true }, null, logger),
-            /clean read is not supported by the memorybucket backend/,
+            () => new MetadataWrapper('mem', { hideNonLocalizedVersions: true }, null, logger),
+            /not supported by the memorybucket backend/,
         );
     });
 
     it('should set the flag on the read and listing calls', done => {
         const metadata = buildWrapper(true);
         metadata.getObjectMD(bucketName, objName, {}, logger, () => {
-            assert.strictEqual(client.getObject.firstCall.args[2].cleanRead, true);
+            assert.strictEqual(client.getObject.firstCall.args[2].hideNonLocalizedVersions, true);
 
             metadata.getObjectsMD(bucketName, [{ key: objName, params: {} }], logger, () => {
-                assert.strictEqual(client.getObjects.firstCall.args[1][0].params.cleanRead, true);
+                assert.strictEqual(client.getObjects.firstCall.args[1][0].params.hideNonLocalizedVersions, true);
 
                 metadata.getBucketAndObjectMD(bucketName, objName, {}, logger, () => {
-                    assert.strictEqual(client.getBucketAndObject.firstCall.args[2].cleanRead, true);
+                    assert.strictEqual(client.getBucketAndObject.firstCall.args[2].hideNonLocalizedVersions, true);
 
                     metadata.listObject(bucketName, {}, logger, () => {
-                        assert.strictEqual(client.listObject.firstCall.args[1].cleanRead, true);
+                        assert.strictEqual(client.listObject.firstCall.args[1].hideNonLocalizedVersions, true);
 
                         metadata.listMultipartUploads(bucketName, {}, logger, () => {
-                            assert.strictEqual(client.listMultipartUploads.firstCall.args[1].cleanRead, true);
+                            assert.strictEqual(
+                                client.listMultipartUploads.firstCall.args[1].hideNonLocalizedVersions,
+                                true,
+                            );
                             return done();
                         });
                     });
@@ -75,20 +83,20 @@ describe('MetadataWrapper::cleanRead', () => {
     it('should not set the flag on the internal and write calls', done => {
         const metadata = buildWrapper(true);
         metadata.listLifecycleObject(bucketName, {}, logger, () => {
-            assert.strictEqual(client.listLifecycleObject.firstCall.args[1].cleanRead, undefined);
+            assert.strictEqual(client.listLifecycleObject.firstCall.args[1].hideNonLocalizedVersions, undefined);
 
             metadata.putObjectMD(bucketName, objName, {}, {}, logger, () => {
-                assert.strictEqual(client.putObject.firstCall.args[3].cleanRead, undefined);
+                assert.strictEqual(client.putObject.firstCall.args[3].hideNonLocalizedVersions, undefined);
 
                 metadata.deleteObjectMD(bucketName, objName, {}, logger, () => {
-                    assert.strictEqual(client.deleteObject.firstCall.args[2].cleanRead, undefined);
+                    assert.strictEqual(client.deleteObject.firstCall.args[2].hideNonLocalizedVersions, undefined);
                     return done();
                 });
             });
         });
     });
 
-    it('should not set the flag when clean read is disabled', done => {
+    it('should not set the flag when the flag is disabled', done => {
         const metadata = buildWrapper(false);
         const params = {};
         metadata.getObjectMD(bucketName, objName, params, logger, () => {
