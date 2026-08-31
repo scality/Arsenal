@@ -1054,9 +1054,19 @@ class MongoClientInterface {
         const versionId = generateVersionId(this.instanceId, this.replicationGroupId);
         objVal.versionId = versionId;
         const masterKey = formatMasterKey(objName, params.vFormat);
-        c.updateOne({ _id: masterKey }, { $set: { value: objVal }, $setOnInsert: { _id: masterKey } }, { upsert: true })
+        const filter = buildConditionsFilter('putObjectVerCase2', { _id: masterKey }, params.conditions, log);
+        if (!filter) {
+            return cb(errors.InternalError);
+        }
+        return c
+            .updateOne(filter, { $set: { value: objVal }, $setOnInsert: { _id: masterKey } }, { upsert: true })
             .then(() => cb(null, `{"versionId": "${objVal.versionId}"}`))
             .catch(err => {
+                // a master failing the condition degenerates the upsert into an insert, raising a duplicate key error
+                if (hasConditions(params.conditions) && err.code === MONGODB_DUPLICATE_KEY_ERROR) {
+                    log.info('putObjectVerCase2: master condition not met, rejecting write', { masterKey });
+                    return cb(errors.PreconditionFailed);
+                }
                 log.error('putObjectVerCase2: error putting object version', { error: err.message });
                 return cb(errors.InternalError);
             });

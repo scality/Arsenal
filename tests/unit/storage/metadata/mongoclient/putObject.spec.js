@@ -453,6 +453,47 @@ describe('MongoClientInterface:putObjectVerCase2', () => {
             return done();
         });
     });
+
+    it('should apply params.conditions to the master filter', async () => {
+        let capturedFilter;
+        const collection = {
+            updateOne: filter => {
+                capturedFilter = filter;
+                return Promise.resolve();
+            },
+        };
+        const params = { conditions: { number: { $gt: 42 }, string: 'forty-two' } };
+        const putObjectVerCase2 = promisify(client.putObjectVerCase2.bind(client));
+        await putObjectVerCase2(collection, 'example-bucket', 'example-object', {}, params, logger);
+        assert.deepStrictEqual(capturedFilter, {
+            _id: 'example-master-key',
+            'value.number': { $gt: 42 },
+            'value.string': 'forty-two',
+        });
+    });
+
+    it('should return PreconditionFailed when the stored master does not satisfy params.conditions', async () => {
+        const collection = {
+            updateOne: () => Promise.reject({ code: 11000 }),
+        };
+        const params = { conditions: { number: { $gt: 42 } } };
+        const putObjectVerCase2 = promisify(client.putObjectVerCase2.bind(client));
+        await assert.rejects(
+            putObjectVerCase2(collection, 'example-bucket', 'example-object', {}, params, logger),
+            err => err.is.PreconditionFailed,
+        );
+    });
+
+    it('should return a retryable InternalError on a duplicate key without params.conditions', async () => {
+        const collection = {
+            updateOne: () => Promise.reject({ code: 11000 }),
+        };
+        const putObjectVerCase2 = promisify(client.putObjectVerCase2.bind(client));
+        await assert.rejects(
+            putObjectVerCase2(collection, 'example-bucket', 'example-object', {}, {}, logger),
+            err => err.is.InternalError,
+        );
+    });
 });
 
 describe('MongoClientInterface:putObjectVerCase3', () => {

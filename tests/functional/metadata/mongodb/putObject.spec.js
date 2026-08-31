@@ -8,7 +8,7 @@ const { errors, versioning } = require('../../../../index');
 const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
 const BucketInfo = require('../../../../lib/models/BucketInfo').default;
 const MetadataWrapper = require('../../../../lib/storage/metadata/MetadataWrapper');
-const { formatVersionKey } = require('../../../../lib/storage/metadata/mongoclient/utils');
+const { formatMasterKey, formatVersionKey } = require('../../../../lib/storage/metadata/mongoclient/utils');
 const { VersionID } = require('../../../../lib/versioning');
 const { BucketVersioningKeyFormat } = versioning.VersioningConstants;
 
@@ -698,6 +698,51 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
                     );
                     const afterSecond = await getObjectP(versionKey);
                     assert.strictEqual(afterSecond.secondWrite, undefined);
+                });
+            });
+
+            describe(`params.conditions on a suspended-versioning put ${variation.it}`, () => {
+                let putObjectMD;
+                let getObjectP;
+                let masterKey;
+                const baseParams = {
+                    versioning: false,
+                    versionId: '',
+                    repairMaster: null,
+                };
+
+                beforeEach(() => {
+                    putObjectMD = promisify(metadata.putObjectMD.bind(metadata));
+                    getObjectP = promisify(getObject);
+                    masterKey = formatMasterKey(OBJECT_NAME, variation.vFormat);
+                });
+
+                it(`should keep the stored object when the condition is not met ${variation.it}`, async () => {
+                    const objVal = { key: OBJECT_NAME, number: 24 };
+                    await putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, baseParams, logger);
+                    const params = { ...baseParams, conditions: { number: { $gt: 42 } } };
+                    await assert.rejects(
+                        putObjectMD(BUCKET_NAME, OBJECT_NAME, { ...objVal, updated: true }, params, logger),
+                        err => err.is.PreconditionFailed,
+                    );
+                    const object = await getObjectP(masterKey);
+                    assert.strictEqual(object.updated, undefined);
+                });
+
+                it(`should update the object when the condition holds ${variation.it}`, async () => {
+                    const objVal = { key: OBJECT_NAME, number: 24 };
+                    await putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, baseParams, logger);
+                    const params = { ...baseParams, conditions: { number: { $lt: 42 } } };
+                    await putObjectMD(BUCKET_NAME, OBJECT_NAME, { ...objVal, updated: true }, params, logger);
+                    const object = await getObjectP(masterKey);
+                    assert.strictEqual(object.updated, true);
+                });
+
+                it(`should insert a missing object despite the condition ${variation.it}`, async () => {
+                    const params = { ...baseParams, conditions: { number: { $gt: 42 } } };
+                    await putObjectMD(BUCKET_NAME, OBJECT_NAME, { key: OBJECT_NAME, number: 24 }, params, logger);
+                    const object = await getObjectP(masterKey);
+                    assert.strictEqual(object.number, 24);
                 });
             });
         });
