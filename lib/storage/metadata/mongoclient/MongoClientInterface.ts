@@ -1232,20 +1232,23 @@ class MongoClientInterface {
     ) {
         const versionKey = formatVersionKey(objName, params.versionId, params.vFormat);
         const masterKey = formatMasterKey(objName, params.vFormat);
-        c.updateOne(
-            {
-                _id: versionKey,
-            },
-            {
-                $set: {
-                    _id: versionKey,
-                    value: objVal,
+        const versionFilter = buildConditionsFilter('putObjectVerCase4', { _id: versionKey }, params.conditions, log);
+        if (!versionFilter) {
+            return cb(errors.InternalError);
+        }
+        return c
+            .updateOne(
+                versionFilter,
+                {
+                    $set: {
+                        _id: versionKey,
+                        value: objVal,
+                    },
                 },
-            },
-            {
-                upsert: true,
-            },
-        )
+                {
+                    upsert: true,
+                },
+            )
             .then(() =>
                 this.getLatestVersion(c, objName, params.vFormat, log, (err, mstObjVal?) => {
                     if (err?.is.NoSuchKey) {
@@ -1311,6 +1314,11 @@ class MongoClientInterface {
                 }),
             )
             .catch(err => {
+                // a version failing the condition degenerates the upsert into an insert, raising a duplicate key error
+                if (hasConditions(params.conditions) && err.code === MONGODB_DUPLICATE_KEY_ERROR) {
+                    log.info('putObjectVerCase4: version condition not met, rejecting write', { versionKey });
+                    return cb(errors.PreconditionFailed);
+                }
                 log.error('putObjectVerCase4: error upserting object version', { error: err.message });
                 return cb(errors.InternalError);
             });

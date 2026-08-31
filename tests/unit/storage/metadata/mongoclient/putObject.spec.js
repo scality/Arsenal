@@ -665,6 +665,49 @@ describe('MongoClientInterface:putObjectVerCase4', () => {
             return done();
         });
     });
+
+    it('should apply params.conditions to the version filter', async () => {
+        sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[4](null, {}));
+        let capturedFilter;
+        const collection = {
+            updateOne: filter => {
+                capturedFilter = filter;
+                return Promise.resolve();
+            },
+            bulkWrite: () => Promise.resolve({}),
+        };
+        const params = { conditions: { number: { $gt: 42 }, string: 'forty-two' } };
+        const putObjectVerCase4 = promisify(client.putObjectVerCase4.bind(client));
+        await putObjectVerCase4(collection, 'example-bucket', 'example-object', {}, params, logger);
+        assert.deepStrictEqual(capturedFilter, {
+            _id: 'example-version-key',
+            'value.number': { $gt: 42 },
+            'value.string': 'forty-two',
+        });
+    });
+
+    it('should return PreconditionFailed when the existing version does not satisfy params.conditions', async () => {
+        const collection = {
+            updateOne: () => Promise.reject({ code: 11000 }),
+        };
+        const params = { conditions: { number: { $gt: 42 } } };
+        const putObjectVerCase4 = promisify(client.putObjectVerCase4.bind(client));
+        await assert.rejects(
+            putObjectVerCase4(collection, 'example-bucket', 'example-object', {}, params, logger),
+            err => err.is.PreconditionFailed,
+        );
+    });
+
+    it('should return a retryable InternalError on a duplicate key without params.conditions', async () => {
+        const collection = {
+            updateOne: () => Promise.reject({ code: 11000 }),
+        };
+        const putObjectVerCase4 = promisify(client.putObjectVerCase4.bind(client));
+        await assert.rejects(
+            putObjectVerCase4(collection, 'example-bucket', 'example-object', {}, {}, logger),
+            err => err.is.InternalError,
+        );
+    });
 });
 
 describe('MongoClientInterface:putObjectNoVer', () => {

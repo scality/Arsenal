@@ -701,6 +701,44 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
                 });
             });
 
+            describe(`params.conditions on a repairMaster put ${variation.it}`, () => {
+                let putObjectMD;
+                let getObjectP;
+                let versionKey;
+                const baseParams = {
+                    versioning: true,
+                    versionId: VERSION_ID,
+                    repairMaster: true,
+                };
+
+                beforeEach(async () => {
+                    putObjectMD = promisify(metadata.putObjectMD.bind(metadata));
+                    getObjectP = promisify(getObject);
+                    versionKey = formatVersionKey(OBJECT_NAME, VERSION_ID, variation.vFormat);
+                    const objVal = { key: OBJECT_NAME, versionId: VERSION_ID, number: 24 };
+                    await putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, baseParams, logger);
+                });
+
+                it(`should keep the stored version when the condition is not met ${variation.it}`, async () => {
+                    const params = { ...baseParams, conditions: { number: { $gt: 42 } } };
+                    const newVal = { key: OBJECT_NAME, versionId: VERSION_ID, number: 24, updated: true };
+                    await assert.rejects(
+                        putObjectMD(BUCKET_NAME, OBJECT_NAME, newVal, params, logger),
+                        err => err.is.PreconditionFailed,
+                    );
+                    const object = await getObjectP(versionKey);
+                    assert.strictEqual(object.updated, undefined);
+                });
+
+                it(`should update the version when the condition holds ${variation.it}`, async () => {
+                    const params = { ...baseParams, conditions: { number: { $lt: 42 } } };
+                    const newVal = { key: OBJECT_NAME, versionId: VERSION_ID, number: 24, updated: true };
+                    await putObjectMD(BUCKET_NAME, OBJECT_NAME, newVal, params, logger);
+                    const object = await getObjectP(versionKey);
+                    assert.strictEqual(object.updated, true);
+                });
+            });
+
             describe(`params.conditions on a suspended-versioning put ${variation.it}`, () => {
                 let putObjectMD;
                 let getObjectP;
