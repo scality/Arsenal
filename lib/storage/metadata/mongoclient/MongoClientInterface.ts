@@ -64,6 +64,34 @@ const __COUNT_ITEMS = 'countitems';
 const ASYNC_REPAIR_TIMEOUT = 15000;
 const MONGODB_DUPLICATE_KEY_ERROR = 11000;
 
+function hasConditions(conditions: any): boolean {
+    return !!conditions && Object.keys(conditions).length > 0;
+}
+
+/**
+ * builds a mongodb filter from a base filter and an optional conditions object
+ * @return the filter, or null if the conditions could not be translated
+ */
+function buildConditionsFilter(
+    method: string,
+    baseFilter: Record<string, any>,
+    conditions: any,
+    log: werelogs.Logger,
+): Record<string, any> | null {
+    if (!hasConditions(conditions)) {
+        return baseFilter;
+    }
+    try {
+        MongoUtils.translateConditions(0, 'value', baseFilter, conditions);
+    } catch (err) {
+        log.error(`${method}: error creating mongodb filter`, {
+            error: reshapeExceptionError(err as ErrorLike),
+        });
+        return null;
+    }
+    return baseFilter;
+}
+
 const MONGO_CONNECT_TIMEOUT_MS = process.env.MONGO_CONNECT_TIMEOUT_MS;
 const MONGO_SOCKET_TIMEOUT_MS = process.env.MONGO_SOCKET_TIMEOUT_MS;
 const MONGO_POOL_SIZE = process.env.MONGO_POOL_SIZE;
@@ -1077,7 +1105,7 @@ class MongoClientInterface {
                         // Failed condition turns the version upsert into an insert of an existing
                         // _id (dup-key). index 0 = version op in the ordered bulkWrite, so it's
                         // the version write that failed the condition.
-                        if (params.conditions && err.writeErrors?.[0]?.index === 0) {
+                        if (hasConditions(params.conditions) && err.writeErrors?.[0]?.index === 0) {
                             log.info('putObjectVerCase3: version condition not met, rejecting write', {
                                 versionKey,
                             });
@@ -1094,17 +1122,9 @@ class MongoClientInterface {
                 });
         };
 
-        // a version failing the condition degenerates the upsert into an insert, raising a duplicate key error
-        const versionFilter: Record<string, any> = { _id: versionKey };
-        if (params.conditions && Object.keys(params.conditions).length > 0) {
-            try {
-                MongoUtils.translateConditions(0, 'value', versionFilter, params.conditions);
-            } catch (err) {
-                log.error('putObjectVerCase3: error creating mongodb filter', {
-                    error: reshapeExceptionError(err as ErrorLike),
-                });
-                return cb(errors.InternalError);
-            }
+        const versionFilter = buildConditionsFilter('putObjectVerCase3', { _id: versionKey }, params.conditions, log);
+        if (!versionFilter) {
+            return cb(errors.InternalError);
         }
 
         return c
