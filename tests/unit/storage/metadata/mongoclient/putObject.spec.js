@@ -904,3 +904,85 @@ describe('MongoClientInterface:putObjectNoVerWithOplogUpdate trace-context plumb
         );
     });
 });
+
+describe('MongoClientInterface:putObjectNoVerWithOplogUpdate conditions', () => {
+    let client;
+
+    beforeAll(() => {
+        client = new MongoClientInterface({});
+    });
+
+    beforeEach(() => {
+        sinon.stub(utils, 'formatMasterKey').callsFake(() => 'example-master-key');
+    });
+
+    afterEach(() => {
+        sinon.restore();
+    });
+
+    const params = {
+        vFormat: 'v0',
+        needOplogUpdate: true,
+        originOp: 's3:ReplaceArchivedObject',
+        conditions: { number: { $gt: 42 } },
+    };
+
+    it('should apply params.conditions to the find filter', async () => {
+        let capturedFilter;
+        const collection = {
+            findOneAndUpdate: filter => {
+                capturedFilter = filter;
+                return Promise.resolve({ value: { key: 'existing' } });
+            },
+            bulkWrite: () => Promise.resolve({ ok: 1 }),
+        };
+        const putObjectNoVerWithOplogUpdate = promisify(client.putObjectNoVerWithOplogUpdate.bind(client));
+        await putObjectNoVerWithOplogUpdate(collection, 'bucket', 'example', {}, params, log);
+        assert.deepStrictEqual(capturedFilter.$and, [{ 'value.number': { $gt: 42 } }]);
+        assert.deepStrictEqual(capturedFilter._id, 'example-master-key');
+    });
+
+    it('should return PreconditionFailed when the stored object does not satisfy params.conditions', async () => {
+        const collection = {
+            findOneAndUpdate: () => Promise.resolve(null),
+            findOne: () => Promise.resolve({ _id: 'example-master-key' }),
+        };
+        const putObjectNoVerWithOplogUpdate = promisify(client.putObjectNoVerWithOplogUpdate.bind(client));
+        await assert.rejects(
+            putObjectNoVerWithOplogUpdate(collection, 'bucket', 'example', {}, params, log),
+            err => err.is.PreconditionFailed,
+        );
+    });
+
+    it('should exclude deleted objects from the condition mismatch disambiguation', async () => {
+        let capturedFilter;
+        const collection = {
+            findOneAndUpdate: () => Promise.resolve(null),
+            findOne: filter => {
+                capturedFilter = filter;
+                return Promise.resolve(null);
+            },
+        };
+        const putObjectNoVerWithOplogUpdate = promisify(client.putObjectNoVerWithOplogUpdate.bind(client));
+        await assert.rejects(
+            putObjectNoVerWithOplogUpdate(collection, 'bucket', 'example', {}, params, log),
+            err => err.is.InternalError,
+        );
+        assert.deepStrictEqual(capturedFilter, {
+            _id: 'example-master-key',
+            $or: [{ 'value.deleted': { $exists: false } }, { 'value.deleted': { $eq: false } }],
+        });
+    });
+
+    it('should not return PreconditionFailed when the object is missing', async () => {
+        const collection = {
+            findOneAndUpdate: () => Promise.resolve(null),
+            findOne: () => Promise.resolve(null),
+        };
+        const putObjectNoVerWithOplogUpdate = promisify(client.putObjectNoVerWithOplogUpdate.bind(client));
+        await assert.rejects(
+            putObjectNoVerWithOplogUpdate(collection, 'bucket', 'example', {}, params, log),
+            err => err.is.InternalError,
+        );
+    });
+});

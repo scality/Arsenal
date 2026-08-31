@@ -1404,11 +1404,22 @@ class MongoClientInterface {
     ) {
         const key = formatMasterKey(objName, params.vFormat);
         const putFilter = { _id: key };
-        // filter used when finding and updating object
-        const findFilter = {
-            ...putFilter,
+        const notDeletedFilter = {
             $or: [{ 'value.deleted': { $exists: false } }, { 'value.deleted': { $eq: false } }],
         };
+        // filter used when finding and updating object
+        const findFilter: Record<string, any> = {
+            ...putFilter,
+            ...notDeletedFilter,
+        };
+        if (hasConditions(params.conditions)) {
+            const conditionsFilter = buildConditionsFilter('putObjectNoVerWithOplogUpdate', {}, params.conditions, log);
+            if (!conditionsFilter) {
+                return cb(errors.InternalError);
+            }
+            // conditions go under $and to leave the deleted flag $or above untouched
+            findFilter.$and = [conditionsFilter];
+        }
         const updateDeleteFilter = {
             ...putFilter,
             'value.deleted': true,
@@ -1430,6 +1441,19 @@ class MongoClientInterface {
                         )
                         .then(doc => {
                             if (!doc?.value) {
+                                if (hasConditions(params.conditions)) {
+                                    // a transiently deleted document is absent, not a condition mismatch
+                                    return collection.findOne({ ...putFilter, ...notDeletedFilter }).then(existing => {
+                                        if (existing) {
+                                            log.info('internalPutObject: object condition not met, rejecting write', {
+                                                bucket: bucketName,
+                                                object: key,
+                                            });
+                                            return next(errors.PreconditionFailed);
+                                        }
+                                        return next(errors.NoSuchKey);
+                                    });
+                                }
                                 log.error('internalPutObject: unable to find target object to update', {
                                     bucket: bucketName,
                                     object: key,
@@ -1483,6 +1507,9 @@ class MongoClientInterface {
             ],
             err => {
                 if (err) {
+                    if (err instanceof ArsenalError && err.is.PreconditionFailed) {
+                        return cb(err);
+                    }
                     log.error('internalPutObject: error updating object', {
                         bucket: bucketName,
                         object: key,

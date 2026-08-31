@@ -790,6 +790,61 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
                     assert.strictEqual(object.number, 24);
                 });
             });
+
+            describe(`params.conditions on a non-versioned put with oplog update ${variation.it}`, () => {
+                let putObjectMD;
+                let getObjectP;
+                let masterKey;
+                const baseParams = {
+                    versioning: false,
+                    versionId: null,
+                    repairMaster: null,
+                };
+                const oplogParams = {
+                    ...baseParams,
+                    needOplogUpdate: true,
+                    originOp: 's3:ReplaceArchivedObject',
+                };
+
+                beforeEach(async () => {
+                    putObjectMD = promisify(metadata.putObjectMD.bind(metadata));
+                    getObjectP = promisify(getObject);
+                    masterKey = formatMasterKey(OBJECT_NAME, variation.vFormat);
+                    const objVal = { key: OBJECT_NAME, number: 24 };
+                    await putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, baseParams, logger);
+                });
+
+                it(`should keep the stored object when the condition is not met ${variation.it}`, async () => {
+                    const params = { ...oplogParams, conditions: { number: { $gt: 42 } } };
+                    const newVal = { key: OBJECT_NAME, number: 24, updated: true };
+                    await assert.rejects(
+                        putObjectMD(BUCKET_NAME, OBJECT_NAME, newVal, params, logger),
+                        err => err.is.PreconditionFailed,
+                    );
+                    const object = await getObjectP(masterKey);
+                    assert.strictEqual(object.updated, undefined);
+                    assert.strictEqual(object.deleted, undefined);
+                });
+
+                it(`should update the object when the condition holds ${variation.it}`, async () => {
+                    const params = { ...oplogParams, conditions: { number: { $lt: 42 } } };
+                    const newVal = { key: OBJECT_NAME, number: 24, updated: true };
+                    await putObjectMD(BUCKET_NAME, OBJECT_NAME, newVal, params, logger);
+                    const object = await getObjectP(masterKey);
+                    assert.strictEqual(object.updated, true);
+                });
+
+                it(`should support a condition using $or ${variation.it}`, async () => {
+                    const params = {
+                        ...oplogParams,
+                        conditions: { $or: [{ number: { $exists: false } }, { number: { $lt: 42 } }] },
+                    };
+                    const newVal = { key: OBJECT_NAME, number: 24, updated: true };
+                    await putObjectMD(BUCKET_NAME, OBJECT_NAME, newVal, params, logger);
+                    const object = await getObjectP(masterKey);
+                    assert.strictEqual(object.updated, true);
+                });
+            });
         });
     });
 });
