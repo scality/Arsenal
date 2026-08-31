@@ -1347,7 +1347,10 @@ class MongoClientInterface {
             return this.putObjectNoVerWithOplogUpdate(collection, bucketName, objName, value, params, log, cb);
         }
         const key = formatMasterKey(objName, params.vFormat);
-        const putFilter = { _id: key };
+        const putFilter = buildConditionsFilter('putObjectNoVer', { _id: key }, params?.conditions, log);
+        if (!putFilter) {
+            return cb(errors.InternalError);
+        }
         return collection
             .updateOne(
                 putFilter,
@@ -1363,6 +1366,11 @@ class MongoClientInterface {
             )
             .then(() => cb(null))
             .catch(err => {
+                // an object failing the condition degenerates the upsert into an insert, raising a duplicate key error
+                if (hasConditions(params?.conditions) && err.code === MONGODB_DUPLICATE_KEY_ERROR) {
+                    log.info('putObjectNoVer: object condition not met, rejecting write', { key });
+                    return cb(errors.PreconditionFailed);
+                }
                 log.error('putObjectNoVer: error putting obect with no versioning', { error: err.message });
                 return cb(errors.InternalError);
             });
