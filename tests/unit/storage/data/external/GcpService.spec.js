@@ -16,12 +16,12 @@ const secretAccessKey = 'secretaccesskey';
 
 /**
  * Mock HTTP server handler for testing GCP client requests.
- * 
+ *
  * AWS SDK v3 is much stricter than v2 and requires:
  * 1. Proper HTTP status codes (200, 204, etc.)
  * 2. Valid XML response bodies for S3 operations (not just empty responses)
  * 3. Correct Content-Type headers
- * 
+ *
  * In v2, the SDK would accept empty responses (just `res.end()`), but v3
  * will throw "S3 aborted request" or XML parsing errors if the response
  * doesn't match the expected format for each operation.
@@ -67,10 +67,9 @@ function handler(isPathStyle) {
                 // For listObjects: URL should be either '/' (virtual-hosted) or '/{bucket}[/]' (path-style)
                 // For getObject: URL should contain a key like '/{key}' or '/{bucket}/{key}'
                 const urlWithoutQuery = req.url.split('?')[0];
-                const isBucketOperation = urlWithoutQuery === '/' || 
-                                         urlWithoutQuery === `/${Bucket}` || 
-                                         urlWithoutQuery === `/${Bucket}/`;
-                
+                const isBucketOperation =
+                    urlWithoutQuery === '/' || urlWithoutQuery === `/${Bucket}` || urlWithoutQuery === `/${Bucket}/`;
+
                 if (isBucketOperation) {
                     // listObjects - bucket-level request
                     const xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -243,7 +242,7 @@ describe('GcpService request behavior', () => {
             dataStoreName: 'test-location',
         });
 
-    httpServer = http.createServer(invalidDnsBucketNameHandler);
+        httpServer = http.createServer(invalidDnsBucketNameHandler);
         httpServer.on('listening', done);
         httpServer.on('error', err => {
             process.stdout.write(`https server: ${err.stack}\n`);
@@ -265,16 +264,15 @@ describe('GcpService request behavior', () => {
     invalidDnsBucketNames.forEach(bucket => {
         // This test verifies that populateURI() properly sticks to path-based bucket name,
         // when the bucket is not DNS-compatible
-        it(`should not use dns-style if bucket isn't dns compatible: ${bucket}`,
-            done => {
-                client.headBucket({ Bucket: bucket }, err => {
-                    // We expect no error here: the invalidDnsBucketNameHandler() function
-                    // will verify that the `host` has indeed not be updated and that
-                    // bucket name is provided through the `path`.
-                    assert.ifError(err);
-                    done();
-                });
+        it(`should not use dns-style if bucket isn't dns compatible: ${bucket}`, done => {
+            client.headBucket({ Bucket: bucket }, err => {
+                // We expect no error here: the invalidDnsBucketNameHandler() function
+                // will verify that the `host` has indeed not be updated and that
+                // bucket name is provided through the `path`.
+                assert.ifError(err);
+                done();
             });
+        });
     });
 });
 
@@ -336,41 +334,46 @@ describe('GcpService pathStyle tests', () => {
         getBucketVersioning: 'GET',
     };
 
-    methodOperations.forEach(test => it(`GCP::${test.op}`, done => {
-        client[test.op](test.params, (err, data) => {
-            assert.ifError(err);
-            assert.strictEqual(requestLog.length, 1);
-            assert.strictEqual(requestLog[0].method, expectedMethodByOp[test.op]);
-            if (data) {
-                assert(data.$metadata);
-            }
-            done();
-        });
-    }));
-
-    sendOperations.forEach(test => it(`GCP::${test.op}`, done => {
-        client.send(new test.Command(test.params))
-            .then(data => {
+    methodOperations.forEach(test =>
+        it(`GCP::${test.op}`, done => {
+            client[test.op](test.params, (err, data) => {
+                assert.ifError(err);
                 assert.strictEqual(requestLog.length, 1);
                 assert.strictEqual(requestLog[0].method, expectedMethodByOp[test.op]);
-                assert(data && data.$metadata);
-                assert.strictEqual(data.$metadata.httpStatusCode, 200);
-                if (test.op === 'listObjects') {
-                    assert.strictEqual(data.Name, Bucket);
-                    assert.strictEqual(data.IsTruncated, false);
-                    assert(!requestLog[0].url.includes('versions'));
-                    assert(!requestLog[0].url.includes('versioning'));
-                } else if (test.op === 'listVersions') {
-                    assert.strictEqual(data.Name, Bucket);
-                    assert.strictEqual(data.IsTruncated, false);
-                    assert(requestLog[0].url.includes('versions'));
-                } else if (test.op === 'getBucketVersioning') {
-                    assert(requestLog[0].url.includes('versioning'));
+                if (data) {
+                    assert(data.$metadata);
                 }
                 done();
-            })
-            .catch(err => done(err));
-    }));
+            });
+        }),
+    );
+
+    sendOperations.forEach(test =>
+        it(`GCP::${test.op}`, done => {
+            client
+                .send(new test.Command(test.params))
+                .then(data => {
+                    assert.strictEqual(requestLog.length, 1);
+                    assert.strictEqual(requestLog[0].method, expectedMethodByOp[test.op]);
+                    assert(data && data.$metadata);
+                    assert.strictEqual(data.$metadata.httpStatusCode, 200);
+                    if (test.op === 'listObjects') {
+                        assert.strictEqual(data.Name, Bucket);
+                        assert.strictEqual(data.IsTruncated, false);
+                        assert(!requestLog[0].url.includes('versions'));
+                        assert(!requestLog[0].url.includes('versioning'));
+                    } else if (test.op === 'listVersions') {
+                        assert.strictEqual(data.Name, Bucket);
+                        assert.strictEqual(data.IsTruncated, false);
+                        assert(requestLog[0].url.includes('versions'));
+                    } else if (test.op === 'getBucketVersioning') {
+                        assert(requestLog[0].url.includes('versioning'));
+                    }
+                    done();
+                })
+                .catch(err => done(err));
+        }),
+    );
 });
 
 describe('GcpService dnsStyle tests', () => {
@@ -431,41 +434,46 @@ describe('GcpService dnsStyle tests', () => {
         getBucketVersioning: 'GET',
     };
 
-    methodOperations.forEach(test => it(`GCP::${test.op}`, done => {
-        client[test.op](test.params, (err, data) => {
-            assert.ifError(err);
-            assert.strictEqual(requestLog.length, 1);
-            assert.strictEqual(requestLog[0].method, expectedMethodByOp[test.op]);
-            if (data) {
-                assert(data.$metadata);
-            }
-            done();
-        });
-    }));
-
-    sendOperations.forEach(test => it(`GCP::${test.op}`, done => {
-        client.send(new test.Command(test.params))
-            .then(data => {
+    methodOperations.forEach(test =>
+        it(`GCP::${test.op}`, done => {
+            client[test.op](test.params, (err, data) => {
+                assert.ifError(err);
                 assert.strictEqual(requestLog.length, 1);
                 assert.strictEqual(requestLog[0].method, expectedMethodByOp[test.op]);
-                assert(data && data.$metadata);
-                assert.strictEqual(data.$metadata.httpStatusCode, 200);
-                if (test.op === 'listObjects') {
-                    assert.strictEqual(data.Name, Bucket);
-                    assert.strictEqual(data.IsTruncated, false);
-                    assert(!requestLog[0].url.includes('versions'));
-                    assert(!requestLog[0].url.includes('versioning'));
-                } else if (test.op === 'listVersions') {
-                    assert.strictEqual(data.Name, Bucket);
-                    assert.strictEqual(data.IsTruncated, false);
-                    assert(requestLog[0].url.includes('versions'));
-                } else if (test.op === 'getBucketVersioning') {
-                    assert(requestLog[0].url.includes('versioning'));
+                if (data) {
+                    assert(data.$metadata);
                 }
                 done();
-            })
-            .catch(err => done(err));
-    }));
+            });
+        }),
+    );
+
+    sendOperations.forEach(test =>
+        it(`GCP::${test.op}`, done => {
+            client
+                .send(new test.Command(test.params))
+                .then(data => {
+                    assert.strictEqual(requestLog.length, 1);
+                    assert.strictEqual(requestLog[0].method, expectedMethodByOp[test.op]);
+                    assert(data && data.$metadata);
+                    assert.strictEqual(data.$metadata.httpStatusCode, 200);
+                    if (test.op === 'listObjects') {
+                        assert.strictEqual(data.Name, Bucket);
+                        assert.strictEqual(data.IsTruncated, false);
+                        assert(!requestLog[0].url.includes('versions'));
+                        assert(!requestLog[0].url.includes('versioning'));
+                    } else if (test.op === 'listVersions') {
+                        assert.strictEqual(data.Name, Bucket);
+                        assert.strictEqual(data.IsTruncated, false);
+                        assert(requestLog[0].url.includes('versions'));
+                    } else if (test.op === 'getBucketVersioning') {
+                        assert(requestLog[0].url.includes('versioning'));
+                    }
+                    done();
+                })
+                .catch(err => done(err));
+        }),
+    );
 });
 
 describe('GcpService helper behavior', () => {
@@ -493,73 +501,87 @@ describe('GcpService helper behavior', () => {
     });
 
     it('putObjectTagging should merge tags into metadata', done => {
-        jest.spyOn(client, 'headObject')
-            .mockImplementation((params, cb) => cb(null, { Metadata: { existing: 'alpha' } }));
-        const copySpy = jest.spyOn(client, 'copyObject')
+        jest.spyOn(client, 'headObject').mockImplementation((params, cb) =>
+            cb(null, { Metadata: { existing: 'alpha' } }),
+        );
+        const copySpy = jest
+            .spyOn(client, 'copyObject')
             .mockImplementation((params, cb) => cb(null, { CopyObjectResult: {} }));
 
-        client.putObjectTagging({
-            Bucket: 'unit-bucket',
-            Key: 'tagged-key',
-            Tagging: {
-                TagSet: [
-                    { Key: 'team', Value: 'storage' },
-                    { Key: 'env', Value: 'prod' },
-                ],
+        client.putObjectTagging(
+            {
+                Bucket: 'unit-bucket',
+                Key: 'tagged-key',
+                Tagging: {
+                    TagSet: [
+                        { Key: 'team', Value: 'storage' },
+                        { Key: 'env', Value: 'prod' },
+                    ],
+                },
             },
-        }, err => {
-            assert.ifError(err);
-            expect(copySpy).toHaveBeenCalledTimes(1);
-            const metadata = copySpy.mock.calls[0][0].Metadata;
-            assert.strictEqual(metadata.existing, 'alpha');
-            assert.strictEqual(metadata['aws-tag-team'], 'storage');
-            assert.strictEqual(metadata['aws-tag-env'], 'prod');
-            done();
-        });
+            err => {
+                assert.ifError(err);
+                expect(copySpy).toHaveBeenCalledTimes(1);
+                const metadata = copySpy.mock.calls[0][0].Metadata;
+                assert.strictEqual(metadata.existing, 'alpha');
+                assert.strictEqual(metadata['aws-tag-team'], 'storage');
+                assert.strictEqual(metadata['aws-tag-env'], 'prod');
+                done();
+            },
+        );
     });
 
     it('deleteObjectTagging should strip tag metadata and add sentinel', done => {
-        jest.spyOn(client, 'headObject')
-            .mockImplementation((params, cb) => cb(null, {
+        jest.spyOn(client, 'headObject').mockImplementation((params, cb) =>
+            cb(null, {
                 Metadata: {
                     'aws-tag-project': 'zenko',
                 },
-            }));
-        const copySpy = jest.spyOn(client, 'copyObject')
+            }),
+        );
+        const copySpy = jest
+            .spyOn(client, 'copyObject')
             .mockImplementation((params, cb) => cb(null, { CopyObjectResult: {} }));
 
-        client.deleteObjectTagging({
-            Bucket: 'unit-bucket',
-            Key: 'tagged-key',
-        }, err => {
-            assert.ifError(err);
-            const metadata = copySpy.mock.calls[0][0].Metadata;
-            assert.strictEqual(metadata['aws-tag-project'], undefined);
-            done();
-        });
+        client.deleteObjectTagging(
+            {
+                Bucket: 'unit-bucket',
+                Key: 'tagged-key',
+            },
+            err => {
+                assert.ifError(err);
+                const metadata = copySpy.mock.calls[0][0].Metadata;
+                assert.strictEqual(metadata['aws-tag-project'], undefined);
+                done();
+            },
+        );
     });
 
     it('getObjectTagging should return TagSet derived from metadata', done => {
-        jest.spyOn(client, 'headObject')
-            .mockImplementation((params, cb) => cb(null, {
+        jest.spyOn(client, 'headObject').mockImplementation((params, cb) =>
+            cb(null, {
                 Metadata: {
                     'aws-tag-owner': 'arsenal',
                     'aws-tag-color': 'blue',
                     misc: 'ignored',
                 },
-            }));
+            }),
+        );
 
-        client.getObjectTagging({
-            Bucket: 'unit-bucket',
-            Key: 'tagged-key',
-        }, (err, res) => {
-            assert.ifError(err);
-            assert.deepStrictEqual(res.TagSet, [
-                { Key: 'owner', Value: 'arsenal' },
-                { Key: 'color', Value: 'blue' },
-            ]);
-            done();
-        });
+        client.getObjectTagging(
+            {
+                Bucket: 'unit-bucket',
+                Key: 'tagged-key',
+            },
+            (err, res) => {
+                assert.ifError(err);
+                assert.deepStrictEqual(res.TagSet, [
+                    { Key: 'owner', Value: 'arsenal' },
+                    { Key: 'color', Value: 'blue' },
+                ]);
+                done();
+            },
+        );
     });
 
     it('createMultipartUpload should reject if parameters are missing', done => {
@@ -571,26 +593,32 @@ describe('GcpService helper behavior', () => {
     });
 
     it('uploadPart should reject invalid part number', done => {
-        client.uploadPart({
-            Bucket: 'unit-bucket',
-            Key: 'object',
-            UploadId: 'upload',
-            PartNumber: 'NaN',
-        }, err => {
-            assert(err);
-            assert(err.is.InvalidArgument);
-            done();
-        });
+        client.uploadPart(
+            {
+                Bucket: 'unit-bucket',
+                Key: 'object',
+                UploadId: 'upload',
+                PartNumber: 'NaN',
+            },
+            err => {
+                assert(err);
+                assert(err.is.InvalidArgument);
+                done();
+            },
+        );
     });
 
     it('uploadPartCopy should reject if parameters are missing', done => {
-        client.uploadPartCopy({
-            Bucket: 'unit-bucket',
-            Key: 'object',
-        }, err => {
-            assert(err);
-            assert(err.is.InvalidRequest);
-            done();
-        });
+        client.uploadPartCopy(
+            {
+                Bucket: 'unit-bucket',
+                Key: 'object',
+            },
+            err => {
+                assert(err);
+                assert(err.is.InvalidRequest);
+                done();
+            },
+        );
     });
 });
