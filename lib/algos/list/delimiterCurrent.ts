@@ -54,14 +54,16 @@ class DelimiterCurrent extends DelimiterMaster {
         // a limit, MongoDB must sort all matching documents — which can
         // exceed the 100MB memory cap and spill to disk.
         // We use maxScannedLifecycleListingEntries (default 10,000) as the
-        // bound because it counts documents scanned, which maps directly
-        // to cursor documents regardless of bucket format (v0 or v1).
+        // bound, scaled to cursor documents by the factor below.
         // The +1 allows the listing algorithm to detect truncation.
         if (this.maxScannedLifecycleListingEntries) {
-        // In v0 versioned buckets, the cursor iterates both master
-        // and version keys interleaved, so we multiply by 2 to
-        // ensure enough master keys pass through the limit.
-        // In v1 format, only master keys are iterated.
+        // scannedKeys is incremented in addContents(), which only master
+        // keys reach. In v0 versioned buckets the cursor also iterates the
+        // version keys interleaved with them, and those consume the limit
+        // without counting, so we multiply by 2 to ensure enough master
+        // keys pass through. In v1 format, only master keys are iterated.
+        // NOTE: listings whose counter lives in filter() see every entry
+        // and must NOT copy this factor -- see DelimiterVersions._cursorLimit().
             const factor = this.vFormat === 'v0' ? 2 : 1;
             params.limit = (this.maxScannedLifecycleListingEntries * factor) + 1;
         }

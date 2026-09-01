@@ -53,23 +53,68 @@ function getListingKey(key, vFormat) {
                 maxScannedLifecycleListingEntries,
             }, fakeLogger, v);
 
+            // the cursor bound is maxScanned + 1: filter() counts every entry
+            // the cursor delivers, so no v0 doubling (unlike DelimiterCurrent)
+            const expectedLimit = maxScannedLifecycleListingEntries + 1;
             let expectedParams;
             if (v === 'v0') {
-                expectedParams = { gte: `${keyMarker}${VID_SEP}`, lt: 'prf' };
+                expectedParams = {
+                    gte: `${keyMarker}${VID_SEP}`,
+                    lt: 'prf',
+                    limit: expectedLimit,
+                };
             } else {
                 expectedParams = [
                     {
                         gte: `${DbPrefixes.Master}${keyMarker}${VID_SEP}`,
                         lt: `${DbPrefixes.Master}prf`,
+                        limit: expectedLimit,
                     },
                     {
                         gte: `${DbPrefixes.Version}${keyMarker}${VID_SEP}`,
                         lt: `${DbPrefixes.Version}prf`,
+                        limit: expectedLimit,
                     },
                 ];
             }
             assert.deepStrictEqual(delimiter.genMDParams(), expectedParams);
             assert.strictEqual(delimiter.maxScannedLifecycleListingEntries, 2);
+        });
+
+        it('should not bound the cursor when maxScannedLifecycleListingEntries is unset', () => {
+            const delimiter = new DelimiterNonCurrent({ prefix: 'pre' }, fakeLogger, v);
+
+            const params = delimiter.genMDParams();
+            const paramSets = Array.isArray(params) ? params : [params];
+            paramSets.forEach(p => assert.strictEqual(p.limit, undefined));
+        });
+
+        it('should stop on its own before the cursor limit is exhausted', () => {
+            // The invariant the cursor bound rests on: whatever the entries
+            // are, the listing must reach FILTER_END within `limit` of them.
+            // A cursor that runs dry first looks exactly like the end of the
+            // keyspace, and the listing would be reported as complete.
+            const maxScannedLifecycleListingEntries = 5;
+            const delimiter = new DelimiterNonCurrent(
+                { maxScannedLifecycleListingEntries }, fakeLogger, v);
+
+            const params = delimiter.genMDParams();
+            const limit = (Array.isArray(params) ? params[0] : params).limit;
+
+            // worst case for the bound: single-version keys, so every entry
+            // is consumed and nothing is ever added to the result
+            let ended = false;
+            for (let i = 0; i < limit; ++i) {
+                const key = `key${String(i).padStart(3, '0')}`;
+                const value = `{"versionId":"vid${i}","last-modified":"2020-01-01T00:00:00.000Z"}`;
+                if (delimiter.filter({ key: getListingKey(key, v), value }) === FILTER_END) {
+                    ended = true;
+                    break;
+                }
+            }
+
+            assert.strictEqual(ended, true, 'listing did not end within the cursor limit');
+            assert.strictEqual(delimiter.result().IsTruncated, true);
         });
         it('should accept entry starting with prefix', () => {
             const delimiter = new DelimiterNonCurrent({ prefix: 'prefix' }, fakeLogger, v);

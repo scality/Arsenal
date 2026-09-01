@@ -52,23 +52,67 @@ function getListingKey(key, vFormat) {
                 maxScannedLifecycleListingEntries,
             }, fakeLogger, v);
 
+            // the cursor bound is maxScanned + 1: filter() counts every entry
+            // the cursor delivers, so no v0 doubling (unlike DelimiterCurrent)
+            const expectedLimit = maxScannedLifecycleListingEntries + 1;
             let expectedParams;
             if (v === 'v0') {
-                expectedParams = { gt: `premark${inc(VID_SEP)}`, lt: 'prf' };
+                expectedParams = {
+                    gt: `premark${inc(VID_SEP)}`,
+                    lt: 'prf',
+                    limit: expectedLimit,
+                };
             } else {
                 expectedParams = [
                     {
                         gt: `${DbPrefixes.Master}premark${inc(VID_SEP)}`,
                         lt: `${DbPrefixes.Master}prf`,
+                        limit: expectedLimit,
                     },
                     {
                         gt: `${DbPrefixes.Version}premark${inc(VID_SEP)}`,
                         lt: `${DbPrefixes.Version}prf`,
+                        limit: expectedLimit,
                     },
                 ];
             }
             assert.deepStrictEqual(delimiter.genMDParams(), expectedParams);
             assert.strictEqual(delimiter.maxScannedLifecycleListingEntries, 2);
+        });
+
+        it('should not bound the cursor when maxScannedLifecycleListingEntries is unset', () => {
+            const delimiter = new DelimiterOrphanDeleteMarker({ prefix: 'pre' }, fakeLogger, v);
+
+            const params = delimiter.genMDParams();
+            const paramSets = Array.isArray(params) ? params : [params];
+            paramSets.forEach(p => assert.strictEqual(p.limit, undefined));
+        });
+
+        it('should stop on its own before the cursor limit is exhausted', () => {
+            // The invariant the cursor bound rests on. It matters more here
+            // than anywhere else: result() flushes the held candidate as an
+            // orphan whenever the scan budget was NOT reached, so a cursor
+            // that runs dry early publishes a delete marker as orphaned while
+            // unseen versions of that key are still behind the cursor.
+            const maxScannedLifecycleListingEntries = 5;
+            const delimiter = new DelimiterOrphanDeleteMarker(
+                { maxScannedLifecycleListingEntries }, fakeLogger, v);
+
+            const params = delimiter.genMDParams();
+            const limit = (Array.isArray(params) ? params[0] : params).limit;
+
+            let ended = false;
+            for (let i = 0; i < limit; ++i) {
+                const key = `key${String(i).padStart(3, '0')}`;
+                const value = `{"versionId":"vid${i}","last-modified":"2020-01-01T00:00:00.000Z"}`;
+                if (delimiter.filter({ key: getListingKey(key, v), value }) === FILTER_END) {
+                    ended = true;
+                    break;
+                }
+            }
+
+            assert.strictEqual(ended, true, 'listing did not end within the cursor limit');
+            assert.strictEqual(delimiter.result().IsTruncated, true);
         });
         it('should accept entry starting with prefix', () => {
             const delimiter = new DelimiterOrphanDeleteMarker({ prefix: 'prefix' }, fakeLogger, v);

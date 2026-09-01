@@ -54,6 +54,7 @@ type GenMDParamsItem = {
     gt ?: string,
     gte ?: string,
     lt ?: string,
+    limit ?: number,
 };
 
 /**
@@ -138,6 +139,41 @@ export class DelimiterVersions extends Extension {
         }
     }
 
+    /**
+     * Maximum number of entries a backend cursor may return for this
+     * listing, or undefined to leave the cursor unbounded.
+     *
+     * Bounded lifecycle listings (DelimiterNonCurrent,
+     * DelimiterOrphanDeleteMarker) stop themselves once filter() has seen
+     * maxScannedLifecycleListingEntries entries, so anything the cursor
+     * returns past that point is read off the shard and thrown away. On a
+     * bucket whose pages return no results the budget is spent in full on
+     * every page, and an unbounded MongoDB cursor fills a 16MB batch each
+     * time.
+     *
+     * filter() counts EVERY entry the cursor delivers -- master keys and
+     * version keys alike, in both v0 and v1 -- and returns FILTER_END on the
+     * entry after the budget is spent. So the listing consumes at most
+     * maxScannedLifecycleListingEntries + 1 entries, and that is the bound.
+     *
+     * No v0 doubling here. DelimiterCurrent multiplies by 2 on v0 because
+     * its counter lives in addContents(), which v0 version keys never reach.
+     * This counter lives in filter(), which every entry reaches. Copying
+     * that factor would double the bound for nothing.
+     *
+     * @return {number|undefined} - cursor limit, or undefined for no limit
+     */
+    _cursorLimit(): number | undefined {
+        if (!this.maxScannedLifecycleListingEntries) {
+            return undefined;
+        }
+        // +1 so the listing always meets its own stopping condition before
+        // the cursor runs dry: a cursor that ends early is indistinguishable
+        // from the end of the keyspace, and would be reported as a complete
+        // listing.
+        return this.maxScannedLifecycleListingEntries + 1;
+    }
+
     genMDParamsV0() {
         const params: GenMDParamsItem = {};
         if (this.prefix) {
@@ -165,6 +201,10 @@ export class DelimiterVersions extends Extension {
                 params.gt = `${this.keyMarker}${inc(VID_SEP)}`;
             }
         }
+        const limit = this._cursorLimit();
+        if (limit) {
+            params.limit = limit;
+        }
         return params;
     }
 
@@ -190,6 +230,16 @@ export class DelimiterVersions extends Extension {
         } else {
             mParams.lt = inc(DbPrefixes.Master);
             vParams.lt = inc(DbPrefixes.Version);
+        }
+        const limit = this._cursorLimit();
+        if (limit) {
+            // Each range is served by its own cursor and the two are merged,
+            // so either one can supply every entry the listing consumes: a
+            // key with a long version history feeds the V range alone, a run
+            // of single-version keys feeds the M range alone. Each carries
+            // the full bound rather than a share of it.
+            mParams.limit = limit;
+            vParams.limit = limit;
         }
         return [mParams, vParams];
     }
