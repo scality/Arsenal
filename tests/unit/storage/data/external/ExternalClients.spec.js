@@ -535,4 +535,47 @@ describe('AwsClient copy source versioning', () => {
         const command = client._client.send.firstCall.args[0];
         assert.strictEqual(command.input.CopySource, 'srcBackendBucket/srcBucket/srcKey');
     });
+
+    it('uploadPartCopy should target the source version id when present', async () => {
+        client._client = { send: sinon.stub().resolves({ CopyPartResult: { ETag: '"abc"' } }) };
+        const request = {
+            bucketName: 'destBucket',
+            objectKey: key,
+            query: { uploadId: 'id', partNumber: '1' },
+            headers: {},
+        };
+        const config = { getAwsBucketName: () => 'srcBackendBucket' };
+        const eTag = await promisify(client.uploadPartCopy.bind(client))(
+            request,
+            'srcBucket/srcKey',
+            '1234',
+            'awsDataStore',
+            config,
+            'uids',
+        );
+        assert.strictEqual(eTag, 'abc');
+        const command = client._client.send.firstCall.args[0];
+        assert.strictEqual(command.input.CopySource, 'srcBackendBucket/srcBucket/srcKey?versionId=1234');
+    });
+
+    it('uploadPartCopy should not add a versionId to the copy source without one', async () => {
+        client._client = { send: sinon.stub().resolves({ CopyPartResult: { ETag: '"abc"' } }) };
+        const request = {
+            bucketName: 'destBucket',
+            objectKey: key,
+            query: { uploadId: 'id', partNumber: '1' },
+            headers: {},
+        };
+        const config = { getAwsBucketName: () => 'srcBackendBucket' };
+        await promisify(client.uploadPartCopy.bind(client))(
+            request,
+            'srcBucket/srcKey',
+            undefined,
+            'awsDataStore',
+            config,
+            'uids',
+        );
+        const command = client._client.send.firstCall.args[0];
+        assert.strictEqual(command.input.CopySource, 'srcBackendBucket/srcBucket/srcKey');
+    });
 });
