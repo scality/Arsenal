@@ -5,6 +5,7 @@ const { default: NullStream } = require('../../../../lib/s3middleware/nullStream
 const DataWrapper = require('../../../../lib/storage/data/DataWrapper');
 const BucketInfo = require('../../../../lib/models/BucketInfo').default;
 const PassThrough = require('stream').PassThrough;
+const { promisify } = require('util');
 
 describe('DataWrapper', () => {
     let sandbox;
@@ -521,6 +522,7 @@ describe('DataWrapper', () => {
                             request,
                             'destBackend',
                             'sourceKey',
+                            undefined,
                             'sourceBackend',
                             storeMetadataParams,
                             mockConfig,
@@ -529,6 +531,42 @@ describe('DataWrapper', () => {
                     );
                     done();
                 },
+            );
+        });
+
+        it('should pass the source version id to client.copyObject', async () => {
+            mockConfig.getLocationConstraintType.returns('aws_s3');
+            mockClient.copyObject.yields(null, {
+                key: 'copiedKey',
+                dataStoreName: 'destBackend',
+                dataStoreType: 'aws_s3',
+                dataStoreVersionId: 'versionId',
+            });
+
+            await promisify(dataWrapper.copyObject.bind(dataWrapper))(
+                request,
+                'sourceBackend',
+                storeMetadataParams,
+                [{ ...dataLocator[0], dataStoreVersionId: 'sourceVersionId' }],
+                dataStoreContext,
+                destBackendInfo,
+                sourceBucketMD,
+                destBucketMD,
+                null,
+                log,
+            );
+
+            assert(
+                mockClient.copyObject.calledWith(
+                    request,
+                    'destBackend',
+                    'sourceKey',
+                    'sourceVersionId',
+                    'sourceBackend',
+                    storeMetadataParams,
+                    mockConfig,
+                    log,
+                ),
             );
         });
 
