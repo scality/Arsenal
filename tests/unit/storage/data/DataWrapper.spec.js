@@ -521,6 +521,7 @@ describe('DataWrapper', () => {
                             request,
                             'destBackend',
                             'sourceKey',
+                            undefined,
                             'sourceBackend',
                             storeMetadataParams,
                             mockConfig,
