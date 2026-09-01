@@ -312,7 +312,7 @@ describe('DataWrapper', () => {
         it('should handle same-type location copy', done => {
             mockConfig.getLocationConstraintType.withArgs('source').returns('aws_s3');
             mockConfig.getLocationConstraintType.withArgs('dest').returns('aws_s3');
-            mockClient.uploadPartCopy.callsFake((req, dest, srcKey, srcLoc, config, log, cb) =>
+            mockClient.uploadPartCopy.callsFake((req, dest, srcKey, srcVer, srcLoc, config, log, cb) =>
                 process.nextTick(() => cb(null, 'test-etag')),
             );
 
@@ -521,6 +521,7 @@ describe('DataWrapper', () => {
                             request,
                             'destBackend',
                             'sourceKey',
+                            undefined,
                             'sourceBackend',
                             storeMetadataParams,
                             mockConfig,
