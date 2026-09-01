@@ -313,7 +313,7 @@ describe('DataWrapper', () => {
         it('should handle same-type location copy', done => {
             mockConfig.getLocationConstraintType.withArgs('source').returns('aws_s3');
             mockConfig.getLocationConstraintType.withArgs('dest').returns('aws_s3');
-            mockClient.uploadPartCopy.callsFake((req, dest, srcKey, srcLoc, config, log, cb) =>
+            mockClient.uploadPartCopy.callsFake((req, dest, srcKey, srcVer, srcLoc, config, log, cb) =>
                 process.nextTick(() => cb(null, 'test-etag')),
             );
 
@@ -333,6 +333,28 @@ describe('DataWrapper', () => {
                     done();
                 },
             );
+        });
+
+        it('should pass the source version id to client.uploadPartCopy', async () => {
+            mockConfig.getLocationConstraintType.withArgs('source').returns('aws_s3');
+            mockConfig.getLocationConstraintType.withArgs('dest').returns('aws_s3');
+            mockClient.uploadPartCopy.callsFake((req, dest, srcKey, srcVer, srcLoc, config, log, cb) =>
+                process.nextTick(() => cb(null, 'test-etag')),
+            );
+
+            await promisify(dataWrapper.uploadPartCopy.bind(dataWrapper))(
+                {},
+                log,
+                mockBucketMD,
+                'source',
+                'dest',
+                [{ key: 'source-key', dataStoreVersionId: 'source-version' }],
+                {},
+                null,
+                sse,
+            );
+
+            assert.strictEqual(mockClient.uploadPartCopy.firstCall.args[3], 'source-version');
         });
     });
 
