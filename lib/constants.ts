@@ -128,7 +128,7 @@ export const externalBackendHealthCheckTimeout = 5000;
 // as a string as first parameter of the get/delete methods.
 export const clientsRequireStringKey = { sproxyd: true, cdmi: true };
 export const hasCopyPartBackends = { aws_s3: true, gcp: true };
-export const versioningNotImplBackends = { azure: true, gcp: true };
+export const versioningNotImplBackends = { azure: true };
 // user metadata applied on zenko-created objects
 export const zenkoIDHeader = 'x-amz-meta-zenko-instance-id';
 // Default expiration value of the S3 pre-signed URL duration

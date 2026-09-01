@@ -301,7 +301,10 @@ describe('external backend clients', () => {
                 await objectDeleteTaggingAsync(key, bucket.getName(), objectMd, log);
             });
 
-            it(`${backend.name} should fail to set tag on missing key`, async () => {
+            // GCP no longer contacts the backend for tagging, so a
+            // missing backend key cannot fail there
+            const itOnAws = backend.config.type === 'aws' ? it : it.skip;
+            itOnAws(`${backend.name} should fail to set tag on missing key`, async () => {
                 const key = 'externalBackendMissingKey';
                 const bucketData = {
                     _name: 'externalBackendTestBucket',
@@ -577,5 +580,151 @@ describe('AwsClient copy source versioning', () => {
         );
         const command = client._client.send.firstCall.args[0];
         assert.strictEqual(command.input.CopySource, 'srcBackendBucket/srcBucket/srcKey');
+    });
+});
+
+describe('GcpClient versioned data operations', () => {
+    const key = 'versionedTestKey';
+    const keyContext = {
+        bucketName: 'versionedTestBucket',
+        objectKey: key,
+        metaHeaders: {},
+    };
+    // client.put calls back with (err, backendKey, dataStoreVersionId),
+    // which promisify would truncate to the first value
+    const putAsync = (c, ...args) =>
+        new Promise((resolve, reject) =>
+            c.put(...args, (err, backendKey, dataStoreVersionId) =>
+                err ? reject(err) : resolve({ backendKey, dataStoreVersionId }),
+            ),
+        );
+    let client;
+
+    beforeEach(() => {
+        client = new GcpClient({
+            s3Params: {},
+            bucketName: 'gcpTestBucketName',
+            mpuBucket: 'gcpTestMpuBucketName',
+            dataStoreName: 'gcpDataStore',
+            type: 'gcp',
+            supportsVersioning: true,
+        });
+    });
+
+    it('put should accept a delete marker without a backend version id', async () => {
+        client._client = { send: sinon.stub().resolves({}) };
+        const { backendKey, dataStoreVersionId } = await putAsync(
+            client,
+            null,
+            0,
+            { ...keyContext, isDeleteMarker: true },
+            'uids',
+        );
+        assert.strictEqual(backendKey, `${keyContext.bucketName}/${key}`);
+        assert.strictEqual(dataStoreVersionId, undefined);
+        assert(client._client.send.calledOnce);
+    });
+
+    it('put should stack a delete marker when the live version is already deleted', async () => {
+        const noSuchKey = Object.assign(new Error('The specified key does not exist.'), { name: 'NoSuchKey' });
+        client._client = { send: sinon.stub().rejects(noSuchKey) };
+        const { backendKey, dataStoreVersionId } = await putAsync(
+            client,
+            null,
+            0,
+            { ...keyContext, isDeleteMarker: true },
+            'uids',
+        );
+        assert.strictEqual(backendKey, `${keyContext.bucketName}/${key}`);
+        assert.strictEqual(dataStoreVersionId, undefined);
+    });
+
+    it('put should fail without a backend version id on a regular object', async () => {
+        client._client = { send: sinon.stub().resolves({}) };
+        await assert.rejects(putAsync(client, null, 0, keyContext, 'uids'), err => err.is.InternalError);
+    });
+
+    it('put should return the backend version id on a regular object', async () => {
+        client._client = { send: sinon.stub().resolves({ VersionId: '1234' }) };
+        const { dataStoreVersionId } = await putAsync(client, null, 0, keyContext, 'uids');
+        assert.strictEqual(dataStoreVersionId, '1234');
+    });
+
+    it('delete should skip the backend for a version with no backend data', async () => {
+        client._client = { send: sinon.stub().resolves({}) };
+        await promisify(client.delete.bind(client))({ key, deleteVersion: true }, 'uids');
+        assert(client._client.send.notCalled);
+    });
+
+    it('uploadPartCopy should target the source version id when present', async () => {
+        client._client = {
+            uploadPartCopy: sinon.stub().yields(null, { CopyObjectResult: { ETag: '"abc"' } }),
+        };
+        const request = {
+            bucketName: 'destBucket',
+            objectKey: key,
+            query: { uploadId: 'id', partNumber: '1' },
+            headers: {},
+        };
+        const config = { getGcpBucketNames: () => ({ bucketName: 'srcBackendBucket' }) };
+        const eTag = await promisify(client.uploadPartCopy.bind(client))(
+            request,
+            'srcBucket/srcKey',
+            '1234',
+            'gcpDataStore',
+            config,
+            'uids',
+        );
+        assert.strictEqual(eTag, 'abc');
+        const params = client._client.uploadPartCopy.firstCall.args[0];
+        assert.strictEqual(params.CopySource, 'srcBackendBucket/srcBucket/srcKey?versionId=1234');
+    });
+
+    it('uploadPartCopy should not add a versionId to the copy source without one', async () => {
+        client._client = {
+            uploadPartCopy: sinon.stub().yields(null, { CopyObjectResult: { ETag: '"abc"' } }),
+        };
+        const request = {
+            bucketName: 'destBucket',
+            objectKey: key,
+            query: { uploadId: 'id', partNumber: '1' },
+            headers: {},
+        };
+        const config = { getGcpBucketNames: () => ({ bucketName: 'srcBackendBucket' }) };
+        await promisify(client.uploadPartCopy.bind(client))(
+            request,
+            'srcBucket/srcKey',
+            undefined,
+            'gcpDataStore',
+            config,
+            'uids',
+        );
+        const params = client._client.uploadPartCopy.firstCall.args[0];
+        assert.strictEqual(params.CopySource, 'srcBackendBucket/srcBucket/srcKey');
+    });
+
+    it('objectPutTagging should succeed without calling the backend', async () => {
+        client._client = { send: sinon.stub().resolves({}) };
+        await promisify(client.objectPutTagging.bind(client))(
+            key,
+            'bucket',
+            { tags: { k: 'v' }, location: [{}] },
+            'uids',
+        );
+        assert(client._client.send.notCalled);
+    });
+
+    it('objectDeleteTagging should succeed without calling the backend', async () => {
+        client._client = { send: sinon.stub().resolves({}) };
+        await promisify(client.objectDeleteTagging.bind(client))(key, 'bucket', { tags: {}, location: [{}] }, 'uids');
+        assert(client._client.send.notCalled);
+    });
+
+    it('delete should target the stored version id when present', async () => {
+        client._client = { send: sinon.stub().resolves({}) };
+        await promisify(client.delete.bind(client))({ key, deleteVersion: true, dataStoreVersionId: '1234' }, 'uids');
+        assert(client._client.send.calledOnce);
+        const command = client._client.send.firstCall.args[0];
+        assert.strictEqual(command.input.VersionId, '1234');
     });
 });

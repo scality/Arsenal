@@ -13,6 +13,10 @@ const gcpSubresources = new Set([
     'storageClass',
     'tagging',
     'upload_id',
+    // GCS signs the multipart upload initiation, but not the requests
+    // that carry uploadId or partNumber: adding those to the signature
+    // makes GCS answer SignatureDoesNotMatch on every part
+    'uploads',
     'versioning',
     'versions',
     'websiteConfig',
