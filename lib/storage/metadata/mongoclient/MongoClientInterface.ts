@@ -306,11 +306,8 @@ class MongoClientInterface {
         this.replicationGroupId = replicationGroupId;
         this.database = database;
         this.isLocationTransient = isLocationTransient;
-        // a version whose data location still refers to a remote site is
-        // non-localized; the locations come from a configuration file and the
-        // service is restarted when they change, so the query fragment hiding
-        // those versions is built once. Delete markers and PHD keys carry no
-        // dataStoreName, are matched by $nin, and are therefore never hidden.
+        // a version is non-localized when its data location still refers to a remote site; $nin also matches the
+        // dataStoreName missing from delete markers and PHD keys, which must stay visible
         const nonLocalized = Object.entries(locations ?? {})
             .filter(([, location]) => location?.isCRR)
             .map(([name]) => name);
@@ -1581,9 +1578,7 @@ class MongoClientInterface {
                     // If no master found then object is either non existent
                     // or last version is delete marker
                     if (!doc || doc.value.isPHD) {
-                        // an absent master means no localized version at all,
-                        // the write path never pointing the master at a
-                        // non-localized version
+                        // the write path keeps the master on a localized version, so no master means none at all
                         this.getLatestVersion(c, objName, vFormat, nonLocalizedFilter, log, (err, value?) => {
                             if (err?.is.NoSuchKey) {
                                 return next(err);
@@ -1639,7 +1634,7 @@ class MongoClientInterface {
         if (objects.length > 1000) {
             return callback(errorInstances.InternalError.customizeDescription('cannot get more than 1000 objects'));
         }
-        // the flag is set per call, hence identical on all the entries of a batch
+        // the flag is set per call, hence identical on every entry of the batch
         const nonLocalizedFilter = objects.some(({ params }) => params?.hideNonLocalizedVersions)
             ? this.nonLocalizedQuery
             : null;
@@ -1734,8 +1729,7 @@ class MongoClientInterface {
      * @param {Object} c collection
      * @param {String} objName object name
      * @param {String} vFormat bucket version format
-     * @param {Object | null} nonLocalizedFilter query fragment hiding the
-     * non-localized versions, or null when nothing must be hidden
+     * @param {Object | null} nonLocalizedFilter query fragment hiding the non-localized versions
      * @param {Object} log logger
      * @param {Function} cb callback
      * @return {undefined}
@@ -2642,9 +2636,7 @@ class MongoClientInterface {
                 mainStreamParams: Array.isArray(extensionParams) ? extensionParams[0] : extensionParams,
                 secondaryStreamParams: Array.isArray(extensionParams) ? extensionParams[1] : null,
                 mongifiedSearch: params.mongifiedSearch,
-                // the master keys always point at a localized version, the
-                // write path taking care of it: only the version listings
-                // have anything to hide
+                // masters always point at a localized version, so only the version listings have anything to hide
                 hideNonLocalizedVersions: params.hideNonLocalizedVersions && extName === 'DelimiterVersions',
             };
             return this.internalListObject(bucketName, internalParams, extension, vFormat, log, cb);

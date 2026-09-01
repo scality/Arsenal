@@ -96,7 +96,7 @@ are not sent back in the listing, it can take a significant amount of time
 listing and ignoring those entries without sending back any new entry, often
 resulting in listing timeouts on the client side.
 The v1 format has been introduced to provide a solution for this issue (see
-Jira ticket: https://scality.atlassian.net/browse/ARTESCA-3028).
+Jira ticket: <https://scality.atlassian.net/browse/ARTESCA-3028>).
 
 ##### Format of master keys
 
@@ -343,16 +343,11 @@ locations[objMD.dataStoreName].isCRR
 ```
 
 Clean read hides those versions from the clients. It is a **per-call flag**
-(`hideNonLocalizedVersions`) on the read and listing APIs — `getObject`, `getObjects`,
-`getBucketAndObject`, `listObject`, `listMultipartUploads` — so any metadata
+(`hideNonLocalizedVersions`) on the read and listing APIs so any metadata
 backend can implement the same contract. `MetadataWrapper` sets the flag on
 every such call when the deployment runs with clean read enabled (set on the
 user-facing Cloudserver only: Backbeat's internal Cloudserver must see all the
 entries), and refuses to start when the backend does not implement it.
-
-The locations are provided by the embedder through the `locations` parameter.
-They are read once, at construction time: the configuration comes from a
-configuration file and the service is restarted when it changes.
 
 Only the versions are filtered: the master key always points at a localized
 version, which is handled at write time — when the version is written, and
@@ -362,15 +357,3 @@ resolution: an object whose versions are all non-localized simply has no master
 key, and the `getObject` fallback resolving an absent or placeholder master to
 the latest version is filtered so that it reports `NoSuchKey` rather than the
 non-localized version.
-
-Implementation notes:
-
-- filtering happens in the MongoDB query (`value.dataStoreName: { $nin: [...] }`),
-  not after the fetch: listing cursors are limited by `maxKeys`, so filtering
-  documents after the limit would under-fill pages and report a complete
-  listing while entries remain;
-- in a metadata search, the filter is added as an `$and` element after the
-  search query has been merged, so that a search on `dataStoreName` neither
-  overwrites it nor is overwritten by it;
-- delete markers and PHD keys carry no `dataStoreName`, are matched by `$nin`,
-  and are therefore never hidden.
