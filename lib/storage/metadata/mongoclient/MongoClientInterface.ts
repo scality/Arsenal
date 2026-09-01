@@ -307,7 +307,7 @@ class MongoClientInterface {
         this.database = database;
         this.isLocationTransient = isLocationTransient;
         // a version is non-localized when its data location still refers to a remote site; $nin also matches the
-        // dataStoreName missing from delete markers and PHD keys, which must stay visible
+        // empty or absent dataStoreName of delete markers and PHD keys, which must stay visible
         const nonLocalized = Object.entries(locations ?? {})
             .filter(([, location]) => location?.isCRR)
             .map(([name]) => name);
@@ -1578,7 +1578,6 @@ class MongoClientInterface {
                     // If no master found then object is either non existent
                     // or last version is delete marker
                     if (!doc || doc.value.isPHD) {
-                        // the write path keeps the master on a localized version, so no master means none at all
                         this.getLatestVersion(c, objName, vFormat, nonLocalizedFilter, log, (err, value?) => {
                             if (err?.is.NoSuchKey) {
                                 return next(err);
