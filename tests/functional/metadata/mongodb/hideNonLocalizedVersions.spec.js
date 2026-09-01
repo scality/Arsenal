@@ -6,6 +6,7 @@ const { versioning } = require('../../../../index');
 const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
 const BucketInfo = require('../../../../lib/models/BucketInfo').default;
 const MetadataWrapper = require('../../../../lib/storage/metadata/MetadataWrapper');
+const { formatVersionKey } = require('../../../../lib/storage/metadata/mongoclient/utils');
 const genVID = versioning.VersionID.generateVersionId;
 const { BucketVersioningKeyFormat } = versioning.VersioningConstants;
 
@@ -17,7 +18,7 @@ const replicationGroupId = 'RG001';
 const LOCAL_LOCATION = 'us-east-1';
 const SOURCE_LOCATION = 'dr-source';
 
-const locationConstraints = {
+const locations = {
     [LOCAL_LOCATION]: { isCRR: false },
     [SOURCE_LOCATION]: { isCRR: true },
 };
@@ -75,20 +76,18 @@ describe('MongoClientInterface::hideNonLocalizedVersions', () => {
     });
 
     /**
-     * Writes a version of an object, as the clean-room metadata processor
-     * would: the data location is the source location until the data is
-     * copied locally.
+     * Writes a localized version of an object, through the regular write path:
+     * the master key follows the version.
      * @param {String} objName - object key
-     * @param {String} dataStoreName - location of the version data
      * @param {Object} [extraMD] - additional object metadata fields
      * @param {Function} cb - callback(err, versionId)
      * @return {undefined}
      */
-    function putVersion(objName, dataStoreName, extraMD, cb) {
+    function putLocalizedVersion(objName, extraMD, cb) {
         const objVal = Object.assign(
             {
                 key: objName,
-                dataStoreName,
+                dataStoreName: LOCAL_LOCATION,
                 'last-modified': new Date().toJSON(),
             },
             extraMD,
@@ -104,6 +103,32 @@ describe('MongoClientInterface::hideNonLocalizedVersions', () => {
             }
             return cb(null, JSON.parse(res).versionId);
         });
+    }
+
+    /**
+     * Writes a non-localized version of an object: its data location still
+     * refers to the source site until the data is copied locally. Only the
+     * version key is written, the master key never pointing at a
+     * non-localized version (write-time handling, ARSN-618): the version key
+     * is inserted directly, the write path not implementing it yet.
+     * @param {String} objName - object key
+     * @param {String} vFormat - bucket key format
+     * @param {Function} cb - callback(err, versionId)
+     * @return {undefined}
+     */
+    function putNonLocalizedVersion(objName, vFormat, cb) {
+        const versionId = generateVersionId();
+        const objVal = {
+            key: objName,
+            versionId,
+            dataStoreName: SOURCE_LOCATION,
+            'last-modified': new Date().toJSON(),
+        };
+        return metadata.client
+            .getCollection(BUCKET_NAME)
+            .insertOne({ _id: formatVersionKey(objName, versionId, vFormat), value: objVal })
+            .then(() => cb(null, versionId))
+            .catch(cb);
     }
 
     function listMasters(hideNonLocalizedVersions, cb) {
@@ -135,7 +160,7 @@ describe('MongoClientInterface::hideNonLocalizedVersions', () => {
                         readPreference: 'primary',
                         database: DB_NAME,
                     },
-                    getLocationConstraints: () => locationConstraints,
+                    locations,
                 };
                 metadata = new MetadataWrapper(IMPL_NAME, opts, null, logger);
                 metadata.setup(done);
@@ -159,12 +184,14 @@ describe('MongoClientInterface::hideNonLocalizedVersions', () => {
 
     variations.forEach(variation => {
         describe(`vFormat : ${variation.vFormat}`, () => {
-            // 'pfx-localized': both versions localized
-            // 'pfx-mixed': older version localized, newest one not
-            // 'pfx-nonlocalized': single, non-localized version
+            // 'pfx-localized': two localized versions, master on the newest
+            // 'pfx-mixed': localized version kept as master, newer version not
+            //              localized
+            // 'pfx-nonlocalized': single non-localized version, no master
             // 'pfx-deletemarker': localized version, hidden by a delete marker
             let localizedV1;
             let mixedLocalizedVersionId;
+            let mixedNonLocalizedVersionId;
             let nonLocalizedVersionId;
 
             beforeEach(done => {
@@ -176,24 +203,29 @@ describe('MongoClientInterface::hideNonLocalizedVersions', () => {
                         },
                         next => metadata.createBucket(BUCKET_NAME, bucketMD, logger, next),
                         next =>
-                            putVersion('pfx-localized', LOCAL_LOCATION, null, (err, versionId) => {
+                            putLocalizedVersion('pfx-localized', null, (err, versionId) => {
                                 localizedV1 = versionId;
                                 return next(err);
                             }),
-                        next => putVersion('pfx-localized', LOCAL_LOCATION, null, next),
+                        next => putLocalizedVersion('pfx-localized', null, next),
                         next =>
-                            putVersion('pfx-mixed', LOCAL_LOCATION, null, (err, versionId) => {
+                            putLocalizedVersion('pfx-mixed', null, (err, versionId) => {
                                 mixedLocalizedVersionId = versionId;
                                 return next(err);
                             }),
-                        next => putVersion('pfx-mixed', SOURCE_LOCATION, null, next),
                         next =>
-                            putVersion('pfx-nonlocalized', SOURCE_LOCATION, null, (err, versionId) => {
+                            putNonLocalizedVersion('pfx-mixed', variation.vFormat, (err, versionId) => {
+                                mixedNonLocalizedVersionId = versionId;
+                                return next(err);
+                            }),
+                        next =>
+                            putNonLocalizedVersion('pfx-nonlocalized', variation.vFormat, (err, versionId) => {
                                 nonLocalizedVersionId = versionId;
                                 return next(err);
                             }),
-                        next => putVersion('pfx-deletemarker', LOCAL_LOCATION, null, next),
-                        next => putVersion('pfx-deletemarker', '', { isDeleteMarker: true }, next),
+                        next => putLocalizedVersion('pfx-deletemarker', null, next),
+                        next =>
+                            putLocalizedVersion('pfx-deletemarker', { isDeleteMarker: true, dataStoreName: '' }, next),
                     ],
                     done,
                 );
@@ -201,24 +233,9 @@ describe('MongoClientInterface::hideNonLocalizedVersions', () => {
 
             afterEach(done => metadata.deleteBucket(BUCKET_NAME, logger, done));
 
-            it('should list all the masters when the flag is not set', done => {
-                listMasters(false, (err, data) => {
-                    assert.ifError(err);
-                    assert.deepStrictEqual(
-                        data.Contents.map(entry => entry.key),
-                        ['pfx-localized', 'pfx-mixed', 'pfx-nonlocalized'],
-                    );
-                    return done();
-                });
-            });
-
-            it('should list the newest localized version as the current one', done => {
+            it('should list the master as the newest localized version', done => {
                 listMasters(true, (err, data) => {
                     assert.ifError(err);
-                    assert.deepStrictEqual(
-                        data.Contents.map(entry => entry.key),
-                        ['pfx-localized', 'pfx-mixed'],
-                    );
                     const mixed = JSON.parse(data.Contents.find(entry => entry.key === 'pfx-mixed').value);
                     assert.strictEqual(mixed.versionId, mixedLocalizedVersionId);
                     assert.strictEqual(mixed.dataStoreName, LOCAL_LOCATION);
@@ -226,44 +243,14 @@ describe('MongoClientInterface::hideNonLocalizedVersions', () => {
                 });
             });
 
-            it('should hide the objects having no localized version', done => {
-                listMasters(true, (err, data) => {
+            it('should leave the master listing untouched, the master being localized', done => {
+                listMasters(false, (err, unfiltered) => {
                     assert.ifError(err);
-                    assert(!data.Contents.some(entry => entry.key === 'pfx-nonlocalized'));
-                    return done();
-                });
-            });
-
-            it('should page the master listing consistently', done => {
-                const listed = [];
-                const listPage = (marker, next) => {
-                    metadata.client.listObject(
-                        BUCKET_NAME,
-                        {
-                            listingType: 'DelimiterMaster',
-                            maxKeys: 1,
-                            hideNonLocalizedVersions: true,
-                            marker,
-                        },
-                        logger,
-                        (err, data) => {
-                            if (err) {
-                                return next(err);
-                            }
-                            data.Contents.forEach(entry => listed.push(entry.key));
-                            if (!data.IsTruncated) {
-                                return next();
-                            }
-                            // without a delimiter, no NextMarker is returned:
-                            // the last listed key is the next marker
-                            return listPage(listed[listed.length - 1], next);
-                        },
-                    );
-                };
-                listPage(undefined, err => {
-                    assert.ifError(err);
-                    assert.deepStrictEqual(listed, ['pfx-localized', 'pfx-mixed']);
-                    return done();
+                    return listMasters(true, (err, filtered) => {
+                        assert.ifError(err);
+                        assert.deepStrictEqual(filtered.Contents, unfiltered.Contents);
+                        return done();
+                    });
                 });
             });
 
@@ -346,8 +333,8 @@ describe('MongoClientInterface::hideNonLocalizedVersions', () => {
             it('should return NoSuchKey when getting a non-localized version', done => {
                 metadata.client.getObject(
                     BUCKET_NAME,
-                    'pfx-nonlocalized',
-                    { versionId: nonLocalizedVersionId, hideNonLocalizedVersions: true },
+                    'pfx-mixed',
+                    { versionId: mixedNonLocalizedVersionId, hideNonLocalizedVersions: true },
                     logger,
                     err => {
                         assert(err?.is.NoSuchKey);
@@ -370,7 +357,7 @@ describe('MongoClientInterface::hideNonLocalizedVersions', () => {
                 );
             });
 
-            it('should return NoSuchKey on the master of a fully non-localized object', done => {
+            it('should return NoSuchKey on an object having no localized version', done => {
                 metadata.client.getObject(
                     BUCKET_NAME,
                     'pfx-nonlocalized',
@@ -383,7 +370,7 @@ describe('MongoClientInterface::hideNonLocalizedVersions', () => {
                 );
             });
 
-            it('should return the newest localized version of a mixed object', done => {
+            it('should return the master, i.e. the newest localized version', done => {
                 metadata.client.getObject(
                     BUCKET_NAME,
                     'pfx-mixed',

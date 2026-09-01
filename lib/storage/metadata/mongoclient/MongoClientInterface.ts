@@ -82,7 +82,6 @@ const DEFAULT_BUCKET_KEY_FORMAT = [<string>BUCKET_VERSIONS.v0, <string>BUCKET_VE
     : BUCKET_VERSIONS.v1;
 
 const DB_PREFIXES = require('../../../versioning/constants').VersioningConstants.DbPrefixes;
-const VID_SEP = require('../../../versioning/constants').VersioningConstants.VersionId.Separator;
 
 function inc(str) {
     return str ? str.slice(0, str.length - 1) + String.fromCharCode(str.charCodeAt(str.length - 1) + 1) : str;
@@ -101,7 +100,7 @@ export type MongoDBClientInterfaceParameters = {
     authCredentials: MongoUtils.AuthCredentials;
     isLocationTransient: Function;
     shardCollections: boolean;
-    getLocationConstraints?: () => Record<string, { isCRR?: boolean }>;
+    locations?: Record<string, { isCRR?: boolean }>;
 };
 
 export type BucketMetadataMongoDB = Omit<Omit<BucketMetadata, 'quotaMax'>, 'capabilities'> & {
@@ -154,7 +153,6 @@ export type InternalListObjectParams = {
     start?: undefined;
     gt?: undefined;
     hideNonLocalizedVersions?: boolean;
-    resolveMasterKeys?: boolean;
 };
 
 export interface UsedCapacityMetrics {
@@ -264,7 +262,7 @@ class MongoClientInterface {
     private replicationGroupId: string;
     private database: string;
     private isLocationTransient: Function;
-    private getLocationConstraints?: () => Record<string, { isCRR?: boolean }>;
+    private nonLocalizedLocations: string[];
     private shardCollections: boolean;
     private concurrentCursors: number;
     private bucketVFormatCache: LRUCache;
@@ -290,7 +288,7 @@ class MongoClientInterface {
             authCredentials,
             isLocationTransient,
             shardCollections,
-            getLocationConstraints,
+            locations,
         } = params;
         const cred = MongoUtils.credPrefix(authCredentials);
         this.mongoUrl = `mongodb://${cred}${replicaSetHosts}/` + `?w=${writeConcern}&readPreference=${readPreference}`;
@@ -308,7 +306,11 @@ class MongoClientInterface {
         this.replicationGroupId = replicationGroupId;
         this.database = database;
         this.isLocationTransient = isLocationTransient;
-        this.getLocationConstraints = getLocationConstraints;
+        // the locations refer to a remote site until the data is copied
+        // locally: the versions still pointing at them are non-localized. The
+        // location configuration is static, the service being restarted when
+        // it changes.
+        this.nonLocalizedLocations = Object.keys(locations || {}).filter(name => locations![name]?.isCRR);
         this.shardCollections = shardCollections;
 
         this.concurrentCursors = CONCURRENT_CURSORS;
@@ -1521,19 +1523,6 @@ class MongoClientInterface {
     }
 
     /**
-     * Returns the locations referring to a remote site, whose objects have no
-     * local data yet.
-     * @return {String[]} location names
-     */
-    private nonLocalizedLocations(): string[] {
-        const locations = this.getLocationConstraints?.();
-        if (!locations) {
-            return [];
-        }
-        return Object.keys(locations).filter(name => locations[name]?.isCRR);
-    }
-
-    /**
      * Builds the query fragment hiding the non-localized versions. Delete
      * markers and PHD keys carry no dataStoreName, are matched by $nin, and
      * are therefore never hidden.
@@ -1541,14 +1530,10 @@ class MongoClientInterface {
      * @return {Object | null} query fragment, or null when nothing to filter
      */
     private nonLocalizedFilter(hide?: boolean): object | null {
-        if (!hide) {
+        if (!hide || this.nonLocalizedLocations.length === 0) {
             return null;
         }
-        const excluded = this.nonLocalizedLocations();
-        if (excluded.length === 0) {
-            return null;
-        }
-        return { 'value.dataStoreName': { $nin: excluded } };
+        return { 'value.dataStoreName': { $nin: this.nonLocalizedLocations } };
     }
 
     /**
@@ -1606,6 +1591,9 @@ class MongoClientInterface {
                     // If no master found then object is either non existent
                     // or last version is delete marker
                     if (!doc || doc.value.isPHD) {
+                        // an absent master means no localized version at all,
+                        // the write path never pointing the master at a
+                        // non-localized version
                         this.getLatestVersion(c, objName, vFormat, nonLocalizedFilter, log, (err, value?) => {
                             if (err?.is.NoSuchKey) {
                                 return next(err);
@@ -2171,7 +2159,6 @@ class MongoClientInterface {
                     // getting the last version if master not found
                     // (either object non existent or last version is a delete marker)
                     if (!mst) {
-                        // the write paths see every version, localized or not
                         return this.getLatestVersion(c, objName, params.vFormat, null, log, (err, version?) => {
                             if (err) {
                                 return next(err);
@@ -2485,27 +2472,7 @@ class MongoClientInterface {
     ) {
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
         const getLatestVersion = this.getLatestVersion;
-        // when the master keys are resolved, the stream must keep the
-        // non-localized masters so that they can be replaced by the newest
-        // localized version of their object
         const nonLocalizedFilter = this.nonLocalizedFilter(params.hideNonLocalizedVersions);
-        const streamFilter = params.resolveMasterKeys ? null : nonLocalizedFilter;
-        const nonLocalizedLocations = params.resolveMasterKeys ? this.nonLocalizedLocations() : [];
-        const isNonLocalizedMaster = (obj: { key: string; value: string }) => {
-            if (nonLocalizedLocations.length === 0) {
-                return false;
-            }
-            // in v0 the master and version keys share the same range: only the
-            // master keys, which carry no version id, are resolved
-            if (vFormat === BUCKET_VERSIONS.v0 && obj.key.includes(VID_SEP)) {
-                return false;
-            }
-            try {
-                return nonLocalizedLocations.includes(JSON.parse(obj.value).dataStoreName);
-            } catch {
-                return false;
-            }
-        };
         let stream;
         let baseStream;
         let resolvePhdKey;
@@ -2532,46 +2499,46 @@ class MongoClientInterface {
         });
         if (!params.secondaryStreamParams) {
             // listing masters only (DelimiterMaster)
-            stream = new MongoReadStream(c, params.mainStreamParams, params.mongifiedSearch, streamFilter);
+            stream = new MongoReadStream(c, params.mainStreamParams, params.mongifiedSearch, nonLocalizedFilter);
             baseStream = stream;
-            if (vFormat === BUCKET_VERSIONS.v1 || params.resolveMasterKeys) {
+            if (vFormat === BUCKET_VERSIONS.v1) {
                 /**
-                 * Some master keys cannot be listed as they are, and are
-                 * replaced by the newest listable version of their object:
-                 * PHD keys (in v1, where the listing cannot just skip them),
-                 * and the masters pointing at a non-localized version when
-                 * those are hidden. A key with no listable version at all is
-                 * dropped from the listing.
+                 * When listing masters only in v1 we can't just skip PHD
+                 * we have to replace them with the latest version of
+                 * the object.
+                 * Here we use a trasform stream that we pipe with the
+                 * mongo read steam and that checks and replaces the key
+                 * read if it's a PHD
                  *  */
                 resolvePhdKey = new Transform({
                     objectMode: true,
                     transform(obj, encoding, callback) {
-                        if (!Version.isPHD(obj.value) && !isNonLocalizedMaster(obj)) {
-                            return callback(null, obj);
-                        }
-                        const key = vFormat === BUCKET_VERSIONS.v1 ? obj.key.slice(DB_PREFIXES.Master.length) : obj.key;
-                        return getLatestVersion(c, key, vFormat, nonLocalizedFilter, log, (err, version?) => {
-                            if (err) {
-                                // ignoring the keys with no version left: all the
-                                // versions might get deleted before a PHD key gets
-                                // resolved, and an object with no localized version
-                                // must not be listed
-                                if (err.is.NoSuchKey) {
-                                    return callback(null);
+                        if (Version.isPHD(obj.value)) {
+                            const key = obj.key.slice(DB_PREFIXES.Master.length);
+                            getLatestVersion(c, key, BUCKET_VERSIONS.v1, null, log, (err, version?) => {
+                                if (err) {
+                                    // ignoring PHD keys with no versions as all versions
+                                    // might get deleted before the PHD key gets resolved by the listing
+                                    // function
+                                    if (err.is.NoSuchKey) {
+                                        return callback(null);
+                                    }
+                                    log.error('internalListObjectV1: error while getting latest version of PHD key', {
+                                        error: err.message,
+                                    });
+                                    return callback(errors.InternalError);
                                 }
-                                log.error('internalListObject: error while getting latest version of master key', {
-                                    error: err.message,
-                                });
-                                return callback(errors.InternalError);
-                            }
-                            MongoUtils.unserialize(version);
-                            // we keep the master key and only replace the value
-                            const latestVersion = {
-                                key: obj.key,
-                                value: JSON.stringify(version),
-                            };
-                            return callback(null, latestVersion);
-                        });
+                                MongoUtils.unserialize(version);
+                                // we keep the master key and only replace the value
+                                const latestVersion = {
+                                    key: obj.key,
+                                    value: JSON.stringify(version),
+                                };
+                                return callback(null, latestVersion);
+                            });
+                        } else {
+                            callback(null, obj);
+                        }
                     },
                 });
                 stream = stream.pipe(resolvePhdKey);
@@ -2685,10 +2652,10 @@ class MongoClientInterface {
                 mainStreamParams: Array.isArray(extensionParams) ? extensionParams[0] : extensionParams,
                 secondaryStreamParams: Array.isArray(extensionParams) ? extensionParams[1] : null,
                 mongifiedSearch: params.mongifiedSearch,
-                hideNonLocalizedVersions: params.hideNonLocalizedVersions,
-                // a master listing shows the newest localized version of an
-                // object rather than hiding the object entirely
-                resolveMasterKeys: Boolean(params.hideNonLocalizedVersions) && extName === 'DelimiterMaster',
+                // the master keys always point at a localized version, the
+                // write path taking care of it: only the version listings
+                // have anything to hide
+                hideNonLocalizedVersions: params.hideNonLocalizedVersions && extName === 'DelimiterVersions',
             };
             return this.internalListObject(bucketName, internalParams, extension, vFormat, log, cb);
         });

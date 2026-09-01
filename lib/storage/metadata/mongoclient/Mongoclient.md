@@ -350,9 +350,18 @@ every such call when the deployment runs with clean read enabled (set on the
 user-facing Cloudserver only: Backbeat's internal Cloudserver must see all the
 entries), and refuses to start when the backend does not implement it.
 
-The location configuration is provided by the embedder through the
-`getLocationConstraints` parameter, evaluated on each call so that
-configuration updates are picked up.
+The locations are provided by the embedder through the `locations` parameter.
+They are read once, at construction time: the configuration comes from a
+configuration file and the service is restarted when it changes.
+
+Only the versions are filtered: the master key always points at a localized
+version, which is handled at write time — when the version is written, and
+therefore independently from this flag. An object listing (`DelimiterMaster`)
+needs no filtering as a consequence, and neither does the master-key
+resolution: an object whose versions are all non-localized simply has no master
+key, and the `getObject` fallback resolving an absent or placeholder master to
+the latest version is filtered so that it reports `NoSuchKey` rather than the
+non-localized version.
 
 Implementation notes:
 
@@ -364,17 +373,4 @@ Implementation notes:
   search query has been merged, so that a search on `dataStoreName` neither
   overwrites it nor is overwritten by it;
 - delete markers and PHD keys carry no `dataStoreName`, are matched by `$nin`,
-  and are therefore never hidden;
-- a master listing (`DelimiterMaster`) keeps the objects whose current version
-  is not localized, and lists them with their newest localized version — the
-  master key is resolved through `getLatestVersion` on the way out of the
-  stream, the same way a PHD key is resolved. An object with no localized
-  version at all is dropped from the listing;
-- `getObject` resolves a hidden master the same way, so a listing and a `GET`
-  agree on which version is current;
-- in the v0 format, master and version keys share the same key range: when a
-  master key is dropped, `DelimiterMaster` skips the version keys of that
-  object instead of exposing them as master entries.
-
-Write-time master-key handling — keeping the master pointing at the newest
-localized version — is data-driven and independent from this flag.
+  and are therefore never hidden.

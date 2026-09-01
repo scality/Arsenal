@@ -6,7 +6,7 @@ const MongoClientInterface = require('../../../../../lib/storage/metadata/mongoc
 const MongoReadStream = require('../../../../../lib/storage/metadata/mongoclient/readStream');
 const utils = require('../../../../../lib/storage/metadata/mongoclient/utils');
 
-const locationConstraints = {
+const locations = {
     'us-east-1': { isCRR: false },
     'dr-source': { isCRR: true },
 };
@@ -15,9 +15,7 @@ describe('MongoClientInterface::hideNonLocalizedVersions', () => {
     let client;
 
     beforeEach(done => {
-        client = new MongoClientInterface({
-            getLocationConstraints: () => locationConstraints,
-        });
+        client = new MongoClientInterface({ locations });
         sinon.stub(utils, 'formatMasterKey').callsFake(() => 'example-master-key');
         sinon.stub(utils, 'formatVersionKey').callsFake(() => 'example-version-key');
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null, 'v0'));
@@ -55,9 +53,7 @@ describe('MongoClientInterface::hideNonLocalizedVersions', () => {
         });
 
         it('should not filter when no location is flagged as non-localized', done => {
-            client = new MongoClientInterface({
-                getLocationConstraints: () => ({ 'us-east-1': { isCRR: false } }),
-            });
+            client = new MongoClientInterface({ locations: { 'us-east-1': { isCRR: false } } });
             sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null, 'v0'));
             captureFilter(filter => {
                 assert.strictEqual(filter['value.dataStoreName'], undefined);
@@ -74,10 +70,8 @@ describe('MongoClientInterface::hideNonLocalizedVersions', () => {
             client.getObject('example-bucket', 'example-object', { hideNonLocalizedVersions: true }, logger, done);
         });
 
-        it('should pass the filter to getLatestVersion when the master is a PHD', done => {
-            const collection = {
-                findOne: () => Promise.resolve({ value: { isPHD: true } }),
-            };
+        it('should filter the latest version lookup when the master is absent', done => {
+            const collection = { findOne: () => Promise.resolve(null) };
             sinon.stub(client, 'getCollection').callsFake(() => collection);
             sinon.stub(client, 'getLatestVersion').callsFake((c, objName, vFormat, nonLocalizedFilter, log, cb) => {
                 assert.deepStrictEqual(nonLocalizedFilter, { 'value.dataStoreName': { $nin: ['dr-source'] } });
@@ -115,22 +109,35 @@ describe('MongoClientInterface::hideNonLocalizedVersions', () => {
         });
     });
 
-    describe('getLatestVersion', () => {
-        it('should add the filter to the versions query', done => {
-            const nonLocalizedFilter = { 'value.dataStoreName': { $nin: ['dr-source'] } };
-            const collection = {
-                find: filter => {
-                    assert.deepStrictEqual(filter['value.dataStoreName'], nonLocalizedFilter['value.dataStoreName']);
-                    return {
-                        sort: () => ({
-                            limit: () => ({
-                                toArray: () => Promise.resolve([{ value: {} }]),
-                            }),
-                        }),
-                    };
-                },
-            };
-            client.getLatestVersion(collection, 'example-object', 'v0', nonLocalizedFilter, logger, done);
+    describe('listObject', () => {
+        function captureListing(cb) {
+            sinon.stub(client, 'internalListObject').callsFake((bucketName, internalParams) => cb(internalParams));
+        }
+
+        it('should hide the non-localized versions from a version listing', done => {
+            captureListing(internalParams => {
+                assert.strictEqual(internalParams.hideNonLocalizedVersions, true);
+                return done();
+            });
+            client.listObject(
+                'example-bucket',
+                { listingType: 'DelimiterVersions', hideNonLocalizedVersions: true },
+                logger,
+                () => {},
+            );
+        });
+
+        it('should not filter a master listing, the master always being localized', done => {
+            captureListing(internalParams => {
+                assert.strictEqual(internalParams.hideNonLocalizedVersions, false);
+                return done();
+            });
+            client.listObject(
+                'example-bucket',
+                { listingType: 'DelimiterMaster', hideNonLocalizedVersions: true },
+                logger,
+                () => {},
+            );
         });
     });
 });
