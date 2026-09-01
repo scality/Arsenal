@@ -48,8 +48,7 @@ export default function getCanonicalizedResource(request: ArsenalRequest, client
     */
     let queryChar = '?';
     // If bucket specified in hostname, add to resourceString
-    let resourceString = request.gotBucketNameFromHost ?
-        `/${request.bucketName}` : '';
+    let resourceString = request.gotBucketNameFromHost ? `/${request.bucketName}` : '';
     // Add the path to the resourceString
     resourceString += url.parse(request.url || '').pathname || '';
 
@@ -62,8 +61,7 @@ export default function getCanonicalizedResource(request: ArsenalRequest, client
     */
 
     // Specified subresources:
-    const subresources =
-        clientType === 'GCP' ? gcpSubresources : awsSubresources;
+    const subresources = clientType === 'GCP' ? gcpSubresources : awsSubresources;
 
     /*
     If the request includes parameters in the query string,
@@ -84,13 +82,12 @@ export default function getCanonicalizedResource(request: ArsenalRequest, client
     // Check which specified subresources are present in query string,
     // build array with them
     const query = request.query;
-    const presentSubresources = Object.keys(query).filter(val =>
-        subresources.has(val));
+    const presentSubresources = Object.keys(query).filter(val => subresources.has(val));
     // Sort the array and add the subresources and their value (if any)
     // to the resourceString
     presentSubresources.sort();
     resourceString = presentSubresources.reduce((prev, current) => {
-        const ch = (query[current] !== '' ? '=' : '');
+        const ch = query[current] !== '' ? '=' : '';
         const ret = `${prev}${queryChar}${current}${ch}${query[current]}`;
         queryChar = '&';
         return ret;
