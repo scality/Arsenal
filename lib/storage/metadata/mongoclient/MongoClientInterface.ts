@@ -262,7 +262,7 @@ class MongoClientInterface {
     private replicationGroupId: string;
     private database: string;
     private isLocationTransient: Function;
-    private nonLocalizedLocations: string[];
+    private nonLocalizedQuery: object | null;
     private shardCollections: boolean;
     private concurrentCursors: number;
     private bucketVFormatCache: LRUCache;
@@ -306,11 +306,15 @@ class MongoClientInterface {
         this.replicationGroupId = replicationGroupId;
         this.database = database;
         this.isLocationTransient = isLocationTransient;
-        // the locations refer to a remote site until the data is copied
-        // locally: the versions still pointing at them are non-localized. The
-        // location configuration is static, the service being restarted when
-        // it changes.
-        this.nonLocalizedLocations = Object.keys(locations || {}).filter(name => locations![name]?.isCRR);
+        // a version whose data location still refers to a remote site is
+        // non-localized; the locations come from a configuration file and the
+        // service is restarted when they change, so the query fragment hiding
+        // those versions is built once. Delete markers and PHD keys carry no
+        // dataStoreName, are matched by $nin, and are therefore never hidden.
+        const nonLocalized = Object.entries(locations ?? {})
+            .filter(([, location]) => location?.isCRR)
+            .map(([name]) => name);
+        this.nonLocalizedQuery = nonLocalized.length ? { 'value.dataStoreName': { $nin: nonLocalized } } : null;
         this.shardCollections = shardCollections;
 
         this.concurrentCursors = CONCURRENT_CURSORS;
@@ -1523,20 +1527,6 @@ class MongoClientInterface {
     }
 
     /**
-     * Builds the query fragment hiding the non-localized versions. Delete
-     * markers and PHD keys carry no dataStoreName, are matched by $nin, and
-     * are therefore never hidden.
-     * @param {Boolean} [hide] whether the versions must be hidden
-     * @return {Object | null} query fragment, or null when nothing to filter
-     */
-    private nonLocalizedFilter(hide?: boolean): object | null {
-        if (!hide || this.nonLocalizedLocations.length === 0) {
-            return null;
-        }
-        return { 'value.dataStoreName': { $nin: this.nonLocalizedLocations } };
-    }
-
-    /**
      * gets versioned and non versioned object metadata
      * @param {String} bucketName bucket name
      * @param {String} objName object name
@@ -1554,7 +1544,7 @@ class MongoClientInterface {
         cb: ArsenalCallback<ObjectMDData>,
     ) {
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
-        const nonLocalizedFilter = this.nonLocalizedFilter(params?.hideNonLocalizedVersions);
+        const nonLocalizedFilter = params?.hideNonLocalizedVersions ? this.nonLocalizedQuery : null;
         let key;
         async.waterfall(
             [
@@ -1650,9 +1640,9 @@ class MongoClientInterface {
             return callback(errorInstances.InternalError.customizeDescription('cannot get more than 1000 objects'));
         }
         // the flag is set per call, hence identical on all the entries of a batch
-        const nonLocalizedFilter = this.nonLocalizedFilter(
-            objects.some(({ params }) => params?.hideNonLocalizedVersions),
-        );
+        const nonLocalizedFilter = objects.some(({ params }) => params?.hideNonLocalizedVersions)
+            ? this.nonLocalizedQuery
+            : null;
         // Function to process each document
         const processDoc = (doc, objName, params, key, cb) => {
             const versionIdValue = params && params.versionId ? params.versionId : undefined;
@@ -1745,7 +1735,7 @@ class MongoClientInterface {
      * @param {String} objName object name
      * @param {String} vFormat bucket version format
      * @param {Object | null} nonLocalizedFilter query fragment hiding the
-     * non-localized versions, as returned by nonLocalizedFilter()
+     * non-localized versions, or null when nothing must be hidden
      * @param {Object} log logger
      * @param {Function} cb callback
      * @return {undefined}
@@ -2472,7 +2462,7 @@ class MongoClientInterface {
     ) {
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
         const getLatestVersion = this.getLatestVersion;
-        const nonLocalizedFilter = this.nonLocalizedFilter(params.hideNonLocalizedVersions);
+        const nonLocalizedFilter = params.hideNonLocalizedVersions ? this.nonLocalizedQuery : null;
         let stream;
         let baseStream;
         let resolvePhdKey;
