@@ -1,6 +1,6 @@
 # Mongoclient
 
-We introduce a new metadata backend called *mongoclient* for
+We introduce a new metadata backend called _mongoclient_ for
 [MongoDB](https://www.mongodb.com). This backend takes advantage of
 MongoDB being a document store to store the metadata (bucket and
 object attributes) as JSON objects.
@@ -48,15 +48,15 @@ sharded and non-sharded collections.
 
 ### Storing Database Information
 
-We need a special collection called the *Infostore* (stored under the
-name __infostore which is impossible to create through the S3 bucket
+We need a special collection called the _Infostore_ (stored under the
+name \_\_infostore which is impossible to create through the S3 bucket
 naming scheme) to store specific database properties such as the
-unique *uuid* for Orbit.
+unique _uuid_ for Orbit.
 
 ### Storing Bucket Attributes
 
-We need to use a special collection called the *Metastore* (stored
-under the name __metastore which is impossible to create through the
+We need to use a special collection called the _Metastore_ (stored
+under the name \_\_metastore which is impossible to create through the
 S3 bucket naming scheme).
 
 ### Versioning Format
@@ -96,7 +96,7 @@ are not sent back in the listing, it can take a significant amount of time
 listing and ignoring those entries without sending back any new entry, often
 resulting in listing timeouts on the client side.
 The v1 format has been introduced to provide a solution for this issue (see
-Jira ticket: https://scality.atlassian.net/browse/ARTESCA-3028).
+Jira ticket: <https://scality.atlassian.net/browse/ARTESCA-3028>).
 
 ##### Format of master keys
 
@@ -113,14 +113,14 @@ Jira ticket: https://scality.atlassian.net/browse/ARTESCA-3028).
 ##### Sizing considerations
 
 - On non-versioned buckets, stored objects have one key containing the object
- metadata.
+  metadata.
 
 - On versioned buckets, stored objects have one master key containing the latest
- version's metadada, and one key per object version or delete marker.
+  version's metadada, and one key per object version or delete marker.
 
 - On versioning-suspended buckets, all version and master keys created before
- the suspension of versioning are kept, and all new puts only update the master
- key.
+  the suspension of versioning are kept, and all new puts only update the master
+  key.
 
 #### v1
 
@@ -157,17 +157,17 @@ on top of the delete marker or if the delete marker is deleted.
 Sizing is roughly equivalent to a v0 format bucket.
 
 - On non-versioned buckets, similar to v0, stored objects have one key
- containing the object metadata.
+  containing the object metadata.
 
 - On versioned buckets, stored objects have one master key containing
- the latest version's metadada, and one key per object version or delete
- marker, however if the last version is a delete marker the master is not
- kept. This makes the storage requirements of the v1 buckets slightly smaller
- than v0.
+  the latest version's metadada, and one key per object version or delete
+  marker, however if the last version is a delete marker the master is not
+  kept. This makes the storage requirements of the v1 buckets slightly smaller
+  than v0.
 
 - On versioning-suspended buckets, all version and master keys created
- before the suspension of versioning are kept, and all new puts only update
- the master key. this is the same behavior as v0.
+  before the suspension of versioning are kept, and all new puts only update
+  the master key. this is the same behavior as v0.
 
 #### Migration from v0 to v1
 
@@ -192,7 +192,7 @@ Mongo) is one possible normal state for an empty bucket.
 
 #### DeleteBucket()
 
-In this case the bucket is *locked* by the upper layers (use of a
+In this case the bucket is _locked_ by the upper layers (use of a
 transient delete flag) so we don't have to worry about that and by the
 fact the bucket is empty neither (which is also checked by the upper
 layers).
@@ -268,7 +268,7 @@ version and we return it.
 #### Listing Objects
 
 The mongoclient backend implements a readable key/value stream called
-*MongoReadStream* that follows the LevelDB duck typing interface used
+_MongoReadStream_ that follows the LevelDB duck typing interface used
 in Arsenal/lib/algos listing algorithms. Note it does not require any
 LevelDB package.
 
@@ -306,7 +306,7 @@ collection level.
 
 At object level if an object was inserted for example we'll find all of the object's
 data in the event. Update events contain the change that occured to an object, and
-delete events don't contain anything (only the object's _id).
+delete events don't contain anything (only the object's \_id).
 
 To keep the latest object's metadata before it got deleted in the oplog, we update
 the full object setting a deletion flag before deleting the object. This adds an
@@ -330,3 +330,30 @@ In non versioned buckets, master object events are the ones to be processed.
 In versioning suspended buckets, both master and version events should be processed,
 as the master object itself is considered a null version. No special case is present
 here as the master object is always present.
+
+## Clean Read
+
+In a clean-room D/R deployment, object metadata is replicated before the object
+data is copied locally: until the copy happens, the version's `location` and
+`dataStoreName` still refer to the remote source site. Such a version is
+**non-localized**, the condition being:
+
+```
+locations[objMD.dataStoreName].isCRR
+```
+
+Clean read hides those versions from the clients. It is a **per-call flag**
+(`hideNonLocalizedVersions`) on the read and listing APIs so any metadata
+backend can implement the same contract. `MetadataWrapper` sets the flag on
+every such call when the deployment runs with clean read enabled (set on the
+user-facing Cloudserver only: Backbeat's internal Cloudserver must see all the
+entries), and refuses to start when the backend does not implement it.
+
+Only the versions are filtered: the master key always points at a localized
+version, which is handled at write time — when the version is written, and
+therefore independently from this flag. An object listing (`DelimiterMaster`)
+needs no filtering as a consequence, and neither does the master-key
+resolution: an object whose versions are all non-localized simply has no master
+key, and the `getObject` fallback resolving an absent or placeholder master to
+the latest version is filtered so that it reports `NoSuchKey` rather than the
+non-localized version.
