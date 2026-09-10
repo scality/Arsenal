@@ -3,8 +3,7 @@ const werelogs = require('werelogs');
 const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
 const errors = require('../../../../../lib/errors').default;
 const sinon = require('sinon');
-const MongoClientInterface =
-    require('../../../../../lib/storage/metadata/mongoclient/MongoClientInterface');
+const MongoClientInterface = require('../../../../../lib/storage/metadata/mongoclient/MongoClientInterface');
 const utils = require('../../../../../lib/storage/metadata/mongoclient/utils');
 
 describe('MongoClientInterface:getObjectNoVer', () => {

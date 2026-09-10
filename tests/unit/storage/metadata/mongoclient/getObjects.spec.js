@@ -3,8 +3,7 @@ const werelogs = require('werelogs');
 const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
 const errors = require('../../../../../lib/errors').default;
 const sinon = require('sinon');
-const MongoClientInterface =
-    require('../../../../../lib/storage/metadata/mongoclient/MongoClientInterface');
+const MongoClientInterface = require('../../../../../lib/storage/metadata/mongoclient/MongoClientInterface');
 const utils = require('../../../../../lib/storage/metadata/mongoclient/utils');
 
 describe('MongoClientInterface:getObjects', () => {
@@ -107,7 +106,7 @@ describe('MongoClientInterface:getObjects', () => {
     });
 
     it('should return empty document if version is not set and not found', done => {
-        const objects = [{ key: 'example-object', params: { } }];
+        const objects = [{ key: 'example-object', params: {} }];
         const doc = {
             _id: 'example-key1',
             value: {
@@ -137,7 +136,7 @@ describe('MongoClientInterface:getObjects', () => {
     });
 
     it('should return latest version if version is found and master is PHD', done => {
-        const objects = [{ key: 'example-object', params: { } }];
+        const objects = [{ key: 'example-object', params: {} }];
         const doc = {
             _id: 'example-key1',
             value: {
@@ -156,12 +155,14 @@ describe('MongoClientInterface:getObjects', () => {
 
         client.getObjects('example-bucket', objects, logger, (err, res) => {
             assert.deepStrictEqual(err, null);
-            assert.deepStrictEqual(res, [{
-                doc: doc.value,
-                key: objects[0].key,
-                versionId: undefined,
-                err: null,
-            }]);
+            assert.deepStrictEqual(res, [
+                {
+                    doc: doc.value,
+                    key: objects[0].key,
+                    versionId: undefined,
+                    err: null,
+                },
+            ]);
             return done();
         });
     });
@@ -293,7 +294,7 @@ describe('MongoClientInterface:getObjects', () => {
         const objects = [];
         const bucketVFormat = 'v0';
         for (let i = 1; i <= N; i++) {
-            objects.push({ key: `example-object-${i}`, params: { } });
+            objects.push({ key: `example-object-${i}`, params: {} });
         }
 
         const docTemplate = {
