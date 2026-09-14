@@ -352,9 +352,19 @@ export class DelimiterVersions extends Extension {
         if (this.nullKey) {
             if (this.nullKey.key !== nonversionedKey
                 || this.nullKey.versionId < <string> keyVersionId) {
-                this.handleKey(
+                const ret = this.handleKey(
                     this.nullKey.key, this.nullKey.versionId, this.nullKey.value);
                 this.nullKey = null;
+                // If the cached null key did not fit in the results, the
+                // listing is complete: return immediately instead of
+                // carrying on scanning keys that cannot be returned
+                // anymore. Other return values only qualify the cached
+                // null key, so they are discarded: the current key is
+                // evaluated on its own below, taking into account any
+                // state change triggered by the above call.
+                if (ret === FILTER_END) {
+                    return FILTER_END;
+                }
             }
         }
         if (keyVersionId === '') {
