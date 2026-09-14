@@ -2,7 +2,7 @@
 
 const assert = require('assert');
 const DelimiterVersions = require('../../../../lib/algos/list/delimiterVersions').DelimiterVersions;
-const { FILTER_ACCEPT, FILTER_SKIP, SKIP_NONE, inc } = require('../../../../lib/algos/list/tools');
+const { FILTER_ACCEPT, FILTER_SKIP, FILTER_END, SKIP_NONE, inc } = require('../../../../lib/algos/list/tools');
 const Werelogs = require('werelogs').Logger;
 const logger = new Werelogs('listTest');
 const zpad = require('../../helpers').zpad;
@@ -1622,6 +1622,47 @@ function getTestListing(mdParams, data, vFormat) {
                     },
                 ],
                 IsTruncated: false,
+            });
+        });
+
+        it('should end the listing when maxKeys is reached while flushing a null key', () => {
+            // Series of consecutive null keys: each new null key
+            // flushes the previously cached one into the results, so
+            // the listing has to end as soon as such a flushed key
+            // does not fit in the results anymore, instead of keeping
+            // on scanning null keys that cannot be returned.
+            const listing = new DelimiterVersions({ maxKeys: 2 }, logger, vFormat);
+            const filterResults = [];
+            for (let i = 0; i < 100; ++i) {
+                const ret = listing.filter({
+                    key: getListingKey(`key${zpad(i)}${VID_SEP}`, vFormat),
+                    value: `{"versionId":"v${i}"}`,
+                });
+                filterResults.push(ret);
+                if (ret === FILTER_END) {
+                    break;
+                }
+            }
+            // the two first null keys fill the results, the third one
+            // is cached, then the fourth one triggers the flush of the
+            // third one which does not fit: the listing ends there
+            assert.deepStrictEqual(filterResults, [
+                FILTER_ACCEPT, FILTER_ACCEPT, FILTER_ACCEPT, FILTER_END,
+            ]);
+            assert.deepStrictEqual(listing.result(), {
+                CommonPrefixes: [],
+                Versions: [{
+                    key: `key${zpad(0)}`,
+                    value: '{"versionId":"v0"}',
+                    versionId: 'v0',
+                }, {
+                    key: `key${zpad(1)}`,
+                    value: '{"versionId":"v1"}',
+                    versionId: 'v1',
+                }],
+                IsTruncated: true,
+                NextKeyMarker: `key${zpad(1)}`,
+                NextVersionIdMarker: 'v1',
             });
         });
 
