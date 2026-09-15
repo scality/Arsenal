@@ -10,6 +10,7 @@ const { versioning } = require('../../../../index');
 const { BucketVersioningKeyFormat } = versioning.VersioningConstants;
 const sinon = require('sinon');
 const MongoReadStream = require('../../../../lib/storage/metadata/mongoclient/readStream');
+const MongoUtils = require('../../../../lib/storage/metadata/mongoclient/utils');
 const { DelimiterMaster } = require('../../../../lib/algos/list/delimiterMaster');
 const { FILTER_SKIP } = require('../../../../lib/algos/list/tools');
 
@@ -491,6 +492,43 @@ describe('MongoClientInterface::metadata.listObject', () => {
                         assert.strictEqual(data.Versions.length, 300);
                         const listedObjectNames = data.Versions.map(x => x.key);
                         assert(!listedObjectNames.includes(objVal.key));
+                        return next();
+                    }),
+                ], done);
+            });
+
+            it('Should not list objects tagged for deletion when the search is a top-level OR', done => {
+                const objVal = {
+                    key: 'pfx4-test-object',
+                };
+                const versionParams = {
+                    versioning: true,
+                };
+                const mongifiedSearch = {};
+                MongoUtils.translateConditions(0, 'value', mongifiedSearch, {
+                    $or: [
+                        { key: 'pfx1-test-object' },
+                        { key: 'pfx4-test-object' },
+                    ],
+                });
+                const params = {
+                    listingType: 'DelimiterMaster',
+                    mongifiedSearch,
+                };
+                async.series([
+                    next => metadata.putObjectMD(BUCKET_NAME, objVal.key, objVal, versionParams,
+                        logger, next),
+                    next => flagObjectForDeletion(objVal.key, next),
+                    next => metadata.listObject(BUCKET_NAME, params, logger, (err, data) => {
+                        try {
+                            assert.ifError(err);
+                            const listedObjectNames = data.Contents.map(x => x.key);
+                            assert(!listedObjectNames.includes(objVal.key),
+                                'object flagged for deletion should not be listed');
+                            assert.deepStrictEqual(listedObjectNames, ['pfx1-test-object']);
+                        } catch (assertErr) {
+                            return next(assertErr);
+                        }
                         return next();
                     }),
                 ], done);

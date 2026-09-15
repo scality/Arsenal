@@ -12,6 +12,9 @@ const locations = {
 };
 
 const nonLocalizedFilter = { 'value.dataStoreName': { $nin: ['dr-source'] } };
+const notDeletedFilter = {
+    $or: [{ 'value.deleted': { $exists: false } }, { 'value.deleted': { $eq: false } }],
+};
 
 describe('MongoClientInterface::hideNonLocalizedVersions', () => {
     let client;
@@ -197,13 +200,20 @@ describe('MongoReadStream::hideNonLocalizedVersions', () => {
     it('should keep the filter when the search query targets the same field', () => {
         const searchOptions = { 'value.dataStoreName': { $eq: 'dr-source' } };
         const query = buildQuery(searchOptions, nonLocalizedFilter);
-        assert.deepStrictEqual(query['value.dataStoreName'], { $eq: 'dr-source' });
-        assert.deepStrictEqual(query.$and, [nonLocalizedFilter]);
+        assert.deepStrictEqual(query.$and, [notDeletedFilter, searchOptions, nonLocalizedFilter]);
     });
 
     it('should keep the $and elements of the search query', () => {
         const searchOptions = { $and: [{ 'value.key': { $eq: 'example-object' } }] };
         const query = buildQuery(searchOptions, nonLocalizedFilter);
-        assert.deepStrictEqual(query.$and, [{ 'value.key': { $eq: 'example-object' } }, nonLocalizedFilter]);
+        assert.deepStrictEqual(query.$and, [notDeletedFilter, searchOptions, nonLocalizedFilter]);
+    });
+
+    it('should keep the deletion filter when the search query is a top-level $or', () => {
+        const searchOptions = {
+            $or: [{ 'value.key': { $eq: 'example-object' } }, { 'value.key': { $eq: 'other-object' } }],
+        };
+        const query = buildQuery(searchOptions, null);
+        assert.deepStrictEqual(query.$and, [notDeletedFilter, searchOptions]);
     });
 });
