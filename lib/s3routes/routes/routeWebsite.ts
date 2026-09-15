@@ -36,11 +36,7 @@ export default function routerWebsite(
                     }
                     // note that key might have been modified in websiteGet
                     // api to add index document
-                    return routesUtils.redirectRequest(redirectInfo,
-                        // TODO ARSN-217 encrypted does not exists in request.connection
-                        // @ts-ignore
-                        key, request.connection.encrypted,
-                        response, request.headers.host!, resMetaHeaders, log);
+                    return routesUtils.redirectRequest(redirectInfo, key, request, response, resMetaHeaders, log);
                 }
                 // user has their own error page
                 if (err && dataGetInfo) {
@@ -69,11 +65,7 @@ export default function routerWebsite(
                             'HEAD', redirectInfo, null, dataRetrievalParams,
                             response, resMetaHeaders, log);
                     }
-                    return routesUtils.redirectRequest(redirectInfo,
-                        // TODO ARSN-217 encrypted does not exists in request.connection
-                        // @ts-ignore
-                        key, request.connection.encrypted,
-                        response, request.headers.host!, resMetaHeaders, log);
+                    return routesUtils.redirectRequest(redirectInfo, key, request, response, resMetaHeaders, log);
                 }
                 // could redirect on err so check for redirectInfo first
                 if (err) {
