@@ -264,6 +264,7 @@ class MongoClientInterface {
     private database: string;
     private isLocationTransient: Function;
     private nonLocalizedQuery: Filter<ObjectMetastoreDocument> | null;
+    private nonLocalizedLocations: Set<string>;
     private shardCollections: boolean;
     private concurrentCursors: number;
     private bucketVFormatCache: LRUCache;
@@ -312,6 +313,7 @@ class MongoClientInterface {
         const nonLocalizedLocations = Object.entries(locations ?? {})
             .filter(([, location]) => location?.isCRR)
             .map(([name]) => name);
+        this.nonLocalizedLocations = new Set(nonLocalizedLocations);
         this.nonLocalizedQuery = nonLocalizedLocations.length
             ? { 'value.dataStoreName': { $nin: nonLocalizedLocations } }
             : null;
@@ -888,6 +890,16 @@ class MongoClientInterface {
     }
 
     /**
+     * A version is non-localized when its location points to data living on
+     * a different site.
+     * @param {Object} objVal object metadata
+     * @return {Boolean} true unless the version is non-localized
+     */
+    isLocalized(objVal: ObjectMDData): boolean {
+        return !this.nonLocalizedLocations.has(objVal.dataStoreName);
+    }
+
+    /**
      * In this case we generate a versionId and
      * sequentially create the object THEN update the master.
      * Master is deleted when version put is a delete marker
@@ -947,8 +959,17 @@ class MongoClientInterface {
         // updating or deleting master depending on the last version put
         // in v0 the master gets updated, in v1 the master gets deleted if version is
         // a delete marker or updated otherwise.
-        const masterOp = this.updateDeleteMaster(objVal.isDeleteMarker || false, params.vFormat, filter, update, true);
-        ops.push(masterOp);
+        // a master never holds a non-localized version, see Mongoclient.md
+        if (this.isLocalized(objVal)) {
+            const masterOp = this.updateDeleteMaster(
+                objVal.isDeleteMarker || false,
+                params.vFormat,
+                filter,
+                update,
+                true,
+            );
+            ops.push(masterOp);
+        }
         c.bulkWrite(ops, {
             ordered: true,
         })
@@ -981,7 +1002,8 @@ class MongoClientInterface {
                     // As a result, checking for the [0] error is enough to know, after checking
                     // its index, what operation failed.
                     const bulkError: WriteError = err.writeErrors[0];
-                    // Check index of the operation that failed (0 = version, 1 = master)
+                    // Check index of the operation that failed (0 = version, 1 = master).
+                    // A non-localized version writes no master op, so index 1 cannot occur.
                     const isMasterOpError = bulkError.index === 1;
 
                     // Master operation failed but version succeeded.
@@ -1040,7 +1062,20 @@ class MongoClientInterface {
         const versionId = generateVersionId(this.instanceId, this.replicationGroupId);
         objVal.versionId = versionId;
         const masterKey = formatMasterKey(objName, params.vFormat);
-        c.updateOne({ _id: masterKey }, { $set: { value: objVal }, $setOnInsert: { _id: masterKey } }, { upsert: true })
+        if (!this.isLocalized(objVal)) {
+            log.error('putObjectVerCase2: refusing to write a non-localized version as master', {
+                bucket: bucketName,
+                key: objName,
+                dataStoreName: objVal.dataStoreName,
+            });
+            return cb(errors.InternalError);
+        }
+        return c
+            .updateOne(
+                { _id: masterKey },
+                { $set: { value: objVal }, $setOnInsert: { _id: masterKey } },
+                { upsert: true },
+            )
             .then(() => cb(null, `{"versionId": "${objVal.versionId}"}`))
             .catch(err => {
                 log.error('putObjectVerCase2: error putting object version', { error: err.message });
@@ -1121,25 +1156,30 @@ class MongoClientInterface {
             }
         }
 
+        const versionOp: AnyBulkWriteOperation<ObjectMetastoreDocument> = {
+            updateOne: {
+                filter: versionFilter,
+                update: {
+                    $set: {
+                        _id: versionKey,
+                        value: objVal,
+                    },
+                },
+                upsert: true,
+            },
+        };
+
+        // a master never holds a non-localized version, see Mongoclient.md
+        if (!this.isLocalized(objVal)) {
+            return putObjectEntry([versionOp], cb);
+        }
+
         return c
             .findOne({ _id: masterKey })
             .then(checkObj => {
                 const objUpsert = !checkObj;
                 // initiating array of operations with version creation/update
-                const ops: AnyBulkWriteOperation<ObjectMetastoreDocument>[] = [
-                    {
-                        updateOne: {
-                            filter: versionFilter,
-                            update: {
-                                $set: {
-                                    _id: versionKey,
-                                    value: objVal,
-                                },
-                            },
-                            upsert: true,
-                        },
-                    },
-                ];
+                const ops: AnyBulkWriteOperation<ObjectMetastoreDocument>[] = [versionOp];
                 // filter to get master
                 const filter = {
                     _id: masterKey,
@@ -1231,8 +1271,12 @@ class MongoClientInterface {
                 upsert: true,
             },
         )
-            .then(() =>
-                this.getLatestVersion(c, objName, params.vFormat, log, (err, mstObjVal?) => {
+            .then(() => {
+                // a master never holds a non-localized version, see Mongoclient.md
+                if (!this.isLocalized(objVal)) {
+                    return cb(null, `{"versionId": "${objVal.versionId}"}`);
+                }
+                return this.getLatestVersion(c, objName, params.vFormat, log, (err, mstObjVal?) => {
                     if (err?.is.NoSuchKey) {
                         return cb(err);
                     }
@@ -1293,8 +1337,8 @@ class MongoClientInterface {
                             log.error('putObjectVerCase4: error upserting master', { error: err.message });
                             return cb(errors.InternalError);
                         });
-                }),
-            )
+                });
+            })
             .catch(err => {
                 log.error('putObjectVerCase4: error upserting object version', { error: err.message });
                 return cb(errors.InternalError);
@@ -1328,6 +1372,14 @@ class MongoClientInterface {
         log: werelogs.Logger,
         cb: ArsenalCallback<void>,
     ) {
+        if (!this.isLocalized(value)) {
+            log.error('putObjectNoVer: refusing to write a non-localized version as master', {
+                bucket: bucketName,
+                key: objName,
+                dataStoreName: value.dataStoreName,
+            });
+            return cb(errors.InternalError);
+        }
         if (params?.needOplogUpdate) {
             return this.putObjectNoVerWithOplogUpdate(collection, bucketName, objName, value, params, log, cb);
         }
@@ -3237,6 +3289,14 @@ class MongoClientInterface {
             }
             const masterKey = formatMasterKey(objName, vFormat);
             const filter = { _id: masterKey };
+            if (!this.isLocalized(objVal)) {
+                log.error('putObjectWithCond: refusing to write a non-localized version as master', {
+                    bucket: bucketName,
+                    key: objName,
+                    dataStoreName: objVal.dataStoreName,
+                });
+                return cb(errors.InternalError);
+            }
             try {
                 MongoUtils.translateConditions(0, 'value', filter, params.conditions);
             } catch (err) {

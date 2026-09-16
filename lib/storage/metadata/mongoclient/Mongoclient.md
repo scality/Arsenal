@@ -363,3 +363,18 @@ versions are all non-localized simply has no master, and `getObject` reports
 the same definition: a version that is not the latest localized one cannot be
 the master, so it takes the non-master path, including when the object has no
 localized version left.
+
+### Writing a non-localized version
+
+The invariant is maintained at write time: `putObjectVerCase1`,
+`putObjectVerCase3` and `putObjectVerCase4` write the version key and skip the
+master operation entirely when the version is non-localized, so the master stays
+on the latest localized version. A version gets its master later, when it is
+localized: the data mover replays the same version id with a local
+`dataStoreName`, which lands in `putObjectVerCase4` and promotes it.
+
+`putObjectVerCase2`, `putObjectNoVer` and `putObjectWithCond` write the master as
+their only document. There is no version key to fall back on, so the master
+cannot be skipped: they refuse the write and return an error rather than store a
+master no client can read from. A replicated bucket is versioned, so those paths
+are not expected to be reached with a non-localized version in the first place.
