@@ -264,6 +264,7 @@ class MongoClientInterface {
     private database: string;
     private isLocationTransient: Function;
     private nonLocalizedQuery: Filter<ObjectMetastoreDocument> | null;
+    private nonLocalizedLocations: Set<string>;
     private shardCollections: boolean;
     private concurrentCursors: number;
     private bucketVFormatCache: LRUCache;
@@ -312,6 +313,7 @@ class MongoClientInterface {
         const nonLocalizedLocations = Object.entries(locations ?? {})
             .filter(([, location]) => location?.isCRR)
             .map(([name]) => name);
+        this.nonLocalizedLocations = new Set(nonLocalizedLocations);
         this.nonLocalizedQuery = nonLocalizedLocations.length
             ? { 'value.dataStoreName': { $nin: nonLocalizedLocations } }
             : null;
@@ -1217,20 +1219,35 @@ class MongoClientInterface {
     ) {
         const versionKey = formatVersionKey(objName, params.versionId, params.vFormat);
         const masterKey = formatMasterKey(objName, params.vFormat);
-        c.updateOne(
-            {
-                _id: versionKey,
-            },
-            {
-                $set: {
+        const upsertVersion = () =>
+            c.updateOne(
+                {
                     _id: versionKey,
-                    value: objVal,
                 },
-            },
-            {
-                upsert: true,
-            },
-        )
+                {
+                    $set: {
+                        _id: versionKey,
+                        value: objVal,
+                    },
+                },
+                {
+                    upsert: true,
+                },
+            );
+        // A version whose data still lives on the Disaster Recovery source location has been
+        // replicated but the data is not copied yet, and must never be exposed as master
+        // write it and skip the master-key update, so the master keeps pointing at the
+        // newest localized version until this one gets localized.
+        const isNonLocalized = this.nonLocalizedLocations.has(objVal.dataStoreName);
+        if (isNonLocalized) {
+            return upsertVersion()
+                .then(() => cb(null, `{"versionId": "${objVal.versionId}"}`))
+                .catch(err => {
+                    log.error('putObjectVerCase4: error upserting non-localized version', { error: err.message });
+                    return cb(errors.InternalError);
+                });
+        }
+        return upsertVersion()
             .then(() =>
                 this.getLatestVersion(c, objName, params.vFormat, log, (err, mstObjVal?) => {
                     if (err?.is.NoSuchKey) {

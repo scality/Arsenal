@@ -626,6 +626,100 @@ describe('MongoClientInterface:putObjectVerCase4', () => {
     });
 });
 
+describe('MongoClientInterface:putObjectVerCase4 with non-localized versions', () => {
+    let client;
+    const localized = { versionId: '1234', dataStoreName: 'us-east-1' };
+    const nonLocalized = { versionId: '1234', dataStoreName: 'dr-source' };
+    const params = { versionId: '1234', vFormat: 'v0' };
+
+    function collectionStub() {
+        return {
+            updateOne: sinon.stub().resolves(),
+            bulkWrite: sinon.stub().resolves({}),
+        };
+    }
+
+    function putVersion(mongoClient, collection, objVal) {
+        return new Promise(resolve =>
+            mongoClient.putObjectVerCase4(
+                collection,
+                'example-bucket',
+                'example-object',
+                objVal,
+                params,
+                logger,
+                (err, res) => resolve({ err, res }),
+            ),
+        );
+    }
+
+    beforeAll(done => {
+        client = new MongoClientInterface({
+            locations: {
+                'us-east-1': { isCRR: false },
+                'dr-source': { isCRR: true },
+            },
+        });
+        return done();
+    });
+
+    beforeEach(done => {
+        sinon.stub(utils, 'formatMasterKey').callsFake(() => 'example-master-key');
+        sinon.stub(utils, 'formatVersionKey').callsFake(() => 'example-version-key');
+        return done();
+    });
+
+    afterEach(done => {
+        sinon.restore();
+        return done();
+    });
+
+    it('should write the version and leave the master alone', async () => {
+        // resolves like a normal lookup, so that skipping it is what the test proves
+        const getLatestVersion = sinon
+            .stub(client, 'getLatestVersion')
+            .callsFake((...args) => args[4](null, localized));
+        const collection = collectionStub();
+        const { err, res } = await putVersion(client, collection, nonLocalized);
+        assert.deepStrictEqual(err, null);
+        assert(res.includes('{"versionId": '));
+        sinon.assert.calledOnce(collection.updateOne);
+        assert.strictEqual(collection.updateOne.firstCall.args[0]._id, 'example-version-key');
+        sinon.assert.notCalled(getLatestVersion);
+        sinon.assert.notCalled(collection.bulkWrite);
+    });
+
+    it('should update the master when the version is localized', async () => {
+        const getLatestVersion = sinon
+            .stub(client, 'getLatestVersion')
+            .callsFake((...args) => args[4](null, localized));
+        const collection = collectionStub();
+        const { err } = await putVersion(client, collection, localized);
+        assert.deepStrictEqual(err, null);
+        sinon.assert.calledOnce(getLatestVersion);
+        sinon.assert.calledOnce(collection.bulkWrite);
+    });
+
+    it('should fail when writing the non-localized version fails', async () => {
+        const collection = collectionStub();
+        collection.updateOne = sinon.stub().rejects(errors.InternalError);
+        const { err } = await putVersion(client, collection, nonLocalized);
+        assert.deepStrictEqual(err, errors.InternalError);
+        sinon.assert.notCalled(collection.bulkWrite);
+    });
+
+    it('should update the master when no location is flagged as non-localized', async () => {
+        const noCrrClient = new MongoClientInterface({ locations: { 'dr-source': { isCRR: false } } });
+        const getLatestVersion = sinon
+            .stub(noCrrClient, 'getLatestVersion')
+            .callsFake((...args) => args[4](null, localized));
+        const collection = collectionStub();
+        const { err } = await putVersion(noCrrClient, collection, nonLocalized);
+        assert.deepStrictEqual(err, null);
+        sinon.assert.calledOnce(getLatestVersion);
+    });
+});
+
 describe('MongoClientInterface:putObjectNoVer', () => {
     let client;
 
