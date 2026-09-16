@@ -626,6 +626,241 @@ describe('MongoClientInterface:putObjectVerCase4', () => {
     });
 });
 
+describe('MongoClientInterface: non-localized versions never become master', () => {
+    let client;
+    const localized = { versionId: '1234', dataStoreName: 'us-east-1' };
+    const nonLocalized = { versionId: '1234', dataStoreName: 'dr-source' };
+    const params = { versionId: '1234', vFormat: 'v0' };
+
+    beforeAll(done => {
+        client = new MongoClientInterface({
+            locations: {
+                'us-east-1': { isCRR: false },
+                'dr-source': { isCRR: true },
+            },
+        });
+        return done();
+    });
+
+    beforeEach(done => {
+        sinon.stub(utils, 'formatMasterKey').callsFake(() => 'example-master-key');
+        sinon.stub(utils, 'formatVersionKey').callsFake(() => 'example-version-key');
+        return done();
+    });
+
+    afterEach(done => {
+        sinon.restore();
+        return done();
+    });
+
+    describe('putObjectVerCase1', () => {
+        function run(objVal) {
+            const collection = { bulkWrite: sinon.stub().resolves({}) };
+            return new Promise(resolve =>
+                client.putObjectVerCase1(collection, 'example-bucket', 'example-object', objVal, params, logger, () =>
+                    resolve(collection.bulkWrite),
+                ),
+            );
+        }
+
+        it('should write the version alone when it is non-localized', async () => {
+            const bulkWrite = await run(Object.assign({}, nonLocalized));
+            assert.strictEqual(bulkWrite.firstCall.args[0].length, 1);
+            assert(bulkWrite.firstCall.args[0][0].insertOne, 'expected the version insert alone');
+        });
+
+        it('should write the master as well when it is localized', async () => {
+            const bulkWrite = await run(Object.assign({}, localized));
+            assert.strictEqual(bulkWrite.firstCall.args[0].length, 2);
+        });
+    });
+
+    describe('putObjectVerCase3', () => {
+        function run(objVal) {
+            const collection = {
+                // an existing master, so the master op is not skipped for other reasons
+                findOne: sinon.stub().resolves({ _id: 'example-master-key', value: objVal }),
+                bulkWrite: sinon.stub().resolves({}),
+            };
+            return new Promise(resolve =>
+                client.putObjectVerCase3(collection, 'example-bucket', 'example-object', objVal, params, logger, () =>
+                    resolve(collection),
+                ),
+            );
+        }
+
+        it('should write the version alone when it is non-localized', async () => {
+            const { bulkWrite, findOne } = await run(Object.assign({}, nonLocalized));
+            assert.strictEqual(bulkWrite.firstCall.args[0].length, 1);
+            // the master and version lookups only serve the master operation
+            sinon.assert.notCalled(findOne);
+        });
+
+        it('should write the master as well when it is localized', async () => {
+            const { bulkWrite } = await run(Object.assign({}, localized));
+            assert.strictEqual(bulkWrite.firstCall.args[0].length, 2);
+        });
+    });
+
+    describe('the paths where the master is the only document written', () => {
+        // they cannot keep a non-localized version out of the master, so they
+        // refuse the write instead of breaking the invariant
+
+        function runNoVer(method, objVal) {
+            const collection = { updateOne: sinon.stub().resolves({}) };
+            return new Promise(resolve =>
+                client[method](
+                    collection,
+                    'example-bucket',
+                    'example-object',
+                    Object.assign({}, objVal),
+                    params,
+                    logger,
+                    err => resolve({ err, collection }),
+                ),
+            );
+        }
+
+        it('putObjectVerCase2 should refuse a non-localized version', async () => {
+            const error = sinon.spy(logger, 'error');
+            const { err, collection } = await runNoVer('putObjectVerCase2', nonLocalized);
+            assert(err?.is.InternalError, 'the write should have been refused');
+            sinon.assert.notCalled(collection.updateOne);
+            assert(error.calledWithMatch('putObjectVerCase2: refusing to write a non-localized version as master'));
+        });
+
+        it('putObjectNoVer should refuse a non-localized version', async () => {
+            const error = sinon.spy(logger, 'error');
+            const { err, collection } = await runNoVer('putObjectNoVer', nonLocalized);
+            assert(err?.is.InternalError, 'the write should have been refused');
+            sinon.assert.notCalled(collection.updateOne);
+            assert(error.calledWithMatch('putObjectNoVer: refusing to write a non-localized version as master'));
+        });
+
+        it('putObjectWithCond should refuse a non-localized version', async () => {
+            const error = sinon.spy(logger, 'error');
+            sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null, 'v0'));
+            const collection = { findOneAndUpdate: sinon.stub().resolves({}) };
+            sinon.stub(client, 'getCollection').returns(collection);
+            const err = await new Promise(resolve =>
+                client.putObjectWithCond(
+                    'example-bucket',
+                    'example-object',
+                    Object.assign({}, nonLocalized),
+                    { conditions: {} },
+                    logger,
+                    resolve,
+                ),
+            );
+            assert(err?.is.InternalError, 'the write should have been refused');
+            sinon.assert.notCalled(collection.findOneAndUpdate);
+            assert(error.calledWithMatch('putObjectWithCond: refusing to write a non-localized version as master'));
+        });
+
+        it('should write a localized version', async () => {
+            const error = sinon.spy(logger, 'error');
+            const { err, collection } = await runNoVer('putObjectNoVer', localized);
+            assert.ifError(err);
+            sinon.assert.calledOnce(collection.updateOne);
+            assert(!error.calledWithMatch('refusing to write a non-localized version as master'));
+        });
+    });
+});
+
+describe('MongoClientInterface:putObjectVerCase4 with non-localized versions', () => {
+    let client;
+    const localized = { versionId: '1234', dataStoreName: 'us-east-1' };
+    const nonLocalized = { versionId: '1234', dataStoreName: 'dr-source' };
+    const params = { versionId: '1234', vFormat: 'v0' };
+
+    function collectionStub() {
+        return {
+            updateOne: sinon.stub().resolves(),
+            bulkWrite: sinon.stub().resolves({}),
+        };
+    }
+
+    function putVersion(mongoClient, collection, objVal) {
+        return new Promise(resolve =>
+            mongoClient.putObjectVerCase4(
+                collection,
+                'example-bucket',
+                'example-object',
+                objVal,
+                params,
+                logger,
+                (err, res) => resolve({ err, res }),
+            ),
+        );
+    }
+
+    beforeAll(done => {
+        client = new MongoClientInterface({
+            locations: {
+                'us-east-1': { isCRR: false },
+                'dr-source': { isCRR: true },
+            },
+        });
+        return done();
+    });
+
+    beforeEach(done => {
+        sinon.stub(utils, 'formatMasterKey').callsFake(() => 'example-master-key');
+        sinon.stub(utils, 'formatVersionKey').callsFake(() => 'example-version-key');
+        return done();
+    });
+
+    afterEach(done => {
+        sinon.restore();
+        return done();
+    });
+
+    it('should write the version and leave the master alone', async () => {
+        // resolves like a normal lookup, so that skipping it is what the test proves
+        const getLatestVersion = sinon
+            .stub(client, 'getLatestVersion')
+            .callsFake((...args) => args[4](null, localized));
+        const collection = collectionStub();
+        const { err, res } = await putVersion(client, collection, nonLocalized);
+        assert.deepStrictEqual(err, null);
+        assert(res.includes('{"versionId": '));
+        sinon.assert.calledOnce(collection.updateOne);
+        assert.strictEqual(collection.updateOne.firstCall.args[0]._id, 'example-version-key');
+        sinon.assert.notCalled(getLatestVersion);
+        sinon.assert.notCalled(collection.bulkWrite);
+    });
+
+    it('should update the master when the version is localized', async () => {
+        const getLatestVersion = sinon
+            .stub(client, 'getLatestVersion')
+            .callsFake((...args) => args[4](null, localized));
+        const collection = collectionStub();
+        const { err } = await putVersion(client, collection, localized);
+        assert.deepStrictEqual(err, null);
+        sinon.assert.calledOnce(getLatestVersion);
+        sinon.assert.calledOnce(collection.bulkWrite);
+    });
+
+    it('should fail when writing the non-localized version fails', async () => {
+        const collection = collectionStub();
+        collection.updateOne = sinon.stub().rejects(errors.InternalError);
+        const { err } = await putVersion(client, collection, nonLocalized);
+        assert.deepStrictEqual(err, errors.InternalError);
+        sinon.assert.notCalled(collection.bulkWrite);
+    });
+
+    it('should update the master when no location is flagged as non-localized', async () => {
+        const noCrrClient = new MongoClientInterface({ locations: { 'dr-source': { isCRR: false } } });
+        const getLatestVersion = sinon
+            .stub(noCrrClient, 'getLatestVersion')
+            .callsFake((...args) => args[4](null, localized));
+        const collection = collectionStub();
+        const { err } = await putVersion(noCrrClient, collection, nonLocalized);
+        assert.deepStrictEqual(err, null);
+        sinon.assert.calledOnce(getLatestVersion);
+    });
+});
+
 describe('MongoClientInterface:putObjectNoVer', () => {
     let client;
 
