@@ -120,9 +120,42 @@ describe('MongoClientInterface:delObject', () => {
         const collection = {
             findOne: () => Promise.resolve(null),
         };
-        sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[4](errors.NoSuchKey));
-        client.deleteObjectVer(collection, 'example-bucket', 'example-object', {}, logger, err => {
+        sinon.stub(client, 'isLatestLocalizedVersion').callsFake((...args) => args[5](null, false));
+        sinon.stub(client, 'internalDeleteObject').callsArgWith(6, errors.NoSuchKey);
+        client.deleteObjectVer(collection, 'example-bucket', 'example-object', { versionId: '1234' }, logger, err => {
             assert(err.is.NoSuchKey);
+            return done();
+        });
+    });
+
+    it('deleteObjectVer:: should call deleteObjectVerNotMaster when the version is not the latest localized one', done => {
+        const collection = {
+            findOne: () => Promise.resolve(null),
+        };
+        sinon.stub(client, 'isLatestLocalizedVersion').callsFake((...args) => args[5](null, false));
+        const deleteObjectVerNotMaster = sinon.stub(client, 'deleteObjectVerNotMaster').callsArg(5);
+        const deleteObjectVerMaster = sinon.stub(client, 'deleteObjectVerMaster');
+        const params = { versionId: '1234' };
+        client.deleteObjectVer(collection, 'example-bucket', 'example-object', params, logger, err => {
+            assert.ifError(err);
+            assert(deleteObjectVerNotMaster.calledOnce);
+            assert(deleteObjectVerMaster.notCalled);
+            return done();
+        });
+    });
+
+    it('deleteObjectVer:: should call deleteObjectVerMaster when the version is the latest localized one', done => {
+        const collection = {
+            findOne: () => Promise.resolve(null),
+        };
+        sinon.stub(client, 'isLatestLocalizedVersion').callsFake((...args) => args[5](null, true));
+        const deleteObjectVerNotMaster = sinon.stub(client, 'deleteObjectVerNotMaster');
+        const deleteObjectVerMaster = sinon.stub(client, 'deleteObjectVerMaster').callsArg(5);
+        const params = { versionId: '1234' };
+        client.deleteObjectVer(collection, 'example-bucket', 'example-object', params, logger, err => {
+            assert.ifError(err);
+            assert(deleteObjectVerMaster.calledOnce);
+            assert(deleteObjectVerNotMaster.notCalled);
             return done();
         });
     });

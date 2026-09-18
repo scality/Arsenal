@@ -29,6 +29,7 @@ import {
     MongoClientOptions,
     ReadPreferenceMode,
     WithId,
+    Filter,
     Collection,
     AnyBulkWriteOperation,
     UpdateFilter,
@@ -100,6 +101,7 @@ export type MongoDBClientInterfaceParameters = {
     authCredentials: MongoUtils.AuthCredentials;
     isLocationTransient: Function;
     shardCollections: boolean;
+    locations?: Record<string, { isCRR?: boolean }>;
 };
 
 export type BucketMetadataMongoDB = Omit<Omit<BucketMetadata, 'quotaMax'>, 'capabilities'> & {
@@ -137,6 +139,7 @@ export type ObjectMDOperationParams = {
     originOp: string;
     doesNotNeedOpogUpdate?: boolean;
     conditions: any;
+    hideNonLocalizedVersions?: boolean;
 };
 
 export type InternalListObjectParams = {
@@ -150,6 +153,7 @@ export type InternalListObjectParams = {
     listingType?: string;
     start?: undefined;
     gt?: undefined;
+    hideNonLocalizedVersions?: boolean;
 };
 
 export interface UsedCapacityMetrics {
@@ -259,6 +263,7 @@ class MongoClientInterface {
     private replicationGroupId: string;
     private database: string;
     private isLocationTransient: Function;
+    private nonLocalizedQuery: Filter<ObjectMetastoreDocument> | null;
     private shardCollections: boolean;
     private concurrentCursors: number;
     private bucketVFormatCache: LRUCache;
@@ -269,6 +274,8 @@ class MongoClientInterface {
     private adminDb: Db | null;
 
     private isConnected = false;
+
+    readonly supportsHideNonLocalizedVersions = true;
 
     constructor(params: MongoDBClientInterfaceParameters) {
         const {
@@ -284,6 +291,7 @@ class MongoClientInterface {
             authCredentials,
             isLocationTransient,
             shardCollections,
+            locations,
         } = params;
         const cred = MongoUtils.credPrefix(authCredentials);
         this.mongoUrl = `mongodb://${cred}${replicaSetHosts}/` + `?w=${writeConcern}&readPreference=${readPreference}`;
@@ -301,6 +309,12 @@ class MongoClientInterface {
         this.replicationGroupId = replicationGroupId;
         this.database = database;
         this.isLocationTransient = isLocationTransient;
+        const nonLocalizedLocations = Object.entries(locations ?? {})
+            .filter(([, location]) => location?.isCRR)
+            .map(([name]) => name);
+        this.nonLocalizedQuery = nonLocalizedLocations.length
+            ? { 'value.dataStoreName': { $nin: nonLocalizedLocations } }
+            : null;
         this.shardCollections = shardCollections;
 
         this.concurrentCursors = CONCURRENT_CURSORS;
@@ -1175,7 +1189,8 @@ class MongoClientInterface {
      * In this case the caller provides a versionId. We assume that
      * objVal already contains the destination versionId. We first
      * update the version if it exists or create it. We then call
-     * getLatestVersion() to get the latest version. We update the
+     * getLatestVersion() to get the latest localized version, a master
+     * never pointing at a non-localized version. We update the
      * master only if the returned version is greater or equal than
      * the stored one. Caveat: this function is not optimized for
      * multiple updates to the same objName, a batch would be more
@@ -1530,6 +1545,7 @@ class MongoClientInterface {
         cb: ArsenalCallback<ObjectMDData>,
     ) {
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
+        const nonLocalizedFilter = params?.hideNonLocalizedVersions ? this.nonLocalizedQuery : null;
         let key;
         async.waterfall(
             [
@@ -1545,6 +1561,7 @@ class MongoClientInterface {
                             _id: key,
                             // filtering out objects flagged for deletion
                             $or: [{ 'value.deleted': { $exists: false } }, { 'value.deleted': { $eq: false } }],
+                            ...nonLocalizedFilter,
                         },
                         {},
                     )
@@ -1565,6 +1582,7 @@ class MongoClientInterface {
                     // If no master found then object is either non existent
                     // or last version is delete marker
                     if (!doc || doc.value.isPHD) {
+                        // ignore hideNonLocalizedVersions: the master is the latest localized version
                         this.getLatestVersion(c, objName, vFormat, log, (err, value?) => {
                             if (err?.is.NoSuchKey) {
                                 return next(err);
@@ -1620,6 +1638,8 @@ class MongoClientInterface {
         if (objects.length > 1000) {
             return callback(errorInstances.InternalError.customizeDescription('cannot get more than 1000 objects'));
         }
+        // the flag is set per call, hence identical on every entry of the batch
+        const nonLocalizedFilter = objects[0]?.params?.hideNonLocalizedVersions ? this.nonLocalizedQuery : null;
         // Function to process each document
         const processDoc = (doc, objName, params, key, cb) => {
             const versionIdValue = params && params.versionId ? params.versionId : undefined;
@@ -1635,6 +1655,7 @@ class MongoClientInterface {
             // If no master found then object is either non existent or last
             // version is delete marker
             if (!doc || doc.value.isPHD) {
+                // ignore hideNonLocalizedVersions: the master is the latest localized version
                 return this.getLatestVersion(c!, objName, vFormat, log, (err, _doc?) =>
                     cb(null, {
                         err,
@@ -1672,6 +1693,7 @@ class MongoClientInterface {
                 .find({
                     _id: { $in: keys },
                     $or: [{ 'value.deleted': { $exists: false } }, { 'value.deleted': { $eq: false } }],
+                    ...nonLocalizedFilter,
                 })
                 .toArray()
                 .then(docs => {
@@ -1742,6 +1764,7 @@ class MongoClientInterface {
                 _id: filter,
                 // filtering out objects flagged for deletion
                 $or: [{ 'value.deleted': { $exists: false } }, { 'value.deleted': { $eq: false } }],
+                ...this.nonLocalizedQuery,
             },
             {},
         )
@@ -1759,6 +1782,57 @@ class MongoClientInterface {
             })
             .catch(err => {
                 log.error('getLatestVersion: error getting latest version', { error: err.message });
+                return cb(errors.InternalError);
+            });
+    }
+
+    /**
+     * Check if a version is the latest localized version, the one an absent or
+     * placeholder master resolves to. Bounding the range at the version itself
+     * stops the query at the first newer localized version, and makes it a miss
+     * right away for the versions a master can never point at, like the
+     * non-localized ones.
+     * @param {Object} c collection
+     * @param {String} objName object name
+     * @param {String} versionId version to check
+     * @param {String} vFormat bucket version format
+     * @param {Object} log logger
+     * @param {Function} cb callback
+     * @return {undefined}
+     */
+    isLatestLocalizedVersion(
+        c: Collection<ObjectMetastoreDocument>,
+        objName: string,
+        versionId: string,
+        vFormat: string,
+        log: werelogs.Logger,
+        cb: ArsenalCallback<boolean>,
+    ) {
+        const versionKey = formatVersionKey(objName, versionId, vFormat);
+        const firstKey =
+            vFormat === BUCKET_VERSIONS.v0
+                ? formatMasterKey(objName, vFormat)
+                : formatVersionKey(objName, VID_NONE, vFormat);
+        c.find(
+            {
+                _id: {
+                    $gt: firstKey,
+                    $lte: versionKey,
+                },
+                // filtering out objects flagged for deletion
+                $or: [{ 'value.deleted': { $exists: false } }, { 'value.deleted': { $eq: false } }],
+                ...this.nonLocalizedQuery,
+            },
+            { projection: { _id: 1 } },
+        )
+            .sort({
+                _id: 1,
+            })
+            .limit(1)
+            .toArray()
+            .then(keys => cb(null, keys[0]?._id === versionKey))
+            .catch(err => {
+                log.error('isLatestLocalizedVersion: error getting latest version', { error: err.message });
                 return cb(errors.InternalError);
             });
     }
@@ -2118,20 +2192,15 @@ class MongoClientInterface {
                         });
                 },
                 (mst, next) => {
-                    // getting the last version if master not found
-                    // (either object non existent or last version is a delete marker)
+                    // without a master (either object non existent or last version is a
+                    // delete marker) the master is the latest localized version
                     if (!mst) {
-                        return this.getLatestVersion(c, objName, params.vFormat, log, (err, version?) => {
-                            if (err) {
-                                return next(err);
-                            }
-                            return next(null, { value: version });
-                        });
+                        return this.isLatestLocalizedVersion(c, objName, params.versionId, params.vFormat, log, next);
                     }
-                    return next(null, mst);
+                    return next(null, mst.value.isPHD || mst.value.versionId === params.versionId);
                 },
-                (mst, next) => {
-                    if (mst.value.isPHD || mst.value.versionId === params.versionId) {
+                (isMaster, next) => {
+                    if (isMaster) {
                         return this.deleteObjectVerMaster(c, bucketName, objName, params, log, next, originOp);
                     }
                     return this.deleteObjectVerNotMaster(c, bucketName, objName, params, log, next, originOp);
@@ -2433,7 +2502,8 @@ class MongoClientInterface {
         cb: ArsenalCallback<void>,
     ) {
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
-        const getLatestVersion = this.getLatestVersion;
+        const getLatestVersion = this.getLatestVersion.bind(this);
+        const nonLocalizedFilter = params.hideNonLocalizedVersions ? this.nonLocalizedQuery : null;
         let stream;
         let baseStream;
         let resolvePhdKey;
@@ -2460,7 +2530,7 @@ class MongoClientInterface {
         });
         if (!params.secondaryStreamParams) {
             // listing masters only (DelimiterMaster)
-            stream = new MongoReadStream(c, params.mainStreamParams, params.mongifiedSearch);
+            stream = new MongoReadStream(c, params.mainStreamParams, params.mongifiedSearch, nonLocalizedFilter);
             baseStream = stream;
             if (vFormat === BUCKET_VERSIONS.v1) {
                 /**
@@ -2476,6 +2546,7 @@ class MongoClientInterface {
                     transform(obj, encoding, callback) {
                         if (Version.isPHD(obj.value)) {
                             const key = obj.key.slice(DB_PREFIXES.Master.length);
+                            // ignore hideNonLocalizedVersions: the master is the latest localized version
                             getLatestVersion(c, key, BUCKET_VERSIONS.v1, log, (err, version?) => {
                                 if (err) {
                                     // ignoring PHD keys with no versions as all versions
@@ -2520,8 +2591,18 @@ class MongoClientInterface {
             }
         } else {
             // listing both master and version keys (delimiterVersion Algo)
-            const masterStream = new MongoReadStream(c, params.mainStreamParams, params.mongifiedSearch);
-            const versionStream = new MongoReadStream(c, params.secondaryStreamParams, params.mongifiedSearch);
+            const masterStream = new MongoReadStream(
+                c,
+                params.mainStreamParams,
+                params.mongifiedSearch,
+                nonLocalizedFilter,
+            );
+            const versionStream = new MongoReadStream(
+                c,
+                params.secondaryStreamParams,
+                params.mongifiedSearch,
+                nonLocalizedFilter,
+            );
             stream = new MergeStream(versionStream, masterStream, extension.compareObjects.bind(extension));
         }
         const gteParams = params.secondaryStreamParams
@@ -2603,6 +2684,8 @@ class MongoClientInterface {
                 mainStreamParams: Array.isArray(extensionParams) ? extensionParams[0] : extensionParams,
                 secondaryStreamParams: Array.isArray(extensionParams) ? extensionParams[1] : null,
                 mongifiedSearch: params.mongifiedSearch,
+                // masters always point at a localized version, so only the version listings have anything to hide
+                hideNonLocalizedVersions: params.hideNonLocalizedVersions && extName === 'DelimiterVersions',
             };
             return this.internalListObject(bucketName, internalParams, extension, vFormat, log, cb);
         });
@@ -2669,6 +2752,7 @@ class MongoClientInterface {
         const internalParams = {
             mainStreamParams: extensionParams,
             mongifiedSearch: params.mongifiedSearch,
+            hideNonLocalizedVersions: params.hideNonLocalizedVersions,
         };
         return this.internalListObject(bucketName, internalParams, extension, BUCKET_VERSIONS.v0, log, cb);
     }
