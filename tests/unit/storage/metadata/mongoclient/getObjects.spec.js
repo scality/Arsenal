@@ -67,7 +67,9 @@ describe('MongoClientInterface:getObjects', () => {
         };
         sinon.stub(client, 'getCollection').callsFake(() => collection);
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null, 'v0'));
-        sinon.stub(client, 'getLatestVersion').callsFake((bucketName, data, log, cb) => cb(errors.InternalError));
+        sinon
+            .stub(client, 'getLatestVersion')
+            .callsFake((bucketName, data, nonLocalizedFilter, log, cb) => cb(errors.InternalError));
         client.getObjects('example-bucket', objects, logger, err => {
             assert.deepStrictEqual(err, errors.InternalError);
             return done();
@@ -92,7 +94,9 @@ describe('MongoClientInterface:getObjects', () => {
         sinon.stub(client, 'getCollection').callsFake(() => collection);
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null, 'v0'));
         doc.value.last = true;
-        sinon.stub(client, 'getLatestVersion').callsFake((c, objName, vFormat, log, cb) => cb(null, doc.value));
+        sinon
+            .stub(client, 'getLatestVersion')
+            .callsFake((c, objName, vFormat, nonLocalizedFilter, log, cb) => cb(null, doc.value));
         client.getObjects('example-bucket', objects, logger, (err, res) => {
             assert.deepStrictEqual(err, null);
             assert.deepStrictEqual(res[0], {
@@ -122,7 +126,9 @@ describe('MongoClientInterface:getObjects', () => {
         sinon.stub(client, 'getCollection').callsFake(() => collection);
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null, 'v0'));
         doc.value.last = true;
-        sinon.stub(client, 'getLatestVersion').callsFake((c, objName, vFormat, log, cb) => cb(null, doc.value));
+        sinon
+            .stub(client, 'getLatestVersion')
+            .callsFake((c, objName, vFormat, nonLocalizedFilter, log, cb) => cb(null, doc.value));
         client.getObjects('example-bucket', objects, logger, (err, res) => {
             assert.deepStrictEqual(err, null);
             assert.deepStrictEqual(res[0], {
@@ -151,7 +157,9 @@ describe('MongoClientInterface:getObjects', () => {
         const bucketVFormat = 'v0';
         sinon.stub(client, 'getCollection').callsFake(() => collection);
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null, bucketVFormat));
-        sinon.stub(client, 'getLatestVersion').callsFake((c, objName, vFormat, log, cb) => cb(null, doc.value));
+        sinon
+            .stub(client, 'getLatestVersion')
+            .callsFake((c, objName, vFormat, nonLocalizedFilter, log, cb) => cb(null, doc.value));
 
         client.getObjects('example-bucket', objects, logger, (err, res) => {
             assert.deepStrictEqual(err, null);
@@ -184,7 +192,9 @@ describe('MongoClientInterface:getObjects', () => {
         sinon.stub(client, 'getCollection').callsFake(() => collection);
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null, bucketVFormat));
         doc.value.last = true;
-        sinon.stub(client, 'getLatestVersion').callsFake((c, objName, vFormat, log, cb) => cb(null, doc.value));
+        sinon
+            .stub(client, 'getLatestVersion')
+            .callsFake((c, objName, vFormat, nonLocalizedFilter, log, cb) => cb(null, doc.value));
         client.getObjects('example-bucket', objects, logger, (err, res) => {
             assert.deepStrictEqual(err, null);
             assert.deepStrictEqual(res[0], {
@@ -319,7 +329,7 @@ describe('MongoClientInterface:getObjects', () => {
         };
         sinon.stub(client, 'getCollection').callsFake(() => collection);
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null, bucketVFormat));
-        sinon.stub(client, 'getLatestVersion').callsFake((c, objName, vFormat, log, cb) => {
+        sinon.stub(client, 'getLatestVersion').callsFake((c, objName, vFormat, nonLocalizedFilter, log, cb) => {
             if (objName === objects[N - 1].key) {
                 return cb(errors.InternalError);
             }

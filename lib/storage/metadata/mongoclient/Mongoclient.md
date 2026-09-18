@@ -330,3 +330,33 @@ In non versioned buckets, master object events are the ones to be processed.
 In versioning suspended buckets, both master and version events should be processed,
 as the master object itself is considered a null version. No special case is present
 here as the master object is always present.
+
+## Clean Read
+
+In a clean-room D/R deployment, object metadata is replicated before the object
+data is copied locally: until the copy happens, the version's `location` and
+`dataStoreName` still refer to the remote source site. Such a version is
+**non-localized**, the condition being:
+
+```
+locations[objMD.dataStoreName].isCRR
+```
+
+Clean read hides those versions from the clients. It is a **per-call flag**
+(`hideNonLocalizedVersions`) on the read and listing APIs so any metadata
+backend can implement the same contract. `MetadataWrapper` sets the flag on
+every such call when the deployment runs with clean read enabled (set on the
+user-facing Cloudserver only: Backbeat's internal Cloudserver must see all the
+entries), and logs an error leaving it off when the backend does not
+implement it.
+
+Only the versions are filtered: the master key always points at a localized
+version, which is handled at write time — when the version is written, and
+therefore independently from this flag. An object listing (`DelimiterMaster`)
+needs no filtering as a consequence, and neither does the master-key lookup.
+
+Resolving an absent or placeholder master is a different matter: it recomputes
+the master, so it always ignores the non-localized versions, whatever the
+caller's view — the same definition the repair paths write. An object whose
+versions are all non-localized simply has no master, and `getObject` reports
+`NoSuchKey` rather than the non-localized version.

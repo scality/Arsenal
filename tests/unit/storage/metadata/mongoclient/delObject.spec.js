@@ -120,7 +120,7 @@ describe('MongoClientInterface:delObject', () => {
         const collection = {
             findOne: () => Promise.resolve(null),
         };
-        sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[4](errors.NoSuchKey));
+        sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[5](errors.NoSuchKey));
         client.deleteObjectVer(collection, 'example-bucket', 'example-object', {}, logger, err => {
             assert(err.is.NoSuchKey);
             return done();
@@ -201,7 +201,7 @@ describe('MongoClientInterface:delObject', () => {
 
     it('deleteOrRepairPHD:: should not fail', done => {
         sinon.useFakeTimers();
-        sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[4](null, { isDeleteMarker: false }));
+        sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[5](null, { isDeleteMarker: false }));
         sinon.stub(client, 'internalDeleteObject').callsArg(6);
         sinon.stub(client, 'asyncRepair').callsArg(5);
         client.deleteOrRepairPHD({}, 'example-bucket', 'example-object', {}, 'v0', logger, err => {

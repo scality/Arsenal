@@ -589,7 +589,7 @@ describe('MongoClientInterface:putObjectVerCase4', () => {
     });
 
     it('should return versionId', done => {
-        sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[4](null, {}));
+        sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[5](null, {}));
         const collection = {
             updateOne: () => Promise.resolve(),
             bulkWrite: () => Promise.resolve({}),
@@ -602,7 +602,7 @@ describe('MongoClientInterface:putObjectVerCase4', () => {
     });
 
     it('should fail when update fails', done => {
-        sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[4](null, {}));
+        sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[5](null, {}));
         const collection = {
             updateOne: () => Promise.reject(errors.InternalError),
             bulkWrite: () => Promise.reject(errors.InternalError),
@@ -614,7 +614,7 @@ describe('MongoClientInterface:putObjectVerCase4', () => {
     });
 
     it('should fail when getLatestVersion fails', done => {
-        sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[4](errors.InternalError));
+        sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[5](errors.InternalError));
         const collection = {
             updateOne: () => Promise.resolve(),
             bulkWrite: () => Promise.resolve(),
