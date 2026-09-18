@@ -30,14 +30,23 @@ describe('MongoClientInterface::hideNonLocalizedVersions', () => {
     });
 
     describe('getObject', () => {
-        function captureFilter(cb) {
-            const collection = {
-                findOne: filter => {
-                    cb(filter);
-                    return Promise.resolve({ value: { key: 'example-object' } });
-                },
-            };
-            sinon.stub(client, 'getCollection').callsFake(() => collection);
+        function getObject(params, checkFilter) {
+            const findOne = sinon.spy(filter => {
+                checkFilter(filter);
+                return Promise.resolve({ value: { key: 'example-object' } });
+            });
+            sinon.stub(client, 'getCollection').callsFake(() => ({ findOne }));
+            return new Promise((resolve, reject) =>
+                client.getObject('example-bucket', 'example-object', params, logger, err => {
+                    try {
+                        assert.ifError(err);
+                        assert.strictEqual(findOne.callCount, 1);
+                        return resolve();
+                    } catch (error) {
+                        return reject(error);
+                    }
+                }),
+            );
         }
 
         // the fallback stands in for the master, so it filters whatever the caller asked for
@@ -47,36 +56,32 @@ describe('MongoClientInterface::hideNonLocalizedVersions', () => {
             return sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[5](null, {}));
         }
 
-        it('should exclude the non-localized locations when the flag is set', done => {
-            captureFilter(filter => {
+        it('should exclude the non-localized locations when the flag is set', async () => {
+            await getObject({ hideNonLocalizedVersions: true }, filter => {
                 assert.deepStrictEqual(filter['value.dataStoreName'], { $nin: ['dr-source'] });
             });
-            client.getObject('example-bucket', 'example-object', { hideNonLocalizedVersions: true }, logger, done);
         });
 
-        it('should not filter when the flag is not set', done => {
-            captureFilter(filter => {
+        it('should not filter when the flag is not set', async () => {
+            await getObject({}, filter => {
                 assert.strictEqual(filter['value.dataStoreName'], undefined);
             });
-            client.getObject('example-bucket', 'example-object', {}, logger, done);
         });
 
-        it('should not filter when no location is flagged as non-localized', done => {
+        it('should not filter when no location is flagged as non-localized', async () => {
             client = new MongoClientInterface({ locations: { 'us-east-1': { isCRR: false } } });
             sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null, 'v0'));
-            captureFilter(filter => {
+            await getObject({ hideNonLocalizedVersions: true }, filter => {
                 assert.strictEqual(filter['value.dataStoreName'], undefined);
             });
-            client.getObject('example-bucket', 'example-object', { hideNonLocalizedVersions: true }, logger, done);
         });
 
-        it('should not filter when no location configuration is provided', done => {
+        it('should not filter when no location configuration is provided', async () => {
             client = new MongoClientInterface({});
             sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null, 'v0'));
-            captureFilter(filter => {
+            await getObject({ hideNonLocalizedVersions: true }, filter => {
                 assert.strictEqual(filter['value.dataStoreName'], undefined);
             });
-            client.getObject('example-bucket', 'example-object', { hideNonLocalizedVersions: true }, logger, done);
         });
 
         it('should filter the latest version lookup when the master is absent', async () => {
@@ -186,6 +191,21 @@ describe('MongoClientInterface::hideNonLocalizedVersions', () => {
                     return done();
                 },
             );
+        });
+    });
+
+    describe('putObjectVerCase4', () => {
+        it('should repair the master with the newest localized version', done => {
+            const getLatestVersion = sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[5](null, {}));
+            const collection = {
+                updateOne: () => Promise.resolve(),
+                bulkWrite: () => Promise.resolve({}),
+            };
+            client.putObjectVerCase4(collection, 'example-bucket', 'example-object', {}, {}, logger, err => {
+                assert.ifError(err);
+                assert.deepStrictEqual(getLatestVersion.firstCall.args[3], nonLocalizedFilter);
+                return done();
+            });
         });
     });
 

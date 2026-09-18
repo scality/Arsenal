@@ -1189,7 +1189,8 @@ class MongoClientInterface {
      * In this case the caller provides a versionId. We assume that
      * objVal already contains the destination versionId. We first
      * update the version if it exists or create it. We then call
-     * getLatestVersion() to get the latest version. We update the
+     * getLatestVersion() to get the latest localized version, a master
+     * never pointing at a non-localized version. We update the
      * master only if the returned version is greater or equal than
      * the stored one. Caveat: this function is not optimized for
      * multiple updates to the same objName, a batch would be more
@@ -1231,7 +1232,7 @@ class MongoClientInterface {
             },
         )
             .then(() =>
-                this.getLatestVersion(c, objName, params.vFormat, null, log, (err, mstObjVal?) => {
+                this.getLatestVersion(c, objName, params.vFormat, this.nonLocalizedQuery, log, (err, mstObjVal?) => {
                     if (err?.is.NoSuchKey) {
                         return cb(err);
                     }
@@ -1581,7 +1582,7 @@ class MongoClientInterface {
                     // If no master found then object is either non existent
                     // or last version is delete marker
                     if (!doc || doc.value.isPHD) {
-                        // the master is the newest localized version, whatever the caller's view
+                        // ignore hideNonLocalizedVersions: the master is the latest localized version
                         this.getLatestVersion(c, objName, vFormat, this.nonLocalizedQuery, log, (err, value?) => {
                             if (err?.is.NoSuchKey) {
                                 return next(err);
@@ -1654,7 +1655,7 @@ class MongoClientInterface {
             // If no master found then object is either non existent or last
             // version is delete marker
             if (!doc || doc.value.isPHD) {
-                // the master is the newest localized version, whatever the caller's view
+                // ignore hideNonLocalizedVersions: the master is the latest localized version
                 return this.getLatestVersion(c!, objName, vFormat, this.nonLocalizedQuery, log, (err, _doc?) =>
                     cb(null, {
                         err,
@@ -2460,7 +2461,7 @@ class MongoClientInterface {
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
         const getLatestVersion = this.getLatestVersion;
         const nonLocalizedFilter = params.hideNonLocalizedVersions ? this.nonLocalizedQuery : null;
-        // the master is the newest localized version, whatever the caller's view
+        // ignore hideNonLocalizedVersions: the master is the latest localized version
         const phdResolutionFilter = this.nonLocalizedQuery;
         let stream;
         let baseStream;
