@@ -17,7 +17,10 @@ let testServer = null;
  * from the client side.
  */
 function startTestServer(done) {
-    testServer = spawn('node', [
+    // process.execPath, not 'node': under Yarn Berry the PATH entry for `node`
+    // is a per-invocation shim in a temp directory, and resolving through it
+    // here is fragile. This spawns the same interpreter running the tests.
+    testServer = spawn(process.execPath, [
         `${__dirname}/ClusterRPC-test-server.js`,
         TEST_SERVER_PORT,
         NB_WORKERS,
