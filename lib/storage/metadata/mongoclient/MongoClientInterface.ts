@@ -1232,7 +1232,7 @@ class MongoClientInterface {
             },
         )
             .then(() =>
-                this.getLatestVersion(c, objName, params.vFormat, this.nonLocalizedQuery, log, (err, mstObjVal?) => {
+                this.getLatestVersion(c, objName, params.vFormat, log, (err, mstObjVal?) => {
                     if (err?.is.NoSuchKey) {
                         return cb(err);
                     }
@@ -1583,7 +1583,7 @@ class MongoClientInterface {
                     // or last version is delete marker
                     if (!doc || doc.value.isPHD) {
                         // ignore hideNonLocalizedVersions: the master is the latest localized version
-                        this.getLatestVersion(c, objName, vFormat, this.nonLocalizedQuery, log, (err, value?) => {
+                        this.getLatestVersion(c, objName, vFormat, log, (err, value?) => {
                             if (err?.is.NoSuchKey) {
                                 return next(err);
                             }
@@ -1656,7 +1656,7 @@ class MongoClientInterface {
             // version is delete marker
             if (!doc || doc.value.isPHD) {
                 // ignore hideNonLocalizedVersions: the master is the latest localized version
-                return this.getLatestVersion(c!, objName, vFormat, this.nonLocalizedQuery, log, (err, _doc?) =>
+                return this.getLatestVersion(c!, objName, vFormat, log, (err, _doc?) =>
                     cb(null, {
                         err,
                         doc: _doc || null,
@@ -1732,8 +1732,6 @@ class MongoClientInterface {
      * @param {Object} c collection
      * @param {String} objName object name
      * @param {String} vFormat bucket version format
-     * @param {Object | null} nonLocalizedFilter query fragment hiding the non-localized
-     * versions, `null` to filter nothing.
      * @param {Object} log logger
      * @param {Function} cb callback
      * @return {undefined}
@@ -1742,7 +1740,6 @@ class MongoClientInterface {
         c: Collection<ObjectMetastoreDocument>,
         objName: string,
         vFormat: string,
-        nonLocalizedFilter: Filter<ObjectMetastoreDocument> | null,
         log: werelogs.Logger,
         cb: ArsenalCallback<ObjectMDData>,
     ) {
@@ -1767,7 +1764,7 @@ class MongoClientInterface {
                 _id: filter,
                 // filtering out objects flagged for deletion
                 $or: [{ 'value.deleted': { $exists: false } }, { 'value.deleted': { $eq: false } }],
-                ...nonLocalizedFilter,
+                ...this.nonLocalizedQuery,
             },
             {},
         )
@@ -1785,6 +1782,57 @@ class MongoClientInterface {
             })
             .catch(err => {
                 log.error('getLatestVersion: error getting latest version', { error: err.message });
+                return cb(errors.InternalError);
+            });
+    }
+
+    /**
+     * Check if a version is the latest localized version, the one an absent or
+     * placeholder master resolves to. Bounding the range at the version itself
+     * stops the query at the first newer localized version, and makes it a miss
+     * right away for the versions a master can never point at, like the
+     * non-localized ones.
+     * @param {Object} c collection
+     * @param {String} objName object name
+     * @param {String} versionId version to check
+     * @param {String} vFormat bucket version format
+     * @param {Object} log logger
+     * @param {Function} cb callback
+     * @return {undefined}
+     */
+    isLatestLocalizedVersion(
+        c: Collection<ObjectMetastoreDocument>,
+        objName: string,
+        versionId: string,
+        vFormat: string,
+        log: werelogs.Logger,
+        cb: ArsenalCallback<boolean>,
+    ) {
+        const versionKey = formatVersionKey(objName, versionId, vFormat);
+        const firstKey =
+            vFormat === BUCKET_VERSIONS.v0
+                ? formatMasterKey(objName, vFormat)
+                : formatVersionKey(objName, VID_NONE, vFormat);
+        c.find(
+            {
+                _id: {
+                    $gt: firstKey,
+                    $lte: versionKey,
+                },
+                // filtering out objects flagged for deletion
+                $or: [{ 'value.deleted': { $exists: false } }, { 'value.deleted': { $eq: false } }],
+                ...this.nonLocalizedQuery,
+            },
+            { projection: { _id: 1 } },
+        )
+            .sort({
+                _id: 1,
+            })
+            .limit(1)
+            .toArray()
+            .then(keys => cb(null, keys[0]?._id === versionKey))
+            .catch(err => {
+                log.error('isLatestLocalizedVersion: error getting latest version', { error: err.message });
                 return cb(errors.InternalError);
             });
     }
@@ -1864,7 +1912,7 @@ class MongoClientInterface {
         vFormat: string,
         log: werelogs.Logger,
     ) {
-        this.getLatestVersion(c, objName, vFormat, this.nonLocalizedQuery, log, (err, value?) => {
+        this.getLatestVersion(c, objName, vFormat, log, (err, value?) => {
             if (err) {
                 log.error('async-repair: getting latest version', { error: err.message });
                 return undefined;
@@ -1904,7 +1952,7 @@ class MongoClientInterface {
     ) {
         const masterKey = formatMasterKey(objName, vFormat);
         // Check if there are other versions available
-        this.getLatestVersion(c, objName, vFormat, this.nonLocalizedQuery, log, (err, version?) => {
+        this.getLatestVersion(c, objName, vFormat, log, (err, version?) => {
             if (err && !err.is.NoSuchKey) {
                 log.error('getLatestVersion: error getting latest version', {
                     error: err.message,
@@ -2144,20 +2192,15 @@ class MongoClientInterface {
                         });
                 },
                 (mst, next) => {
-                    // getting the last version if master not found
-                    // (either object non existent or last version is a delete marker)
+                    // without a master (either object non existent or last version is a
+                    // delete marker) the master is the latest localized version
                     if (!mst) {
-                        return this.getLatestVersion(c, objName, params.vFormat, null, log, (err, version?) => {
-                            if (err) {
-                                return next(err);
-                            }
-                            return next(null, { value: version });
-                        });
+                        return this.isLatestLocalizedVersion(c, objName, params.versionId, params.vFormat, log, next);
                     }
-                    return next(null, mst);
+                    return next(null, mst.value.isPHD || mst.value.versionId === params.versionId);
                 },
-                (mst, next) => {
-                    if (mst.value.isPHD || mst.value.versionId === params.versionId) {
+                (isMaster, next) => {
+                    if (isMaster) {
                         return this.deleteObjectVerMaster(c, bucketName, objName, params, log, next, originOp);
                     }
                     return this.deleteObjectVerNotMaster(c, bucketName, objName, params, log, next, originOp);
@@ -2459,10 +2502,8 @@ class MongoClientInterface {
         cb: ArsenalCallback<void>,
     ) {
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
-        const getLatestVersion = this.getLatestVersion;
+        const getLatestVersion = this.getLatestVersion.bind(this);
         const nonLocalizedFilter = params.hideNonLocalizedVersions ? this.nonLocalizedQuery : null;
-        // ignore hideNonLocalizedVersions: the master is the latest localized version
-        const phdResolutionFilter = this.nonLocalizedQuery;
         let stream;
         let baseStream;
         let resolvePhdKey;
@@ -2505,7 +2546,8 @@ class MongoClientInterface {
                     transform(obj, encoding, callback) {
                         if (Version.isPHD(obj.value)) {
                             const key = obj.key.slice(DB_PREFIXES.Master.length);
-                            getLatestVersion(c, key, BUCKET_VERSIONS.v1, phdResolutionFilter, log, (err, version?) => {
+                            // ignore hideNonLocalizedVersions: the master is the latest localized version
+                            getLatestVersion(c, key, BUCKET_VERSIONS.v1, log, (err, version?) => {
                                 if (err) {
                                     // ignoring PHD keys with no versions as all versions
                                     // might get deleted before the PHD key gets resolved by the listing

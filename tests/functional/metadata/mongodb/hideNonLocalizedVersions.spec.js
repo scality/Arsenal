@@ -52,6 +52,7 @@ describe('MongoClientInterface::hideNonLocalizedVersions', () => {
     let getObject;
     let getObjects;
     let listObject;
+    let deleteObject;
 
     const bucketMD = BucketInfo.fromObj({
         _name: BUCKET_NAME,
@@ -166,6 +167,7 @@ describe('MongoClientInterface::hideNonLocalizedVersions', () => {
         getObject = promisify(metadata.client.getObject.bind(metadata.client));
         getObjects = promisify(metadata.client.getObjects.bind(metadata.client));
         listObject = promisify(metadata.client.listObject.bind(metadata.client));
+        deleteObject = promisify(metadata.client.deleteObject.bind(metadata.client));
         await promisify(metadata.setup.bind(metadata))();
     });
 
@@ -369,6 +371,13 @@ describe('MongoClientInterface::hideNonLocalizedVersions', () => {
                 assert.ifError(data[0].err);
                 assert.strictEqual(data[0].doc.dataStoreName, LOCAL_LOCATION);
                 assert(data[1].err?.is.NoSuchKey);
+            });
+
+            it('should delete a version of an object having no localized version', async () => {
+                await deleteObject(BUCKET_NAME, 'pfx-nonlocalized', { versionId: nonLocalizedVersionId }, logger);
+                const versionKey = formatVersionKey('pfx-nonlocalized', nonLocalizedVersionId, variation.vFormat);
+                const doc = await metadata.client.getCollection(BUCKET_NAME).findOne({ _id: versionKey });
+                assert.strictEqual(doc, null);
             });
 
             it('should not filter anything when the flag is not set', async () => {

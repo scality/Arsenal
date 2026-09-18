@@ -359,4 +359,7 @@ Resolving an absent or placeholder master is a different matter: it recomputes
 the master, so it always ignores the non-localized versions, whatever the
 caller's view — the same definition the repair paths write. An object whose
 versions are all non-localized simply has no master, and `getObject` reports
-`NoSuchKey` rather than the non-localized version.
+`NoSuchKey` rather than the non-localized version. Deleting a version follows
+the same definition: a version that is not the latest localized one cannot be
+the master, so it takes the non-master path, including when the object has no
+localized version left.
