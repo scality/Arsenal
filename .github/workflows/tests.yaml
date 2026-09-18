@@ -26,23 +26,25 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Enable Corepack
+        run: corepack enable
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'yarn'
       - name: install dependencies
-        run: yarn install --frozen-lockfile --prefer-offline --network-concurrency 1
+        run: yarn install --immutable
       - name: lint yaml
-        run: yarn --silent lint_yml
+        run: yarn lint_yml
       - name: lint javascript
-        run: yarn --silent lint --max-warnings 0
+        run: yarn lint --max-warnings 0
       - name: lint markdown
-        run: yarn --silent lint_md
+        run: yarn lint_md
       - name: add hostname
         run: |
           sudo sh -c "echo '127.0.0.1 testrequestbucket.localhost' >> /etc/hosts"
       - name: test and coverage
-        run: yarn --silent coverage
+        run: yarn coverage
       - name: run functional tests
         run: yarn ft_test
       - uses: codecov/codecov-action@v4
@@ -59,13 +61,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Enable Corepack
+        run: corepack enable
       - name: Install NodeJS
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: yarn
       - name: Install dependencies
-        run: yarn install --frozen-lockfile --prefer-offline
+        run: yarn install --immutable
       - name: Compile
         run: yarn build
       - name: Upload artifacts
@@ -88,9 +92,16 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: '24'
-          cache: yarn
-          cache-dependency-path: tests/workflows/yarn.lock
+      # No `cache: yarn` here: setup-node probes the Yarn cache folder from the
+      # repo root, and `yarn cache dir` exits 1 there once packageManager pins
+      # Yarn 4 (`yarn --version` itself still works). This job deliberately
+      # stays on Yarn 1 for tests/workflows, which pins yarn@1.22.22 itself.
+      # working-directory, not `yarn --cwd`: Corepack resolves packageManager
+      # from the process CWD, so --cwd would pick up the repo root's Yarn 4
+      # and ignore the yarn@1.22.22 pin in tests/workflows/package.json.
       - name: Install dependencies
-        run: yarn --cwd tests/workflows install --frozen-lockfile
+        run: yarn install --frozen-lockfile
+        working-directory: tests/workflows
       - name: Run workflow tests
-        run: yarn --cwd tests/workflows test
+        run: yarn test
+        working-directory: tests/workflows

@@ -109,7 +109,7 @@
     "scripts": {
         "build": "tsc",
         "build_doc": "cd documentation/listingAlgos/pics; dot -Tsvg delimiterStateChart.dot > delimiterStateChart.svg; dot -Tsvg delimiterMasterV0StateChart.dot > delimiterMasterV0StateChart.svg; dot -Tsvg delimiterVersionsStateChart.dot > delimiterVersionsStateChart.svg",
-        "coverage": "export NODE_OPTIONS=\"--tls-max-v1.2\" && nyc --clean jest tests --coverage --testTimeout=120000 --forceExit --testPathIgnorePatterns 'tests/functional/pykmip|tests/workflows'",
+        "coverage": "NODE_OPTIONS=\"--tls-max-v1.2\" nyc --clean jest tests --coverage --testTimeout=120000 --forceExit --testPathIgnorePatterns 'tests/functional/pykmip|tests/workflows'",
         "dev": "nodemon --ext ts --ignore build --exec \"yarn build\"",
         "ft_pykmip_test": "jest tests/functional/pykmip",
         "ft_test": "jest tests/functional --testTimeout=120000 --forceExit --testPathIgnorePatterns tests/functional/pykmip",
@@ -119,7 +119,8 @@
         "prettier": "prettier",
         "prettier:diff": "scality-prettier-diff",
         "prepare": "yarn build",
-        "test": "export NODE_OPTIONS=\"--tls-max-v1.2\" && jest tests/unit --detectOpenHandles"
+        "prepack": "tsc",
+        "test": "NODE_OPTIONS=\"--tls-max-v1.2\" jest tests/unit --detectOpenHandles"
     },
     "jest": {
         "maxWorkers": 1,
@@ -154,5 +155,20 @@
             "lcov",
             "text"
         ]
+    },
+    "packageManager": "yarn@4.18.0+sha512.fcb8716fe7cd0eece141ffc18b92193a9df9204c1ba83189c288835223fc0bbe64af473bab0d5e9927a7daeb5caf2bb07eb2787cc9338ca040ea125f2a1f2f7e",
+    "dependenciesMeta": {
+        "fcntl": {
+            "built": true
+        },
+        "ioctl": {
+            "built": true
+        },
+        "leveldown": {
+            "built": true
+        },
+        "mongodb-memory-server": {
+            "built": true
+        }
     }
 }
