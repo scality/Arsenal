@@ -69,8 +69,8 @@ describe('network.probe.HealthProbeServer', () => {
                 livenessCheck: falseStub,
                 readinessCheck: falseStub,
             });
+            server._cbOnListening = done;
             server.start();
-            done();
         }
 
         beforeAll(done => {
@@ -105,8 +105,8 @@ describe('network.probe.HealthProbeServer', () => {
             server = new HealthProbeServer({
                 port: 4042,
             });
+            server._cbOnListening = done;
             server.start();
-            done();
         }
 
         beforeAll(done => {
@@ -140,8 +140,8 @@ describe('network.probe.HealthProbeServer', () => {
             server = new HealthProbeServer({
                 port: 4042,
             });
+            server._cbOnListening = done;
             server.start();
-            done();
         }
 
         beforeAll(done => {
