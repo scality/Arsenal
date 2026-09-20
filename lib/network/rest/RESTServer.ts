@@ -1,10 +1,10 @@
 import assert from 'assert';
-import * as url from 'url';
 import * as werelogs from 'werelogs';
 import * as http from 'http';
 import httpServer from '../http/server';
 import * as constants from '../../constants';
 import { parseURL } from './utils';
+import { parseRequestTarget } from '../../utils/requestUrl';
 import * as httpUtils from '../http/utils';
 import errors, { ArsenalError, errorInstances } from '../../errors';
 
@@ -191,7 +191,7 @@ export default class RESTServer extends httpServer {
 
         // Get request on the toplevel endpoint with ?action
         if (req.url?.startsWith(`${constants.dataFileURL}?`)) {
-            const queryParam = url.parse(req.url).query;
+            const queryParam = parseRequestTarget(req.url).query;
             if (queryParam === 'diskUsage') {
                 return this.dataStore.getDiskUsage((err, result) => {
                     if (err) {

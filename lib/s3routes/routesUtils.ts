@@ -1,4 +1,5 @@
-import * as url from 'url';
+import * as querystring from 'querystring';
+import { parseRequestTarget } from '../utils/requestUrl';
 import * as http from 'http';
 import { eachSeries } from 'async';
 
@@ -1119,12 +1120,12 @@ export function getBucketNameFromHost(request: http.IncomingMessage, validHosts:
  * @return request object with additional attributes
  */
 export function normalizeRequest(request: ArsenalRequest, validHosts: string[]) {
-    const parsedUrl = url.parse(request.url!, true);
-    request.query = parsedUrl.query as Record<string, string>;
+    const parsedUrl = parseRequestTarget(request.url!);
+    request.query = querystring.parse(parsedUrl.query ?? '') as Record<string, string>;
     // TODO: make the namespace come from a config variable.
     request.namespace = 'default';
     // Parse bucket and/or object names from request
-    const resources = getResourceNames(request, parsedUrl.pathname!, validHosts);
+    const resources = getResourceNames(request, parsedUrl.pathname, validHosts);
     request.gotBucketNameFromHost = resources.gotBucketNameFromHost ?? false;
     request.bucketName = resources.bucket;
     request.objectKey = resources.object;

@@ -1,4 +1,4 @@
-import * as url from 'url';
+import { parseRequestTarget } from '../../utils/requestUrl';
 import { type ArsenalRequest } from '../../types/ArsenalRequest';
 
 const gcpSubresources = new Set([
@@ -50,7 +50,7 @@ export default function getCanonicalizedResource(request: ArsenalRequest, client
     // If bucket specified in hostname, add to resourceString
     let resourceString = request.gotBucketNameFromHost ? `/${request.bucketName}` : '';
     // Add the path to the resourceString
-    resourceString += url.parse(request.url || '').pathname || '';
+    resourceString += parseRequestTarget(request.url || '').pathname;
 
     /*
     If request includes a specified subresource,

@@ -224,4 +224,38 @@ describe('canonicalization', () => {
             'x-amz-meta-meta:something very meta\n' + 'x-amz-spaced-header:value1  ,  value2\n',
         );
     });
+
+    /*
+     * The signed resource has to be the path exactly as the client sent it:
+     * rewriting it here would check the signature against a different object
+     * than the one the request addresses.
+     */
+    describe('canonicalized resource path', () => {
+        const resourceFor = url => getCanonicalizedResource({ headers: {}, url, query: {} });
+
+        it('should keep dot segments in the key', () => {
+            assert.strictEqual(resourceFor('/bucket/a/../b'), '/bucket/a/../b');
+            assert.strictEqual(resourceFor('/bucket/a/./b'), '/bucket/a/./b');
+        });
+
+        it('should keep a key that itself starts with a slash', () => {
+            assert.strictEqual(resourceFor('//bucket/key'), '//bucket/key');
+        });
+
+        it('should leave a non-ASCII key unencoded', () => {
+            assert.strictEqual(resourceFor('/bucket/ключ'), '/bucket/ключ');
+        });
+
+        it('should escape a space, matching what the signing client sends', () => {
+            assert.strictEqual(resourceFor('/bucket/my file.txt'), '/bucket/my%20file.txt');
+        });
+
+        it('should keep percent-encoding untouched', () => {
+            assert.strictEqual(resourceFor('/bucket/key%2Fnested'), '/bucket/key%2Fnested');
+        });
+
+        it('should drop the query string', () => {
+            assert.strictEqual(resourceFor('/bucket/key?uploads=1'), '/bucket/key');
+        });
+    });
 });

@@ -1,6 +1,6 @@
 import { errorInstances } from '../../errors';
 import * as constants from '../../constants';
-import * as url from 'url';
+import { parseRequestTarget } from '../../utils/requestUrl';
 const passthroughPrefixLength = constants.passthroughFileURL.length;
 
 export function explodePath(path: string) {
@@ -35,8 +35,7 @@ export function explodePath(path: string) {
  *   - pathInfo.key {String} - The requested key
  */
 export function parseURL(urlStr: string, expectKey: boolean) {
-    const urlObj = url.parse(urlStr);
-    const pathInfo = explodePath(decodeURI(urlObj.path!));
+    const pathInfo = explodePath(decodeURI(parseRequestTarget(urlStr).path));
     if ((pathInfo.service !== constants.dataFileURL)
         && (pathInfo.service !== constants.passthroughFileURL)) {
         throw errorInstances.InvalidAction.customizeDescription(

@@ -40,6 +40,7 @@ export * as s3routes from './lib/s3routes';
 export * as versioning from './lib/versioning';
 export * as stream from './lib/stream';
 export * as jsutil from './lib/jsutil';
+export * as requestUrl from './lib/utils/requestUrl';
 export { default as stringHash } from './lib/stringHash';
 export * as db from './lib/db';
 export * as errorUtils from './lib/errorUtils';
