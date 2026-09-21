@@ -4,7 +4,7 @@ import * as werelogs from 'werelogs';
 import { errorMapping, kmipMsg } from './errorMapping';
 import { errorInstances } from '../../errors';
 
-type UUIDOptions = { random?: number[]; rng?: () => number[]; } | null;
+type UUIDOptions = { random?: number[]; rng?: () => number[] } | null;
 function uuidv4(options: UUIDOptions, buffer: Buffer, offset?: number): Buffer;
 function uuidv4(options?: UUIDOptions): string;
 function uuidv4(options?: any, buffer?: any, offset?: any): string | Buffer {
@@ -23,7 +23,6 @@ function _uniqueBatchItemID() {
     return uuidv4(null, theUUID);
 }
 
-
 function _PrimitiveType(tagName: string, type: string, value: any) {
     return { [tagName]: { type, value } };
 }
@@ -36,19 +35,18 @@ function _PrimitiveType(tagName: string, type: string, value: any) {
 const thalesInternalTokenError = {
     status: 'Operation Failed',
     reason: 'General Failure',
-    messages: [
-        '[NCERRUnauthorizedAccess]: Token has been revoked',
-        '[NCERRUnauthorizedAccess]: Invalid token'
-    ],
+    messages: ['[NCERRUnauthorizedAccess]: Token has been revoked', '[NCERRUnauthorizedAccess]: Invalid token'],
 };
 
 function isThalesInternalTokenError(status, reason, message) {
-    return status === thalesInternalTokenError.status
-        && reason === thalesInternalTokenError.reason
-        && thalesInternalTokenError.messages.includes(message);
+    return (
+        status === thalesInternalTokenError.status &&
+        reason === thalesInternalTokenError.reason &&
+        thalesInternalTokenError.messages.includes(message)
+    );
 }
 
-export type Options = { codec: any; transport: any; };
+export type Options = { codec: any; transport: any };
 export default class KMIP {
     protocolVersion: {
         major: number;
@@ -236,12 +234,7 @@ export default class KMIP {
      * message is sent.
      * @param handshakeFunction - (logger: Object, cb: Function(err))
      */
-    registerHandshakeFunction(
-        handshakeFunction: (
-            logger: werelogs.Logger,
-            cb: (error: Error | null) => void,
-        ) => void,
-    ) {
+    registerHandshakeFunction(handshakeFunction: (logger: werelogs.Logger, cb: (error: Error | null) => void) => void) {
         this.transport.registerHandshakeFunction(handshakeFunction);
     }
 
@@ -309,25 +302,31 @@ export default class KMIP {
      * @param {String} [resource] - KeyId or BucketName to identify in error message
      * @returns {undefined}
      */
-    request(logger: werelogs.Logger, operation: string, payload: any,
-        cb: (error: Error | null, response?: any) => void, resource?: string) {
+    request(
+        logger: werelogs.Logger,
+        operation: string,
+        payload: any,
+        cb: (error: Error | null, response?: any) => void,
+        resource?: string,
+    ) {
         const uuid = _uniqueBatchItemID();
         const message = KMIP.Message([
             KMIP.Structure('Request Message', [
                 KMIP.Structure('Request Header', [
                     KMIP.Structure('Protocol Version', [
-                        KMIP.Integer('Protocol Version Major',
-                            this.protocolVersion.major),
-                        KMIP.Integer('Protocol Version Minor',
-                            this.protocolVersion.minor)]),
-                    KMIP.Integer('Maximum Response Size',
-                        this.maximumResponseSize),
-                    KMIP.Integer('Batch Count', 1)]),
+                        KMIP.Integer('Protocol Version Major', this.protocolVersion.major),
+                        KMIP.Integer('Protocol Version Minor', this.protocolVersion.minor),
+                    ]),
+                    KMIP.Integer('Maximum Response Size', this.maximumResponseSize),
+                    KMIP.Integer('Batch Count', 1),
+                ]),
                 KMIP.Structure('Batch Item', [
                     KMIP.Enumeration('Operation', operation),
                     KMIP.ByteString('Unique Batch Item ID', uuid),
                     KMIP.Structure('Request Payload', payload),
-                ])])]);
+                ]),
+            ]),
+        ]);
         const encodedMessage = this._encodeMessage(message);
         this._sendEncodedMessage(logger, operation, encodedMessage, uuid, false, cb, resource);
     }
@@ -339,110 +338,101 @@ export default class KMIP {
         uuid: Buffer,
         isRetry: boolean,
         cb: (error: Error | null, response?: any) => void,
-        resource?: string
+        resource?: string,
     ) {
         const startDate = Date.now();
-        this.transport.send(
-            logger, encodedMessage,
-            (err, conversation, rawResponse, latencies, queues) => {
-                const now = Date.now();
-                const kmipLog = {
-                    host: this.options.transport.tls.host,
-                    op: operation,
-                    latencyMs: {
-                        total: now - startDate,
-                        deferred: (latencies.req ?? now) - latencies.defered,
-                        req: now - latencies.req,
-                    },
-                    queues,
-                };
-                if (err) {
-                    // Retryable most likely network related
-                    const error = errorInstances.InternalError
-                        // For internal errors like ECONNREFUSED the message can contain
-                        // sensitive information like hostname port we don't want to leak
-                        .customizeDescription(kmipMsg(operation, resource, err.code));
-                    // warn level to avoid dumping debug and trace logs on retryable errors
-                    logger.warn('KMIP::request: Failed to send message',
-                        { error: err, msg: err.toString?.(), kmip: kmipLog });
-                    return cb(error);
-                }
-                const response = this._decodeMessage(logger, rawResponse);
-                const performedOperation =
-                      response.lookup('Response Message/' +
-                                      'Batch Item/Operation')[0];
-                const resultStatus =
-                      response.lookup('Response Message/' +
-                                      'Batch Item/Result Status')[0];
-                const resultUniqueBatchItemID =
-                      response.lookup('Response Message/' +
-                                      'Batch Item/Unique Batch Item ID')[0];
-                /** Collect all possible error from the response */
-                const errorList: { msg: string, got: any, expected: any }[] = [];
-                if (!resultUniqueBatchItemID ||
-                    resultUniqueBatchItemID.compare(uuid) !== 0) {
-                    this.transport.abortPipeline(conversation);
-                    errorList.push({
-                        msg: 'Invalid batch item ID returned',
-                        got: resultUniqueBatchItemID?.toString('hex'),
-                        expected: uuid.toString('hex'),
-                    });
-                }
-                if (performedOperation !== operation) {
-                    this.transport.abortPipeline(conversation);
-                    errorList.push({
-                        msg: 'Operation mismatch',
-                        got: performedOperation,
-                        expected: operation,
-                    });
-                }
-                if (resultStatus !== 'Success') {
-                    const resultReason =
-                          response.lookup(
-                              'Response Message/Batch Item/Result Reason')[0];
-                    const resultMessage =
-                          response.lookup(
-                              'Response Message/Batch Item/Result Message')[0];
-                    errorList.push({
-                        msg: 'error reponse',
-                        got: { resultStatus, resultReason, resultMessage },
-                        expected: undefined,
-                    });
+        this.transport.send(logger, encodedMessage, (err, conversation, rawResponse, latencies, queues) => {
+            const now = Date.now();
+            const kmipLog = {
+                host: this.options.transport.tls.host,
+                op: operation,
+                latencyMs: {
+                    total: now - startDate,
+                    deferred: (latencies.req ?? now) - latencies.defered,
+                    req: now - latencies.req,
+                },
+                queues,
+            };
+            if (err) {
+                // Retryable most likely network related
+                const error = errorInstances.InternalError
+                    // For internal errors like ECONNREFUSED the message can contain
+                    // sensitive information like hostname port we don't want to leak
+                    .customizeDescription(kmipMsg(operation, resource, err.code));
+                // warn level to avoid dumping debug and trace logs on retryable errors
+                logger.warn('KMIP::request: Failed to send message', {
+                    error: err,
+                    msg: err.toString?.(),
+                    kmip: kmipLog,
+                });
+                return cb(error);
+            }
+            const response = this._decodeMessage(logger, rawResponse);
+            const performedOperation = response.lookup('Response Message/' + 'Batch Item/Operation')[0];
+            const resultStatus = response.lookup('Response Message/' + 'Batch Item/Result Status')[0];
+            const resultUniqueBatchItemID = response.lookup('Response Message/' + 'Batch Item/Unique Batch Item ID')[0];
+            /** Collect all possible error from the response */
+            const errorList: { msg: string; got: any; expected: any }[] = [];
+            if (!resultUniqueBatchItemID || resultUniqueBatchItemID.compare(uuid) !== 0) {
+                this.transport.abortPipeline(conversation);
+                errorList.push({
+                    msg: 'Invalid batch item ID returned',
+                    got: resultUniqueBatchItemID?.toString('hex'),
+                    expected: uuid.toString('hex'),
+                });
+            }
+            if (performedOperation !== operation) {
+                this.transport.abortPipeline(conversation);
+                errorList.push({
+                    msg: 'Operation mismatch',
+                    got: performedOperation,
+                    expected: operation,
+                });
+            }
+            if (resultStatus !== 'Success') {
+                const resultReason = response.lookup('Response Message/Batch Item/Result Reason')[0];
+                const resultMessage = response.lookup('Response Message/Batch Item/Result Message')[0];
+                errorList.push({
+                    msg: 'error reponse',
+                    got: { resultStatus, resultReason, resultMessage },
+                    expected: undefined,
+                });
 
-                    if (!isRetry && isThalesInternalTokenError(resultStatus, resultReason, resultMessage)) {
-                        logger.info('KMIP::reconnecting', { errorList, kmipLog, handshakeDone: this.handshakeDone });
-                        // Close TLS channel socket
-                        this.transport.abortPipeline(conversation, () => {
-                            // Once completely closed and all callbacks are drained,
-                            // reopen the TLS channel connection and skip KMIP handshake if it was already done
-                            // as we already have kmip details
-                            this.transport._createConversation(logger, () => {}, this.handshakeDone);
-                            this._sendEncodedMessage(logger, operation, encodedMessage, uuid, true, cb, resource);
-                        });
-                        return undefined;
-                    }
+                if (!isRetry && isThalesInternalTokenError(resultStatus, resultReason, resultMessage)) {
+                    logger.info('KMIP::reconnecting', { errorList, kmipLog, handshakeDone: this.handshakeDone });
+                    // Close TLS channel socket
+                    this.transport.abortPipeline(conversation, () => {
+                        // Once completely closed and all callbacks are drained,
+                        // reopen the TLS channel connection and skip KMIP handshake if it was already done
+                        // as we already have kmip details
+                        this.transport._createConversation(logger, () => {}, this.handshakeDone);
+                        this._sendEncodedMessage(logger, operation, encodedMessage, uuid, true, cb, resource);
+                    });
+                    return undefined;
+                }
 
-                    // Use AccessDenied as default to avoid retryable error
-                    // Error message does not match AWS, generic message for KMIP provide every details
-                    const kmsErr = (errorMapping[resultStatus]?.[resultReason] ?? errorInstances.AccessDenied)
-                        .customizeDescription(
-                            kmipMsg(operation, resource, `${resultReason}: ${resultMessage}`)
-                        );
-                    // warn level to avoid dumping debug and trace logs on retryable errors
-                    logger.warn('KMIP::request error', { errorList, kmip: kmipLog, error: kmsErr });
-                    return cb(kmsErr);
-                }
-                if (errorList.length) {
-                    // warn level to avoid dumping debug and trace logs on retryable errors
-                    logger.warn('KMIP::request error', { errorList, kmip: kmipLog });
-                    // Retryable as connection is closed and all messages errored
-                    return cb(errorInstances.InternalError.customizeDescription(
-                        kmipMsg(operation, resource, `Internal ${errorList.map(e => e.msg)}`)
-                    ));
-                }
-                logger.info('KMIP::success', { kmip: kmipLog });
-                return cb(null, response);
-            });
+                // Use AccessDenied as default to avoid retryable error
+                // Error message does not match AWS, generic message for KMIP provide every details
+                const kmsErr = (
+                    errorMapping[resultStatus]?.[resultReason] ?? errorInstances.AccessDenied
+                ).customizeDescription(kmipMsg(operation, resource, `${resultReason}: ${resultMessage}`));
+                // warn level to avoid dumping debug and trace logs on retryable errors
+                logger.warn('KMIP::request error', { errorList, kmip: kmipLog, error: kmsErr });
+                return cb(kmsErr);
+            }
+            if (errorList.length) {
+                // warn level to avoid dumping debug and trace logs on retryable errors
+                logger.warn('KMIP::request error', { errorList, kmip: kmipLog });
+                // Retryable as connection is closed and all messages errored
+                return cb(
+                    errorInstances.InternalError.customizeDescription(
+                        kmipMsg(operation, resource, `Internal ${errorList.map(e => e.msg)}`),
+                    ),
+                );
+            }
+            logger.info('KMIP::success', { kmip: kmipLog });
+            return cb(null, response);
+        });
     }
 
     stop(cb?: Function) {
