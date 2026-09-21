@@ -85,7 +85,6 @@
         "@scality/eslint-config-scality": "scality/Guidelines#8.3.3",
         "@sinonjs/fake-timers": "^15.0.0",
         "@types/async": "^3.2.24",
-        "@types/ioredis": "^5.0.0",
         "@types/jest": "^29.5.13",
         "@types/node": "^22.7.6",
         "@types/utf8": "^3.0.3",
