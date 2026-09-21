@@ -7,7 +7,7 @@ import { errorInstances } from '../../errors';
 type UUIDOptions = { random?: number[]; rng?: () => number[]; } | null;
 function uuidv4(options: UUIDOptions, buffer: Buffer, offset?: number): Buffer;
 function uuidv4(options?: UUIDOptions): string;
-function uuidv4(options?: any, buffer?: any, offset?: any) {
+function uuidv4(options?: any, buffer?: any, offset?: any): string | Buffer {
     return uuid(options, buffer, offset);
 }
 
