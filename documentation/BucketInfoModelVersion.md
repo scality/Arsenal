@@ -4,30 +4,31 @@
 
 - v7 to v11 can mean different features between S3C & Zenko.
 - Avoid using model version to check features
-  - used by model < v2 (for splitter)
-  - used in some tests (v5 and v10)
+    - used by model < v2 (for splitter)
+    - used in some tests (v5 and v10)
 
-| Version | S3C (dev/7.X)           | Zenko (dev/8.X)          | Status      |
-|---------|-------------------------|--------------------------|-------------|
-| v2 - v6 | ✅                      | ✅                       | ✅ Common   |
-| v7      | ObjectLock              | UID                      | ❌ Collision|
-| v8      | BucketNotification      | ReadLocationConstraints  | ❌ Collision|
-| v9      | SSEConfiguredMasterKey  | isNFS                    | ❌ Collision|
-| v10     | UID                     | Ingestion                | ❌ Collision|
-| v11     | Tags                    | AzureInfo                | ❌ Collision|
-| v12     | -                       | ObjectLock               | ↪️ Forward  |
-| v13     | -                       | BucketNotification       | ↪️ Forward  |
-| v14     | -                       | SSEConfiguredMasterKey   | ↪️ Forward  |
-| v15     | -                       | Tags                     | ↪️ Forward  |
-| v16     | -                       | Capabilities(VeeamSOSApi)| ✅ New      |
-| v17     | -                       | QuotaMax                 | ✅ New      |
-| **Unified at v17**                                                         |
+| Version | S3C (dev/7.X)          | Zenko (dev/8.X)           | Status       |
+| ------- | ---------------------- | ------------------------- | ------------ |
+| v2 - v6 | ✅                     | ✅                        | ✅ Common    |
+| v7      | ObjectLock             | UID                       | ❌ Collision |
+| v8      | BucketNotification     | ReadLocationConstraints   | ❌ Collision |
+| v9      | SSEConfiguredMasterKey | isNFS                     | ❌ Collision |
+| v10     | UID                    | Ingestion                 | ❌ Collision |
+| v11     | Tags                   | AzureInfo                 | ❌ Collision |
+| v12     | -                      | ObjectLock                | ↪️ Forward   |
+| v13     | -                      | BucketNotification        | ↪️ Forward   |
+| v14     | -                      | SSEConfiguredMasterKey    | ↪️ Forward   |
+| v15     | -                      | Tags                      | ↪️ Forward   |
+| v16     | -                      | Capabilities(VeeamSOSApi) | ✅ New       |
+| v17     | -                      | QuotaMax                  | ✅ New       |
+
+Model versions are unified across S3C and Zenko starting at v17.
 
 ## Model Version 0/1
 
 ### Properties
 
-``` javascript
+```javascript
 this._acl = aclInstance;
 this._name = name;
 this._owner = owner;
@@ -44,8 +45,8 @@ property not added until Model Version 2
 
 ### Properties Added
 
-``` javascript
-this._mdBucketModelVersion = mdBucketModelVersion || 0
+```javascript
+this._mdBucketModelVersion = mdBucketModelVersion || 0;
 this._transient = transient || false;
 this._deleted = deleted || false;
 ```
@@ -216,9 +217,9 @@ The Tag Set of a bucket is an array of objects with Key and Value:
 [
     {
         Key: 'something',
-        Value: 'some_data'
-    }
-]
+        Value: 'some_data',
+    },
+];
 ```
 
 ### Usage
