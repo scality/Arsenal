@@ -48,7 +48,7 @@
         "agentkeepalive": "^4.6.0",
         "ajv": "6.15.0",
         "async": "~2.6.4",
-        "base-x": "3.0.8",
+        "base-x": "3.0.11",
         "base62": "^2.0.2",
         "debug": "^4.4.3",
         "fcntl": "github:scality/node-fcntl#0.3.1",
