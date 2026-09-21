@@ -41,6 +41,7 @@ export * as versioning from './lib/versioning';
 export * as stream from './lib/stream';
 export * as jsutil from './lib/jsutil';
 export * as requestUrl from './lib/utils/requestUrl';
+export { default as Backoff } from './lib/utils/Backoff';
 export { default as stringHash } from './lib/stringHash';
 export * as db from './lib/db';
 export * as errorUtils from './lib/errorUtils';
