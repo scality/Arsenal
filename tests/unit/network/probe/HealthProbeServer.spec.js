@@ -1,6 +1,5 @@
 const assert = require('assert');
-const HealthProbeServer =
-      require('../../../../lib/network/probe/HealthProbeServer').default;
+const HealthProbeServer = require('../../../../lib/network/probe/HealthProbeServer').default;
 const http = require('http');
 
 function makeRequest(meth, uri) {
@@ -15,15 +14,9 @@ function makeRequest(meth, uri) {
     return req;
 }
 
-const healthcheckEndpoints = [
-    '/_/health/liveness',
-    '/_/health/readiness',
-];
+const healthcheckEndpoints = ['/_/health/liveness', '/_/health/readiness'];
 
-const badHealthcheckEndpoints = [
-    '/_/health/liveness_thisiswrong',
-    '/_/health/readiness_thisiswrong',
-];
+const badHealthcheckEndpoints = ['/_/health/liveness_thisiswrong', '/_/health/readiness_thisiswrong'];
 
 describe('network.probe.HealthProbeServer', () => {
     describe('service is "up"', () => {
@@ -43,8 +36,7 @@ describe('network.probe.HealthProbeServer', () => {
             done();
         });
         healthcheckEndpoints.forEach(ep => {
-            it('should perform a GET and ' +
-                'return 200 OK', done => {
+            it('should perform a GET and ' + 'return 200 OK', done => {
                 makeRequest('GET', ep)
                     .on('response', res => {
                         assert(res.statusCode === 200);
@@ -53,7 +45,8 @@ describe('network.probe.HealthProbeServer', () => {
                     .on('error', err => {
                         assert.ifError(err);
                         done();
-                    }).end();
+                    })
+                    .end();
             });
         });
     });
@@ -83,8 +76,7 @@ describe('network.probe.HealthProbeServer', () => {
         });
 
         healthcheckEndpoints.forEach(ep => {
-            it('should perform a GET and ' +
-                'return 503 ServiceUnavailable', done => {
+            it('should perform a GET and ' + 'return 503 ServiceUnavailable', done => {
                 makeRequest('GET', ep)
                     .on('response', res => {
                         assert(res.statusCode === 503);
@@ -93,7 +85,8 @@ describe('network.probe.HealthProbeServer', () => {
                     .on('error', err => {
                         assert.ifError(err);
                         done();
-                    }).end();
+                    })
+                    .end();
             });
         });
     });
@@ -119,8 +112,7 @@ describe('network.probe.HealthProbeServer', () => {
         });
 
         healthcheckEndpoints.forEach(ep => {
-            it('should perform a POST and ' +
-                'return 405 MethodNotAllowed', done => {
+            it('should perform a POST and ' + 'return 405 MethodNotAllowed', done => {
                 makeRequest('POST', ep)
                     .on('response', res => {
                         assert(res.statusCode === 405);
@@ -129,7 +121,8 @@ describe('network.probe.HealthProbeServer', () => {
                     .on('error', err => {
                         assert.ifError(err);
                         done();
-                    }).end();
+                    })
+                    .end();
             });
         });
     });
@@ -154,8 +147,7 @@ describe('network.probe.HealthProbeServer', () => {
         });
 
         badHealthcheckEndpoints.forEach(ep => {
-            it('should perform a GET and ' +
-                'return 400 InvalidURI', done => {
+            it('should perform a GET and ' + 'return 400 InvalidURI', done => {
                 makeRequest('GET', ep)
                     .on('response', res => {
                         assert(res.statusCode === 400);
@@ -164,7 +156,8 @@ describe('network.probe.HealthProbeServer', () => {
                     .on('error', err => {
                         assert.ifError(err);
                         done();
-                    }).end();
+                    })
+                    .end();
             });
         });
     });
@@ -206,7 +199,8 @@ describe('network.probe.HealthProbeServer', () => {
                 .on('error', err => {
                     assert.ifError(err);
                     done();
-                }).end();
+                })
+                .end();
         });
     });
 });

@@ -19,23 +19,14 @@ function setContentRange(
 ) {
     const [start, end] = byteRange;
     assert(start !== undefined && end !== undefined);
-    response.setHeader('Content-Range',
-        `bytes ${start}-${end}/${objectSize}`);
+    response.setHeader('Content-Range', `bytes ${start}-${end}/${objectSize}`);
 }
 
-function sendError(
-    res: http.ServerResponse,
-    log: werelogs.RequestLogger,
-    error: ArsenalError,
-    optMessage?: string,
-) {
+function sendError(res: http.ServerResponse, log: werelogs.RequestLogger, error: ArsenalError, optMessage?: string) {
     res.writeHead(error.code);
     const message = optMessage ?? error.description ?? '';
-    log.debug('sending back error response', { httpCode: error.code,
-        errorType: error.message,
-        error: message });
-    res.end(`${JSON.stringify({ errorType: error.message,
-        errorMessage: message })}\n`);
+    log.debug('sending back error response', { httpCode: error.code, errorType: error.message, error: message });
+    res.end(`${JSON.stringify({ errorType: error.message, errorMessage: message })}\n`);
 }
 
 /**
@@ -64,7 +55,7 @@ export default class RESTServer extends httpServer {
         port: number;
         dataStore: any;
         bindAddress?: string;
-        log: { logLevel: any; dumpLevel: any; };
+        log: { logLevel: any; dumpLevel: any };
     }) {
         assert(params.port);
 
@@ -105,9 +96,7 @@ export default class RESTServer extends httpServer {
      * @return new request logger
      */
     createLogger(reqUids?: string) {
-        return reqUids ?
-            this.logging.newRequestLoggerFromSerializedUids(reqUids) :
-            this.logging.newRequestLogger();
+        return reqUids ? this.logging.newRequestLoggerFromSerializedUids(reqUids) : this.logging.newRequestLogger();
     }
 
     /**
@@ -120,8 +109,7 @@ export default class RESTServer extends httpServer {
     _onRequest(req: http.IncomingMessage, res: http.ServerResponse) {
         const reqUids = req.headers['x-scal-request-uids'];
         const log = this.createLogger(reqUids as string);
-        log.debug('request received', { method: req.method,
-            url: req.url });
+        log.debug('request received', { method: req.method, url: req.url });
         const method = req.method ?? '';
         if (method in this.reqMethods) {
             this.reqMethods[method](req, res, log);
@@ -138,11 +126,7 @@ export default class RESTServer extends httpServer {
      * @param res - HTTP response object
      * @param log - logger object
      */
-    _onPut(
-        req: http.IncomingMessage,
-        res: http.ServerResponse,
-        log: werelogs.RequestLogger,
-    ) {
+    _onPut(req: http.IncomingMessage, res: http.ServerResponse, log: werelogs.RequestLogger) {
         let size: number;
         try {
             parseURL(req.url ?? '', false);
@@ -152,8 +136,7 @@ export default class RESTServer extends httpServer {
             }
             size = Number.parseInt(contentLength, 10);
             if (Number.isNaN(size)) {
-                throw errorInstances.InvalidInput.customizeDescription(
-                    'bad Content-Length');
+                throw errorInstances.InvalidInput.customizeDescription('bad Content-Length');
             }
         } catch (err: any) {
             return sendError(res, log, err);
@@ -180,14 +163,9 @@ export default class RESTServer extends httpServer {
      * @param res - HTTP response object
      * @param log - logger object
      */
-    _onGet(
-        req: http.IncomingMessage,
-        res: http.ServerResponse,
-        log: werelogs.RequestLogger,
-    ) {
+    _onGet(req: http.IncomingMessage, res: http.ServerResponse, log: werelogs.RequestLogger) {
         let pathInfo: ReturnType<typeof parseURL>;
-        let rangeSpec: ReturnType<typeof httpUtils.parseRangeSpec> | undefined =
-            undefined;
+        let rangeSpec: ReturnType<typeof httpUtils.parseRangeSpec> | undefined = undefined;
 
         // Get request on the toplevel endpoint with ?action
         if (req.url?.startsWith(`${constants.dataFileURL}?`)) {
@@ -237,8 +215,7 @@ export default class RESTServer extends httpServer {
                 if (err) {
                     return sendError(res, log, err);
                 }
-                log.debug('sending back 200/206 response with contents',
-                    { key: pathInfo.key });
+                log.debug('sending back 200/206 response with contents', { key: pathInfo.key });
                 setContentLength(res, contentLength);
                 res.setHeader('Accept-Ranges', 'bytes');
                 if (byteRange) {
@@ -263,11 +240,7 @@ export default class RESTServer extends httpServer {
      * @param res - HTTP response object
      * @param log - logger object
      */
-    _onDelete(
-        req: http.IncomingMessage,
-        res: http.ServerResponse,
-        log: werelogs.RequestLogger,
-    ) {
+    _onDelete(req: http.IncomingMessage, res: http.ServerResponse, log: werelogs.RequestLogger) {
         let pathInfo: ReturnType<typeof parseURL>;
         try {
             pathInfo = parseURL(req.url ?? '', true);
@@ -278,8 +251,7 @@ export default class RESTServer extends httpServer {
             if (err) {
                 return sendError(res, log, err);
             }
-            log.debug('sending back 204 response to DELETE',
-                { key: pathInfo.key });
+            log.debug('sending back 204 response to DELETE', { key: pathInfo.key });
             res.writeHead(204);
             return res.end(() => {
                 log.debug('DELETE response sent', { key: pathInfo.key });

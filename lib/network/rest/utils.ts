@@ -15,8 +15,7 @@ export function explodePath(path: string) {
     if (pathMatch) {
         return {
             service: pathMatch[1],
-            key: (pathMatch[3] !== undefined && pathMatch[3].length > 0 ?
-                pathMatch[3] : undefined),
+            key: pathMatch[3] !== undefined && pathMatch[3].length > 0 ? pathMatch[3] : undefined,
         };
     }
     throw errorInstances.InvalidURI.customizeDescription('malformed URI');
@@ -36,14 +35,11 @@ export function explodePath(path: string) {
  */
 export function parseURL(urlStr: string, expectKey: boolean) {
     const pathInfo = explodePath(decodeURI(parseRequestTarget(urlStr).path));
-    if ((pathInfo.service !== constants.dataFileURL)
-        && (pathInfo.service !== constants.passthroughFileURL)) {
-        throw errorInstances.InvalidAction.customizeDescription(
-            `unsupported service '${pathInfo.service}'`);
+    if (pathInfo.service !== constants.dataFileURL && pathInfo.service !== constants.passthroughFileURL) {
+        throw errorInstances.InvalidAction.customizeDescription(`unsupported service '${pathInfo.service}'`);
     }
     if (expectKey && pathInfo.key === undefined) {
-        throw errorInstances.MissingParameter.customizeDescription(
-            'URL is missing key');
+        throw errorInstances.MissingParameter.customizeDescription('URL is missing key');
     }
     if (!expectKey && pathInfo.key !== undefined) {
         // note: we may implement rewrite functionality by allowing a
@@ -52,8 +48,7 @@ export function parseURL(urlStr: string, expectKey: boolean) {
         // atomicity of the update (we would just remove the old
         // object when the new one has been written entirely in this
         // case, saving a request over an equivalent PUT + DELETE).
-        throw errorInstances.InvalidURI.customizeDescription(
-            'PUT url cannot contain a key');
+        throw errorInstances.InvalidURI.customizeDescription('PUT url cannot contain a key');
     }
     return pathInfo;
 }

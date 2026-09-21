@@ -11,15 +11,15 @@ const gcpCanonicalizedResource = request => getCanonicalizedResource(request, 'G
 describe('canonicalization', () => {
     it('should construct a canonicalized header in the correct order for AWS', () => {
         const headers = {
-            date: 'Mon, 21 Sep 2015 22:29:27 GMT',
+            'date': 'Mon, 21 Sep 2015 22:29:27 GMT',
             'x-amz-request-payer': 'requester',
             'x-amz-meta-meta': 'something very meta',
             'x-amz-meta-bits': '0',
             'x-amz-meta-blksize': '2097152',
             'x-amz-meta-compress': '0',
-            authorization: 'AWS accessKey1:V8g5UJUFmMzruMqUHVT6ZwvUw+M=',
-            host: 's3.amazonaws.com:80',
-            connection: 'Keep-Alive',
+            'authorization': 'AWS accessKey1:V8g5UJUFmMzruMqUHVT6ZwvUw+M=',
+            'host': 's3.amazonaws.com:80',
+            'connection': 'Keep-Alive',
             'user-agent': 'Cyberduck/4.7.2.18004 (Mac OS X/10.10.5) (x86_64)',
         };
         const canonicalizedHeader = getCanonicalizedAmzHeaders(headers);
@@ -35,10 +35,10 @@ describe('canonicalization', () => {
 
     it('should return an empty string as the canonicalized ' + 'header if no amz headers', () => {
         const headers = {
-            date: 'Mon, 21 Sep 2015 22:29:27 GMT',
-            authorization: 'AWS accessKey1:V8g5UJUFmMzruMqUHVT6ZwvUw+M=',
-            host: 's3.amazonaws.com:80',
-            connection: 'Keep-Alive',
+            'date': 'Mon, 21 Sep 2015 22:29:27 GMT',
+            'authorization': 'AWS accessKey1:V8g5UJUFmMzruMqUHVT6ZwvUw+M=',
+            'host': 's3.amazonaws.com:80',
+            'connection': 'Keep-Alive',
             'user-agent': 'Cyberduck/4.7.2.18004 (Mac OS X/10.10.5) (x86_64)',
         };
         const canonicalizedHeader = getCanonicalizedAmzHeaders(headers);
@@ -89,15 +89,15 @@ describe('canonicalization', () => {
 
     it('should construct a canonicalized header in the correct order for GCP', () => {
         const headers = {
-            date: 'Mon, 21 Sep 2015 22:29:27 GMT',
+            'date': 'Mon, 21 Sep 2015 22:29:27 GMT',
             'x-goog-request-payer': 'requester',
             'x-goog-meta-meta': 'something very meta',
             'x-goog-meta-bits': '0',
             'x-goog-meta-blksize': '2097152',
             'x-goog-meta-compress': '0',
-            authorization: 'GOOG1 accessKey1:V8g5UJUFmMzruMqUHVT6ZwvUw+M=',
-            host: 's3.amazonaws.com:80',
-            connection: 'Keep-Alive',
+            'authorization': 'GOOG1 accessKey1:V8g5UJUFmMzruMqUHVT6ZwvUw+M=',
+            'host': 's3.amazonaws.com:80',
+            'connection': 'Keep-Alive',
             'user-agent': 'Cyberduck/4.7.2.18004 (Mac OS X/10.10.5) (x86_64)',
         };
         const canonicalizedHeader = getCanonicalizedGcpHeaders(headers);
@@ -113,10 +113,10 @@ describe('canonicalization', () => {
 
     it('should return an empty string as the canonicalized ' + 'header if no goog headers', () => {
         const headers = {
-            date: 'Mon, 21 Sep 2015 22:29:27 GMT',
-            authorization: 'GOOG1 accessKey1:V8g5UJUFmMzruMqUHVT6ZwvUw+M=',
-            host: 'storage.googleapis.com:80',
-            connection: 'Keep-Alive',
+            'date': 'Mon, 21 Sep 2015 22:29:27 GMT',
+            'authorization': 'GOOG1 accessKey1:V8g5UJUFmMzruMqUHVT6ZwvUw+M=',
+            'host': 'storage.googleapis.com:80',
+            'connection': 'Keep-Alive',
             'user-agent': 'Cyberduck/4.7.2.18004 (Mac OS X/10.10.5) (x86_64)',
         };
         const canonicalizedHeader = getCanonicalizedGcpHeaders(headers);
@@ -167,11 +167,11 @@ describe('canonicalization', () => {
 
     it('should handle header values that are arrays (AWS SDK v3 compatibility) for AWS', () => {
         const headers = {
-            date: 'Mon, 21 Sep 2015 22:29:27 GMT',
+            'date': 'Mon, 21 Sep 2015 22:29:27 GMT',
             'x-amz-array-header': ['value1', 'value2', 'value3'],
             'x-amz-meta-meta': 'something very meta',
-            authorization: 'AWS accessKey1:V8g5UJUFmMzruMqUHVT6ZwvUw+M=',
-            host: 's3.amazonaws.com:80',
+            'authorization': 'AWS accessKey1:V8g5UJUFmMzruMqUHVT6ZwvUw+M=',
+            'host': 's3.amazonaws.com:80',
         };
         const canonicalizedHeader = getCanonicalizedAmzHeaders(headers);
         assert.strictEqual(
@@ -182,11 +182,11 @@ describe('canonicalization', () => {
 
     it('should handle header values that are numbers for AWS', () => {
         const headers = {
-            date: 'Mon, 21 Sep 2015 22:29:27 GMT',
+            'date': 'Mon, 21 Sep 2015 22:29:27 GMT',
             'x-amz-number-header': 12345,
             'x-amz-meta-meta': 'something very meta',
-            authorization: 'AWS accessKey1:V8g5UJUFmMzruMqUHVT6ZwvUw+M=',
-            host: 's3.amazonaws.com:80',
+            'authorization': 'AWS accessKey1:V8g5UJUFmMzruMqUHVT6ZwvUw+M=',
+            'host': 's3.amazonaws.com:80',
         };
         const canonicalizedHeader = getCanonicalizedAmzHeaders(headers);
         assert.strictEqual(
@@ -197,11 +197,11 @@ describe('canonicalization', () => {
 
     it('should handle header values that are arrays for GCP', () => {
         const headers = {
-            date: 'Mon, 21 Sep 2015 22:29:27 GMT',
+            'date': 'Mon, 21 Sep 2015 22:29:27 GMT',
             'x-goog-array-header': ['gcp-val1', 'gcp-val2'],
             'x-goog-meta-meta': 'something very meta',
-            authorization: 'GOOG1 accessKey1:V8g5UJUFmMzruMqUHVT6ZwvUw+M=',
-            host: 'storage.googleapis.com:80',
+            'authorization': 'GOOG1 accessKey1:V8g5UJUFmMzruMqUHVT6ZwvUw+M=',
+            'host': 'storage.googleapis.com:80',
         };
         const canonicalizedHeader = getCanonicalizedGcpHeaders(headers);
         assert.strictEqual(
@@ -212,11 +212,11 @@ describe('canonicalization', () => {
 
     it('should handle header values with extra whitespace in arrays', () => {
         const headers = {
-            date: 'Mon, 21 Sep 2015 22:29:27 GMT',
+            'date': 'Mon, 21 Sep 2015 22:29:27 GMT',
             'x-amz-spaced-header': ['  value1  ', '  value2  '],
             'x-amz-meta-meta': 'something very meta',
-            authorization: 'AWS accessKey1:V8g5UJUFmMzruMqUHVT6ZwvUw+M=',
-            host: 's3.amazonaws.com:80',
+            'authorization': 'AWS accessKey1:V8g5UJUFmMzruMqUHVT6ZwvUw+M=',
+            'host': 's3.amazonaws.com:80',
         };
         const canonicalizedHeader = getCanonicalizedAmzHeaders(headers);
         assert.strictEqual(
