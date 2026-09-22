@@ -121,6 +121,7 @@
         "prettier": "prettier",
         "prettier:diff": "scality-prettier-diff",
         "prepare": "yarn build",
+        "prepack": "tsc",
         "test": "NODE_OPTIONS=\"${NODE_OPTIONS:-} --tls-max-v1.2\" jest tests/unit --detectOpenHandles"
     },
     "jest": {
