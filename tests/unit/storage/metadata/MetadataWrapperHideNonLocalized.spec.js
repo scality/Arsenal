@@ -83,13 +83,15 @@ describe('MetadataWrapper::hideNonLocalizedVersions', () => {
 
         await call(metadata, 'listMultipartUploads', bucketName, {});
         assert.strictEqual(client.listMultipartUploads.firstCall.args[1].hideNonLocalizedVersions, true);
+
+        // the lifecycle listings decide which version is current, so they must see
+        // the same versions as the clients do
+        await call(metadata, 'listLifecycleObject', bucketName, {});
+        assert.strictEqual(client.listLifecycleObject.firstCall.args[1].hideNonLocalizedVersions, true);
     });
 
-    it('should not set the flag on the internal and write calls', async () => {
+    it('should not set the flag on the write calls', async () => {
         const metadata = buildWrapper(true);
-
-        await call(metadata, 'listLifecycleObject', bucketName, {});
-        assert.strictEqual(client.listLifecycleObject.firstCall.args[1].hideNonLocalizedVersions, undefined);
 
         await call(metadata, 'putObjectMD', bucketName, objName, {}, {});
         assert.strictEqual(client.putObject.firstCall.args[3].hideNonLocalizedVersions, undefined);
