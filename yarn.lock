@@ -2842,6 +2842,15 @@
     commander "11.1.0"
     markdownlint "0.31.1"
 
+"@scality/fcntl@^0.4.0":
+  version "0.4.0"
+  resolved "https://registry.yarnpkg.com/@scality/fcntl/-/fcntl-0.4.0.tgz#16f437d0f8af3a77922a8a33263e7f85d06df5eb"
+  integrity sha512-m5CnmdRfbE3cWtykdh81zzhxdheUsS+yjxe7F4bbPlfbjR0QJAS7BA4czccXE9/QMCVdAoe5ZiGtTBQEbPi0Ng==
+  dependencies:
+    bindings "^1.1.1"
+    node-addon-api "^8.3.0"
+    node-gyp "^11.1.0"
+
 "@scality/hdclient@^1.3.2":
   version "1.3.2"
   resolved "https://registry.yarnpkg.com/@scality/hdclient/-/hdclient-1.3.2.tgz#544d08a5b88869a9c30107c05d774e13595966fb"
@@ -5212,14 +5221,6 @@ fb-watchman@^2.0.0:
   integrity sha512-p5161BqbuCaSnB8jIbzQHOlpgsPmK5rJVDfDKO91Axs5NC1uu3HRQm6wt9cd9/+GtQQIO53JdGXXoyDpTAsgYA==
   dependencies:
     bser "2.1.1"
-
-"fcntl@github:scality/node-fcntl#0.3.0":
-  version "0.3.0"
-  resolved "https://codeload.github.com/scality/node-fcntl/tar.gz/397840a8842e6d8067b6be8c22f1a2b81486f123"
-  dependencies:
-    bindings "^1.1.1"
-    node-addon-api "^8.3.0"
-    node-gyp "^11.1.0"
 
 fdir@^6.5.0:
   version "6.5.0"
