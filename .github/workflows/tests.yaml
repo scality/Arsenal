@@ -54,7 +54,7 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
       - name: run executables tests
-        run: yarn install && yarn test
+        run: yarn install --immutable && yarn test
         working-directory: 'lib/executables/pensieveCreds/'
 
   compile:
@@ -91,12 +91,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+      - name: Enable Corepack
+        run: corepack enable
       - name: Install NodeJS
         uses: actions/setup-node@v6
         with:
           node-version: '24'
+          cache: yarn
+          cache-dependency-path: tests/workflows/yarn.lock
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: yarn install --immutable
         working-directory: tests/workflows
       - name: Run workflow tests
         run: yarn test
