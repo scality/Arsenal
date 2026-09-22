@@ -2638,6 +2638,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@eslint/js@npm:^9.37.0":
+  version: 9.39.5
+  resolution: "@eslint/js@npm:9.39.5"
+  checksum: 10c0/49894e98ba313a7d3bfb1b20d55c0f9826be45a7db876fd84e533ac7f101b1d95b51cd22c6a6db3a45066b9c0d068c31b4a22fa0db8a6cc8744a25540efdb824
+  languageName: node
+  linkType: hard
+
 "@eslint/object-schema@npm:^2.1.6":
   version: 2.1.6
   resolution: "@eslint/object-schema@npm:2.1.6"
@@ -3658,6 +3665,8 @@ __metadata:
     "@babel/preset-env": "npm:^7.28.3"
     "@babel/preset-typescript": "npm:^7.27.1"
     "@eslint/compat": "npm:^1.4.0"
+    "@eslint/eslintrc": "npm:^3.3.1"
+    "@eslint/js": "npm:^9.37.0"
     "@eslint/plugin-kit": "npm:^0.4.0"
     "@js-sdsl/ordered-set": "npm:^4.4.2"
     "@opentelemetry/api": "npm:^1.9.1"
