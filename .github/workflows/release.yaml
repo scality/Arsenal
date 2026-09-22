@@ -83,6 +83,8 @@ jobs:
             exit 1
           fi
 
+      - name: Enable Corepack
+        run: corepack enable
       - name: Install NodeJS
         uses: actions/setup-node@v6
         with:
@@ -90,7 +92,7 @@ jobs:
           cache: yarn
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile --prefer-offline
+        run: yarn install --immutable
 
       - name: Build
         run: yarn build
