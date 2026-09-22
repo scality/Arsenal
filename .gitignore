@@ -17,9 +17,10 @@ coverage/
 # TypeScript
 build/
 
-# Yarn (Berry) — see .yarnrc.yml
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/sdks
-!.yarn/versions
+# Yarn (Berry). Globbed, not anchored: the nested install roots are their
+# own Yarn projects.
+**/.yarn/*
+!**/.yarn/patches
+!**/.yarn/plugins
+!**/.yarn/sdks
+!**/.yarn/versions
