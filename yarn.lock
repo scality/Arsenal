@@ -3731,8 +3731,15 @@ __metadata:
     werelogs: "scality/werelogs#8.2.4"
     xml2js: "npm:^0.6.2"
   dependenciesMeta:
+    "@scality/fcntl":
+      built: true
     ioctl:
+      built: true
       optional: true
+    leveldown:
+      built: true
+    mongodb-memory-server:
+      built: true
   languageName: unknown
   linkType: soft
 
