@@ -7,8 +7,11 @@
         "test": "mocha --recursive --timeout 5500 tests/unit"
     },
     "dependencies": {
-        "mocha": "5.2.0",
-        "async": "~2.6.1",
-        "node-forge": "^0.7.1"
-    }
+        "async": "~2.6.4",
+        "node-forge": "^1.3.1"
+    },
+    "devDependencies": {
+        "mocha": "^12.0.2"
+    },
+    "packageManager": "yarn@4.18.0+sha512.fcb8716fe7cd0eece141ffc18b92193a9df9204c1ba83189c288835223fc0bbe64af473bab0d5e9927a7daeb5caf2bb07eb2787cc9338ca040ea125f2a1f2f7e"
 }
