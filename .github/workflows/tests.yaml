@@ -26,30 +26,38 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Enable Corepack
+        run: corepack enable
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'yarn'
+          cache-dependency-path: |
+            yarn.lock
+            lib/executables/pensieveCreds/yarn.lock
       - name: install dependencies
-        run: yarn install --frozen-lockfile --prefer-offline --network-concurrency 1
+        run: yarn install --immutable
+      # Berry does not run `prepare` on install; some tests require build/.
+      - name: build
+        run: yarn build
       - name: lint yaml
-        run: yarn --silent lint_yml
+        run: yarn lint_yml
       - name: lint javascript
-        run: yarn --silent lint --max-warnings 0
+        run: yarn lint --max-warnings 0
       - name: lint markdown
-        run: yarn --silent lint_md
+        run: yarn lint_md
       - name: add hostname
         run: |
           sudo sh -c "echo '127.0.0.1 testrequestbucket.localhost' >> /etc/hosts"
       - name: test and coverage
-        run: yarn --silent coverage
+        run: yarn coverage
       - name: run functional tests
         run: yarn ft_test
       - uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
       - name: run executables tests
-        run: yarn install && yarn test
+        run: yarn install --immutable && yarn test
         working-directory: 'lib/executables/pensieveCreds/'
 
   compile:
@@ -59,13 +67,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Enable Corepack
+        run: corepack enable
       - name: Install NodeJS
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: yarn
       - name: Install dependencies
-        run: yarn install --frozen-lockfile --prefer-offline
+        run: yarn install --immutable
       - name: Compile
         run: yarn build
       - name: Upload artifacts
@@ -84,6 +94,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+      - name: Enable Corepack
+        run: corepack enable
       - name: Install NodeJS
         uses: actions/setup-node@v6
         with:
@@ -91,6 +103,8 @@ jobs:
           cache: yarn
           cache-dependency-path: tests/workflows/yarn.lock
       - name: Install dependencies
-        run: yarn --cwd tests/workflows install --frozen-lockfile
+        run: yarn install --immutable
+        working-directory: tests/workflows
       - name: Run workflow tests
-        run: yarn --cwd tests/workflows test
+        run: yarn test
+        working-directory: tests/workflows

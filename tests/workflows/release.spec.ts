@@ -44,6 +44,7 @@ async function createTag(tag: string) {
 const mockSteps = {
     build: [
         { name: 'Fail if release already exists', mockWith: 'echo no-release-found' },
+        { name: 'Enable Corepack', mockWith: 'echo skip-corepack' },
         { name: 'Install NodeJS', mockWith: 'echo skip-setup-node' },
         { name: 'Install dependencies', mockWith: 'echo skip-install' },
         { name: 'Build', mockWith: 'echo skip-build' },
