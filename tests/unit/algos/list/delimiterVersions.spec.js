@@ -1646,20 +1646,21 @@ function getTestListing(mdParams, data, vFormat) {
             // the two first null keys fill the results, the third one
             // is cached, then the fourth one triggers the flush of the
             // third one which does not fit: the listing ends there
-            assert.deepStrictEqual(filterResults, [
-                FILTER_ACCEPT, FILTER_ACCEPT, FILTER_ACCEPT, FILTER_END,
-            ]);
+            assert.deepStrictEqual(filterResults, [FILTER_ACCEPT, FILTER_ACCEPT, FILTER_ACCEPT, FILTER_END]);
             assert.deepStrictEqual(listing.result(), {
                 CommonPrefixes: [],
-                Versions: [{
-                    key: `key${zpad(0)}`,
-                    value: '{"versionId":"v0"}',
-                    versionId: 'v0',
-                }, {
-                    key: `key${zpad(1)}`,
-                    value: '{"versionId":"v1"}',
-                    versionId: 'v1',
-                }],
+                Versions: [
+                    {
+                        key: `key${zpad(0)}`,
+                        value: '{"versionId":"v0"}',
+                        versionId: 'v0',
+                    },
+                    {
+                        key: `key${zpad(1)}`,
+                        value: '{"versionId":"v1"}',
+                        versionId: 'v1',
+                    },
+                ],
                 IsTruncated: true,
                 NextKeyMarker: `key${zpad(1)}`,
                 NextVersionIdMarker: 'v1',
