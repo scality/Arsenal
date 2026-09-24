@@ -44,7 +44,7 @@ const variations = [
     { it: '(v1)', vFormat: BucketVersioningKeyFormat.v1 },
 ];
 
-describe('MongoClientInterface::hideNonLocalizedVersions', () => {
+describe('MongoClientInterface::clean view', () => {
     let metadata;
     let createBucket;
     let deleteBucket;
@@ -259,7 +259,7 @@ describe('MongoClientInterface::hideNonLocalizedVersions', () => {
             });
 
             it('should page the version listing consistently', async () => {
-                const listed = [];
+                const listed: string[] = [];
                 let keyMarker;
                 let versionIdMarker;
                 for (;;) {
@@ -388,6 +388,162 @@ describe('MongoClientInterface::hideNonLocalizedVersions', () => {
                     logger,
                 );
                 assert.strictEqual(data.dataStoreName, SOURCE_LOCATION);
+            });
+        });
+    });
+
+    describe('the master key of a non-localized version', () => {
+        const OBJ_NAME = 'pfx-object';
+
+        /**
+         * Object metadata as the clean-room processor replicates it.
+         * @param {String|null} versionId - version id, left out when null
+         * @param {String} dataStoreName - location the version data lives on
+         * @param {Object} [extraMD] - additional object metadata fields
+         * @return {Object} object metadata
+         */
+        function objectMD(versionId, dataStoreName, extraMD?) {
+            return Object.assign(
+                {
+                    key: OBJ_NAME,
+                    dataStoreName,
+                    'last-modified': new Date().toJSON(),
+                },
+                versionId ? { versionId } : null,
+                extraMD,
+            );
+        }
+
+        /**
+         * Writes a version the way the clean-room processor does: the version id
+         * is preserved and the master is repaired, i.e. putObjectVerCase4.
+         * @param {Object} objVal - object metadata to write
+         * @return {Promise<undefined>} the write
+         */
+        function putReplicated(objVal) {
+            const params = { versionId: objVal.versionId, repairMaster: true };
+            return putObjectMD(BUCKET_NAME, OBJ_NAME, objVal, params, logger);
+        }
+
+        variations.forEach(variation => {
+            describe(`vFormat : ${variation.vFormat}`, () => {
+                // one object, two versions: v2 is generated last, so it is the
+                // newer one and would take the master over if it were localized
+                let v1NonLocalized;
+                let v1Localized;
+                let v1LocalizedUpdated;
+                let v2NonLocalized;
+
+                function getMaster() {
+                    return metadata.client
+                        .getCollection(BUCKET_NAME)
+                        .findOne({ _id: formatMasterKey(OBJ_NAME, variation.vFormat) });
+                }
+
+                function getVersion(versionId) {
+                    return metadata.client
+                        .getCollection(BUCKET_NAME)
+                        .findOne({ _id: formatVersionKey(OBJ_NAME, versionId, variation.vFormat) });
+                }
+
+                beforeEach(async () => {
+                    metadata.client.defaultBucketKeyFormat = variation.vFormat;
+                    await createBucket(BUCKET_NAME, bucketMD, logger);
+                    const v1 = generateVersionId();
+                    const v2 = generateVersionId();
+                    v1NonLocalized = objectMD(v1, SOURCE_LOCATION);
+                    v1Localized = objectMD(v1, LOCAL_LOCATION);
+                    v1LocalizedUpdated = objectMD(v1, LOCAL_LOCATION, { legalHold: true });
+                    v2NonLocalized = objectMD(v2, SOURCE_LOCATION);
+                });
+
+                afterEach(() => deleteBucket(BUCKET_NAME, logger));
+
+                it('should write the version without creating a master', async () => {
+                    await putReplicated(v1NonLocalized);
+                    const version = await getVersion(v1NonLocalized.versionId);
+                    assert(version, 'the version key should have been written');
+                    assert.strictEqual(version.value.dataStoreName, SOURCE_LOCATION);
+                    assert.strictEqual(await getMaster(), null);
+                });
+
+                it('should keep the master on the localized version when a newer one is not localized', async () => {
+                    await putReplicated(v1Localized);
+                    await putReplicated(v2NonLocalized);
+                    const master = await getMaster();
+                    assert(master, 'the master key should still be there');
+                    assert.strictEqual(master.value.versionId, v1Localized.versionId);
+                    assert.strictEqual(master.value.dataStoreName, LOCAL_LOCATION);
+                });
+
+                it('should update the master when a localized version is written again', async () => {
+                    await putReplicated(v1Localized);
+                    // the processor replays the version to apply an object-lock change
+                    await putReplicated(v1LocalizedUpdated);
+                    const master = await getMaster();
+                    assert.strictEqual(master.value.versionId, v1Localized.versionId);
+                    assert.strictEqual(master.value.legalHold, true);
+                });
+
+                it('should repair the master when the version gets localized', async () => {
+                    await putReplicated(v1NonLocalized);
+                    assert.strictEqual(await getMaster(), null);
+                    // the data copy rewrites the location, replaying the same version id
+                    await putReplicated(v1Localized);
+                    const master = await getMaster();
+                    assert(master, 'the master key should have been repaired');
+                    assert.strictEqual(master.value.versionId, v1Localized.versionId);
+                    assert.strictEqual(master.value.dataStoreName, LOCAL_LOCATION);
+                });
+
+                describe('the paths writing the master alone', () => {
+                    // an object with no version of its own, localized or not
+                    let localized;
+                    let nonLocalized;
+
+                    beforeEach(() => {
+                        localized = objectMD(null, LOCAL_LOCATION);
+                        nonLocalized = objectMD(null, SOURCE_LOCATION);
+                    });
+
+                    function putMasterOnly(objVal, params) {
+                        return putObjectMD(BUCKET_NAME, OBJ_NAME, objVal, params, logger);
+                    }
+
+                    function putWithCond(objVal) {
+                        return promisify(metadata.putObjectWithCond.bind(metadata))(
+                            BUCKET_NAME,
+                            OBJ_NAME,
+                            objVal,
+                            { conditions: {} },
+                            logger,
+                        );
+                    }
+
+                    async function assertRefused(promise) {
+                        await assert.rejects(promise, err => {
+                            assert(err.is.InternalError, `unexpected error ${err.message}`);
+                            return true;
+                        });
+                        assert.strictEqual(await getMaster(), null);
+                    }
+
+                    it('should write a localized version having no version of its own', async () => {
+                        await putMasterOnly(localized, {});
+                        const master = await getMaster();
+                        assert(master, 'the master key should have been written');
+                        assert.strictEqual(master.value.dataStoreName, LOCAL_LOCATION);
+                    });
+
+                    it('should refuse a non-localized version having no version of its own', async () =>
+                        assertRefused(putMasterOnly(nonLocalized, {})));
+
+                    it('should refuse a non-localized null version', async () =>
+                        assertRefused(putMasterOnly(nonLocalized, { versionId: '' })));
+
+                    it('should refuse a non-localized version on a conditional write', async () =>
+                        assertRefused(putWithCond(nonLocalized)));
+                });
             });
         });
     });
