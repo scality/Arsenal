@@ -1,4 +1,5 @@
 const assert = require('assert');
+const promClient = require('@prometheus-io/client');
 
 const ZenkoMetrics = require('../../../lib/metrics/ZenkoMetrics').default;
 
@@ -100,8 +101,21 @@ describe('ZenkoMetrics', () => {
         });
         expectedLines.forEach(expectedLine => {
             assert.notStrictEqual(
-                lines[expectedLine], undefined,
-                `missing expected line in Prometheus export '${expectedLine}'`);
+                lines[expectedLine],
+                undefined,
+                `missing expected line in Prometheus export '${expectedLine}'`,
+            );
         });
+    });
+
+    it('should expose metrics that can be registered by a consumer registry', async () => {
+        const consumerRegistry = new promClient.Registry();
+        consumerRegistry.registerMetric(counter);
+
+        const mergedRegistry = promClient.Registry.merge([consumerRegistry, promClient.register]);
+        const metrics = await mergedRegistry.metrics();
+
+        assert.match(metrics, /gizmo_counter 11/);
+        assert.match(metrics, /pet_counter\{type="kitten"\} 1/);
     });
 });
