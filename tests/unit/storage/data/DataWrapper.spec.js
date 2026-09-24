@@ -5,6 +5,7 @@ const { default: NullStream } = require('../../../../lib/s3middleware/nullStream
 const DataWrapper = require('../../../../lib/storage/data/DataWrapper');
 const BucketInfo = require('../../../../lib/models/BucketInfo').default;
 const PassThrough = require('stream').PassThrough;
+const { promisify } = require('util');
 
 describe('DataWrapper', () => {
     let sandbox;
@@ -312,7 +313,7 @@ describe('DataWrapper', () => {
         it('should handle same-type location copy', done => {
             mockConfig.getLocationConstraintType.withArgs('source').returns('aws_s3');
             mockConfig.getLocationConstraintType.withArgs('dest').returns('aws_s3');
-            mockClient.uploadPartCopy.callsFake((req, dest, srcKey, srcLoc, config, log, cb) =>
+            mockClient.uploadPartCopy.callsFake((req, dest, srcKey, srcVer, srcLoc, config, log, cb) =>
                 process.nextTick(() => cb(null, 'test-etag')),
             );
 
@@ -332,6 +333,28 @@ describe('DataWrapper', () => {
                     done();
                 },
             );
+        });
+
+        it('should pass the source version id to client.uploadPartCopy', async () => {
+            mockConfig.getLocationConstraintType.withArgs('source').returns('aws_s3');
+            mockConfig.getLocationConstraintType.withArgs('dest').returns('aws_s3');
+            mockClient.uploadPartCopy.callsFake((req, dest, srcKey, srcVer, srcLoc, config, log, cb) =>
+                process.nextTick(() => cb(null, 'test-etag')),
+            );
+
+            await promisify(dataWrapper.uploadPartCopy.bind(dataWrapper))(
+                {},
+                log,
+                mockBucketMD,
+                'source',
+                'dest',
+                [{ key: 'source-key', dataStoreVersionId: 'source-version' }],
+                {},
+                null,
+                sse,
+            );
+
+            assert.strictEqual(mockClient.uploadPartCopy.firstCall.args[3], 'source-version');
         });
     });
 
@@ -521,6 +544,7 @@ describe('DataWrapper', () => {
                             request,
                             'destBackend',
                             'sourceKey',
+                            undefined,
                             'sourceBackend',
                             storeMetadataParams,
                             mockConfig,
@@ -529,6 +553,42 @@ describe('DataWrapper', () => {
                     );
                     done();
                 },
+            );
+        });
+
+        it('should pass the source version id to client.copyObject', async () => {
+            mockConfig.getLocationConstraintType.returns('aws_s3');
+            mockClient.copyObject.yields(null, {
+                key: 'copiedKey',
+                dataStoreName: 'destBackend',
+                dataStoreType: 'aws_s3',
+                dataStoreVersionId: 'versionId',
+            });
+
+            await promisify(dataWrapper.copyObject.bind(dataWrapper))(
+                request,
+                'sourceBackend',
+                storeMetadataParams,
+                [{ ...dataLocator[0], dataStoreVersionId: 'sourceVersionId' }],
+                dataStoreContext,
+                destBackendInfo,
+                sourceBucketMD,
+                destBucketMD,
+                null,
+                log,
+            );
+
+            assert(
+                mockClient.copyObject.calledWith(
+                    request,
+                    'destBackend',
+                    'sourceKey',
+                    'sourceVersionId',
+                    'sourceBackend',
+                    storeMetadataParams,
+                    mockConfig,
+                    log,
+                ),
             );
         });
 
