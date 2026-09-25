@@ -1,7 +1,5 @@
 'use strict'; // eslint-disable-line
 
-const level = require('level');
-const sublevel = require('level-sublevel');
 const temp = require('temp');
 const assert = require('assert');
 const async = require('async');
@@ -11,37 +9,42 @@ const Logger = require('werelogs').Logger;
 
 const rpc = require('../../../../lib/network/rpc/rpc');
 const levelNet = require('../../../../lib/network/rpc/level-net');
-
+const { ClassicLevel } = require('classic-level');
+const { openSubLevel, createReadStream } = require('../../../../lib/storage/metadata/file/levelUtils');
 
 // simply forward the API calls to the db as-is
 const dbAsyncAPI = {
-    put: (env, ...args) => {
-        env.subDb.put(...args);
+    put: (env, key, value, options, cb) => {
+        env.subDb.put(key, value, options).then(() => cb(), cb);
     },
-    del: (env, ...args) => {
-        env.subDb.del(...args);
+    del: (env, key, options, cb) => {
+        env.subDb.del(key, options).then(() => cb(), cb);
     },
-    get: (env, ...args) => {
-        env.subDb.get(...args);
+    get: (env, key, options, cb) => {
+        env.subDb.get(key, options).then(value => {
+            if (value === undefined) {
+                const err = new Error(`Key not found in database [${key}]`);
+                err.notFound = true;
+                return cb(err);
+            }
+            return cb(null, value);
+        }, cb);
     },
-    batch: (env, ...args) => {
-        env.subDb.batch(...args);
+    batch: (env, ops, options, cb) => {
+        env.subDb.batch(ops, options).then(() => cb(), cb);
     },
 };
 const dbSyncAPI = {
-    createReadStream:
-    (env, ...args) => env.subDb.createReadStream(args),
+    createReadStream: (env, options) => createReadStream(env.subDb, options),
 };
 
 describe('level-net - LevelDB over network', () => {
     let db;
     let server;
     let client;
-    const params = { };
-    const srvLogger = new Logger('level-net:test-server',
-        { level: 'info', dump: 'error' });
-    const cliLogger = new Logger('level-net:test-client',
-        { level: 'info', dump: 'error' });
+    const params = {};
+    const srvLogger = new Logger('level-net:test-server', { level: 'info', dump: 'error' });
+    const cliLogger = new Logger('level-net:test-client', { level: 'info', dump: 'error' });
     const reqLogger = cliLogger.newRequestLoggerFromSerializedUids('foo');
 
     function setupLevelNet(done) {
@@ -51,8 +54,10 @@ describe('level-net - LevelDB over network', () => {
         const dbService = new levelNet.LevelDbService({
             server,
             rootDb: db,
+            lookupSubLevel: path => openSubLevel(db, path),
             namespace: '/test/db',
-            logger: srvLogger });
+            logger: srvLogger,
+        });
         dbService.registerSyncAPI(dbSyncAPI);
         dbService.registerAsyncAPI(dbAsyncAPI);
 
@@ -82,14 +87,12 @@ describe('level-net - LevelDB over network', () => {
         if (crudList.includes('C')) {
             const value = `${key}:testvalue1`;
             opList.push(done => {
-                const dbg = (`put sub '${db.path.join(':')}' ` +
-                             `key '${key}' value '${value}'`);
+                const dbg = `put sub '${db.path.join(':')}' ` + `key '${key}' value '${value}'`;
                 debug(`BEGIN ${dbg}`);
-                db.withRequestLogger(reqLogger)
-                    .put(key, value, params, err => {
-                        debug(`END ${dbg} -> ${err}`);
-                        done(err);
-                    });
+                db.withRequestLogger(reqLogger).put(key, value, params, err => {
+                    debug(`END ${dbg} -> ${err}`);
+                    done(err);
+                });
             });
         }
         if (crudList.includes('R')) {
@@ -97,64 +100,56 @@ describe('level-net - LevelDB over network', () => {
             opList.push(done => {
                 const dbg = `get sub '${db.path.join(':')}' key '${key}'`;
                 debug(`BEGIN ${dbg}`);
-                db.withRequestLogger(reqLogger)
-                    .get(key, params, (err, data) => {
-                        if (!err) {
-                            assert.strictEqual(data, expectedValue);
-                        }
-                        debug(`END ${dbg} -> (${err},'${data}')`);
-                        done(err);
-                    });
+                db.withRequestLogger(reqLogger).get(key, params, (err, data) => {
+                    if (!err) {
+                        assert.strictEqual(data, expectedValue);
+                    }
+                    debug(`END ${dbg} -> (${err},'${data}')`);
+                    done(err);
+                });
             });
         }
         if (crudList.includes('U')) {
             const value = `${key}:testvalue2`;
             opList.push(done => {
-                const dbg = (`update sub '${db.path.join(':')}' ` +
-                             `key '${key}' value '${value}'`);
+                const dbg = `update sub '${db.path.join(':')}' ` + `key '${key}' value '${value}'`;
                 debug(`BEGIN ${dbg}`);
-                db.withRequestLogger(reqLogger)
-                    .put(key, value, params, err => {
-                        debug(`END ${dbg} -> ${err}`);
-                        done(err);
-                    });
+                db.withRequestLogger(reqLogger).put(key, value, params, err => {
+                    debug(`END ${dbg} -> ${err}`);
+                    done(err);
+                });
             });
             // read after write to check contents have been updated
             opList.push(done => {
-                const dbg = (`get (check) sub '${db.path.join(':')}' ` +
-                             `key '${key}'`);
+                const dbg = `get (check) sub '${db.path.join(':')}' ` + `key '${key}'`;
                 debug(`BEGIN ${dbg}`);
-                db.withRequestLogger(reqLogger)
-                    .get(key, params, (err, data) => {
-                        debug(`END ${dbg} -> (${err},'${data}')`);
-                        assert.ifError(err);
-                        assert.strictEqual(data, value);
-                        done();
-                    });
+                db.withRequestLogger(reqLogger).get(key, params, (err, data) => {
+                    debug(`END ${dbg} -> (${err},'${data}')`);
+                    assert.ifError(err);
+                    assert.strictEqual(data, value);
+                    done();
+                });
             });
         }
         if (crudList.includes('D')) {
             opList.push(done => {
                 const dbg = `del sub '${db.path.join(':')}' key '${key}'`;
                 debug(`BEGIN ${dbg}`);
-                db.withRequestLogger(reqLogger)
-                    .del(key, params, err => {
-                        debug(`END ${dbg} -> ${err}`);
-                        done(err);
-                    });
+                db.withRequestLogger(reqLogger).del(key, params, err => {
+                    debug(`END ${dbg} -> ${err}`);
+                    done(err);
+                });
             });
             // check that contents have effectively been deleted
             opList.push(done => {
-                const dbg = (`get (check) sub '${db.path.join(':')}' ` +
-                             `key '${key}'`);
+                const dbg = `get (check) sub '${db.path.join(':')}' ` + `key '${key}'`;
                 debug(`BEGIN ${dbg}`);
-                db.withRequestLogger(reqLogger)
-                    .get(key, params, err => {
-                        debug(`END ${dbg} -> ${err}`);
-                        assert(err);
-                        assert(err.notFound);
-                        done();
-                    });
+                db.withRequestLogger(reqLogger).get(key, params, err => {
+                    debug(`END ${dbg} -> ${err}`);
+                    assert(err);
+                    assert(err.notFound);
+                    done();
+                });
             });
         }
 
@@ -163,8 +158,7 @@ describe('level-net - LevelDB over network', () => {
 
     beforeAll(done => {
         temp.mkdir('level-net-testdb-', (err, dbDir) => {
-            const rootDb = level(dbDir);
-            db = sublevel(rootDb);
+            db = new ClassicLevel(dbDir);
             setupLevelNet(done);
         });
     });
@@ -245,8 +239,7 @@ describe('level-net - LevelDB over network', () => {
                 return undefined;
             }
             for (let i = 0; i < nbKeys; ++i) {
-                client.withRequestLogger(reqLogger)
-                    .put(keyOfIter(i), valueOfIter(i), params, putCb);
+                client.withRequestLogger(reqLogger).put(keyOfIter(i), valueOfIter(i), params, putCb);
             }
         }
         beforeAll(done => {
@@ -258,9 +251,9 @@ describe('level-net - LevelDB over network', () => {
 
             for (let i = 0; i < nbGet; ++i) {
                 const randI = Math.floor(Math.random() * nbKeys);
-                // linter complains with 'no-loop-func' but we need a
-                // new randI each time
-                function getCb(err, data) { // eslint-disable-line
+                // a new function is defined per iteration so that each
+                // callback closes over its own randI
+                function getCb(err, data) {
                     assert.ifError(err);
                     assert.strictEqual(data, valueOfIter(randI));
                     ++nbGetDone;
@@ -268,12 +261,10 @@ describe('level-net - LevelDB over network', () => {
                         return done();
                     }
                 }
-                client.withRequestLogger(reqLogger)
-                    .get(keyOfIter(randI), params, getCb);
+                client.withRequestLogger(reqLogger).get(keyOfIter(randI), params, getCb);
             }
         });
-        it('should be able to list all keys through a stream and ' +
-           'rewrite them on-the-fly', done => {
+        it('should be able to list all keys through a stream and ' + 'rewrite them on-the-fly', done => {
             client.createReadStream((err, keyStream) => {
                 assert.ifError(err);
 
@@ -291,16 +282,14 @@ describe('level-net - LevelDB over network', () => {
                     assert(entry.key);
                     assert(!prevKey || entry.key > prevKey);
                     prevKey = entry.key;
-                    client.withRequestLogger(reqLogger)
-                        .put(entry.key, `new data for key ${entry.key}`,
-                            params, err => {
-                                assert.ifError(err);
-                                ++nbPutDone;
-                                if (nbPutDone === nbKeys && receivedEnd) {
-                                    done();
-                                }
-                                return undefined;
-                            });
+                    client.withRequestLogger(reqLogger).put(entry.key, `new data for key ${entry.key}`, params, err => {
+                        assert.ifError(err);
+                        ++nbPutDone;
+                        if (nbPutDone === nbKeys && receivedEnd) {
+                            done();
+                        }
+                        return undefined;
+                    });
                 });
                 keyStream.on('end', () => {
                     receivedEnd = true;
@@ -311,8 +300,7 @@ describe('level-net - LevelDB over network', () => {
                 });
             });
         });
-        it('should be able to abort key listing properly when client ' +
-           'destroys the stream', done => {
+        it('should be able to abort key listing properly when client ' + 'destroys the stream', done => {
             client.createReadStream((err, keyStream) => {
                 assert.ifError(err);
 
@@ -332,8 +320,7 @@ describe('level-net - LevelDB over network', () => {
                         // wait 100ms to make sure no further data is issued
                         setTimeout(() => {
                             assert(nbKeysListed === nbKeys / 2);
-                            debug('after abort: keyStream._readState=',
-                                keyStream._readState);
+                            debug('after abort: keyStream._readState=', keyStream._readState);
                             done();
                         }, 100);
                     }
@@ -359,8 +346,7 @@ describe('level-net - LevelDB over network', () => {
                     return undefined;
                 }
                 for (let i = 0; i < nbKeys; ++i) {
-                    client.withRequestLogger(reqLogger)
-                        .get(keyOfIter(i), params, checkCb);
+                    client.withRequestLogger(reqLogger).get(keyOfIter(i), params, checkCb);
                 }
             }
             function delCb(err) {
@@ -371,8 +357,7 @@ describe('level-net - LevelDB over network', () => {
                 }
             }
             for (let i = 0; i < nbKeys; ++i) {
-                client.withRequestLogger(reqLogger)
-                    .del(keyOfIter(i), params, delCb);
+                client.withRequestLogger(reqLogger).del(keyOfIter(i), params, delCb);
             }
         });
     });

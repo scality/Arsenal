@@ -43,8 +43,7 @@ export class LevelDbClient extends rpc.BaseClient {
         this.path = []; // start from the root sublevel
 
         // transmit the sublevel information as a request param
-        this.addRequestInfoProducer(
-            dbClient => ({ subLevel: dbClient.path }));
+        this.addRequestInfoProducer(dbClient => ({ subLevel: dbClient.path }));
     }
 
     /**
@@ -59,8 +58,7 @@ export class LevelDbClient extends rpc.BaseClient {
      * same API as its parent
      */
     openSub(subName: string) {
-        const subDbClient = new LevelDbClient({ url: this.url,
-            logger: this.logger });
+        const subDbClient = new LevelDbClient({ url: this.url, logger: this.logger });
         // make the same exposed RPC calls available from the sub-level object
         Object.assign(subDbClient, this);
         // listeners should not be duplicated on sublevel
@@ -86,6 +84,15 @@ export class LevelDbService extends rpc.BaseService {
     rootDb: any;
 
     /**
+     * lookup a sublevel db given by the <tt>path</tt> array from the
+     * root leveldb handle.
+     *
+     * @param path - path to the sublevel, as a piecewise array of sub-levels
+     * @return the handle to the sublevel
+     */
+    lookupSubLevel: (path: string[]) => any;
+
+    /**
      * @constructor
      *
      * @param params - constructor parameters
@@ -95,6 +102,8 @@ export class LevelDbService extends rpc.BaseService {
      *   (http://host:port/namespace)
      * @param params.rootDb - root LevelDB database object to
      *   expose to remote clients
+     * @param params.lookupSubLevel - resolve a sublevel path against the
+     *   root database, e.g. openSubLevel() for the file metadata layout
      * @param params.logger - logger object
      * @param [params.apiVersion="1.0"] - Version number that
      *   is shared with clients in the manifest (may be used to ensure
@@ -102,31 +111,23 @@ export class LevelDbService extends rpc.BaseService {
      * @param [params.server] - convenience parameter,
      * calls server.registerServices() automatically
      */
-    constructor(params: { namespace: string; rootDb: any; logger: Logger;
-        apiVersion: string; server: typeof rpc.RPCServer }) {
+    constructor(params: {
+        namespace: string;
+        rootDb: any;
+        logger: Logger;
+        apiVersion: string;
+        server: typeof rpc.RPCServer;
+        lookupSubLevel: (path: string[]) => any;
+    }) {
         assert(params.rootDb);
+        assert(params.lookupSubLevel);
         super(params);
         this.rootDb = params.rootDb;
+        this.lookupSubLevel = params.lookupSubLevel;
 
         this.addRequestInfoConsumer((dbService, reqParams) => ({
             subLevel: reqParams.subLevel,
             subDb: this.lookupSubLevel(reqParams.subLevel),
         }));
-    }
-
-    /**
-     * lookup a sublevel db given by the <tt>path</tt> array from the
-     * root leveldb handle.
-     *
-     * @param path - path to the sublevel, as a
-     * piecewise array of sub-levels
-     * @return the handle to the sublevel
-     */
-    lookupSubLevel(path: string[]) {
-        let subDb = this.rootDb;
-        path.forEach(pathItem => {
-            subDb = subDb.sublevel(pathItem);
-        });
-        return subDb;
     }
 }
