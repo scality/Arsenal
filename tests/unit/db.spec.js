@@ -1,14 +1,14 @@
-'use strict';// eslint-disable-line strict
+'use strict'; // eslint-disable-line strict
 
 const assert = require('assert');
 const async = require('async');
 
-const leveldb = require('level');
 const temp = require('temp');
 temp.track();
 
 const db = require('../../index').db;
 const errors = require('../../lib/errors').default;
+const { ClassicLevel } = require('classic-level');
 
 const IndexTransaction = db.IndexTransaction;
 const key1 = 'key1';
@@ -18,9 +18,63 @@ const value1 = 'value1';
 const value2 = 'value2';
 const value3 = 'value3';
 
+/**
+ * IndexTransaction commits to the database handle its caller provides, which
+ * is the callback based metadata client. Stand in for it with a local
+ * database exposing the same calling conventions.
+ */
+class CallbackLevel {
+    constructor(location, options) {
+        this.db = new ClassicLevel(location, options);
+    }
+
+    get(key, cb) {
+        this.db.get(key).then(value => {
+            if (value === undefined) {
+                const err = new Error(`Key not found in database [${key}]`);
+                err.notFound = true;
+                return cb(err);
+            }
+            return cb(null, value);
+        }, cb);
+    }
+
+    put(key, value, cb) {
+        return this.db.put(key, value).then(() => cb(), cb);
+    }
+
+    batch(ops, options, cb) {
+        if (ops === undefined) {
+            return new CallbackBatch(this);
+        }
+        return this.db.batch(ops, options).then(() => cb(), cb);
+    }
+}
+
+class CallbackBatch {
+    constructor(db) {
+        this.db = db;
+        this.ops = [];
+    }
+
+    put(key, value) {
+        this.ops.push({ type: 'put', key, value });
+        return this;
+    }
+
+    del(key) {
+        this.ops.push({ type: 'del', key });
+        return this;
+    }
+
+    write(cb) {
+        return this.db.batch(this.ops, {}, cb);
+    }
+}
+
 function createDb() {
     const indexPath = temp.mkdirSync();
-    return leveldb(indexPath, { valueEncoding: 'json' });
+    return new CallbackLevel(indexPath, { valueEncoding: 'json' });
 }
 
 function checkValueInDb(db, k, v, done) {
@@ -74,23 +128,28 @@ class ConditionalLevelDB {
     }
 
     batch(operations, writeOptions, cb) {
-        return async.eachLimit(writeOptions.conditions, 10, (cond, asyncCallback) => {
-            switch (true) {
-            case ('notExists' in cond):
-                checkKeyNotExistsInDB(this.db, cond.notExists, asyncCallback);
-                break;
-            case ('exists' in cond):
-                checkKeyExistsInDB(this.db, cond.exists, asyncCallback);
-                break;
-            default:
-                asyncCallback(new Error('unsupported conditional operation'));
-            }
-        }, err => {
-            if (err) {
-                return cb(err);
-            }
-            return this.db.batch(operations, writeOptions, cb);
-        });
+        return async.eachLimit(
+            writeOptions.conditions,
+            10,
+            (cond, asyncCallback) => {
+                switch (true) {
+                    case 'notExists' in cond:
+                        checkKeyNotExistsInDB(this.db, cond.notExists, asyncCallback);
+                        break;
+                    case 'exists' in cond:
+                        checkKeyExistsInDB(this.db, cond.exists, asyncCallback);
+                        break;
+                    default:
+                        asyncCallback(new Error('unsupported conditional operation'));
+                }
+            },
+            err => {
+                if (err) {
+                    return cb(err);
+                }
+                return this.db.batch(operations, writeOptions, cb);
+            },
+        );
     }
 
     get client() {
@@ -177,10 +236,7 @@ describe('IndexTransaction', () => {
             });
         }
 
-        db.batch()
-            .put('k1', 'v1')
-            .put('k2', 'v2')
-            .write(commitTransactionAndCheck);
+        db.batch().put('k1', 'v1').put('k2', 'v2').write(commitTransactionAndCheck);
     });
 
     it('should refuse types other than del and put', done => {
@@ -387,10 +443,7 @@ describe('IndexTransaction', () => {
             key: key1,
             value: value1,
         });
-        return async.series([
-            next => transaction.commit(next),
-            next => client.get(key1, next),
-        ], (err, res) => {
+        return async.series([next => transaction.commit(next), next => client.get(key1, next)], (err, res) => {
             assert.ifError(err);
             assert.strictEqual(res[1], value1);
             return done();
@@ -440,19 +493,20 @@ describe('IndexTransaction', () => {
                 if (!err || !err.is.EntityAlreadyExists) {
                     return done(new Error('should not be able to conditional put for duplicate key'));
                 }
-                return async.parallel([
-                    next => checkKeyNotExistsInDB(client, key2, next),
-                    next => checkKeyNotExistsInDB(client, key3, next),
-                ], err => {
-                    assert.ifError(err);
-                    return done();
-                });
+                return async.parallel(
+                    [
+                        next => checkKeyNotExistsInDB(client, key2, next),
+                        next => checkKeyNotExistsInDB(client, key3, next),
+                    ],
+                    err => {
+                        assert.ifError(err);
+                        return done();
+                    },
+                );
             });
         }
 
-        client.batch()
-            .put(key1, value1)
-            .write(tryPushAgain);
+        client.batch().put(key1, value1).write(tryPushAgain);
     });
 
     it('should not allow batch operation with empty condition', done => {
@@ -482,10 +536,7 @@ describe('IndexTransaction', () => {
         const { client } = db;
         let transaction = new IndexTransaction(db);
         transaction.put(key1, value1);
-        return async.series([
-            next => transaction.commit(next),
-            next => client.get(key1, next),
-        ], err => {
+        return async.series([next => transaction.commit(next), next => client.get(key1, next)], err => {
             assert.ifError(err);
             // create new transaction as previous transaction is already committed
             transaction = new IndexTransaction(db);
@@ -495,10 +546,7 @@ describe('IndexTransaction', () => {
                 key: key1,
                 value: value2,
             });
-            return async.series([
-                next => transaction.commit(next),
-                next => client.get(key1, next),
-            ], (err, res) => {
+            return async.series([next => transaction.commit(next), next => client.get(key1, next)], (err, res) => {
                 assert.ifError(err);
                 assert.strictEqual(res[1], value2);
                 return done();
@@ -527,10 +575,7 @@ describe('IndexTransaction', () => {
         const { client } = db;
         let transaction = new IndexTransaction(db);
         transaction.put(key1, value1);
-        return async.series([
-            next => transaction.commit(next),
-            next => client.get(key1, next),
-        ], err => {
+        return async.series([next => transaction.commit(next), next => client.get(key1, next)], err => {
             assert.ifError(err);
             // create new transaction as previous transaction is already committed
             transaction = new IndexTransaction(db);
@@ -542,10 +587,7 @@ describe('IndexTransaction', () => {
                 value: value2,
             });
 
-            return async.series([
-                next => transaction.commit(next),
-                next => client.get(key1, next),
-            ], (err, res) => {
+            return async.series([next => transaction.commit(next), next => client.get(key1, next)], (err, res) => {
                 assert.ifError(err);
                 assert.strictEqual(res[1], value2);
                 return done();
