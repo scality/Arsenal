@@ -71,8 +71,15 @@ describe('DataWrapper', () => {
             }),
         };
 
-        dataWrapper = new DataWrapper(mockClient, 'multipleBackends',
-            mockConfig, mockKms, mockMetadata, mockLocStorageCheckFn, mockVault);
+        dataWrapper = new DataWrapper(
+            mockClient,
+            'multipleBackends',
+            mockConfig,
+            mockKms,
+            mockMetadata,
+            mockLocStorageCheckFn,
+            mockVault,
+        );
     });
 
     afterEach(() => {
@@ -98,22 +105,19 @@ describe('DataWrapper', () => {
                 process.nextTick(() => cb(null, dataRetrievalInfo));
             });
 
-            dataWrapper.put(cipherBundle, value, 100, {}, backendInfo, log,
-                (err, result, returnedStream) => {
-                    assert.strictEqual(err, null);
-                    assert.deepStrictEqual(result, dataRetrievalInfo);
-                    assert(returnedStream instanceof MD5Sum);
-                    done();
-                });
+            dataWrapper.put(cipherBundle, value, 100, {}, backendInfo, log, (err, result, returnedStream) => {
+                assert.strictEqual(err, null);
+                assert.deepStrictEqual(result, dataRetrievalInfo);
+                assert(returnedStream instanceof MD5Sum);
+                done();
+            });
         });
 
         it('should handle put error with location metric decrement', done => {
             const backendInfo = { getControllingLocationConstraint: () => 'testLocation' };
 
-            mockLocStorageCheckFn.onCall(0).callsFake((loc, size, log, cb) =>
-                process.nextTick(() => cb(null)));
-            mockLocStorageCheckFn.onCall(1).callsFake((loc, size, log, cb) =>
-                process.nextTick(() => cb(null)));
+            mockLocStorageCheckFn.onCall(0).callsFake((loc, size, log, cb) => process.nextTick(() => cb(null)));
+            mockLocStorageCheckFn.onCall(1).callsFake((loc, size, log, cb) => process.nextTick(() => cb(null)));
             mockClient.put.callsFake((stream, size, ctx, info, uid, cb) => {
                 process.nextTick(() => cb(new Error('Put failed')));
             });
@@ -128,8 +132,15 @@ describe('DataWrapper', () => {
 
     describe('head', () => {
         it('should skip if not multipleBackends', done => {
-            const wrapper = new DataWrapper(mockClient, 'scality', mockConfig, mockKms,
-                mockMetadata, mockLocStorageCheckFn, mockVault);
+            const wrapper = new DataWrapper(
+                mockClient,
+                'scality',
+                mockConfig,
+                mockKms,
+                mockMetadata,
+                mockLocStorageCheckFn,
+                mockVault,
+            );
             wrapper.head({}, log, err => {
                 assert.strictEqual(err, undefined);
                 assert(!mockClient.head.called);
@@ -164,10 +175,10 @@ describe('DataWrapper', () => {
                 masterKeyId: 'test-id',
             };
             const decipherBundle = { decipher: new PassThrough() };
-            mockClient.get.callsFake((info, range, uid, cb) =>
-                process.nextTick(() => cb(null, new PassThrough())));
+            mockClient.get.callsFake((info, range, uid, cb) => process.nextTick(() => cb(null, new PassThrough())));
             mockKms.createDecipherBundle.callsFake((sse, offset, log, cb) =>
-                process.nextTick(() => cb(null, decipherBundle)));
+                process.nextTick(() => cb(null, decipherBundle)),
+            );
 
             dataWrapper.get(objectGetInfo, null, log, (err, stream) => {
                 assert.strictEqual(err, null);
@@ -186,12 +197,11 @@ describe('DataWrapper', () => {
         });
 
         it('should retry on delete failure', done => {
-            mockClient.delete.onCall(0).callsFake((info, uid, cb) =>
-                process.nextTick(() => cb(new Error('First fail'))));
-            mockClient.delete.onCall(1).callsFake((info, uid, cb) =>
-                process.nextTick(() => cb(null)));
-            mockLocStorageCheckFn.callsFake((loc, size, log, cb) =>
-                process.nextTick(() => cb(null)));
+            mockClient.delete
+                .onCall(0)
+                .callsFake((info, uid, cb) => process.nextTick(() => cb(new Error('First fail'))));
+            mockClient.delete.onCall(1).callsFake((info, uid, cb) => process.nextTick(() => cb(null)));
+            mockLocStorageCheckFn.callsFake((loc, size, log, cb) => process.nextTick(() => cb(null)));
 
             dataWrapper.delete({ key: 'test-key', size: 100, dataStoreName: 'test' }, log, err => {
                 assert.strictEqual(err, null);
@@ -216,8 +226,7 @@ describe('DataWrapper', () => {
                 { key: 'key1', dataStoreName: 'test' },
                 { key: 'key2', dataStoreName: 'test' },
             ];
-            mockClient.batchDelete.callsFake((name, keys, log, cb) =>
-                process.nextTick(() => cb(null)));
+            mockClient.batchDelete.callsFake((name, keys, log, cb) => process.nextTick(() => cb(null)));
             mockConfig.getLocationConstraintType.returns('scality');
 
             dataWrapper.batchDelete(locations, 'DELETE', 'new', log, err => {
@@ -240,7 +249,8 @@ describe('DataWrapper', () => {
 
         it('should handle healthcheck error', done => {
             mockClient.healthcheck.callsFake((startup, log, cb) =>
-                process.nextTick(() => cb(new Error('Health fail'))));
+                process.nextTick(() => cb(new Error('Health fail'))),
+            );
             dataWrapper.checkHealth(log, (err, result) => {
                 assert.strictEqual(err, null);
                 assert(result.multipleBackends.error);
@@ -261,7 +271,8 @@ describe('DataWrapper', () => {
 
         it('should call client.getDiskUsage when implemented', done => {
             mockClient.getDiskUsage.callsFake((config, uid, cb) =>
-                process.nextTick(() => cb(null, { usage: '100MB' })));
+                process.nextTick(() => cb(null, { usage: '100MB' })),
+            );
             dataWrapper.getDiskUsage(log, (err, result) => {
                 assert.strictEqual(err, null);
                 assert.deepStrictEqual(result, { usage: '100MB' });
@@ -279,58 +290,93 @@ describe('DataWrapper', () => {
         });
 
         it('should handle zero byte object', done => {
-            dataWrapper.uploadPartCopy({}, log, mockBucketMD, 'source', 'dest', [], {}, null, sse,
+            dataWrapper.uploadPartCopy(
+                {},
+                log,
+                mockBucketMD,
+                'source',
+                'dest',
+                [],
+                {},
+                null,
+                sse,
                 (err, eTag, lastModified) => {
                     assert.strictEqual(err, null);
                     assert.strictEqual(eTag, 'd41d8cd98f00b204e9800998ecf8427e');
                     assert(typeof lastModified === 'string');
                     done();
-                });
+                },
+            );
         });
 
         it('should handle same-type location copy', done => {
             mockConfig.getLocationConstraintType.withArgs('source').returns('aws_s3');
             mockConfig.getLocationConstraintType.withArgs('dest').returns('aws_s3');
             mockClient.uploadPartCopy.callsFake((req, dest, srcKey, srcLoc, config, log, cb) =>
-                process.nextTick(() => cb(null, 'test-etag')));
+                process.nextTick(() => cb(null, 'test-etag')),
+            );
 
-            dataWrapper.uploadPartCopy({}, log, mockBucketMD, 'source', 'dest',
-                [{ key: 'source-key' }], {}, null, sse, (err, eTag) => {
+            dataWrapper.uploadPartCopy(
+                {},
+                log,
+                mockBucketMD,
+                'source',
+                'dest',
+                [{ key: 'source-key' }],
+                {},
+                null,
+                sse,
+                (err, eTag) => {
                     assert.strictEqual(err, null);
                     assert.strictEqual(eTag, 'test-etag');
                     done();
-                });
+                },
+            );
         });
     });
 
     describe('MPU Operations', () => {
         it('should initiate MPU', done => {
-            mockClient.createMPU.callsFake((key, headers, bucket, redirect, loc, contentType,
-                cache, disp, enc, tag, log, cb) =>
-                process.nextTick(() => cb(null, { uploadId: 'test-id' })));
-            dataWrapper.initiateMPU({ objectKey: 'key', bucketName: 'bucket', locConstraint: 'test' },
-                null, log, (err, result) => {
+            mockClient.createMPU.callsFake(
+                (key, headers, bucket, redirect, loc, contentType, cache, disp, enc, tag, log, cb) =>
+                    process.nextTick(() => cb(null, { uploadId: 'test-id' })),
+            );
+            dataWrapper.initiateMPU(
+                { objectKey: 'key', bucketName: 'bucket', locConstraint: 'test' },
+                null,
+                log,
+                (err, result) => {
                     assert.strictEqual(err, null);
                     assert.deepStrictEqual(result, { uploadId: 'test-id' });
                     done();
-                });
+                },
+            );
         });
 
         it('should complete MPU', done => {
-            mockClient.completeMPU.callsFake((key, id, loc, list, mdInfo, bucket, userMD,
-                content, tag, log, cb) =>
-                process.nextTick(() => cb(null, { key: 'completed-key' })));
-            dataWrapper.completeMPU({}, { objectKey: 'key', uploadId: 'id', jsonList: {}, bucketName: 'bucket' },
-                {}, 'test', {}, {}, null, null, log, (err, result) => {
+            mockClient.completeMPU.callsFake((key, id, loc, list, mdInfo, bucket, userMD, content, tag, log, cb) =>
+                process.nextTick(() => cb(null, { key: 'completed-key' })),
+            );
+            dataWrapper.completeMPU(
+                {},
+                { objectKey: 'key', uploadId: 'id', jsonList: {}, bucketName: 'bucket' },
+                {},
+                'test',
+                {},
+                {},
+                null,
+                null,
+                log,
+                (err, result) => {
                     assert.strictEqual(err, null);
                     assert.deepStrictEqual(result, { key: 'completed-key' });
                     done();
-                });
+                },
+            );
         });
 
         it('should abort MPU', done => {
-            mockClient.abortMPU.callsFake((key, id, loc, bucket, log, cb) =>
-                process.nextTick(() => cb(null)));
+            mockClient.abortMPU.callsFake((key, id, loc, bucket, log, cb) => process.nextTick(() => cb(null)));
             dataWrapper.abortMPU('key', 'id', 'test', 'bucket', {}, {}, null, log, err => {
                 assert.strictEqual(err, null);
                 done();
@@ -348,18 +394,18 @@ describe('DataWrapper', () => {
                 process.nextTick(() => cb(null, dataRetrievalInfo));
             });
 
-            dataWrapper._put(cipherBundle, new PassThrough(), 100, {}, {}, log,
-                (err, result, returnedStream) => {
-                    assert.strictEqual(err, null);
-                    assert.deepStrictEqual(result, dataRetrievalInfo);
-                    assert(returnedStream instanceof MD5Sum);
-                    done();
-                });
+            dataWrapper._put(cipherBundle, new PassThrough(), 100, {}, {}, log, (err, result, returnedStream) => {
+                assert.strictEqual(err, null);
+                assert.deepStrictEqual(result, dataRetrievalInfo);
+                assert(returnedStream instanceof MD5Sum);
+                done();
+            });
         });
 
         it('should handle put error', done => {
             mockClient.put.callsFake((stream, size, ctx, info, uid, cb) =>
-                process.nextTick(() => cb({ httpCode: 408 })));
+                process.nextTick(() => cb({ httpCode: 408 })),
+            );
             dataWrapper._put(null, new PassThrough(), 100, {}, {}, log, err => {
                 assert(err.is.IncompleteBody);
                 done();
@@ -369,10 +415,10 @@ describe('DataWrapper', () => {
 
     describe('_retryDelete', () => {
         it('should succeed after retry', done => {
-            mockClient.delete.onCall(0).callsFake((info, uid, cb) =>
-                process.nextTick(() => cb(new Error('First fail'))));
-            mockClient.delete.onCall(1).callsFake((info, uid, cb) =>
-                process.nextTick(() => cb(null)));
+            mockClient.delete
+                .onCall(0)
+                .callsFake((info, uid, cb) => process.nextTick(() => cb(new Error('First fail'))));
+            mockClient.delete.onCall(1).callsFake((info, uid, cb) => process.nextTick(() => cb(null)));
 
             dataWrapper._retryDelete('test-key', log, 0, err => {
                 assert.strictEqual(err, undefined);
@@ -382,8 +428,7 @@ describe('DataWrapper', () => {
         });
 
         it('should fail after max retries', done => {
-            mockClient.delete.callsFake((info, uid, cb) =>
-                process.nextTick(() => cb(new Error('Persistent fail'))));
+            mockClient.delete.callsFake((info, uid, cb) => process.nextTick(() => cb(new Error('Persistent fail'))));
             dataWrapper._retryDelete('test-key', log, 0, err => {
                 assert(err.is.InternalError);
                 assert(mockClient.delete.calledThrice);
@@ -398,12 +443,14 @@ describe('DataWrapper', () => {
             dataStoreName: 'destBackend',
             size: 100,
         };
-        const dataLocator = [{
-            key: 'sourceKey',
-            dataStoreETag: 'etag',
-            start: 0,
-            size: 100,
-        }];
+        const dataLocator = [
+            {
+                key: 'sourceKey',
+                dataStoreETag: 'etag',
+                start: 0,
+                size: 100,
+            },
+        ];
         const dataStoreContext = {
             bucketName: 'destBucket',
             owner: 'owner',
@@ -413,14 +460,32 @@ describe('DataWrapper', () => {
         const destBackendInfo = {
             getControllingLocationConstraint: () => 'destBackend',
         };
-        const sourceBucketMD = new BucketInfo('sourceBucket', 'owner',
-            'source-display-name', new Date().toJSON(),
-            null, null, null, null, null, null,
-            '');
-        const destBucketMD = new BucketInfo('destBucket', 'owner',
-            'dest-display-name', new Date().toJSON(),
-            null, null, null, null, null, null,
-            'location-constraint');
+        const sourceBucketMD = new BucketInfo(
+            'sourceBucket',
+            'owner',
+            'source-display-name',
+            new Date().toJSON(),
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            '',
+        );
+        const destBucketMD = new BucketInfo(
+            'destBucket',
+            'owner',
+            'dest-display-name',
+            new Date().toJSON(),
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            'location-constraint',
+        );
         const _ = sinon.match.any;
 
         beforeEach(() => {
@@ -436,17 +501,35 @@ describe('DataWrapper', () => {
                 dataStoreVersionId: 'versionId',
             });
 
-            dataWrapper.copyObject(request, 'sourceBackend', storeMetadataParams,
-                dataLocator, dataStoreContext, destBackendInfo, sourceBucketMD,
-                destBucketMD, null, log, (err, result) => {
+            dataWrapper.copyObject(
+                request,
+                'sourceBackend',
+                storeMetadataParams,
+                dataLocator,
+                dataStoreContext,
+                destBackendInfo,
+                sourceBucketMD,
+                destBucketMD,
+                null,
+                log,
+                (err, result) => {
                     assert.strictEqual(err, null);
                     assert.strictEqual(result[0].key, 'copiedKey');
                     assert.strictEqual(result[0].dataStoreVersionId, 'versionId');
-                    assert(mockClient.copyObject.calledWith(
-                        request, 'destBackend', 'sourceKey', 'sourceBackend',
-                        storeMetadataParams, mockConfig, log));
+                    assert(
+                        mockClient.copyObject.calledWith(
+                            request,
+                            'destBackend',
+                            'sourceKey',
+                            'sourceBackend',
+                            storeMetadataParams,
+                            mockConfig,
+                            log,
+                        ),
+                    );
                     done();
-                });
+                },
+            );
         });
 
         it('should handle client copy error', done => {
@@ -455,30 +538,51 @@ describe('DataWrapper', () => {
             mockConfig.getLocationConstraintType.returns('aws_s3');
             mockClient.copyObject.yields(copyErr);
 
-            dataWrapper.copyObject(request, 'sourceBackend', storeMetadataParams,
-                dataLocator, dataStoreContext, destBackendInfo, sourceBucketMD,
-                destBucketMD, undefined, log, err => {
+            dataWrapper.copyObject(
+                request,
+                'sourceBackend',
+                storeMetadataParams,
+                dataLocator,
+                dataStoreContext,
+                destBackendInfo,
+                sourceBucketMD,
+                destBucketMD,
+                undefined,
+                log,
+                err => {
                     assert(err instanceof Error);
                     assert.strictEqual(err, copyErr);
                     done();
-                });
+                },
+            );
         });
 
         it('should handle regular copy through get/put', done => {
             mockClient.get.withArgs(dataLocator[0]).yields(null); // Successful get, but no stream (empty object)
-            mockClient.put.withArgs(_, 100, dataStoreContext, destBackendInfo)
+            mockClient.put
+                .withArgs(_, 100, dataStoreContext, destBackendInfo)
                 .yields(null, { key: 'copiedKey', dataStoreName: 'destBackend' });
 
-            dataWrapper.copyObject(request, 'sourceBackend', storeMetadataParams,
-                dataLocator, dataStoreContext, destBackendInfo, sourceBucketMD,
-                destBucketMD, null, log, (err, results) => {
+            dataWrapper.copyObject(
+                request,
+                'sourceBackend',
+                storeMetadataParams,
+                dataLocator,
+                dataStoreContext,
+                destBackendInfo,
+                sourceBucketMD,
+                destBucketMD,
+                null,
+                log,
+                (err, results) => {
                     assert.strictEqual(err, null);
                     assert.strictEqual(results[0].key, 'copiedKey');
                     assert(!mockClient.copyObject.called);
                     assert(mockClient.get.calledOnce);
                     assert(mockClient.put.calledOnce);
                     done();
-                });
+                },
+            );
         });
 
         it('should not use client.copyObject with different location constraint types', done => {
@@ -486,19 +590,30 @@ describe('DataWrapper', () => {
             mockConfig.getLocationConstraintType.withArgs('destBackend').returns('gcp');
 
             mockClient.get.withArgs(dataLocator[0]).yields(null); // Successful get, but no stream (empty object)
-            mockClient.put.withArgs(_, 100, dataStoreContext, destBackendInfo)
+            mockClient.put
+                .withArgs(_, 100, dataStoreContext, destBackendInfo)
                 .yields(null, { key: 'copiedKey', dataStoreName: 'destBackend' });
 
-            dataWrapper.copyObject(request, 'sourceBackend', storeMetadataParams,
-                dataLocator, dataStoreContext, destBackendInfo, sourceBucketMD,
-                destBucketMD, null, log, (err, results) => {
+            dataWrapper.copyObject(
+                request,
+                'sourceBackend',
+                storeMetadataParams,
+                dataLocator,
+                dataStoreContext,
+                destBackendInfo,
+                sourceBucketMD,
+                destBucketMD,
+                null,
+                log,
+                (err, results) => {
                     assert.strictEqual(err, null);
                     assert.strictEqual(results[0].key, 'copiedKey');
                     assert(!mockClient.copyObject.called);
                     assert(mockClient.get.calledOnce);
                     assert(mockClient.put.calledOnce);
                     done();
-                });
+                },
+            );
         });
 
         it('should not use client.copyObject with encryption', done => {
@@ -509,18 +624,29 @@ describe('DataWrapper', () => {
 
             mockClient.get.withArgs(dataLocator[0]).yields(null); // Successful get, but no stream (empty object)
             mockLocStorageCheckFn.yields(null);
-            mockClient.put.withArgs(_, 100, dataStoreContext, destBackendInfo)
+            mockClient.put
+                .withArgs(_, 100, dataStoreContext, destBackendInfo)
                 .yields(null, { key: 'copiedKey', dataStoreName: 'destBackend' });
 
-            dataWrapper.copyObject(request, 'sourceBackend', storeMetadataParams,
-                dataLocator, dataStoreContext, destBackendInfo, sourceBucketMD,
-                destBucketMD, serverSideEncryption, log, err => {
+            dataWrapper.copyObject(
+                request,
+                'sourceBackend',
+                storeMetadataParams,
+                dataLocator,
+                dataStoreContext,
+                destBackendInfo,
+                sourceBucketMD,
+                destBucketMD,
+                serverSideEncryption,
+                log,
+                err => {
                     assert.strictEqual(err, null);
                     assert(!mockClient.copyObject.called);
                     assert(mockClient.get.calledOnce);
                     assert(mockClient.put.calledOnce);
                     done();
-                });
+                },
+            );
         });
 
         it('shoud handle get error', done => {
@@ -528,13 +654,23 @@ describe('DataWrapper', () => {
 
             mockClient.get.withArgs(dataLocator[0]).yields(copyErr);
 
-            dataWrapper.copyObject(request, 'sourceBackend', storeMetadataParams,
-                dataLocator, dataStoreContext, destBackendInfo, sourceBucketMD,
-                destBucketMD, null, log, err => {
+            dataWrapper.copyObject(
+                request,
+                'sourceBackend',
+                storeMetadataParams,
+                dataLocator,
+                dataStoreContext,
+                destBackendInfo,
+                sourceBucketMD,
+                destBucketMD,
+                null,
+                log,
+                err => {
                     assert(err instanceof Error);
                     assert(err.is.ServiceUnavailable);
                     done();
-                });
+                },
+            );
         });
 
         it('shoud handle put error', done => {
@@ -543,36 +679,59 @@ describe('DataWrapper', () => {
             mockClient.get.withArgs(dataLocator[0]).yields(null); // Successful get, but no stream (empty object)
             mockClient.put.withArgs(_, 100, dataStoreContext, destBackendInfo).yields(copyErr);
 
-            dataWrapper.copyObject(request, 'sourceBackend', storeMetadataParams,
-                dataLocator, dataStoreContext, destBackendInfo, sourceBucketMD,
-                destBucketMD, null, log, err => {
+            dataWrapper.copyObject(
+                request,
+                'sourceBackend',
+                storeMetadataParams,
+                dataLocator,
+                dataStoreContext,
+                destBackendInfo,
+                sourceBucketMD,
+                destBucketMD,
+                null,
+                log,
+                err => {
                     assert(err instanceof Error);
                     assert(err.is.ServiceUnavailable);
                     done();
-                });
+                },
+            );
         });
 
         it('should handle Azure copy with parallel get/put', done => {
-            const azureDataLocator = [{
-                ...dataLocator[0],
-                dataStoreType: 'azure',
-            }];
+            const azureDataLocator = [
+                {
+                    ...dataLocator[0],
+                    dataStoreType: 'azure',
+                },
+            ];
 
             mockClient.get.withArgs(azureDataLocator[0]).yields(null); // Successful get, but no stream (empty object)
-            mockClient.put.withArgs(_, 100, dataStoreContext, destBackendInfo)
+            mockClient.put
+                .withArgs(_, 100, dataStoreContext, destBackendInfo)
                 .callsFake((stream, size, ctx, info, uid, cb) =>
-                    stream._flush(() => cb(null, { key: 'azureKey', dataStoreName: 'destBackend' }))
+                    stream._flush(() => cb(null, { key: 'azureKey', dataStoreName: 'destBackend' })),
                 );
 
-            dataWrapper.copyObject(request, 'sourceBackend', storeMetadataParams,
-                azureDataLocator, dataStoreContext, destBackendInfo, sourceBucketMD,
-                destBucketMD, null, log, (err, results) => {
+            dataWrapper.copyObject(
+                request,
+                'sourceBackend',
+                storeMetadataParams,
+                azureDataLocator,
+                dataStoreContext,
+                destBackendInfo,
+                sourceBucketMD,
+                destBucketMD,
+                null,
+                log,
+                (err, results) => {
                     assert.strictEqual(err, null);
                     assert.strictEqual(results[0].key, 'azureKey');
                     assert(mockClient.get.calledOnce);
                     assert(mockClient.put.calledOnce);
                     done();
-                });
+                },
+            );
         });
     });
 });
