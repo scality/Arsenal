@@ -227,6 +227,23 @@ describe('ObjectMD class setters/getters', () => {
         ]);
     });
 
+    it('copying an ObjectMD does not share replication info', () => {
+        const source = new ObjectMD().setReplicationStatus('PENDING').setReplicationBackends([
+            { site: 'a', status: 'PENDING', dataStoreVersionId: '' },
+            { site: 'b', status: 'PENDING', dataStoreVersionId: '' },
+        ]);
+        const copy = new ObjectMD(source);
+        copy.setReplicationStatus('REPLICA')
+            .setReplicationSiteStatus({ site: 'a' }, 'COMPLETED')
+            .setReplicationSiteDataStoreVersionId({ site: 'a' }, 'v1');
+        copy.getReplicationBackends().pop();
+        assert.strictEqual(source.getReplicationStatus(), 'PENDING');
+        assert.deepStrictEqual(source.getReplicationBackends(), [
+            { site: 'a', status: 'PENDING', dataStoreVersionId: '' },
+            { site: 'b', status: 'PENDING', dataStoreVersionId: '' },
+        ]);
+    });
+
     it('ObjectMD::setReplicationBackends', () => {
         md.setReplicationBackends([
             {

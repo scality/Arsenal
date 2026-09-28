@@ -275,8 +275,11 @@ export default class ObjectMD {
         // copies. Since performance is a concern, we want to avoid
         // the JSON.parse(JSON.stringify()) method.
 
+        const { replicationInfo } = this._data;
         Object.assign(this._data, objMd._data);
-        Object.assign(this._data.replicationInfo, objMd._data.replicationInfo);
+        this._data.replicationInfo = Object.assign(replicationInfo, objMd._data.replicationInfo, {
+            backends: objMd._data.replicationInfo.backends?.map(backend => ({ ...backend })),
+        });
     }
 
     _updateFromParsedJSON(objMd: object) {
