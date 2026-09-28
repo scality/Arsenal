@@ -186,6 +186,28 @@ describe('DataWrapper', () => {
                 done();
             });
         });
+
+        it('should destroy the source stream when createDecipherBundle fails, to prevent leaks', done => {
+            const objectGetInfo = {
+                key: 'test-key',
+                cipheredDataKey: Buffer.from('test').toString('base64'),
+                cryptoScheme: 1,
+                masterKeyId: 'test-id',
+            };
+            const sourceStream = new PassThrough();
+            const kmsErr = new Error('KMS unavailable');
+            mockClient.get.callsFake((info, range, uid, cb) =>
+                process.nextTick(() => cb(null, sourceStream)));
+            mockKms.createDecipherBundle.callsFake((sse, offset, log, cb) =>
+                process.nextTick(() => cb(kmsErr)));
+
+            assert.strictEqual(sourceStream.destroyed, false);
+            dataWrapper.get(objectGetInfo, null, log, err => {
+                assert.strictEqual(err, kmsErr);
+                assert.strictEqual(sourceStream.destroyed, true);
+                done();
+            });
+        });
     });
 
     describe('delete', () => {
@@ -332,6 +354,34 @@ describe('DataWrapper', () => {
                     done();
                 },
             );
+        });
+
+        it('should destroy the original get() stream when createCipherBundle fails', done => {
+            const serverSideEncryption = { algorithm: 'AES256' };
+            const request = {
+                query: { partNumber: '1', uploadId: 'upload-id' },
+                objectKey: 'destKey',
+                bucketName: 'destBucket',
+            };
+            const dataLocator = [{ key: 'source-key', size: 100, start: 0 }];
+            const sourceStream = new PassThrough();
+            const kmsErr = new Error('KMS unavailable');
+
+            mockClient.get.withArgs(dataLocator[0]).yields(null, sourceStream);
+            mockKms.createCipherBundle.callsFake((sseCfg, log, cb) =>
+                process.nextTick(() => cb(kmsErr)));
+
+            dataWrapper.uploadPartCopy(request, log, mockBucketMD, 'sourceBackend',
+                'testLocation', dataLocator, {}, null, serverSideEncryption, err => {
+                    assert.strictEqual(err, kmsErr);
+                    assert.strictEqual(mockClient.uploadPart.called, false);
+
+                    // setImmediate is necessary for the pipeline to propagate the destroy.
+                    setImmediate(() => {
+                        assert.strictEqual(sourceStream.destroyed, true);
+                        done();
+                    });
+                });
         });
     });
 
@@ -732,6 +782,27 @@ describe('DataWrapper', () => {
                     done();
                 },
             );
+        });
+
+        it('should destroy the source stream when createCipherBundle fails during copy', done => {
+            mockConfig.getLocationConstraintType.returns('aws_s3');
+            const serverSideEncryption = { algorithm: 'AES256' };
+            const sourceStream = new PassThrough();
+            const kmsErr = new Error('KMS unavailable');
+
+            mockClient.get.withArgs(dataLocator[0]).yields(null, sourceStream);
+            mockKms.createCipherBundle.callsFake((sse, log, cb) =>
+                process.nextTick(() => cb(kmsErr)));
+
+            assert.strictEqual(sourceStream.destroyed, false);
+            dataWrapper.copyObject(request, 'sourceBackend', storeMetadataParams,
+                dataLocator, dataStoreContext, destBackendInfo, sourceBucketMD,
+                destBucketMD, serverSideEncryption, log, err => {
+                    assert.strictEqual(err, kmsErr);
+                    assert.strictEqual(mockClient.put.called, false);
+                    assert.strictEqual(sourceStream.destroyed, true);
+                    done();
+                });
         });
     });
 });
