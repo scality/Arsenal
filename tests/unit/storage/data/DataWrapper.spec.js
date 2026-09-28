@@ -197,6 +197,84 @@ describe('DataWrapper', () => {
                 done();
             });
         });
+
+        [
+            {
+                name: 'prepared decipherStream',
+                setup: sourceStream => {
+                    const decipherStream = new PassThrough();
+                    const objectGetInfo = { key: 'test-key', decipherStream };
+                    mockClient.get.callsFake((info, range, uid, cb) =>
+                        process.nextTick(() => cb(null, sourceStream)));
+                    return { objectGetInfo, decipherStream };
+                },
+            },
+            {
+                name: 'built decipher stream',
+                setup: sourceStream => {
+                    const objectGetInfo = {
+                        key: 'test-key',
+                        cipheredDataKey: Buffer.from('test').toString('base64'),
+                        cryptoScheme: 1,
+                        masterKeyId: 'test-id',
+                    };
+                    const decipherBundle = { decipher: new PassThrough() };
+                    mockClient.get.callsFake((info, range, uid, cb) =>
+                        process.nextTick(() => cb(null, sourceStream)));
+                    mockKms.createDecipherBundle.callsFake((sse, offset, log, cb) =>
+                        process.nextTick(() => cb(null, decipherBundle)));
+                    return { objectGetInfo, decipherStream: decipherBundle.decipher };
+                },
+            },
+        ].forEach(({ name, setup }) => {
+            describe(`with ${name}`, () => {
+                it('should propagate a source stream error to the decipher stream and destroy it', done => {
+                    const sourceStream = new PassThrough();
+                    const { objectGetInfo, decipherStream } = setup(sourceStream);
+
+                    dataWrapper.get(objectGetInfo, null, log, (err, returnedStream) => {
+                        assert.strictEqual(err, null);
+                        assert.strictEqual(returnedStream, decipherStream);
+                        assert.strictEqual(decipherStream.destroyed, false);
+
+                        let emittedErr = null;
+                        returnedStream.on('error', e => {
+                            emittedErr = e;
+                        });
+
+                        const sourceErr = new Error('sproxyd connection reset');
+                        sourceStream.emit('error', sourceErr);
+
+                        // setImmediate is necessary for the pipeline to propagate the error.
+                        setImmediate(() => {
+                            assert.strictEqual(emittedErr, sourceErr);
+                            assert.strictEqual(decipherStream.destroyed, true);
+                            done();
+                        });
+                    });
+                });
+
+                it('should destroy the source stream when the decipher stream is destroyed early', done => {
+                    const sourceStream = new PassThrough();
+                    const { objectGetInfo, decipherStream } = setup(sourceStream);
+
+                    dataWrapper.get(objectGetInfo, null, log, (err, returnedStream) => {
+                        assert.strictEqual(err, null);
+                        assert.strictEqual(returnedStream, decipherStream);
+                        assert.strictEqual(sourceStream.destroyed, false);
+
+                        // Simulate consumer (HTTP response) destroying returned stream before source finishes
+                        returnedStream.destroy();
+
+                        // setImmediate is necessary for the pipeline to propagate the destroy.
+                        setImmediate(() => {
+                            assert.strictEqual(sourceStream.destroyed, true);
+                            done();
+                        });
+                    });
+                });
+            });
+        });
     });
 
     describe('delete', () => {
@@ -353,6 +431,32 @@ describe('DataWrapper', () => {
                     });
                 });
         });
+
+        it('should destroy the original get() stream when the backend write destination fails', done => {
+            const request = {
+                query: { partNumber: '1', uploadId: 'upload-id' },
+                objectKey: 'destKey',
+                bucketName: 'destBucket',
+            };
+            const dataLocator = [{ key: 'source-key', size: 100, start: 0 }];
+            const sourceStream = new PassThrough();
+
+            mockClient.get.withArgs(dataLocator[0]).yields(null, sourceStream);
+            mockLocStorageCheckFn.callsFake((loc, size, log, cb) => process.nextTick(() => cb(null)));
+            // Simulate the backend write destination failing right away
+            mockClient.put.callsFake((stream, size, ctx, info, uid, cb) =>
+                process.nextTick(() => cb(new Error('backend write destination died'))));
+
+            dataWrapper.uploadPartCopy(request, log, mockBucketMD, 'sourceBackend',
+                'testLocation', dataLocator, {}, null, err => {
+                    assert(err.is.ServiceUnavailable);
+                    // setImmediate needed for stream.destroy() to mark the stream as destroyed
+                    setImmediate(() => {
+                        assert.strictEqual(sourceStream.destroyed, true);
+                        done();
+                    });
+                });
+        });
     });
 
     describe('MPU Operations', () => {
@@ -414,6 +518,45 @@ describe('DataWrapper', () => {
                 process.nextTick(() => cb({ httpCode: 408 })));
             dataWrapper._put(null, new PassThrough(), 100, {}, {}, log, err => {
                 assert(err.is.IncompleteBody);
+                done();
+            });
+        });
+
+        it('should propagate a value stream error through the hashed stream to the cipher stream', done => {
+            const fileWrapper = new DataWrapper(mockClient, 'file', mockConfig, mockKms,
+                mockMetadata, mockLocStorageCheckFn, mockVault);
+            const cipherBundle = { cipher: new PassThrough() };
+            const value = new PassThrough();
+            value.on('error', () => {});
+            mockClient.put.callsFake(() => {});
+
+            fileWrapper._put(cipherBundle, value, 100, {}, {}, log, () => {});
+            assert.strictEqual(cipherBundle.cipher.destroyed, false);
+            value.emit('error', new Error('client stream reset'));
+
+            // setImmediate is necessary for the pipeline to propagate the error.
+            setImmediate(() => {
+                assert.strictEqual(cipherBundle.cipher.destroyed, true);
+                done();
+            });
+        });
+
+        it('should not destroy the value stream when the cipher stream is destroyed early', done => {
+            // `value` is the HTTP upload stream.
+            // it must keep draining or the client will block waiting for backpressure.
+            const fileWrapper = new DataWrapper(mockClient, 'file', mockConfig, mockKms,
+                mockMetadata, mockLocStorageCheckFn, mockVault);
+            const cipherBundle = { cipher: new PassThrough() };
+            const value = new PassThrough();
+            mockClient.put.callsFake(() => {});
+
+            fileWrapper._put(cipherBundle, value, 100, {}, {}, log, () => {});
+            assert.strictEqual(value.destroyed, false);
+
+            cipherBundle.cipher.destroy();
+
+            setImmediate(() => {
+                assert.strictEqual(value.destroyed, false);
                 done();
             });
         });
@@ -642,6 +785,24 @@ describe('DataWrapper', () => {
                 destBucketMD, serverSideEncryption, log, err => {
                     assert(err.is.InternalError);
                     assert.strictEqual(mockClient.put.called, false);
+                    assert.strictEqual(sourceStream.destroyed, true);
+                    done();
+                });
+        });
+
+        it('should destroy the source stream when the backend write destination fails during copy', done => {
+            const sourceStream = new PassThrough();
+
+            mockClient.get.withArgs(dataLocator[0]).yields(null, sourceStream);
+            // Simulate the backend write destination failing right away
+            mockClient.put.callsFake((stream, size, ctx, info, uid, cb) =>
+                process.nextTick(() => cb(new Error('backend write destination died'))));
+
+            assert.strictEqual(sourceStream.destroyed, false);
+            dataWrapper.copyObject(request, 'sourceBackend', storeMetadataParams,
+                dataLocator, dataStoreContext, destBackendInfo, sourceBucketMD,
+                destBucketMD, null, log, err => {
+                    assert(err.is.ServiceUnavailable);
                     assert.strictEqual(sourceStream.destroyed, true);
                     done();
                 });
