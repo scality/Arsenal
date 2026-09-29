@@ -534,7 +534,7 @@ describe('MongoClientInterface:putObjectVerCase3', () => {
         const putObjectVerCase3 = promisify(client.putObjectVerCase3.bind(client));
         await putObjectVerCase3(collection, 'example-bucket', 'example-object', {}, params, logger);
         assert.deepStrictEqual(capturedOps[0].updateOne.filter, {
-            _id: 'example-version-key',
+            '_id': 'example-version-key',
             'value.number': { $gt: 42 },
             'value.string': 'forty-two',
         });

@@ -92,8 +92,8 @@ describe('MongoClientInterface::clean view', () => {
     async function putLocalizedVersion(objName, extraMD) {
         const objVal = Object.assign(
             {
-                key: objName,
-                dataStoreName: LOCAL_LOCATION,
+                'key': objName,
+                'dataStoreName': LOCAL_LOCATION,
                 'last-modified': new Date().toJSON(),
             },
             extraMD,
@@ -120,9 +120,9 @@ describe('MongoClientInterface::clean view', () => {
     async function putNonLocalizedVersion(objName, vFormat) {
         const versionId = generateVersionId();
         const objVal = {
-            key: objName,
+            'key': objName,
             versionId,
-            dataStoreName: SOURCE_LOCATION,
+            'dataStoreName': SOURCE_LOCATION,
             'last-modified': new Date().toJSON(),
         };
         await metadata.client
@@ -405,7 +405,7 @@ describe('MongoClientInterface::clean view', () => {
         function objectMD(versionId, dataStoreName, extraMD?) {
             return Object.assign(
                 {
-                    key: OBJ_NAME,
+                    'key': OBJ_NAME,
                     dataStoreName,
                     'last-modified': new Date().toJSON(),
                 },

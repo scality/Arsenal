@@ -1182,7 +1182,7 @@ class MongoClientInterface {
                 const ops: AnyBulkWriteOperation<ObjectMetastoreDocument>[] = [versionOp];
                 // filter to get master
                 const filter = {
-                    _id: masterKey,
+                    '_id': masterKey,
                     'value.versionId': objVal.versionId,
                 };
                 // values to update master
@@ -1918,7 +1918,7 @@ class MongoClientInterface {
         objVal.originOp = 's3:ObjectRemoved:Delete';
         c.findOneAndReplace(
             {
-                _id: masterKey,
+                '_id': masterKey,
                 'value.isPHD': true,
                 'value.versionId': mst.versionId,
             },
@@ -2097,7 +2097,7 @@ class MongoClientInterface {
                             },
                             {
                                 $set: {
-                                    _id: masterKey,
+                                    '_id': masterKey,
                                     'value.isPHD': true,
                                     'value.versionId': _vid,
                                     'value.deleted': false,
@@ -2389,7 +2389,7 @@ class MongoClientInterface {
 
         const updateDeleteFilter = Object.assign(
             {
-                _id: key,
+                '_id': key,
                 'value.deleted': true,
             },
             filter,
@@ -2404,7 +2404,7 @@ class MongoClientInterface {
                             findFilter,
                             {
                                 $set: {
-                                    _id: key,
+                                    '_id': key,
                                     'value.deleted': true,
                                 },
                             },
@@ -3199,7 +3199,7 @@ class MongoClientInterface {
     getIngestionBuckets(log: werelogs.Logger, cb: ArsenalCallback<BucketInfo[]>) {
         const m = this.getCollection<BucketMetastoreDocument>(METASTORE);
         m.find({
-            _id: {
+            '_id': {
                 $nin: [PENSIEVE, USERSBUCKET],
             },
             'value.ingestion': {
@@ -3455,7 +3455,7 @@ class MongoClientInterface {
         this.adminDb!.command({
             currentOp: true,
             $or: [
-                { op: 'command', 'command.createIndexes': { $exists: true } },
+                { 'op': 'command', 'command.createIndexes': { $exists: true } },
                 { op: 'none', msg: /^Index Build/ },
             ],
         })
