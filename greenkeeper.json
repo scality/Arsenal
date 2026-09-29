@@ -2,7 +2,6 @@
   "groups": {
     "default": {
       "packages": [
-        "lib/executables/pensieveCreds/package.json",
         "package.json"
       ]
     }
