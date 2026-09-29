@@ -1,8 +1,8 @@
 const assert = require('assert');
 const { parseServiceCredentials, decryptSecret } =
-    require('../../utils');
+    require('../../../lib/executables/pensieveCreds/utils');
 const { privateKey, accessKey, secretKey, decryptedSecretKey }
-    = require('../resources.json');
+    = require('./resources.json');
 
 describe('decyrptSecret', () => {
     it('should decrypt a secret', () => {
