@@ -2773,6 +2773,12 @@ class MongoClientInterface {
             const internalParams = {
                 mainStreamParams: Array.isArray(extensionParams) ? extensionParams[0] : extensionParams,
                 secondaryStreamParams: Array.isArray(extensionParams) ? extensionParams[1] : null,
+                // Hide non-localized versions for DelimiterNonCurrent only, so lifecycle can't delete
+                // them before their data is copied.
+                // DelimiterCurrent doesn't need it: it lists masters, which are never non-localized.
+                // DelimiterOrphanDeleteMarker must not hide them: a delete marker in front of a
+                // non-localized version is not orphan.
+                hideNonLocalizedVersions: params.hideNonLocalizedVersions && extName === 'DelimiterNonCurrent',
             };
 
             return this.internalListObject(bucketName, internalParams, extension, vFormat, log, cb);

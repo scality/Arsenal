@@ -547,4 +547,53 @@ describe('MongoClientInterface::clean view', () => {
             });
         });
     });
+
+    describe('lifecycle listings', () => {
+        function listLifecycle(listingType, hideNonLocalizedVersions) {
+            return promisify(metadata.client.listLifecycleObject.bind(metadata.client))(
+                BUCKET_NAME,
+                { listingType, maxKeys: 100, hideNonLocalizedVersions },
+                logger,
+            );
+        }
+
+        variations.forEach(variation => {
+            describe(`vFormat : ${variation.vFormat}`, () => {
+                // 'pfx-mixed': localized version held by the master, newer version not localized
+                // 'pfx-orphan': non-localized version, hidden behind a newer delete marker
+                beforeEach(async () => {
+                    metadata.client.defaultBucketKeyFormat = variation.vFormat;
+                    await createBucket(BUCKET_NAME, bucketMD, logger);
+                    await putLocalizedVersion('pfx-mixed', null);
+                    await putNonLocalizedVersion('pfx-mixed', variation.vFormat);
+                    await putNonLocalizedVersion('pfx-orphan', variation.vFormat);
+                    await putLocalizedVersion('pfx-orphan', { isDeleteMarker: true, dataStoreName: '' });
+                });
+
+                afterEach(() => deleteBucket(BUCKET_NAME, logger));
+
+                it('should not list a non-localized version as noncurrent', async () => {
+                    const data = await listLifecycle('DelimiterNonCurrent', true);
+                    assert.deepStrictEqual(data.Contents, []);
+                });
+
+                it('should list it as noncurrent when the flag is not set', async () => {
+                    // the master holds the latest localized version, so the newer non-localized one
+                    // is taken for a noncurrent version, and would expire before being localized
+                    const data = await listLifecycle('DelimiterNonCurrent', false);
+                    const mixed = data.Contents.filter(entry => entry.key === 'pfx-mixed');
+                    assert.deepStrictEqual(
+                        mixed.map(entry => JSON.parse(entry.value).dataStoreName),
+                        [SOURCE_LOCATION],
+                    );
+                });
+
+                it('should not take a delete marker hiding a non-localized version for an orphan', async () => {
+                    // expiring it would resurrect the object once the version is localized
+                    const data = await listLifecycle('DelimiterOrphanDeleteMarker', true);
+                    assert.deepStrictEqual(data.Contents, []);
+                });
+            });
+        });
+    });
 });
