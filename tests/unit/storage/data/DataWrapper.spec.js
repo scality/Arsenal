@@ -413,14 +413,13 @@ describe('DataWrapper', () => {
             const sourceStream = new PassThrough();
             const kmsErr = new Error('KMS unavailable');
 
-            mockBucketMD.getServerSideEncryption.returns(serverSideEncryption);
             mockClient.get.withArgs(dataLocator[0]).yields(null, sourceStream);
             mockKms.createCipherBundle.callsFake((sseCfg, log, cb) =>
                 process.nextTick(() => cb(kmsErr)));
 
             dataWrapper.uploadPartCopy(request, log, mockBucketMD, 'sourceBackend',
-                'testLocation', dataLocator, {}, null, err => {
-                    assert(err.is.InternalError);
+                'testLocation', dataLocator, {}, null, serverSideEncryption, err => {
+                    assert.strictEqual(err, kmsErr);
                     assert.strictEqual(mockClient.uploadPart.called, false);
 
                     // setImmediate is necessary for the pipeline to propagate the destroy.
@@ -447,7 +446,7 @@ describe('DataWrapper', () => {
                 process.nextTick(() => cb(new Error('backend write destination died'))));
 
             dataWrapper.uploadPartCopy(request, log, mockBucketMD, 'sourceBackend',
-                'testLocation', dataLocator, {}, null, err => {
+                'testLocation', dataLocator, {}, null, null, err => {
                     assert(err.is.ServiceUnavailable);
                     // setImmediate needed for stream.destroy() to mark the stream as destroyed
                     setImmediate(() => {
@@ -782,7 +781,7 @@ describe('DataWrapper', () => {
             dataWrapper.copyObject(request, 'sourceBackend', storeMetadataParams,
                 dataLocator, dataStoreContext, destBackendInfo, sourceBucketMD,
                 destBucketMD, serverSideEncryption, log, err => {
-                    assert(err.is.InternalError);
+                    assert.strictEqual(err, kmsErr);
                     assert.strictEqual(mockClient.put.called, false);
                     assert.strictEqual(sourceStream.destroyed, true);
                     done();
