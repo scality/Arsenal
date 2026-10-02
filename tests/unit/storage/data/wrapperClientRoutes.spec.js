@@ -8,6 +8,7 @@ const MetadataWrapper =
     require('../../../../lib/storage/metadata/MetadataWrapper');
 const MultipleBackendGateway =
     require('../../../../lib/storage/data/MultipleBackendGateway');
+const errors = require('../../../../lib/errors').default;
 
 const clientName = 'mem';
 const sproxydLocation = 'sproxydlocation';
@@ -44,13 +45,29 @@ function genObjGetInfo(backend, key) {
     };
 }
 
+class MockFailingSproxydClient extends MockSproxydClient {
+    delete(key, reqUids, callback) {
+        const error = new Error();
+        error.code = 404;
+        error.isExpected = true;
+        return callback(error);
+    }
+}
+
+function genFailingClients(sproxydLocation) {
+    const clients = {};
+    clients[sproxydLocation] = new MockFailingSproxydClient();
+    clients[sproxydLocation].clientType = 'scality';
+    return clients;
+}
+
 function dummyStorageCheckFn(location, size, log, cb) {
     return cb();
 }
 
-function getDataWrapper() {
+function getDataWrapper(clients) {
     const mbg = new MultipleBackendGateway(
-        genExternalClients(sproxydLocation, azureLocation),
+        clients,
         new MetadataWrapper(clientName, {}));
     const implName = 'multipleBackends';
     const config = null;
@@ -62,10 +79,15 @@ function getDataWrapper() {
 }
 
 let dw;
+let fdw;
 
 describe('Routes from DataWrapper to backend client', () => {
     beforeAll(() => {
-        dw = getDataWrapper();
+        const clients = genExternalClients(sproxydLocation, azureLocation);
+        dw = getDataWrapper(clients);
+
+        const failingClients = genFailingClients(sproxydLocation);
+        fdw = getDataWrapper(failingClients);
     });
 
     it('should follow object put path successfully for sproxyd backend', () => {
@@ -90,6 +112,14 @@ describe('Routes from DataWrapper to backend client', () => {
             const objectGetInfo = genObjGetInfo('sproxyd');
             dw.delete(objectGetInfo, log, err => {
                 assert.ifError(err);
+            });
+        });
+
+    it('should handle failing sproxyd request',
+        () => {
+            const objectGetInfo = genObjGetInfo('sproxyd');
+            fdw.delete(objectGetInfo, log, err => {
+                assert.deepStrictEqual(err, errors.ObjNotFound);
             });
         });
 
