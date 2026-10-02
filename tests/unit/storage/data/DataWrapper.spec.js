@@ -3,6 +3,7 @@ const sinon = require('sinon');
 const { default: MD5Sum } = require('../../../../lib/s3middleware/MD5Sum');
 const { default: NullStream } = require('../../../../lib/s3middleware/nullStream');
 const DataWrapper = require('../../../../lib/storage/data/DataWrapper');
+const BucketInfo = require('../../../../lib/models/BucketInfo').default;
 const PassThrough = require('stream').PassThrough;
 
 describe('DataWrapper', () => {
@@ -50,6 +51,7 @@ describe('DataWrapper', () => {
                 awsLocation: { type: 'aws_s3' },
             },
             getLocationConstraintType: sandbox.stub().returns('scality'),
+            isSameAzureAccount: sandbox.stub().returns(false),
         };
 
         mockMetadata = {};
@@ -171,6 +173,106 @@ describe('DataWrapper', () => {
                 assert.strictEqual(err, null);
                 assert.strictEqual(stream, decipherBundle.decipher);
                 done();
+            });
+        });
+
+        it('should destroy the source stream when createDecipherBundle fails, to prevent leaks', done => {
+            const objectGetInfo = {
+                key: 'test-key',
+                cipheredDataKey: Buffer.from('test').toString('base64'),
+                cryptoScheme: 1,
+                masterKeyId: 'test-id',
+            };
+            const sourceStream = new PassThrough();
+            const kmsErr = new Error('KMS unavailable');
+            mockClient.get.callsFake((info, range, uid, cb) =>
+                process.nextTick(() => cb(null, sourceStream)));
+            mockKms.createDecipherBundle.callsFake((sse, offset, log, cb) =>
+                process.nextTick(() => cb(kmsErr)));
+
+            assert.strictEqual(sourceStream.destroyed, false);
+            dataWrapper.get(objectGetInfo, null, log, err => {
+                assert.strictEqual(err, kmsErr);
+                assert.strictEqual(sourceStream.destroyed, true);
+                done();
+            });
+        });
+
+        [
+            {
+                name: 'prepared decipherStream',
+                setup: sourceStream => {
+                    const decipherStream = new PassThrough();
+                    const objectGetInfo = { key: 'test-key', decipherStream };
+                    mockClient.get.callsFake((info, range, uid, cb) =>
+                        process.nextTick(() => cb(null, sourceStream)));
+                    return { objectGetInfo, decipherStream };
+                },
+            },
+            {
+                name: 'built decipher stream',
+                setup: sourceStream => {
+                    const objectGetInfo = {
+                        key: 'test-key',
+                        cipheredDataKey: Buffer.from('test').toString('base64'),
+                        cryptoScheme: 1,
+                        masterKeyId: 'test-id',
+                    };
+                    const decipherBundle = { decipher: new PassThrough() };
+                    mockClient.get.callsFake((info, range, uid, cb) =>
+                        process.nextTick(() => cb(null, sourceStream)));
+                    mockKms.createDecipherBundle.callsFake((sse, offset, log, cb) =>
+                        process.nextTick(() => cb(null, decipherBundle)));
+                    return { objectGetInfo, decipherStream: decipherBundle.decipher };
+                },
+            },
+        ].forEach(({ name, setup }) => {
+            describe(`with ${name}`, () => {
+                it('should propagate a source stream error to the decipher stream and destroy it', done => {
+                    const sourceStream = new PassThrough();
+                    const { objectGetInfo, decipherStream } = setup(sourceStream);
+
+                    dataWrapper.get(objectGetInfo, null, log, (err, returnedStream) => {
+                        assert.strictEqual(err, null);
+                        assert.strictEqual(returnedStream, decipherStream);
+                        assert.strictEqual(decipherStream.destroyed, false);
+
+                        let emittedErr = null;
+                        returnedStream.on('error', e => {
+                            emittedErr = e;
+                        });
+
+                        const sourceErr = new Error('sproxyd connection reset');
+                        sourceStream.emit('error', sourceErr);
+
+                        // setImmediate is necessary for the pipeline to propagate the error.
+                        setImmediate(() => {
+                            assert.strictEqual(emittedErr, sourceErr);
+                            assert.strictEqual(decipherStream.destroyed, true);
+                            done();
+                        });
+                    });
+                });
+
+                it('should destroy the source stream when the decipher stream is destroyed early', done => {
+                    const sourceStream = new PassThrough();
+                    const { objectGetInfo, decipherStream } = setup(sourceStream);
+
+                    dataWrapper.get(objectGetInfo, null, log, (err, returnedStream) => {
+                        assert.strictEqual(err, null);
+                        assert.strictEqual(returnedStream, decipherStream);
+                        assert.strictEqual(sourceStream.destroyed, false);
+
+                        // Simulate consumer (HTTP response) destroying returned stream before source finishes
+                        returnedStream.destroy();
+
+                        // setImmediate is necessary for the pipeline to propagate the destroy.
+                        setImmediate(() => {
+                            assert.strictEqual(sourceStream.destroyed, true);
+                            done();
+                        });
+                    });
+                });
             });
         });
     });
@@ -299,6 +401,60 @@ describe('DataWrapper', () => {
                     done();
                 });
         });
+
+        it('should destroy the original get() stream when createCipherBundle fails', done => {
+            const serverSideEncryption = { algorithm: 'AES256' };
+            const request = {
+                query: { partNumber: '1', uploadId: 'upload-id' },
+                objectKey: 'destKey',
+                bucketName: 'destBucket',
+            };
+            const dataLocator = [{ key: 'source-key', size: 100, start: 0 }];
+            const sourceStream = new PassThrough();
+            const kmsErr = new Error('KMS unavailable');
+
+            mockClient.get.withArgs(dataLocator[0]).yields(null, sourceStream);
+            mockKms.createCipherBundle.callsFake((sseCfg, log, cb) =>
+                process.nextTick(() => cb(kmsErr)));
+
+            dataWrapper.uploadPartCopy(request, log, mockBucketMD, 'sourceBackend',
+                'testLocation', dataLocator, {}, null, serverSideEncryption, err => {
+                    assert.strictEqual(err, kmsErr);
+                    assert.strictEqual(mockClient.uploadPart.called, false);
+
+                    // setImmediate is necessary for the pipeline to propagate the destroy.
+                    setImmediate(() => {
+                        assert.strictEqual(sourceStream.destroyed, true);
+                        done();
+                    });
+                });
+        });
+
+        it('should destroy the original get() stream when the backend write destination fails', done => {
+            const request = {
+                query: { partNumber: '1', uploadId: 'upload-id' },
+                objectKey: 'destKey',
+                bucketName: 'destBucket',
+            };
+            const dataLocator = [{ key: 'source-key', size: 100, start: 0 }];
+            const sourceStream = new PassThrough();
+
+            mockClient.get.withArgs(dataLocator[0]).yields(null, sourceStream);
+            mockLocStorageCheckFn.callsFake((loc, size, log, cb) => process.nextTick(() => cb(null)));
+            // Simulate the backend write destination failing right away
+            mockClient.put.callsFake((stream, size, ctx, info, uid, cb) =>
+                process.nextTick(() => cb(new Error('backend write destination died'))));
+
+            dataWrapper.uploadPartCopy(request, log, mockBucketMD, 'sourceBackend',
+                'testLocation', dataLocator, {}, null, null, err => {
+                    assert(err.is.ServiceUnavailable);
+                    // setImmediate needed for stream.destroy() to mark the stream as destroyed
+                    setImmediate(() => {
+                        assert.strictEqual(sourceStream.destroyed, true);
+                        done();
+                    });
+                });
+        });
     });
 
     describe('MPU Operations', () => {
@@ -363,6 +519,45 @@ describe('DataWrapper', () => {
                 done();
             });
         });
+
+        it('should propagate a value stream error through the hashed stream to the cipher stream', done => {
+            const fileWrapper = new DataWrapper(mockClient, 'file', mockConfig, mockKms,
+                mockMetadata, mockLocStorageCheckFn, mockVault);
+            const cipherBundle = { cipher: new PassThrough() };
+            const value = new PassThrough();
+            value.on('error', () => {});
+            mockClient.put.callsFake(() => {});
+
+            fileWrapper._put(cipherBundle, value, 100, {}, {}, log, () => {});
+            assert.strictEqual(cipherBundle.cipher.destroyed, false);
+            value.emit('error', new Error('client stream reset'));
+
+            // setImmediate is necessary for the pipeline to propagate the error.
+            setImmediate(() => {
+                assert.strictEqual(cipherBundle.cipher.destroyed, true);
+                done();
+            });
+        });
+
+        it('should not destroy the value stream when the cipher stream is destroyed early', done => {
+            // `value` is the HTTP upload stream.
+            // it must keep draining or the client will block waiting for backpressure.
+            const fileWrapper = new DataWrapper(mockClient, 'file', mockConfig, mockKms,
+                mockMetadata, mockLocStorageCheckFn, mockVault);
+            const cipherBundle = { cipher: new PassThrough() };
+            const value = new PassThrough();
+            mockClient.put.callsFake(() => {});
+
+            fileWrapper._put(cipherBundle, value, 100, {}, {}, log, () => {});
+            assert.strictEqual(value.destroyed, false);
+
+            cipherBundle.cipher.destroy();
+
+            setImmediate(() => {
+                assert.strictEqual(value.destroyed, false);
+                done();
+            });
+        });
     });
 
     describe('_retryDelete', () => {
@@ -387,6 +582,228 @@ describe('DataWrapper', () => {
                 assert(mockClient.delete.calledThrice);
                 done();
             });
+        });
+    });
+
+    describe('copyObject', () => {
+        const request = {};
+        const storeMetadataParams = {
+            dataStoreName: 'destBackend',
+            size: 100,
+        };
+        const dataLocator = [{
+            key: 'sourceKey',
+            dataStoreETag: 'etag',
+            start: 0,
+            size: 100,
+        }];
+        const dataStoreContext = {
+            bucketName: 'destBucket',
+            owner: 'owner',
+            namespace: 'namespace',
+            objectKey: 'destKey',
+        };
+        const destBackendInfo = {
+            getControllingLocationConstraint: () => 'destBackend',
+        };
+        const sourceBucketMD = new BucketInfo('sourceBucket', 'owner',
+            'source-display-name', new Date().toJSON(),
+            null, null, null, null, null, null,
+            '');
+        const destBucketMD = new BucketInfo('destBucket', 'owner',
+            'dest-display-name', new Date().toJSON(),
+            null, null, null, null, null, null,
+            'location-constraint');
+        const _ = sinon.match.any;
+
+        beforeEach(() => {
+            mockLocStorageCheckFn.yields(null);
+        });
+
+        it('should call client.copyObject for external backend copy', done => {
+            mockConfig.getLocationConstraintType.returns('aws_s3');
+            mockClient.copyObject.yields(null, {
+                key: 'copiedKey',
+                dataStoreName: 'destBackend',
+                dataStoreType: 'aws_s3',
+                dataStoreVersionId: 'versionId',
+            });
+
+            dataWrapper.copyObject(request, 'sourceBackend', storeMetadataParams,
+                dataLocator, dataStoreContext, destBackendInfo, sourceBucketMD,
+                destBucketMD, null, log, (err, result) => {
+                    assert.strictEqual(err, null);
+                    assert.strictEqual(result[0].key, 'copiedKey');
+                    assert.strictEqual(result[0].dataStoreVersionId, 'versionId');
+                    assert(mockClient.copyObject.calledWith(
+                        request, 'destBackend', 'sourceKey', 'sourceBackend',
+                        storeMetadataParams, mockConfig, log));
+                    done();
+                });
+        });
+
+        it('should handle client copy error', done => {
+            const copyErr = new Error('Copy failed');
+
+            mockConfig.getLocationConstraintType.returns('aws_s3');
+            mockClient.copyObject.yields(copyErr);
+
+            dataWrapper.copyObject(request, 'sourceBackend', storeMetadataParams,
+                dataLocator, dataStoreContext, destBackendInfo, sourceBucketMD,
+                destBucketMD, null, log, err => {
+                    assert(err instanceof Error);
+                    assert.strictEqual(err, copyErr);
+                    done();
+                });
+        });
+
+        it('should handle regular copy through get/put', done => {
+            mockClient.get.withArgs(dataLocator[0]).yields(null); // Successful get, but no stream (empty object)
+            mockClient.put.withArgs(_, 100, dataStoreContext, destBackendInfo)
+                .yields(null, { key: 'copiedKey', dataStoreName: 'destBackend' });
+
+            dataWrapper.copyObject(request, 'sourceBackend', storeMetadataParams,
+                dataLocator, dataStoreContext, destBackendInfo, sourceBucketMD,
+                destBucketMD, null, log, (err, results) => {
+                    assert.strictEqual(err, null);
+                    assert.strictEqual(results[0].key, 'copiedKey');
+                    assert(!mockClient.copyObject.called);
+                    assert(mockClient.get.calledOnce);
+                    assert(mockClient.put.calledOnce);
+                    done();
+                });
+        });
+
+        it('should not use client.copyObject with different location constraint types', done => {
+            mockConfig.getLocationConstraintType.withArgs('sourceBackend').returns('aws_s3');
+            mockConfig.getLocationConstraintType.withArgs('destBackend').returns('gcp');
+
+            mockClient.get.withArgs(dataLocator[0]).yields(null); // Successful get, but no stream (empty object)
+            mockClient.put.withArgs(_, 100, dataStoreContext, destBackendInfo)
+                .yields(null, { key: 'copiedKey', dataStoreName: 'destBackend' });
+
+            dataWrapper.copyObject(request, 'sourceBackend', storeMetadataParams,
+                dataLocator, dataStoreContext, destBackendInfo, sourceBucketMD,
+                destBucketMD, null, log, (err, results) => {
+                    assert.strictEqual(err, null);
+                    assert.strictEqual(results[0].key, 'copiedKey');
+                    assert(!mockClient.copyObject.called);
+                    assert(mockClient.get.calledOnce);
+                    assert(mockClient.put.calledOnce);
+                    done();
+                });
+        });
+
+        it('should not use client.copyObject with encryption', done => {
+            mockConfig.getLocationConstraintType.returns('aws_s3');
+
+            const serverSideEncryption = { algorithm: 'AES256' };
+            mockKms.createCipherBundle.yields(null, { cipher: new PassThrough() });
+
+            mockClient.get.withArgs(dataLocator[0]).yields(null); // Successful get, but no stream (empty object)
+            mockLocStorageCheckFn.yields(null);
+            mockClient.put.withArgs(_, 100, dataStoreContext, destBackendInfo)
+                .yields(null, { key: 'copiedKey', dataStoreName: 'destBackend' });
+
+            dataWrapper.copyObject(request, 'sourceBackend', storeMetadataParams,
+                dataLocator, dataStoreContext, destBackendInfo, sourceBucketMD,
+                destBucketMD, serverSideEncryption, log, err => {
+                    assert.strictEqual(err, null);
+                    assert(!mockClient.copyObject.called);
+                    assert(mockClient.get.calledOnce);
+                    assert(mockClient.put.calledOnce);
+                    done();
+                });
+        });
+
+        it('shoud handle get error', done => {
+            const copyErr = new Error('Copy failed');
+
+            mockClient.get.withArgs(dataLocator[0]).yields(copyErr);
+
+            dataWrapper.copyObject(request, 'sourceBackend', storeMetadataParams,
+                dataLocator, dataStoreContext, destBackendInfo, sourceBucketMD,
+                destBucketMD, null, log, err => {
+                    assert(err instanceof Error);
+                    assert(err.is.ServiceUnavailable);
+                    done();
+                });
+        });
+
+        it('shoud handle put error', done => {
+            const copyErr = new Error('Copy failed');
+
+            mockClient.get.withArgs(dataLocator[0]).yields(null); // Successful get, but no stream (empty object)
+            mockClient.put.withArgs(_, 100, dataStoreContext, destBackendInfo).yields(copyErr);
+
+            dataWrapper.copyObject(request, 'sourceBackend', storeMetadataParams,
+                dataLocator, dataStoreContext, destBackendInfo, sourceBucketMD,
+                destBucketMD, null, log, err => {
+                    assert(err instanceof Error);
+                    assert(err.is.ServiceUnavailable);
+                    done();
+                });
+        });
+
+        it('should handle Azure copy with parallel get/put', done => {
+            const azureDataLocator = [Object.assign({}, dataLocator[0], {
+                dataStoreType: 'azure',
+            })];
+
+            mockClient.get.withArgs(azureDataLocator[0]).yields(null); // Successful get, but no stream (empty object)
+            mockClient.put.withArgs(_, 100, dataStoreContext, destBackendInfo)
+                .callsFake((stream, size, ctx, info, uid, cb) =>
+                    stream._flush(() => cb(null, { key: 'azureKey', dataStoreName: 'destBackend' })),
+                );
+
+            dataWrapper.copyObject(request, 'sourceBackend', storeMetadataParams,
+                azureDataLocator, dataStoreContext, destBackendInfo, sourceBucketMD,
+                destBucketMD, null, log, (err, results) => {
+                    assert.strictEqual(err, null);
+                    assert.strictEqual(results[0].key, 'azureKey');
+                    assert(mockClient.get.calledOnce);
+                    assert(mockClient.put.calledOnce);
+                    done();
+                });
+        });
+
+        it('should destroy the source stream when createCipherBundle fails during copy', done => {
+            mockConfig.getLocationConstraintType.returns('aws_s3');
+            const serverSideEncryption = { algorithm: 'AES256' };
+            const sourceStream = new PassThrough();
+            const kmsErr = new Error('KMS unavailable');
+
+            mockClient.get.withArgs(dataLocator[0]).yields(null, sourceStream);
+            mockKms.createCipherBundle.callsFake((sse, log, cb) =>
+                process.nextTick(() => cb(kmsErr)));
+
+            assert.strictEqual(sourceStream.destroyed, false);
+            dataWrapper.copyObject(request, 'sourceBackend', storeMetadataParams,
+                dataLocator, dataStoreContext, destBackendInfo, sourceBucketMD,
+                destBucketMD, serverSideEncryption, log, err => {
+                    assert.strictEqual(err, kmsErr);
+                    assert.strictEqual(mockClient.put.called, false);
+                    assert.strictEqual(sourceStream.destroyed, true);
+                    done();
+                });
+        });
+
+        it('should destroy the source stream when the backend write destination fails during copy', done => {
+            const sourceStream = new PassThrough();
+
+            mockClient.get.withArgs(dataLocator[0]).yields(null, sourceStream);
+            // Simulate the backend write destination failing right away
+            mockClient.put.callsFake((stream, size, ctx, info, uid, cb) =>
+                process.nextTick(() => cb(new Error('backend write destination died'))));
+
+            assert.strictEqual(sourceStream.destroyed, false);
+            dataWrapper.copyObject(request, 'sourceBackend', storeMetadataParams,
+                dataLocator, dataStoreContext, destBackendInfo, sourceBucketMD,
+                destBucketMD, null, log, err => {
+                    assert(err.is.ServiceUnavailable);
+                    assert.strictEqual(sourceStream.destroyed, true);
+                    done();
+                });
         });
     });
 });
