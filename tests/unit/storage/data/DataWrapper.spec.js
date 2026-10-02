@@ -504,6 +504,60 @@ describe('DataWrapper', () => {
                 },
             );
         });
+
+        it('should destroy the original get() stream when createCipherBundle fails', done => {
+            const serverSideEncryption = { algorithm: 'AES256' };
+            const request = {
+                query: { partNumber: '1', uploadId: 'upload-id' },
+                objectKey: 'destKey',
+                bucketName: 'destBucket',
+            };
+            const dataLocator = [{ key: 'source-key', size: 100, start: 0 }];
+            const sourceStream = new PassThrough();
+            const kmsErr = new Error('KMS unavailable');
+
+            mockClient.get.withArgs(dataLocator[0]).yields(null, sourceStream);
+            mockKms.createCipherBundle.callsFake((sseCfg, log, cb) =>
+                process.nextTick(() => cb(kmsErr)));
+
+            dataWrapper.uploadPartCopy(request, log, mockBucketMD, 'sourceBackend',
+                'testLocation', dataLocator, {}, null, serverSideEncryption, err => {
+                    assert.strictEqual(err, kmsErr);
+                    assert.strictEqual(mockClient.uploadPart.called, false);
+
+                    // setImmediate is necessary for the pipeline to propagate the destroy.
+                    setImmediate(() => {
+                        assert.strictEqual(sourceStream.destroyed, true);
+                        done();
+                    });
+                });
+        });
+
+        it('should destroy the original get() stream when the backend write destination fails', done => {
+            const request = {
+                query: { partNumber: '1', uploadId: 'upload-id' },
+                objectKey: 'destKey',
+                bucketName: 'destBucket',
+            };
+            const dataLocator = [{ key: 'source-key', size: 100, start: 0 }];
+            const sourceStream = new PassThrough();
+
+            mockClient.get.withArgs(dataLocator[0]).yields(null, sourceStream);
+            mockLocStorageCheckFn.callsFake((loc, size, log, cb) => process.nextTick(() => cb(null)));
+            // Simulate the backend write destination failing right away
+            mockClient.put.callsFake((stream, size, ctx, info, uid, cb) =>
+                process.nextTick(() => cb(new Error('backend write destination died'))));
+
+            dataWrapper.uploadPartCopy(request, log, mockBucketMD, 'sourceBackend',
+                'testLocation', dataLocator, {}, null, null, err => {
+                    assert(err.is.ServiceUnavailable);
+                    // setImmediate needed for stream.destroy() to mark the stream as destroyed
+                    setImmediate(() => {
+                        assert.strictEqual(sourceStream.destroyed, true);
+                        done();
+                    });
+                });
+        });
     });
 
     describe('MPU Operations', () => {
@@ -1015,6 +1069,45 @@ describe('DataWrapper', () => {
                     done();
                 },
             );
+        });
+
+        it('should destroy the source stream when createCipherBundle fails during copy', done => {
+            mockConfig.getLocationConstraintType.returns('aws_s3');
+            const serverSideEncryption = { algorithm: 'AES256' };
+            const sourceStream = new PassThrough();
+            const kmsErr = new Error('KMS unavailable');
+
+            mockClient.get.withArgs(dataLocator[0]).yields(null, sourceStream);
+            mockKms.createCipherBundle.callsFake((sse, log, cb) =>
+                process.nextTick(() => cb(kmsErr)));
+
+            assert.strictEqual(sourceStream.destroyed, false);
+            dataWrapper.copyObject(request, 'sourceBackend', storeMetadataParams,
+                dataLocator, dataStoreContext, destBackendInfo, sourceBucketMD,
+                destBucketMD, serverSideEncryption, log, err => {
+                    assert.strictEqual(err, kmsErr);
+                    assert.strictEqual(mockClient.put.called, false);
+                    assert.strictEqual(sourceStream.destroyed, true);
+                    done();
+                });
+        });
+
+        it('should destroy the source stream when the backend write destination fails during copy', done => {
+            const sourceStream = new PassThrough();
+
+            mockClient.get.withArgs(dataLocator[0]).yields(null, sourceStream);
+            // Simulate the backend write destination failing right away
+            mockClient.put.callsFake((stream, size, ctx, info, uid, cb) =>
+                process.nextTick(() => cb(new Error('backend write destination died'))));
+
+            assert.strictEqual(sourceStream.destroyed, false);
+            dataWrapper.copyObject(request, 'sourceBackend', storeMetadataParams,
+                dataLocator, dataStoreContext, destBackendInfo, sourceBucketMD,
+                destBucketMD, null, log, err => {
+                    assert(err.is.ServiceUnavailable);
+                    assert.strictEqual(sourceStream.destroyed, true);
+                    done();
+                });
         });
     });
 });
