@@ -1,9 +1,9 @@
 {
     "name": "@scality/arsenal",
+    "version": "8.6.0-preview.4",
     "engines": {
         "node": ">=22"
     },
-    "version": "8.6.0-preview.3",
     "config": {
         "mongodbMemoryServer": {
             "version": "8.0.23"
