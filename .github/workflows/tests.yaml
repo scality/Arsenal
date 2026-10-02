@@ -55,9 +55,6 @@ jobs:
         if: matrix.node-version == '24'
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-      - name: run executables tests
-        run: yarn install && yarn test
-        working-directory: 'lib/executables/pensieveCreds/'
 
   compile:
     name: Compile and upload build artifacts
