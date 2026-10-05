@@ -1,4 +1,4 @@
-import promClient from 'prom-client';
+import promClient from '@prometheus-io/client';
 
 export default class ZenkoMetrics {
     static createCounter(params: promClient.CounterConfiguration<string>) {
