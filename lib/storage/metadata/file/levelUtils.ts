@@ -125,19 +125,20 @@ export function createKeyStream(db: LevelDatabase, options?: Record<string, unkn
  * from RPC clients and from the record log, so they carry a sublevel path
  * rather than a database handle.
  *
+ * Operations without a type are puts: level-sublevel accepted them, and the
+ * versioning layer still emits them, but abstract-level rejects them.
+ *
  * @param rootDb - database holding the sublevel hierarchy
- * @param ops - batch operations, with a `prefix` path
+ * @param ops - batch operations, with an optional `prefix` path
  * @return batch operations targetting a sublevel
  */
 export function resolveBatchSubLevels(rootDb: LevelDatabase, ops: BatchOperation[]): BatchOperation[] {
     return ops.map(op => {
-        if (!op.prefix) {
-            return op;
+        const operation: BatchOperation = Object.assign({}, op, { type: op.type ?? 'put' });
+        if (op.prefix) {
+            operation.sublevel = openSubLevel(rootDb, op.prefix);
+            delete operation.prefix;
         }
-        const operation: BatchOperation = Object.assign({}, op, {
-            sublevel: openSubLevel(rootDb, op.prefix),
-        });
-        delete operation.prefix;
         return operation;
     });
 }
