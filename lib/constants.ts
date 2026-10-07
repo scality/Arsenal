@@ -129,8 +129,6 @@ export const externalBackendHealthCheckTimeout = 5000;
 export const clientsRequireStringKey = { sproxyd: true, cdmi: true };
 export const hasCopyPartBackends = { aws_s3: true, gcp: true };
 export const versioningNotImplBackends = { azure: true, gcp: true };
-// user metadata applied on zenko-created objects
-export const zenkoIDHeader = 'x-amz-meta-zenko-instance-id';
 // Default expiration value of the S3 pre-signed URL duration
 // 604800 seconds (seven days).
 export const defaultPreSignedURLExpiry = 7 * 24 * 60 * 60;
