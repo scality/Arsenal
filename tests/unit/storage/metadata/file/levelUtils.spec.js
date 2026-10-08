@@ -66,6 +66,26 @@ describe('levelUtils - level-sublevel compatibility', () => {
             const value = await openSubLevel(rootDb, ['..recordLogs', 'other']).get('batched');
             assert.strictEqual(value, 'v');
         });
+
+        // level-sublevel treated operations without a type as puts, and the
+        // versioning layer still relies on it
+        it('should default operations without a type to put', async () => {
+            await rootDb.batch(
+                resolveBatchSubLevels(rootDb, [
+                    { prefix: ['untyped'], key: 'withPrefix', value: 'v1' },
+                    { key: 'withoutPrefix', value: 'v2' },
+                ]),
+            );
+            assert.strictEqual(await openSubLevel(rootDb, ['untyped']).get('withPrefix'), 'v1');
+            assert.strictEqual(await rootDb.get('withoutPrefix'), 'v2');
+        });
+
+        it('should keep explicit del operations', async () => {
+            const sub = openSubLevel(rootDb, ['typed']);
+            await sub.put('toDelete', 'v');
+            await rootDb.batch(resolveBatchSubLevels(rootDb, [{ type: 'del', prefix: ['typed'], key: 'toDelete' }]));
+            assert.strictEqual(await sub.get('toDelete'), undefined);
+        });
     });
 
     describe('streams', () => {
