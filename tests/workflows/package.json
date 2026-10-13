@@ -11,7 +11,7 @@
         "@kie/act-js": "^2.6.2",
         "@kie/mock-github": "^2.0.2",
         "@types/jest": "^30.0.0",
-        "@types/node": "^24.19.0",
+        "@types/node": "^24.19.2",
         "jest": "^30.5.2",
         "ts-jest": "^29.4.14",
         "ts-node": "^10.9.2",
