@@ -1,7 +1,6 @@
-
 import type * as werelogs from 'werelogs';
 // Logger should probably by RequestLogger instead
-import errors from "../errors";
+import errors from '../errors';
 
 export const SCAL_KMS_ARN = 'arn:scality:kms:';
 
@@ -10,7 +9,7 @@ export enum KmsType {
     internal = 'internal',
     /** External provider */
     external = 'external',
-};
+}
 
 export enum KmsProtocol {
     /** For tests & dev */
@@ -21,13 +20,13 @@ export enum KmsProtocol {
     scality = 'scality',
     aws_kms = 'aws_kms',
     kmip = 'kmip',
-};
+}
 
 const kmsTypeProtocolMapping = {
     [KmsType.internal]: [KmsProtocol.mem, KmsProtocol.file] as const,
     [KmsType.external]: [KmsProtocol.scality, KmsProtocol.aws_kms, KmsProtocol.kmip] as const,
 } as const;
-export type KmsProtocolByType<T extends KmsType> = typeof kmsTypeProtocolMapping[T][number];
+export type KmsProtocolByType<T extends KmsType> = (typeof kmsTypeProtocolMapping)[T][number];
 
 /**
  * Possible arn are:
@@ -54,13 +53,17 @@ export interface KmsBackend<T extends KmsType> {
 }
 
 export function makeScalityArnPrefix<T extends KmsType>(
-    type: T, protocol: KmsProtocolByType<T>, provider: string
+    type: T,
+    protocol: KmsProtocolByType<T>,
+    provider: string,
 ): AwsLikeKmsArnPrefix<T> {
     return `${SCAL_KMS_ARN}${type}:${protocol}:${provider}:key/`;
 }
 
 export function makeBackend<T extends KmsType>(
-    type: T, protocol: KmsProtocolByType<T>, provider: string
+    type: T,
+    protocol: KmsProtocolByType<T>,
+    provider: string,
 ): KmsBackend<T> {
     return {
         type,
@@ -97,10 +100,13 @@ export function isValidType(type: KmsType | string): type is KmsType {
     return kmsTypes.includes(type as KmsType);
 }
 export function isValidProtocol<T extends KmsType = KmsType>(
-    type: T, protocol: KmsProtocol | string
+    type: T,
+    protocol: KmsProtocol | string,
 ): protocol is KmsProtocolByType<T> {
-    return (kmsTypeProtocolMapping[type] as unknown as KmsProtocol[] | undefined)
-        ?.includes(protocol as KmsProtocol) || false;
+    return (
+        (kmsTypeProtocolMapping[type] as unknown as KmsProtocol[] | undefined)?.includes(protocol as KmsProtocol) ||
+        false
+    );
 }
 /** must be lowercase alphanumeric */
 export function isValidProvider(provider: string) {
@@ -109,11 +115,11 @@ export function isValidProvider(provider: string) {
 // end of functions to validate configuration
 
 export interface KmsArnDetail {
-    type: KmsType,
-    protocol: KmsProtocol,
-    provider: string,
-    arnType: 'key' | 'alias', // we don't support alias yet
-    id: string,
+    type: KmsType;
+    protocol: KmsProtocol;
+    provider: string;
+    arnType: 'key' | 'alias'; // we don't support alias yet
+    id: string;
 }
 type NotValidatedKmsArnDetail = { [Key in keyof KmsArnDetail]?: KmsArnDetail[Key] | string };
 
@@ -128,14 +134,14 @@ export function extractDetailFromArn(keyArn: AwsLikeKmsArn): NotValidatedKmsArnD
     }
 
     const [arnPrefix, ...keyIdOrArn] = keyArn.split('/');
-    const [,,,type, protocol, provider, arnType] = arnPrefix.split(':');
+    const [, , , type, protocol, provider, arnType] = arnPrefix.split(':');
 
     return {
         type,
         protocol,
         provider,
         arnType,
-        id: keyIdOrArn?.join('/')
+        id: keyIdOrArn?.join('/'),
     };
 }
 
@@ -146,21 +152,24 @@ export function extractDetailFromArn(keyArn: AwsLikeKmsArn): NotValidatedKmsArnD
  * @returns error or null
  */
 export function validateKeyDetail(keyDetail: NotValidatedKmsArnDetail, backends: KmsBackend<KmsType>[]) {
-    const isValidBackend = backends.some(backend =>
-        keyDetail.type === backend.type
-        && keyDetail.protocol === backend.protocol
-        && keyDetail.provider === backend.provider
+    const isValidBackend = backends.some(
+        backend =>
+            keyDetail.type === backend.type &&
+            keyDetail.protocol === backend.protocol &&
+            keyDetail.provider === backend.provider,
     );
     // Produce error description to end user with detail of backend configuration for troubleshooting
     if (!isValidBackend) {
         return errors.InvalidArgument.customizeDescription(
-            `KMS Scality KeyArn doesn't match any configured providers. Possible arn are: "${
-                backends.map(b => b.arnPrefix).join('", "')}"`
+            `KMS Scality KeyArn doesn't match any configured providers. Possible arn are: "${backends
+                .map(b => b.arnPrefix)
+                .join('", "')}"`,
         );
     }
     if (keyDetail.arnType !== 'key') {
         return errors.InvalidArgument.customizeDescription(
-            `Invalid KMS Scality KeyArn, expected "key" instead of "${keyDetail.arnType}"`);
+            `Invalid KMS Scality KeyArn, expected "key" instead of "${keyDetail.arnType}"`,
+        );
     }
     if (!keyDetail.id) {
         return errors.InvalidArgument.customizeDescription(`Invalid KMS Scality KeyArn, missing KeyId`);
@@ -176,20 +185,16 @@ export interface KMSInterface {
         bucketName: string,
         logger: werelogs.Logger,
         cb: (err?: Error | null, keyId?: string, keyArn?: string) => void,
-    ): void
+    ): void;
 
-    destroyBucketKey(
-        bucketKeyIdOrArn: string,
-        logger: werelogs.Logger,
-        cb: (err?: Error | null) => void,
-    ): void
+    destroyBucketKey(bucketKeyIdOrArn: string, logger: werelogs.Logger, cb: (err?: Error | null) => void): void;
 
     generateDataKey?(
         cryptoScheme: number,
         masterKeyIdOrArn: string,
         logger: werelogs.Logger,
         cb: (err: Error | null, plainTextDataKey?: Buffer, cipheredDataKey?: Buffer) => void,
-    ): void
+    ): void;
 
     cipherDataKey(
         cryptoScheme: number,
@@ -197,7 +202,7 @@ export interface KMSInterface {
         plainTextDataKey: Buffer,
         logger: werelogs.Logger,
         cb: (err: Error | null, cipheredDataKey?: Buffer) => void,
-    ): void
+    ): void;
 
     decipherDataKey(
         cryptoScheme: number,
@@ -205,10 +210,7 @@ export interface KMSInterface {
         cipheredDataKey: Buffer,
         logger: werelogs.Logger,
         cb: (err: Error | null, plainTextDataKey?: Buffer) => void,
-    ): void
+    ): void;
 
-    healthcheck?(
-        logger: werelogs.Logger,
-        cb: (err: Error | null) => void
-    ): void
+    healthcheck?(logger: werelogs.Logger, cb: (err: Error | null) => void): void;
 }

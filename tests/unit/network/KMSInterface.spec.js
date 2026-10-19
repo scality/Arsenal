@@ -27,31 +27,34 @@ describe('KMSInterface', () => {
     ];
 
     describe('makeScalityArnPrefix', () => {
-        backends.forEach(({ type, protocol, provider }) => it(
-            `should succeed for ${type}:${protocol}:${provider}`, () => {
+        backends.forEach(({ type, protocol, provider }) =>
+            it(`should succeed for ${type}:${protocol}:${provider}`, () => {
                 const res = makeScalityArnPrefix(type, protocol, provider);
                 assert.strictEqual(res, `${SCAL_KMS_ARN}${type}:${protocol}:${provider}:key/`);
-            }));
+            }),
+        );
     });
 
     describe('makeBackend', () => {
-        backends.forEach(({ type, protocol, provider }) => it(
-            `should succeed for ${type}:${protocol}:${provider}`, () => {
+        backends.forEach(({ type, protocol, provider }) =>
+            it(`should succeed for ${type}:${protocol}:${provider}`, () => {
                 const res = makeBackend(type, protocol, provider);
                 assert.strictEqual(res.type, type);
                 assert.strictEqual(res.protocol, protocol);
                 assert.strictEqual(res.provider, provider);
                 assert.strictEqual(res.arnPrefix, `${SCAL_KMS_ARN}${type}:${protocol}:${provider}:key/`);
-            }));
+            }),
+        );
     });
 
     describe('isScalityKmsArn', () => {
-        backends.forEach(({ type, protocol, provider, key }) => it(
-            `should return true for ${type}:${protocol}:${provider}`, () => {
+        backends.forEach(({ type, protocol, provider, key }) =>
+            it(`should return true for ${type}:${protocol}:${provider}`, () => {
                 const arn = `${makeScalityArnPrefix(type, protocol, provider)}${key || '12345'}`;
                 const res = isScalityKmsArn(arn);
                 assert.strictEqual(res, true);
-            }));
+            }),
+        );
 
         it('should return false for non arn', () => {
             assert.strictEqual(isScalityKmsArn('12345'), false);
@@ -62,12 +65,13 @@ describe('KMSInterface', () => {
     });
 
     describe('getKeyIdFromArn', () => {
-        backends.forEach(({ type, protocol, provider, key }) => it(
-            `should return KeyId for ${type}:${protocol}:${provider}`, () => {
+        backends.forEach(({ type, protocol, provider, key }) =>
+            it(`should return KeyId for ${type}:${protocol}:${provider}`, () => {
                 const arn = `${makeScalityArnPrefix(type, protocol, provider)}${key || '12345'}`;
                 const res = getKeyIdFromArn(arn);
                 assert.strictEqual(res, key || '12345');
-            }));
+            }),
+        );
 
         it('should return KeyId for non arn', () => {
             assert.strictEqual(getKeyIdFromArn('12345'), '12345');
@@ -84,10 +88,11 @@ describe('KMSInterface', () => {
     });
 
     describe('isValidProtocol', () => {
-        backends.forEach(({ type, protocol, provider }) => it(
-            `should return true for ${type}:${protocol}:${provider}`, () => {
+        backends.forEach(({ type, protocol, provider }) =>
+            it(`should return true for ${type}:${protocol}:${provider}`, () => {
                 assert.strictEqual(isValidProtocol(type, protocol), true);
-            }));
+            }),
+        );
 
         it('should return false for mismatching type and protocol', () => {
             assert.strictEqual(isValidProtocol(KmsType.internal, KmsProtocol.kmip), false);
@@ -110,8 +115,8 @@ describe('KMSInterface', () => {
     });
 
     describe('extractDetailFromArn', () => {
-        backends.forEach(({ type, protocol, provider, key }) => it(
-            `should return detail for ${type}:${protocol}:${provider}`, () => {
+        backends.forEach(({ type, protocol, provider, key }) =>
+            it(`should return detail for ${type}:${protocol}:${provider}`, () => {
                 const arn = `${makeScalityArnPrefix(type, protocol, provider)}${key || '12345'}`;
                 const detail = extractDetailFromArn(arn);
 
@@ -120,7 +125,8 @@ describe('KMSInterface', () => {
                 assert.strictEqual(detail.provider, provider);
                 assert.strictEqual(detail.arnType, 'key');
                 assert.strictEqual(detail.id, key || '12345');
-            }));
+            }),
+        );
 
         it('should return only id for non arn', () => {
             const detail = extractDetailFromArn('12345');
@@ -144,14 +150,15 @@ describe('KMSInterface', () => {
     });
 
     describe('validateKeyDetail', () => {
-        backends.forEach(({ type, protocol, provider, key }) => it(
-            `should return no error ${type}:${protocol}:${provider}`, () => {
+        backends.forEach(({ type, protocol, provider, key }) =>
+            it(`should return no error ${type}:${protocol}:${provider}`, () => {
                 const arn = `${makeScalityArnPrefix(type, protocol, provider)}${key || '12345'}`;
                 const detail = extractDetailFromArn(arn);
                 const backend = makeBackend(type, protocol, provider);
 
                 assert.strictEqual(validateKeyDetail(detail, [backend]), null);
-            }));
+            }),
+        );
 
         it('should return an error for non arn key', () => {
             const b1 = backends[1];
@@ -161,9 +168,11 @@ describe('KMSInterface', () => {
             const err = validateKeyDetail(detail, [backend]);
             assert.notStrictEqual(err, null);
             assert.strictEqual(err.InvalidArgument, true);
-            assert.strictEqual(err.description,
+            assert.strictEqual(
+                err.description,
                 `KMS Scality KeyArn doesn\'t match any configured providers. Possible arn are: \"${
-                    backend.arnPrefix}\"`,
+                    backend.arnPrefix
+                }\"`,
             );
         });
 
@@ -175,9 +184,11 @@ describe('KMSInterface', () => {
             const err = validateKeyDetail(detail, [backend]);
             assert.notStrictEqual(err, null);
             assert.strictEqual(err.InvalidArgument, true);
-            assert.strictEqual(err.description,
+            assert.strictEqual(
+                err.description,
                 `KMS Scality KeyArn doesn\'t match any configured providers. Possible arn are: \"${
-                    backend.arnPrefix}\"`,
+                    backend.arnPrefix
+                }\"`,
             );
         });
 
@@ -191,9 +202,11 @@ describe('KMSInterface', () => {
             const err = validateKeyDetail(detail, [backend]);
             assert.notStrictEqual(err, null);
             assert.strictEqual(err.InvalidArgument, true);
-            assert.strictEqual(err.description,
+            assert.strictEqual(
+                err.description,
                 `KMS Scality KeyArn doesn\'t match any configured providers. Possible arn are: \"${
-                    backend.arnPrefix}\"`,
+                    backend.arnPrefix
+                }\"`,
             );
         });
 
@@ -206,8 +219,10 @@ describe('KMSInterface', () => {
             const err = validateKeyDetail(detail, [backend]);
             assert.notStrictEqual(err, null);
             assert.strictEqual(err.InvalidArgument, true);
-            assert.strictEqual(err.description,
-                'Invalid KMS Scality KeyArn, expected "key" instead of "wrongResourceType"');
+            assert.strictEqual(
+                err.description,
+                'Invalid KMS Scality KeyArn, expected "key" instead of "wrongResourceType"',
+            );
         });
 
         it('should return an error for missing KeyId after arnPrefix', () => {
