@@ -149,21 +149,26 @@ export function extractDetailFromArn(keyArn: AwsLikeKmsArn): NotValidatedKmsArnD
  * Validate arn detail provided as input from PutObject or retrieved from GetObject
  * List of backends should include the currently configured KMS.
  * Optionally the sseMigration can be included in backends for Get requests pulling key from DB
+ * @param keyDetail detail extracted from keyArn
+ * @param backends configured KMS backends
+ * @param keyArn the requested key, named in the error
  * @returns error or null
  */
-export function validateKeyDetail(keyDetail: NotValidatedKmsArnDetail, backends: KmsBackend<KmsType>[]) {
+export function validateKeyDetail(
+    keyDetail: NotValidatedKmsArnDetail,
+    backends: KmsBackend<KmsType>[],
+    keyArn: string,
+) {
     const isValidBackend = backends.some(
         backend =>
             keyDetail.type === backend.type &&
             keyDetail.protocol === backend.protocol &&
             keyDetail.provider === backend.provider,
     );
-    // Produce error description to end user with detail of backend configuration for troubleshooting
+    // The error reaches the end user: name only the requested arn, not the configured backends
     if (!isValidBackend) {
         return errors.InvalidArgument.customizeDescription(
-            `KMS Scality KeyArn doesn't match any configured providers. Possible arn are: "${backends
-                .map(b => b.arnPrefix)
-                .join('", "')}"`,
+            `KMS Scality KeyArn "${keyArn}" doesn't match any configured providers`,
         );
     }
     if (keyDetail.arnType !== 'key') {

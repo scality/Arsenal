@@ -150,13 +150,24 @@ describe('KMSInterface', () => {
     });
 
     describe('validateKeyDetail', () => {
+        const configuredBackends = backends.map(b => makeBackend(b.type, b.protocol, b.provider));
+
+        function assertUnmatchedProvider(err, keyArnInDescription) {
+            assert.notStrictEqual(err, null);
+            assert.strictEqual(err.InvalidArgument, true);
+            assert.strictEqual(
+                err.description,
+                `KMS Scality KeyArn "${keyArnInDescription}" doesn't match any configured providers`,
+            );
+        }
+
         backends.forEach(({ type, protocol, provider, key }) =>
             it(`should return no error ${type}:${protocol}:${provider}`, () => {
                 const arn = `${makeScalityArnPrefix(type, protocol, provider)}${key || '12345'}`;
                 const detail = extractDetailFromArn(arn);
                 const backend = makeBackend(type, protocol, provider);
 
-                assert.strictEqual(validateKeyDetail(detail, [backend]), null);
+                assert.strictEqual(validateKeyDetail(detail, [backend], arn), null);
             }),
         );
 
@@ -165,15 +176,7 @@ describe('KMSInterface', () => {
             const detail = extractDetailFromArn('12345');
             const backend = makeBackend(b1.type, b1.protocol, b1.provider);
 
-            const err = validateKeyDetail(detail, [backend]);
-            assert.notStrictEqual(err, null);
-            assert.strictEqual(err.InvalidArgument, true);
-            assert.strictEqual(
-                err.description,
-                `KMS Scality KeyArn doesn\'t match any configured providers. Possible arn are: \"${
-                    backend.arnPrefix
-                }\"`,
-            );
+            assertUnmatchedProvider(validateKeyDetail(detail, [backend], '12345'), '12345');
         });
 
         it('should return an error for aws arn', () => {
@@ -181,15 +184,7 @@ describe('KMSInterface', () => {
             const detail = extractDetailFromArn(awsArn);
             const backend = makeBackend(b1.type, b1.protocol, b1.provider);
 
-            const err = validateKeyDetail(detail, [backend]);
-            assert.notStrictEqual(err, null);
-            assert.strictEqual(err.InvalidArgument, true);
-            assert.strictEqual(
-                err.description,
-                `KMS Scality KeyArn doesn\'t match any configured providers. Possible arn are: \"${
-                    backend.arnPrefix
-                }\"`,
-            );
+            assertUnmatchedProvider(validateKeyDetail(detail, [backend], awsArn), awsArn);
         });
 
         it('should return an error for mismatching key and provider', () => {
@@ -199,14 +194,20 @@ describe('KMSInterface', () => {
             const detail = extractDetailFromArn(arn);
             const backend = makeBackend(b1.type, b1.protocol, b1.provider);
 
-            const err = validateKeyDetail(detail, [backend]);
-            assert.notStrictEqual(err, null);
-            assert.strictEqual(err.InvalidArgument, true);
-            assert.strictEqual(
-                err.description,
-                `KMS Scality KeyArn doesn\'t match any configured providers. Possible arn are: \"${
-                    backend.arnPrefix
-                }\"`,
+            assertUnmatchedProvider(validateKeyDetail(detail, [backend], arn), arn);
+        });
+
+        it('should not list the configured providers in the error', () => {
+            const arn = `${makeScalityArnPrefix(KmsType.external, KmsProtocol.kmip, 'unconfigured')}54`;
+            const detail = extractDetailFromArn(arn);
+
+            const err = validateKeyDetail(detail, configuredBackends, arn);
+            assertUnmatchedProvider(err, arn);
+            configuredBackends.forEach(backend =>
+                assert(
+                    !err.description.includes(backend.arnPrefix),
+                    `description names configured provider ${backend.arnPrefix}`,
+                ),
             );
         });
 
@@ -216,7 +217,7 @@ describe('KMSInterface', () => {
             const detail = extractDetailFromArn(arn);
             const backend = makeBackend(b0.type, b0.protocol, b0.provider);
 
-            const err = validateKeyDetail(detail, [backend]);
+            const err = validateKeyDetail(detail, [backend], arn);
             assert.notStrictEqual(err, null);
             assert.strictEqual(err.InvalidArgument, true);
             assert.strictEqual(
@@ -231,7 +232,7 @@ describe('KMSInterface', () => {
             const detail = extractDetailFromArn(arn);
             const backend = makeBackend(b0.type, b0.protocol, b0.provider);
 
-            const err = validateKeyDetail(detail, [backend]);
+            const err = validateKeyDetail(detail, [backend], arn);
             assert.notStrictEqual(err, null);
             assert.strictEqual(err.InvalidArgument, true);
             assert.strictEqual(err.description, 'Invalid KMS Scality KeyArn, missing KeyId');
