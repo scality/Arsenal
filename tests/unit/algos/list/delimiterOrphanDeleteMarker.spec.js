@@ -489,5 +489,171 @@ function getListingKey(key, vFormat) {
 
             assert.deepStrictEqual(delimiter.result(), expectedResult);
         });
+
+        // A null version is stored under a "null key": the version key with an empty
+        // version id suffix (`<key>\0`). DelimiterVersions.filter() parks such a key in
+        // this.nullKey and only hands it to addVersion() when a later entry shows where
+        // it belongs, or at the end of the listing. The tests below cover that end-of-listing
+        // path for orphan delete markers (ARSN-666 / S3C-11512).
+        it('should return a single null-version orphan delete marker', () => {
+            const delimiter = new DelimiterOrphanDeleteMarker({ }, fakeLogger, v);
+
+            const masterKey = 'key';
+            const nullKey = `${masterKey}${VID_SEP}`;
+            const date = '1970-01-01T00:00:00.001Z';
+            const value = `{"versionId":"version1","isNull":true,"last-modified":"${date}","isDeleteMarker":true}`;
+
+            assert.strictEqual(delimiter.filter({
+                key: getListingKey(nullKey, v),
+                value,
+            }), FILTER_ACCEPT);
+
+            const expectedResult = {
+                Contents: [
+                    {
+                        key: masterKey,
+                        value,
+                    },
+                ],
+                IsTruncated: false,
+            };
+
+            assert.deepStrictEqual(delimiter.result(), expectedResult);
+        });
+
+        it('should return all null-version orphan delete markers, including the last one', () => {
+            const delimiter = new DelimiterOrphanDeleteMarker({ }, fakeLogger, v);
+
+            const date = '1970-01-01T00:00:00.001Z';
+            const entries = ['key1', 'key2', 'key3'].map((masterKey, i) => ({
+                masterKey,
+                value: `{"versionId":"version${i}","isNull":true,"last-modified":"${date}","isDeleteMarker":true}`,
+            }));
+
+            entries.forEach(({ masterKey, value }) => {
+                assert.strictEqual(delimiter.filter({
+                    key: getListingKey(`${masterKey}${VID_SEP}`, v),
+                    value,
+                }), FILTER_ACCEPT);
+            });
+
+            const expectedResult = {
+                Contents: entries.map(({ masterKey, value }) => ({ key: masterKey, value })),
+                IsTruncated: false,
+            };
+
+            assert.deepStrictEqual(delimiter.result(), expectedResult);
+        });
+
+        it('should return truncated content when the last null-version orphan delete marker does not fit', () => {
+            const delimiter = new DelimiterOrphanDeleteMarker({ maxKeys: 1 }, fakeLogger, v);
+
+            const date = '1970-01-01T00:00:00.001Z';
+
+            const masterKey1 = 'key1';
+            const value1 = `{"versionId":"version1","isNull":true,"last-modified":"${date}","isDeleteMarker":true}`;
+
+            assert.strictEqual(delimiter.filter({
+                key: getListingKey(`${masterKey1}${VID_SEP}`, v),
+                value: value1,
+            }), FILTER_ACCEPT);
+
+            const masterKey2 = 'key2';
+            const value2 = `{"versionId":"version2","isNull":true,"last-modified":"${date}","isDeleteMarker":true}`;
+
+            assert.strictEqual(delimiter.filter({
+                key: getListingKey(`${masterKey2}${VID_SEP}`, v),
+                value: value2,
+            }), FILTER_ACCEPT);
+
+            // key2 must be left for the next listing, which starts after NextMarker
+            const expectedResult = {
+                Contents: [
+                    {
+                        key: masterKey1,
+                        value: value1,
+                    },
+                ],
+                NextMarker: masterKey1,
+                IsTruncated: true,
+            };
+
+            assert.deepStrictEqual(delimiter.result(), expectedResult);
+        });
+
+        it('should not return the last delete marker as an orphan when its key has an older null version', () => {
+            const delimiter = new DelimiterOrphanDeleteMarker({ }, fakeLogger, v);
+
+            const masterKey = 'key';
+
+            // the null key sorts first even though it is the older version
+            const nullKey = `${masterKey}${VID_SEP}`;
+            const date1 = '1970-01-01T00:00:00.001Z';
+            const value1 = `{"versionId":"version2","isNull":true,"last-modified":"${date1}"}`;
+
+            assert.strictEqual(delimiter.filter({
+                key: getListingKey(nullKey, v),
+                value: value1,
+            }), FILTER_ACCEPT);
+
+            // current version: delete marker, newer than the null version
+            const versionId2 = 'version1';
+            const versionKey2 = `${masterKey}${VID_SEP}${versionId2}`;
+            const date2 = '1970-01-01T00:00:00.002Z';
+            const value2 = `{"versionId":"${versionId2}","last-modified":"${date2}","isDeleteMarker":true}`;
+
+            assert.strictEqual(delimiter.filter({
+                key: getListingKey(versionKey2, v),
+                value: value2,
+            }), FILTER_ACCEPT);
+
+            assert.deepStrictEqual(delimiter.result(), EmptyResult);
+        });
+
+        it('should not consider a parked null-version delete marker as an orphan if listing interrupted', () => {
+            const maxScannedLifecycleListingEntries = 2;
+            const delimiter = new DelimiterOrphanDeleteMarker({ maxScannedLifecycleListingEntries }, fakeLogger, v);
+
+            // key1: orphan delete marker, kept as candidate
+            const masterKey1 = 'key1';
+            const versionId1 = 'version1';
+            const versionKey1 = `${masterKey1}${VID_SEP}${versionId1}`;
+            const date1 = '1970-01-01T00:00:00.001Z';
+            const value1 = `{"versionId":"${versionId1}","last-modified":"${date1}","isDeleteMarker":true}`;
+
+            assert.strictEqual(delimiter.filter({
+                key: getListingKey(versionKey1, v),
+                value: value1,
+            }), FILTER_ACCEPT);
+
+            // key2: null delete marker, parked by DelimiterVersions
+            const masterKey2 = 'key2';
+            const value2 = `{"versionId":"version2","isNull":true,"last-modified":"${date1}","isDeleteMarker":true}`;
+
+            assert.strictEqual(delimiter.filter({
+                key: getListingKey(`${masterKey2}${VID_SEP}`, v),
+                value: value2,
+            }), FILTER_ACCEPT);
+
+            // key3: triggers the interruption
+            const masterKey3 = 'key3';
+            const versionKey3 = `${masterKey3}${VID_SEP}version3`;
+            const value3 = `{"versionId":"version3","last-modified":"${date1}","isDeleteMarker":true}`;
+
+            assert.strictEqual(delimiter.filter({
+                key: getListingKey(versionKey3, v),
+                value: value3,
+            }), FILTER_END);
+
+            // nothing is decided on an interrupted listing: no false positive,
+            // and the next listing restarts from the beginning (no key fully processed yet)
+            const expectedResult = {
+                Contents: [],
+                NextMarker: null,
+                IsTruncated: true,
+            };
+
+            assert.deepStrictEqual(delimiter.result(), expectedResult);
+        });
     });
 });
