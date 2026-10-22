@@ -149,7 +149,10 @@ export type Params = {
         object: string[];
     };
     unsupportedQueries: any;
-    api: { callApiMethod: routesUtils.CallApiMethod };
+    api: { 
+        callApiMethod: routesUtils.CallApiMethod,
+        callPostObject: routesUtils.CallApiMethod,
+    };
 }
 
 /** routes - route request to appropriate method

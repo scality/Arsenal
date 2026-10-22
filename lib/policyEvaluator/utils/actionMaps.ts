@@ -137,6 +137,7 @@ const actionMonitoringMapS3 = {
     objectGetTagging: 'GetObjectTagging',
     objectHead: 'HeadObject',
     objectPut: 'PutObject',
+    objectPost: 'PostObject',
     objectPutACL: 'PutObjectAcl',
     objectPutCopyPart: 'UploadPartCopy',
     objectPutLegalHold: 'PutObjectLegalHold',

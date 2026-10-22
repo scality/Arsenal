@@ -8,7 +8,7 @@ import StatsClient from '../../metrics/StatsClient';
 export default function routeOPTIONS(
     request: http.IncomingMessage,
     response: http.ServerResponse,
-    api: { callApiMethod: routesUtils.CallApiMethod },
+    api: routesUtils.ApiMethods,
     log: RequestLogger,
     statsClient?: StatsClient,
 ) {
