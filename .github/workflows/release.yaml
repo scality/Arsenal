@@ -23,12 +23,13 @@ jobs:
         if: >-
           ${{ github.event_name == 'workflow_dispatch'
           && !startsWith(github.ref, 'refs/heads/development/')
-          && !startsWith(github.ref, 'refs/heads/hotfix/') }}
+          && !startsWith(github.ref, 'refs/heads/hotfix/')
+          && !startsWith(github.ref, 'refs/heads/epic/') }}
         env:
           REF_NAME: ${{ github.ref_name }}
         run: |
-          echo "::error::Releases must run from a development/* or" \
-            "hotfix/* branch (got $REF_NAME)"
+          echo "::error::Releases must run from a development/*," \
+            "hotfix/* or epic/* branch (got $REF_NAME)"
           exit 1
 
       - name: Checkout
@@ -176,16 +177,11 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Create Release
-        uses: softprops/action-gh-release@v3
+      # Epic copy: create the tag only, with no GitHub release.
+      - name: Create the tag
         env:
-          GITHUB_TOKEN: ${{ github.token }}
-        with:
-          name: ${{ needs.build.outputs.version }}
-          tag_name: ${{ needs.build.outputs.version }}
-          generate_release_notes: true
-          append_body: true
-          body: |
-            GitHub Packages: https://github.com/${{ github.repository }}/pkgs/npm/arsenal
-            npm: https://www.npmjs.com/package/@scality/arsenal
-          target_commitish: ${{ github.sha }}
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.build.outputs.version }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/git/refs" \
+            -f ref="refs/tags/$TAG" -f sha="$GITHUB_SHA"
