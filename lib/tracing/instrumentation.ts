@@ -104,13 +104,17 @@ function instrumentAsyncHandler(self: unknown, apiMethod: ApiMethod, spanName: s
     return result;
 }
 
-// Wrap an API handler so each call produces an `api.<methodName>` span; returns
-// the handler unchanged when OTEL is off.
-export function instrumentApiMethod<T extends (...args: any[]) => any>(apiMethod: T, methodName: string): T {
+// Wrap an API handler so each call produces a `<spanPrefix><methodName>` span
+// (`spanPrefix` defaults to `api.`); returns the handler unchanged when OTEL is off.
+export function instrumentApiMethod<T extends (...args: any[]) => any>(
+    apiMethod: T,
+    methodName: string,
+    spanPrefix: string = SPAN_PREFIX,
+): T {
     if (!isEnabled()) {
         return apiMethod;
     }
-    const spanName = `${SPAN_PREFIX}${methodName}`;
+    const spanName = `${spanPrefix}${methodName}`;
     return function instrumented(this: unknown, ...args: any[]) {
         const callbackIndex = (args as any).findLastIndex((a: any) => typeof a === 'function');
         if (callbackIndex !== -1) {
