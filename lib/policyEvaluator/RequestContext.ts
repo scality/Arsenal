@@ -1,4 +1,5 @@
 import { parseIp } from '../ipCheck';
+import { notificationArnPrefix } from '../constants';
 
 // http://docs.aws.amazon.com/IAM/latest/UserGuide/list_s3.html
 // For MPU actions:
@@ -13,6 +14,7 @@ import {
     actionMapSTS,
     actionMapMetadata,
     actionMapSUR,
+    actionMapBucketNotif,
 } from './utils/actionMaps';
 
 export const actionNeedQuotaCheck = {
@@ -64,6 +66,8 @@ function _findAction(service: string, method: string) {
             return actionMapMetadata[method];
         case 'sur':
             return actionMapSUR[method];
+        case 'bucketnotif':
+            return actionMapBucketNotif[method];
         default:
             return undefined;
     }
@@ -133,6 +137,13 @@ function _buildArn(
                 `${generalResource}${specificResource ? `/${specificResource}` : ''}`
             );
         }
+        case 'bucketnotif': {
+            // arn:scality:bucketnotif::<account-id>:<destination name>
+            // A list names no destination, so it gets the account-level ARN.
+            // Keep ?? and not ||: an empty name keeps its empty relative id,
+            // so it never takes the ARN of the list.
+            return `${notificationArnPrefix}::${requesterInfo!.accountid}:${generalResource ?? '*'}`;
+        }
         default:
             return undefined;
     }
@@ -181,7 +192,8 @@ export type RequestContextType = {
  * @param {object} headers - request headers
  * @param {query} query - request query
  * @param {string} generalResource - bucket name from request if any if from s3
- * or accounts, buckets or users from utapi
+ * or accounts, buckets or users from utapi, or the destination name if from
+ * bucketnotif (undefined only for notificationDestinationList)
  * @param {string} specificResource - object name from request if any if from s3
  * or bucketname from utapi if from utapi
  * @param {string} requesterIp - ip of requester
