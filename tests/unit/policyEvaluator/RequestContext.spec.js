@@ -12,7 +12,8 @@ describe('RequestContext', () => {
         'GET', // apiMethod
         's3', // awsService
         'us-east-1', // locationConstraint
-        { // requesterInfo
+        {
+            // requesterInfo
             arn: 'arn:aws:iam::user/johndoe',
             accountid: 'JOHNACCOUNT',
             username: 'John Doe',
@@ -68,7 +69,6 @@ describe('RequestContext', () => {
         { name: 'getNeedTagEval', expectedValue: true },
         { name: 'getObjectLockRetentionDays', expectedValue: 5 },
         { name: 'isQuotaCheckNeeded', expectedValue: true },
-
     ];
     GetterTests.forEach(testCase => {
         it(`getter:${testCase.name}`, () => {
@@ -149,7 +149,10 @@ describe('RequestContext', () => {
         const metadataParams = [...constructorParams];
         metadataParams[7] = 'metadata';
         const metadataRC = new RequestContext(...metadataParams);
-        assert.strictEqual(metadataRC.getResource(), 'arn:scality:metadata::JOHNACCOUNT:general-resource/specific-resource');
+        assert.strictEqual(
+            metadataRC.getResource(),
+            'arn:scality:metadata::JOHNACCOUNT:general-resource/specific-resource',
+        );
     });
 
     it('should return correct ARN for SUR service', () => {

@@ -1,7 +1,6 @@
 'use strict'; // eslint-disable-line strict
 
-const { validateUserPolicy, validateResourcePolicy } =
-    require('../../../lib/policy/policyValidator');
+const { validateUserPolicy, validateResourcePolicy } = require('../../../lib/policy/policyValidator');
 const { default: errors, ArsenalError } = require('../../../lib/errors');
 const successRes = { error: null, valid: true };
 const sampleUserPolicy = {
@@ -35,8 +34,7 @@ const errDict = {
         Action: 'Policy statement must contain actions.',
     },
     pattern: {
-        Action: 'Actions/Conditions must be prefaced by a vendor,' +
-            ' e.g., iam, sdb, ec2, etc.',
+        Action: 'Actions/Conditions must be prefaced by a vendor,' + ' e.g., iam, sdb, ec2, etc.',
         Resource: 'Resource must be in ARN format or "*".',
     },
     minItems: {
@@ -86,9 +84,11 @@ beforeEach(() => {
 
 describe('Policies validation - Invalid JSON', () => {
     it('should return error for invalid user policy JSON', () => {
-        const result = validateUserPolicy('{"Version":"2012-10-17",' +
-        '"Statement":{"Effect":"Allow""Action":"s3:PutObject",' +
-        '"Resource":"arn:aws:s3*"}}');
+        const result = validateUserPolicy(
+            '{"Version":"2012-10-17",' +
+                '"Statement":{"Effect":"Allow""Action":"s3:PutObject",' +
+                '"Resource":"arn:aws:s3*"}}',
+        );
         const fail = failRes(user);
         expect(result.valid).toBeFalsy();
         expect(result.error.type).toEqual(fail.error.type);
@@ -96,9 +96,11 @@ describe('Policies validation - Invalid JSON', () => {
         expect(result.error).toBeInstanceOf(ArsenalError);
     });
     it('should return error for invaild resource policy JSON', () => {
-        const result = validateResourcePolicy('{"Version":"2012-10-17",' +
-        '"Statement":{"Effect":"Allow""Action":"s3:PutObject",' +
-        '"Resource":"arn:aws:s3*"}}');
+        const result = validateResourcePolicy(
+            '{"Version":"2012-10-17",' +
+                '"Statement":{"Effect":"Allow""Action":"s3:PutObject",' +
+                '"Resource":"arn:aws:s3*"}}',
+        );
         const fail = failRes(resource);
         expect(result.valid).toBeFalsy();
         expect(result.error.type).toEqual(fail.error.type);
@@ -131,12 +133,10 @@ describe('Policies validation - Version', () => {
         check(userPolicy, failRes(user, errDict.required.Version), user);
     });
 
-    it('should return error if Version field in resource policy is missing',
-        () => {
-            resourcePolicy.Version = undefined;
-            check(resourcePolicy, failRes(resource, errDict.required.Version),
-                resource);
-        });
+    it('should return error if Version field in resource policy is missing', () => {
+        resourcePolicy.Version = undefined;
+        check(resourcePolicy, failRes(resource, errDict.required.Version), resource);
+    });
 });
 
 describe('Policies validation - Principal', () => {
@@ -166,10 +166,7 @@ describe('Policies validation - Principal', () => {
         {
             name: 'multiple account arn',
             value: {
-                AWS: [
-                    'arn:aws:iam::111111111111:root',
-                    'arn:aws:iam::111111111112:root',
-                ],
+                AWS: ['arn:aws:iam::111111111111:root', 'arn:aws:iam::111111111112:root'],
             },
             policyType: [user, resource],
         },
@@ -190,16 +187,15 @@ describe('Policies validation - Principal', () => {
         },
         {
             name: 'user arn with vault made path',
-            value: { AWS: 'arn:aws:iam::767707094035:user/user2/TENANT_USER/null/5417be27-8709-48bd-adfb-865ebc58b9f0/1a464be02ea631bdaf2a9ee884434233374a457460e925bf10d9e4665f8fa796/c1d83067-a3f3-41a4-bd45-d6bf47270bd0' }, // eslint-disable-line max-len
+            value: {
+                AWS: 'arn:aws:iam::767707094035:user/user2/TENANT_USER/null/5417be27-8709-48bd-adfb-865ebc58b9f0/1a464be02ea631bdaf2a9ee884434233374a457460e925bf10d9e4665f8fa796/c1d83067-a3f3-41a4-bd45-d6bf47270bd0',
+            },
             policyType: [user, resource],
         },
         {
             name: 'multiple user arns',
             value: {
-                AWS: [
-                    'arn:aws:iam::111111111111:user/alex',
-                    'arn:aws:iam::111111111111:user/thibault',
-                ],
+                AWS: ['arn:aws:iam::111111111111:user/alex', 'arn:aws:iam::111111111111:user/thibault'],
             },
             policyType: [user, resource],
         },
@@ -213,18 +209,14 @@ describe('Policies validation - Principal', () => {
         {
             name: 'multiple role arn',
             value: {
-                AWS: [
-                    'arn:aws:iam::111111111111:role/dev',
-                    'arn:aws:iam::111111111111:role/prod',
-                ],
+                AWS: ['arn:aws:iam::111111111111:role/dev', 'arn:aws:iam::111111111111:role/prod'],
             },
             policyType: [user, resource],
         },
         {
             name: 'saml provider',
             value: {
-                Federated:
-                    'arn:aws:iam::111111111111:saml-provider/mysamlprovider',
+                Federated: 'arn:aws:iam::111111111111:saml-provider/mysamlprovider',
             },
             policyType: [user],
         },
@@ -235,33 +227,28 @@ describe('Policies validation - Principal', () => {
         },
         {
             name: 'with canonical user id',
-            value: { CanonicalUser:
-                '1examplecanonicalid12345678909876' +
-                '54321qwerty12345asdfg67890z1x2c' },
+            value: { CanonicalUser: '1examplecanonicalid12345678909876' + '54321qwerty12345asdfg67890z1x2c' },
             policyType: [resource],
         },
     ].forEach(test => {
         if (test.policyType.includes(user)) {
-            it(`should allow user policy principal field with ${test.name}`,
-                () => {
-                    userPolicy.Statement.Principal = test.value;
-                    delete userPolicy.Statement.Resource;
-                    check(userPolicy, successRes, user);
-                });
+            it(`should allow user policy principal field with ${test.name}`, () => {
+                userPolicy.Statement.Principal = test.value;
+                delete userPolicy.Statement.Resource;
+                check(userPolicy, successRes, user);
+            });
 
-            it(`should allow user policy notPrincipal field with ${test.name}`,
-                () => {
-                    userPolicy.Statement.NotPrincipal = test.value;
-                    delete userPolicy.Statement.Resource;
-                    check(userPolicy, successRes, user);
-                });
+            it(`should allow user policy notPrincipal field with ${test.name}`, () => {
+                userPolicy.Statement.NotPrincipal = test.value;
+                delete userPolicy.Statement.Resource;
+                check(userPolicy, successRes, user);
+            });
         }
         if (test.policyType.includes(resource)) {
-            it(`should allow resource policy principal field with ${test.name}`,
-                () => {
-                    resourcePolicy.Statement[0].Principal = test.value;
-                    check(resourcePolicy, successRes, resource);
-                });
+            it(`should allow resource policy principal field with ${test.name}`, () => {
+                resourcePolicy.Statement[0].Principal = test.value;
+                check(resourcePolicy, successRes, resource);
+            });
         }
     });
 
@@ -308,10 +295,7 @@ describe('Policies validation - Principal', () => {
         {
             name: 'multiple malformed account arn',
             value: {
-                AWS: [
-                    'arn:aws:iam::111111111111:root',
-                    'arn:aws:iam::111111111112:',
-                ],
+                AWS: ['arn:aws:iam::111111111111:root', 'arn:aws:iam::111111111112:'],
             },
             policyType: [user, resource],
         },
@@ -333,10 +317,7 @@ describe('Policies validation - Principal', () => {
         {
             name: 'multiple malformed user arns',
             value: {
-                AWS: [
-                    'arn:aws:iam::111111111111:user/alex',
-                    'arn:aws:iam::111111111111:user/',
-                ],
+                AWS: ['arn:aws:iam::111111111111:user/alex', 'arn:aws:iam::111111111111:user/'],
             },
             policyType: [user, resource],
         },
@@ -350,10 +331,7 @@ describe('Policies validation - Principal', () => {
         {
             name: 'multiple malformed role arn',
             value: {
-                AWS: [
-                    'arn:aws:iam::111111111111:role/dev',
-                    'arn:aws:iam::11111111z111:role/prod',
-                ],
+                AWS: ['arn:aws:iam::111111111111:role/dev', 'arn:aws:iam::11111111z111:role/prod'],
             },
             policyType: [user, resource],
         },
@@ -369,9 +347,7 @@ describe('Policies validation - Principal', () => {
         },
         {
             name: 'invalid canonical user',
-            value: { CanonicalUser:
-                '12345invalid-canonical-id$$$//098' +
-                '7654321poiu1q2w3e4r5t6y7u8i9o0p' },
+            value: { CanonicalUser: '12345invalid-canonical-id$$$//098' + '7654321poiu1q2w3e4r5t6y7u8i9o0p' },
             policyType: [resource],
         },
     ].forEach(test => {
@@ -505,8 +481,7 @@ describe('Policies validation - Statement', () => {
         it(`resource policy ${test.name}`, () => {
             test.toDelete.forEach(p => delete resourcePolicy.Statement[0][p]);
             if (test.expected === 'fail') {
-                check(resourcePolicy, failRes(resource, test.errMessage),
-                    resource);
+                check(resourcePolicy, failRes(resource, test.errMessage), resource);
             } else {
                 check(resourcePolicy, test.expected, resource);
             }
@@ -519,10 +494,9 @@ describe('Policies validation - Statement::Sid_block', () => {
         check(userPolicy, successRes, user);
     });
 
-    it('resource policy should succeed if Sid is any alphanumeric string',
-        () => {
-            check(resourcePolicy, successRes, resource);
-        });
+    it('resource policy should succeed if Sid is any alphanumeric string', () => {
+        check(resourcePolicy, successRes, resource);
+    });
 
     it('user policy should fail if Sid is not a valid format', () => {
         userPolicy.Statement.Sid = 'foo bar()';
@@ -615,8 +589,7 @@ const actionTests = [
     },
 ];
 
-describe('User policies validation - Statement::Action_block/' +
-    'Statement::NotAction_block', () => {
+describe('User policies validation - Statement::Action_block/' + 'Statement::NotAction_block', () => {
     beforeEach(() => {
         userPolicy.Statement.Action = undefined;
         userPolicy.Statement.NotAction = undefined;
@@ -647,8 +620,7 @@ describe('Resource policies validation - Statement::Action_block', () => {
         it(`${test.name}`, () => {
             resourcePolicy.Statement[0].Action = test.value;
             if (test.expected === 'fail') {
-                check(resourcePolicy, failRes(resource, test.errMessage),
-                    resource);
+                check(resourcePolicy, failRes(resource, test.errMessage), resource);
             } else {
                 check(resourcePolicy, test.expected, resource);
             }
@@ -697,8 +669,7 @@ const resourceTests = [
     },
 ];
 
-describe('User policies validation - Statement::Resource_block' +
-    'Statement::NotResource_block', () => {
+describe('User policies validation - Statement::Resource_block' + 'Statement::NotResource_block', () => {
     beforeEach(() => {
         userPolicy.Statement.Resource = undefined;
         userPolicy.Statement.NotResource = undefined;
@@ -734,8 +705,7 @@ describe('Resource policies validation - Statement::Resource_block', () => {
         it(`${test.name}`, () => {
             resourcePolicy.Statement[0].Resource = test.value;
             if (test.expected === 'fail') {
-                check(resourcePolicy, failRes(resource, test.errMessage),
-                    resource);
+                check(resourcePolicy, failRes(resource, test.errMessage), resource);
             } else {
                 check(resourcePolicy, test.expected, resource);
             }
@@ -744,8 +714,7 @@ describe('Resource policies validation - Statement::Resource_block', () => {
 
     it('should fail for empty list of resources', () => {
         resourcePolicy.Statement[0].Resource = [];
-        check(resourcePolicy, failRes(resource, errDict.minItems.Resource),
-            resource);
+        check(resourcePolicy, failRes(resource, errDict.minItems.Resource), resource);
     });
 });
 
