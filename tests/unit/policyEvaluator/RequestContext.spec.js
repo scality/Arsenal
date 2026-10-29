@@ -131,6 +131,32 @@ describe('RequestContext', () => {
         assert.deepStrictEqual(newSerialized, SerializedFields);
     });
 
+    describe('action and ARN of each service, with no explicit action or sub-resource', () => {
+        [
+            ['s3', 'objectGet', 's3:GetObject', 'arn:aws:s3:::general-resource'],
+            ['iam', 'listUserTags', 'iam:ListUserTags', 'arn:aws:iam::JOHNACCOUNT:general-resource'],
+            ['sso', 'SsoAuthorize', 'sso:Authorize', 'arn:scality:sso:::general-resource'],
+            ['ring', 'PutObject', 'ring:PutObject', 'arn:aws:ring::JOHNACCOUNT:general-resource'],
+            ['utapi', 'ListMetrics', 'utapi:ListMetrics', 'arn:scality:utapi::JOHNACCOUNT:general-resource/'],
+            // the fixture has no targetAccountId, which sts puts in the ARN
+            ['sts', 'assumeRole', 'sts:AssumeRole', 'arn:aws:iam::undefined:general-resource'],
+            ['metadata', 'admin', 'metadata:admin', 'arn:scality:metadata::JOHNACCOUNT:general-resource/'],
+            ['sur', 'GetMetrics', 'sur:GetMetrics', 'arn:scality:sur::JOHNACCOUNT:general-resource'],
+            ['unknown', 'GetMetrics', undefined, undefined],
+        ].forEach(([service, apiMethod, action, arn]) => {
+            it(`should give ${service} ${apiMethod} its action and ARN`, () => {
+                const params = [...constructorParams];
+                params[3] = undefined; // specificResource
+                params[6] = apiMethod;
+                params[7] = service;
+                params[15] = undefined; // action, so that the service map gives it
+                const serviceRC = new RequestContext(...params);
+                assert.strictEqual(serviceRC.getAction(), action);
+                assert.strictEqual(serviceRC.getResource(), arn);
+            });
+        });
+    });
+
     it('should return correct ARN for utapi service', () => {
         const utapiParams = [...constructorParams];
         utapiParams[7] = 'utapi';
