@@ -700,6 +700,24 @@ describe('User policies validation - Statement::Resource_block' + 'Statement::No
     });
 });
 
+describe('User policies validation - bucket notification destinations', () => {
+    it('should allow the five destination actions on tenant and global destination ARNs', () => {
+        userPolicy.Statement.Condition = undefined;
+        userPolicy.Statement.Action = [
+            'scality:CreateBucketNotificationDestination',
+            'scality:UpdateBucketNotificationDestination',
+            'scality:GetBucketNotificationDestination',
+            'scality:DeleteBucketNotificationDestination',
+            'scality:ListBucketNotificationDestinations',
+        ];
+        userPolicy.Statement.Resource = [
+            'arn:scality:bucketnotif::123456789012:my-dest',
+            'arn:scality:bucketnotif:::target1',
+        ];
+        check(userPolicy, successRes, user);
+    });
+});
+
 describe('Resource policies validation - Statement::Resource_block', () => {
     resourceTests.forEach(test => {
         it(`${test.name}`, () => {

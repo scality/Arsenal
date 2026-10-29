@@ -223,4 +223,54 @@ describe('RequestContext', () => {
         const unknownRC = new RequestContext(...unknownParams);
         assert.strictEqual(unknownRC.getResource(), undefined);
     });
+
+    describe('bucketnotif service', () => {
+        // specificResource keeps the fixture's value: a destination ARN has no
+        // sub-resource, so it must not show in the ARN
+        const bucketNotifRC = (apiMethod, destinationName) => {
+            const params = [...constructorParams];
+            params[2] = destinationName; // generalResource
+            params[6] = apiMethod;
+            params[7] = 'bucketnotif';
+            params[15] = undefined; // action, so that the service map gives it
+            return new RequestContext(...params);
+        };
+
+        [
+            ['notificationDestinationCreate', 'scality:CreateBucketNotificationDestination'],
+            ['notificationDestinationUpdate', 'scality:UpdateBucketNotificationDestination'],
+            ['notificationDestinationGet', 'scality:GetBucketNotificationDestination'],
+            ['notificationDestinationDelete', 'scality:DeleteBucketNotificationDestination'],
+            ['notificationDestinationList', 'scality:ListBucketNotificationDestinations'],
+        ].forEach(([apiMethod, action]) => {
+            it(`should map ${apiMethod} to ${action}`, () => {
+                assert.strictEqual(bucketNotifRC(apiMethod, 'my-dest').getAction(), action);
+            });
+        });
+
+        it('should not map an S3 method', () => {
+            assert.strictEqual(bucketNotifRC('bucketPutNotification', 'my-dest').getAction(), undefined);
+        });
+
+        it('should return the ARN of the destination in the requester account', () => {
+            assert.strictEqual(
+                bucketNotifRC('notificationDestinationGet', 'my-dest').getResource(),
+                'arn:scality:bucketnotif::JOHNACCOUNT:my-dest',
+            );
+        });
+
+        it('should return the account-level ARN when no destination is named', () => {
+            assert.strictEqual(
+                bucketNotifRC('notificationDestinationList', undefined).getResource(),
+                'arn:scality:bucketnotif::JOHNACCOUNT:*',
+            );
+        });
+
+        it('should not give an empty destination name the account-level ARN', () => {
+            assert.strictEqual(
+                bucketNotifRC('notificationDestinationCreate', '').getResource(),
+                'arn:scality:bucketnotif::JOHNACCOUNT:',
+            );
+        });
+    });
 });
