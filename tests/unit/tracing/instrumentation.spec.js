@@ -143,6 +143,17 @@ describe('instrumentApiMethod', () => {
                 done();
             });
         });
+
+        it('should use the provided span prefix instead of the default', async () => {
+            const handler = async a => `async-${a}`;
+            const wrapped = instrumentApiMethod(handler, 'objectGetAsync', 'CustomAPI.');
+
+            await wrapped('x');
+
+            const spans = exporter.getFinishedSpans();
+            assert.strictEqual(spans.length, 1);
+            assert.strictEqual(spans[0].name, 'CustomAPI.objectGetAsync');
+        });
     });
 
     describe('OTEL off', () => {
