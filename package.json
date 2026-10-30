@@ -55,7 +55,7 @@
         "fcntl": "github:scality/node-fcntl#0.3.1",
         "httpagent": "scality/httpagent#1.1.1",
         "https-proxy-agent": "^7.0.6",
-        "ioredis": "^5.8.1",
+        "ioredis": "^6.0.0",
         "ipaddr.js": "^2.2.0",
         "joi": "^18.0.1",
         "mongodb": "^6.20.0",
