@@ -76,7 +76,6 @@ const actionMapBucketRateLimit = {
     bucketDeleteRateLimit: 'scality:DeleteBucketRateLimit',
 };
 
-
 // action map used for request context
 const actionMapRQ = {
     bucketPut: 's3:CreateBucket',
@@ -190,12 +189,17 @@ const actionMonitoringMapS3 = {
     bucketGetRateLimit: 'GetBucketRateLimit',
     bucketPutRateLimit: 'PutBucketRateLimit',
     bucketDeleteRateLimit: 'DeleteBucketRateLimit',
+    notificationDestinationCreate: 'CreateBucketNotificationDestination',
+    notificationDestinationUpdate: 'UpdateBucketNotificationDestination',
+    notificationDestinationGet: 'GetBucketNotificationDestination',
+    notificationDestinationDelete: 'DeleteBucketNotificationDestination',
+    notificationDestinationList: 'ListBucketNotificationDestinations',
 };
 
 const actionMapAccountQuotas = {
-    UpdateAccountQuota : 'scality:UpdateAccountQuota',
-    DeleteAccountQuota : 'scality:DeleteAccountQuota',
-    GetAccountQuota : 'scality:GetAccountQuota',
+    UpdateAccountQuota: 'scality:UpdateAccountQuota',
+    DeleteAccountQuota: 'scality:DeleteAccountQuota',
+    GetAccountQuota: 'scality:GetAccountQuota',
 };
 
 const actionMapIAM = {
@@ -267,6 +271,16 @@ const actionMapSUR = {
     AdminTriggerDownsample: 'sur:AdminTriggerDownsample',
 };
 
+// Kept out of actionMapRQ: that map is also the bucket policy map, and
+// bucket policies must not grant the destination actions
+const actionMapBucketNotif = {
+    notificationDestinationCreate: 'scality:CreateBucketNotificationDestination',
+    notificationDestinationUpdate: 'scality:UpdateBucketNotificationDestination',
+    notificationDestinationGet: 'scality:GetBucketNotificationDestination',
+    notificationDestinationDelete: 'scality:DeleteBucketNotificationDestination',
+    notificationDestinationList: 'scality:ListBucketNotificationDestinations',
+};
+
 export {
     actionMapRQ,
     actionMapBP,
@@ -277,5 +291,6 @@ export {
     actionMapSTS,
     actionMapMetadata,
     actionMapSUR,
+    actionMapBucketNotif,
     actionMapBucketRateLimit,
 };

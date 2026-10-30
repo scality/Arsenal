@@ -12,7 +12,8 @@ describe('RequestContext', () => {
         'GET', // apiMethod
         's3', // awsService
         'us-east-1', // locationConstraint
-        { // requesterInfo
+        {
+            // requesterInfo
             arn: 'arn:aws:iam::user/johndoe',
             accountid: 'JOHNACCOUNT',
             username: 'John Doe',
@@ -68,7 +69,6 @@ describe('RequestContext', () => {
         { name: 'getNeedTagEval', expectedValue: true },
         { name: 'getObjectLockRetentionDays', expectedValue: 5 },
         { name: 'isQuotaCheckNeeded', expectedValue: true },
-
     ];
     GetterTests.forEach(testCase => {
         it(`getter:${testCase.name}`, () => {
@@ -131,6 +131,32 @@ describe('RequestContext', () => {
         assert.deepStrictEqual(newSerialized, SerializedFields);
     });
 
+    describe('action and ARN of each service, with no explicit action or sub-resource', () => {
+        [
+            ['s3', 'objectGet', 's3:GetObject', 'arn:aws:s3:::general-resource'],
+            ['iam', 'listUserTags', 'iam:ListUserTags', 'arn:aws:iam::JOHNACCOUNT:general-resource'],
+            ['sso', 'SsoAuthorize', 'sso:Authorize', 'arn:scality:sso:::general-resource'],
+            ['ring', 'PutObject', 'ring:PutObject', 'arn:aws:ring::JOHNACCOUNT:general-resource'],
+            ['utapi', 'ListMetrics', 'utapi:ListMetrics', 'arn:scality:utapi::JOHNACCOUNT:general-resource/'],
+            // the fixture has no targetAccountId, which sts puts in the ARN
+            ['sts', 'assumeRole', 'sts:AssumeRole', 'arn:aws:iam::undefined:general-resource'],
+            ['metadata', 'admin', 'metadata:admin', 'arn:scality:metadata::JOHNACCOUNT:general-resource/'],
+            ['sur', 'GetMetrics', 'sur:GetMetrics', 'arn:scality:sur::JOHNACCOUNT:general-resource'],
+            ['unknown', 'GetMetrics', undefined, undefined],
+        ].forEach(([service, apiMethod, action, arn]) => {
+            it(`should give ${service} ${apiMethod} its action and ARN`, () => {
+                const params = [...constructorParams];
+                params[3] = undefined; // specificResource
+                params[6] = apiMethod;
+                params[7] = service;
+                params[15] = undefined; // action, so that the service map gives it
+                const serviceRC = new RequestContext(...params);
+                assert.strictEqual(serviceRC.getAction(), action);
+                assert.strictEqual(serviceRC.getResource(), arn);
+            });
+        });
+    });
+
     it('should return correct ARN for utapi service', () => {
         const utapiParams = [...constructorParams];
         utapiParams[7] = 'utapi';
@@ -149,7 +175,10 @@ describe('RequestContext', () => {
         const metadataParams = [...constructorParams];
         metadataParams[7] = 'metadata';
         const metadataRC = new RequestContext(...metadataParams);
-        assert.strictEqual(metadataRC.getResource(), 'arn:scality:metadata::JOHNACCOUNT:general-resource/specific-resource');
+        assert.strictEqual(
+            metadataRC.getResource(),
+            'arn:scality:metadata::JOHNACCOUNT:general-resource/specific-resource',
+        );
     });
 
     it('should return correct ARN for SUR service', () => {
@@ -193,5 +222,55 @@ describe('RequestContext', () => {
         unknownParams[7] = 'unknown';
         const unknownRC = new RequestContext(...unknownParams);
         assert.strictEqual(unknownRC.getResource(), undefined);
+    });
+
+    describe('bucketnotif service', () => {
+        // specificResource keeps the fixture's value: a destination ARN has no
+        // sub-resource, so it must not show in the ARN
+        const bucketNotifRC = (apiMethod, destinationName) => {
+            const params = [...constructorParams];
+            params[2] = destinationName; // generalResource
+            params[6] = apiMethod;
+            params[7] = 'bucketnotif';
+            params[15] = undefined; // action, so that the service map gives it
+            return new RequestContext(...params);
+        };
+
+        [
+            ['notificationDestinationCreate', 'scality:CreateBucketNotificationDestination'],
+            ['notificationDestinationUpdate', 'scality:UpdateBucketNotificationDestination'],
+            ['notificationDestinationGet', 'scality:GetBucketNotificationDestination'],
+            ['notificationDestinationDelete', 'scality:DeleteBucketNotificationDestination'],
+            ['notificationDestinationList', 'scality:ListBucketNotificationDestinations'],
+        ].forEach(([apiMethod, action]) => {
+            it(`should map ${apiMethod} to ${action}`, () => {
+                assert.strictEqual(bucketNotifRC(apiMethod, 'my-dest').getAction(), action);
+            });
+        });
+
+        it('should not map an S3 method', () => {
+            assert.strictEqual(bucketNotifRC('bucketPutNotification', 'my-dest').getAction(), undefined);
+        });
+
+        it('should return the ARN of the destination in the requester account', () => {
+            assert.strictEqual(
+                bucketNotifRC('notificationDestinationGet', 'my-dest').getResource(),
+                'arn:scality:bucketnotif::JOHNACCOUNT:my-dest',
+            );
+        });
+
+        it('should return the account-level ARN when no destination is named', () => {
+            assert.strictEqual(
+                bucketNotifRC('notificationDestinationList', undefined).getResource(),
+                'arn:scality:bucketnotif::JOHNACCOUNT:*',
+            );
+        });
+
+        it('should not give an empty destination name the account-level ARN', () => {
+            assert.strictEqual(
+                bucketNotifRC('notificationDestinationCreate', '').getResource(),
+                'arn:scality:bucketnotif::JOHNACCOUNT:',
+            );
+        });
     });
 });

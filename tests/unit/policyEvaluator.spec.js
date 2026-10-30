@@ -1090,8 +1090,8 @@ describe('policyEvaluator', () => {
                         _apiMethod: 'bucketGet',
                         _requesterInfo: { username: 'Pete' },
                         _query: {
-                            prefix: 'home/Pete',
-                            delimiter: 'ok',
+                            'prefix': 'home/Pete',
+                            'delimiter': 'ok',
                             'max-keys': '9',
                         },
                         _headers: { 'user-agent': 'CyberSquaw' },
@@ -1120,8 +1120,8 @@ describe('policyEvaluator', () => {
                         _apiMethod: 'bucketGet',
                         _requesterInfo: { username: 'Pete' },
                         _query: {
-                            prefix: 'home/Pete',
-                            delimiter: 'ok',
+                            'prefix': 'home/Pete',
+                            'delimiter': 'ok',
                             'max-keys': '11',
                         },
                         _headers: { 'user-agent': 'CyberSquaw' },
@@ -1761,6 +1761,142 @@ describe('policyEvaluator for utapi', () => {
             check(requestContext, {}, samples['utapi list metrics with account ID'], 'Neutral');
         },
     );
+});
+
+describe('policyEvaluator for bucketnotif', () => {
+    const accountId = '123456789012';
+    const destinationArn = `arn:scality:bucketnotif::${accountId}:my-dest`;
+    const allowed = { verdict: 'Allow', isImplicit: false };
+    const deniedByDefault = { verdict: 'Deny', isImplicit: true };
+    const deniedExplicitly = { verdict: 'Deny', isImplicit: false };
+
+    function destinationRequest(apiMethod, destinationName) {
+        const requestContext = new RequestContext(
+            {},
+            {},
+            destinationName,
+            undefined,
+            undefined,
+            undefined,
+            apiMethod,
+            'bucketnotif',
+        );
+        requestContext.setRequesterInfo({ accountid: accountId });
+        return requestContext;
+    }
+
+    function userPolicy(...statements) {
+        return { Version: '2012-10-17', Statement: statements };
+    }
+
+    function evaluate(apiMethod, destinationName, policies) {
+        return standardEvaluateAllPolicies(destinationRequest(apiMethod, destinationName), policies, log);
+    }
+
+    const allowCreateMyDest = userPolicy({
+        Effect: 'Allow',
+        Action: 'scality:CreateBucketNotificationDestination',
+        Resource: destinationArn,
+    });
+
+    it('should deny by default a user whose policies grant every action on other services', () => {
+        const otherServices = userPolicy({
+            Effect: 'Allow',
+            Action: '*',
+            Resource: ['arn:aws:s3:::*', 'arn:scality:utapi::*:*', 'arn:scality:sur::*:*'],
+        });
+        assert.deepStrictEqual(evaluate('notificationDestinationGet', 'my-dest', [otherServices]), deniedByDefault);
+    });
+
+    it('should deny by default a user with every S3 permission', () => {
+        const s3Admin = userPolicy({ Effect: 'Allow', Action: 's3:*', Resource: '*' });
+        assert.deepStrictEqual(evaluate('notificationDestinationGet', 'my-dest', [s3Admin]), deniedByDefault);
+    });
+
+    it('should allow the action on the destination that the policy names', () => {
+        assert.deepStrictEqual(evaluate('notificationDestinationCreate', 'my-dest', [allowCreateMyDest]), allowed);
+    });
+
+    it('should deny the action on a destination that the policy does not name', () => {
+        assert.deepStrictEqual(
+            evaluate('notificationDestinationCreate', 'other-dest', [allowCreateMyDest]),
+            deniedByDefault,
+        );
+    });
+
+    it('should deny another action on the destination that the policy names', () => {
+        assert.deepStrictEqual(
+            evaluate('notificationDestinationUpdate', 'my-dest', [allowCreateMyDest]),
+            deniedByDefault,
+        );
+    });
+
+    it('should deny the action when the policy names the destination in another account', () => {
+        const otherAccount = userPolicy({
+            Effect: 'Allow',
+            Action: 'scality:CreateBucketNotificationDestination',
+            Resource: 'arn:scality:bucketnotif::999999999999:my-dest',
+        });
+        assert.deepStrictEqual(evaluate('notificationDestinationCreate', 'my-dest', [otherAccount]), deniedByDefault);
+    });
+
+    it('should not apply a policy on global destinations to a tenant destination', () => {
+        const globalDestinations = userPolicy({
+            Effect: 'Allow',
+            Action: 'scality:*',
+            Resource: 'arn:scality:bucketnotif:::*',
+        });
+        assert.deepStrictEqual(
+            evaluate('notificationDestinationGet', 'my-dest', [globalDestinations]),
+            deniedByDefault,
+        );
+    });
+
+    [
+        ['notificationDestinationCreate', 'my-dest'],
+        ['notificationDestinationUpdate', 'my-dest'],
+        ['notificationDestinationGet', 'my-dest'],
+        ['notificationDestinationDelete', 'my-dest'],
+        ['notificationDestinationList', undefined],
+    ].forEach(([apiMethod, destinationName]) => {
+        it(`should allow ${apiMethod} with a wildcard on the actions and the account`, () => {
+            const allDestinations = userPolicy({
+                Effect: 'Allow',
+                Action: 'scality:*BucketNotificationDestination*',
+                Resource: 'arn:scality:bucketnotif::*:*',
+            });
+            assert.deepStrictEqual(evaluate(apiMethod, destinationName, [allDestinations]), allowed);
+        });
+    });
+
+    it('should allow the list on the account-level resource', () => {
+        const listOwnAccount = userPolicy({
+            Effect: 'Allow',
+            Action: 'scality:ListBucketNotificationDestinations',
+            Resource: `arn:scality:bucketnotif::${accountId}:*`,
+        });
+        assert.deepStrictEqual(evaluate('notificationDestinationList', undefined, [listOwnAccount]), allowed);
+    });
+
+    it('should deny the list when the policy names only one destination', () => {
+        const listMyDest = userPolicy({
+            Effect: 'Allow',
+            Action: 'scality:ListBucketNotificationDestinations',
+            Resource: destinationArn,
+        });
+        assert.deepStrictEqual(evaluate('notificationDestinationList', undefined, [listMyDest]), deniedByDefault);
+    });
+
+    it('should deny the action when a statement explicitly denies it', () => {
+        const allowAllDenyMyDest = userPolicy(
+            { Effect: 'Allow', Action: 'scality:*', Resource: '*' },
+            { Effect: 'Deny', Action: 'scality:DeleteBucketNotificationDestination', Resource: destinationArn },
+        );
+        assert.deepStrictEqual(
+            evaluate('notificationDestinationDelete', 'my-dest', [allowAllDenyMyDest]),
+            deniedExplicitly,
+        );
+    });
 });
 
 describe('handleWildcards', () => {

@@ -94,6 +94,18 @@ const tests = [
         isMatch: false,
     },
     {
+        // a bucketnotif ARN with an empty account id is a global destination
+        policyArn: 'arn:scality:bucketnotif:::*',
+        requestArn: 'arn:scality:bucketnotif:::target1',
+        isMatch: true,
+    },
+    {
+        // so it does not reach the destinations of a tenant account
+        policyArn: 'arn:scality:bucketnotif:::*',
+        requestArn: 'arn:scality:bucketnotif::123456789012:my-dest',
+        isMatch: false,
+    },
+    {
         policyArn: 'arn:aws:iam::005978442556:role/path/sub/MyRole',
         requestArn: 'arn:aws:iam::005978442556:role/path/sub/MyRole',
         isMatch: true,
