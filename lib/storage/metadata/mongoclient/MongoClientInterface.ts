@@ -64,6 +64,34 @@ const __COUNT_ITEMS = 'countitems';
 const ASYNC_REPAIR_TIMEOUT = 15000;
 const MONGODB_DUPLICATE_KEY_ERROR = 11000;
 
+function hasConditions(conditions: any): boolean {
+    return !!conditions && Object.keys(conditions).length > 0;
+}
+
+/**
+ * builds a mongodb filter from a base filter and an optional conditions object
+ * @return the filter, or null if the conditions could not be translated
+ */
+function buildConditionsFilter(
+    method: string,
+    baseFilter: Record<string, any>,
+    conditions: any,
+    log: werelogs.Logger,
+): Record<string, any> | null {
+    if (!hasConditions(conditions)) {
+        return baseFilter;
+    }
+    try {
+        MongoUtils.translateConditions(0, 'value', baseFilter, conditions);
+    } catch (err) {
+        log.error(`${method}: error creating mongodb filter`, {
+            error: reshapeExceptionError(err as ErrorLike),
+        });
+        return null;
+    }
+    return baseFilter;
+}
+
 const MONGO_CONNECT_TIMEOUT_MS = process.env.MONGO_CONNECT_TIMEOUT_MS;
 const MONGO_SOCKET_TIMEOUT_MS = process.env.MONGO_SOCKET_TIMEOUT_MS;
 const MONGO_POOL_SIZE = process.env.MONGO_POOL_SIZE;
@@ -1026,9 +1054,19 @@ class MongoClientInterface {
         const versionId = generateVersionId(this.instanceId, this.replicationGroupId);
         objVal.versionId = versionId;
         const masterKey = formatMasterKey(objName, params.vFormat);
-        c.updateOne({ _id: masterKey }, { $set: { value: objVal }, $setOnInsert: { _id: masterKey } }, { upsert: true })
+        const filter = buildConditionsFilter('putObjectVerCase2', { _id: masterKey }, params.conditions, log);
+        if (!filter) {
+            return cb(errors.InternalError);
+        }
+        return c
+            .updateOne(filter, { $set: { value: objVal }, $setOnInsert: { _id: masterKey } }, { upsert: true })
             .then(() => cb(null, `{"versionId": "${objVal.versionId}"}`))
             .catch(err => {
+                // a master failing the condition degenerates the upsert into an insert, raising a duplicate key error
+                if (hasConditions(params.conditions) && err.code === MONGODB_DUPLICATE_KEY_ERROR) {
+                    log.info('putObjectVerCase2: master condition not met, rejecting write', { masterKey });
+                    return cb(errors.PreconditionFailed);
+                }
                 log.error('putObjectVerCase2: error putting object version', { error: err.message });
                 return cb(errors.InternalError);
             });
@@ -1077,7 +1115,7 @@ class MongoClientInterface {
                         // Failed condition turns the version upsert into an insert of an existing
                         // _id (dup-key). index 0 = version op in the ordered bulkWrite, so it's
                         // the version write that failed the condition.
-                        if (params.conditions && err.writeErrors?.[0]?.index === 0) {
+                        if (hasConditions(params.conditions) && err.writeErrors?.[0]?.index === 0) {
                             log.info('putObjectVerCase3: version condition not met, rejecting write', {
                                 versionKey,
                             });
@@ -1094,17 +1132,9 @@ class MongoClientInterface {
                 });
         };
 
-        // a version failing the condition degenerates the upsert into an insert, raising a duplicate key error
-        const versionFilter: Record<string, any> = { _id: versionKey };
-        if (params.conditions && Object.keys(params.conditions).length > 0) {
-            try {
-                MongoUtils.translateConditions(0, 'value', versionFilter, params.conditions);
-            } catch (err) {
-                log.error('putObjectVerCase3: error creating mongodb filter', {
-                    error: reshapeExceptionError(err as ErrorLike),
-                });
-                return cb(errors.InternalError);
-            }
+        const versionFilter = buildConditionsFilter('putObjectVerCase3', { _id: versionKey }, params.conditions, log);
+        if (!versionFilter) {
+            return cb(errors.InternalError);
         }
 
         return c
@@ -1202,20 +1232,23 @@ class MongoClientInterface {
     ) {
         const versionKey = formatVersionKey(objName, params.versionId, params.vFormat);
         const masterKey = formatMasterKey(objName, params.vFormat);
-        c.updateOne(
-            {
-                _id: versionKey,
-            },
-            {
-                $set: {
-                    _id: versionKey,
-                    value: objVal,
+        const versionFilter = buildConditionsFilter('putObjectVerCase4', { _id: versionKey }, params.conditions, log);
+        if (!versionFilter) {
+            return cb(errors.InternalError);
+        }
+        return c
+            .updateOne(
+                versionFilter,
+                {
+                    $set: {
+                        _id: versionKey,
+                        value: objVal,
+                    },
                 },
-            },
-            {
-                upsert: true,
-            },
-        )
+                {
+                    upsert: true,
+                },
+            )
             .then(() =>
                 this.getLatestVersion(c, objName, params.vFormat, log, (err, mstObjVal?) => {
                     if (err?.is.NoSuchKey) {
@@ -1281,6 +1314,11 @@ class MongoClientInterface {
                 }),
             )
             .catch(err => {
+                // a version failing the condition degenerates the upsert into an insert, raising a duplicate key error
+                if (hasConditions(params.conditions) && err.code === MONGODB_DUPLICATE_KEY_ERROR) {
+                    log.info('putObjectVerCase4: version condition not met, rejecting write', { versionKey });
+                    return cb(errors.PreconditionFailed);
+                }
                 log.error('putObjectVerCase4: error upserting object version', { error: err.message });
                 return cb(errors.InternalError);
             });
@@ -1317,7 +1355,10 @@ class MongoClientInterface {
             return this.putObjectNoVerWithOplogUpdate(collection, bucketName, objName, value, params, log, cb);
         }
         const key = formatMasterKey(objName, params.vFormat);
-        const putFilter = { _id: key };
+        const putFilter = buildConditionsFilter('putObjectNoVer', { _id: key }, params?.conditions, log);
+        if (!putFilter) {
+            return cb(errors.InternalError);
+        }
         return collection
             .updateOne(
                 putFilter,
@@ -1333,6 +1374,11 @@ class MongoClientInterface {
             )
             .then(() => cb(null))
             .catch(err => {
+                // an object failing the condition degenerates the upsert into an insert, raising a duplicate key error
+                if (hasConditions(params?.conditions) && err.code === MONGODB_DUPLICATE_KEY_ERROR) {
+                    log.info('putObjectNoVer: object condition not met, rejecting write', { key });
+                    return cb(errors.PreconditionFailed);
+                }
                 log.error('putObjectNoVer: error putting obect with no versioning', { error: err.message });
                 return cb(errors.InternalError);
             });
@@ -1366,11 +1412,22 @@ class MongoClientInterface {
     ) {
         const key = formatMasterKey(objName, params.vFormat);
         const putFilter = { _id: key };
-        // filter used when finding and updating object
-        const findFilter = {
-            ...putFilter,
+        const notDeletedFilter = {
             $or: [{ 'value.deleted': { $exists: false } }, { 'value.deleted': { $eq: false } }],
         };
+        // filter used when finding and updating object
+        const findFilter: Record<string, any> = {
+            ...putFilter,
+            ...notDeletedFilter,
+        };
+        if (hasConditions(params.conditions)) {
+            const conditionsFilter = buildConditionsFilter('putObjectNoVerWithOplogUpdate', {}, params.conditions, log);
+            if (!conditionsFilter) {
+                return cb(errors.InternalError);
+            }
+            // conditions go under $and to leave the deleted flag $or above untouched
+            findFilter.$and = [conditionsFilter];
+        }
         const updateDeleteFilter = {
             ...putFilter,
             'value.deleted': true,
@@ -1392,6 +1449,19 @@ class MongoClientInterface {
                         )
                         .then(doc => {
                             if (!doc?.value) {
+                                if (hasConditions(params.conditions)) {
+                                    // a transiently deleted document is absent, not a condition mismatch
+                                    return collection.findOne({ ...putFilter, ...notDeletedFilter }).then(existing => {
+                                        if (existing) {
+                                            log.info('internalPutObject: object condition not met, rejecting write', {
+                                                bucket: bucketName,
+                                                object: key,
+                                            });
+                                            return next(errors.PreconditionFailed);
+                                        }
+                                        return next(errors.NoSuchKey);
+                                    });
+                                }
                                 log.error('internalPutObject: unable to find target object to update', {
                                     bucket: bucketName,
                                     object: key,
@@ -1445,6 +1515,9 @@ class MongoClientInterface {
             ],
             err => {
                 if (err) {
+                    if (err instanceof ArsenalError && err.is.PreconditionFailed) {
+                        return cb(err);
+                    }
                     log.error('internalPutObject: error updating object', {
                         bucket: bucketName,
                         object: key,
