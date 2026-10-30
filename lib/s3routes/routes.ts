@@ -11,6 +11,7 @@ import routePOST from './routes/routePOST';
 import routeOPTIONS from './routes/routeOPTIONS';
 import * as routesUtils from './routesUtils';
 import routeWebsite from './routes/routeWebsite';
+import routeNotificationDestination from './routes/routeNotificationDestination';
 import * as http from 'http';
 import StatsClient from '../metrics/StatsClient';
 import { objectKeyByteLimit } from '../constants';
@@ -146,6 +147,13 @@ function checkTypes(
         'object',
         'bad routes param: dataRetrievalParams must be a defined object',
     );
+    if (params.notificationDestinationRoutes) {
+        assert.strictEqual(
+            typeof params.notificationDestinationRoutes,
+            'boolean',
+            'bad routes param: notificationDestinationRoutes must be a boolean',
+        );
+    }
     if (s3config) {
         assert.strictEqual(typeof s3config, 'object', 'bad routes param: s3config must be an object');
     }
@@ -163,6 +171,7 @@ export type Params = {
     };
     unsupportedQueries: any;
     api: { callApiMethod: routesUtils.CallApiMethod };
+    notificationDestinationRoutes?: boolean;
 };
 
 /** routes - route request to appropriate method
@@ -183,6 +192,12 @@ export type Params = {
  *  values for whether queries are supported
  * @param params.dataRetrievalParams - params to create instance of
  * data retrieval function
+ * @param [params.notificationDestinationRoutes] - send each non-OPTIONS
+ *  ?notification-destination request on a REST endpoint to the bucket
+ *  notification destination route: a service-root request reaches the
+ *  destination API, and a request that names a bucket or a key gets
+ *  MethodNotAllowed. Off unless true, so that a caller that does not set it
+ *  keeps today's routing
  * @param logger - werelogs logger instance
  * @param [s3config] - s3 configuration
  */
@@ -203,6 +218,7 @@ export default function routes(
         websiteEndpoints,
         blacklistedPrefixes,
         dataRetrievalParams,
+        notificationDestinationRoutes,
     } = params;
 
     requestUtils.computeIpAndHttpProtocolSecurity(req, s3config);
@@ -272,6 +288,19 @@ export default function routes(
         return routesUtils.responseXMLBody(error, '', res, log);
     }
 
+    const isWebsiteRequest = websiteEndpoints && websiteEndpoints.indexOf(req.parsedHost) > -1;
+
+    // bucket notification destination request, only when the caller opts in,
+    // and never on a website endpoint, which keeps its own route below
+    if (
+        notificationDestinationRoutes === true &&
+        !isWebsiteRequest &&
+        req.method !== 'OPTIONS' &&
+        req.query['notification-destination'] !== undefined
+    ) {
+        return routeNotificationDestination(req, res, api, log, statsClient);
+    }
+
     const bucketOrKeyError = checkBucketAndKey(
         req.bucketName,
         req.objectKey,
@@ -287,7 +316,7 @@ export default function routes(
     }
 
     // bucket website request
-    if (websiteEndpoints && websiteEndpoints.indexOf(req.parsedHost) > -1) {
+    if (isWebsiteRequest) {
         return routeWebsite(req, res, api, log, statsClient, dataRetrievalParams);
     }
 
