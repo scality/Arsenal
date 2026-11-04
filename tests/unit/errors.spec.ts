@@ -77,7 +77,7 @@ describe('Errors: ', () => {
         expect(first.is).toBe(second.is);
     });
 
-    it ('errors.ok should return the same instance for perf', () => {
+    it('errors.ok should return the same instance for perf', () => {
         const first = errors.ok;
         const second = errors.ok;
         expect(first).toBe(second);
@@ -87,7 +87,7 @@ describe('Errors: ', () => {
         expect(first.stack).toEqual(second.stack);
     });
 
-    it ('errorInstances should return the same instance for perf', () => {
+    it('errorInstances should return the same instance for perf', () => {
         const first = errorInstances.AccessDenied;
         const second = errorInstances.AccessDenied;
         expect(first).toBe(second);
@@ -104,12 +104,31 @@ describe('Errors: ', () => {
         expect(err.type).toEqual('KMS.NotFoundException');
         expect(err.code).toEqual(400);
         expect(err.description).toEqual(
-            'The request was rejected because the specified entity or resource could not be found.');
+            'The request was rejected because the specified entity or resource could not be found.',
+        );
+    });
+
+    it.each([
+        ['DestinationAlreadyExists', 409, 'The specified bucket notification destination already exists.'],
+        ['NoSuchDestination', 404, 'The specified bucket notification destination does not exist.'],
+        ['InvalidDestination', 400, 'The bucket notification destination is not valid.'],
+        [
+            'TooManyBucketNotificationDestinations',
+            400,
+            'You have attempted to create more bucket notification destinations than allowed.',
+        ],
+        ['CredentialsUnavailable', 500, 'The credentials of the bucket notification destination are unavailable.'],
+    ])('should have the bucket notification destination error %s', (name, code, description) => {
+        const err = errorInstances[name as keyof typeof errorInstances];
+        expect(err).toBeInstanceOf(ArsenalError);
+        expect(err.is[name as keyof typeof err.is]).toBeTruthy();
+        expect(err.type).toEqual(name);
+        expect(err.code).toEqual(code);
+        expect(err.description).toEqual(description);
     });
 });
 
 describe('Backward compatibility flag', () => {
-
     const env = process.env;
 
     beforeEach(() => {
@@ -132,7 +151,7 @@ describe('Backward compatibility flag', () => {
     it('should be enabled when `true` is specified', () => {
         process.env = {
             ALLOW_UNSAFE_ERROR_COMPARISON: 'true',
-            ...env
+            ...env,
         };
         const errors = require('../../lib/errors');
         const err = errors.default.InternalError;
@@ -144,7 +163,7 @@ describe('Backward compatibility flag', () => {
     it('should be disabled when `false` is specified', () => {
         process.env = {
             ALLOW_UNSAFE_ERROR_COMPARISON: 'false',
-            ...env
+            ...env,
         };
         const errors = require('../../lib/errors');
         const err = errors.default.InternalError;
@@ -156,7 +175,7 @@ describe('Backward compatibility flag', () => {
     it('should be disabled when `foo` is specified', () => {
         process.env = {
             ALLOW_UNSAFE_ERROR_COMPARISON: 'foo',
-            ...env
+            ...env,
         };
         const errors = require('../../lib/errors');
         const err = errors.default.InternalError;

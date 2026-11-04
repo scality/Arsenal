@@ -695,6 +695,31 @@ export const LocationNotFound: ErrorFormat = {
     description: 'The object data location does not exist.',
 };
 
+export const DestinationAlreadyExists: ErrorFormat = {
+    code: 409,
+    description: 'The specified bucket notification destination already exists.',
+};
+
+export const NoSuchDestination: ErrorFormat = {
+    code: 404,
+    description: 'The specified bucket notification destination does not exist.',
+};
+
+export const InvalidDestination: ErrorFormat = {
+    code: 400,
+    description: 'The bucket notification destination is not valid.',
+};
+
+export const TooManyBucketNotificationDestinations: ErrorFormat = {
+    code: 400,
+    description: 'You have attempted to create more bucket notification destinations than allowed.',
+};
+
+export const CredentialsUnavailable: ErrorFormat = {
+    code: 500,
+    description: 'The credentials of the bucket notification destination are unavailable.',
+};
+
 // -------------- Internal project errors --------------
 // ----------------------- Vault -----------------------
 // #### formatErrors ####
