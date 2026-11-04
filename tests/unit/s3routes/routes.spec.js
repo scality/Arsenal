@@ -143,6 +143,208 @@ describe('routes', () => {
 
         routesUtils.isValidBucketName.restore();
     });
+
+    describe('bucket notification destination requests', () => {
+        const nameRequired = 'A bucket notification destination name must be specified.';
+
+        beforeEach(() => {
+            params.websiteEndpoints = [];
+            params.api.callApiMethod = sinon.stub();
+        });
+
+        afterEach(() => {
+            sinon.restore();
+        });
+
+        describe.each([
+            ['unset', undefined],
+            ['false', false],
+        ])('with notificationDestinationRoutes %s', (label, value) => {
+            beforeEach(() => {
+                if (value !== undefined) {
+                    params.notificationDestinationRoutes = value;
+                }
+            });
+
+            it.each(['PUT', 'POST', 'DELETE'])(
+                'should keep answering MethodNotAllowed to a service-root %s',
+                method => {
+                    req.method = method;
+                    req.url = '/?notification-destination&name=dest';
+
+                    routes(req, res, params, logger, s3config);
+
+                    expect(params.api.callApiMethod.called).toBe(false);
+                    expect(res.end.firstCall.args[0]).toContain(errorInstances.MethodNotAllowed.message);
+                },
+            );
+
+            it('should keep listing the buckets for a service-root GET', () => {
+                req.url = '/?notification-destination';
+
+                routes(req, res, params, logger, s3config);
+
+                expect(params.api.callApiMethod.firstCall.args[0]).toBe('serviceGet');
+            });
+
+            it('should keep routing a bucket DELETE to bucketDelete', () => {
+                req.method = 'DELETE';
+                req.url = '/bucket?notification-destination&name=dest';
+                sinon.stub(routesUtils, 'isValidBucketName').returns(true);
+
+                routes(req, res, params, logger, s3config);
+
+                expect(params.api.callApiMethod.firstCall.args[0]).toBe('bucketDelete');
+            });
+        });
+
+        describe('with notificationDestinationRoutes true', () => {
+            beforeEach(() => {
+                params.notificationDestinationRoutes = true;
+            });
+
+            it.each([
+                ['PUT', '/?notification-destination&name=dest', 'notificationDestinationCreate'],
+                ['POST', '/?notification-destination&name=dest', 'notificationDestinationUpdate'],
+                ['GET', '/?notification-destination&name=dest', 'notificationDestinationGet'],
+                ['GET', '/?notification-destination', 'notificationDestinationList'],
+                ['DELETE', '/?notification-destination&name=dest', 'notificationDestinationDelete'],
+            ])('should route a %s %s to %s', (method, url, apiMethod) => {
+                req.method = method;
+                req.url = url;
+
+                routes(req, res, params, logger, s3config);
+
+                expect(params.api.callApiMethod.calledOnce).toBe(true);
+                expect(params.api.callApiMethod.firstCall.args[0]).toBe(apiMethod);
+            });
+
+            it('should answer MethodNotAllowed when the path names a bucket', () => {
+                req.method = 'DELETE';
+                req.url = '/bucket?notification-destination&name=dest';
+                sinon.stub(routesUtils, 'isValidBucketName').returns(true);
+
+                routes(req, res, params, logger, s3config);
+
+                expect(params.api.callApiMethod.called).toBe(false);
+                expect(res.end.firstCall.args[0]).toContain(errorInstances.MethodNotAllowed.message);
+            });
+
+            it('should answer MethodNotAllowed when the host names a bucket', () => {
+                req.method = 'DELETE';
+                req.headers.host = 'bucket.localhost';
+                req.url = '/?notification-destination&name=dest';
+
+                routes(req, res, params, logger, s3config);
+
+                expect(params.api.callApiMethod.called).toBe(false);
+                expect(res.end.firstCall.args[0]).toContain(errorInstances.MethodNotAllowed.message);
+            });
+
+            it('should answer InvalidArgument when the name is missing', () => {
+                req.method = 'PUT';
+                req.url = '/?notification-destination';
+
+                routes(req, res, params, logger, s3config);
+
+                expect(params.api.callApiMethod.called).toBe(false);
+                expect(res.end.firstCall.args[0]).toContain(nameRequired);
+            });
+
+            it('should keep answering MethodNotAllowed to a bare service-root DELETE', () => {
+                req.method = 'DELETE';
+                req.url = '/';
+
+                routes(req, res, params, logger, s3config);
+
+                expect(params.api.callApiMethod.called).toBe(false);
+                expect(res.end.firstCall.args[0]).toContain(errorInstances.MethodNotAllowed.message);
+            });
+
+            it('should keep listing the buckets for a bare service-root GET', () => {
+                req.url = '/';
+
+                routes(req, res, params, logger, s3config);
+
+                expect(params.api.callApiMethod.firstCall.args[0]).toBe('serviceGet');
+            });
+
+            it('should keep the CORS answer to an OPTIONS', () => {
+                req.method = 'OPTIONS';
+                req.url = '/?notification-destination&name=dest';
+
+                routes(req, res, params, logger, s3config);
+
+                expect(params.api.callApiMethod.called).toBe(false);
+                expect(res.end.firstCall.args[0]).toContain(errorInstances.AccessForbidden.message);
+            });
+
+            it('should not route a PUT on a website host to the destination API', () => {
+                params.websiteEndpoints = ['s3-website.localhost'];
+                req.method = 'PUT';
+                req.headers.host = 's3-website.localhost';
+                req.url = '/?notification-destination&name=dest';
+
+                routes(req, res, params, logger, s3config);
+
+                expect(params.api.callApiMethod.called).toBe(false);
+                expect(res.end.firstCall.args[0]).toContain('MethodNotAllowed');
+            });
+
+            it('should leave a GET on a website bucket host to websiteGet', () => {
+                params.websiteEndpoints = ['s3-website.localhost'];
+                req.method = 'GET';
+                req.headers.host = 'bucket.s3-website.localhost';
+                req.url = '/?notification-destination';
+
+                routes(req, res, params, logger, s3config);
+
+                expect(params.api.callApiMethod.firstCall.args[0]).toBe('websiteGet');
+            });
+        });
+
+        it.each([null, 0, ''])('should treat a notificationDestinationRoutes of %p as off', value => {
+            params.notificationDestinationRoutes = value;
+            req.method = 'PUT';
+            req.url = '/?notification-destination&name=dest';
+
+            routes(req, res, params, logger, s3config);
+
+            expect(params.api.callApiMethod.called).toBe(false);
+            expect(res.end.firstCall.args[0]).toContain(errorInstances.MethodNotAllowed.message);
+        });
+
+        it('should reject a notificationDestinationRoutes that is not a boolean', () => {
+            params.notificationDestinationRoutes = 'true';
+            req.url = '/?notification-destination';
+
+            expect(() => routes(req, res, params, logger, s3config)).toThrow(
+                'bad routes param: notificationDestinationRoutes must be a boolean',
+            );
+        });
+
+        it('should treat a non-boolean notificationDestinationRoutes as off in production', () => {
+            // isDevMode is read when routes.ts loads, so load a production copy
+            const nodeEnv = process.env.NODE_ENV;
+            let productionRoutes;
+            try {
+                process.env.NODE_ENV = 'production';
+                jest.isolateModules(() => {
+                    ({ routes: productionRoutes } = require('../../../lib/s3routes'));
+                });
+            } finally {
+                process.env.NODE_ENV = nodeEnv;
+            }
+            params.notificationDestinationRoutes = 'false';
+            req.method = 'PUT';
+            req.url = '/?notification-destination&name=dest';
+
+            productionRoutes(req, res, params, logger, s3config);
+
+            expect(params.api.callApiMethod.called).toBe(false);
+            expect(res.end.firstCall.args[0]).toContain(errorInstances.MethodNotAllowed.message);
+        });
+    });
 });
 
 describe('routesUtils.newRequestLoggerFromRequest', () => {
