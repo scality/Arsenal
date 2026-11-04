@@ -20,3 +20,4 @@ export type { ReplicationFormat } from './ReplicationConfiguration';
 export { default as BucketLoggingStatus } from './BucketLoggingStatus';
 export { default as RateLimitConfiguration } from './RateLimitConfiguration';
 export * as WebsiteConfiguration from './WebsiteConfiguration';
+export * as NotificationDestination from './NotificationDestination';
