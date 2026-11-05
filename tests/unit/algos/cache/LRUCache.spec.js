@@ -110,8 +110,7 @@ describe('LRUCache', () => {
         assert.strictEqual(lru.count(), 1000000);
         // check present (even) and evicted (odd) items
         for (let i = 0; i < 1000000; ++i) {
-            assert.strictEqual(lru.get(`${i}`),
-                i % 2 === 0 ? i : undefined);
+            assert.strictEqual(lru.get(`${i}`), i % 2 === 0 ? i : undefined);
             assert.strictEqual(lru.remove(`${i}`), i % 2 === 0);
         }
         assert.strictEqual(lru.count(), 500000);
@@ -119,5 +118,38 @@ describe('LRUCache', () => {
             assert.strictEqual(lru.remove(`${i}`), true);
         }
         assert.strictEqual(lru.count(), 0);
+    });
+
+    ['constructor', '__proto__', 'hasOwnProperty', 'toString'].forEach(key => {
+        it(`should handle "${key}" as a regular key`, () => {
+            const lru = new LRUCache(2);
+            assert.strictEqual(lru.get(key), undefined);
+            assert.strictEqual(lru.add(key, 1), false);
+            assert.strictEqual(lru.count(), 1);
+            assert.strictEqual(lru.get(key), 1);
+            assert.strictEqual(new LRUCache(2).get(key), undefined);
+            assert.strictEqual(lru.remove(key), true);
+            assert.strictEqual(lru.count(), 0);
+            assert.strictEqual(lru.get(key), undefined);
+            assert.strictEqual(lru.remove(key), false);
+            assert.strictEqual(lru.count(), 0);
+            assert.strictEqual(Object.value, undefined);
+            assert.deepStrictEqual(Object.keys(Object.prototype), []);
+        });
+    });
+
+    it('should keep evicting entries after a "constructor" key', () => {
+        const lru = new LRUCache(3);
+        lru.add('a', 1);
+        lru.add('b', 2);
+        lru.add('constructor', 3);
+        lru.add('c', 4);
+        lru.add('d', 5);
+        assert.strictEqual(lru.count(), 3);
+        assert.strictEqual(lru.get('a'), undefined);
+        assert.strictEqual(lru.get('b'), undefined);
+        assert.strictEqual(lru.get('constructor'), 3);
+        assert.strictEqual(lru.get('c'), 4);
+        assert.strictEqual(lru.get('d'), 5);
     });
 });
