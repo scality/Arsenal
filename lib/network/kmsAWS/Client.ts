@@ -149,8 +149,8 @@ export default class Client implements KMSInterface {
                 }
                 // May produce double arn prefix: scality arn + aws arn
                 // arn:scality:kms:external:aws_kms:custom:key/arn:aws:kms:region:accountId:key/cbd69d33-ba8e-4b56-8cfe
-                // If this is a problem, a config flag should be used to hide the scality arn when returning the KMS KeyId
-                // or aws arn when creating the KMS Key
+                // If this is a problem, a config flag should be used to hide the scality arn when returning the
+                // KMS KeyId or aws arn when creating the KMS Key
                 const arn = `${this.backend.arnPrefix}${keyId}`;
                 cb(null, keyId, arn);
             })

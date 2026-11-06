@@ -77,7 +77,7 @@ describe('WebsiteConfiguration class', () => {
         done();
     });
 
-    it('should initialize routingRules properly during construction from array of RoutingRule class instances', done => {
+    it('should initialize routingRules during construction from array of RoutingRule class instances', done => {
         const testWebsiteConfigParams = {
             routingRules: [],
         };

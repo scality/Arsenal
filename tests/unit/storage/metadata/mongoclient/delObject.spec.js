@@ -128,7 +128,7 @@ describe('MongoClientInterface:delObject', () => {
         });
     });
 
-    it('deleteObjectVer:: should call deleteObjectVerNotMaster when the version is not the latest localized one', done => {
+    it('deleteObjectVer:: should call deleteObjectVerNotMaster when version is not the latest localized one', done => {
         const collection = {
             findOne: () => Promise.resolve(null),
         };

@@ -151,7 +151,7 @@ describe('policyEvaluator', () => {
                 },
             );
 
-            it('should deny access that impacts resource other than that specified in NotResource in Deny policy', () => {
+            it('should deny access that impacts resource other than the one in NotResource in Deny policy', () => {
                 const rcModifiers = {
                     _generalResource: 'someotherresource',
                     _specificResource: undefined,
@@ -614,7 +614,7 @@ describe('policyEvaluator', () => {
                 check(requestContext, {}, policy, 'Allow');
             });
 
-            it('should be neutral for DateLessThan token issue time condition with ISO time if do not meet condition', () => {
+            it('should be neutral for DateLessThan token issue time condition with ISO time if not met', () => {
                 policy.Statement.Condition = { DateLessThan: { 'aws:TokenIssueTime': '2016-06-30T19:42:23.431Z' } };
                 let rcModifiers = { _tokenIssueTime: '2016-06-30T19:42:23.531Z' };
                 check(requestContext, rcModifiers, policy, 'Neutral');
@@ -622,12 +622,12 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, policy, 'Neutral');
             });
 
-            it('should be neutral for DateLessThan current time condition with ISO time if do not meet condition', () => {
+            it('should be neutral for DateLessThan current time condition with ISO time if not met', () => {
                 policy.Statement.Condition = { DateLessThan: { 'aws:CurrentTime': '2016-06-30T19:42:23.431Z' } };
                 check(requestContext, {}, policy, 'Neutral');
             });
 
-            it('should be neutral for DateLessThan current time condition with epoch time if do not meet condition', () => {
+            it('should be neutral for DateLessThan current time condition with epoch time if not met', () => {
                 policy.Statement.Condition = { DateLessThan: { 'aws:EpochTime': '1467315743431' } };
                 check(requestContext, {}, policy, 'Neutral');
             });
@@ -658,7 +658,7 @@ describe('policyEvaluator', () => {
                 check(requestContext, {}, policy, 'Allow');
             });
 
-            it('should be neutral for DateLessThanEquals token condition with ISO time if do not meet condition', () => {
+            it('should be neutral for DateLessThanEquals token condition with ISO time if not met', () => {
                 policy.Statement.Condition = {
                     DateLessThanEquals: { 'aws:TokenIssueTime': '2016-06-30T19:42:23.431Z' },
                 };
@@ -685,7 +685,7 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, policy, 'Allow');
             });
 
-            it('should allow access for DateLessThanEquals current time condition with ISO time if meet condition', () => {
+            it('should allow access for DateLessThanEquals current time condition with ISO time if met', () => {
                 policy.Statement.Condition = {
                     DateLessThanEquals: { 'aws:CurrentTime': '2099-06-30T19:42:23.431Z' },
                 };
@@ -700,7 +700,7 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, policy, 'Neutral');
             });
 
-            it('should be neutral for DateGreaterThan current time condition with ISO time if do not meet condition', () => {
+            it('should be neutral for DateGreaterThan current time condition with ISO time if not met', () => {
                 policy.Statement.Condition = { DateGreaterThan: { 'aws:CurrentTime': '2099-06-30T19:42:23.431Z' } };
                 check(requestContext, {}, policy, 'Neutral');
             });
@@ -716,7 +716,7 @@ describe('policyEvaluator', () => {
                 check(requestContext, {}, policy, 'Allow');
             });
 
-            it('should be neutral for DateGreaterThanEquals token condition with ISO time if do not meet condition', () => {
+            it('should be neutral for DateGreaterThanEquals token condition with ISO time if not met', () => {
                 policy.Statement.Condition = {
                     DateGreaterThanEquals: { 'aws:TokenIssueTime': '2016-06-30T19:42:23.431Z' },
                 };
@@ -743,7 +743,7 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, policy, 'Allow');
             });
 
-            it('should allow access for DateGreaterThanEquals current time condition with ISO time if meet condition', () => {
+            it('should allow access for DateGreaterThanEquals current time condition with ISO time if met', () => {
                 policy.Statement.Condition = {
                     DateGreaterThanEquals: { 'aws:CurrentTime': '2016-06-30T19:42:23.431Z' },
                 };
@@ -816,7 +816,7 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, policy, 'Allow');
             });
 
-            it('should be neutral for IpAddress condition if do not meet condition even if ipv4 address is mapped', () => {
+            it('should be neutral for IpAddress condition if not met even if ipv4 address is mapped', () => {
                 policy.Statement.Condition = { IpAddress: { 'aws:SourceIp': '203.0.113.0/24' } };
                 const rcModifiers = { _requesterIp: '::ffff:203.0.114.255' };
                 check(requestContext, rcModifiers, policy, 'Neutral');
@@ -862,7 +862,7 @@ describe('policyEvaluator', () => {
                 },
             );
 
-            it('should allow access for NotIpAddress condition if meet condition even if ipv4 mapped address is used', () => {
+            it('should allow access for NotIpAddress condition if met even if ipv4 mapped address is used', () => {
                 policy.Statement.Condition = { NotIpAddress: { 'aws:SourceIp': '203.0.113.0/24' } };
                 const rcModifiers = { _requesterIp: '::ffff:203.0.112.254' };
                 check(requestContext, rcModifiers, policy, 'Allow');
@@ -1000,7 +1000,7 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, policy, 'Neutral');
             });
 
-            it('should allow access with multiple operator conditions and multiple conditions under an operator', () => {
+            it('should allow access with multiple operator conditions and multiple conditions per operator', () => {
                 policy.Statement.Action = 's3:ListBucket';
                 policy.Statement.Condition = {
                     StringLike: {
@@ -1667,7 +1667,7 @@ describe('policyEvaluator for utapi', () => {
         check(requestContext, {}, samples['utapi list metrics with account ID'], 'Allow');
     });
 
-    it('should be neutral on access to list metrics when accountid in policy differs from accountid in requestContext', () => {
+    it('should be neutral for listing metrics when policy accountid differs from requestContext accountid', () => {
         const requestContext = new RequestContext(
             {},
             {},

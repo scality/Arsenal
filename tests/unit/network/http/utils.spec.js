@@ -52,7 +52,7 @@ describe('getByteRangeFromSpec function', () => {
     ].forEach(testCase => {
         const { rangeSpec, objectSize, expectedByteRange } = testCase;
 
-        it(`should transform spec ${rangeSpec} with object size ${objectSize} to byte range ${expectedByteRange}`, () => {
+        it(`should transform spec ${rangeSpec} with size ${objectSize} to byte range ${expectedByteRange}`, () => {
             const byteRange = getByteRangeFromSpec(rangeSpec, objectSize);
             if (expectedByteRange.error) {
                 assert(byteRange.error);

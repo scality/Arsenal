@@ -7,7 +7,7 @@ const createCanonicalRequest = require('../../../../lib/auth/v4/createCanonicalR
 describe('createCanonicalRequest function', () => {
     // Example taken from: http://docs.aws.amazon.com/AmazonS3/
     // latest/API/sig-v4-header-based-auth.html
-    it('should construct a canonical request in accordance with AWS rules for a get object request (header auth)', () => {
+    it('should construct a canonical request following AWS rules for a get object request (header auth)', () => {
         const params = {
             pHttpVerb: 'GET',
             pResource: '/test.txt',
@@ -90,7 +90,7 @@ describe('createCanonicalRequest function', () => {
 
     // Example taken from: http://docs.aws.amazon.com/AmazonS3/
     // latest/API/sig-v4-header-based-auth.html
-    it('should construct a canonical request in accordance with AWS rules for a put object request (header auth)', () => {
+    it('should construct a canonical request following AWS rules for a put object request (header auth)', () => {
         const params = {
             pHttpVerb: 'PUT',
             pResource: '/test$file.text',

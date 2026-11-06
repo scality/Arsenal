@@ -345,7 +345,7 @@ describe('MongoClientInterface::metadata.listLifecycleObject::noncurrent', () =>
                 });
             });
 
-            it('Should list non-current versions older than a specific date and excluding keys stored in location1', done => {
+            it('Should list non-current versions older than a date, excluding keys stored in location1', done => {
                 const params = {
                     listingType: 'DelimiterNonCurrent',
                     excludedDataStoreName: location1,
@@ -980,7 +980,7 @@ describe('MongoClientInterface::metadata.listLifecycleObject::noncurrent', () =>
                 });
             });
 
-            it('Should truncate list of non-current versions that start with prefix and older than beforedate', done => {
+            it('Should truncate list of non-current versions starting with prefix and older than beforedate', done => {
                 const params = {
                     listingType: 'DelimiterNonCurrent',
                     prefix: 'pfx2',

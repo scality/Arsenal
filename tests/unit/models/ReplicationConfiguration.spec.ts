@@ -471,7 +471,7 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
         expect(result).toBeUndefined();
     });
 
-    it('should return InvalidArgument when Scality destination has two comma-separated roles but one is invalid', () => {
+    it('should return InvalidArgument when Scality destination has two comma-separated roles, one invalid', () => {
         const repConfig = {
             Role: [`invalidarn:${TEST_ROLE}`],
             Rule: [
@@ -657,7 +657,7 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
         expect(result).toEqual(errors.InvalidRequest);
     });
 
-    it('should return InvalidRequest if StorageClass not provided and cloudserver config has no replication endpoint', () => {
+    it('should return InvalidRequest if no StorageClass and cloudserver config has no replication endpoint', () => {
         const repConfig = {
             Role: [TEST_ROLE],
             Rule: [
@@ -679,7 +679,7 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
         expect(result).toEqual(errors.InvalidRequest);
     });
 
-    it('should return InvalidRequest if StorageClass provided and cloudserver config has no replication endpoint', () => {
+    it('should return InvalidRequest if StorageClass given and cloudserver config has no replication endpoint', () => {
         const repConfig = {
             Role: [TEST_ROLE],
             Rule: [
@@ -1755,7 +1755,10 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
                         <ID>rule1</ID>
                         <Status>Enabled</Status>
                         <Filter/>
-                        <Destination><Bucket>arn:aws:s3:::bucket-a</Bucket><StorageClass>ring</StorageClass></Destination>
+                        <Destination>
+                            <Bucket>arn:aws:s3:::bucket-a</Bucket>
+                            <StorageClass>ring</StorageClass>
+                        </Destination>
                     </Rule>
                 </ReplicationConfiguration>`;
             const { emitted: emittedNoPrefix, meta1: metaNoPrefix } = roundTrip(noPrefixXml);
@@ -1771,7 +1774,10 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
                         <ID>rule1</ID>
                         <Status>Enabled</Status>
                         <Filter><Prefix></Prefix></Filter>
-                        <Destination><Bucket>arn:aws:s3:::bucket-a</Bucket><StorageClass>ring</StorageClass></Destination>
+                        <Destination>
+                            <Bucket>arn:aws:s3:::bucket-a</Bucket>
+                            <StorageClass>ring</StorageClass>
+                        </Destination>
                     </Rule>
                 </ReplicationConfiguration>`;
             const { emitted: emittedEmptyPrefix, meta1: metaEmptyPrefix } = roundTrip(emptyPrefixXml);

@@ -302,7 +302,7 @@ describe('v4 headerAuthCheck', () => {
         done();
     });
 
-    it('should return error if timestamp from date header is in the future (and there is no x-amz-date header)', done => {
+    it('should return error if timestamp from date header is in the future (and no x-amz-date header)', done => {
         const alteredRequest = createAlteredRequest(
             {
                 date: 'Tue, 08 Feb 2095 20:14:05 GMT',

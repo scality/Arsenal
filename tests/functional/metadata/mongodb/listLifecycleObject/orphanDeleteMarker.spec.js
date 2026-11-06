@@ -418,7 +418,7 @@ describe('MongoClientInterface::metadata.listLifecycleObject::orphan', () => {
                 });
             });
 
-            it('Should return the truncated list of orphan delete markers older than 1970-01-01T00:00:00.006Z', done => {
+            it('Should return truncated list of orphan delete markers older than 1970-01-01T00:00:00.006Z', done => {
                 const params = {
                     listingType: 'DelimiterOrphanDeleteMarker',
                     maxKeys: 2,
@@ -436,7 +436,7 @@ describe('MongoClientInterface::metadata.listLifecycleObject::orphan', () => {
                 });
             });
 
-            it('Should return the following list of orphan delete markers older than 1970-01-01T00:00:00.006Z', done => {
+            it('Should return the next list of orphan delete markers older than 1970-01-01T00:00:00.006Z', done => {
                 const params = {
                     listingType: 'DelimiterOrphanDeleteMarker',
                     maxKeys: 2,
@@ -453,7 +453,7 @@ describe('MongoClientInterface::metadata.listLifecycleObject::orphan', () => {
                 });
             });
 
-            it('Should return the truncated list of orphan delete markers older than 1970-01-01T00:00:00.001Z', done => {
+            it('Should return truncated list of orphan delete markers older than 1970-01-01T00:00:00.001Z', done => {
                 const params = {
                     listingType: 'DelimiterOrphanDeleteMarker',
                     maxKeys: 2,
