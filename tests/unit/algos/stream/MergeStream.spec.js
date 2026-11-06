@@ -177,8 +177,7 @@ describe('MergeStream', () => {
         [false, true].forEach(usePauseResume => {
             [false, true].forEach(errorAtEnd => {
                 if ((!usePauseResume && !errorAtEnd) || nbEntries <= 1000) {
-                    const fixtureDesc =
-                        `${usePauseResume ? ' with pause/resume' : ''}${errorAtEnd ? ' with error' : ''}`;
+                    const fixtureDesc = `${usePauseResume ? ' with pause/resume' : ''}${errorAtEnd ? ' with error' : ''}`;
                     it(`${nbEntries} sequential entries${fixtureDesc}`, done => {
                         jest.setTimeout(10000);
                         const stream1 = [];

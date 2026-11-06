@@ -1274,8 +1274,7 @@ export default class LifecycleConfiguration {
                     tagXML = tags
                         .map(t => {
                             const { key, val } = t;
-                            const Tag =
-                                `<Tag><Key>${escapeForXml(key)}</Key><Value>${escapeForXml(val)}</Value></Tag>`;
+                            const Tag = `<Tag><Key>${escapeForXml(key)}</Key><Value>${escapeForXml(val)}</Value></Tag>`;
                             return Tag;
                         })
                         .join('');

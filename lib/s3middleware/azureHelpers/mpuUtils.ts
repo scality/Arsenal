@@ -52,8 +52,7 @@ export const getMpuSummaryKey = (objectName: string, uploadId: string) => `${obj
 export const getBlockId = (uploadId: string, partNumber: number, subPartIndex: number) => {
     const paddedPartNumber = padString(partNumber, 'partNumber');
     const paddedSubPart = padString(subPartIndex, 'subPart');
-    const blockId =
-        `${uploadId}${splitter}partNumber${paddedPartNumber}${splitter}subPart${paddedSubPart}${splitter}`;
+    const blockId = `${uploadId}${splitter}partNumber${paddedPartNumber}${splitter}subPart${paddedSubPart}${splitter}`;
     return Buffer.from(padString(blockId, 'part')).toString('base64');
 };
 
