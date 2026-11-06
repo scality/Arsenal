@@ -159,11 +159,10 @@ async function cipherAndAssert(cipherPromiseFct, executions, actual, expected, s
         )}`,
     );
     if (spysCipherUnhealthy) {
+        const callCounts = spysCipherUnhealthy.map(spy => spy.callCount);
         assert.ok(
             spysCipherUnhealthy.every(spy => Math.abs(spy.callCount - expectedCallsUnhealthy) <= APPROX),
-            `Each unhealthy hosts should have been called ${expectedCalls} (+-${APPROX}). Instead got ${spysCipherUnhealthy.map(
-                spy => spy.callCount,
-            )}. ${
+            `Each unhealthy hosts should have been called ${expectedCalls} (+-${APPROX}). Instead got ${callCounts}. ${
                 triggerUnhealthy
                     ? 'Because it received request in parallel, beore being marked unhealthy'
                     : 'Because it was already marked unhealthy'

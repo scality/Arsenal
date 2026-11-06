@@ -13,7 +13,7 @@ const log = new DummyRequestLogger();
     describe(item.desc, () => {
         // Example taken from: http://docs.aws.amazon.com/AmazonS3/
         // latest/API/sig-v4-header-based-auth.html
-        it('should construct a stringToSign in accordance with AWS rules for a get object request (header auth)', () => {
+        it('should construct a stringToSign following AWS rules for a get object request (header auth)', () => {
             const path = '/test.txt';
             const params = {
                 request: {
@@ -53,7 +53,7 @@ const log = new DummyRequestLogger();
 
         // Example taken from: http://docs.aws.amazon.com/AmazonS3/
         // latest/API/sig-v4-header-based-auth.html
-        it('should construct a stringToSign in accordance with AWS rules for a put object request (header auth)', () => {
+        it('should construct a stringToSign following AWS rules for a put object request (header auth)', () => {
             const path = '/test$file.text';
             const params = {
                 request: {

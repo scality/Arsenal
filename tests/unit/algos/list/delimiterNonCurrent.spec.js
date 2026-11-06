@@ -515,7 +515,7 @@ describe('DelimiterNonCurrent over PHD master keys', () => {
 
     ['v0', 'v1'].forEach(v => {
         describe(`with ${v} bucket format`, () => {
-            it('should set NextKeyMarker to the PHD key when truncation happens inside a run of dangling PHD masters', () => {
+            it('should set NextKeyMarker to the PHD key when truncating inside a run of dangling PHD masters', () => {
                 const maxScannedLifecycleListingEntries = 5;
                 const delimiter = new DelimiterNonCurrent({ maxScannedLifecycleListingEntries }, fakeLogger, v);
 

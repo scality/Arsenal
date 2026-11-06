@@ -562,7 +562,7 @@ describe('MongoClientInterface::metadata.listLifecycleObject::current', () => {
                 });
             });
 
-            it('Should return the list of current versions modified before 1970-01-01T00:00:01.010Z with prefix pfx1', done => {
+            it('Should list current versions modified before 1970-01-01T00:00:01.010Z with prefix pfx1', done => {
                 const params = {
                     listingType: 'DelimiterCurrent',
                     beforeDate: '1970-01-01T00:00:01.010Z',

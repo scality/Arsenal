@@ -50,7 +50,7 @@ describe('Public Access', () => {
         },
     );
 
-    it('should not grant access to a request that contains an authorization header without proper credentials', done => {
+    it('should not grant access to a request that has an authorization header without proper credentials', done => {
         const request = {
             method: 'GET',
             headers: {
