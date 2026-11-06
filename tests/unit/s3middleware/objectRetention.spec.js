@@ -1,8 +1,5 @@
 const assert = require('assert');
-const {
-    parseRetentionXml,
-    convertToXml,
-} = require('../../../lib/s3middleware/objectRetention');
+const { parseRetentionXml, convertToXml } = require('../../../lib/s3middleware/objectRetention');
 const DummyRequestLogger = require('../helpers').DummyRequestLogger;
 
 const log = new DummyRequestLogger();
@@ -13,17 +10,14 @@ const failDate = new Date('05/01/2020');
 const passDate = new Date();
 passDate.setDate(passDate.getDate() + 2);
 
-
 function buildXml(key, value) {
-    const mode = key === 'Mode' ?
-        `<Mode>${value}</Mode>` :
-        '<Mode>GOVERNANCE</Mode>';
-    const retainDate = key === 'RetainDate' ?
-        `<RetainUntilDate>${value}</RetainUntilDate>` :
-        `<RetainUntilDate>${date}</RetainUntilDate>`;
-    const retention = key === 'Retention' ?
-        `<Retention>${value}</Retention>` :
-        `<Retention>${mode}${retainDate}</Retention>`;
+    const mode = key === 'Mode' ? `<Mode>${value}</Mode>` : '<Mode>GOVERNANCE</Mode>';
+    const retainDate =
+        key === 'RetainDate'
+            ? `<RetainUntilDate>${value}</RetainUntilDate>`
+            : `<RetainUntilDate>${date}</RetainUntilDate>`;
+    const retention =
+        key === 'Retention' ? `<Retention>${value}</Retention>` : `<Retention>${mode}${retainDate}</Retention>`;
     return retention;
 }
 
@@ -63,8 +57,7 @@ const failTests = [
         name: 'should fail with invalid mode',
         params: { key: 'Mode', value: 'GOVERPLIANCE' },
         error: 'MalformedXML',
-        errMessage: 'Mode request xml must be one of "GOVERNANCE", ' +
-            '"COMPLIANCE"',
+        errMessage: 'Mode request xml must be one of "GOVERNANCE", ' + '"COMPLIANCE"',
     },
     {
         name: 'should fail with retain until date in invalid format',
@@ -95,24 +88,22 @@ const validRetainDates = [
 describe('object Retention validation', () => {
     failTests.forEach(t => {
         it(t.name, done => {
-            parseRetentionXml(buildXml(t.params.key, t.params.value), log,
-                err => {
-                    assert(err.is[t.error]);
-                    assert.strictEqual(err.description, t.errMessage);
-                    done();
-                });
+            parseRetentionXml(buildXml(t.params.key, t.params.value), log, err => {
+                assert(err.is[t.error]);
+                assert.strictEqual(err.description, t.errMessage);
+                done();
+            });
         });
     });
 
     describe('should pass with valid retention date', () => {
         validRetainDates.forEach(retainDate => {
             it(`should pass with - ${retainDate}`, done => {
-                parseRetentionXml(buildXml('RetainDate', retainDate), log,
-                    (err, result) => {
-                        assert.ifError(err);
-                        assert.deepStrictEqual(result, expectedRetention(retainDate));
-                        done();
-                    });
+                parseRetentionXml(buildXml('RetainDate', retainDate), log, (err, result) => {
+                    assert.ifError(err);
+                    assert.deepStrictEqual(result, expectedRetention(retainDate));
+                    done();
+                });
             });
         });
     });

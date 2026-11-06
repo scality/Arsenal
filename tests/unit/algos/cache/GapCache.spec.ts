@@ -44,9 +44,7 @@ describe('GapCache', () => {
 
             // only the second gap should have been exposed, due to the change of
             // exposure delay subsequent to the first call to setGap()
-            expect(await gapCache.lookupGap('ape', 'zoo')).toEqual(
-                { firstKey: 'qux', lastKey: 'quz', weight: 10 }
-            );
+            expect(await gapCache.lookupGap('ape', 'zoo')).toEqual({ firstKey: 'qux', lastKey: 'quz', weight: 10 });
         });
     });
 
@@ -56,9 +54,7 @@ describe('GapCache', () => {
             gapCache.setGap('qux', 'quz', 20);
             await new Promise(resolve => setTimeout(resolve, 300));
 
-            expect(await gapCache.lookupGap('ape', 'zoo')).toEqual(
-                { firstKey: 'bar', lastKey: 'baz', weight: 10 }
-            );
+            expect(await gapCache.lookupGap('ape', 'zoo')).toEqual({ firstKey: 'bar', lastKey: 'baz', weight: 10 });
             gapCache.clear();
             expect(await gapCache.lookupGap('ape', 'zoo')).toBeNull();
         });
@@ -91,8 +87,7 @@ describe('GapCache', () => {
             // wait an extra 250ms to ensure all valid gaps have been exposed
             await new Promise(resolve => setTimeout(resolve, 250));
             // the next gap is indeed 'goat'... because 'cat'... should have been invalidated
-            expect(await gapCache.lookupGap('bat', 'zoo')).toEqual(
-                { firstKey: 'goat', lastKey: 'hog', weight: 20 });
+            expect(await gapCache.lookupGap('bat', 'zoo')).toEqual({ firstKey: 'goat', lastKey: 'hog', weight: 20 });
         });
     });
 
@@ -110,8 +105,7 @@ describe('GapCache', () => {
         // 100ms to cope with scheduling uncertainty and GapSet processing time, after
         // which the gap introduced by setGap() should always be exposed.
         await new Promise(resolve => setTimeout(resolve, 250));
-        expect(await gapCache.lookupGap('ape', 'cat')).toEqual(
-            { firstKey: 'bar', lastKey: 'baz', weight: 10 });
+        expect(await gapCache.lookupGap('ape', 'cat')).toEqual({ firstKey: 'bar', lastKey: 'baz', weight: 10 });
 
         // check getters
         expect(gapCache.maxGaps).toEqual(10);
@@ -127,103 +121,98 @@ describe('GapCache', () => {
         expect(nGaps).toEqual(1);
 
         // check toArray()
-        expect(gapCache.toArray()).toEqual([
-            { firstKey: 'bar', lastKey: 'baz', weight: 10 },
-        ]);
+        expect(gapCache.toArray()).toEqual([{ firstKey: 'bar', lastKey: 'baz', weight: 10 }]);
     });
 
-    it('removeOverlappingGaps() should invalidate all overlapping gaps that are already exposed',
-        async () => {
-            gapCache.setGap('cat', 'fox', 10);
-            gapCache.setGap('lion', 'seal', 20);
-            // wait for 3x100ms to ensure all setGap() calls have been exposed
-            await new Promise(resolve => setTimeout(resolve, 300));
-            // expect 0 gap removed because 'hog' is not in any gap
-            expect(gapCache.removeOverlappingGaps(['hog'])).toEqual(0);
-            // expect 1 gap removed because 'cat' -> 'fox' should be already exposed
-            expect(gapCache.removeOverlappingGaps(['dog'])).toEqual(1);
-            // the gap should have been invalidated permanently
-            expect(await gapCache.lookupGap('dog', 'fox')).toBeNull();
-            // the other gap should still be present
-            expect(await gapCache.lookupGap('rat', 'tiger')).toEqual(
-                { firstKey: 'lion', lastKey: 'seal', weight: 20 });
-        });
+    it('removeOverlappingGaps() should invalidate all overlapping gaps that are already exposed', async () => {
+        gapCache.setGap('cat', 'fox', 10);
+        gapCache.setGap('lion', 'seal', 20);
+        // wait for 3x100ms to ensure all setGap() calls have been exposed
+        await new Promise(resolve => setTimeout(resolve, 300));
+        // expect 0 gap removed because 'hog' is not in any gap
+        expect(gapCache.removeOverlappingGaps(['hog'])).toEqual(0);
+        // expect 1 gap removed because 'cat' -> 'fox' should be already exposed
+        expect(gapCache.removeOverlappingGaps(['dog'])).toEqual(1);
+        // the gap should have been invalidated permanently
+        expect(await gapCache.lookupGap('dog', 'fox')).toBeNull();
+        // the other gap should still be present
+        expect(await gapCache.lookupGap('rat', 'tiger')).toEqual({ firstKey: 'lion', lastKey: 'seal', weight: 20 });
+    });
 
-    it('removeOverlappingGaps() should invalidate all overlapping gaps that are not yet exposed',
+    it('removeOverlappingGaps() should invalidate all overlapping gaps that are not yet exposed', async () => {
+        gapCache.setGap('cat', 'fox', 10);
+        gapCache.setGap('lion', 'seal', 20);
+        // make the following calls asynchronous for the sake of the
+        // test, but not waiting for the exposure delay
+        await new Promise(resolve => setImmediate(resolve));
+        // expect 0 gap removed because 'hog' is not in any gap
+        expect(gapCache.removeOverlappingGaps(['hog'])).toEqual(0);
+        // expect 0 gap removed because 'cat' -> 'fox' is not exposed yet,
+        // but internally it should have been removed from the staging or
+        // frozen gap set
+        expect(gapCache.removeOverlappingGaps(['dog'])).toEqual(0);
+
+        // wait for 3x100ms to ensure all non-invalidated setGap() calls have been exposed
+        await new Promise(resolve => setTimeout(resolve, 300));
+        // the gap should have been invalidated permanently
+        expect(await gapCache.lookupGap('dog', 'fox')).toBeNull();
+        // the other gap should now be exposed
+        expect(await gapCache.lookupGap('rat', 'tiger')).toEqual({ firstKey: 'lion', lastKey: 'seal', weight: 20 });
+    });
+
+    it(
+        'removeOverlappingGaps() should invalidate gaps created later by setGap() but ' + 'within the exposure delay',
         async () => {
-            gapCache.setGap('cat', 'fox', 10);
-            gapCache.setGap('lion', 'seal', 20);
-            // make the following calls asynchronous for the sake of the
-            // test, but not waiting for the exposure delay
-            await new Promise(resolve => setImmediate(resolve));
-            // expect 0 gap removed because 'hog' is not in any gap
-            expect(gapCache.removeOverlappingGaps(['hog'])).toEqual(0);
-            // expect 0 gap removed because 'cat' -> 'fox' is not exposed yet,
-            // but internally it should have been removed from the staging or
-            // frozen gap set
+            // wait for 80ms (slightly less than exposure delay of 100ms)
+            // before calling removeOverlappingGaps(), so that the next
+            // exposure timer kicks in before the call to setGap()
+            await new Promise(resolve => setTimeout(resolve, 80));
+
+            // there is no exposed gap yet, so expect 0 gap removed
             expect(gapCache.removeOverlappingGaps(['dog'])).toEqual(0);
 
-            // wait for 3x100ms to ensure all non-invalidated setGap() calls have been exposed
-            await new Promise(resolve => setTimeout(resolve, 300));
-            // the gap should have been invalidated permanently
-            expect(await gapCache.lookupGap('dog', 'fox')).toBeNull();
-            // the other gap should now be exposed
-            expect(await gapCache.lookupGap('rat', 'tiger')).toEqual(
-                { firstKey: 'lion', lastKey: 'seal', weight: 20 });
-        });
+            // wait for 50ms (half of exposure delay of 100ms) before
+            // setting a new gap overlapping with 'dog'
+            await new Promise(resolve => setTimeout(resolve, 50));
+            gapCache.setGap('cat', 'fox', 10);
 
-    it('removeOverlappingGaps() should invalidate gaps created later by setGap() but ' +
-    'within the exposure delay', async () => {
-        // wait for 80ms (slightly less than exposure delay of 100ms)
-        // before calling removeOverlappingGaps(), so that the next
-        // exposure timer kicks in before the call to setGap()
-        await new Promise(resolve => setTimeout(resolve, 80));
+            // also set a non-overlapping gap to make sure it is not invalidated
+            gapCache.setGap('goat', 'hog', 20);
 
-        // there is no exposed gap yet, so expect 0 gap removed
-        expect(gapCache.removeOverlappingGaps(['dog'])).toEqual(0);
+            // wait an extra 250ms to ensure all valid gaps have been exposed
+            await new Promise(resolve => setTimeout(resolve, 250));
+            // the next gap is indeed 'goat'... because 'cat'... should have been invalidated
+            expect(await gapCache.lookupGap('bat', 'zoo')).toEqual({ firstKey: 'goat', lastKey: 'hog', weight: 20 });
+        },
+    );
 
-        // wait for 50ms (half of exposure delay of 100ms) before
-        // setting a new gap overlapping with 'dog'
-        await new Promise(resolve => setTimeout(resolve, 50));
-        gapCache.setGap('cat', 'fox', 10);
+    it(
+        'removeOverlappingGaps() should not invalidate gaps created more than twice ' + 'the exposure delay later',
+        async () => {
+            // there is no exposed gap yet, so expect 0 gap removed
+            expect(gapCache.removeOverlappingGaps(['dog'])).toEqual(0);
 
-        // also set a non-overlapping gap to make sure it is not invalidated
-        gapCache.setGap('goat', 'hog', 20);
+            // wait for 250ms (more than twice the exposure delay of 100ms) before
+            // setting a new gap overlapping with 'dog'
+            await new Promise(resolve => setTimeout(resolve, 250));
+            gapCache.setGap('cat', 'fox', 10);
 
-        // wait an extra 250ms to ensure all valid gaps have been exposed
-        await new Promise(resolve => setTimeout(resolve, 250));
-        // the next gap is indeed 'goat'... because 'cat'... should have been invalidated
-        expect(await gapCache.lookupGap('bat', 'zoo')).toEqual(
-            { firstKey: 'goat', lastKey: 'hog', weight: 20 });
-    });
+            // also set a non-overlapping gap to make sure it is not invalidated
+            gapCache.setGap('goat', 'hog', 20);
 
-    it('removeOverlappingGaps() should not invalidate gaps created more than twice ' +
-    'the exposure delay later', async () => {
-        // there is no exposed gap yet, so expect 0 gap removed
-        expect(gapCache.removeOverlappingGaps(['dog'])).toEqual(0);
-
-        // wait for 250ms (more than twice the exposure delay of 100ms) before
-        // setting a new gap overlapping with 'dog'
-        await new Promise(resolve => setTimeout(resolve, 250));
-        gapCache.setGap('cat', 'fox', 10);
-
-        // also set a non-overlapping gap to make sure it is not invalidated
-        gapCache.setGap('goat', 'hog', 20);
-
-        // wait for an extra 250ms to ensure the new gap is exposed
-        await new Promise(resolve => setTimeout(resolve, 250));
-        // should find the inserted gap as it should not have been invalidated
-        expect(await gapCache.lookupGap('bat', 'zoo')).toEqual(
-            { firstKey: 'cat', lastKey: 'fox', weight: 10 });
-    });
+            // wait for an extra 250ms to ensure the new gap is exposed
+            await new Promise(resolve => setTimeout(resolve, 250));
+            // should find the inserted gap as it should not have been invalidated
+            expect(await gapCache.lookupGap('bat', 'zoo')).toEqual({ firstKey: 'cat', lastKey: 'fox', weight: 10 });
+        },
+    );
 
     it('exposed gaps should be merged when possible', async () => {
         gapCache.setGap('bar', 'baz', 10);
         gapCache.setGap('baz', 'qux', 10);
         // wait until the merged gap is exposed
         await new Promise(resolve => setTimeout(resolve, 300));
-        expect(await gapCache.lookupGap('ape', 'cat')).toEqual(
-            { firstKey: 'bar', lastKey: 'qux', weight: 20 });
+        expect(await gapCache.lookupGap('ape', 'cat')).toEqual({ firstKey: 'bar', lastKey: 'qux', weight: 20 });
     });
 
     it('exposed gaps should be split when above maxGapWeight', async () => {
@@ -231,21 +220,18 @@ describe('GapCache', () => {
         gapCache.setGap('baz', 'qux', 10);
         // wait until the gaps are exposed
         await new Promise(resolve => setTimeout(resolve, 300));
-        expect(await gapCache.lookupGap('cat', 'dog')).toEqual(
-            { firstKey: 'baz', lastKey: 'qux', weight: 10 });
+        expect(await gapCache.lookupGap('cat', 'dog')).toEqual({ firstKey: 'baz', lastKey: 'qux', weight: 10 });
     });
 
     it('gaps should not be exposed when reaching the maxGaps limit', async () => {
-        const gapsArray = new Array(gapCache.maxGaps).fill(undefined).map(
-            (_, i) => {
-                const firstKey = `0000${i}`.slice(-4);
-                return {
-                    firstKey,
-                    lastKey: `${firstKey}foo`,
-                    weight: 10,
-                };
-            }
-        );
+        const gapsArray = new Array(gapCache.maxGaps).fill(undefined).map((_, i) => {
+            const firstKey = `0000${i}`.slice(-4);
+            return {
+                firstKey,
+                lastKey: `${firstKey}foo`,
+                weight: 10,
+            };
+        });
         for (const gap of gapsArray) {
             gapCache.setGap(gap.firstKey, gap.lastKey, gap.weight);
         }

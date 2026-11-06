@@ -3,8 +3,7 @@ const assert = require('assert');
 const werelogs = require('werelogs');
 const { MongoMemoryReplSet } = require('mongodb-memory-server');
 const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
-const MetadataWrapper =
-    require('../../../../../lib/storage/metadata/MetadataWrapper');
+const MetadataWrapper = require('../../../../../lib/storage/metadata/MetadataWrapper');
 const { versioning } = require('../../../../../index');
 const { BucketVersioningKeyFormat } = versioning.VersioningConstants;
 const { makeBucketMD } = require('./utils');
@@ -16,9 +15,7 @@ const BUCKET_NAME = 'test-lifecycle-list-bucket-null';
 
 const mongoserver = new MongoMemoryReplSet({
     debug: false,
-    instanceOpts: [
-        { port: 27020 },
-    ],
+    instanceOpts: [{ port: 27020 }],
     replSet: {
         name: 'rs0',
         count: 1,
@@ -49,12 +46,17 @@ describe('MongoClientInterface::metadata.listLifecycleObject::nullVersion', () =
     });
 
     afterAll(done => {
-        async.series([
-            next => metadata.close(next),
-            next => mongoserver.stop()
-                .then(() => next())
-                .catch(next),
-        ], done);
+        async.series(
+            [
+                next => metadata.close(next),
+                next =>
+                    mongoserver
+                        .stop()
+                        .then(() => next())
+                        .catch(next),
+            ],
+            done,
+        );
     });
 
     [BucketVersioningKeyFormat.v0, BucketVersioningKeyFormat.v1].forEach(v => {
@@ -67,97 +69,100 @@ describe('MongoClientInterface::metadata.listLifecycleObject::nullVersion', () =
                     repairMaster: null,
                 };
                 metadata.client.defaultBucketKeyFormat = v;
-                async.series([
-                    next => metadata.createBucket(BUCKET_NAME, bucketMD, logger, next),
-                    next => {
-                        const objName = 'key0';
-                        const timestamp = 0;
+                async.series(
+                    [
+                        next => metadata.createBucket(BUCKET_NAME, bucketMD, logger, next),
+                        next => {
+                            const objName = 'key0';
+                            const timestamp = 0;
 
-                        const lastModified = new Date(timestamp).toISOString();
-                        const objVal = {
-                            'key': objName,
-                            'versionId': 'null',
-                            'isNull': true,
-                            'last-modified': lastModified,
-                        };
-                        return metadata.putObjectMD(BUCKET_NAME, objName, objVal, versionParams, logger, next);
-                    },
-                    next => {
-                        const objName = 'key1';
-                        const timestamp = 0;
+                            const lastModified = new Date(timestamp).toISOString();
+                            const objVal = {
+                                'key': objName,
+                                'versionId': 'null',
+                                'isNull': true,
+                                'last-modified': lastModified,
+                            };
+                            return metadata.putObjectMD(BUCKET_NAME, objName, objVal, versionParams, logger, next);
+                        },
+                        next => {
+                            const objName = 'key1';
+                            const timestamp = 0;
 
-                        const lastModified = new Date(timestamp).toISOString();
-                        const objVal = {
-                            'key': objName,
-                            'versionId': 'null',
-                            'isNull': true,
-                            'last-modified': lastModified,
-                        };
-                        return metadata.putObjectMD(BUCKET_NAME, objName, objVal, versionParams, logger, next);
-                    },
-                    next => {
-                        const objName = 'key1';
-                        const timestamp = 0;
+                            const lastModified = new Date(timestamp).toISOString();
+                            const objVal = {
+                                'key': objName,
+                                'versionId': 'null',
+                                'isNull': true,
+                                'last-modified': lastModified,
+                            };
+                            return metadata.putObjectMD(BUCKET_NAME, objName, objVal, versionParams, logger, next);
+                        },
+                        next => {
+                            const objName = 'key1';
+                            const timestamp = 0;
 
-                        const lastModified = new Date(timestamp).toISOString();
-                        const objVal = {
-                            'key': objName,
-                            'last-modified': lastModified,
-                        };
-                        return metadata.putObjectMD(BUCKET_NAME, objName, objVal, versionParams, logger, next);
-                    },
-                    // key2 simulates a scenario where:
-                    // 1) bucket is versioned
-                    // 2) put object key2
-                    // 3) bucket versioning gets suspended
-                    // 4) put object key2
-                    // result:
-                    // {
-                    //     "_id" : "Mkey0",
-                    //     "value" : {
-                    //         "key" : "key2",
-                    //         "isNull" : true,
-                    //         "versionId" : "<VersionId2>",
-                    //         "last-modified" : "2023-07-11T14:16:00.151Z",
-                    //     }
-                    // },
-                    // {
-                    //     "_id" : "Vkey0\u0000<VersionId1>",
-                    //     "value" : {
-                    //         "key" : "key2",
-                    //         "versionId" : "<VersionId1>",
-                    //         "tags" : {
-                    //         },
-                    //         "last-modified" : "2023-07-11T14:15:36.713Z",
-                    //     }
-                    // },
-                    next => {
-                        const objName = 'key2';
-                        const timestamp = 0;
+                            const lastModified = new Date(timestamp).toISOString();
+                            const objVal = {
+                                'key': objName,
+                                'last-modified': lastModified,
+                            };
+                            return metadata.putObjectMD(BUCKET_NAME, objName, objVal, versionParams, logger, next);
+                        },
+                        // key2 simulates a scenario where:
+                        // 1) bucket is versioned
+                        // 2) put object key2
+                        // 3) bucket versioning gets suspended
+                        // 4) put object key2
+                        // result:
+                        // {
+                        //     "_id" : "Mkey0",
+                        //     "value" : {
+                        //         "key" : "key2",
+                        //         "isNull" : true,
+                        //         "versionId" : "<VersionId2>",
+                        //         "last-modified" : "2023-07-11T14:16:00.151Z",
+                        //     }
+                        // },
+                        // {
+                        //     "_id" : "Vkey0\u0000<VersionId1>",
+                        //     "value" : {
+                        //         "key" : "key2",
+                        //         "versionId" : "<VersionId1>",
+                        //         "tags" : {
+                        //         },
+                        //         "last-modified" : "2023-07-11T14:15:36.713Z",
+                        //     }
+                        // },
+                        next => {
+                            const objName = 'key2';
+                            const timestamp = 0;
 
-                        const lastModified = new Date(timestamp).toISOString();
-                        const objVal = {
-                            'key': objName,
-                            'last-modified': lastModified,
-                        };
-                        return metadata.putObjectMD(BUCKET_NAME, objName, objVal, versionParams, logger, next);
-                    },
-                    next => {
-                        const objName = 'key2';
-                        const timestamp = 0;
-                        const params = {
-                            versionId: '',
-                        };
+                            const lastModified = new Date(timestamp).toISOString();
+                            const objVal = {
+                                'key': objName,
+                                'last-modified': lastModified,
+                            };
+                            return metadata.putObjectMD(BUCKET_NAME, objName, objVal, versionParams, logger, next);
+                        },
+                        next => {
+                            const objName = 'key2';
+                            const timestamp = 0;
+                            const params = {
+                                versionId: '',
+                            };
 
-                        const lastModified = new Date(timestamp).toISOString();
-                        const objVal = {
-                            'key': objName,
-                            'last-modified': lastModified,
-                            'isNull': true,
-                        };
-                        return metadata.putObjectMD(BUCKET_NAME, objName, objVal, params, logger, next);
-                    },
-                ], done);
+                            const lastModified = new Date(timestamp).toISOString();
+                            const objVal = {
+                                'key': objName,
+                                'last-modified': lastModified,
+                                'isNull': true,
+                            };
+                            return metadata.putObjectMD(BUCKET_NAME, objName, objVal, params, logger, next);
+                        },
+                    ],
+                    done,
+                );
             });
 
             afterEach(done => metadata.deleteBucket(BUCKET_NAME, logger, done));

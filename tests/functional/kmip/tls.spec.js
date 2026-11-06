@@ -1,8 +1,7 @@
 const assert = require('assert');
 const net = require('net');
 const tls = require('tls');
-const TransportTemplate =
-      require('../../../lib/network/kmip/transport/TransportTemplate').default;
+const TransportTemplate = require('../../../lib/network/kmip/transport/TransportTemplate').default;
 const { logger } = require('../../utils/kmip/ersatz');
 
 describe('KMIP Connection Management', () => {
@@ -20,14 +19,12 @@ describe('KMIP Connection Management', () => {
     });
 
     it('should gracefully handle connection errors', done => {
-        const transport = new TransportTemplate(
-            tls,
-            {
-                pipelineDepth: 1,
-                tls: {
-                    port: 5696,
-                },
-            });
+        const transport = new TransportTemplate(tls, {
+            pipelineDepth: 1,
+            tls: {
+                port: 5696,
+            },
+        });
         const request = Buffer.alloc(10).fill(6);
         /* Using a for loop here instead of anything
          * asynchronous, the callbacks get stuck in

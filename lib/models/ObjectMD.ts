@@ -68,14 +68,14 @@ export type ObjectMDData = {
     'content-encoding': string;
     'creation-time'?: string;
     'last-modified'?: string;
-    expires: string;
+    'expires': string;
     'content-length': number;
     'content-type': string;
     'content-md5': string;
     'x-amz-version-id': 'null' | string;
     'x-amz-server-version-id': string;
     'x-amz-restore'?: ObjectMDAmzRestore;
-    archive?: ObjectMDArchive;
+    'archive'?: ObjectMDArchive;
     'x-amz-storage-class': string;
     'x-amz-server-side-encryption': string;
     'x-amz-server-side-encryption-aws-kms-key-id': string;
@@ -83,45 +83,45 @@ export type ObjectMDData = {
     'x-amz-website-redirect-location': string;
     'x-amz-scal-transition-in-progress'?: boolean;
     'x-amz-scal-transition-time'?: string;
-    azureInfo?: ObjectMDAzureInfoMetadata;
-    acl: ACL;
-    key: string;
-    location: null | Location[];
+    'azureInfo'?: ObjectMDAzureInfoMetadata;
+    'acl': ACL;
+    'key': string;
+    'location': null | Location[];
     // versionId, isNull, isNull2, nullVersionId and isDeleteMarker
     // should be undefined when not set explicitly
-    isNull?: boolean;
-    isNull2?: boolean;
-    nullVersionId?: string;
-    nullUploadId?: string;
-    isDeleteMarker?: boolean;
-    versionId?: string;
-    uploadId?: string;
-    legalHold?: boolean;
-    retentionMode?: string;
-    retentionDate?: string;
-    tags: {};
-    replicationInfo: ReplicationInfo;
-    dataStoreName: string;
-    originOp: string;
-    traceContext?: {
+    'isNull'?: boolean;
+    'isNull2'?: boolean;
+    'nullVersionId'?: string;
+    'nullUploadId'?: string;
+    'isDeleteMarker'?: boolean;
+    'versionId'?: string;
+    'uploadId'?: string;
+    'legalHold'?: boolean;
+    'retentionMode'?: string;
+    'retentionDate'?: string;
+    'tags': {};
+    'replicationInfo': ReplicationInfo;
+    'dataStoreName': string;
+    'originOp': string;
+    'traceContext'?: {
         traceparent: string;
         tracestate?: string;
     };
-    microVersionId?: string;
+    'microVersionId'?: string;
     // Deletion flag
     // Used for keeping object metadata in the oplog event
     // In case of a deletion the flag is first updated before
     // deleting the object
-    deleted?: boolean;
+    'deleted'?: boolean;
     // PHD flag indicates whether the object is a temporary placeholder.
     // This is the case when the latest version of an object gets deleted
     // the master is set as a placeholder and gets updated with the new latest
     // version data after a certain amount of time.
-    isPHD?: boolean;
+    'isPHD'?: boolean;
     // This is the canonical Id for the bucket owner.
     // This is only set when it differs from `owner-id`.
-    bucketOwnerId?: string;
-    checksum?: ObjectMDChecksum;
+    'bucketOwnerId'?: string;
+    'checksum'?: ObjectMDChecksum;
 };
 
 /**
@@ -211,7 +211,7 @@ export default class ObjectMD {
             'cache-control': '',
             'content-disposition': '',
             'content-encoding': '',
-            expires: '',
+            'expires': '',
             'content-length': 0,
             'content-type': '',
             'content-md5': '',
@@ -230,27 +230,27 @@ export default class ObjectMD {
             'x-amz-server-side-encryption-customer-algorithm': '',
             'x-amz-website-redirect-location': '',
             'x-amz-scal-transition-in-progress': undefined,
-            acl: {
+            'acl': {
                 Canned: 'private',
                 FULL_CONTROL: [],
                 WRITE_ACP: [],
                 READ: [],
                 READ_ACP: [],
             },
-            key: '',
-            location: null,
-            azureInfo: undefined,
+            'key': '',
+            'location': null,
+            'azureInfo': undefined,
             // versionId, isNull, nullVersionId and isDeleteMarker
             // should be undefined when not set explicitly
-            isNull: undefined,
-            isNull2: undefined,
-            nullVersionId: undefined,
-            nullUploadId: undefined,
-            isDeleteMarker: undefined,
-            versionId: undefined,
-            uploadId: undefined,
-            tags: {},
-            replicationInfo: {
+            'isNull': undefined,
+            'isNull2': undefined,
+            'nullVersionId': undefined,
+            'nullUploadId': undefined,
+            'isDeleteMarker': undefined,
+            'versionId': undefined,
+            'uploadId': undefined,
+            'tags': {},
+            'replicationInfo': {
                 status: '',
                 backends: [],
                 content: [],
@@ -262,10 +262,10 @@ export default class ObjectMD {
                 isNFS: undefined,
                 isReplica: undefined,
             },
-            dataStoreName: '',
-            originOp: '',
-            deleted: undefined,
-            isPHD: undefined,
+            'dataStoreName': '',
+            'originOp': '',
+            'deleted': undefined,
+            'isPHD': undefined,
         };
     }
 

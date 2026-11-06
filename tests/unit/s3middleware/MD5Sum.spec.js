@@ -4,7 +4,7 @@ const MD5Sum = require('../../../lib/s3middleware/MD5Sum').default;
 const constants = require('../../../lib/constants');
 
 function consume(stream) {
-    stream.on('data', () => { });
+    stream.on('data', () => {});
 }
 
 function testMD5(payload, expectedMD5, done) {
@@ -35,7 +35,6 @@ describe('utilities.MD5Sum', () => {
          * $ dd if=/dev/zero of=/dev/stdout bs=1M count=16 2>/dev/null | md5sum
          */
         const buffer = Buffer.alloc(4 * 1024 * 1024);
-        testMD5([buffer, buffer, buffer, buffer],
-            '2c7ab85a893283e98c931e9511add182', done);
+        testMD5([buffer, buffer, buffer, buffer], '2c7ab85a893283e98c931e9511add182', done);
     });
 });

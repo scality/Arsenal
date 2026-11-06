@@ -19,8 +19,7 @@ function assertHeaders(responseMock, expectedHeaders) {
 }
 
 describe('routesUtils.redirectRequestOnError', () => {
-    describe('from request on folder containing ' +
-    'index without trailing /', () => {
+    describe('from request on folder containing ' + 'index without trailing /', () => {
         const errorHeaders = {
             'x-amz-error-code': errorInstances.Found.type,
             'x-amz-error-message': errorInstances.Found.description,
@@ -30,9 +29,14 @@ describe('routesUtils.redirectRequestOnError', () => {
             const responseMock = new HttpResponseMock();
             const routing = { withError: true, location: '/photos/' };
             routesUtils.redirectRequestOnError(
-                errors.Found, 'GET',
-                routing, null, null, responseMock,
-                corsHeaders, new DummyRequestLogger(),
+                errors.Found,
+                'GET',
+                routing,
+                null,
+                null,
+                responseMock,
+                corsHeaders,
+                new DummyRequestLogger(),
             );
 
             assert.strictEqual(responseMock.statusCode, 302);
@@ -48,9 +52,14 @@ describe('routesUtils.redirectRequestOnError', () => {
             const responseMock = new HttpResponseMock();
             const routing = { withError: true, location: '/photos/' };
             routesUtils.redirectRequestOnError(
-                errors.Found, 'HEAD',
-                routing, null, null, responseMock,
-                corsHeaders, new DummyRequestLogger(),
+                errors.Found,
+                'HEAD',
+                routing,
+                null,
+                null,
+                responseMock,
+                corsHeaders,
+                new DummyRequestLogger(),
             );
 
             assert.strictEqual(responseMock.statusCode, 302);
@@ -78,12 +87,16 @@ describe('routesUtils.redirectRequestOnError', () => {
                     this.push(null);
                 },
             });
-            dataWrapperGetStub = sinon.stub(DataWrapper.prototype, 'get')
-                .yields(null, mockStream);
+            dataWrapperGetStub = sinon.stub(DataWrapper.prototype, 'get').yields(null, mockStream);
             routesUtils.redirectRequestOnError(
-                errors.AccessDenied, 'GET',
-                routing, [{ mock: true }], { mockRetrieveDataParams: true },
-                responseMock, corsHeaders, new DummyRequestLogger(),
+                errors.AccessDenied,
+                'GET',
+                routing,
+                [{ mock: true }],
+                { mockRetrieveDataParams: true },
+                responseMock,
+                corsHeaders,
+                new DummyRequestLogger(),
             );
             assert.strictEqual(responseMock.statusCode, 301);
             assert.strictEqual(responseMock._headers.Location, routing.location);

@@ -5,8 +5,7 @@ async function testStream(startByteOffset, streamSize, expectedData) {
     const p = new Promise((resolve, reject) => {
         const dos = new DummyObjectStream(startByteOffset, streamSize);
         const readChunks = [];
-        dos
-            .on('data', chunk => readChunks.push(chunk))
+        dos.on('data', chunk => readChunks.push(chunk))
             .on('error', err => reject(err))
             .on('end', () => {
                 assert.strictEqual(readChunks.join(''), expectedData);
@@ -19,7 +18,6 @@ async function testStream(startByteOffset, streamSize, expectedData) {
 describe('DummyObjectStream', () => {
     jest.setTimeout(30000);
     it('should return a stream of 8-byte hex-encoded blocks', async () => {
-         
         await testStream(0, 0, '');
         await testStream(50, 0, '');
         await testStream(0, 1, ' ');
@@ -39,19 +37,16 @@ describe('DummyObjectStream', () => {
         await testStream(567890123, 30, '950c8 1d950d0 1d950d8 1d950e0 ');
 
         // test larger streams with 8MiB of contents
-        const expectedLarge =
-              new Array(1024 * 1024).fill()
-                  .map((x, i) => ` ${`000000${Number(i * 8).toString(16)}`.slice(-7)}`)
-                  .join('');
+        const expectedLarge = new Array(1024 * 1024)
+            .fill()
+            .map((x, i) => ` ${`000000${Number(i * 8).toString(16)}`.slice(-7)}`)
+            .join('');
         await testStream(0, 8 * 1024 * 1024, expectedLarge);
 
-        const expectedLarge2 =
-              ['950c8']
-                  .concat(new Array(1024 * 1024).fill()
-                      .map((x, i) => ` ${Number(0x1d950d0 + i * 8).toString(16)}`))
-                  .concat([' 25'])
-                  .join('');
+        const expectedLarge2 = ['950c8']
+            .concat(new Array(1024 * 1024).fill().map((x, i) => ` ${Number(0x1d950d0 + i * 8).toString(16)}`))
+            .concat([' 25'])
+            .join('');
         await testStream(567890123, 5 + 8 * 1024 * 1024 + 3, expectedLarge2);
-         
     });
 });

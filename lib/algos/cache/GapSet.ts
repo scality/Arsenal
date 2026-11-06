@@ -2,9 +2,9 @@ import assert from 'assert';
 import { OrderedSet } from '@js-sdsl/ordered-set';
 
 export type GapSetEntry = {
-    firstKey: string,
-    lastKey: string,
-    weight: number,
+    firstKey: string;
+    lastKey: string;
+    weight: number;
 };
 
 export interface GapSetInterface {
@@ -16,7 +16,7 @@ export interface GapSetInterface {
     lookupGap: (minKey: string, maxKey?: string) => Promise<GapSetEntry | null>;
     [Symbol.iterator]: () => Iterator<GapSetEntry>;
     toArray: () => GapSetEntry[];
-};
+}
 
 /**
  * Specialized data structure to support caching of listing "gaps",
@@ -34,12 +34,8 @@ export default class GapSet implements GapSetInterface, Iterable<GapSetEntry> {
      * gap (unitless). Triggers splitting gaps when reached
      */
     constructor(maxWeight: number) {
-        this._gaps = new OrderedSet(
-            [],
-            (left: GapSetEntry, right: GapSetEntry) => (
-                left.firstKey < right.firstKey ? -1 :
-                    left.firstKey > right.firstKey ? 1 : 0
-            )
+        this._gaps = new OrderedSet([], (left: GapSetEntry, right: GapSetEntry) =>
+            left.firstKey < right.firstKey ? -1 : left.firstKey > right.firstKey ? 1 : 0,
         );
         this._maxWeight = maxWeight;
     }
@@ -84,10 +80,11 @@ export default class GapSet implements GapSetInterface, Iterable<GapSetEntry> {
             }
         }
         let remainingWeight = weight;
-        if (!curGap                         // no previous gap
-            || curGap.lastKey < firstKey    // previous gap not overlapping
-            || (curGap.lastKey === firstKey // previous gap overlapping by one key...
-                && curGap.weight + weight > this._maxWeight) // ...but we can't extend it
+        if (
+            !curGap || // no previous gap
+            curGap.lastKey < firstKey || // previous gap not overlapping
+            (curGap.lastKey === firstKey && // previous gap overlapping by one key...
+                curGap.weight + weight > this._maxWeight) // ...but we can't extend it
         ) {
             // create a new gap indexed by 'firstKey'
             curGap = { firstKey, lastKey: firstKey, weight: 0 };
@@ -261,8 +258,7 @@ export default class GapSet implements GapSetInterface, Iterable<GapSetEntry> {
                 // efficiency trade-off: 100 iterations of log(N) complexity lookups should
                 // not block the event loop for too long
                 for (let opCounter = 0; opCounter < 100; ++opCounter) {
-                    const chainedGapIt = this._gaps.find(
-                            <GapSetEntry>{ firstKey: coalescedGap.lastKey });
+                    const chainedGapIt = this._gaps.find(<GapSetEntry>{ firstKey: coalescedGap.lastKey });
                     if (!chainedGapIt.isAccessible()) {
                         // chain is complete
                         return resolve(coalescedGap);

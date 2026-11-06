@@ -1,14 +1,12 @@
 const assert = require('assert');
 const crypto = require('crypto');
 
-const objectUtils =
-    require('../../../lib/s3middleware/objectUtils');
+const objectUtils = require('../../../lib/s3middleware/objectUtils');
 
 const hexHash = 'd41d8cd98f00b204e9800998ecf8427e';
 const base64Hash = '1B2M2Y8AsgTpgAmY7PhCfg==';
 const base64Buffer = Buffer.from([
-    0xd4, 0x1d, 0x8c, 0xd9, 0x8f, 0x00, 0xb2, 0x04,
-    0xe9, 0x80, 0x09, 0x98, 0xec, 0xf8, 0x42, 0x7e,
+    0xd4, 0x1d, 0x8c, 0xd9, 0x8f, 0x00, 0xb2, 0x04, 0xe9, 0x80, 0x09, 0x98, 0xec, 0xf8, 0x42, 0x7e,
 ]);
 
 describe('s3middleware object utilities', () => {

@@ -65,8 +65,7 @@ describe('routesUtils.normalizeRequest', () => {
         assert.strictEqual(result.parsedHost, '[::1]');
     });
 
-    it('should parse bucket name from host ' +
-        'and object name from path', () => {
+    it('should parse bucket name from host ' + 'and object name from path', () => {
         const request = {
             url: `/${objName}`,
             headers: { host: `${bucketName}.s3.amazonaws.com` },

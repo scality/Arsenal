@@ -8,9 +8,9 @@ Common utilities for the S3 project components
 Within this repository, you will be able to find the shared libraries for the
 multiple components making up the whole Project.
 
-* [Guidelines](#guidelines)
-* [Shuffle](#shuffle) to shuffle an array.
-* [Errors](#errors) load an object of errors instances.
+- [Guidelines](#guidelines)
+- [Shuffle](#shuffle) to shuffle an array.
+- [Errors](#errors) load an object of errors instances.
     - [errors/arsenalErrors.json](errors/arsenalErrors.json)
 
 ## Guidelines
@@ -21,14 +21,13 @@ Please read our coding and workflow guidelines at
 ### Contributing
 
 In order to contribute, please follow the
-[Contributing Guidelines](
-https://github.com/scality/Guidelines/blob/master/CONTRIBUTING.md).
+[Contributing Guidelines](https://github.com/scality/Guidelines/blob/master/CONTRIBUTING.md).
 
 ## Shuffle
 
 ### Usage
 
-``` js
+```js
 import { shuffle } from 'arsenal';
 
 let array = [1, 2, 3, 4, 5];
@@ -44,7 +43,7 @@ console.log(array);
 
 ### Usage
 
-``` js
+```js
 import { errors } from 'arsenal';
 
 console.log(errors.AccessDenied);
@@ -53,7 +52,6 @@ console.log(errors.AccessDenied);
 //    code: 403,
 //    description: 'Access Denied',
 //    AccessDenied: true }
-
 ```
 
 ## Build Status

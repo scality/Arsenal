@@ -10,8 +10,7 @@ const ref2 = require('./sample_authdata_refresh.json');
 const obj2 = JSON.parse(JSON.stringify(ref2));
 
 const searchEmail = 'sampleaccount1@sampling.com';
-const expectCanId =
-    '79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2be';
+const expectCanId = '79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2be';
 const searchAccountId = '123456789012';
 const expectedName = 'Bart';
 
@@ -27,8 +26,7 @@ describe('S3 in_memory auth backend', () => {
     it('should find an account', done => {
         const backend = new Backend(JSON.parse(JSON.stringify(ref)));
         backend.getCanonicalIds([searchEmail], log, (err, res) => {
-            assert.strictEqual(res.message.body[searchEmail],
-                expectCanId);
+            assert.strictEqual(res.message.body[searchEmail], expectCanId);
             done();
         });
     });
@@ -37,8 +35,7 @@ describe('S3 in_memory auth backend', () => {
         const backend = new Backend(JSON.parse(JSON.stringify(ref)));
         backend.getAccountIds([searchCanId], log, (err, res) => {
             assert.ifError(err);
-            assert.strictEqual(res.message.body[searchCanId],
-                expectAccountId);
+            assert.strictEqual(res.message.body[searchCanId], expectAccountId);
             done();
         });
     });
@@ -47,8 +44,7 @@ describe('S3 in_memory auth backend', () => {
         const backend = new Backend(JSON.parse(JSON.stringify(ref)));
         backend.getAccountIds([invalidAccountId], log, (err, res) => {
             assert.ifError(err);
-            assert.strictEqual(res.message.body[invalidAccountId],
-                'Not Found');
+            assert.strictEqual(res.message.body[invalidAccountId], 'Not Found');
             done();
         });
     });

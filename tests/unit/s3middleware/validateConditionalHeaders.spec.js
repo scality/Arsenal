@@ -57,19 +57,22 @@ const combinedCases = [
             'if-match': 'success',
         },
         result: 'success',
-    }, {
+    },
+    {
         headers: {
             'if-unmodified-since': 'success',
             'if-match': 'fail',
         },
         result: basicTestCases['if-match'].error,
-    }, {
+    },
+    {
         headers: {
             'if-unmodified-since': 'fail',
             'if-match': 'success',
         },
         result: 'success',
-    }, {
+    },
+    {
         headers: {
             'if-unmodified-since': 'fail',
             'if-match': 'fail',
@@ -119,8 +122,7 @@ function checkSuccess(h) {
     it('should succeed when value meets condition', () => {
         const headers = {};
         headers[h] = basicTestCases[h].success;
-        const result =
-            validateConditionalHeaders(headers, lastModified, contentMD5);
+        const result = validateConditionalHeaders(headers, lastModified, contentMD5);
         expect(result.error).toBeUndefined();
     });
 }
@@ -129,8 +131,7 @@ function checkFailure(h) {
     it('should fail when value does not meet condition', () => {
         const headers = {};
         headers[h] = basicTestCases[h].fail;
-        const result =
-            validateConditionalHeaders(headers, lastModified, contentMD5);
+        const result = validateConditionalHeaders(headers, lastModified, contentMD5);
         expect(result.present).toBeTruthy();
         expect(result.error.is[basicTestCases[h].error]).toBeTruthy();
     });
@@ -138,21 +139,23 @@ function checkFailure(h) {
 
 function checkCaseResult(testCase) {
     const h = Object.keys(testCase.headers);
-    it(`"${h[0]}" ${testCase.headers[h[0]]} and "${h[1]}" ` +
-    `${testCase.headers[h[1]]}: should return ${testCase.result}`, () => {
-        const testHeaders = {};
-        h.forEach(key => {
-            testHeaders[key] = basicTestCases[key][testCase.headers[key]];
-        });
-        const result = validateConditionalHeaders(testHeaders,
-            lastModified, contentMD5);
-        if (testCase.result === 'success') {
-            expect(result.error).toBeUndefined();
-        } else {
-            expect(result.present).toBeTruthy();
-            expect(result.error.is[testCase.result]).toBeTruthy();
-        }
-    });
+    it(
+        `"${h[0]}" ${testCase.headers[h[0]]} and "${h[1]}" ` +
+            `${testCase.headers[h[1]]}: should return ${testCase.result}`,
+        () => {
+            const testHeaders = {};
+            h.forEach(key => {
+                testHeaders[key] = basicTestCases[key][testCase.headers[key]];
+            });
+            const result = validateConditionalHeaders(testHeaders, lastModified, contentMD5);
+            if (testCase.result === 'success') {
+                expect(result.error).toBeUndefined();
+            } else {
+                expect(result.present).toBeTruthy();
+                expect(result.error.is[testCase.result]).toBeTruthy();
+            }
+        },
+    );
 }
 
 describe('validateConditionalHeaders util function ::', () => {
@@ -180,42 +183,34 @@ describe('checkDateModifiedHeaders util function: ', () => {
         error: null,
     };
 
-    it('should return NotModified error for \'if-modified-since\' header',
-        () => {
-            const header = {};
-            header['if-modified-since'] = afterLastModified;
-            const { modifiedSinceRes, unmodifiedSinceRes } =
-            checkDateModifiedHeaders(header, lastModified);
-            expect(modifiedSinceRes.error.is.NotModified).toBeTruthy();
-            expect(unmodifiedSinceRes).toStrictEqual(expectedAbsense);
-        });
+    it("should return NotModified error for 'if-modified-since' header", () => {
+        const header = {};
+        header['if-modified-since'] = afterLastModified;
+        const { modifiedSinceRes, unmodifiedSinceRes } = checkDateModifiedHeaders(header, lastModified);
+        expect(modifiedSinceRes.error.is.NotModified).toBeTruthy();
+        expect(unmodifiedSinceRes).toStrictEqual(expectedAbsense);
+    });
 
-    it('should return PreconditionFailed error for \'if-unmodified-since\' ' +
-    'header', () => {
+    it("should return PreconditionFailed error for 'if-unmodified-since' " + 'header', () => {
         const header = {};
         header['if-unmodified-since'] = beforeLastModified;
-        const { modifiedSinceRes, unmodifiedSinceRes } =
-            checkDateModifiedHeaders(header, lastModified);
+        const { modifiedSinceRes, unmodifiedSinceRes } = checkDateModifiedHeaders(header, lastModified);
         expect(unmodifiedSinceRes.error.is.PreconditionFailed).toBeTruthy();
         expect(modifiedSinceRes).toStrictEqual(expectedAbsense);
     });
 
-    it('should succeed if \'if-modified-since\' header value is earlier ' +
-    'than last modified', () => {
+    it("should succeed if 'if-modified-since' header value is earlier " + 'than last modified', () => {
         const header = {};
         header['if-modified-since'] = beforeLastModified;
-        const { modifiedSinceRes, unmodifiedSinceRes } =
-            checkDateModifiedHeaders(header, lastModified);
+        const { modifiedSinceRes, unmodifiedSinceRes } = checkDateModifiedHeaders(header, lastModified);
         expect(modifiedSinceRes).toStrictEqual(expectedSuccess);
         expect(unmodifiedSinceRes).toStrictEqual(expectedAbsense);
     });
 
-    it('should succeed if \'if-unmodified-since\' header value is later ' +
-    'than last modified', () => {
+    it("should succeed if 'if-unmodified-since' header value is later " + 'than last modified', () => {
         const header = {};
         header['if-unmodified-since'] = afterLastModified;
-        const { modifiedSinceRes, unmodifiedSinceRes } =
-            checkDateModifiedHeaders(header, lastModified);
+        const { modifiedSinceRes, unmodifiedSinceRes } = checkDateModifiedHeaders(header, lastModified);
         expect(unmodifiedSinceRes).toStrictEqual(expectedSuccess);
         expect(modifiedSinceRes).toStrictEqual(expectedAbsense);
     });
@@ -239,17 +234,15 @@ describe('_checkEtagMatch function :', () => {
         expect(result).toStrictEqual(expectedSuccess);
     });
 
-    it('should return success for multiple valid values with comma at index 0',
-        () => {
-            const result = _checkEtagMatch(`,${listOfValues}`, contentMD5);
-            expect(result).toStrictEqual(expectedSuccess);
-        });
+    it('should return success for multiple valid values with comma at index 0', () => {
+        const result = _checkEtagMatch(`,${listOfValues}`, contentMD5);
+        expect(result).toStrictEqual(expectedSuccess);
+    });
 
-    it('should return success as long as one value in list is valid',
-        () => {
-            const result = _checkEtagMatch(`${listOfValues},aaa`, contentMD5);
-            expect(result).toStrictEqual(expectedSuccess);
-        });
+    it('should return success as long as one value in list is valid', () => {
+        const result = _checkEtagMatch(`${listOfValues},aaa`, contentMD5);
+        expect(result).toStrictEqual(expectedSuccess);
+    });
 
     const failTests = [
         { desc: 'if only value does not match', value: 'aaa' },
@@ -270,11 +263,8 @@ describe('_checkEtagNoneMatch function :', () => {
             expect(result.error.is.NotModified).toBeTruthy();
         });
 
-        it(`should return NotModified if ${item.desc} is in a list of ` +
-          'otherwise non-matching values',
-        () => {
-            const result = _checkEtagNoneMatch(`aaa,${item.value},bbb`,
-                contentMD5);
+        it(`should return NotModified if ${item.desc} is in a list of ` + 'otherwise non-matching values', () => {
+            const result = _checkEtagNoneMatch(`aaa,${item.value},bbb`, contentMD5);
             expect(result.error.is.NotModified).toBeTruthy();
         });
     });
@@ -284,8 +274,7 @@ describe('_checkEtagNoneMatch function :', () => {
         expect(result).toStrictEqual(expectedSuccess);
     });
 
-    it('should return success for multiple non-matching values ' +
-    'with comma at index 0', () => {
+    it('should return success for multiple non-matching values ' + 'with comma at index 0', () => {
         const result = _checkEtagNoneMatch(',aaa,bbb,ccc', contentMD5);
         expect(result).toStrictEqual(expectedSuccess);
     });
@@ -297,23 +286,20 @@ describe('_checkModifiedSince function :', () => {
         expect(result.error.is.InvalidArgument).toBeTruthy();
     });
 
-    it('should return success if header value is earlier to than last modified',
-        () => {
-            const result = _checkModifiedSince(beforeLastModified, lastModified);
-            expect(result).toStrictEqual(expectedSuccess);
-        });
+    it('should return success if header value is earlier to than last modified', () => {
+        const result = _checkModifiedSince(beforeLastModified, lastModified);
+        expect(result).toStrictEqual(expectedSuccess);
+    });
 
-    it('should return NotModified if header value is later than last modified',
-        () => {
-            const result = _checkModifiedSince(afterLastModified, lastModified);
-            expect(result.error.is.NotModified).toBeTruthy();
-        });
+    it('should return NotModified if header value is later than last modified', () => {
+        const result = _checkModifiedSince(afterLastModified, lastModified);
+        expect(result.error.is.NotModified).toBeTruthy();
+    });
 
-    it('should return NotModified if header value is equal to last modified',
-        () => {
-            const result = _checkModifiedSince(lastModified, lastModified);
-            expect(result.error.is.NotModified).toBeTruthy();
-        });
+    it('should return NotModified if header value is equal to last modified', () => {
+        const result = _checkModifiedSince(lastModified, lastModified);
+        expect(result.error.is.NotModified).toBeTruthy();
+    });
 });
 
 describe('_checkUnmodifiedSince function :', () => {
@@ -322,21 +308,18 @@ describe('_checkUnmodifiedSince function :', () => {
         expect(result.error.is.InvalidArgument).toBeTruthy();
     });
 
-    it('should return PreconditionFailed if header value is earlier than ' +
-    'last modified', () => {
+    it('should return PreconditionFailed if header value is earlier than ' + 'last modified', () => {
         const result = _checkUnmodifiedSince(beforeLastModified, lastModified);
         expect(result.error.is.PreconditionFailed).toBeTruthy();
     });
 
-    it('should return success if header value is later to than last modified',
-        () => {
-            const result = _checkUnmodifiedSince(afterLastModified, lastModified);
-            expect(result).toStrictEqual(expectedSuccess);
-        });
+    it('should return success if header value is later to than last modified', () => {
+        const result = _checkUnmodifiedSince(afterLastModified, lastModified);
+        expect(result).toStrictEqual(expectedSuccess);
+    });
 
-    it('should return success if header value is equal to last modified',
-        () => {
-            const result = _checkUnmodifiedSince(lastModified, lastModified);
-            expect(result).toStrictEqual(expectedSuccess);
-        });
+    it('should return success if header value is equal to last modified', () => {
+        const result = _checkUnmodifiedSince(lastModified, lastModified);
+        expect(result).toStrictEqual(expectedSuccess);
+    });
 });

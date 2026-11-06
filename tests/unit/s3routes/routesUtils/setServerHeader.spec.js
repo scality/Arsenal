@@ -1,10 +1,7 @@
 const sinon = require('sinon');
 const assert = require('assert');
 const werelogs = require('werelogs');
-const {
-    setServerHeader,
-    okHeaderResponse,
-} = require('../../../../lib/s3routes/routesUtils');
+const { setServerHeader, okHeaderResponse } = require('../../../../lib/s3routes/routesUtils');
 
 const logger = new werelogs.Logger('test:setServerHeader', 'debug', 'debug');
 const log = logger.newRequestLogger();

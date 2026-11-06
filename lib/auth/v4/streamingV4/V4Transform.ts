@@ -56,14 +56,8 @@ export default class V4Transform extends Transform {
      * @param log - logger object
      * @param cb - callback to api
      */
-    constructor(
-        streamingV4Params: TransformParams,
-        vault: Vault,
-        log: RequestLogger,
-        cb: Callback,
-    ) {
-        const { accessKey, signatureFromRequest, region, scopeDate, timestamp,
-            credentialScope } = streamingV4Params;
+    constructor(streamingV4Params: TransformParams, vault: Vault, log: RequestLogger, cb: Callback) {
+        const { accessKey, signatureFromRequest, region, scopeDate, timestamp, credentialScope } = streamingV4Params;
         super({});
         this.log = log;
         this.cb = cb;
@@ -113,28 +107,24 @@ export default class V4Transform extends Transform {
             this.currentMetadata.push(remainingPlusStoredMetadata);
             return { completeMetadata: false };
         }
-        let fullMetadata = remainingPlusStoredMetadata.slice(0,
-            lineBreakIndex);
+        let fullMetadata = remainingPlusStoredMetadata.slice(0, lineBreakIndex);
 
         // handle extra line break on end of data chunk
         if (fullMetadata.length === 0) {
-            const chunkWithoutLeadingLineBreak = remainingPlusStoredMetadata
-                .slice(2);
+            const chunkWithoutLeadingLineBreak = remainingPlusStoredMetadata.slice(2);
             // find second line break
             lineBreakIndex = chunkWithoutLeadingLineBreak.indexOf('\r\n');
             if (lineBreakIndex < 0) {
                 this.currentMetadata.push(chunkWithoutLeadingLineBreak);
                 return { completeMetadata: false };
             }
-            fullMetadata = chunkWithoutLeadingLineBreak.slice(0,
-                lineBreakIndex);
+            fullMetadata = chunkWithoutLeadingLineBreak.slice(0, lineBreakIndex);
         }
 
         const splitMeta = fullMetadata.toString().split(';');
         this.log.trace('parsed full metadata for chunk', { splitMeta });
         if (splitMeta.length !== 2) {
-            this.log.trace('chunk body did not contain correct ' +
-            'metadata format');
+            this.log.trace('chunk body did not contain correct ' + 'metadata format');
             return { err: errors.InvalidArgument };
         }
         // chunk-size is sent in hex
@@ -165,8 +155,7 @@ export default class V4Transform extends Transform {
             completeMetadata: true,
             // start slice at lineBreak plus 2 to remove line break at end of
             // metadata piece since length of '\r\n' is 2
-            unparsedChunk: remainingPlusStoredMetadata
-                .slice(lineBreakIndex + 2),
+            unparsedChunk: remainingPlusStoredMetadata.slice(lineBreakIndex + 2),
         };
     }
 
@@ -179,10 +168,13 @@ export default class V4Transform extends Transform {
      */
     _authenticate(dataToSend: Buffer | null, done: Callback) {
         // use prior sig to construct new string to sign
-        const stringToSign = constructChunkStringToSign(this.timestamp,
-            this.credentialScope, this.lastSignature, dataToSend ?? undefined);
-        this.log.trace('constructed chunk string to sign',
-            { stringToSign });
+        const stringToSign = constructChunkStringToSign(
+            this.timestamp,
+            this.credentialScope,
+            this.lastSignature,
+            dataToSend ?? undefined,
+        );
+        this.log.trace('constructed chunk string to sign', { stringToSign });
         // once used prior sig to construct string to sign, reassign
         // lastSignature to current signature
         this.lastSignature = this.currentSignature!;
@@ -201,14 +193,15 @@ export default class V4Transform extends Transform {
         };
         return this.vault.authenticateV4Request(vaultParams, null, {}, err => {
             if (err) {
-                this.log.trace('err from vault on streaming v4 auth',
-                    { error: err, paramsSentToVault: vaultParams.data });
+                this.log.trace('err from vault on streaming v4 auth', {
+                    error: err,
+                    paramsSentToVault: vaultParams.data,
+                });
                 return done(err);
             }
             return done();
         });
     }
-
 
     /**
      * This function will parse the chunk into metadata and data,
@@ -229,9 +222,7 @@ export default class V4Transform extends Transform {
 
         if (this.lastPieceDone) {
             const slice = chunk.slice(0, 10);
-            this.log.trace('received chunk after end.' +
-            'See first 10 bytes of chunk',
-            { chunk: slice.toString() });
+            this.log.trace('received chunk after end.' + 'See first 10 bytes of chunk', { chunk: slice.toString() });
             return callback();
         }
         let unparsedChunk = chunk;
@@ -242,11 +233,9 @@ export default class V4Transform extends Transform {
             // async function
             done => {
                 if (!this.haveMetadata) {
-                    this.log.trace('do not have metadata so calling ' +
-                    '_parseMetadata');
+                    this.log.trace('do not have metadata so calling ' + '_parseMetadata');
                     // need to parse our metadata
-                    const parsedMetadataResults =
-                        this._parseMetadata(unparsedChunk);
+                    const parsedMetadataResults = this._parseMetadata(unparsedChunk);
                     if (parsedMetadataResults.err) {
                         return done(parsedMetadataResults.err);
                     }
@@ -282,8 +271,7 @@ export default class V4Transform extends Transform {
                 }
                 // parse just the next data piece without \r\n at the end
                 // (therefore, minus 2)
-                const nextDataPiece =
-                    unparsedChunk.slice(0, this.seekingDataSize - 2);
+                const nextDataPiece = unparsedChunk.slice(0, this.seekingDataSize - 2);
                 // add parsed data piece to other currentData pieces
                 // so that this.currentData is the full data piece
                 nextDataPiece.copy(this.currentData, this.dataCursor);
@@ -291,8 +279,7 @@ export default class V4Transform extends Transform {
                     if (err) {
                         return done(err);
                     }
-                    unparsedChunk =
-                        unparsedChunk.slice(this.seekingDataSize);
+                    unparsedChunk = unparsedChunk.slice(this.seekingDataSize);
                     this.push(this.currentData);
                     this.haveMetadata = false;
                     this.seekingDataSize = -1;

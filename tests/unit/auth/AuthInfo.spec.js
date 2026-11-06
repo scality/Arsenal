@@ -1,4 +1,4 @@
-'use strict';  
+'use strict';
 
 const assert = require('assert');
 
@@ -53,8 +53,7 @@ describe('AuthInfo class constructor', () => {
     });
 
     it('should have a working getAccountDisplayName() method', () => {
-        assert.strictEqual(authInfo.getAccountDisplayName(),
-            accountDisplayName);
+        assert.strictEqual(authInfo.getAccountDisplayName(), accountDisplayName);
     });
 
     it('should have a working getIAMdisplayName() method', () => {
@@ -76,16 +75,16 @@ describe('AuthInfo class constructor', () => {
     it('should have a working isRequesterAServiceAccount() method', () => {
         assert.strictEqual(authInfo.isRequesterAServiceAccount(), false);
         const serviceAccount = new AuthInfo({
-            canonicalID: `${constants.zenkoServiceAccount}/clueso` });
+            canonicalID: `${constants.zenkoServiceAccount}/clueso`,
+        });
         assert.strictEqual(serviceAccount.isRequesterAServiceAccount(), true);
     });
 
     it('should have a working isRequesterThisServiceAccount() method', () => {
         const serviceAccount = new AuthInfo({
-            canonicalID: `${constants.zenkoServiceAccount}/clueso` });
-        assert.strictEqual(
-            serviceAccount.isRequesterThisServiceAccount('backbeat'), false);
-        assert.strictEqual(
-            serviceAccount.isRequesterThisServiceAccount('clueso'), true);
+            canonicalID: `${constants.zenkoServiceAccount}/clueso`,
+        });
+        assert.strictEqual(serviceAccount.isRequesterThisServiceAccount('backbeat'), false);
+        assert.strictEqual(serviceAccount.isRequesterThisServiceAccount('clueso'), true);
     });
 });

@@ -28,4 +28,3 @@ describe('prepareStream', () => {
         expect(result).toBeInstanceOf(Transform);
     });
 });
-

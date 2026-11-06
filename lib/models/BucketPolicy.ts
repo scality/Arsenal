@@ -59,7 +59,7 @@ export type BucketPolicyMetadata = {
         Action: string | string[];
         Resource: string | string[];
         Condition?: Record<string, Record<string, string | string[] | number>>;
-    }[],
+    }[];
 };
 
 export default class BucketPolicy {
@@ -90,8 +90,7 @@ export default class BucketPolicy {
      */
     private getPolicy(): { error: ArsenalError } | any {
         if (!this.json || this.json === '') {
-            return { error: errorInstances.MalformedPolicy.customizeDescription(
-                'request json is empty or undefined') };
+            return { error: errorInstances.MalformedPolicy.customizeDescription('request json is empty or undefined') };
         }
         const validSchema = validateResourcePolicy(this.json);
         if (validSchema.error) {
@@ -120,24 +119,22 @@ export default class BucketPolicy {
      */
     private validateActionResource(): { error?: ArsenalError } {
         const invalid = this.policy?.Statement.every((s: any) => {
-            const actions: string[] = typeof s.Action === 'string' ?
-                [s.Action] : s.Action;
-            const resources: string[] = typeof s.Resource === 'string' ?
-                [s.Resource] : s.Resource;
-            const objectAction = actions.some(a =>
-                a.includes('Object') || objectActions.includes(a));
+            const actions: string[] = typeof s.Action === 'string' ? [s.Action] : s.Action;
+            const resources: string[] = typeof s.Resource === 'string' ? [s.Resource] : s.Resource;
+            const objectAction = actions.some(a => a.includes('Object') || objectActions.includes(a));
             // wildcardObjectAction checks for actions such as 's3:*' or
             // 's3:Put*' but will return false for actions such as
             // 's3:PutBucket*'
-            const wildcardObjectAction = actions.some(
-                a => a.includes('*') && !a.includes('Bucket'));
+            const wildcardObjectAction = actions.some(a => a.includes('*') && !a.includes('Bucket'));
             const objectResource = resources.some(r => r.includes('/'));
-            return ((objectAction && !objectResource) ||
-                (objectResource && !objectAction && !wildcardObjectAction));
+            return (objectAction && !objectResource) || (objectResource && !objectAction && !wildcardObjectAction);
         });
         if (invalid) {
-            return { error: errorInstances.MalformedPolicy.customizeDescription(
-                'Action does not apply to any resource(s) in statement') };
+            return {
+                error: errorInstances.MalformedPolicy.customizeDescription(
+                    'Action does not apply to any resource(s) in statement',
+                ),
+            };
         }
         return {};
     }

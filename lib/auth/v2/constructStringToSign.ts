@@ -25,13 +25,11 @@ export default function constructStringToSign(
     const headers = request.headers;
     const query = data;
 
-    const contentMD5 = headers['content-md5'] ?
-        headers['content-md5'] : query['Content-MD5'];
-    stringToSign += (contentMD5 ? `${contentMD5}\n` : '\n');
+    const contentMD5 = headers['content-md5'] ? headers['content-md5'] : query['Content-MD5'];
+    stringToSign += contentMD5 ? `${contentMD5}\n` : '\n';
 
-    const contentType = headers['content-type'] ?
-        headers['content-type'] : query['Content-Type'];
-    stringToSign += (contentType ? `${contentType}\n` : '\n');
+    const contentType = headers['content-type'] ? headers['content-type'] : query['Content-Type'];
+    stringToSign += contentType ? `${contentType}\n` : '\n';
 
     /*
     AWS docs are conflicting on whether to include x-amz-date header here
@@ -41,8 +39,9 @@ export default function constructStringToSign(
     */
     const date = query.Expires ? query.Expires : headers.date;
     const combinedQueryHeaders = Object.assign({}, headers, query);
-    stringToSign += (date ? `${date}\n` : '\n')
-        + getCanonicalizedAmzHeaders(combinedQueryHeaders, clientType)
-        + getCanonicalizedResource(request, clientType);
+    stringToSign +=
+        (date ? `${date}\n` : '\n') +
+        getCanonicalizedAmzHeaders(combinedQueryHeaders, clientType) +
+        getCanonicalizedResource(request, clientType);
     return utf8.encode(stringToSign);
 }

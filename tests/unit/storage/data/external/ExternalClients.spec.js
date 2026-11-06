@@ -439,7 +439,7 @@ describe('external backend clients', () => {
                 const metaHeaders = {
                     'x-amz-meta-custom-key': 'customValue',
                     'x-amz-meta-second-key': 'secondValue',
-                    ignored: 'shouldBeDropped',
+                    'ignored': 'shouldBeDropped',
                 };
                 const args = [
                     key,

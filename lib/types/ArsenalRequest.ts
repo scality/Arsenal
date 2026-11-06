@@ -23,7 +23,7 @@ export interface ArsenalRequestHeaders {
 /**
  * Extended HTTP request interface for Arsenal with all custom properties
  * that are added throughout the request processing pipeline.
- * 
+ *
  * This interface documents all the custom properties that Arsenal adds to
  * the standard Node.js http.IncomingMessage object during request processing.
  * This is for INCOMING requests to the server.
@@ -56,18 +56,18 @@ export interface ArsenalRequest extends Omit<http.IncomingMessage, 'headers'> {
     /** Parsed path from URL */
     path: string;
 
-    /** 
+    /**
      * Content length parsed from headers.
      */
     parsedContentLength: number;
 
-    /** 
+    /**
      * POST indicator - set to empty string for POST requests
      * Added in routePOST.ts
      */
     post?: string;
 
-    /** 
+    /**
      * MD5 hash of request content, parsed and validated
      * Added in routePUT.ts for PUT requests with content-md5 header
      */
@@ -112,7 +112,7 @@ export interface ArsenalRequest extends Omit<http.IncomingMessage, 'headers'> {
     /** Sub-resource for nested operations */
     subResource?: string;
 
-    /** 
+    /**
      * Virtual hosted bucket name for GCP requests
      * Added in GCP backend processing
      */

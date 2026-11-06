@@ -32,9 +32,7 @@ describe('routePUT', () => {
 
         routePUT(request, response, api, log, statsClient);
 
-        expect(api.callApiMethod).toHaveBeenCalledWith(
-            'bucketPut', request, response, log, expect.any(Function),
-        );
+        expect(api.callApiMethod).toHaveBeenCalledWith('bucketPut', request, response, log, expect.any(Function));
     });
 
     it('should call objectPut when objectKey is present and valid content-md5', () => {
@@ -48,9 +46,7 @@ describe('routePUT', () => {
 
         routePUT(request, response, api, log, statsClient);
 
-        expect(api.callApiMethod).toHaveBeenCalledWith(
-            'objectPut', request, response, log, expect.any(Function),
-        );
+        expect(api.callApiMethod).toHaveBeenCalledWith('objectPut', request, response, log, expect.any(Function));
     });
 
     it('should return InvalidDigest error for an invalid content-md5', () => {
@@ -62,20 +58,28 @@ describe('routePUT', () => {
         routePUT(request, response, api, log, statsClient);
 
         expect(routesUtils.responseNoBody).toHaveBeenCalledWith(
-            new ArsenalError('InvalidDigest'), null, response, 200, log,
+            new ArsenalError('InvalidDigest'),
+            null,
+            response,
+            200,
+            log,
         );
     });
 
     it('should return MissingContentLength error if content-length is missing', () => {
         request.objectKey = 'test-object';
-        request.headers = { };
+        request.headers = {};
         request.query = {};
         api.callApiMethod = jest.fn();
 
         routePUT(request, response, api, log, statsClient);
 
         expect(routesUtils.responseNoBody).toHaveBeenCalledWith(
-            new ArsenalError('MissingContentLength'), null, response, 411, log,
+            new ArsenalError('MissingContentLength'),
+            null,
+            response,
+            411,
+            log,
         );
     });
 
@@ -87,7 +91,11 @@ describe('routePUT', () => {
         routePUT(request, response, api, log, statsClient);
 
         expect(api.callApiMethod).toHaveBeenCalledWith(
-            'bucketPutVersioning', request, response, log, expect.any(Function),
+            'bucketPutVersioning',
+            request,
+            response,
+            log,
+            expect.any(Function),
         );
     });
 
@@ -99,9 +107,7 @@ describe('routePUT', () => {
 
         routePUT(request, response, api, log, statsClient);
 
-        expect(api.callApiMethod).toHaveBeenCalledWith(
-            'objectCopy', request, response, log, expect.any(Function),
-        );
+        expect(api.callApiMethod).toHaveBeenCalledWith('objectCopy', request, response, log, expect.any(Function));
     });
 
     it('should call objectPutACL when query.acl is present', () => {
@@ -111,9 +117,7 @@ describe('routePUT', () => {
 
         routePUT(request, response, api, log, statsClient);
 
-        expect(api.callApiMethod).toHaveBeenCalledWith(
-            'objectPutACL', request, response, log, expect.any(Function),
-        );
+        expect(api.callApiMethod).toHaveBeenCalledWith('objectPutACL', request, response, log, expect.any(Function));
     });
 
     it('should call bucketUpdateQuota when query.quota is set', () => {
@@ -124,7 +128,11 @@ describe('routePUT', () => {
         routePUT(request, response, api, log, statsClient);
 
         expect(api.callApiMethod).toHaveBeenCalledWith(
-            'bucketUpdateQuota', request, response, log, expect.any(Function),
+            'bucketUpdateQuota',
+            request,
+            response,
+            log,
+            expect.any(Function),
         );
     });
 
@@ -136,7 +144,11 @@ describe('routePUT', () => {
         routePUT(request, response, api, log, statsClient);
 
         expect(api.callApiMethod).toHaveBeenCalledWith(
-            'bucketPutWebsite', request, response, log, expect.any(Function),
+            'bucketPutWebsite',
+            request,
+            response,
+            log,
+            expect.any(Function),
         );
     });
 
@@ -148,7 +160,11 @@ describe('routePUT', () => {
         routePUT(request, response, api, log, statsClient);
 
         expect(api.callApiMethod).toHaveBeenCalledWith(
-            'bucketPutTagging', request, response, log, expect.any(Function),
+            'bucketPutTagging',
+            request,
+            response,
+            log,
+            expect.any(Function),
         );
     });
 
@@ -159,9 +175,7 @@ describe('routePUT', () => {
 
         routePUT(request, response, api, log, statsClient);
 
-        expect(api.callApiMethod).toHaveBeenCalledWith(
-            'bucketPutCors', request, response, log, expect.any(Function),
-        );
+        expect(api.callApiMethod).toHaveBeenCalledWith('bucketPutCors', request, response, log, expect.any(Function));
     });
 
     it('should call bucketPutReplication when query.replication is set', () => {
@@ -172,7 +186,11 @@ describe('routePUT', () => {
         routePUT(request, response, api, log, statsClient);
 
         expect(api.callApiMethod).toHaveBeenCalledWith(
-            'bucketPutReplication', request, response, log, expect.any(Function),
+            'bucketPutReplication',
+            request,
+            response,
+            log,
+            expect.any(Function),
         );
     });
 
@@ -184,7 +202,11 @@ describe('routePUT', () => {
         routePUT(request, response, api, log, statsClient);
 
         expect(api.callApiMethod).toHaveBeenCalledWith(
-            'bucketPutLifecycle', request, response, log, expect.any(Function),
+            'bucketPutLifecycle',
+            request,
+            response,
+            log,
+            expect.any(Function),
         );
     });
 
@@ -195,9 +217,7 @@ describe('routePUT', () => {
 
         routePUT(request, response, api, log, statsClient);
 
-        expect(api.callApiMethod).toHaveBeenCalledWith(
-            'bucketPutPolicy', request, response, log, expect.any(Function),
-        );
+        expect(api.callApiMethod).toHaveBeenCalledWith('bucketPutPolicy', request, response, log, expect.any(Function));
     });
 
     it('should call bucketPutObjectLock when query.object-lock is set', () => {
@@ -208,7 +228,11 @@ describe('routePUT', () => {
         routePUT(request, response, api, log, statsClient);
 
         expect(api.callApiMethod).toHaveBeenCalledWith(
-            'bucketPutObjectLock', request, response, log, expect.any(Function),
+            'bucketPutObjectLock',
+            request,
+            response,
+            log,
+            expect.any(Function),
         );
     });
 
@@ -220,7 +244,11 @@ describe('routePUT', () => {
         routePUT(request, response, api, log, statsClient);
 
         expect(api.callApiMethod).toHaveBeenCalledWith(
-            'bucketPutNotification', request, response, log, expect.any(Function),
+            'bucketPutNotification',
+            request,
+            response,
+            log,
+            expect.any(Function),
         );
     });
 
@@ -232,7 +260,11 @@ describe('routePUT', () => {
         routePUT(request, response, api, log, statsClient);
 
         expect(api.callApiMethod).toHaveBeenCalledWith(
-            'bucketPutEncryption', request, response, log, expect.any(Function),
+            'bucketPutEncryption',
+            request,
+            response,
+            log,
+            expect.any(Function),
         );
     });
 
@@ -244,7 +276,11 @@ describe('routePUT', () => {
         routePUT(request, response, api, log, statsClient);
 
         expect(api.callApiMethod).toHaveBeenCalledWith(
-            'bucketPutLogging', request, response, log, expect.any(Function),
+            'bucketPutLogging',
+            request,
+            response,
+            log,
+            expect.any(Function),
         );
     });
 
@@ -256,7 +292,11 @@ describe('routePUT', () => {
         routePUT(request, response, api, log, statsClient);
 
         expect(api.callApiMethod).toHaveBeenCalledWith(
-            'bucketPutRateLimit', request, response, log, expect.any(Function),
+            'bucketPutRateLimit',
+            request,
+            response,
+            log,
+            expect.any(Function),
         );
     });
 
@@ -268,7 +308,11 @@ describe('routePUT', () => {
         routePUT(request, response, api, log, statsClient);
 
         expect(routesUtils.responseNoBody).toHaveBeenCalledWith(
-            new ArsenalError('BadRequest'), null, response, undefined, log,
+            new ArsenalError('BadRequest'),
+            null,
+            response,
+            undefined,
+            log,
         );
     });
 });

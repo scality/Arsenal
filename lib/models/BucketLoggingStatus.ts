@@ -74,9 +74,7 @@ export default class BucketLoggingStatus {
 `;
     }
 
-    static fromXML(
-        data: string,
-    ): { error?: { arsenalError: ArsenalError, details: any }; res?: BucketLoggingStatus; } {
+    static fromXML(data: string): { error?: { arsenalError: ArsenalError; details: any }; res?: BucketLoggingStatus } {
         let parsed, parseError;
 
         try {
@@ -153,10 +151,11 @@ export default class BucketLoggingStatus {
             } else if (loggingEnabledData.TargetPrefix[0].length > TARGET_PREFIX_MAX_LENGTH) {
                 return {
                     error: {
-                        arsenalError: errorInstances.InvalidArgument
-                            .customizeDescription(`Field exceeds ${TARGET_PREFIX_MAX_LENGTH} bytes`)
-                            .addMetadataEntry('invalidArguments',
-                                [{ ArgumentName: 'TargetPrefix', ArgumentValue: loggingEnabledData.TargetPrefix[0] }]),
+                        arsenalError: errorInstances.InvalidArgument.customizeDescription(
+                            `Field exceeds ${TARGET_PREFIX_MAX_LENGTH} bytes`,
+                        ).addMetadataEntry('invalidArguments', [
+                            { ArgumentName: 'TargetPrefix', ArgumentValue: loggingEnabledData.TargetPrefix[0] },
+                        ]),
                         details: `TargetPrefix field length > ${TARGET_PREFIX_MAX_LENGTH}`,
                     },
                 };
@@ -191,4 +190,4 @@ export default class BucketLoggingStatus {
             res: new BucketLoggingStatus(loggingEnabled),
         };
     }
-};
+}
