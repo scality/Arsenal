@@ -64,7 +64,7 @@ const requiredTags = [
     {
         tag: 'Rule',
         error: 'MissingRequiredParameter',
-        errMessage: "missing required key 'Rules' in " + 'LifecycleConfiguration',
+        errMessage: "missing required key 'Rules' in LifecycleConfiguration",
     },
     { tag: 'Status', error: 'MissingRequiredParameter', errMessage: 'Rule xml does not include Status' },
     { tag: 'Filter', error: 'MalformedXML', errMessage: 'Rule xml does not include valid Filter or Prefix' },
@@ -76,13 +76,13 @@ const invalidActions = [
         tag: 'AbortIncompleteMultipartUpload',
         label: 'no-time',
         error: 'MalformedXML',
-        errMessage: 'AbortIncompleteMultipartUpload action does not ' + 'include DaysAfterInitiation',
+        errMessage: 'AbortIncompleteMultipartUpload action does not include DaysAfterInitiation',
     },
     {
         tag: 'AbortIncompleteMultipartUpload',
         label: 'no-tags',
         error: 'InvalidRequest',
-        errMessage: 'Tag-based filter cannot be ' + 'used with AbortIncompleteMultipartUpload action',
+        errMessage: 'Tag-based filter cannot be used with AbortIncompleteMultipartUpload action',
     },
     {
         tag: 'AbortIncompleteMultipartUpload',
@@ -94,7 +94,7 @@ const invalidActions = [
         tag: 'AbortIncompleteMultipartUpload',
         label: 'exceed-max-days',
         error: 'MalformedXML',
-        errMessage: "'DaysAfterInitiation' in AbortIncompleteMultipartUpload " + 'action must not exceed 2147483647',
+        errMessage: "'DaysAfterInitiation' in AbortIncompleteMultipartUpload action must not exceed 2147483647",
     },
     {
         tag: 'Expiration',
@@ -126,7 +126,7 @@ const invalidActions = [
         label: 'no-tags',
         inTag: 'ExpiredObjectDeleteMarker',
         error: 'InvalidRequest',
-        errMessage: 'Tag-based filter cannot be used with ' + 'ExpiredObjectDeleteMarker action',
+        errMessage: 'Tag-based filter cannot be used with ExpiredObjectDeleteMarker action',
     },
     {
         tag: 'Expiration',
@@ -138,7 +138,7 @@ const invalidActions = [
         tag: 'NoncurrentVersionExpiration',
         label: 'no-time',
         error: 'MalformedXML',
-        errMessage: 'NoncurrentVersionExpiration action does not include ' + 'NoncurrentDays',
+        errMessage: 'NoncurrentVersionExpiration action does not include NoncurrentDays',
     },
     {
         tag: 'NoncurrentVersionExpiration',
@@ -150,7 +150,7 @@ const invalidActions = [
         tag: 'NoncurrentVersionExpiration',
         label: 'exceed-max-days',
         error: 'MalformedXML',
-        errMessage: "'NoncurrentDays' in NoncurrentVersionExpiration " + 'action must not exceed 2147483647',
+        errMessage: "'NoncurrentDays' in NoncurrentVersionExpiration action must not exceed 2147483647",
     },
 ];
 
@@ -165,7 +165,7 @@ const invalidFilters = [
         tag: 'Filter',
         label: 'and-prefix-tag',
         error: 'MalformedXML',
-        errMessage: 'Filter should only include one of And, Prefix, or ' + 'Tag key',
+        errMessage: 'Filter should only include one of And, Prefix, or Tag key',
     },
     {
         tag: 'And',
@@ -222,7 +222,7 @@ function generateAction(errorTag, tagObj) {
             middleTags = tagObj.inTag
                 ? `<${tagObj.inTag}>true</${tagObj.inTag}>`
                 : `<${days[tagObj.tag]}>1</${days[tagObj.tag]}>`;
-            xmlObj.filter = '<Filter><Tag><Key>key</Key>' + '<Value></Value></Tag></Filter>';
+            xmlObj.filter = '<Filter><Tag><Key>key</Key><Value></Value></Tag></Filter>';
         }
         if (tagObj.label === 'invalid-days') {
             middleTags = `<${days[tagObj.tag]}>-1</${days[tagObj.tag]}>`;
@@ -237,7 +237,7 @@ function generateAction(errorTag, tagObj) {
             middleTags = '<Date>03-08-2018</Date>';
         }
         if (tagObj.label === 'invalid-eodm') {
-            middleTags = '<ExpiredObjectDeleteMarker>foo' + '</ExpiredObjectDeleteMarker>';
+            middleTags = '<ExpiredObjectDeleteMarker>foo</ExpiredObjectDeleteMarker>';
         }
         xmlObj.actions = `<${tagObj.tag}>${middleTags}</${tagObj.tag}>`;
     } else {
@@ -844,7 +844,7 @@ describe('LifecycleConfiguration', () => {
                 },
             ];
             const ruleFilter = lifecycleConfiguration._getRuleFilterDesc(rule);
-            assert.strictEqual(ruleFilter, 'filter ' + "'(prefix= and tag: key=a, value=b and tag: key=c, value=d)'");
+            assert.strictEqual(ruleFilter, "filter '(prefix= and tag: key=a, value=b and tag: key=c, value=d)'");
         });
 
         it('should get Filter.And without Prefix', () => {
@@ -968,7 +968,7 @@ describe('LifecycleConfiguration', () => {
                 ancestor: 'b',
                 rule: getParsedXML().LifecycleConfiguration.Rule[0],
             });
-            const msg = "'StorageClass' must be different for 'b' actions " + "in same 'Rule' with prefix ''";
+            const msg = "'StorageClass' must be different for 'b' actions in same 'Rule' with prefix ''";
             expect(error.is.InvalidRequest).toBeTruthy();
             expect(error.description).toEqual(msg);
         });
@@ -999,7 +999,7 @@ describe('LifecycleConfiguration', () => {
                 currentTimeType: 'Days',
                 rule: getParsedXML().LifecycleConfiguration.Rule[0],
             });
-            const msg = "Found mixed 'Date' and 'Days' based Transition " + "actions in lifecycle rule for prefix ''";
+            const msg = "Found mixed 'Date' and 'Days' based Transition actions in lifecycle rule for prefix ''";
             expect(error.is.InvalidRequest).toBeTruthy();
             expect(error.description).toEqual(msg);
         });
@@ -1115,7 +1115,7 @@ describe('LifecycleConfiguration', () => {
             const rule = getRule();
             rule.NoncurrentVersionTransition[0].NoncurrentDays[0] = '-1';
             const result = lifecycleConfiguration._parseNoncurrentVersionTransition(rule);
-            const msg = "'NoncurrentDays' in NoncurrentVersionTransition " + 'action must be nonnegative';
+            const msg = "'NoncurrentDays' in NoncurrentVersionTransition action must be nonnegative";
             expect(result.error.is.InvalidArgument).toBeTruthy();
             expect(result.error.description).toEqual(msg);
         });
@@ -1154,7 +1154,7 @@ describe('LifecycleConfiguration', () => {
             });
         });
 
-        it('should return parsed result object with error when days is ' + 'negative', () => {
+        it('should return parsed result object with error when days is negative', () => {
             const rule = getRule();
             rule.Transition[0].Days[0] = '-1';
             const result = lifecycleConfiguration._parseTransition(rule);
@@ -1163,7 +1163,7 @@ describe('LifecycleConfiguration', () => {
             expect(result.error.description).toEqual(msg);
         });
 
-        it('should return parsed result object with error when two ' + 'transition days are the same', () => {
+        it('should return parsed result object with error when two transition days are the same', () => {
             const rule = getRule();
             rule.Prefix = ['prefix'];
             rule.Transition[1].Days[0] = '0';
@@ -1179,7 +1179,7 @@ describe('LifecycleConfiguration', () => {
     });
 
     describe('::_parseTransition with Date', () => {
-        it('should return parsed result object with error when dates are not ' + 'more than one day apart', () => {
+        it('should return parsed result object with error when dates are not more than one day apart', () => {
             const rule = {
                 Prefix: ['prefix'],
                 Transition: [
@@ -1222,7 +1222,7 @@ describe('LifecycleConfiguration', () => {
             assert.strictEqual(error, null);
         });
 
-        it('should not return error when transitions have days greater than ' + '24 hours apart', () => {
+        it('should not return error when transitions have days greater than 24 hours apart', () => {
             const params = {
                 rule: {
                     Transition: [
@@ -1265,7 +1265,7 @@ describe('LifecycleConfiguration', () => {
             expect(error.is.InvalidArgument).toBeTruthy();
         });
 
-        it('should not return error when transitions have dates greater than ' + '24 hours apart', () => {
+        it('should not return error when transitions have dates greater than 24 hours apart', () => {
             const params = {
                 rule: {
                     Transition: [
@@ -1286,7 +1286,7 @@ describe('LifecycleConfiguration', () => {
             assert.strictEqual(error, null);
         });
 
-        it('should return error when transitions have dates less than 24 ' + 'hours apart', () => {
+        it('should return error when transitions have dates less than 24 hours apart', () => {
             const params = {
                 rule: {
                     Prefix: 'prefix',

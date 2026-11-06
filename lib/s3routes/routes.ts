@@ -257,7 +257,7 @@ export default function routes(
         log.debug('could not normalize request', { error: err.stack });
         return routesUtils.responseXMLBody(
             errorInstances.InvalidURI.customizeDescription(
-                'Could not parse the ' + 'specified URI. Check your restEndpoints configuration.',
+                'Could not parse the specified URI. Check your restEndpoints configuration.',
             ),
             null,
             res,

@@ -50,12 +50,12 @@ describe('policyEvaluator', () => {
                 check(requestContext, {}, samples['arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess'], 'Allow');
             });
 
-            it('should be neutral under multi-statement ' + 'policy if request resource not in policy', () => {
+            it('should be neutral under multi-statement policy if request resource not in policy', () => {
                 check(requestContext, { _apiMethod: 'objectPut' }, samples['Multi-Statement Policy'], 'Neutral');
             });
 
             it(
-                'should grant access under multi-statement ' + 'policy if action and resource match those in policy',
+                'should grant access under multi-statement policy if action and resource match those in policy',
                 () => {
                     const rcModifiers = {
                         _apiMethod: 'objectGet',
@@ -66,7 +66,7 @@ describe('policyEvaluator', () => {
                 },
             );
 
-            it('should be neutral under multi-statement ' + 'policy if request action not in policy', () => {
+            it('should be neutral under multi-statement policy if request action not in policy', () => {
                 const rcModifiers = {
                     _apiMethod: 'objectDelete',
                     _generalResource: 'notVeryPrivate',
@@ -74,7 +74,7 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, samples['Multi-Statement Policy'], 'Neutral');
             });
 
-            it('should allow access under a policy with a variable in the ' + 'resource', () => {
+            it('should allow access under a policy with a variable in the resource', () => {
                 const rcModifiers = {
                     _apiMethod: 'objectPut',
                     _generalResource: 'personalbucket',
@@ -156,7 +156,7 @@ describe('policyEvaluator', () => {
             );
 
             it(
-                'should deny access that impacts resource other than that ' + 'specified in NotResource in Deny policy',
+                'should deny access that impacts resource other than that specified in NotResource in Deny policy',
                 () => {
                     const rcModifiers = {
                         _generalResource: 'someotherresource',
@@ -167,7 +167,7 @@ describe('policyEvaluator', () => {
             );
 
             it(
-                'should be neutral on access that impacts resource ' + 'specified in NotResource in Allow policy',
+                'should be neutral on access that impacts resource specified in NotResource in Allow policy',
                 () => {
                     const rcModifiers = {
                         _generalResource: 'mybucket',
@@ -178,7 +178,7 @@ describe('policyEvaluator', () => {
             );
 
             it(
-                'should allow access to resource that is not specified ' + 'as part of NotResource in Allow policy',
+                'should allow access to resource that is not specified as part of NotResource in Allow policy',
                 () => {
                     const rcModifiers = {
                         _generalResource: 'someotherresource',
@@ -205,7 +205,7 @@ describe('policyEvaluator', () => {
                 requestContext.setRequesterInfo({});
             });
 
-            it('should allow access under a StringEquals condition if ' + 'condition passes', () => {
+            it('should allow access under a StringEquals condition if condition passes', () => {
                 policy.Statement.Condition = {
                     StringEquals: { 'aws:UserAgent': 'CyberSquaw' },
                 };
@@ -217,7 +217,7 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, policy, 'Allow');
             });
 
-            it('should be neutral under a StringEquals condition if condition' + ' does not pass', () => {
+            it('should be neutral under a StringEquals condition if condition does not pass', () => {
                 policy.Statement.Condition = {
                     StringEquals: { 'aws:UserAgent': 'CyberSquaw' },
                 };
@@ -262,7 +262,7 @@ describe('policyEvaluator', () => {
             );
 
             it(
-                'should treat wildcards literally in StringEquals condition ' + 'and translate variables properly',
+                'should treat wildcards literally in StringEquals condition and translate variables properly',
                 () => {
                     policy.Statement.Action = 's3:ListBucket';
                     policy.Statement.Condition = {
@@ -279,7 +279,7 @@ describe('policyEvaluator', () => {
                 },
             );
 
-            it('should allow access if condition operator has IfExists and ' + 'key not provided', () => {
+            it('should allow access if condition operator has IfExists and key not provided', () => {
                 policy.Statement.Resource = '*';
                 policy.Statement.Condition = {
                     StringLikeIfExists: { 'ec2:InstanceType': ['t1.*', 't2.*', 'm3.*'] },
@@ -287,7 +287,7 @@ describe('policyEvaluator', () => {
                 check(requestContext, {}, policy, 'Allow');
             });
 
-            it('should allow access for StringLike condition with ' + 'variables and wildcards', () => {
+            it('should allow access for StringLike condition with variables and wildcards', () => {
                 policy.Statement.Action = 's3:ListBucket';
                 policy.Statement.Resource = '*';
                 policy.Statement.Condition = {
@@ -324,7 +324,7 @@ describe('policyEvaluator', () => {
                 },
             );
 
-            it('should allow access for StringNotLike condition with ' + 'variables and wildcards', () => {
+            it('should allow access for StringNotLike condition with variables and wildcards', () => {
                 policy.Statement.Action = 's3:ListBucket';
                 policy.Statement.Resource = '*';
                 policy.Statement.Condition = {
@@ -380,7 +380,7 @@ describe('policyEvaluator', () => {
                 },
             );
 
-            it('should be neutral for StringNotEquals condition if ' + 'do not meet condition', () => {
+            it('should be neutral for StringNotEquals condition if do not meet condition', () => {
                 policy.Statement.Resource = 'arn:aws:s3:::bucket/*';
                 policy.Statement.Condition = {
                     StringNotEquals: { 's3:x-amz-acl': ['public-read', 'public-read-write'] },
@@ -395,7 +395,7 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, policy, 'Neutral');
             });
 
-            it('should allow access for StringNotEquals condition if ' + 'meet condition', () => {
+            it('should allow access for StringNotEquals condition if meet condition', () => {
                 policy.Statement.Resource = 'arn:aws:s3:::bucket/*';
                 policy.Statement.Condition = {
                     StringNotEquals: { 's3:x-amz-acl': ['public-read', 'public-read-write'] },
@@ -426,7 +426,7 @@ describe('policyEvaluator', () => {
                 },
             );
 
-            it('should be neutral for StringEqualsIgnoreCase condition ' + 'if do not meet condition', () => {
+            it('should be neutral for StringEqualsIgnoreCase condition if do not meet condition', () => {
                 policy.Statement.Condition = {
                     StringEqualsIgnoreCase: { 'aws:UserAgent': ['CyberSquaw', 's3Sergeant', 'jetSetter'] },
                 };
@@ -439,7 +439,7 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, policy, 'Neutral');
             });
 
-            it('should allow access for StringEqualsIgnoreCase condition ' + 'if meet condition', () => {
+            it('should allow access for StringEqualsIgnoreCase condition if meet condition', () => {
                 policy.Statement.Condition = {
                     StringEqualsIgnoreCase: { 'aws:UserAgent': ['CyberSquaw', 's3Sergeant', 'jetSetter'] },
                 };
@@ -451,7 +451,7 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, policy, 'Allow');
             });
 
-            it('should be neutral for StringNotEqualsIgnoreCase condition ' + 'if do not meet condition', () => {
+            it('should be neutral for StringNotEqualsIgnoreCase condition if do not meet condition', () => {
                 policy.Statement.Condition = {
                     StringNotEqualsIgnoreCase: { 'aws:UserAgent': ['CyberSquaw', 's3Sergeant', 'jetSetter'] },
                 };
@@ -463,7 +463,7 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, policy, 'Neutral');
             });
 
-            it('should allow access for StringNotEqualsIgnoreCase condition ' + 'if meet condition', () => {
+            it('should allow access for StringNotEqualsIgnoreCase condition if meet condition', () => {
                 policy.Statement.Condition = {
                     StringNotEqualsIgnoreCase: { 'aws:UserAgent': ['CyberSquaw', 's3Sergeant', 'jetSetter'] },
                 };
@@ -486,25 +486,25 @@ describe('policyEvaluator', () => {
                 },
             );
 
-            it('should be neutral for NumericEquals condition ' + 'if do not meet condition', () => {
+            it('should be neutral for NumericEquals condition if do not meet condition', () => {
                 policy.Statement.Condition = { NumericEquals: { 's3:max-keys': '100' } };
                 const rcModifiers = { _query: { 'max-keys': '101' } };
                 check(requestContext, rcModifiers, policy, 'Neutral');
             });
 
-            it('should allow access for NumericEquals condition ' + 'if meet condition', () => {
+            it('should allow access for NumericEquals condition if meet condition', () => {
                 policy.Statement.Condition = { NumericEquals: { 's3:max-keys': '100' } };
                 const rcModifiers = { _query: { 'max-keys': '100' } };
                 check(requestContext, rcModifiers, policy, 'Allow');
             });
 
-            it('should be neutral for NumericNotEquals condition ' + 'if do not meet condition', () => {
+            it('should be neutral for NumericNotEquals condition if do not meet condition', () => {
                 policy.Statement.Condition = { NumericNotEquals: { 's3:max-keys': '100' } };
                 const rcModifiers = { _query: { 'max-keys': '100' } };
                 check(requestContext, rcModifiers, policy, 'Neutral');
             });
 
-            it('should allow access for NumericNotEquals condition ' + 'if meet condition', () => {
+            it('should allow access for NumericNotEquals condition if meet condition', () => {
                 policy.Statement.Condition = { NumericNotEquals: { 's3:max-keys': '100' } };
                 const rcModifiers = { _query: { 'max-keys': '101' } };
                 check(requestContext, rcModifiers, policy, 'Allow');
@@ -520,26 +520,26 @@ describe('policyEvaluator', () => {
                 },
             );
 
-            it('should be neutral for NumericLessThan condition ' + 'if do not meet condition', () => {
+            it('should be neutral for NumericLessThan condition if do not meet condition', () => {
                 policy.Statement.Condition = { NumericLessThan: { 's3:max-keys': '100' } };
                 requestContext._query['max-keys'] = ['100', '200', '300'];
                 const rcModifiers = { _query: { 'max-keys': ['100', '200', '300'] } };
                 check(requestContext, rcModifiers, policy, 'Neutral');
             });
 
-            it('should allow access for NumericLessThan condition ' + 'if meet condition', () => {
+            it('should allow access for NumericLessThan condition if meet condition', () => {
                 policy.Statement.Condition = { NumericLessThan: { 's3:max-keys': '100' } };
                 const rcModifiers = { _query: { 'max-keys': '99' } };
                 check(requestContext, rcModifiers, policy, 'Allow');
             });
 
-            it('should be neutral for NumericLessThanEquals condition ' + 'if do not meet condition', () => {
+            it('should be neutral for NumericLessThanEquals condition if do not meet condition', () => {
                 policy.Statement.Condition = { NumericLessThanEquals: { 's3:max-keys': '100' } };
                 const rcModifiers = { _query: { 'max-keys': '101' } };
                 check(requestContext, rcModifiers, policy, 'Neutral');
             });
 
-            it('should allow access for NumericLessThanEquals condition ' + 'if meet condition', () => {
+            it('should allow access for NumericLessThanEquals condition if meet condition', () => {
                 policy.Statement.Condition = { NumericLessThanEquals: { 's3:max-keys': '100' } };
                 let rcModifiers = { _query: { 'max-keys': '100' } };
                 check(requestContext, rcModifiers, policy, 'Allow');
@@ -547,25 +547,25 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, policy, 'Allow');
             });
 
-            it('should be neutral for NumericGreaterThan condition ' + 'if do not meet condition', () => {
+            it('should be neutral for NumericGreaterThan condition if do not meet condition', () => {
                 policy.Statement.Condition = { NumericGreaterThan: { 's3:max-keys': '100' } };
                 const rcModifiers = { _query: { 'max-keys': '100' } };
                 check(requestContext, rcModifiers, policy, 'Neutral');
             });
 
-            it('should allow access for NumericGreaterThan condition ' + 'if meet condition', () => {
+            it('should allow access for NumericGreaterThan condition if meet condition', () => {
                 policy.Statement.Condition = { NumericGreaterThan: { 's3:max-keys': '100' } };
                 const rcModifiers = { _query: { 'max-keys': '101' } };
                 check(requestContext, rcModifiers, policy, 'Allow');
             });
 
-            it('should be neutral for NumericGreaterThanEquals condition ' + 'if do not meet condition', () => {
+            it('should be neutral for NumericGreaterThanEquals condition if do not meet condition', () => {
                 policy.Statement.Condition = { NumericGreaterThanEquals: { 's3:max-keys': '100' } };
                 const rcModifiers = { _query: { 'max-keys': '99' } };
                 check(requestContext, rcModifiers, policy, 'Neutral');
             });
 
-            it('should allow access for NumericGreaterThanEquals condition ' + 'if meet condition', () => {
+            it('should allow access for NumericGreaterThanEquals condition if meet condition', () => {
                 policy.Statement.Condition = { NumericGreaterThanEquals: { 's3:max-keys': '100' } };
                 let rcModifiers = { _query: { 'max-keys': '100' } };
                 check(requestContext, rcModifiers, policy, 'Allow');
@@ -573,7 +573,7 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, policy, 'Allow');
             });
 
-            it('should be neutral for DateEquals condition with ISO date' + 'if do not meet condition', () => {
+            it('should be neutral for DateEquals condition with ISO dateif do not meet condition', () => {
                 policy.Statement.Condition = { DateEquals: { 'aws:TokenIssueTime': '2016-06-30T19:42:23.531Z' } };
                 let rcModifiers = { _tokenIssueTime: '2016-06-30T19:42:23.431Z' };
                 check(requestContext, rcModifiers, policy, 'Neutral');
@@ -581,13 +581,13 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, policy, 'Neutral');
             });
 
-            it('should be neutral for DateEquals condition with epoch date' + 'if do not meet condition', () => {
+            it('should be neutral for DateEquals condition with epoch dateif do not meet condition', () => {
                 policy.Statement.Condition = { 'aws:EpochTime': '1467315743531' };
                 const rcModifiers = { _tokenIssueTime: '1467315743431' };
                 check(requestContext, rcModifiers, policy, 'Neutral');
             });
 
-            it('should allow access for DateEquals condition with ISO time ' + 'if meet condition', () => {
+            it('should allow access for DateEquals condition with ISO time if meet condition', () => {
                 policy.Statement.Condition = { DateEquals: { 'aws:TokenIssueTime': '2016-06-30T19:42:23.431Z' } };
                 let rcModifiers = { _tokenIssueTime: '2016-06-30T19:42:23.431Z' };
                 check(requestContext, rcModifiers, policy, 'Allow');
@@ -595,14 +595,14 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, policy, 'Allow');
             });
 
-            it('should allow access for DateEquals condition with epoch time ' + 'if meet condition', () => {
+            it('should allow access for DateEquals condition with epoch time if meet condition', () => {
                 const clock = fakeTimers.install({ now: 1467315743431 });
                 policy.Statement.Condition = { DateEquals: { 'aws:EpochTime': '1467315743431' } };
                 check(requestContext, {}, policy, 'Allow');
                 clock.uninstall();
             });
 
-            it('should be neutral for DateNotEquals condition with ISO time' + 'if do not meet condition', () => {
+            it('should be neutral for DateNotEquals condition with ISO timeif do not meet condition', () => {
                 policy.Statement.Condition = { DateNotEquals: { 'aws:TokenIssueTime': '2016-06-30T19:42:23.431Z' } };
                 let rcModifiers = { _tokenIssueTime: '2016-06-30T19:42:23.431Z' };
                 check(requestContext, rcModifiers, policy, 'Neutral');
@@ -610,14 +610,14 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, policy, 'Neutral');
             });
 
-            it('should be neutral for DateNotEquals condition with epoch ' + 'time if do not meet condition', () => {
+            it('should be neutral for DateNotEquals condition with epoch time if do not meet condition', () => {
                 const clock = fakeTimers.install({ now: 1467315743431 });
                 policy.Statement.Condition = { DateNotEquals: { 'aws:EpochTime': '1467315743431' } };
                 check(requestContext, {}, policy, 'Neutral');
                 clock.uninstall();
             });
 
-            it('should allow access for DateNotEquals condition with ISO time' + 'if meet condition', () => {
+            it('should allow access for DateNotEquals condition with ISO timeif meet condition', () => {
                 policy.Statement.Condition = { DateNotEquals: { 'aws:TokenIssueTime': '2016-06-30T19:42:23.531Z' } };
                 let rcModifiers = { _tokenIssueTime: '2016-06-30T19:42:23.431Z' };
                 check(requestContext, rcModifiers, policy, 'Allow');
@@ -625,7 +625,7 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, policy, 'Allow');
             });
 
-            it('should allow access for DateNotEquals condition with epoch ' + 'time if meet condition', () => {
+            it('should allow access for DateNotEquals condition with epoch time if meet condition', () => {
                 policy.Statement.Condition = { DateNotEquals: { 'aws:EpochTime': '1467315743531' } };
                 check(requestContext, {}, policy, 'Allow');
             });
@@ -643,7 +643,7 @@ describe('policyEvaluator', () => {
             );
 
             it(
-                'should be neutral for DateLessThan current time condition ' + 'with ISO time if do not meet condition',
+                'should be neutral for DateLessThan current time condition with ISO time if do not meet condition',
                 () => {
                     policy.Statement.Condition = { DateLessThan: { 'aws:CurrentTime': '2016-06-30T19:42:23.431Z' } };
                     check(requestContext, {}, policy, 'Neutral');
@@ -659,7 +659,7 @@ describe('policyEvaluator', () => {
                 },
             );
 
-            it('should allow access for DateLessThan ISO token time ' + 'condition if meet condition', () => {
+            it('should allow access for DateLessThan ISO token time condition if meet condition', () => {
                 policy.Statement.Condition = {
                     DateLessThan: {
                         'aws:TokenIssueTime': [
@@ -673,20 +673,20 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, policy, 'Allow');
             });
 
-            it('should allow access for DateLessThan ISO current time ' + 'condition if meet condition', () => {
+            it('should allow access for DateLessThan ISO current time condition if meet condition', () => {
                 policy.Statement.Condition = { DateLessThan: { 'aws:CurrentTime': '2099-06-30T19:42:23.431Z' } };
                 check(requestContext, {}, policy, 'Allow');
                 const rcModifiers = { _tokenIssueTime: '1467315743331' };
                 check(requestContext, rcModifiers, policy, 'Allow');
             });
 
-            it('should allow access for DateLessThan epoch current time ' + 'condition if meet condition', () => {
+            it('should allow access for DateLessThan epoch current time condition if meet condition', () => {
                 policy.Statement.Condition = { DateLessThan: { 'aws:EpochTime': '4086531743431' } };
                 check(requestContext, {}, policy, 'Allow');
             });
 
             it(
-                'should be neutral for DateLessThanEquals token condition ' + 'with ISO time if do not meet condition',
+                'should be neutral for DateLessThanEquals token condition with ISO time if do not meet condition',
                 () => {
                     policy.Statement.Condition = {
                         DateLessThanEquals: { 'aws:TokenIssueTime': '2016-06-30T19:42:23.431Z' },
@@ -708,7 +708,7 @@ describe('policyEvaluator', () => {
             );
 
             it(
-                'should allow access for DateLessThanEquals toekn condition ' + 'with ISO time if meet condition',
+                'should allow access for DateLessThanEquals toekn condition with ISO time if meet condition',
                 () => {
                     policy.Statement.Condition = {
                         DateLessThanEquals: { 'aws:TokenIssueTime': '2016-06-30T19:42:23.431Z' },
@@ -730,7 +730,7 @@ describe('policyEvaluator', () => {
             );
 
             it(
-                'should be neutral for DateGreaterThan token condition ' + 'with ISO time if do not meet condition',
+                'should be neutral for DateGreaterThan token condition with ISO time if do not meet condition',
                 () => {
                     policy.Statement.Condition = {
                         DateGreaterThan: { 'aws:TokenIssueTime': '2016-06-30T19:42:23.431Z' },
@@ -749,14 +749,14 @@ describe('policyEvaluator', () => {
                 },
             );
 
-            it('should allow access for DateGreaterThan token condition ' + 'with ISO time if meet condition', () => {
+            it('should allow access for DateGreaterThan token condition with ISO time if meet condition', () => {
                 policy.Statement.Condition = { DateGreaterThan: { 'aws:TokenIssueTime': '2016-06-30T19:42:23.431Z' } };
                 const rcModifiers = { _tokenIssueTime: '2016-06-30T19:42:23.531Z' };
                 check(requestContext, rcModifiers, policy, 'Allow');
             });
 
             it(
-                'should allow access for DateGreaterThan current time ' + 'condition with ISO time if meet condition',
+                'should allow access for DateGreaterThan current time condition with ISO time if meet condition',
                 () => {
                     policy.Statement.Condition = { DateGreaterThan: { 'aws:CurrentTime': '2016-06-30T19:42:23.431Z' } };
                     check(requestContext, {}, policy, 'Allow');
@@ -787,7 +787,7 @@ describe('policyEvaluator', () => {
             );
 
             it(
-                'should allow access for DateGreaterThanEquals token ' + 'condition with ISO time if meet condition',
+                'should allow access for DateGreaterThanEquals token condition with ISO time if meet condition',
                 () => {
                     policy.Statement.Condition = {
                         DateGreaterThanEquals: { 'aws:TokenIssueTime': '2016-06-30T19:42:23.431Z' },
@@ -808,19 +808,19 @@ describe('policyEvaluator', () => {
                 },
             );
 
-            it('should be neutral for Bool condition ' + 'if do not meet condition', () => {
+            it('should be neutral for Bool condition if do not meet condition', () => {
                 policy.Statement.Condition = { Bool: { 'aws:SecureTransport': 'true' } };
                 const rcModifiers = { _sslEnabled: false };
                 check(requestContext, rcModifiers, policy, 'Neutral');
             });
 
-            it('should allow access for Bool condition ' + 'if meet condition', () => {
+            it('should allow access for Bool condition if meet condition', () => {
                 policy.Statement.Condition = { Bool: { 'aws:SecureTransport': 'true' } };
                 const rcModifiers = { _sslEnabled: true };
                 check(requestContext, rcModifiers, policy, 'Allow');
             });
 
-            it('should be neutral for BinaryEquals condition ' + 'if do not meet condition', () => {
+            it('should be neutral for BinaryEquals condition if do not meet condition', () => {
                 // Contrived example since applicability
                 // of this operator to S3 is unclear
                 policy.Statement.Condition = { BinaryEquals: { 's3:x-amz-copy-source': 'ZnVja2V0L29iamVjdA==' } };
@@ -832,7 +832,7 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, policy, 'Neutral');
             });
 
-            it('should allow access for BinaryEquals condition ' + 'if meet condition', () => {
+            it('should allow access for BinaryEquals condition if meet condition', () => {
                 policy.Statement.Condition = { BinaryEquals: { 's3:x-amz-copy-source': 'YnVja2V0L29iamVjdA==' } };
                 const rcModifiers = {
                     _headers: {
@@ -842,7 +842,7 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, policy, 'Allow');
             });
 
-            it('should be neutral for BinaryNotEquals condition ' + 'if do not meet condition', () => {
+            it('should be neutral for BinaryNotEquals condition if do not meet condition', () => {
                 policy.Statement.Condition = { BinaryNotEquals: { 's3:x-amz-copy-source': 'YnVja2V0L29iamVjdA==' } };
                 const rcModifiers = {
                     _headers: {
@@ -852,7 +852,7 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, policy, 'Neutral');
             });
 
-            it('should allow access for BinaryNotEquals condition ' + 'if meet condition', () => {
+            it('should allow access for BinaryNotEquals condition if meet condition', () => {
                 policy.Statement.Condition = { BinaryNotEquals: { 's3:x-amz-copy-source': 'ZnVja2V0L29iamVjdA==' } };
                 const rcModifiers = {
                     _headers: {
@@ -862,13 +862,13 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, policy, 'Allow');
             });
 
-            it('should be neutral for IpAddress condition ' + 'if do not meet condition', () => {
+            it('should be neutral for IpAddress condition if do not meet condition', () => {
                 policy.Statement.Condition = { IpAddress: { 'aws:SourceIp': '203.0.113.0/24' } };
                 const rcModifiers = { _requesterIp: '203.0.114.255' };
                 check(requestContext, rcModifiers, policy, 'Neutral');
             });
 
-            it('should allow access for IpAddress condition ' + 'if meet condition', () => {
+            it('should allow access for IpAddress condition if meet condition', () => {
                 policy.Statement.Condition = { IpAddress: { 'aws:SourceIp': '203.0.113.0/24' } };
                 const rcModifiers = { _requesterIp: '203.0.113.254' };
                 check(requestContext, rcModifiers, policy, 'Allow');
@@ -885,7 +885,7 @@ describe('policyEvaluator', () => {
             );
 
             it(
-                'should allow access for IpAddress condition ' + 'if meet condition even if ipv4 addres is mapped',
+                'should allow access for IpAddress condition if meet condition even if ipv4 addres is mapped',
                 () => {
                     policy.Statement.Condition = { IpAddress: { 'aws:SourceIp': '203.0.113.0/24' } };
                     const rcModifiers = { _requesterIp: '::ffff:203.0.113.254' };
@@ -893,14 +893,14 @@ describe('policyEvaluator', () => {
                 },
             );
 
-            it('should be neutral for IpAddress condition ' + 'if nonsense is given for ip address in request', () => {
+            it('should be neutral for IpAddress condition if nonsense is given for ip address in request', () => {
                 policy.Statement.Condition = { IpAddress: { 'aws:SourceIp': '203.0.113.0/24' } };
                 const rcModifiers = { _requesterIp: 'nonsense' };
                 check(requestContext, rcModifiers, policy, 'Neutral');
             });
 
             it(
-                'should be neutral for IpAddress condition ' + 'if nonsense is given for ip address in condition',
+                'should be neutral for IpAddress condition if nonsense is given for ip address in condition',
                 () => {
                     policy.Statement.Condition = { IpAddress: { 'aws:SourceIp': 'nonsense' } };
                     const rcModifiers = { _requesterIp: '203.0.113.254' };
@@ -908,13 +908,13 @@ describe('policyEvaluator', () => {
                 },
             );
 
-            it('should be neutral for NotIpAddress condition ' + 'if do not meet condition', () => {
+            it('should be neutral for NotIpAddress condition if do not meet condition', () => {
                 policy.Statement.Condition = { NotIpAddress: { 'aws:SourceIp': '203.0.113.0/24' } };
                 const rcModifiers = { _requesterIp: '203.0.113.0' };
                 check(requestContext, rcModifiers, policy, 'Neutral');
             });
 
-            it('should allow access for NotIpAddress condition ' + 'if meet condition', () => {
+            it('should allow access for NotIpAddress condition if meet condition', () => {
                 policy.Statement.Condition = { NotIpAddress: { 'aws:SourceIp': '203.0.113.0/24' } };
                 const rcModifiers = { _requesterIp: '203.0.112.254' };
                 check(requestContext, rcModifiers, policy, 'Allow');
@@ -940,13 +940,13 @@ describe('policyEvaluator', () => {
                 },
             );
 
-            it('should be neutral for Null condition ' + 'if do not meet condition', () => {
+            it('should be neutral for Null condition if do not meet condition', () => {
                 policy.Statement.Condition = { Null: { 'aws:TokenIssueTime': 'true' } };
                 const rcModifiers = { _tokenIssueTime: '2016-06-30T23:26:36.642Z' };
                 check(requestContext, rcModifiers, policy, 'Neutral');
             });
 
-            it('should allow access for Null condition ' + 'if meet condition', () => {
+            it('should allow access for Null condition if meet condition', () => {
                 policy.Statement.Condition = { Null: { 'aws:TokenIssueTime': 'true' } };
                 check(requestContext, {}, policy, 'Allow');
             });
@@ -973,7 +973,7 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, policy, 'Neutral');
             });
 
-            it('should be neutral for ArnLike if the relative-id case ' + 'does not match', () => {
+            it('should be neutral for ArnLike if the relative-id case does not match', () => {
                 policy.Statement.Condition = {
                     ArnLike: { 'iam:PolicyArn': ['arn:aws:iam::012345678901:policy/dev/*'] },
                 };
@@ -984,7 +984,7 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, policy, 'Neutral');
             });
 
-            it('should be neutral for ArnLike if a leading segment case ' + 'does not match', () => {
+            it('should be neutral for ArnLike if a leading segment case does not match', () => {
                 policy.Statement.Condition = {
                     ArnLike: { 'iam:PolicyArn': ['arn:aws:IAM::012345678901:policy/dev/*'] },
                 };
@@ -995,7 +995,7 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, policy, 'Neutral');
             });
 
-            it('should allow access for ArnEquals with a * wildcard in ' + 'the relative-id', () => {
+            it('should allow access for ArnEquals with a * wildcard in the relative-id', () => {
                 policy.Statement.Condition = {
                     ArnEquals: { 'iam:PolicyArn': ['arn:aws:iam::012345678901:policy/dev/*'] },
                 };
@@ -1006,7 +1006,7 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, policy, 'Allow');
             });
 
-            it('should allow access for ArnEquals with a * wildcard in ' + 'a leading segment', () => {
+            it('should allow access for ArnEquals with a * wildcard in a leading segment', () => {
                 policy.Statement.Condition = {
                     ArnEquals: { 'iam:PolicyArn': ['arn:aws:iam::*:policy/dev/devMachine1'] },
                 };
@@ -1028,7 +1028,7 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, policy, 'Allow');
             });
 
-            it('should be neutral for ArnEquals if the relative-id case ' + 'does not match', () => {
+            it('should be neutral for ArnEquals if the relative-id case does not match', () => {
                 policy.Statement.Condition = {
                     ArnEquals: { 'iam:PolicyArn': ['arn:aws:iam::012345678901:policy/dev/devMachine1'] },
                 };
@@ -1039,7 +1039,7 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, policy, 'Neutral');
             });
 
-            it('should not let an ArnNotLike carve-out match an arn that ' + 'differs only by case', () => {
+            it('should not let an ArnNotLike carve-out match an arn that differs only by case', () => {
                 policy.Statement.Condition = {
                     ArnNotLike: { 'iam:PolicyArn': ['arn:aws:iam::012345678901:policy/dev/*'] },
                 };
@@ -1050,7 +1050,7 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, policy, 'Allow');
             });
 
-            it('should be neutral for ArnNotLike if the arn is within the ' + 'carve-out', () => {
+            it('should be neutral for ArnNotLike if the arn is within the carve-out', () => {
                 policy.Statement.Condition = {
                     ArnNotLike: { 'iam:PolicyArn': ['arn:aws:iam::012345678901:policy/dev/*'] },
                 };
@@ -1061,7 +1061,7 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, policy, 'Neutral');
             });
 
-            it('should be neutral for ArnNotEquals if the arn matches a ' + 'wildcard value', () => {
+            it('should be neutral for ArnNotEquals if the arn matches a wildcard value', () => {
                 policy.Statement.Condition = {
                     ArnNotEquals: { 'iam:PolicyArn': ['arn:aws:iam::012345678901:policy/dev/*'] },
                 };
@@ -1073,7 +1073,7 @@ describe('policyEvaluator', () => {
             });
 
             it(
-                'should allow access with multiple operator conditions ' + 'and multiple conditions under an operator',
+                'should allow access with multiple operator conditions and multiple conditions under an operator',
                 () => {
                     policy.Statement.Action = 's3:ListBucket';
                     policy.Statement.Condition = {
@@ -1698,7 +1698,7 @@ describe('policyEvaluator for utapi', () => {
         check(requestContext, {}, samples['utapi list metrics'], 'Allow');
     });
 
-    it('should be neutral on access to list metrics for bucket not ' + 'named in policy', () => {
+    it('should be neutral on access to list metrics for bucket not named in policy', () => {
         const requestContext = new RequestContext(
             {},
             {},
@@ -1713,7 +1713,7 @@ describe('policyEvaluator for utapi', () => {
         check(requestContext, {}, samples['utapi list metrics'], 'Neutral');
     });
 
-    it('should permit access to list metrics for bucket when accountid in ' + 'requestContext', () => {
+    it('should permit access to list metrics for bucket when accountid in requestContext', () => {
         const requestContext = new RequestContext(
             {},
             {},
@@ -1728,7 +1728,7 @@ describe('policyEvaluator for utapi', () => {
         check(requestContext, {}, samples['utapi list metrics'], 'Allow');
     });
 
-    it('should permit access to list metrics for bucket and account ID named ' + 'in policy', () => {
+    it('should permit access to list metrics for bucket and account ID named in policy', () => {
         const requestContext = new RequestContext(
             {},
             {},

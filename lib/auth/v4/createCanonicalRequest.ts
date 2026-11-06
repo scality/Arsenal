@@ -29,7 +29,7 @@ export default function createCanonicalRequest(params: {
     let payloadChecksum = params.payloadChecksum;
     if (!payloadChecksum) {
         if (pHttpVerb === 'GET') {
-            payloadChecksum = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b' + '934ca495991b7852b855';
+            payloadChecksum = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
         } else if (pHttpVerb === 'POST') {
             let notEncodeStar = false;
             // The java sdk does not encode the '*' parameter to compute the

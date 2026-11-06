@@ -20,11 +20,11 @@ const CRYPTOGRAPHIC_DEFAULT_IV = Buffer.alloc(16).fill(0);
 
 const searchFilter = {
     protocolVersionMajor:
-        'Response Message/Batch Item/' + 'Response Payload/Protocol Version/' + 'Protocol Version Major',
+        'Response Message/Batch Item/Response Payload/Protocol Version/Protocol Version Major',
     protocolVersionMinor:
-        'Response Message/Batch Item/' + 'Response Payload/Protocol Version/' + 'Protocol Version Minor',
-    extensionName: 'Response Message/Batch Item/Response Payload' + '/Extension Information/Extension Name',
-    extensionTag: 'Response Message/Batch Item/Response Payload' + '/Extension Information/Extension Tag',
+        'Response Message/Batch Item/Response Payload/Protocol Version/Protocol Version Minor',
+    extensionName: 'Response Message/Batch Item/Response Payload/Extension Information/Extension Name',
+    extensionTag: 'Response Message/Batch Item/Response Payload/Extension Information/Extension Tag',
     vendorIdentification: 'Response Message/Batch Item/Response Payload/Vendor Identification',
     serverInformation: 'Response Message/Batch Item/Response Payload/Server Information',
     operation: 'Response Message/Batch Item/Response Payload/Operation',

@@ -40,7 +40,7 @@ describe('BucketPolicy class getBucketPolicy', () => {
     });
 
     it(
-        'should return MalformedPolicy error if request action is for objects ' + 'but resource refers to bucket',
+        'should return MalformedPolicy error if request action is for objects but resource refers to bucket',
         done => {
             const newPolicy = createPolicy('Action', 's3:GetObject');
             const bucketPolicy = new BucketPolicy(JSON.stringify(newPolicy)).getBucketPolicy();
@@ -72,7 +72,7 @@ describe('BucketPolicy class getBucketPolicy', () => {
     );
 
     it(
-        'should return MalformedPolicy error if request resource refers to ' + 'object but action is for buckets',
+        'should return MalformedPolicy error if request resource refers to object but action is for buckets',
         done => {
             const newPolicy = createPolicy('Resource', 'arn:aws:s3:::examplebucket/*');
             const bucketPolicy = new BucketPolicy(JSON.stringify(newPolicy)).getBucketPolicy();

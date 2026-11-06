@@ -994,7 +994,7 @@ describe('test versioning request processor', () => {
         });
     });
 
-    it('process version specific put request: non-deleted versionId === "" ' + 'with deleteNullKey=true', done => {
+    it('process version specific put request: non-deleted versionId === "" with deleteNullKey=true', done => {
         const key = randkey();
         const value = '{"foo":"bar"}';
         const options = { versionId: '', deleteNullKey: true };

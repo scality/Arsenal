@@ -90,7 +90,7 @@ export default class BackendInfo {
         const restEndpoint = config.restEndpoints[requestEndpoint];
         if (!(restEndpoint in config.locationConstraints)) {
             log.trace(
-                'the default locationConstraint for request' + 'Endpoint does not match any config locationConstraint',
+                'the default locationConstraint for requestEndpoint does not match any config locationConstraint',
                 { requestEndpoint },
             );
             return false;

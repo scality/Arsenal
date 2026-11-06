@@ -143,7 +143,7 @@ describe('BucketLoggingStatus', () => {
             });
 
             it('should return error for XML without BucketLoggingStatus root tag', () => {
-                const xml = '<?xml version="1.0" encoding="UTF-8"?>' + '<WrongTag></WrongTag>';
+                const xml = '<?xml version="1.0" encoding="UTF-8"?><WrongTag></WrongTag>';
 
                 const result = BucketLoggingStatus.fromXML(xml);
 

@@ -21,7 +21,7 @@ const query = {
     'X-Amz-Date': '20160208T234304Z',
     // 900 seconds = 15 minutes
     'X-Amz-Expires': '900',
-    'X-Amz-Signature': '036c5d854aca98a003c1c155a' + '7723157d8148ad5888b3aee1133784eb5aec08b',
+    'X-Amz-Signature': '036c5d854aca98a003c1c155a7723157d8148ad5888b3aee1133784eb5aec08b',
     'X-Amz-SignedHeaders': 'host',
 };
 const headers = {
@@ -56,7 +56,7 @@ describe('v4 queryAuthCheck', () => {
         done();
     });
 
-    it('should return error if service set forth in ' + 'credential param is not s3', done => {
+    it('should return error if service set forth in credential param is not s3', done => {
         const alteredRequest = createAlteredRequest(
             { 'X-Amz-Credential': 'accessKey1/20160208/us-east-1/EC2/aws4_request' },
             'query',
@@ -68,7 +68,7 @@ describe('v4 queryAuthCheck', () => {
         done();
     });
 
-    it('should return error if requestType set forth in ' + 'credential param is not aws4_request', done => {
+    it('should return error if requestType set forth in credential param is not aws4_request', done => {
         const alteredRequest = createAlteredRequest(
             { 'X-Amz-Credential': 'accessKey1/20160208/us-east-1/s3/aws2_request' },
             'query',
@@ -101,7 +101,7 @@ describe('v4 queryAuthCheck', () => {
         done();
     });
 
-    it('should return error if an x-amz header is not included as signed ' + 'header but is in request', done => {
+    it('should return error if an x-amz header is not included as signed header but is in request', done => {
         const alteredRequest = createAlteredRequest(
             {
                 'x-amz-acl': 'public',
@@ -115,7 +115,7 @@ describe('v4 queryAuthCheck', () => {
         done();
     });
 
-    it('should return error if an x-scal header is not included as signed ' + 'header but is in request', done => {
+    it('should return error if an x-scal header is not included as signed header but is in request', done => {
         const alteredRequest = createAlteredRequest(
             {
                 'x-scal-encryption': 'true',
@@ -143,14 +143,14 @@ describe('v4 queryAuthCheck', () => {
         done();
     });
 
-    it('should return error if X-Amz-Expires param ' + 'is less than 1', done => {
+    it('should return error if X-Amz-Expires param is less than 1', done => {
         const alteredRequest = createAlteredRequest({ 'X-Amz-Expires': 0 }, 'query', request, query);
         const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
         assert.deepStrictEqual(res.err, errors.InvalidArgument);
         done();
     });
 
-    it('should return error if X-Amz-Expires param ' + 'is greater than 604800', done => {
+    it('should return error if X-Amz-Expires param is greater than 604800', done => {
         // Greater than 604800 seconds (7 days)
         const alteredRequest = createAlteredRequest({ 'X-Amz-Expires': 604801 }, 'query', request, query);
         const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
@@ -189,12 +189,12 @@ describe('v4 queryAuthCheck', () => {
     });
 
     it(
-        'should return error if scope date from X-Amz-Credential param' + 'does not match date from X-Amz-Date param',
+        'should return error if scope date from X-Amz-Credential paramdoes not match date from X-Amz-Date param',
         done => {
             const clock = fakeTimers.install({ now: 1454974984001 });
             const alteredRequest = createAlteredRequest(
                 {
-                    'X-Amz-Credential': 'accessKey1/20160209/' + 'us-east-1/s3/aws4_request',
+                    'X-Amz-Credential': 'accessKey1/20160209/us-east-1/s3/aws4_request',
                 },
                 'query',
                 request,
@@ -218,7 +218,7 @@ describe('v4 queryAuthCheck', () => {
         done();
     });
 
-    it('should successfully return v4 and no error if X-Amz-Expires param ' + 'is 604800 (7 days)', done => {
+    it('should successfully return v4 and no error if X-Amz-Expires param is 604800 (7 days)', done => {
         // Freezes time so date created within function will be Feb 8, 2016
         const clock = fakeTimers.install({ now: 1454974984001 });
         const alteredRequest = createAlteredRequest({ 'X-Amz-Expires': 604800 }, 'query', request, query);
@@ -229,7 +229,7 @@ describe('v4 queryAuthCheck', () => {
         done();
     });
 
-    it('should successfully return v4 and no error if X-Amz-Expires param ' + 'is less thant 604800 (7 days)', done => {
+    it('should successfully return v4 and no error if X-Amz-Expires param is less thant 604800 (7 days)', done => {
         // Freezes time so date created within function will be Feb 8, 2016
         const clock = fakeTimers.install({ now: 1454974984001 });
         const alteredRequest = createAlteredRequest({ 'X-Amz-Expires': 604799 }, 'query', request, query);

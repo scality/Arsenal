@@ -70,12 +70,12 @@ export const _validator = {
     validateKeyValue: (key: string, value: any) => {
         if (key.length > 128) {
             return errorInstances.InvalidTag.customizeDescription(
-                'The TagKey you ' + 'have provided is too long, max 128',
+                'The TagKey you have provided is too long, max 128',
             );
         }
         if (value.length > 256) {
             return errorInstances.InvalidTag.customizeDescription(
-                'The TagValue you ' + 'have provided is too long, max 256',
+                'The TagValue you have provided is too long, max 256',
             );
         }
         return true;
@@ -107,7 +107,7 @@ function _validateTags(tags: Array<{ Key: string[]; Value: string[] }>) {
         const value = tag.Value[0];
 
         if (!key) {
-            return errorInstances.InvalidTag.customizeDescription('The TagKey you ' + 'have provided is invalid');
+            return errorInstances.InvalidTag.customizeDescription('The TagKey you have provided is invalid');
         }
 
         // Allowed characters are letters, whitespace, and numbers, plus

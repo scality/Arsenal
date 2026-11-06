@@ -69,7 +69,7 @@ describe('getByteRangeFromSpec function', () => {
 });
 
 describe('parseRange function', () => {
-    it('should return an object with the start and end if range is ' + 'valid', () => {
+    it('should return an object with the start and end if range is valid', () => {
         checkParseRange('bytes=0-9', 10, [0, 9]);
     });
 
@@ -82,42 +82,42 @@ describe('parseRange function', () => {
         },
     );
 
-    it('should handle incomplete range specifier where only end offset is ' + 'provided', () => {
+    it('should handle incomplete range specifier where only end offset is provided', () => {
         checkParseRange('bytes=-500', 10000, [9500, 9999]);
     });
 
-    it('should handle incomplete range specifier where only start ' + 'provided', () => {
+    it('should handle incomplete range specifier where only start provided', () => {
         checkParseRange('bytes=9500-', 10000, [9500, 9999]);
     });
 
-    it('should return undefined for the range if the range header ' + 'format is invalid: missing equal', () => {
+    it('should return undefined for the range if the range header format is invalid: missing equal', () => {
         checkParseRange('bytes0-9', 10);
     });
 
-    it('should return undefined for the range if the range header ' + 'format is invalid: missing dash', () => {
+    it('should return undefined for the range if the range header format is invalid: missing dash', () => {
         checkParseRange('bytes=09', 10);
     });
 
     it(
-        'should return undefined for the range if the range header ' + 'format is invalid: value invalid character',
+        'should return undefined for the range if the range header format is invalid: value invalid character',
         () => {
             checkParseRange('bytes=%-4', 10);
         },
     );
 
-    it('should return undefined for the range if the range header ' + 'format is invalid: value not int', () => {
+    it('should return undefined for the range if the range header format is invalid: value not int', () => {
         checkParseRange('bytes=4-a', 10);
     });
 
-    it('should return undefined for the range if the range header ' + 'format is invalid: start > end', () => {
+    it('should return undefined for the range if the range header format is invalid: start > end', () => {
         checkParseRange('bytes=5-4', 10);
     });
 
-    it('should return undefined for the range if the range header ' + 'format is invalid: negative start bound', () => {
+    it('should return undefined for the range if the range header format is invalid: negative start bound', () => {
         checkParseRange('bytes=-2-5', 10);
     });
 
-    it('should return InvalidRange if the range of the resource ' + 'does not cover the byte range', () => {
+    it('should return InvalidRange if the range of the resource does not cover the byte range', () => {
         const rangeHeader = 'bytes=10-30';
         const totalLength = 10;
         const { range, error } = parseRange(rangeHeader, totalLength);
@@ -127,10 +127,10 @@ describe('parseRange function', () => {
     it('should return undefined for "bytes=-" request (invalid syntax) ', () => {
         checkParseRange('bytes=-', 10);
     });
-    it('should return undefined for "bytes=-" request (invalid syntax, ' + 'empty object)', () => {
+    it('should return undefined for "bytes=-" request (invalid syntax, empty object)', () => {
         checkParseRange('bytes=-', 0);
     });
-    it('should return undefined for "bytes=10-9" request (invalid syntax, ' + 'empty object)', () => {
+    it('should return undefined for "bytes=10-9" request (invalid syntax, empty object)', () => {
         checkParseRange('bytes=10-9', 0);
     });
     it('should return InvalidRange on 0-byte suffix range request', () => {
@@ -139,28 +139,28 @@ describe('parseRange function', () => {
         assert.strictEqual(error.code, 416);
         assert.strictEqual(range, undefined);
     });
-    it('should return InvalidRange on 0-byte suffix range request ' + '(empty object)', () => {
+    it('should return InvalidRange on 0-byte suffix range request (empty object)', () => {
         const rangeHeader = 'bytes=-0';
         const { range, error } = parseRange(rangeHeader, 0);
         assert.strictEqual(error.code, 416);
         assert.strictEqual(range, undefined);
     });
-    it('should return undefined on suffix range request on empty ' + 'object', () => {
+    it('should return undefined on suffix range request on empty object', () => {
         checkParseRange('bytes=-10', 0);
     });
-    it('should return InvalidRange on empty object when only start==0 ' + 'provided', () => {
+    it('should return InvalidRange on empty object when only start==0 provided', () => {
         const rangeHeader = 'bytes=0-';
         const { range, error } = parseRange(rangeHeader, 0);
         assert.strictEqual(error.code, 416);
         assert.strictEqual(range, undefined);
     });
-    it('should return InvalidRange on empty object when only start!=0 ' + 'provided', () => {
+    it('should return InvalidRange on empty object when only start!=0 provided', () => {
         const rangeHeader = 'bytes=10-';
         const { range, error } = parseRange(rangeHeader, 0);
         assert.strictEqual(error.code, 416);
         assert.strictEqual(range, undefined);
     });
-    it('should return InvalidRange on empty object when start and end ' + 'are provided', () => {
+    it('should return InvalidRange on empty object when start and end are provided', () => {
         const rangeHeader = 'bytes=10-30';
         const { range, error } = parseRange(rangeHeader, 0);
         assert.strictEqual(error.code, 416);
