@@ -272,7 +272,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
         });
     });
 
-    it('should return Transition across many rules: first rule with ' + 'multiple transitions', () => {
+    it('should return Transition across many rules: first rule with multiple transitions', () => {
         const applicableRules = [
             new LifecycleRule()
                 .addTransitions([
@@ -306,7 +306,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
         });
     });
 
-    it('should return Transition across many rules: second rule with ' + 'multiple transitions', () => {
+    it('should return Transition across many rules: second rule with multiple transitions', () => {
         const applicableRules = [
             new LifecycleRule()
                 .addTransitions([
@@ -344,7 +344,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
         });
     });
 
-    it('should return Transition across many rules: combination of Date ' + 'and Days gets Date result', () => {
+    it('should return Transition across many rules: combination of Date and Days gets Date result', () => {
         const applicableDate = getDate({ numberOfDaysFromNow: -1 });
         const applicableRules = [
             new LifecycleRule()
@@ -375,7 +375,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
         });
     });
 
-    it('should return Transition across many rules: combination of Date ' + 'and Days gets Days result', () => {
+    it('should return Transition across many rules: combination of Date and Days gets Days result', () => {
         const applicableRules = [
             new LifecycleRule()
                 .addTransitions([
@@ -405,7 +405,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
         });
     });
 
-    it('should not return transition when Transitions has no applicable ' + 'rule: Days', () => {
+    it('should not return transition when Transitions has no applicable rule: Days', () => {
         const applicableRules = [
             new LifecycleRule()
                 .addTransitions([
@@ -422,7 +422,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
         assert.strictEqual(rules.Transition, undefined);
     });
 
-    it('should not return transition when Transitions has no applicable ' + 'rule: Date', () => {
+    it('should not return transition when Transitions has no applicable rule: Date', () => {
         const applicableRules = [
             new LifecycleRule()
                 .addTransitions([
@@ -439,7 +439,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
         assert.strictEqual(rules.Transition, undefined);
     });
 
-    it('should not return transition when Transitions is an empty ' + 'array', () => {
+    it('should not return transition when Transitions is an empty array', () => {
         const applicableRules = [new LifecycleRule().addTransitions([]).build()];
         const rules = lutils.getApplicableRules(applicableRules, {});
         assert.strictEqual(rules.Transition, undefined);
@@ -559,7 +559,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
         });
     });
 
-    it('should return Transition across many rules: first rule with ' + 'multiple transitions', () => {
+    it('should return Transition across many rules: first rule with multiple transitions', () => {
         const applicableRules = [
             new LifecycleRule()
                 .addNCVTransitions([
@@ -593,7 +593,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
         });
     });
 
-    it('should return Transition across many rules: second rule with ' + 'multiple transitions', () => {
+    it('should return Transition across many rules: second rule with multiple transitions', () => {
         const applicableRules = [
             new LifecycleRule()
                 .addNCVTransitions([
@@ -631,7 +631,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
         });
     });
 
-    it('should not return transition when Transitions has no applicable ' + 'rule: Days', () => {
+    it('should not return transition when Transitions has no applicable rule: Days', () => {
         const applicableRules = [
             new LifecycleRule()
                 .addNCVTransitions([
@@ -648,7 +648,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
         assert.strictEqual(rules.Transition, undefined);
     });
 
-    it('should not return transition when Transitions is an empty ' + 'array', () => {
+    it('should not return transition when Transitions is an empty array', () => {
         const applicableRules = [new LifecycleRule().addNCVTransitions([]).build()];
         const rules = lutils.getApplicableRules(applicableRules, {});
         assert.strictEqual(rules.Transition, undefined);
@@ -661,7 +661,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
     });
 
     describe('transitioning to the same storage class', () => {
-        it('should not return transition when applicable transition is ' + 'already stored at the destination', () => {
+        it('should not return transition when applicable transition is already stored at the destination', () => {
             const applicableRules = [
                 new LifecycleRule()
                     .addTransitions([
@@ -707,7 +707,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
             },
         );
 
-        it('should not return transition when applicable transition is ' + 'already stored at the destination', () => {
+        it('should not return transition when applicable transition is already stored at the destination', () => {
             const applicableRules = [
                 new LifecycleRule()
                     .addNCVTransitions([

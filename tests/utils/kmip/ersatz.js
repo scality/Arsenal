@@ -64,10 +64,10 @@ class MirrorChannel extends EchoChannel {
         const uniqueBatchItemID = request.lookup('Request Message/Batch Item/Unique Batch Item ID')[0];
         const requestPayload = request.lookup('Request Message/Batch Item/Request Payload')[0];
         const requestProtocolVersionMinor = request.lookup(
-            'Request Message/Request Header/Protocol Version/' + 'Protocol Version Minor',
+            'Request Message/Request Header/Protocol Version/Protocol Version Minor',
         )[0];
         const requestProtocolVersionMajor = request.lookup(
-            'Request Message/Request Header/Protocol Version/' + 'Protocol Version Major',
+            'Request Message/Request Header/Protocol Version/Protocol Version Major',
         )[0];
         const requestOperation = request.lookup('Request Message/Batch Item/Operation')[0];
         const response = this.KMIP.Message([

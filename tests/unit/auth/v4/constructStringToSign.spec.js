@@ -14,7 +14,7 @@ const log = new DummyRequestLogger();
         // Example taken from: http://docs.aws.amazon.com/AmazonS3/
         // latest/API/sig-v4-header-based-auth.html
         it(
-            'should construct a stringToSign in accordance ' + 'with AWS rules for a get object request (header auth)',
+            'should construct a stringToSign in accordance with AWS rules for a get object request (header auth)',
             () => {
                 const path = '/test.txt';
                 const params = {
@@ -33,12 +33,12 @@ const log = new DummyRequestLogger();
                                 '0170aba48dd91039c6036bdb41',
                             'range': 'bytes=0-9',
                             'x-amz-content-sha256':
-                                'e3b0c44298fc1c149afbf4c' + '8996fb92427ae41e4649b934ca495991b7852b855',
+                                'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
                         },
                     },
                     query: {},
                     signedHeaders: 'host;range;x-amz-content-sha256;x-amz-date',
-                    payloadChecksum: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4' + '649b934ca495991b7852b855',
+                    payloadChecksum: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
                     credentialScope: '20130524/us-east-1/s3/aws4_request',
                     timestamp: '20130524T000000Z',
                     log,
@@ -58,7 +58,7 @@ const log = new DummyRequestLogger();
         // Example taken from: http://docs.aws.amazon.com/AmazonS3/
         // latest/API/sig-v4-header-based-auth.html
         it(
-            'should construct a stringToSign in accordance ' + 'with AWS rules for a put object request (header auth)',
+            'should construct a stringToSign in accordance with AWS rules for a put object request (header auth)',
             () => {
                 const path = '/test$file.text';
                 const params = {
@@ -78,12 +78,12 @@ const log = new DummyRequestLogger();
                                 '38d841ea1380cd77a1b5971af0ece108bd',
                             'x-amz-storage-class': 'REDUCED_REDUNDANCY',
                             'x-amz-content-sha256':
-                                '44ce7dd67c959e0d3524ffac1' + '771dfbba87d2b6b4b4e99e42034a8b803f8b072',
+                                '44ce7dd67c959e0d3524ffac1771dfbba87d2b6b4b4e99e42034a8b803f8b072',
                         },
                     },
                     query: {},
-                    signedHeaders: 'date;host;x-amz-content-sha256;' + 'x-amz-date;x-amz-storage-class',
-                    payloadChecksum: '44ce7dd67c959e0d3524ffac1771dfbba8' + '7d2b6b4b4e99e42034a8b803f8b072',
+                    signedHeaders: 'date;host;x-amz-content-sha256;x-amz-date;x-amz-storage-class',
+                    payloadChecksum: '44ce7dd67c959e0d3524ffac1771dfbba87d2b6b4b4e99e42034a8b803f8b072',
                     credentialScope: '20130524/us-east-1/s3/aws4_request',
                     timestamp: '20130524T000000Z',
                     log,
@@ -117,7 +117,7 @@ const log = new DummyRequestLogger();
                     },
                     query: {
                         'X-Amz-Algorithm': 'AWS4-HMAC-SHA256',
-                        'X-Amz-Credential': 'AKIAIOSFODNN7EXAMPLE/20130524/' + 'us-east-1/s3/aws4_request',
+                        'X-Amz-Credential': 'AKIAIOSFODNN7EXAMPLE/20130524/us-east-1/s3/aws4_request',
                         'X-Amz-Date': '20130524T000000Z',
                         'X-Amz-Expires': '86400',
                         'X-Amz-SignedHeaders': 'host',

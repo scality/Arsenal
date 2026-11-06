@@ -160,7 +160,7 @@ export function meetConditions(requestContext: RequestContext, statementConditio
                 (keyBasedOnRequestContext === undefined || keyBasedOnRequestContext === null) &&
                 (hasIfExistsCondition || isNegationOperator)
             ) {
-                log.trace('satisfies condition due to IfExists operator or ' + 'negation operator', {
+                log.trace('satisfies condition due to IfExists operator or negation operator', {
                     method: 'evaluators.evaluatePolicy',
                 });
                 continue;
@@ -172,7 +172,7 @@ export function meetConditions(requestContext: RequestContext, statementConditio
                 (keyBasedOnRequestContext === null || keyBasedOnRequestContext === undefined) &&
                 bareOperator !== 'Null'
             ) {
-                log.trace('condition not satisfied due to ' + 'missing info', {
+                log.trace('condition not satisfied due to missing info', {
                     operator,
                     conditionKey: transformedKey,
                     policyValue: transformedValue,

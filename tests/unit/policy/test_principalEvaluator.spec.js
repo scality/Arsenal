@@ -162,7 +162,7 @@ describe('Principal evaluator', () => {
             result: 'Neutral',
         },
         {
-            name: 'account (arn) not in NotPrincipal (effect Allow) -> ' + 'grant access',
+            name: 'account (arn) not in NotPrincipal (effect Allow) -> grant access',
             statement: {
                 NotPrincipal: {
                     AWS: anotherAccountArn,
@@ -173,7 +173,7 @@ describe('Principal evaluator', () => {
             result: 'Allow',
         },
         {
-            name: 'account (arn) not in NotPrincipal (effect Deny) -> ' + 'deny access',
+            name: 'account (arn) not in NotPrincipal (effect Deny) -> deny access',
             statement: {
                 NotPrincipal: {
                     AWS: anotherAccountArn,
@@ -184,7 +184,7 @@ describe('Principal evaluator', () => {
             result: 'Deny',
         },
         {
-            name: 'Other entities than AWS in principal (effect Allow) -> ' + 'neutral',
+            name: 'Other entities than AWS in principal (effect Allow) -> neutral',
             statement: {
                 Principal: {
                     Service: 'backbeat',
@@ -195,7 +195,7 @@ describe('Principal evaluator', () => {
             result: 'Neutral',
         },
         {
-            name: 'Other entities than AWS in principal (effect Deny) -> ' + 'neutral',
+            name: 'Other entities than AWS in principal (effect Deny) -> neutral',
             statement: {
                 Principal: {
                     Service: 'backbeat',

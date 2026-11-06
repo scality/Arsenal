@@ -1064,7 +1064,7 @@ function getTestListing(mdParams, data, vFormat) {
             assert.strictEqual(delimiter.skipping(), SKIP_NONE);
         });
 
-        it('skipping() should return SKIP_NONE when marker is set and ' + 'does not contain the delimiter', () => {
+        it('skipping() should return SKIP_NONE when marker is set and does not contain the delimiter', () => {
             const key = 'foo';
             const delimiter = new DelimiterVersions({ delimiter: '/', marker: key }, logger, vFormat);
 
@@ -1075,7 +1075,7 @@ function getTestListing(mdParams, data, vFormat) {
             assert.strictEqual(delimiter.skipping(), SKIP_NONE);
         });
 
-        it('skipping() should return prefix to skip when marker is set and ' + 'contains the delimiter', () => {
+        it('skipping() should return prefix to skip when marker is set and contains the delimiter', () => {
             const key = 'foo/bar';
             const delimiter = new DelimiterVersions({ delimiter: '/', marker: key }, logger, vFormat);
 
@@ -1091,7 +1091,7 @@ function getTestListing(mdParams, data, vFormat) {
             }
         });
 
-        it('skipping() should return prefix when marker is set and ' + 'ends with the delimiter', () => {
+        it('skipping() should return prefix when marker is set and ends with the delimiter', () => {
             const key = 'foo/';
             const delimiter = new DelimiterVersions({ delimiter: '/', marker: key }, logger, vFormat);
 

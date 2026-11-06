@@ -27,7 +27,7 @@ const errDict = {
         Action: 'Policy statement must contain actions.',
     },
     pattern: {
-        Action: 'Actions/Conditions must be prefaced by a vendor,' + ' e.g., iam, sdb, ec2, etc.',
+        Action: 'Actions/Conditions must be prefaced by a vendor, e.g., iam, sdb, ec2, etc.',
         Resource: 'Resource must be in ARN format or "*".',
     },
     minItems: {

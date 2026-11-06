@@ -11,7 +11,7 @@ const log = new DummyRequestLogger();
 const gcpConstructStringToSign = (request, query, log) => constructStringToSign(request, query, log, 'GCP');
 
 describe('checkAuth reconstruction of signature', () => {
-    it('should reconstruct the signature for a ' + 'GET request from s3-curl for AWS', () => {
+    it('should reconstruct the signature for a GET request from s3-curl for AWS', () => {
         // Based on s3-curl run
         const request = {
             method: 'GET',
@@ -31,7 +31,7 @@ describe('checkAuth reconstruction of signature', () => {
         assert.strictEqual(reconstructedSig, 'MJNF7AqNapSu32TlBOVkcAxj58c=');
     });
 
-    it('should reconstruct the signature for a GET request from ' + 'CyberDuck for AWS', () => {
+    it('should reconstruct the signature for a GET request from CyberDuck for AWS', () => {
         // Based on CyberDuck request
         const request = {
             method: 'GET',
@@ -52,7 +52,7 @@ describe('checkAuth reconstruction of signature', () => {
         assert.strictEqual(reconstructedSig, 'V8g5UJUFmMzruMqUHVT6ZwvUw+M=');
     });
 
-    it('should reconstruct the signature for a PUT request from ' + 's3cmd for AWS', () => {
+    it('should reconstruct the signature for a PUT request from s3cmd for AWS', () => {
         // Based on s3cmd run
         const request = {
             method: 'PUT',
@@ -79,7 +79,7 @@ describe('checkAuth reconstruction of signature', () => {
         assert.strictEqual(reconstructedSig, 'fWPcicKn7Fhzfje/0pRTifCxL44=');
     });
 
-    it('should reconstruct the signature for a ' + 'GET request from s3-curl for GCP', () => {
+    it('should reconstruct the signature for a GET request from s3-curl for GCP', () => {
         // Based on s3-curl run
         const request = {
             method: 'GET',
@@ -99,7 +99,7 @@ describe('checkAuth reconstruction of signature', () => {
         assert.strictEqual(reconstructedSig, 'MJNF7AqNapSu32TlBOVkcAxj58c=');
     });
 
-    it('should reconstruct the signature for a GET request from ' + 'CyberDuck for GCP', () => {
+    it('should reconstruct the signature for a GET request from CyberDuck for GCP', () => {
         // Based on CyberDuck request
         const request = {
             method: 'GET',
@@ -120,7 +120,7 @@ describe('checkAuth reconstruction of signature', () => {
         assert.strictEqual(reconstructedSig, 'bdcnXSDhpN0lR2NBUlayg4vmMDU=');
     });
 
-    it('should reconstruct the signature for a PUT request from ' + 's3cmd for GCP', () => {
+    it('should reconstruct the signature for a PUT request from s3cmd for GCP', () => {
         // Based on s3cmd run
         const request = {
             method: 'PUT',

@@ -57,7 +57,7 @@ const failTests = [
         name: 'should fail with invalid mode',
         params: { key: 'Mode', value: 'GOVERPLIANCE' },
         error: 'MalformedXML',
-        errMessage: 'Mode request xml must be one of "GOVERNANCE", ' + '"COMPLIANCE"',
+        errMessage: 'Mode request xml must be one of "GOVERNANCE", "COMPLIANCE"',
     },
     {
         name: 'should fail with retain until date in invalid format',

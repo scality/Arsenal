@@ -43,10 +43,10 @@ const serverExtensions = [
 
 class DummyServerTransport {
     registerHandshakeFunction() {
-        throw new Error('DummyServerTransport::registerHandshakeFunction: ' + 'Client side operations not implemented');
+        throw new Error('DummyServerTransport::registerHandshakeFunction: Client side operations not implemented');
     }
     send() {
-        throw new Error('DummyServerTransport::send: ' + 'Client side operations not implemented');
+        throw new Error('DummyServerTransport::send: Client side operations not implemented');
     }
 }
 
@@ -73,10 +73,10 @@ class LoopbackServerChannel extends EchoChannel {
         this.routeRequest(requestOperation, request, (err, responsePayload) => {
             const uniqueBatchItemID = request.lookup('Request Message/Batch Item/Unique Batch Item ID')[0];
             const requestProtocolVersionMinor = request.lookup(
-                'Request Message/Request Header/Protocol Version/' + 'Protocol Version Minor',
+                'Request Message/Request Header/Protocol Version/Protocol Version Minor',
             )[0];
             const requestProtocolVersionMajor = request.lookup(
-                'Request Message/Request Header/Protocol Version/' + 'Protocol Version Major',
+                'Request Message/Request Header/Protocol Version/Protocol Version Major',
             )[0];
 
             let result;
@@ -251,7 +251,7 @@ class LoopbackServerChannel extends EchoChannel {
     }
 
     routeActivate(request, cb) {
-        const keyIdentifier = (request.lookup('Request Message/Batch Item/Request Payload/' + 'Unique Identifier') || [
+        const keyIdentifier = (request.lookup('Request Message/Batch Item/Request Payload/Unique Identifier') || [
             undefined,
         ])[0];
         this.managedKeys[keyIdentifier].activationDate = new Date();
@@ -275,20 +275,20 @@ class LoopbackServerChannel extends EchoChannel {
     }
 
     _transform(cipherFunc, request, cb) {
-        const keyIdentifier = (request.lookup('Request Message/Batch Item/Request Payload/' + 'Unique Identifier') || [
+        const keyIdentifier = (request.lookup('Request Message/Batch Item/Request Payload/Unique Identifier') || [
             undefined,
         ])[0];
         const blockCipherMode = (request.lookup(
-            'Request Message/Batch Item/Request Payload/' + 'Cryptographic Parameters/Block Cipher Mode',
+            'Request Message/Batch Item/Request Payload/Cryptographic Parameters/Block Cipher Mode',
         ) || [undefined])[0];
         const paddingMethod = (request.lookup(
-            'Request Message/Batch Item/Request Payload/' + 'Cryptographic Parameters/Padding Method',
+            'Request Message/Batch Item/Request Payload/Cryptographic Parameters/Padding Method',
         ) || [undefined])[0];
         const cryptographicAlgorithm = (request.lookup(
-            'Request Message/Batch Item/Request Payload/' + 'Cryptographic Parameters/Cryptographic Algorithm',
+            'Request Message/Batch Item/Request Payload/Cryptographic Parameters/Cryptographic Algorithm',
         ) || [undefined])[0];
         const ivCounterNonce = this._getIvCounterNonce(request);
-        const data = (request.lookup('Request Message/Batch Item/Request Payload/' + 'Data') || [undefined])[0];
+        const data = (request.lookup('Request Message/Batch Item/Request Payload/Data') || [undefined])[0];
         assert(blockCipherMode === expectedBlockCipherMode);
         assert(paddingMethod === expectedPaddingMethod);
         assert(cryptographicAlgorithm === expectedAlgorithm);
@@ -318,7 +318,7 @@ class LoopbackServerChannel extends EchoChannel {
     }
 
     routeRevoke(request, cb) {
-        const keyIdentifier = (request.lookup('Request Message/Batch Item/Request Payload/' + 'Unique Identifier') || [
+        const keyIdentifier = (request.lookup('Request Message/Batch Item/Request Payload/Unique Identifier') || [
             undefined,
         ])[0];
         this.managedKeys[keyIdentifier].activationDate = null;
@@ -327,7 +327,7 @@ class LoopbackServerChannel extends EchoChannel {
     }
 
     routeDestroy(request, cb) {
-        const keyIdentifier = (request.lookup('Request Message/Batch Item/Request Payload/' + 'Unique Identifier') || [
+        const keyIdentifier = (request.lookup('Request Message/Batch Item/Request Payload/Unique Identifier') || [
             undefined,
         ])[0];
         assert(!this.managedKeys[keyIdentifier].activationDate);

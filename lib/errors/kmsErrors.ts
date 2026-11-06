@@ -63,7 +63,7 @@ export const allowedKmsErrors = {
     KeyUnavailableException: {
         code: 500,
         description:
-            'The request was rejected because the specified KMS key was not available. ' + 'You can retry the request.',
+            'The request was rejected because the specified KMS key was not available. You can retry the request.',
     },
     LimitExceededException: {
         code: 400,
