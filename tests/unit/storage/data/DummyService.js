@@ -297,7 +297,7 @@ class DummyService {
         return new AzureDummyContainerClient(key);
     }
 
-    _handleGetObject(command) {
+    _handleGetObject() {
         const stream = new DummyObjectStream(0, 10000000);
         const response = {
             Body: stream,

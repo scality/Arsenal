@@ -1,13 +1,12 @@
 const DummyRequestLogger = require('../helpers').DummyRequestLogger;
 const fakeTimers = require('@sinonjs/fake-timers');
-const { server: authServer, setHandler, doAuth } = require('../../../lib/auth/auth');
+const { server: authServer, setHandler } = require('../../../lib/auth/auth');
 const AuthInfo = require('../../../lib/auth/AuthInfo').default;
 const Vault = require('../../../lib/auth/Vault').default;
 const assert = require('assert');
 const sinon = require('sinon');
 
 describe('auth.doAuth', () => {
-    let request;
     let log;
     let cb;
     let vault;

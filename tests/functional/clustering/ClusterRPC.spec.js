@@ -52,7 +52,7 @@ function handleAssertionError(responseBody) {
     let parsed;
     try {
         parsed = JSON.parse(responseBody);
-    } catch (_) {
+    } catch {
         return;
     }
 
