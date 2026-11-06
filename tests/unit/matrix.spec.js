@@ -258,7 +258,7 @@ describe('Matrix', () => {
                     'should generate matrix',
                 )
                 .execute();
-        } catch (e) {
+        } catch {
             anExceptionWasFound = true;
         }
         it('An exception was launched', done => {
@@ -282,7 +282,7 @@ describe('Matrix', () => {
                     );
                 })
                 .execute();
-        } catch (e) {
+        } catch {
             anExceptionWasFound = true;
         }
         it('An exception was launched', done => {

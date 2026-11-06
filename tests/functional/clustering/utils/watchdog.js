@@ -78,7 +78,7 @@ if (Cluster.isMaster) {
             }
             try {
                 return process.kill(worker.process.pid, 0);
-            } catch (e) {
+            } catch {
                 log.error('Worker not restarted', {
                     id: i,
                 });

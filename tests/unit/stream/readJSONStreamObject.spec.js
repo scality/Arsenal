@@ -48,7 +48,7 @@ describe('readJSONStreamObject', () => {
             let value;
             try {
                 value = await readJSONStreamObject(new ReqStream(testCase.contents), testCase.joiSchema);
-            } catch (err) {
+            } catch {
                 assert.strictEqual(testCase.error, true);
                 return undefined;
             }

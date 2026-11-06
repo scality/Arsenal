@@ -124,7 +124,7 @@ describe('KMIP TTLV Codec', () => {
         try {
             kmip.encodeMask('Cryptographic Usage Mask', usageMask);
             done(Error('Must not succeed'));
-        } catch (e) {
+        } catch {
             done();
         }
     });
@@ -145,7 +145,7 @@ describe('KMIP TTLV Codec', () => {
             try {
                 kmip._decodeMessage(logger, rawMessage);
                 done(Error('Must not succeed'));
-            } catch (e) {
+            } catch {
                 done();
             }
         });
