@@ -1,10 +1,10 @@
-'use strict'; // eslint-disable-line strict
+'use strict';  
 
 const assert = require('assert');
 const MultipartUploads =
     require('../../../../lib/algos/list/MPU').MultipartUploads;
 const werelogs = require('werelogs').Logger;
-// eslint-disable-next-line new-cap
+ 
 const logger = new werelogs('listMpuTest');
 const performListing = require('../../../utils/performListing');
 const VSConst = require('../../../../lib/versioning/constants').VersioningConstants;
@@ -223,7 +223,7 @@ describe('Multipart Uploads listing algorithm', () => {
             assert.deepStrictEqual(listingResult, expectedResult);
         });
 
-        it(`should pass through checksum fields ` +
+        it('should pass through checksum fields ' +
             `(vFormat=${vFormat})`, () => {
             const checksumDbListing = checksumKeys[vFormat].map((key, i) => ({
                 key,

@@ -309,7 +309,7 @@ function generateRule(errorTag, tagObj, ID, Status, Filter, Action) {
         Rule = `<Rule>${ID + Status + Filter + Action}</Rule>` + `<Rule>${ID + Status + Filter + Action}</Rule>`;
     } else if (tagObj && tagObj.rule === 'too-many-rules') {
         for (let i = 0; i <= 1000; i++) {
-            // eslint-disable-next-line no-param-reassign
+             
             ID = `<ID>foo${i}</ID>`;
             Rule = `${Rule}<Rule>${ID + Status + Filter + Action}</Rule>`;
         }

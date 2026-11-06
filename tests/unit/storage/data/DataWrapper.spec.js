@@ -94,13 +94,13 @@ describe('DataWrapper', () => {
             const dataRetrievalInfo = { key: 'test-key', dataStoreName: 'test' };
             const hashedStream = new MD5Sum();
             sandbox.stub(hashedStream, 'on').callsFake((event, cb) => {
-                if (event === 'hashed') cb();
+                if (event === 'hashed') {cb();}
                 return hashedStream;
             });
 
             mockLocStorageCheckFn.callsFake((loc, size, log, cb) => process.nextTick(() => cb(null)));
             mockClient.put.callsFake((stream, size, ctx, info, uid, cb) => {
-                // eslint-disable-next-line no-param-reassign
+                 
                 stream.completedHash = 'mock-hash';
                 process.nextTick(() => cb(null, dataRetrievalInfo));
             });
@@ -560,7 +560,7 @@ describe('DataWrapper', () => {
             const cipherBundle = { cipher: new PassThrough() };
             const dataRetrievalInfo = { key: 'test-key', dataStoreName: 'test' };
             mockClient.put.callsFake((stream, size, ctx, info, uid, cb) => {
-                // eslint-disable-next-line no-param-reassign
+                 
                 stream.completedHash = 'mock-hash';
                 process.nextTick(() => cb(null, dataRetrievalInfo));
             });

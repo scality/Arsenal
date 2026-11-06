@@ -58,7 +58,7 @@ export default class BucketLoggingStatus {
     }
 
     toXML(): string {
-        let loggingEnabledXML = "";
+        let loggingEnabledXML = '';
         if (this._loggingEnabled) {
             loggingEnabledXML = `<LoggingEnabled>
     <TargetBucket>${this._loggingEnabled.TargetBucket}</TargetBucket>
