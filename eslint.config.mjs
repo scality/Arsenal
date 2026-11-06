@@ -5,6 +5,7 @@ import { FlatCompat } from '@eslint/eslintrc';
 import tseslint from 'typescript-eslint';
 import { includeIgnoreFile } from '@eslint/compat';
 import eslintConfigPrettier from 'eslint-config-prettier';
+import globals from 'globals';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,6 +31,12 @@ export default tseslint.config(
             'new-cap': 'off',
             'quotes': 'off',
             '@typescript-eslint/no-unsafe-function-type': 'off',
+        },
+    },
+    {
+        files: ['tests/**/*.js'],
+        languageOptions: {
+            globals: globals.jest,
         },
     },
     // Must be last: turns off ESLint formatting rules that conflict with
