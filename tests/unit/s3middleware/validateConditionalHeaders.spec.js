@@ -263,7 +263,7 @@ describe('_checkEtagNoneMatch function :', () => {
             expect(result.error.is.NotModified).toBeTruthy();
         });
 
-        it(`should return NotModified if ${item.desc} is in a list of ` + 'otherwise non-matching values', () => {
+        it(`should return NotModified if ${item.desc} is in a list of otherwise non-matching values`, () => {
             const result = _checkEtagNoneMatch(`aaa,${item.value},bbb`, contentMD5);
             expect(result.error.is.NotModified).toBeTruthy();
         });

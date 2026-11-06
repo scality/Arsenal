@@ -354,7 +354,7 @@ export function decode(str: string): string | Error {
             decoded.length !== BASE62_DECODED_LENGTH
         ) {
             return new Error(
-                `decoded ${str} is not length ` + `${LEGACY_BASE62_DECODED_LENGTH} or ${BASE62_DECODED_LENGTH}`,
+                `decoded ${str} is not length ${LEGACY_BASE62_DECODED_LENGTH} or ${BASE62_DECODED_LENGTH}`,
             );
         }
         return decoded;

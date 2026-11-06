@@ -65,7 +65,7 @@ function _listingURL(prefix, marker) {
     const reSlash = /[/]/g;
     const escapedPrefix = prefix.replace(reSlash, '%2F');
     const escapedMarker = marker.replace(reSlash, '%2F');
-    return `/default/bucket/${Bucket}?delimiter=%2F&prefix=` + `${escapedPrefix}&maxKeys=1&marker=${escapedMarker}`;
+    return `/default/bucket/${Bucket}?delimiter=%2F&prefix=${escapedPrefix}&maxKeys=1&marker=${escapedMarker}`;
 }
 
 function _listObjects(prefix, objects, cb) {

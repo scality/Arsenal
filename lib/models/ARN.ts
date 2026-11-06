@@ -75,7 +75,7 @@ export default class ARN {
         if (accountId && !/^([0-9]{12}|[*])$/.test(accountId)) {
             return {
                 error: errorInstances.InvalidArgument.customizeDescription(
-                    `bad ARN: bad account ID "${accountId}": ` + 'must be a 12-digit number or "*"',
+                    `bad ARN: bad account ID "${accountId}": must be a 12-digit number or "*"`,
                 ),
             };
         }

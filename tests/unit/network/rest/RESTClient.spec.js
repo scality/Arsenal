@@ -71,7 +71,7 @@ describe('RESTClient single-callback guarantee (ARSN-594)', () => {
             assert.strictEqual(
                 callCount,
                 1,
-                'get callback should be called exactly once, was called ' + `${callCount} times`,
+                `get callback should be called exactly once, was called ${callCount} times`,
             );
             assert.ifError(firstErr);
             assert.strictEqual(firstRes, fakeResponse);

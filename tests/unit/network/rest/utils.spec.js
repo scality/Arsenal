@@ -15,7 +15,7 @@ describe('parseURL function', () => {
             expectedKey: 'test with spaces',
         },
         {
-            inputUrl: `${constants.passthroughFileURL}` + '/test%20with%20encoded%20spaces',
+            inputUrl: `${constants.passthroughFileURL}/test%20with%20encoded%20spaces`,
             expectedKey: 'test with encoded spaces',
         },
     ].forEach(testCase => {

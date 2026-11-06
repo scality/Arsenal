@@ -53,14 +53,14 @@ export const getBlockId = (uploadId: string, partNumber: number, subPartIndex: n
     const paddedPartNumber = padString(partNumber, 'partNumber');
     const paddedSubPart = padString(subPartIndex, 'subPart');
     const blockId =
-        `${uploadId}${splitter}partNumber${paddedPartNumber}` + `${splitter}subPart${paddedSubPart}${splitter}`;
+        `${uploadId}${splitter}partNumber${paddedPartNumber}${splitter}subPart${paddedSubPart}${splitter}`;
     return Buffer.from(padString(blockId, 'part')).toString('base64');
 };
 
 export const getSummaryPartId = (partNumber: number, eTag: string, size: number) => {
     const paddedPartNumber = padString(partNumber, 'partNumber');
     const timestamp = Date.now();
-    const summaryKey = `${paddedPartNumber}${splitter}${timestamp}` + `${splitter}${eTag}${splitter}${size}${splitter}`;
+    const summaryKey = `${paddedPartNumber}${splitter}${timestamp}${splitter}${eTag}${splitter}${size}${splitter}`;
     return padString(summaryKey, 'part');
 };
 

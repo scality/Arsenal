@@ -212,7 +212,7 @@ export function convertToXml(objectTags?: any) {
     xml.push('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>', '<Tagging> <TagSet>');
     if (objectTags && Object.keys(objectTags).length > 0) {
         Object.keys(objectTags).forEach(key => {
-            xml.push(`<Tag><Key>${escapeForXml(key)}</Key>` + `<Value>${escapeForXml(objectTags[key])}</Value></Tag>`);
+            xml.push(`<Tag><Key>${escapeForXml(key)}</Key><Value>${escapeForXml(objectTags[key])}</Value></Tag>`);
         });
     }
     xml.push('</TagSet> </Tagging>');

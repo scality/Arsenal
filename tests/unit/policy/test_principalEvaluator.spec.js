@@ -255,7 +255,7 @@ describe('Principal evaluator', () => {
             valids: {
                 AWS: [
                     `arn:aws:iam::${defaultAccountId}:role/role1`,
-                    `arn:aws:iam::${defaultAccountId}:assumed-role` + '/role1/session',
+                    `arn:aws:iam::${defaultAccountId}:assumed-role/role1/session`,
                 ],
             },
             result: 'Allow',
@@ -271,7 +271,7 @@ describe('Principal evaluator', () => {
             valids: {
                 AWS: [
                     `arn:aws:iam::${defaultAccountId}:role/role1`,
-                    `arn:aws:iam::${defaultAccountId}:assumed-role` + '/role1/session',
+                    `arn:aws:iam::${defaultAccountId}:assumed-role/role1/session`,
                 ],
             },
             result: 'Deny',

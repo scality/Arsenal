@@ -281,7 +281,7 @@ function generateFilter(errorTag, tagObj) {
             middleTags = `<Prefix>${longValue}</Prefix>`;
         }
         if (tagObj.label === 'mult-prefixes') {
-            middleTags = '<Prefix>foo</Prefix><Prefix>bar</Prefix>' + `<Prefix>${tagObj.lastPrefix}</Prefix>`;
+            middleTags = `<Prefix>foo</Prefix><Prefix>bar</Prefix><Prefix>${tagObj.lastPrefix}</Prefix>`;
         }
         if (tagObj.label === 'mult-tags') {
             middleTags =
@@ -306,7 +306,7 @@ function generateFilter(errorTag, tagObj) {
 function generateRule(errorTag, tagObj, ID, Status, Filter, Action) {
     let Rule;
     if (tagObj && tagObj.rule === 'not-unique-id') {
-        Rule = `<Rule>${ID + Status + Filter + Action}</Rule>` + `<Rule>${ID + Status + Filter + Action}</Rule>`;
+        Rule = `<Rule>${ID + Status + Filter + Action}</Rule><Rule>${ID + Status + Filter + Action}</Rule>`;
     } else if (tagObj && tagObj.rule === 'too-many-rules') {
         for (let i = 0; i <= 1000; i++) {
             ID = `<ID>foo${i}</ID>`;
@@ -352,7 +352,7 @@ function generateXml(errorTag, tagObj) {
         Rule = `<Rule>${ID + Status + Filter + Action}</Rule>`;
     }
     const Lifecycle =
-        errorTag === 'LifecycleConfiguration' ? '' : `<LifecycleConfiguration>${Rule}` + '</LifecycleConfiguration>';
+        errorTag === 'LifecycleConfiguration' ? '' : `<LifecycleConfiguration>${Rule}</LifecycleConfiguration>`;
     return Lifecycle;
 }
 

@@ -430,7 +430,7 @@ export class BaseService {
         } else {
             return cb(
                 errorInstances.InvalidArgument.customizeDescription(
-                    `Unknown remote call ${remoteCall} ` + `in namespace ${this.namespace}`,
+                    `Unknown remote call ${remoteCall} in namespace ${this.namespace}`,
                 ),
             );
         }

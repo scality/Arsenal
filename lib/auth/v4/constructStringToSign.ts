@@ -37,6 +37,6 @@ export default function constructStringToSign(params: {
     }
     const sha256 = crypto.createHash('sha256');
     const canonicalHex = sha256.update(canonicalReqResult, 'binary').digest('hex');
-    const stringToSign = `AWS4-HMAC-SHA256\n${timestamp}\n` + `${credentialScope}\n${canonicalHex}`;
+    const stringToSign = `AWS4-HMAC-SHA256\n${timestamp}\n${credentialScope}\n${canonicalHex}`;
     return stringToSign;
 }

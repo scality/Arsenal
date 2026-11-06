@@ -221,7 +221,7 @@ describe('Multipart Uploads listing algorithm', () => {
             assert.deepStrictEqual(listingResult, expectedResult);
         });
 
-        it('should pass through checksum fields ' + `(vFormat=${vFormat})`, () => {
+        it(`should pass through checksum fields (vFormat=${vFormat})`, () => {
             const checksumDbListing = checksumKeys[vFormat].map((key, i) => ({
                 key,
                 value: checksumValues[i],
