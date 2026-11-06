@@ -13,9 +13,8 @@ const logger = new DummyRequestLogger();
 
 describe('Public Access', () => {
     it(
-        'should grant access to a user that provides absolutely' +
-            'no authentication information and should assign that user the ' +
-            'All Users Group accessKey',
+        'should grant access to a user that provides absolutelyno authentication ' +
+            'information and should assign that user the All Users Group accessKey',
         done => {
             const request = {
                 method: 'GET',

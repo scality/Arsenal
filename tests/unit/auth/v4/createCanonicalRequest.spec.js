@@ -166,9 +166,8 @@ describe('createCanonicalRequest function', () => {
     );
 
     it(
-        'should construct a canonical request that contains upper and ' +
-            'lower case query params and query params treated like headers ' +
-            '(x-amz-acl)',
+        'should construct a canonical request that contains upper and lower ' +
+            'case query params and query params treated like headers (x-amz-acl)',
         () => {
             const params = {
                 pHttpVerb: 'PUT',
@@ -233,9 +232,8 @@ describe('createCanonicalRequest function', () => {
     });
 
     it(
-        'should construct a canonical request that contains a ' +
-            'signed expect header even if expect header value was ' +
-            'stripped by the load balancer',
+        'should construct a canonical request that contains a signed expect ' +
+            'header even if expect header value was stripped by the load balancer',
         () => {
             const params = {
                 pHttpVerb: 'PUT',
@@ -260,9 +258,8 @@ describe('createCanonicalRequest function', () => {
     );
 
     it(
-        'should trim white space in a canonical header value so that ' +
-            'there is no white space before or after a value and any sequential ' +
-            'white space becomes a single space',
+        'should trim white space in a canonical header value so that there is no white ' +
+            'space before or after a value and any sequential white space becomes a single space',
         () => {
             const params = {
                 pHttpVerb: 'GET',

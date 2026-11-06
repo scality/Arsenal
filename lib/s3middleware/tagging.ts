@@ -11,9 +11,8 @@ export interface BucketTag {
 
 const errorInvalidArgument = () =>
     errorInstances.InvalidArgument.customizeDescription(
-        "The header 'x-amz-tagging' shall be " +
-            'encoded as UTF-8 then URLEncoded URL query parameters without ' +
-            'tag name duplicates.',
+        "The header 'x-amz-tagging' shall be encoded as UTF-8 then " +
+            'URLEncoded URL query parameters without tag name duplicates.',
     );
 const errorBadRequestLimit50 = () =>
     errorInstances.BadRequest.customizeDescription('Object tags cannot be greater than 50');

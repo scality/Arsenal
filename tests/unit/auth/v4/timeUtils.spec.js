@@ -16,9 +16,8 @@ const log = new DummyRequestLogger();
 
 describe('convertAmzTimeToMs function', () => {
     it(
-        'should convert ISO8601Timestamp format without ' +
-            'dashes or colons, e.g. 20160202T220410Z to milliseconds since ' +
-            'Unix epoch',
+        'should convert ISO8601Timestamp format without dashes or ' +
+            'colons, e.g. 20160202T220410Z to milliseconds since Unix epoch',
         () => {
             const input = '20160202T220410Z';
             const expectedOutput = 1454450650000;
