@@ -35,8 +35,7 @@ describe('v2 constructStringToSign function', () => {
             'Signature': 'WAkITY3f1igNJf68weCmffkUzDM=',
             'x-amz-acl': 'public-read',
         };
-        const expectedOutput =
-            'PUT\n\nimage/jpeg\n1472669382\nx-amz-acl:public-read\n/noderocks/cuteotter.jpeg';
+        const expectedOutput = 'PUT\n\nimage/jpeg\n1472669382\nx-amz-acl:public-read\n/noderocks/cuteotter.jpeg';
         const actualOutput = constructStringToSign(request, data, log);
         assert.strictEqual(actualOutput, expectedOutput);
     });
@@ -68,8 +67,7 @@ describe('v2 constructStringToSign function', () => {
             'Signature': 'WAkITY3f1igNJf68weCmffkUzDM=',
             'x-goog-acl': 'public-read',
         };
-        const expectedOutput =
-            'PUT\n\nimage/jpeg\n1472669382\nx-goog-acl:public-read\n/noderocks/cuteotter.jpeg';
+        const expectedOutput = 'PUT\n\nimage/jpeg\n1472669382\nx-goog-acl:public-read\n/noderocks/cuteotter.jpeg';
         const actualOutput = constructStringToSign(request, data, log, 'GCP');
         assert.strictEqual(actualOutput, expectedOutput);
     });

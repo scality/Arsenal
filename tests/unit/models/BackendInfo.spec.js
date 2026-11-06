@@ -108,23 +108,17 @@ describe('BackendInfo class', () => {
             assert.equal(res.isValid, true);
         });
 
-        it(
-            'should return isValid if requestEndpoint is invalid but valid objectLocationConstraint was provided',
-            () => {
-                dummyConfig.backends.data = 'multiple';
-                const res = BackendInfo.controllingBackendParam(dummyConfig, memLocation, undefined, 'notValid', log);
-                assert.equal(res.isValid, true);
-            },
-        );
+        it('should return isValid if requestEndpoint is invalid but valid objectLocationConstraint was provided', () => {
+            dummyConfig.backends.data = 'multiple';
+            const res = BackendInfo.controllingBackendParam(dummyConfig, memLocation, undefined, 'notValid', log);
+            assert.equal(res.isValid, true);
+        });
 
-        it(
-            'should return isValid if requestEndpoint is invalid but valid bucketLocationConstraint was provided',
-            () => {
-                dummyConfig.backends.data = 'multiple';
-                const res = BackendInfo.controllingBackendParam(dummyConfig, undefined, memLocation, 'notValid', log);
-                assert.equal(res.isValid, true);
-            },
-        );
+        it('should return isValid if requestEndpoint is invalid but valid bucketLocationConstraint was provided', () => {
+            dummyConfig.backends.data = 'multiple';
+            const res = BackendInfo.controllingBackendParam(dummyConfig, undefined, memLocation, 'notValid', log);
+            assert.equal(res.isValid, true);
+        });
 
         it('should return isValid if all backend parameters are valid', () => {
             const res = BackendInfo.controllingBackendParam(dummyConfig, memLocation, fileLocation, '127.0.0.1', log);

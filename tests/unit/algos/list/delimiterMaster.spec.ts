@@ -1401,87 +1401,81 @@ describe('DelimiterMaster listing algorithm: gap caching and lookup', () => {
         expect(gapCache.toArray()).toEqual([]);
     });
 
-    it(
-        'should trigger gap lookup and continue filtering without skipping when encountering a delete marker',
-        () => {
-            const listing = new DelimiterMaster({}, fakeLogger, 'v0');
-            const gapsArray = [{ firstKey: 'pre/0002', lastKey: `pre/0003${VID_SEP}v100`, weight: 6 }];
-            const gapCache = GapCacheAsSet.createFromArray(JSON.parse(JSON.stringify(gapsArray)), 100);
-            listing.refreshGapCache(gapCache);
+    it('should trigger gap lookup and continue filtering without skipping when encountering a delete marker', () => {
+        const listing = new DelimiterMaster({}, fakeLogger, 'v0');
+        const gapsArray = [{ firstKey: 'pre/0002', lastKey: `pre/0003${VID_SEP}v100`, weight: 6 }];
+        const gapCache = GapCacheAsSet.createFromArray(JSON.parse(JSON.stringify(gapsArray)), 100);
+        listing.refreshGapCache(gapCache);
 
-            let resumeState = filterEntries(listing, 'Vv', 'as');
-            // state should still be UnknownGap since no delete marker has been seen yet
-            expect(listing._gapCaching.state).toEqual(GapCachingState.UnknownGap);
+        let resumeState = filterEntries(listing, 'Vv', 'as');
+        // state should still be UnknownGap since no delete marker has been seen yet
+        expect(listing._gapCaching.state).toEqual(GapCachingState.UnknownGap);
 
-            resumeState = filterEntries(listing, 'D', 'a', resumeState);
-            // since the lookup is asynchronous (Promise-based), it should now be in progress
-            expect(listing._gapCaching.state).toEqual(GapCachingState.GapLookupInProgress);
+        resumeState = filterEntries(listing, 'D', 'a', resumeState);
+        // since the lookup is asynchronous (Promise-based), it should now be in progress
+        expect(listing._gapCaching.state).toEqual(GapCachingState.GapLookupInProgress);
 
-            filterEntries(listing, 'dv Ddv Vv Ddv', 'ss ass as ass', resumeState);
-            // the lookup should still be in progress
-            expect(listing._gapCaching.state).toEqual(GapCachingState.GapLookupInProgress);
+        filterEntries(listing, 'dv Ddv Vv Ddv', 'ss ass as ass', resumeState);
+        // the lookup should still be in progress
+        expect(listing._gapCaching.state).toEqual(GapCachingState.GapLookupInProgress);
 
-            // the gap cache shouldn't have been updated
-            expect(gapCache.toArray()).toEqual(gapsArray);
-        },
-    );
+        // the gap cache shouldn't have been updated
+        expect(gapCache.toArray()).toEqual(gapsArray);
+    });
 
-    it(
-        'should cache a gap after lookup completes, and use it to skip over keys within the gap range',
-        async () => {
-            const listing = new DelimiterMaster({}, fakeLogger, 'v0');
-            const gapsArray = [{ firstKey: 'pre/0002', lastKey: `pre/0006${VID_SEP}v101`, weight: 14 }];
-            const gapCache = GapCacheAsSet.createFromArray(JSON.parse(JSON.stringify(gapsArray)), 100);
-            listing.refreshGapCache(gapCache);
+    it('should cache a gap after lookup completes, and use it to skip over keys within the gap range', async () => {
+        const listing = new DelimiterMaster({}, fakeLogger, 'v0');
+        const gapsArray = [{ firstKey: 'pre/0002', lastKey: `pre/0006${VID_SEP}v101`, weight: 14 }];
+        const gapCache = GapCacheAsSet.createFromArray(JSON.parse(JSON.stringify(gapsArray)), 100);
+        listing.refreshGapCache(gapCache);
 
-            let resumeState = filterEntries(listing, 'Vv D', 'as a');
-            // since the lookup is asynchronous (Promise-based), it should now be in progress
-            expect(listing._gapCaching.state).toEqual(GapCachingState.GapLookupInProgress);
-            expect(listing.state.id).toEqual(DelimiterMasterFilterStateId.SkippingVersionsV0);
-            // wait until the lookup completes (should happen in the next
-            // event loop iteration so always quicker than a non-immediate timer)
-            await new Promise(resolve => setTimeout(resolve, 1));
+        let resumeState = filterEntries(listing, 'Vv D', 'as a');
+        // since the lookup is asynchronous (Promise-based), it should now be in progress
+        expect(listing._gapCaching.state).toEqual(GapCachingState.GapLookupInProgress);
+        expect(listing.state.id).toEqual(DelimiterMasterFilterStateId.SkippingVersionsV0);
+        // wait until the lookup completes (should happen in the next
+        // event loop iteration so always quicker than a non-immediate timer)
+        await new Promise(resolve => setTimeout(resolve, 1));
 
-            // the lookup should have completed now and the next gap should be cached
-            expect(listing._gapCaching.state).toEqual(GapCachingState.GapCached);
-            expect(listing.state.id).toEqual(DelimiterMasterFilterStateId.SkippingVersionsV0);
+        // the lookup should have completed now and the next gap should be cached
+        expect(listing._gapCaching.state).toEqual(GapCachingState.GapCached);
+        expect(listing.state.id).toEqual(DelimiterMasterFilterStateId.SkippingVersionsV0);
 
-            // the state should stay in SkippingVersionsV0 until filter() is called with
-            // a new master delete marker
-            resumeState = filterEntries(listing, 'dvvv', 'ssss', resumeState);
-            expect(listing.state.id).toEqual(DelimiterMasterFilterStateId.SkippingVersionsV0);
+        // the state should stay in SkippingVersionsV0 until filter() is called with
+        // a new master delete marker
+        resumeState = filterEntries(listing, 'dvvv', 'ssss', resumeState);
+        expect(listing.state.id).toEqual(DelimiterMasterFilterStateId.SkippingVersionsV0);
 
-            // here comes the next master delete marker, it should be skipped as it is still within
-            // the cached gap's range (its key is "0003" and version "v100")
-            resumeState = filterEntries(listing, 'D', 's', resumeState);
-            // the listing algorithm should now be actively skipping the gap
-            expect(listing.state.id).toEqual(DelimiterMasterFilterStateId.SkippingGapV0);
+        // here comes the next master delete marker, it should be skipped as it is still within
+        // the cached gap's range (its key is "0003" and version "v100")
+        resumeState = filterEntries(listing, 'D', 's', resumeState);
+        // the listing algorithm should now be actively skipping the gap
+        expect(listing.state.id).toEqual(DelimiterMasterFilterStateId.SkippingGapV0);
 
-            // the skipping() function should return the gap's last key.
-            // NOTE: returning a key to jump to that is the actual gap's last key
-            // (instead of a key just after) allows the listing algorithm to build
-            // a chained gap when the database listing is restarted from that point
-            // and there are more delete markers to skip.
-            expect(listing.skipping()).toEqual(`pre/0006${VID_SEP}v101`);
+        // the skipping() function should return the gap's last key.
+        // NOTE: returning a key to jump to that is the actual gap's last key
+        // (instead of a key just after) allows the listing algorithm to build
+        // a chained gap when the database listing is restarted from that point
+        // and there are more delete markers to skip.
+        expect(listing.skipping()).toEqual(`pre/0006${VID_SEP}v101`);
 
-            // - The next master delete markers with key "0004" and "0005" are still within the
-            //   gap's range, so filter() should return FILTER_SKIP ('s')
-            //
-            // - Master key "0006" is NOT a delete marker, although this means that the update
-            //   happened after the gap was looked up and the listing is allowed to skip it as
-            //   well (it actually doesn't even check so doesn't know what type of key it is).
-            //
-            // - The following master delete marker "0007" is past the gap so returns
-            //   FILTER_ACCEPT ('a') and should have triggered a new cache lookup, and
-            //   the listing state should have been switched back to SkippingVersionsV0.
-            filterEntries(listing, 'dv Ddv Ddv Vvvv Ddv', 'ss sss sss ssss ass', resumeState);
-            expect(listing._gapCaching.state).toEqual(GapCachingState.GapLookupInProgress);
-            expect(listing.state.id).toEqual(DelimiterMasterFilterStateId.SkippingVersionsV0);
+        // - The next master delete markers with key "0004" and "0005" are still within the
+        //   gap's range, so filter() should return FILTER_SKIP ('s')
+        //
+        // - Master key "0006" is NOT a delete marker, although this means that the update
+        //   happened after the gap was looked up and the listing is allowed to skip it as
+        //   well (it actually doesn't even check so doesn't know what type of key it is).
+        //
+        // - The following master delete marker "0007" is past the gap so returns
+        //   FILTER_ACCEPT ('a') and should have triggered a new cache lookup, and
+        //   the listing state should have been switched back to SkippingVersionsV0.
+        filterEntries(listing, 'dv Ddv Ddv Vvvv Ddv', 'ss sss sss ssss ass', resumeState);
+        expect(listing._gapCaching.state).toEqual(GapCachingState.GapLookupInProgress);
+        expect(listing.state.id).toEqual(DelimiterMasterFilterStateId.SkippingVersionsV0);
 
-            // the gap cache must not have been updated in the process
-            expect(gapCache.toArray()).toEqual(gapsArray);
-        },
-    );
+        // the gap cache must not have been updated in the process
+        expect(gapCache.toArray()).toEqual(gapsArray);
+    });
 
     it('should extend a cached gap forward if current delete markers are listed beyond', async () => {
         const listing = new DelimiterMaster({}, fakeLogger, 'v0');

@@ -26,8 +26,7 @@ describe('should URIencode in accordance with AWS rules', () => {
 
     it('should encode / if no second argument given', () => {
         const input1 = '/s3amazonaws.com/?$*@whateverASFEFWE()@)(*#@+  )';
-        const expectedOutput1 =
-            '%2Fs3amazonaws.com%2F%3F%24%2A%40whateverASFEFWE%28%29%40%29%28%2A%23%40%2B%20%20%29';
+        const expectedOutput1 = '%2Fs3amazonaws.com%2F%3F%24%2A%40whateverASFEFWE%28%29%40%29%28%2A%23%40%2B%20%20%29';
         const actualOutput1 = awsURIencode(input1);
         assert.strictEqual(actualOutput1, expectedOutput1);
         const input2 =

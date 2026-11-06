@@ -188,24 +188,21 @@ describe('v4 queryAuthCheck', () => {
         done();
     });
 
-    it(
-        'should return error if scope date from X-Amz-Credential paramdoes not match date from X-Amz-Date param',
-        done => {
-            const clock = fakeTimers.install({ now: 1454974984001 });
-            const alteredRequest = createAlteredRequest(
-                {
-                    'X-Amz-Credential': 'accessKey1/20160209/us-east-1/s3/aws4_request',
-                },
-                'query',
-                request,
-                query,
-            );
-            const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
-            clock.uninstall();
-            assert.deepStrictEqual(res.err, errors.RequestTimeTooSkewed);
-            done();
-        },
-    );
+    it('should return error if scope date from X-Amz-Credential paramdoes not match date from X-Amz-Date param', done => {
+        const clock = fakeTimers.install({ now: 1454974984001 });
+        const alteredRequest = createAlteredRequest(
+            {
+                'X-Amz-Credential': 'accessKey1/20160209/us-east-1/s3/aws4_request',
+            },
+            'query',
+            request,
+            query,
+        );
+        const res = queryAuthCheck(alteredRequest, log, alteredRequest.query);
+        clock.uninstall();
+        assert.deepStrictEqual(res.err, errors.RequestTimeTooSkewed);
+        done();
+    });
 
     it('should successfully return v4 and no error', done => {
         // Freezes time so date created within function will be Feb 8, 2016

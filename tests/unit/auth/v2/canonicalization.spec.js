@@ -189,10 +189,7 @@ describe('canonicalization', () => {
             'host': 's3.amazonaws.com:80',
         };
         const canonicalizedHeader = getCanonicalizedAmzHeaders(headers);
-        assert.strictEqual(
-            canonicalizedHeader,
-            'x-amz-meta-meta:something very meta\nx-amz-number-header:12345\n',
-        );
+        assert.strictEqual(canonicalizedHeader, 'x-amz-meta-meta:something very meta\nx-amz-number-header:12345\n');
     });
 
     it('should handle header values that are arrays for GCP', () => {

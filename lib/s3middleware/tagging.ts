@@ -69,9 +69,7 @@ export const _validator = {
 
     validateKeyValue: (key: string, value: any) => {
         if (key.length > 128) {
-            return errorInstances.InvalidTag.customizeDescription(
-                'The TagKey you have provided is too long, max 128',
-            );
+            return errorInstances.InvalidTag.customizeDescription('The TagKey you have provided is too long, max 128');
         }
         if (value.length > 256) {
             return errorInstances.InvalidTag.customizeDescription(

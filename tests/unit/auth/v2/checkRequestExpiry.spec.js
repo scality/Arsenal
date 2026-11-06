@@ -21,14 +21,11 @@ describe('checkTimestamp for timecheck in header auth', () => {
         assert.deepStrictEqual(timeoutResult, errors.RequestTimeTooSkewed);
     });
 
-    it(
-        'should return RequestTimeTooSkewed error if the date in the header is more than 15 minutes in the future',
-        () => {
-            const timestamp = new Date(Date.now() + 16 * 60000);
-            const timeoutResult = checkRequestExpiry(timestamp, log);
-            assert.deepStrictEqual(timeoutResult, errors.RequestTimeTooSkewed);
-        },
-    );
+    it('should return RequestTimeTooSkewed error if the date in the header is more than 15 minutes in the future', () => {
+        const timestamp = new Date(Date.now() + 16 * 60000);
+        const timeoutResult = checkRequestExpiry(timestamp, log);
+        assert.deepStrictEqual(timeoutResult, errors.RequestTimeTooSkewed);
+    });
 
     it('should return no error if the date in the header is within 15 minutes of current time', () => {
         const timestamp = new Date();

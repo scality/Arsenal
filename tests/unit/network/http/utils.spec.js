@@ -98,12 +98,9 @@ describe('parseRange function', () => {
         checkParseRange('bytes=09', 10);
     });
 
-    it(
-        'should return undefined for the range if the range header format is invalid: value invalid character',
-        () => {
-            checkParseRange('bytes=%-4', 10);
-        },
-    );
+    it('should return undefined for the range if the range header format is invalid: value invalid character', () => {
+        checkParseRange('bytes=%-4', 10);
+    });
 
     it('should return undefined for the range if the range header format is invalid: value not int', () => {
         checkParseRange('bytes=4-a', 10);

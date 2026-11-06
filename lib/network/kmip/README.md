@@ -54,12 +54,8 @@ const socket = tls.connect(5696, options, () => {
 socket.on('data', data => {
     const decodedMessage = kmip.decodeMessage(logger, data);
     const summary = {
-        major: decodedMessage.lookup(
-            'Response Message/Response Header/Protocol Version/Protocol Version Major',
-        )[0],
-        minor: decodedMessage.lookup(
-            'Response Message/Response Header/Protocol Version/Protocol Version Minor',
-        )[0],
+        major: decodedMessage.lookup('Response Message/Response Header/Protocol Version/Protocol Version Major')[0],
+        minor: decodedMessage.lookup('Response Message/Response Header/Protocol Version/Protocol Version Minor')[0],
         supportedOperations: decodedMessage.lookup('Response Message/Batch Item/Response Payload/Operation'),
         supportedObjectTypes: decodedMessage.lookup('Response Message/Batch Item/Response Payload/Object Type'),
         serverInformation: decodedMessage.lookup('Response Message/Batch Item/Response Payload/Server Information'),

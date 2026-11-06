@@ -567,8 +567,7 @@ Object.keys(acl).forEach(aclObj =>
             });
             it('setReplicationConfiguration should set replication configuration', () => {
                 const newReplicationConfig = {
-                    Role:
-                        'arn:aws:iam::123456789012:role/src-resource,arn:aws:iam::123456789012:role/dest-resource',
+                    Role: 'arn:aws:iam::123456789012:role/src-resource,arn:aws:iam::123456789012:role/dest-resource',
                     Rules: [
                         {
                             Destination: {
