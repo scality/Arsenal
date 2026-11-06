@@ -391,8 +391,8 @@ describe('GcpService dnsStyle tests', () => {
                 forcePathStyle: false,
                 region: 'us-east-1',
                 credentials: {
-                    accessKeyId: accessKeyId,
-                    secretAccessKey: secretAccessKey,
+                    accessKeyId,
+                    secretAccessKey,
                 },
             },
             bucketName: 'test-bucket',
@@ -563,7 +563,7 @@ describe('GcpService helper behavior', () => {
                 Metadata: {
                     'aws-tag-owner': 'arsenal',
                     'aws-tag-color': 'blue',
-                    misc: 'ignored',
+                    'misc': 'ignored',
                 },
             }),
         );
