@@ -1,9 +1,8 @@
-'use strict'; 
+'use strict';
 
 const assert = require('assert');
 
-const { checkLimit, inc, listingParamsMasterKeysV0ToV1 } =
-      require('../../../../lib/algos/list/tools');
+const { checkLimit, inc, listingParamsMasterKeysV0ToV1 } = require('../../../../lib/algos/list/tools');
 const VSConst = require('../../../../lib/versioning/constants').VersioningConstants;
 const { DbPrefixes } = VSConst;
 

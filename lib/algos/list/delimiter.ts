@@ -1,34 +1,33 @@
 'use strict';
 
 const Extension = require('./Extension').default;
-const { inc, listingParamsMasterKeysV0ToV1,
-    FILTER_END, FILTER_ACCEPT, FILTER_SKIP, SKIP_NONE } = require('./tools');
+const { inc, listingParamsMasterKeysV0ToV1, FILTER_END, FILTER_ACCEPT, FILTER_SKIP, SKIP_NONE } = require('./tools');
 const VSConst = require('../../versioning/constants').VersioningConstants;
 const { DbPrefixes, BucketVersioningKeyFormat } = VSConst;
 
 export interface FilterState {
-    id: number,
-};
+    id: number;
+}
 
 export interface FilterReturnValue {
-    FILTER_ACCEPT,
-    FILTER_SKIP,
-    FILTER_END,
-};
+    FILTER_ACCEPT;
+    FILTER_SKIP;
+    FILTER_END;
+}
 
 export const enum DelimiterFilterStateId {
     NotSkipping = 1,
     SkippingPrefix = 2,
-};
+}
 
 export interface DelimiterFilterState_NotSkipping extends FilterState {
-    id: DelimiterFilterStateId.NotSkipping,
-};
+    id: DelimiterFilterStateId.NotSkipping;
+}
 
 export interface DelimiterFilterState_SkippingPrefix extends FilterState {
-    id: DelimiterFilterStateId.SkippingPrefix,
+    id: DelimiterFilterStateId.SkippingPrefix;
     prefix: string;
-};
+}
 
 type KeyHandler = (key: string, value: string) => FilterReturnValue;
 
@@ -39,9 +38,9 @@ export type ResultObject = {
         value: string;
     }[];
     IsTruncated: boolean;
-    Delimiter ?: string;
-    NextMarker ?: string;
-    NextContinuationToken ?: string;
+    Delimiter?: string;
+    NextMarker?: string;
+    NextContinuationToken?: string;
 };
 
 /**
@@ -57,7 +56,6 @@ export type ResultObject = {
  * @prop {Number} maxKeys              - number of keys to list
  */
 export class Delimiter extends Extension {
-
     state: FilterState;
     keyHandlers: { [id: number]: KeyHandler };
 
@@ -103,45 +101,42 @@ export class Delimiter extends Extension {
         this.IsTruncated = false;
         this.keyHandlers = {};
 
-        Object.assign(this, {
-            [BucketVersioningKeyFormat.v0]: {
-                genMDParams: this.genMDParamsV0,
-                getObjectKey: this.getObjectKeyV0,
-                skipping: this.skippingV0,
-            },
-            [BucketVersioningKeyFormat.v1]: {
-                genMDParams: this.genMDParamsV1,
-                getObjectKey: this.getObjectKeyV1,
-                skipping: this.skippingV1,
-            },
-        }[this.vFormat]);
+        Object.assign(
+            this,
+            {
+                [BucketVersioningKeyFormat.v0]: {
+                    genMDParams: this.genMDParamsV0,
+                    getObjectKey: this.getObjectKeyV0,
+                    skipping: this.skippingV0,
+                },
+                [BucketVersioningKeyFormat.v1]: {
+                    genMDParams: this.genMDParamsV1,
+                    getObjectKey: this.getObjectKeyV1,
+                    skipping: this.skippingV1,
+                },
+            }[this.vFormat],
+        );
 
         // if there is a delimiter, we may skip ranges by prefix,
         // hence using the NotSkippingPrefix flavor that checks the
         // subprefix up to the delimiter for the NotSkipping state
         if (this.delimiter) {
-            this.setKeyHandler(
-                DelimiterFilterStateId.NotSkipping,
-                this.keyHandler_NotSkippingPrefix.bind(this));
+            this.setKeyHandler(DelimiterFilterStateId.NotSkipping, this.keyHandler_NotSkippingPrefix.bind(this));
         } else {
             // listing without a delimiter never has to skip over any
             // prefix -> use NeverSkipping flavor for the NotSkipping
             // state
-            this.setKeyHandler(
-                DelimiterFilterStateId.NotSkipping,
-                this.keyHandler_NeverSkipping.bind(this));
+            this.setKeyHandler(DelimiterFilterStateId.NotSkipping, this.keyHandler_NeverSkipping.bind(this));
         }
-        this.setKeyHandler(
-            DelimiterFilterStateId.SkippingPrefix,
-            this.keyHandler_SkippingPrefix.bind(this));
+        this.setKeyHandler(DelimiterFilterStateId.SkippingPrefix, this.keyHandler_SkippingPrefix.bind(this));
 
-        this.state = <DelimiterFilterState_NotSkipping> {
+        this.state = <DelimiterFilterState_NotSkipping>{
             id: DelimiterFilterStateId.NotSkipping,
         };
     }
 
     genMDParamsV0() {
-        const params: { gt ?: string, gte ?: string, lt ?: string } = {};
+        const params: { gt?: string; gte?: string; lt?: string } = {};
         if (this.prefix) {
             params.gte = this.prefix;
             params.lt = inc(this.prefix);
@@ -249,7 +244,7 @@ export class Delimiter extends Extension {
      *  @param {String} obj.value - The value of the element
      *  @return {number}          - indicates if iteration should continue
      */
-    filter(obj: { key: string, value: string }): FilterReturnValue {
+    filter(obj: { key: string; value: string }): FilterReturnValue {
         const key = this.getObjectKey(obj);
         const value = obj.value;
 
@@ -284,7 +279,7 @@ export class Delimiter extends Extension {
         if (commonPrefix) {
             // transition into SkippingPrefix state to skip all following keys
             // while they start with the same prefix
-            this.setState(<DelimiterFilterState_SkippingPrefix> {
+            this.setState(<DelimiterFilterState_SkippingPrefix>{
                 id: DelimiterFilterStateId.SkippingPrefix,
                 prefix: commonPrefix,
             });
@@ -293,11 +288,11 @@ export class Delimiter extends Extension {
     }
 
     keyHandler_SkippingPrefix(key: string, value: string): FilterReturnValue {
-        const { prefix } = <DelimiterFilterState_SkippingPrefix> this.state;
+        const { prefix } = <DelimiterFilterState_SkippingPrefix>this.state;
         if (key.startsWith(prefix)) {
             return FILTER_SKIP;
         }
-        this.setState(<DelimiterFilterState_NotSkipping> {
+        this.setState(<DelimiterFilterState_NotSkipping>{
             id: DelimiterFilterStateId.NotSkipping,
         });
         return this.handleKey(key, value);
@@ -305,13 +300,13 @@ export class Delimiter extends Extension {
 
     skippingBase(): string | undefined {
         switch (this.state.id) {
-        case DelimiterFilterStateId.SkippingPrefix: {
-            const { prefix } = <DelimiterFilterState_SkippingPrefix> this.state;
-            return inc(prefix);
-        }
+            case DelimiterFilterStateId.SkippingPrefix: {
+                const { prefix } = <DelimiterFilterState_SkippingPrefix>this.state;
+                return inc(prefix);
+            }
 
-        default:
-            return SKIP_NONE;
+            default:
+                return SKIP_NONE;
         }
     }
 
@@ -345,11 +340,9 @@ export class Delimiter extends Extension {
             Delimiter: this.delimiter,
         };
         if (this.parameters.v2) {
-            result.NextContinuationToken = this.IsTruncated
-                ? this.nextMarker : undefined;
+            result.NextContinuationToken = this.IsTruncated ? this.nextMarker : undefined;
         } else {
-            result.NextMarker = (this.IsTruncated && this.delimiter)
-                ? this.nextMarker : undefined;
+            result.NextMarker = this.IsTruncated && this.delimiter ? this.nextMarker : undefined;
         }
         return result;
     }

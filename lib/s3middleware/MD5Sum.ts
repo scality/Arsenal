@@ -25,11 +25,7 @@ export default class MD5Sum extends Transform {
     _transform(
         chunk: string,
         encoding: crypto.Encoding,
-        callback: (
-            err: Error | null,
-            chunk: string,
-            encoding: crypto.Encoding,
-        ) => void,
+        callback: (err: Error | null, chunk: string, encoding: crypto.Encoding) => void,
     ) {
         this.hash.update(chunk, encoding);
         callback(null, chunk, encoding);

@@ -315,9 +315,7 @@
         "Statement": {
             "oneOf": [
                 {
-                    "type": [
-                        "array"
-                    ],
+                    "type": ["array"],
                     "minItems": 1,
                     "items": {
                         "type": "object",
@@ -328,10 +326,7 @@
                             },
                             "Effect": {
                                 "type": "string",
-                                "enum": [
-                                    "Allow",
-                                    "Deny"
-                                ]
+                                "enum": ["Allow", "Deny"]
                             },
                             "Principal": {
                                 "$ref": "#/definitions/principalItem"
@@ -399,54 +394,28 @@
                         },
                         "oneOf": [
                             {
-                                "required": [
-                                    "Effect",
-                                    "Action",
-                                    "Resource"
-                                ]
+                                "required": ["Effect", "Action", "Resource"]
                             },
                             {
-                                "required": [
-                                    "Effect",
-                                    "Action",
-                                    "NotResource"
-                                ]
+                                "required": ["Effect", "Action", "NotResource"]
                             },
                             {
-                                "required": [
-                                    "Effect",
-                                    "NotAction",
-                                    "Resource"
-                                ]
+                                "required": ["Effect", "NotAction", "Resource"]
                             },
                             {
-                                "required": [
-                                    "Effect",
-                                    "NotAction",
-                                    "NotResource"
-                                ]
+                                "required": ["Effect", "NotAction", "NotResource"]
                             },
                             {
-                                "required": [
-                                    "Effect",
-                                    "Action",
-                                    "Principal"
-                                ]
+                                "required": ["Effect", "Action", "Principal"]
                             },
                             {
-                                "required": [
-                                    "Effect",
-                                    "Action",
-                                    "NotPrincipal"
-                                ]
+                                "required": ["Effect", "Action", "NotPrincipal"]
                             }
                         ]
                     }
                 },
                 {
-                    "type": [
-                        "object"
-                    ],
+                    "type": ["object"],
                     "properties": {
                         "Sid": {
                             "type": "string",
@@ -454,10 +423,7 @@
                         },
                         "Effect": {
                             "type": "string",
-                            "enum": [
-                                "Allow",
-                                "Deny"
-                            ]
+                            "enum": ["Allow", "Deny"]
                         },
                         "Principal": {
                             "$ref": "#/definitions/principalItem"
@@ -522,55 +488,28 @@
                     },
                     "oneOf": [
                         {
-                            "required": [
-                                "Action",
-                                "Effect",
-                                "Resource"
-                            ]
+                            "required": ["Action", "Effect", "Resource"]
                         },
                         {
-                            "required": [
-                                "Action",
-                                "Effect",
-                                "NotResource"
-                            ]
+                            "required": ["Action", "Effect", "NotResource"]
                         },
                         {
-                            "required": [
-                                "Effect",
-                                "NotAction",
-                                "Resource"
-                            ]
+                            "required": ["Effect", "NotAction", "Resource"]
                         },
                         {
-                            "required": [
-                                "Effect",
-                                "NotAction",
-                                "NotResource"
-                            ]
+                            "required": ["Effect", "NotAction", "NotResource"]
                         },
                         {
-                            "required": [
-                                "Effect",
-                                "Action",
-                                "Principal"
-                            ]
+                            "required": ["Effect", "Action", "Principal"]
                         },
                         {
-                            "required": [
-                                "Effect",
-                                "Action",
-                                "NotPrincipal"
-                            ]
+                            "required": ["Effect", "Action", "NotPrincipal"]
                         }
                     ]
                 }
             ]
         }
     },
-    "required": [
-        "Version",
-        "Statement"
-    ],
+    "required": ["Version", "Statement"],
     "additionalProperties": false
 }

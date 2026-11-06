@@ -47,25 +47,25 @@ export function actionNeedQuotaCheckCopy(action: string, currentApi: string) {
 
 function _findAction(service: string, method: string) {
     switch (service) {
-    case 's3':
-        return actionMapRQ[method];
-    case 'iam':
-        return actionMapIAM[method];
-    case 'sso':
-        return actionMapSSO[method];
-    case 'ring':
-        return `ring:${method}`;
-    case 'utapi':
-        // currently only method is ListMetrics
-        return `utapi:${method}`;
-    case 'sts':
-        return actionMapSTS[method];
-    case 'metadata':
-        return actionMapMetadata[method];
-    case 'sur':
-        return actionMapSUR[method];
-    default:
-        return undefined;
+        case 's3':
+            return actionMapRQ[method];
+        case 'iam':
+            return actionMapIAM[method];
+        case 'sso':
+            return actionMapSSO[method];
+        case 'ring':
+            return `ring:${method}`;
+        case 'utapi':
+            // currently only method is ListMetrics
+            return `utapi:${method}`;
+        case 'sts':
+            return actionMapSTS[method];
+        case 'metadata':
+            return actionMapMetadata[method];
+        case 'sur':
+            return actionMapSUR[method];
+        default:
+            return undefined;
     }
 }
 
@@ -73,72 +73,68 @@ function _buildArn(
     service: string,
     generalResource?: string,
     specificResource?: string,
-    requesterInfo?: { accountid: string, targetAccountId: string },
+    requesterInfo?: { accountid: string; targetAccountId: string },
 ) {
     // arn:partition:service:region:account-id:resourcetype/resource
     switch (service) {
-    case 's3': {
-        // arn:aws:s3:::bucket/object
-        // General resource is bucketName
-        if (generalResource && specificResource) {
-            return `arn:aws:s3:::${generalResource}/${specificResource}`;
-        } else if (generalResource) {
-            return `arn:aws:s3:::${generalResource}`;
+        case 's3': {
+            // arn:aws:s3:::bucket/object
+            // General resource is bucketName
+            if (generalResource && specificResource) {
+                return `arn:aws:s3:::${generalResource}/${specificResource}`;
+            } else if (generalResource) {
+                return `arn:aws:s3:::${generalResource}`;
+            }
+            return 'arn:aws:s3:::';
         }
-        return 'arn:aws:s3:::';
-    }
-    case 'iam':
-    case 'sts': {
-        // arn:aws:iam::<account-id>:<resource-type>/<resource>
-        let accountId = requesterInfo!.accountid;
-        if (service === 'sts') {
-            accountId = requesterInfo!.targetAccountId;
+        case 'iam':
+        case 'sts': {
+            // arn:aws:iam::<account-id>:<resource-type>/<resource>
+            let accountId = requesterInfo!.accountid;
+            if (service === 'sts') {
+                accountId = requesterInfo!.targetAccountId;
+            }
+            if (specificResource) {
+                return `arn:aws:iam::${accountId}:` + `${generalResource}${specificResource}`;
+            }
+            return `arn:aws:iam::${accountId}:${generalResource}`;
         }
-        if (specificResource) {
-            return `arn:aws:iam::${accountId}:` +
-                `${generalResource}${specificResource}`;
+        case 'ring': {
+            // arn:aws:iam::<account-id>:<resource-type>/<resource>
+            if (specificResource) {
+                return `arn:aws:ring::${requesterInfo!.accountid}:` + `${generalResource}/${specificResource}`;
+            }
+            return `arn:aws:ring::${requesterInfo!.accountid}:${generalResource}`;
         }
-        return `arn:aws:iam::${accountId}:${generalResource}`;
-    }
-    case 'ring': {
-        // arn:aws:iam::<account-id>:<resource-type>/<resource>
-        if (specificResource) {
-            return `arn:aws:ring::${requesterInfo!.accountid}:` +
-                `${generalResource}/${specificResource}`;
+        case 'utapi': {
+            // arn:scality:utapi:::resourcetype/resource
+            // (possible resource types are buckets, accounts or users)
+            if (specificResource) {
+                return `arn:scality:utapi::${requesterInfo!.accountid}:` + `${generalResource}/${specificResource}`;
+            }
+            return `arn:scality:utapi::${requesterInfo!.accountid}:` + `${generalResource}/`;
         }
-        return `arn:aws:ring::${requesterInfo!.accountid}:${generalResource}`;
-    }
-    case 'utapi': {
-        // arn:scality:utapi:::resourcetype/resource
-        // (possible resource types are buckets, accounts or users)
-        if (specificResource) {
-            return `arn:scality:utapi::${requesterInfo!.accountid}:` +
-                `${generalResource}/${specificResource}`;
+        case 'sso': {
+            if (specificResource) {
+                return `arn:scality:sso:::${generalResource}/${specificResource}`;
+            }
+            return `arn:scality:sso:::${generalResource}`;
         }
-        return `arn:scality:utapi::${requesterInfo!.accountid}:` +
-            `${generalResource}/`;
-    }
-    case 'sso': {
-        if (specificResource) {
-            return `arn:scality:sso:::${generalResource}/${specificResource}`;
+        case 'metadata': {
+            // arn:scality:metadata::<account-id>:<resource-type>/<resource>
+            if (specificResource) {
+                return `arn:scality:metadata::${requesterInfo!.accountid}:` + `${generalResource}/${specificResource}`;
+            }
+            return `arn:scality:metadata::${requesterInfo!.accountid}:` + `${generalResource}/`;
         }
-        return `arn:scality:sso:::${generalResource}`;
-    }
-    case 'metadata': {
-        // arn:scality:metadata::<account-id>:<resource-type>/<resource>
-        if (specificResource) {
-            return `arn:scality:metadata::${requesterInfo!.accountid}:` +
-                `${generalResource}/${specificResource}`;
+        case 'sur': {
+            return (
+                `arn:scality:sur::${requesterInfo!.accountid}:` +
+                `${generalResource}${specificResource ? `/${specificResource}` : ''}`
+            );
         }
-        return `arn:scality:metadata::${requesterInfo!.accountid}:` +
-            `${generalResource}/`;
-    }
-    case 'sur': {
-        return `arn:scality:sur::${requesterInfo!.accountid}:` +
-            `${generalResource}${specificResource ? `/${specificResource}` : ''}`;
-    }
-    default:
-        return undefined;
+        default:
+            return undefined;
     }
 }
 
@@ -281,8 +277,8 @@ export default class RequestContext {
         this._securityToken = securityToken;
         this._policyArn = policyArn;
         this._action = action;
-        this._needQuota = needQuota || actionNeedQuotaCheck[apiMethod] === true
-            || actionWithDataDeletion[apiMethod] === true;
+        this._needQuota =
+            needQuota || actionNeedQuotaCheck[apiMethod] === true || actionWithDataDeletion[apiMethod] === true;
         this._requestObjTags = requestObjTags || null;
         this._existingObjTag = existingObjTag || null;
         this._needTagEval = needTagEval || false;
@@ -291,9 +287,9 @@ export default class RequestContext {
     }
 
     /**
-    * Serialize the object
-    * @return - stringified object
-    */
+     * Serialize the object
+     * @return - stringified object
+     */
     serialize(): string {
         const requestInfo = {
             apiMethod: this._apiMethod,
@@ -366,9 +362,9 @@ export default class RequestContext {
     }
 
     /**
-    * Get the request action
-    * @return action
-    */
+     * Get the request action
+     * @return action
+     */
     getAction(): string {
         if (this._action) {
             return this._action;
@@ -381,19 +377,21 @@ export default class RequestContext {
     }
 
     /**
-    * Get the resource impacted by the request
-    * @return arn for the resource
-    */
+     * Get the resource impacted by the request
+     * @return arn for the resource
+     */
     getResource(): string {
         if (this._foundResource) {
             return this._foundResource;
         }
-        this._foundResource =
-            _buildArn(this._awsService, this._generalResource,
-                this._specificResource, this._requesterInfo);
+        this._foundResource = _buildArn(
+            this._awsService,
+            this._generalResource,
+            this._specificResource,
+            this._requesterInfo,
+        );
         return this._foundResource!;
     }
-
 
     /**
      * Set headers
@@ -618,7 +616,6 @@ export default class RequestContext {
     getTokenIssueTime() {
         return this._tokenIssueTime;
     }
-
 
     /**
      * Set multiFactorAuthPresent

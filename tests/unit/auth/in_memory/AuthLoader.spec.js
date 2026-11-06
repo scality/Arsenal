@@ -88,11 +88,10 @@ describe('AuthLoader class', () => {
         } else {
             // Check a failure when the type of field is different than
             // expected
-            it(`should fail when modified field ${test[0]} ${test[1]}`,
-                done => {
-                    should._exec = shouldFail;
-                    should.modifiedField(obj, test[0], test[1], done);
-                });
+            it(`should fail when modified field ${test[0]} ${test[1]}`, done => {
+                should._exec = shouldFail;
+                should.modifiedField(obj, test[0], test[1], done);
+            });
         }
     });
 
@@ -100,10 +99,7 @@ describe('AuthLoader class', () => {
     // optionals fields
     // format:
     //   - key: field to modify
-    [
-        'accounts.0.keys',
-        'accounts.0.users',
-    ].forEach(test => {
+    ['accounts.0.keys', 'accounts.0.users'].forEach(test => {
         // Check a success when deleting optional fields
         it(`should return success when missing field ${test}`, done => {
             should._exec = shouldSucceed;

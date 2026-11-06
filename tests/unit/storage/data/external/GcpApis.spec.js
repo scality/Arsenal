@@ -42,8 +42,7 @@ describe('GcpApis', () => {
                 assert.deepStrictEqual(command.input, {
                     Bucket: params.Bucket,
                     Prefix: createMpuKey(params.Key, params.UploadId, 'parts'),
-                    Marker: createMpuKey(params.Key, params.UploadId,
-                        params.PartNumberMarker, 'parts'),
+                    Marker: createMpuKey(params.Key, params.UploadId, params.PartNumberMarker, 'parts'),
                     MaxKeys: params.MaxParts,
                 });
                 done();
@@ -54,14 +53,18 @@ describe('GcpApis', () => {
             const listObjectsError = new Error('send(ListObjectsCommand) failed');
             const service = { send: sandbox.stub().rejects(listObjectsError) };
 
-            listParts.call(service, {
-                Bucket: 'b',
-                Key: 'obj',
-                UploadId: 'upload',
-            }, err => {
-                assert.strictEqual(err, listObjectsError);
-                done();
-            });
+            listParts.call(
+                service,
+                {
+                    Bucket: 'b',
+                    Key: 'obj',
+                    UploadId: 'upload',
+                },
+                err => {
+                    assert.strictEqual(err, listObjectsError);
+                    done();
+                },
+            );
         });
     });
 
@@ -70,8 +73,10 @@ describe('GcpApis', () => {
             it('should list versions and delete each version', done => {
                 const service = {
                     _maxConcurrent: 10,
-                    send: sandbox.stub()
-                        .onCall(0).callsFake(command => {
+                    send: sandbox
+                        .stub()
+                        .onCall(0)
+                        .callsFake(command => {
                             assert(command instanceof ListObjectVersionsCommand);
                             assert.deepStrictEqual(command.input, {
                                 Bucket: 'mpu-bucket',
@@ -83,12 +88,11 @@ describe('GcpApis', () => {
                                 IsTruncated: true,
                                 NextKeyMarker: 'k2',
                                 NextVersionIdMarker: 'v2',
-                                Versions: [
-                                    { Key: 'a', VersionId: '1' },
-                                ],
+                                Versions: [{ Key: 'a', VersionId: '1' }],
                             });
                         })
-                        .onCall(1).callsFake(command => {
+                        .onCall(1)
+                        .callsFake(command => {
                             assert(command instanceof ListObjectVersionsCommand);
                             assert.deepStrictEqual(command.input, {
                                 Bucket: 'mpu-bucket',
@@ -183,8 +187,7 @@ describe('GcpApis', () => {
         });
 
         it('should call removeParts with derived Prefix', done => {
-            const removeStub = sandbox.stub(MpuHelper.prototype, 'removeParts')
-                .callsFake((_delParams, cb) => cb(null));
+            const removeStub = sandbox.stub(MpuHelper.prototype, 'removeParts').callsFake((_delParams, cb) => cb(null));
 
             const params = {
                 Bucket: 'b',
@@ -216,56 +219,66 @@ describe('GcpApis', () => {
         });
 
         it('should reject empty parts list', done => {
-            completeMultipartUpload.call({}, {
-                Bucket: 'b',
-                MPU: 'mpu-b',
-                Key: 'obj',
-                UploadId: 'upload',
-                MultipartUpload: { Parts: [] },
-            }, err => {
-                assert(err);
-                assert(err.is.InvalidRequest);
-                done();
-            });
+            completeMultipartUpload.call(
+                {},
+                {
+                    Bucket: 'b',
+                    MPU: 'mpu-b',
+                    Key: 'obj',
+                    UploadId: 'upload',
+                    MultipartUpload: { Parts: [] },
+                },
+                err => {
+                    assert(err);
+                    assert(err.is.InvalidRequest);
+                    done();
+                },
+            );
         });
 
         it('should reject invalid part order', done => {
-            completeMultipartUpload.call({}, {
-                Bucket: 'b',
-                MPU: 'mpu-b',
-                Key: 'obj',
-                UploadId: 'upload',
-                MultipartUpload: {
-                    Parts: [
-                        { PartNumber: 2 },
-                        { PartNumber: 1 },
-                    ],
+            completeMultipartUpload.call(
+                {},
+                {
+                    Bucket: 'b',
+                    MPU: 'mpu-b',
+                    Key: 'obj',
+                    UploadId: 'upload',
+                    MultipartUpload: {
+                        Parts: [{ PartNumber: 2 }, { PartNumber: 1 }],
+                    },
                 },
-            }, err => {
-                assert(err);
-                assert.strictEqual(err.message, 'InvalidPartOrder');
-                done();
-            });
+                err => {
+                    assert(err);
+                    assert.strictEqual(err.message, 'InvalidPartOrder');
+                    done();
+                },
+            );
         });
 
         it('should run MPU flow and remove parts', done => {
             sandbox.stub(console, 'log').callsFake(() => undefined);
 
-            const splitMergeStub = sandbox.stub(MpuHelper.prototype, 'splitMerge')
+            const splitMergeStub = sandbox
+                .stub(MpuHelper.prototype, 'splitMerge')
                 .callsFake((params, partList, level, cb) => cb(null, 2));
-            const composeFinalStub = sandbox.stub(MpuHelper.prototype, 'composeFinal')
+            const composeFinalStub = sandbox
+                .stub(MpuHelper.prototype, 'composeFinal')
                 .callsFake((numParts, params, cb) => cb(null, 'finalKey'));
-            const generateStub = sandbox.stub(MpuHelper.prototype, 'generateMpuResult')
+            const generateStub = sandbox
+                .stub(MpuHelper.prototype, 'generateMpuResult')
                 .callsFake((result, partList, cb) => cb(null, result, 'aggEtag'));
-            const copyStub = sandbox.stub(MpuHelper.prototype, 'copyToMain')
-                .callsFake((result, aggregateETag, params, cb) => cb(null, {
-                    Bucket: params.Bucket,
-                    Key: params.Key,
-                    VersionId: 'v1',
-                    ETag: '"aggEtag"',
-                }));
-            const removeStub = sandbox.stub(MpuHelper.prototype, 'removeParts')
-                .callsFake((_delParams, cb) => cb(null));
+            const copyStub = sandbox
+                .stub(MpuHelper.prototype, 'copyToMain')
+                .callsFake((result, aggregateETag, params, cb) =>
+                    cb(null, {
+                        Bucket: params.Bucket,
+                        Key: params.Key,
+                        VersionId: 'v1',
+                        ETag: '"aggEtag"',
+                    }),
+                );
+            const removeStub = sandbox.stub(MpuHelper.prototype, 'removeParts').callsFake((_delParams, cb) => cb(null));
 
             const params = {
                 Bucket: 'b',
@@ -273,10 +286,7 @@ describe('GcpApis', () => {
                 Key: 'obj',
                 UploadId: 'upload',
                 MultipartUpload: {
-                    Parts: [
-                        { PartNumber: 1 },
-                        { PartNumber: 2 },
-                    ],
+                    Parts: [{ PartNumber: 1 }, { PartNumber: 2 }],
                 },
             };
 
@@ -301,4 +311,3 @@ describe('GcpApis', () => {
         });
     });
 });
-

@@ -60,9 +60,7 @@ describe('routerWebsite', () => {
 
         routerWebsite(request, response, api, log, statsClient, dataRetrievalParams);
 
-        expect(api.callApiMethod).toHaveBeenCalledWith(
-            'websiteGet', request, response, log, expect.any(Function),
-        );
+        expect(api.callApiMethod).toHaveBeenCalledWith('websiteGet', request, response, log, expect.any(Function));
     });
 
     it('should call websiteHead when request method is HEAD', () => {
@@ -71,9 +69,7 @@ describe('routerWebsite', () => {
 
         routerWebsite(request, response, api, log, statsClient, dataRetrievalParams);
 
-        expect(api.callApiMethod).toHaveBeenCalledWith(
-            'websiteHead', request, response, log, expect.any(Function),
-        );
+        expect(api.callApiMethod).toHaveBeenCalledWith('websiteHead', request, response, log, expect.any(Function));
     });
 
     it('should handle error with HEAD and call redirectRequestOnError', () => {
@@ -142,7 +138,13 @@ describe('routerWebsite', () => {
         routerWebsite(request, response, api, log, statsClient, dataRetrievalParams);
 
         expect(routesUtils.redirectRequest).toHaveBeenCalledWith(
-            mockRedirectInfo, 'some-key', true, response, request.headers.host, null, log,
+            mockRedirectInfo,
+            'some-key',
+            true,
+            response,
+            request.headers.host,
+            null,
+            log,
         );
     });
 
@@ -157,9 +159,7 @@ describe('routerWebsite', () => {
 
         routerWebsite(request, response, api, log, statsClient, dataRetrievalParams);
 
-        expect(routesUtils.errorHtmlResponse).toHaveBeenCalledWith(
-            mockError, null, 'test-bucket', response, null, log,
-        );
+        expect(routesUtils.errorHtmlResponse).toHaveBeenCalledWith(mockError, null, 'test-bucket', response, null, log);
     });
 
     it('should handle error in websiteGet and call redirectRequestOnError', () => {
@@ -216,7 +216,14 @@ describe('routerWebsite', () => {
         routerWebsite(request, response, api, log, statsClient, dataRetrievalParams);
 
         expect(routesUtils.responseStreamData).toHaveBeenCalledWith(
-            null, undefined, null, { content: 'data' }, dataRetrievalParams, response, undefined, log,
+            null,
+            undefined,
+            null,
+            { content: 'data' },
+            dataRetrievalParams,
+            response,
+            undefined,
+            log,
         );
     });
 });

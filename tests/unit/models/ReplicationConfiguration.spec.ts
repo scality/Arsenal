@@ -5,19 +5,19 @@ const { default: ReplicationConfiguration } = require('../../../lib/models/Repli
 
 const mockS3ServerConfig = {
     locationConstraints: {
-        ring: {
+        'ring': {
             type: 'scality',
             objectId: 'ring',
         },
-        awsbackend: {
+        'awsbackend': {
             type: 'aws_s3',
             objectId: 'awsbackend',
         },
-        gcpbackend: {
+        'gcpbackend': {
             type: 'gcp',
             objectId: 'gcpbackend',
         },
-        azurebackend: {
+        'azurebackend': {
             type: 'azure',
             objectId: 'azurebackend',
         },

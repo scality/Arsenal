@@ -39,67 +39,70 @@ describe('BucketPolicy class getBucketPolicy', () => {
         done();
     });
 
-    it('should return MalformedPolicy error if request action is for objects ' +
-    'but resource refers to bucket', done => {
-        const newPolicy = createPolicy('Action', 's3:GetObject');
-        const bucketPolicy = new BucketPolicy(JSON.stringify(newPolicy))
-            .getBucketPolicy();
-        checkErr(bucketPolicy, 'MalformedPolicy', mismatchErr);
-        done();
-    });
+    it(
+        'should return MalformedPolicy error if request action is for objects ' + 'but resource refers to bucket',
+        done => {
+            const newPolicy = createPolicy('Action', 's3:GetObject');
+            const bucketPolicy = new BucketPolicy(JSON.stringify(newPolicy)).getBucketPolicy();
+            checkErr(bucketPolicy, 'MalformedPolicy', mismatchErr);
+            done();
+        },
+    );
 
-    it('should return MalformedPolicy error if request action is for objects ' +
-    'but does\'t include \'Object\' and resource refers to bucket', done => {
-        const newPolicy = createPolicy('Action', 's3:AbortMultipartUpload');
-        const bucketPolicy = new BucketPolicy(JSON.stringify(newPolicy))
-            .getBucketPolicy();
-        checkErr(bucketPolicy, 'MalformedPolicy', mismatchErr);
-        done();
-    });
+    it(
+        'should return MalformedPolicy error if request action is for objects ' +
+            "but does't include 'Object' and resource refers to bucket",
+        done => {
+            const newPolicy = createPolicy('Action', 's3:AbortMultipartUpload');
+            const bucketPolicy = new BucketPolicy(JSON.stringify(newPolicy)).getBucketPolicy();
+            checkErr(bucketPolicy, 'MalformedPolicy', mismatchErr);
+            done();
+        },
+    );
 
-    it('should return MalformedPolicy error if request action is for objects ' +
-    '(with wildcard) but resource refers to bucket', done => {
-        const newPolicy = createPolicy('Action', 's3:GetObject*');
-        const bucketPolicy = new BucketPolicy(JSON.stringify(newPolicy))
-            .getBucketPolicy();
-        checkErr(bucketPolicy, 'MalformedPolicy', mismatchErr);
-        done();
-    });
+    it(
+        'should return MalformedPolicy error if request action is for objects ' +
+            '(with wildcard) but resource refers to bucket',
+        done => {
+            const newPolicy = createPolicy('Action', 's3:GetObject*');
+            const bucketPolicy = new BucketPolicy(JSON.stringify(newPolicy)).getBucketPolicy();
+            checkErr(bucketPolicy, 'MalformedPolicy', mismatchErr);
+            done();
+        },
+    );
 
-    it('should return MalformedPolicy error if request resource refers to ' +
-    'object but action is for buckets', done => {
-        const newPolicy = createPolicy('Resource',
-            'arn:aws:s3:::examplebucket/*');
-        const bucketPolicy = new BucketPolicy(JSON.stringify(newPolicy))
-            .getBucketPolicy();
-        checkErr(bucketPolicy, 'MalformedPolicy', mismatchErr);
-        done();
-    });
+    it(
+        'should return MalformedPolicy error if request resource refers to ' + 'object but action is for buckets',
+        done => {
+            const newPolicy = createPolicy('Resource', 'arn:aws:s3:::examplebucket/*');
+            const bucketPolicy = new BucketPolicy(JSON.stringify(newPolicy)).getBucketPolicy();
+            checkErr(bucketPolicy, 'MalformedPolicy', mismatchErr);
+            done();
+        },
+    );
 
-    it('should return MalformedPolicy error if request resource refers to ' +
-    'object but action is for buckets (with wildcard)', done => {
-        const newPolicy = createPolicy('Resource',
-            'arn:aws:s3:::examplebucket/*');
-        newPolicy.Statement[0].Action = 's3:GetBucket*';
-        const bucketPolicy = new BucketPolicy(JSON.stringify(newPolicy))
-            .getBucketPolicy();
-        checkErr(bucketPolicy, 'MalformedPolicy', mismatchErr);
-        done();
-    });
+    it(
+        'should return MalformedPolicy error if request resource refers to ' +
+            'object but action is for buckets (with wildcard)',
+        done => {
+            const newPolicy = createPolicy('Resource', 'arn:aws:s3:::examplebucket/*');
+            newPolicy.Statement[0].Action = 's3:GetBucket*';
+            const bucketPolicy = new BucketPolicy(JSON.stringify(newPolicy)).getBucketPolicy();
+            checkErr(bucketPolicy, 'MalformedPolicy', mismatchErr);
+            done();
+        },
+    );
 
     it('should successfully get a valid policy', done => {
-        const bucketPolicy = new BucketPolicy(JSON.stringify(testBucketPolicy))
-            .getBucketPolicy();
+        const bucketPolicy = new BucketPolicy(JSON.stringify(testBucketPolicy)).getBucketPolicy();
         assert.deepStrictEqual(bucketPolicy, testBucketPolicy);
         done();
     });
 
-    it('should successfully get a valid policy with wildcard in action',
-        done => {
-            const newPolicy = createPolicy('Action', 's3:Get*');
-            const bucketPolicy = new BucketPolicy(JSON.stringify(newPolicy))
-                .getBucketPolicy();
-            assert.deepStrictEqual(bucketPolicy, newPolicy);
-            done();
-        });
+    it('should successfully get a valid policy with wildcard in action', done => {
+        const newPolicy = createPolicy('Action', 's3:Get*');
+        const bucketPolicy = new BucketPolicy(JSON.stringify(newPolicy)).getBucketPolicy();
+        assert.deepStrictEqual(bucketPolicy, newPolicy);
+        done();
+    });
 });

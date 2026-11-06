@@ -23,10 +23,10 @@ result.
 
 ## State Chart
 
-- States with grey background are *Idle* states, which are waiting for
+- States with grey background are _Idle_ states, which are waiting for
   a new listing key
 
-- States with blue background are *Processing* states, which are
+- States with blue background are _Processing_ states, which are
   actively processing a new listing key passed by the filter()
   function
 

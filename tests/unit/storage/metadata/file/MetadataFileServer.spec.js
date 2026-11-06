@@ -1,10 +1,9 @@
-'use strict';  
+'use strict';
 
 const assert = require('assert');
 const sinon = require('sinon');
 const storageUtils = require('../../../../../lib/storage/utils');
-const MetadataFileServer = require(
-    '../../../../../lib/storage/metadata/file/MetadataFileServer');
+const MetadataFileServer = require('../../../../../lib/storage/metadata/file/MetadataFileServer');
 
 describe('MetadataFileServer', () => {
     let sandbox;
@@ -84,22 +83,22 @@ describe('MetadataFileServer', () => {
 
             const registerAPICallback = {};
             const dbServiceMock = {
-                registerAsyncAPI: (apiObj) => {
+                registerAsyncAPI: apiObj => {
                     registerAPICallback.getDiskUsage = apiObj.getDiskUsage;
-                }
+                },
             };
             sandbox.stub(server, 'initMetadataService').callsFake(function () {
                 this.services.push(dbServiceMock);
                 const apiObject = {
                     getDiskUsage: (env, callback) => {
                         storageUtils.getDiskUsage(this.path, callback);
-                    }
+                    },
                 };
 
                 dbServiceMock.registerAsyncAPI(apiObject);
             });
             server.initMetadataService();
-            const mockEnv = { requestLogger: { info: () => { } } };
+            const mockEnv = { requestLogger: { info: () => {} } };
 
             registerAPICallback.getDiskUsage(mockEnv, (err, result) => {
                 assert.ifError(err);
@@ -125,21 +124,21 @@ describe('MetadataFileServer', () => {
 
             const registerAPICallback = {};
             const dbServiceMock = {
-                registerAsyncAPI: (apiObj) => {
+                registerAsyncAPI: apiObj => {
                     registerAPICallback.getDiskUsage = apiObj.getDiskUsage;
-                }
+                },
             };
             sandbox.stub(server, 'initMetadataService').callsFake(function () {
                 this.services.push(dbServiceMock);
                 const apiObject = {
                     getDiskUsage: (env, callback) => {
                         storageUtils.getDiskUsage(this.path, callback);
-                    }
+                    },
                 };
                 dbServiceMock.registerAsyncAPI(apiObject);
             });
             server.initMetadataService();
-            const mockEnv = { requestLogger: { info: () => { } } };
+            const mockEnv = { requestLogger: { info: () => {} } };
 
             registerAPICallback.getDiskUsage(mockEnv, (err, result) => {
                 assert.strictEqual(err, testError);

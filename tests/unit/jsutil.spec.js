@@ -1,13 +1,11 @@
-'use strict'; 
+'use strict';
 
 const assert = require('assert');
 const jsutil = require('../../index').jsutil;
 
 describe('JSUtil', () => {
     describe('once', () => {
-        it('should call the wrapped function only once when invoked ' +
-           'multiple times',
-        done => {
+        it('should call the wrapped function only once when invoked ' + 'multiple times', done => {
             let value = 42;
             let value2 = 51;
 

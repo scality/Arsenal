@@ -81,13 +81,7 @@ export default class ObjectMDLocation {
      * @return return this
      */
     setDataLocation(location: BaseLocation | (BaseLocation & Ciphered)) {
-        [
-            'key',
-            'dataStoreName',
-            'dataStoreVersionId',
-            'cryptoScheme',
-            'cipheredDataKey',
-        ].forEach(attrName => {
+        ['key', 'dataStoreName', 'dataStoreVersionId', 'cryptoScheme', 'cipheredDataKey'].forEach(attrName => {
             if (location[attrName] !== undefined) {
                 this._data[attrName] = location[attrName];
             } else {

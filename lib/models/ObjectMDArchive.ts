@@ -98,7 +98,7 @@ export default class ObjectMDArchive {
      */
     setRestoreRequestedAt(value: Date | string) {
         if (value) {
-            const checkWith = (new Date(value)).getTime();
+            const checkWith = new Date(value).getTime();
             if (Number.isNaN(Number(checkWith))) {
                 throw new Error('restoreRequestedAt must be a valid Date.');
             }
@@ -142,7 +142,7 @@ export default class ObjectMDArchive {
             if (!this.restoreRequestedAt || !this.restoreRequestedDays) {
                 throw new Error('restoreCompletedAt must be set after restoreRequestedAt and restoreRequestedDays.');
             }
-            const checkWith = (new Date(value)).getTime();
+            const checkWith = new Date(value).getTime();
             if (Number.isNaN(Number(checkWith))) {
                 throw new Error('restoreCompletedAt must be a valid Date.');
             }
@@ -165,7 +165,7 @@ export default class ObjectMDArchive {
             if (!this.restoreRequestedAt || !this.restoreRequestedDays) {
                 throw new Error('restoreWillExpireAt must be set after restoreRequestedAt and restoreRequestedDays.');
             }
-            const checkWith = (new Date(value)).getTime();
+            const checkWith = new Date(value).getTime();
             if (Number.isNaN(Number(checkWith))) {
                 throw new Error('restoreWillExpireAt must be a valid Date.');
             }

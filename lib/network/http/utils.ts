@@ -15,11 +15,8 @@ import errors, { ArsenalError } from '../../errors';
  *     syntax is invalid
  */
 export function parseRangeSpec(
-    rangeHeader: string
-):
-    | { error: ArsenalError }
-    | { suffix: number }
-    | { start: number; end?: number } {
+    rangeHeader: string,
+): { error: ArsenalError } | { suffix: number } | { start: number; end?: number } {
     const rangeMatch = /^bytes=([0-9]+)?-([0-9]+)?$/.exec(rangeHeader);
     if (rangeMatch) {
         const rangeValues = rangeMatch.slice(1, 3);
@@ -28,8 +25,7 @@ export function parseRangeSpec(
                 return { suffix: Number.parseInt(rangeValues[1], 10) };
             }
         } else {
-            const rangeSpec: { start: number; end?: number } =
-                { start: Number.parseInt(rangeValues[0], 10) };
+            const rangeSpec: { start: number; end?: number } = { start: Number.parseInt(rangeValues[0], 10) };
             if (rangeValues[1] === undefined) {
                 return rangeSpec;
             }
@@ -61,7 +57,7 @@ export function parseRangeSpec(
  */
 export function getByteRangeFromSpec(
     rangeSpec: { suffix: number } | { start: number; end?: number },
-    objectSize: number
+    objectSize: number,
 ): { error: ArsenalError } | { range: [number, number] } | {} {
     if ('suffix' in rangeSpec) {
         if (rangeSpec.suffix === 0) {
@@ -73,14 +69,11 @@ export function getByteRangeFromSpec(
             // full object (0 bytes)
             return {};
         }
-        return { range: [Math.max(objectSize - rangeSpec.suffix, 0),
-            objectSize - 1] };
+        return { range: [Math.max(objectSize - rangeSpec.suffix, 0), objectSize - 1] };
     }
     if (rangeSpec.start < objectSize) {
         // test is false if end is undefined or end is greater than objectSize
-        const end: number = rangeSpec.end !== undefined && rangeSpec.end < objectSize
-            ? rangeSpec.end
-            : objectSize - 1;
+        const end: number = rangeSpec.end !== undefined && rangeSpec.end < objectSize ? rangeSpec.end : objectSize - 1;
         return { range: [rangeSpec.start, end] };
     }
     return { error: errors.InvalidRange };
@@ -105,7 +98,7 @@ export function getByteRangeFromSpec(
  */
 export function parseRange(
     rangeHeader: string,
-    objectSize: number
+    objectSize: number,
 ): { range: [number, number] } | {} | { error: ArsenalError } {
     const rangeSpec = parseRangeSpec(rangeHeader);
     if ('error' in rangeSpec) {
@@ -118,6 +111,5 @@ export function parseRange(
 
 export function checkSupportIPv6() {
     const niList = os.networkInterfaces();
-    return Object.keys(niList).some(network =>
-        niList[network]?.some(intfc => intfc.family === 'IPv6'));
+    return Object.keys(niList).some(network => niList[network]?.some(intfc => intfc.family === 'IPv6'));
 }

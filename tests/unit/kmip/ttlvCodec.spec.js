@@ -1,4 +1,4 @@
-'use strict';  
+'use strict';
 /* eslint new-cap: "off" */
 
 const assert = require('assert');

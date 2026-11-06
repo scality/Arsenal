@@ -42,7 +42,7 @@ async function createTag(tag: string) {
 }
 
 const mockSteps = {
-    build: [
+    'build': [
         { name: 'Fail if release already exists', mockWith: 'echo no-release-found' },
         { name: 'Install NodeJS', mockWith: 'echo skip-setup-node' },
         { name: 'Install dependencies', mockWith: 'echo skip-install' },
@@ -61,7 +61,7 @@ const mockSteps = {
         { name: 'Install NodeJS', mockWith: 'echo skip-setup-node' },
         { name: 'Publish to npm', mockWith: 'echo skip-publish' },
     ],
-    release: [{ name: 'Create Release', mockWith: 'echo skip-create-release' }],
+    'release': [{ name: 'Create Release', mockWith: 'echo skip-create-release' }],
 };
 
 function run(act: Act) {

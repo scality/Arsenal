@@ -100,8 +100,10 @@ describe('ZenkoMetrics', () => {
         });
         expectedLines.forEach(expectedLine => {
             assert.notStrictEqual(
-                lines[expectedLine], undefined,
-                `missing expected line in Prometheus export '${expectedLine}'`);
+                lines[expectedLine],
+                undefined,
+                `missing expected line in Prometheus export '${expectedLine}'`,
+            );
         });
     });
 });

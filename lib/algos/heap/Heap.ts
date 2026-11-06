@@ -17,7 +17,7 @@ export class Heap {
     _order: HeapOrder;
     _heap: any[];
     _cmpFn: CompareFunction;
-    
+
     constructor(size: number, order: HeapOrder, cmpFn: CompareFunction) {
         this.size = 0;
         this._maxSize = size;
@@ -31,15 +31,15 @@ export class Heap {
     }
 
     _left(i: number): number {
-        return Math.floor((2 * i) + 1);
+        return Math.floor(2 * i + 1);
     }
 
     _right(i: number): number {
-        return Math.floor((2 * i) + 2);
+        return Math.floor(2 * i + 2);
     }
 
     _shouldSwap(childIdx: number, parentIdx: number): boolean {
-        return this._cmpFn(this._heap[childIdx], this._heap[parentIdx]) as number === this._order as number;
+        return (this._cmpFn(this._heap[childIdx], this._heap[parentIdx]) as number) === (this._order as number);
     }
 
     _swap(i: number, j: number) {
@@ -86,7 +86,7 @@ export class Heap {
         }
 
         return null;
-    };
+    }
 
     remove(): any {
         if (this.size <= 0) {
@@ -99,7 +99,7 @@ export class Heap {
         --this.size;
 
         return ret;
-    };
+    }
 
     peek(): any {
         if (this.size <= 0) {
@@ -107,7 +107,7 @@ export class Heap {
         }
 
         return this._heap[0];
-    };
+    }
 }
 
 export class MinHeap extends Heap {
@@ -120,5 +120,4 @@ export class MaxHeap extends Heap {
     constructor(size: number, cmpFn: CompareFunction) {
         super(size, HeapOrder.Max, cmpFn);
     }
-} 
-
+}

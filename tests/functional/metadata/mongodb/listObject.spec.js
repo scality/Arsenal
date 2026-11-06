@@ -53,7 +53,7 @@ describe('MongoClientInterface::metadata.listObject', () => {
             () => count < versionNb,
             cbIterator => {
                 count++;
-                 
+
                 return metadata.putObjectMD(bucketName, objName, objVal, params, logger, cbIterator);
             },
             cb,
@@ -618,7 +618,6 @@ describe('MongoClientInterface::metadata.listObject', () => {
             });
 
             it('Should properly destroy the MongoDBReadStream', done => {
-                 
                 const destroyStub = sinon.stub(MongoReadStream.prototype, 'destroy').callsFake(function (...args) {
                     // You can add extra logic here if needed
                     MongoReadStream.prototype.destroy.wrappedMethod.apply(this, ...args);
@@ -637,13 +636,12 @@ describe('MongoClientInterface::metadata.listObject', () => {
             });
 
             it('Should properly destroy the MongoDBReadStream on error', done => {
-                 
                 const destroyStub = sinon.stub(MongoReadStream.prototype, 'destroy').callsFake(function (...args) {
                     // You can add extra logic here if needed
                     MongoReadStream.prototype.destroy.wrappedMethod.apply(this, ...args);
                 });
                 // stub the cursor creation to emit an error
-                 
+
                 const readStub = sinon.stub(MongoReadStream.prototype, '_read').callsFake(function () {
                     this.emit('error', new Error('error'));
                 });

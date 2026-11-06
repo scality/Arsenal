@@ -3,7 +3,6 @@ const assert = require('assert');
 const ChainBackend = require('../../../lib/auth/auth').backends.chainBackend;
 const BaseBackend = require('../../../lib/auth/auth').backends.baseBackend;
 
-
 const testError = new Error('backend error');
 
 const backendWithAllMethods = {
@@ -62,35 +61,37 @@ describe('Auth Backend: Chain Backend', () => {
     [
         ['should throw an error if client list is not an array', null],
         ['should throw an error if client list empty', []],
-        ['should throw an error if a client is missing the verifySignatureV2 method', [
-            new TestBackend(),
-            getBackendWithMissingMethod('verifySignatureV2'),
-        ]],
-        ['should throw an error if a client is missing the verifySignatureV4 auth method', [
-            new TestBackend(),
-            getBackendWithMissingMethod('verifySignatureV4'),
-        ]],
-        ['should throw an error if a client is missing the getCanonicalId method', [
-            new TestBackend(),
-            getBackendWithMissingMethod('getCanonicalIds'),
-        ]],
-        ['should throw an error if a client is missing the getEmailAddresses method', [
-            new TestBackend(),
-            getBackendWithMissingMethod('getEmailAddresses'),
-        ]],
-        ['should throw an error if a client is missing the checkPolicies method', [
-            new TestBackend(),
-            getBackendWithMissingMethod('checkPolicies'),
-        ]],
-        ['should throw an error if a client is missing the healthcheck method', [
-            new TestBackend(),
-            getBackendWithMissingMethod('healthcheck'),
-        ]],
-    ].forEach(([msg, input]) => it(msg, () => {
-        assert.throws(() => {
-            new ChainBackend('chain', input);  
-        });
-    }));
+        [
+            'should throw an error if a client is missing the verifySignatureV2 method',
+            [new TestBackend(), getBackendWithMissingMethod('verifySignatureV2')],
+        ],
+        [
+            'should throw an error if a client is missing the verifySignatureV4 auth method',
+            [new TestBackend(), getBackendWithMissingMethod('verifySignatureV4')],
+        ],
+        [
+            'should throw an error if a client is missing the getCanonicalId method',
+            [new TestBackend(), getBackendWithMissingMethod('getCanonicalIds')],
+        ],
+        [
+            'should throw an error if a client is missing the getEmailAddresses method',
+            [new TestBackend(), getBackendWithMissingMethod('getEmailAddresses')],
+        ],
+        [
+            'should throw an error if a client is missing the checkPolicies method',
+            [new TestBackend(), getBackendWithMissingMethod('checkPolicies')],
+        ],
+        [
+            'should throw an error if a client is missing the healthcheck method',
+            [new TestBackend(), getBackendWithMissingMethod('healthcheck')],
+        ],
+    ].forEach(([msg, input]) =>
+        it(msg, () => {
+            assert.throws(() => {
+                new ChainBackend('chain', input);
+            });
+        }),
+    );
 
     [
         // function name, function args
@@ -144,8 +145,10 @@ describe('Auth Backend: Chain Backend', () => {
                 ],
             ].forEach(([msg, expected, backendArgs]) => {
                 it(msg, done => {
-                    const backend = new ChainBackend('chain',
-                        backendArgs.map((args) => new TestBackend(...args)));
+                    const backend = new ChainBackend(
+                        'chain',
+                        backendArgs.map(args => new TestBackend(...args)),
+                    );
                     backend[fn](...fnArgs, (err, res) => {
                         assert.ifError(err);
                         assert.strictEqual(res, expected);
@@ -153,7 +156,8 @@ describe('Auth Backend: Chain Backend', () => {
                     });
                 });
             });
-        }));
+        }),
+    );
 
     [
         // function name, function args
@@ -183,15 +187,18 @@ describe('Auth Backend: Chain Backend', () => {
                 backend[fn](...fnArgs, (err, res) => {
                     assert.ifError(err);
                     assert.deepStrictEqual(res, {
-                        message: { body: {
-                            test1: 'aaa',
-                            test2: 'bbb',
-                        } },
+                        message: {
+                            body: {
+                                test1: 'aaa',
+                                test2: 'bbb',
+                            },
+                        },
                     });
                     done();
                 });
             });
-        }));
+        }),
+    );
 
     describe('::getCanonicalIdsByAccountIds', () => {
         it('should return an error if any of the clients fails', done => {
@@ -217,11 +224,8 @@ describe('Auth Backend: Chain Backend', () => {
                 assert.ifError(err);
                 assert.deepStrictEqual(res, {
                     message: {
-                        body: [
-                            { accountId: 'aaa' },
-                            { accountId: 'bbb' },
-                        ],
-                    }, 
+                        body: [{ accountId: 'aaa' }, { accountId: 'bbb' }],
+                    },
                 });
                 done();
             });
@@ -262,42 +266,48 @@ describe('Auth Backend: Chain Backend', () => {
             backend.checkPolicies(null, null, null, (err, res) => {
                 assert.ifError(err);
                 assert.deepStrictEqual(res, {
-                    message: { body: [
-                        { isAllowed: true, arn: 'arn:aws:s3:::policybucket/obj1' },
-                        { isAllowed: true, arn: 'arn:aws:s3:::policybucket/obj2' },
-                    ] },
+                    message: {
+                        body: [
+                            { isAllowed: true, arn: 'arn:aws:s3:::policybucket/obj1' },
+                            { isAllowed: true, arn: 'arn:aws:s3:::policybucket/obj2' },
+                        ],
+                    },
                 });
                 done();
             });
         });
     });
 
-
     describe('::_mergeObject', () => {
         it('should correctly merge reponses', () => {
             const objectResps = [
-                { message: { body: {
-                    id1: 'email1@test.com',
-                    wrongformatcanid: 'WrongFormat',
-                    id4: 'email4@test.com',
-                } } },
-                { message: { body: {
-                    id2: 'NotFound',
-                    id3: 'email3@test.com',
-                    id4: 'email5@test.com',
-                } } },
-            ];
-            assert.deepStrictEqual(
-                ChainBackend._mergeObjects(objectResps),
                 {
-                    id1: 'email1@test.com',
-                    wrongformatcanid: 'WrongFormat',
-                    id2: 'NotFound',
-                    id3: 'email3@test.com',
-                    // id4 should be overwritten
-                    id4: 'email5@test.com',
+                    message: {
+                        body: {
+                            id1: 'email1@test.com',
+                            wrongformatcanid: 'WrongFormat',
+                            id4: 'email4@test.com',
+                        },
+                    },
                 },
-            );
+                {
+                    message: {
+                        body: {
+                            id2: 'NotFound',
+                            id3: 'email3@test.com',
+                            id4: 'email5@test.com',
+                        },
+                    },
+                },
+            ];
+            assert.deepStrictEqual(ChainBackend._mergeObjects(objectResps), {
+                id1: 'email1@test.com',
+                wrongformatcanid: 'WrongFormat',
+                id2: 'NotFound',
+                id3: 'email3@test.com',
+                // id4 should be overwritten
+                id4: 'email5@test.com',
+            });
         });
     });
 
@@ -311,14 +321,16 @@ describe('Auth Backend: Chain Backend', () => {
                 },
                 {
                     message: {
-                        body: [{
-                            accountId: '820584278927',
-                            canonicalId: '0b7738d4630bba4df490a30f35c94dc1ba01c47a9cb6342c8a50df6a78e11fe9',
-                            name: 'account3',
-                        }],
+                        body: [
+                            {
+                                accountId: '820584278927',
+                                canonicalId: '0b7738d4630bba4df490a30f35c94dc1ba01c47a9cb6342c8a50df6a78e11fe9',
+                                name: 'account3',
+                            },
+                        ],
                         code: 200,
                         message: 'Attributes retrieved',
-                    }
+                    },
                 },
                 {
                     message: {
@@ -327,109 +339,152 @@ describe('Auth Backend: Chain Backend', () => {
                                 accountId: '988542727028',
                                 canonicalId: '8c9800244adbc7ea8cab0491061befa15f45c3b63db677f3a3cf7094493dd10a',
                                 name: 'account1',
-                            }, {
+                            },
+                            {
                                 accountId: '809872782425',
                                 canonicalId: 'bcf336c310145dab60b3b67c7d4c14a074a07ae2d99eb4c8a4385a809f1ffd90',
                                 name: 'account2',
-                            }
+                            },
                         ],
                         code: 200,
                         message: 'Attributes retrieved',
-                    }
+                    },
                 },
             ];
-            assert.deepStrictEqual(
-                ChainBackend._mergeObjArraysByKey(arrayResps, 'accountId'),
-                [
-                    {
-                      accountId: '820584278927',
-                      canonicalId: '0b7738d4630bba4df490a30f35c94dc1ba01c47a9cb6342c8a50df6a78e11fe9',
-                      name: 'account3'
-                    },
-                    {
-                      accountId: '988542727028',
-                      canonicalId: '8c9800244adbc7ea8cab0491061befa15f45c3b63db677f3a3cf7094493dd10a',
-                      name: 'account1'
-                    },
-                    {
-                      accountId: '809872782425',
-                      canonicalId: 'bcf336c310145dab60b3b67c7d4c14a074a07ae2d99eb4c8a4385a809f1ffd90',
-                      name: 'account2'
-                    }
-                ],
-            );
+            assert.deepStrictEqual(ChainBackend._mergeObjArraysByKey(arrayResps, 'accountId'), [
+                {
+                    accountId: '820584278927',
+                    canonicalId: '0b7738d4630bba4df490a30f35c94dc1ba01c47a9cb6342c8a50df6a78e11fe9',
+                    name: 'account3',
+                },
+                {
+                    accountId: '988542727028',
+                    canonicalId: '8c9800244adbc7ea8cab0491061befa15f45c3b63db677f3a3cf7094493dd10a',
+                    name: 'account1',
+                },
+                {
+                    accountId: '809872782425',
+                    canonicalId: 'bcf336c310145dab60b3b67c7d4c14a074a07ae2d99eb4c8a4385a809f1ffd90',
+                    name: 'account2',
+                },
+            ]);
         });
     });
 
     describe('::_mergePolicies', () => {
         it('should correctly merge policies', () => {
             const policyResps = [
-                { message: { body: [
-                    { isAllowed: false, arn: 'arn:aws:s3:::policybucket/true1' },
-                    { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true2' },
-                    { isAllowed: false, arn: 'arn:aws:s3:::policybucket/false1' },
-                ] } },
-                { message: { body: [
-                    { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true1' },
-                    { isAllowed: false, arn: 'arn:aws:s3:::policybucket/true2' },
-                    { isAllowed: false, arn: 'arn:aws:s3:::policybucket/false2' },
-                ] } },
+                {
+                    message: {
+                        body: [
+                            { isAllowed: false, arn: 'arn:aws:s3:::policybucket/true1' },
+                            { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true2' },
+                            { isAllowed: false, arn: 'arn:aws:s3:::policybucket/false1' },
+                        ],
+                    },
+                },
+                {
+                    message: {
+                        body: [
+                            { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true1' },
+                            { isAllowed: false, arn: 'arn:aws:s3:::policybucket/true2' },
+                            { isAllowed: false, arn: 'arn:aws:s3:::policybucket/false2' },
+                        ],
+                    },
+                },
             ];
-            assert.deepStrictEqual(
-                ChainBackend._mergePolicies(policyResps),
-                [
-                    { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true1' },
-                    { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true2' },
-                    { isAllowed: false, arn: 'arn:aws:s3:::policybucket/false1' },
-                    { isAllowed: false, arn: 'arn:aws:s3:::policybucket/false2' },
-                ],
-            );
+            assert.deepStrictEqual(ChainBackend._mergePolicies(policyResps), [
+                { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true1' },
+                { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true2' },
+                { isAllowed: false, arn: 'arn:aws:s3:::policybucket/false1' },
+                { isAllowed: false, arn: 'arn:aws:s3:::policybucket/false2' },
+            ]);
             const policyRespsNested = [
-                { message: { body: [
-                    [
-                        { isAllowed: false, arn: 'arn:aws:s3:::policybucket/true1' },
-                        { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true2' },
-                    ],
-                ] } },
-                { message: { body: [
-                    [
-                        { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true1' },
-                        { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true2' },
-                    ],
-                ] } },
+                {
+                    message: {
+                        body: [
+                            [
+                                { isAllowed: false, arn: 'arn:aws:s3:::policybucket/true1' },
+                                { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true2' },
+                            ],
+                        ],
+                    },
+                },
+                {
+                    message: {
+                        body: [
+                            [
+                                { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true1' },
+                                { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true2' },
+                            ],
+                        ],
+                    },
+                },
             ];
-            assert.deepStrictEqual(
-                ChainBackend._mergePolicies(policyRespsNested),
-                [
-                    { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true1' },
-                    { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true2' },
-                ],
-            );
+            assert.deepStrictEqual(ChainBackend._mergePolicies(policyRespsNested), [
+                { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true1' },
+                { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true2' },
+            ]);
         });
 
         it('should correctly merge policies with implicit denies and actions', () => {
             const policyResps = [
-                { message: { body: [
-                    { isAllowed: false, arn: 'arn:aws:s3:::policybucket/true1', action: 'action1', isImplicit: true },
-                    { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true2', action: 'action2', isImplicit: false },
-                    { isAllowed: false, arn: 'arn:aws:s3:::policybucket/false1', action: 'action3', isImplicit: false },
-                ] } },
-                { message: { body: [
-                    { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true1', action: 'action1', isImplicit: false },
-                    { isAllowed: false, arn: 'arn:aws:s3:::policybucket/true2', action: 'action1', isImplicit: true },
-                    { isAllowed: false, arn: 'arn:aws:s3:::policybucket/false2', action: 'action1', isImplicit: true },
-                ] } },
+                {
+                    message: {
+                        body: [
+                            {
+                                isAllowed: false,
+                                arn: 'arn:aws:s3:::policybucket/true1',
+                                action: 'action1',
+                                isImplicit: true,
+                            },
+                            {
+                                isAllowed: true,
+                                arn: 'arn:aws:s3:::policybucket/true2',
+                                action: 'action2',
+                                isImplicit: false,
+                            },
+                            {
+                                isAllowed: false,
+                                arn: 'arn:aws:s3:::policybucket/false1',
+                                action: 'action3',
+                                isImplicit: false,
+                            },
+                        ],
+                    },
+                },
+                {
+                    message: {
+                        body: [
+                            {
+                                isAllowed: true,
+                                arn: 'arn:aws:s3:::policybucket/true1',
+                                action: 'action1',
+                                isImplicit: false,
+                            },
+                            {
+                                isAllowed: false,
+                                arn: 'arn:aws:s3:::policybucket/true2',
+                                action: 'action1',
+                                isImplicit: true,
+                            },
+                            {
+                                isAllowed: false,
+                                arn: 'arn:aws:s3:::policybucket/false2',
+                                action: 'action1',
+                                isImplicit: true,
+                            },
+                        ],
+                    },
+                },
             ];
-            assert.deepStrictEqual(
-                ChainBackend._mergePolicies(policyResps),
-                [
-                    { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true1', action: 'action1', isImplicit: false },
-                    { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true2', action: 'action2', isImplicit: false },
-                    { isAllowed: false, arn: 'arn:aws:s3:::policybucket/false1', action: 'action3', isImplicit: false },
-                    { isAllowed: false, arn: 'arn:aws:s3:::policybucket/true2', action: 'action1', isImplicit: true },
-                    { isAllowed: false, arn: 'arn:aws:s3:::policybucket/false2', action: 'action1', isImplicit: true },
-                ],
-            );
+            assert.deepStrictEqual(ChainBackend._mergePolicies(policyResps), [
+                { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true1', action: 'action1', isImplicit: false },
+                { isAllowed: true, arn: 'arn:aws:s3:::policybucket/true2', action: 'action2', isImplicit: false },
+                { isAllowed: false, arn: 'arn:aws:s3:::policybucket/false1', action: 'action3', isImplicit: false },
+                { isAllowed: false, arn: 'arn:aws:s3:::policybucket/true2', action: 'action1', isImplicit: true },
+                { isAllowed: false, arn: 'arn:aws:s3:::policybucket/false2', action: 'action1', isImplicit: true },
+            ]);
         });
     });
 

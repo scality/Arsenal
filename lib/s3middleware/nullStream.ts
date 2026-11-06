@@ -26,9 +26,7 @@ export default class NullStream extends Readable {
      */
     _read(size: number) {
         const toRead = Math.min(size, this.bytesToRead);
-        const buffer = toRead > 0
-            ? Buffer.alloc(toRead, 0)
-            : null;
+        const buffer = toRead > 0 ? Buffer.alloc(toRead, 0) : null;
         this.bytesToRead -= toRead;
         this.push(buffer);
     }

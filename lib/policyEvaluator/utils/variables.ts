@@ -37,8 +37,7 @@ function findVariable(variable: string, requestContext: RequestContext): string 
     map.set('aws:principaltype', requesterInfo.principaltype);
     // aws:SecureTransport is boolean value that represents whether the
     // request was sent using SSL
-    map.set('aws:SecureTransport',
-        requestContext.getSslEnabled() ? 'true' : 'false');
+    map.set('aws:SecureTransport', requestContext.getSslEnabled() ? 'true' : 'false');
     // aws:SourceIp is requester's IP address, for use with IP address
     // conditions
     map.set('aws:SourceIp', requestContext.getRequesterIp());

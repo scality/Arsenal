@@ -23,6 +23,5 @@ export function transformTagKeyValue(key: string, value: string): [string, strin
  * @return array of tag key names
  */
 export function getTagKeys(tagQuery: string) {
-    return tagQuery.split('&')
-        .map(tag => tag.split('=')[0]);
+    return tagQuery.split('&').map(tag => tag.split('=')[0]);
 }

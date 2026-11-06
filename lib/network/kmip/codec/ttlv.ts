@@ -13,7 +13,7 @@ function _ttlvPadVector(vec: any[]) {
         }
         length += buf.length;
     });
-    const paddingLength = (Math.ceil(length / 8) * 8) - length;
+    const paddingLength = Math.ceil(length / 8) * 8 - length;
     if (paddingLength > 0) {
         vec.push(Buffer.alloc(paddingLength).fill(0));
     }
@@ -50,42 +50,36 @@ export default function TTLVCodec() {
                 while (i < length) {
                     const element = {};
                     const elementTag = value.slice(i, i + 3).toString('hex');
-                    const elementType =
-                          value.slice(i + 3, i + 4).toString('hex');
+                    const elementType = value.slice(i + 3, i + 4).toString('hex');
                     const elementLength = value.readUInt32BE(i + 4);
                     const property: any = {};
                     if (!TypeDecoder[elementType]) {
-                        _throwError(logger,
-                            'Unknown element type',
-                            { funcName, elementTag, elementType });
+                        _throwError(logger, 'Unknown element type', { funcName, elementTag, elementType });
                     }
-                    const elementValue = value.slice(i + 8,
-                        i + 8 + elementLength);
+                    const elementValue = value.slice(i + 8, i + 8 + elementLength);
                     if (elementValue.length !== elementLength) {
-                        _throwError(logger, 'BUG: Wrong buffer size',
-                            { funcName, elementLength,
-                                bufferLength: elementValue.length });
+                        _throwError(logger, 'BUG: Wrong buffer size', {
+                            funcName,
+                            elementLength,
+                            bufferLength: elementValue.length,
+                        });
                     }
                     property.type = TypeDecoder[elementType].name;
-                    property.value = TypeDecoder[elementType]
-                        .decode(logger, elementTag, elementValue, diversion);
+                    property.value = TypeDecoder[elementType].decode(logger, elementTag, elementValue, diversion);
                     if (diversion) {
                         property.diversion = diversion;
                         diversion = null;
                     }
                     const tagInfo = TagDecoder[elementTag];
                     if (!tagInfo) {
-                        logger.debug('Unknown element tag',
-                            { funcName, elementTag });
+                        logger.debug('Unknown element tag', { funcName, elementTag });
                         property.tag = elementTag;
                         element['Unknown Tag'] = property;
                     } else {
                         element[tagInfo.name] = property;
                         if (tagInfo.name === 'Attribute Name') {
                             if (property.type !== 'TextString') {
-                                _throwError(logger,
-                                    'Invalide type',
-                                    { funcName, type: property.type });
+                                _throwError(logger, 'Invalide type', { funcName, type: property.type });
                             }
                             diversion = property.value;
                         }
@@ -113,16 +107,14 @@ export default function TTLVCodec() {
                         if (!TypeEncoder[itemType]) {
                             throw Error(`Unknown Type '${itemType}'`);
                         }
-                        const itemResult: any[] =
-                              TypeEncoder[itemType].encode(itemTagName,
-                                  itemValue,
-                                  itemDiversion);
-                        encodedValue = encodedValue
-                            .concat(_ttlvPadVector(itemResult));
+                        const itemResult: any[] = TypeEncoder[itemType].encode(itemTagName, itemValue, itemDiversion);
+                        encodedValue = encodedValue.concat(_ttlvPadVector(itemResult));
                     });
                 });
                 encodedValue = _ttlvPadVector(encodedValue);
-                encodedValue.forEach(buf => { vectorLength += buf.length; });
+                encodedValue.forEach(buf => {
+                    vectorLength += buf.length;
+                });
                 length.writeUInt32BE(vectorLength);
                 return _ttlvPadVector([tag, type, length, ...encodedValue]);
             },
@@ -133,10 +125,7 @@ export default function TTLVCodec() {
                 const funcName = 'Integer::decode';
                 const fixedLength = 4;
                 if (fixedLength !== value.length) {
-                    _throwError(logger,
-                        'Length mismatch',
-                        { funcName, fixedLength,
-                            bufferLength: value.length });
+                    _throwError(logger, 'Length mismatch', { funcName, fixedLength, bufferLength: value.length });
                 }
                 return value.readUInt32BE(0);
             },
@@ -156,24 +145,17 @@ export default function TTLVCodec() {
                 const funcName = 'LongInteger::decode';
                 const fixedLength = 8;
                 if (fixedLength !== value.length) {
-                    _throwError(logger,
-                        'Length mismatch',
-                        { funcName, fixedLength,
-                            bufferLength: value.length });
+                    _throwError(logger, 'Length mismatch', { funcName, fixedLength, bufferLength: value.length });
                 }
-                const longUInt = UINT32_MAX * value.readUInt32BE(0) +
-                      value.readUInt32BE(4);
+                const longUInt = UINT32_MAX * value.readUInt32BE(0) + value.readUInt32BE(4);
                 if (longUInt > Number.MAX_SAFE_INTEGER) {
-                    _throwError(logger,
-                        '53-bit overflow',
-                        { funcName, longUInt });
+                    _throwError(logger, '53-bit overflow', { funcName, longUInt });
                 }
                 return longUInt;
             },
             encode: (tagName, value) => {
                 const tag = Buffer.from(TagEncoder[tagName].value, 'hex');
-                const type =
-                      Buffer.from(TypeEncoder['LongInteger'].value, 'hex');
+                const type = Buffer.from(TypeEncoder['LongInteger'].value, 'hex');
                 const length = Buffer.alloc(4);
                 length.writeUInt32BE(8);
                 const encodedValue = Buffer.alloc(8);
@@ -187,8 +169,7 @@ export default function TTLVCodec() {
             decode: (logger, tag, value) => value,
             encode: (tagName, value) => {
                 const tag = Buffer.from(TagEncoder[tagName].value, 'hex');
-                const type =
-                      Buffer.from(TypeEncoder['BigInteger'].value, 'hex');
+                const type = Buffer.from(TypeEncoder['BigInteger'].value, 'hex');
                 const length = Buffer.alloc(4);
                 length.writeUInt32BE(value.length);
                 return _ttlvPadVector([tag, type, length, value]);
@@ -200,35 +181,23 @@ export default function TTLVCodec() {
                 const funcName = 'Enumeration::decode';
                 const fixedLength = 4;
                 if (fixedLength !== value.length) {
-                    _throwError(logger,
-                        'Length mismatch',
-                        { funcName, fixedLength,
-                            bufferLength: value.length });
+                    _throwError(logger, 'Length mismatch', { funcName, fixedLength, bufferLength: value.length });
                 }
                 const enumValue = value.toString('hex');
                 const actualTag = diversion ? TagEncoder[diversion].value : tag;
                 const enumInfo = TagDecoder[actualTag];
-                if (!enumInfo ||
-                    !enumInfo.enumeration ||
-                    !enumInfo.enumeration[enumValue]) {
-                    return { tag,
-                        value: enumValue,
-                        message: 'Unknown enumeration value',
-                        diversion,
-                    };
+                if (!enumInfo || !enumInfo.enumeration || !enumInfo.enumeration[enumValue]) {
+                    return { tag, value: enumValue, message: 'Unknown enumeration value', diversion };
                 }
                 return enumInfo.enumeration[enumValue];
             },
             encode: (tagName, value, diversion) => {
                 const tag = Buffer.from(TagEncoder[tagName].value, 'hex');
-                const type =
-                      Buffer.from(TypeEncoder['Enumeration'].value, 'hex');
+                const type = Buffer.from(TypeEncoder['Enumeration'].value, 'hex');
                 const length = Buffer.alloc(4);
                 length.writeUInt32BE(4);
                 const actualTag = diversion || tagName;
-                const encodedValue =
-                      Buffer.from(TagEncoder[actualTag].enumeration[value],
-                          'hex');
+                const encodedValue = Buffer.from(TagEncoder[actualTag].enumeration[value], 'hex');
                 return _ttlvPadVector([tag, type, length, encodedValue]);
             },
         },
@@ -238,10 +207,7 @@ export default function TTLVCodec() {
                 const funcName = 'Boolean::decode';
                 const fixedLength = 8;
                 if (fixedLength !== value.length) {
-                    _throwError(logger,
-                        'Length mismatch',
-                        { funcName, fixedLength,
-                            bufferLength: value.length });
+                    _throwError(logger, 'Length mismatch', { funcName, fixedLength, bufferLength: value.length });
                 }
                 const msUInt = value.readUInt32BE(0);
                 const lsUInt = value.readUInt32BE(4);
@@ -263,12 +229,10 @@ export default function TTLVCodec() {
             decode: (logger, tag, value) => value.toString('utf8'),
             encode: (tagName, value) => {
                 const tag = Buffer.from(TagEncoder[tagName].value, 'hex');
-                const type =
-                      Buffer.from(TypeEncoder['TextString'].value, 'hex');
+                const type = Buffer.from(TypeEncoder['TextString'].value, 'hex');
                 const length = Buffer.alloc(4);
                 length.writeUInt32BE(value.length);
-                return _ttlvPadVector([tag, type, length,
-                    Buffer.from(value, 'utf8')]);
+                return _ttlvPadVector([tag, type, length, Buffer.from(value, 'utf8')]);
             },
         },
         '08': {
@@ -276,8 +240,7 @@ export default function TTLVCodec() {
             decode: (logger, tag, value) => value,
             encode: (tagName, value) => {
                 const tag = Buffer.from(TagEncoder[tagName].value, 'hex');
-                const type =
-                      Buffer.from(TypeEncoder['ByteString'].value, 'hex');
+                const type = Buffer.from(TypeEncoder['ByteString'].value, 'hex');
                 const length = Buffer.alloc(4);
                 length.writeUInt32BE(value.length);
                 return _ttlvPadVector([tag, type, length, value]);
@@ -289,18 +252,12 @@ export default function TTLVCodec() {
                 const funcName = 'Date-Time::decode';
                 const fixedLength = 8;
                 if (fixedLength !== value.length) {
-                    _throwError(logger,
-                        'Length mismatch',
-                        { funcName, fixedLength,
-                            bufferLength: value.length });
+                    _throwError(logger, 'Length mismatch', { funcName, fixedLength, bufferLength: value.length });
                 }
                 const d = new Date(0);
-                const utcSeconds = UINT32_MAX * value.readUInt32BE(0) +
-                      value.readUInt32BE(4);
+                const utcSeconds = UINT32_MAX * value.readUInt32BE(0) + value.readUInt32BE(4);
                 if (utcSeconds > Number.MAX_SAFE_INTEGER) {
-                    _throwError(logger,
-                        '53-bit overflow',
-                        { funcName, utcSeconds });
+                    _throwError(logger, '53-bit overflow', { funcName, utcSeconds });
                 }
                 d.setUTCSeconds(utcSeconds);
                 return d;
@@ -323,10 +280,7 @@ export default function TTLVCodec() {
                 const funcName = 'Interval::decode';
                 const fixedLength = 4;
                 if (fixedLength !== value.length) {
-                    _throwError(logger,
-                        'Length mismatch',
-                        { funcName, fixedLength,
-                            bufferLength: value.length });
+                    _throwError(logger, 'Length mismatch', { funcName, fixedLength, bufferLength: value.length });
                 }
                 return value.readInt32BE(0);
             },
@@ -341,7 +295,6 @@ export default function TTLVCodec() {
             },
         },
     };
-
 
     /* Construct TagDecoder */
     Object.keys(TagDecoder).forEach(key => {
@@ -358,7 +311,6 @@ export default function TTLVCodec() {
         TagEncoder[TagDecoder[key].name] = element;
     });
 
-
     /* Construct TypeDecoder and TypeEncoder */
     Object.keys(PrimitiveTypes).forEach(value => {
         const name = PrimitiveTypes[value].name;
@@ -367,7 +319,6 @@ export default function TTLVCodec() {
         TypeDecoder[value] = { name, decode };
         TypeEncoder[name] = { value, encode };
     });
-
 
     /* Public Methods Definition */
     // @ts-ignore
@@ -400,8 +351,7 @@ export default function TTLVCodec() {
 
     // @ts-ignore
     this.decode = (logger, rawMessage) => {
-        const messageContent =
-              TypeDecoder['01'].decode(logger, null, rawMessage);
+        const messageContent = TypeDecoder['01'].decode(logger, null, rawMessage);
         return new KMIPMessage(messageContent);
     };
 
@@ -418,9 +368,7 @@ export default function TTLVCodec() {
                 if (!TypeEncoder[type]) {
                     throw Error(`Unknown Type '${type}'`);
                 }
-                const itemValue = TypeEncoder[type].encode(key,
-                    item[key].value,
-                    item[key].diversion);
+                const itemValue = TypeEncoder[type].encode(key, item[key].value, item[key].diversion);
                 result = result.concat(_ttlvPadVector(itemValue));
             });
         });

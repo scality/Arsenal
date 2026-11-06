@@ -9,29 +9,29 @@ Configuration is done using the configuration file.
 
 Supported parameters:
 
-| Config File        | Description                                             |
-|--------------------|---------------------------------------------------------|
-| kmsAWS.providerName| Friendly name to identify the KMS key provider in MD    |
-| kmsAWS.region      | AWS region to use                                       |
-| kmsAWS.endpoint    | Endpoint URL                                            |
-| kmsAWS.ak          | Credentials, Access Key                                 |
-| kmsAWS.sk          | Credentials, Secret Key                                 |
-| kmsAWS.noAwsArn    | Optional (default false): use KeyId instead of KeyArn   |
-| kmsAWS.tls         | TLS configuration (Object, see below)                   |
+| Config File         | Description                                           |
+| ------------------- | ----------------------------------------------------- |
+| kmsAWS.providerName | Friendly name to identify the KMS key provider in MD  |
+| kmsAWS.region       | AWS region to use                                     |
+| kmsAWS.endpoint     | Endpoint URL                                          |
+| kmsAWS.ak           | Credentials, Access Key                               |
+| kmsAWS.sk           | Credentials, Secret Key                               |
+| kmsAWS.noAwsArn     | Optional (default false): use KeyId instead of KeyArn |
+| kmsAWS.tls          | TLS configuration (Object, see below)                 |
 
 TLS configuration attributes:
 
-| Config File         | Description                                            |
-|---------------------|--------------------------------------------------------|
-| rejectUnauthorized  | `false` to disable TLS cert checks (useful in          |
-|                     | development, **DON'T** disable in production)          |
-| minVersion          | Min TLS version: 'TLSv1.3', 'TLSv1.2', 'TLSv1.1', or   |
-|                     | 'TLSv1' (See [Node.js TLS](https://nodejs.org/api/tls) |
-| maxVersion          | Max TLS version: 'TLSv1.3', 'TLSv1.2', 'TLSv1.1', or   |
-|                     | 'TLSv1' (See [Node.js TLS](https://nodejs.org/api/tls) |
-| ca                  | Filename or array of filenames for CA(s)               |
-| cert                | Filename or array of filenames for certificate(s)      |
-| key                 | Filename or array of filenames for private key(s)      |
+| Config File        | Description                                            |
+| ------------------ | ------------------------------------------------------ |
+| rejectUnauthorized | `false` to disable TLS cert checks (useful in          |
+|                    | development, **DON'T** disable in production)          |
+| minVersion         | Min TLS version: 'TLSv1.3', 'TLSv1.2', 'TLSv1.1', or   |
+|                    | 'TLSv1' (See [Node.js TLS](https://nodejs.org/api/tls) |
+| maxVersion         | Max TLS version: 'TLSv1.3', 'TLSv1.2', 'TLSv1.1', or   |
+|                    | 'TLSv1' (See [Node.js TLS](https://nodejs.org/api/tls) |
+| ca                 | Filename or array of filenames for CA(s)               |
+| cert               | Filename or array of filenames for certificate(s)      |
+| key                | Filename or array of filenames for private key(s)      |
 
 All TLS attributes follow Node.js definitions. See
 [Node.js TLS Connect Options](https://nodejs.org/api/tls.html#tlsconnectoptions)

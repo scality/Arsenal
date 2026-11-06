@@ -1,13 +1,17 @@
 {
-    "accounts": [{
-        "name": "Zenko",
-        "email": "sampleaccount4@sampling.com",
-        "arn": "aws::iam:123456789015:root",
-        "canonicalID": "newCanId",
-        "shortid": "123456789015",
-        "keys": [{
-            "access": "accessKeyZenko",
-            "secret": "verySecretKeyZenko"
-        }]
-    }]
+    "accounts": [
+        {
+            "name": "Zenko",
+            "email": "sampleaccount4@sampling.com",
+            "arn": "aws::iam:123456789015:root",
+            "canonicalID": "newCanId",
+            "shortid": "123456789015",
+            "keys": [
+                {
+                    "access": "accessKeyZenko",
+                    "secret": "verySecretKeyZenko"
+                }
+            ]
+        }
+    ]
 }
