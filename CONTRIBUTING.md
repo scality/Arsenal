@@ -16,13 +16,9 @@ yarn dev
 
 ### Formatting
 
-Prettier is enforced in CI for changed files, including `package.json`.
-Since `yarn add`/`yarn remove` may rewrite `package.json` with 2-space
-indentation, run formatting before pushing dependency changes:
+Prettier formatting of the whole repository is checked in CI. Run it before
+pushing:
 
 ```bash
 yarn run prettier --write .
 ```
-
-When reviewing PRs with indentation-only changes, enable **Hide whitespace** in
-the GitHub file diff view to make functional changes easier to spot.
