@@ -38,10 +38,10 @@ function generateFilter(testParams) {
     if (testParams.key === 'FilterRule') {
         if (Array.isArray(testParams.value)) {
             testParams.value.forEach(v => {
-                filter = `${filter}<Filter><S3Key><FilterRule>${v}` + '</FilterRule></S3Key></Filter>';
+                filter = `${filter}<Filter><S3Key><FilterRule>${v}</FilterRule></S3Key></Filter>`;
             });
         } else {
-            filter = `<Filter><S3Key><FilterRule>${testParams.value}` + '</FilterRule></S3Key></Filter>';
+            filter = `<Filter><S3Key><FilterRule>${testParams.value}</FilterRule></S3Key></Filter>`;
         }
     }
     return filter;
@@ -55,7 +55,7 @@ function generateXml(testParams) {
             : '<Queue>arn:scality:bucketnotif:::target</Queue>';
     const event = generateEvent(testParams);
     const filter = generateFilter(testParams);
-    let queueConfig = `<QueueConfiguration>${id}${arn}${event}${filter}` + '</QueueConfiguration>';
+    let queueConfig = `<QueueConfiguration>${id}${arn}${event}${filter}</QueueConfiguration>`;
     if (testParams.key === 'QueueConfiguration') {
         if (testParams.value === 'double') {
             queueConfig = `${queueConfig}${queueConfig}`;

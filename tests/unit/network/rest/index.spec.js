@@ -181,7 +181,7 @@ describe('REST interface for blob data storage', () => {
             { range: [undefined, 0], emptyObject: true },
         ].forEach((test, i) => {
             const { range, emptyObject } = test;
-            it(`should get error 416 on ${range[0]}-${range[1]}` + `${emptyObject ? ' (empty object)' : ''}`, done => {
+            it(`should get error 416 on ${range[0]}-${range[1]}${emptyObject ? ' (empty object)' : ''}`, done => {
                 const key = emptyObject ? emptyObjKey : objKey;
                 client.get(key, range, (2000 + i).toString(), err => {
                     assert(err);

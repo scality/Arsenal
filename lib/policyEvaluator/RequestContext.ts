@@ -95,14 +95,14 @@ function _buildArn(
                 accountId = requesterInfo!.targetAccountId;
             }
             if (specificResource) {
-                return `arn:aws:iam::${accountId}:` + `${generalResource}${specificResource}`;
+                return `arn:aws:iam::${accountId}:${generalResource}${specificResource}`;
             }
             return `arn:aws:iam::${accountId}:${generalResource}`;
         }
         case 'ring': {
             // arn:aws:iam::<account-id>:<resource-type>/<resource>
             if (specificResource) {
-                return `arn:aws:ring::${requesterInfo!.accountid}:` + `${generalResource}/${specificResource}`;
+                return `arn:aws:ring::${requesterInfo!.accountid}:${generalResource}/${specificResource}`;
             }
             return `arn:aws:ring::${requesterInfo!.accountid}:${generalResource}`;
         }
@@ -110,9 +110,9 @@ function _buildArn(
             // arn:scality:utapi:::resourcetype/resource
             // (possible resource types are buckets, accounts or users)
             if (specificResource) {
-                return `arn:scality:utapi::${requesterInfo!.accountid}:` + `${generalResource}/${specificResource}`;
+                return `arn:scality:utapi::${requesterInfo!.accountid}:${generalResource}/${specificResource}`;
             }
-            return `arn:scality:utapi::${requesterInfo!.accountid}:` + `${generalResource}/`;
+            return `arn:scality:utapi::${requesterInfo!.accountid}:${generalResource}/`;
         }
         case 'sso': {
             if (specificResource) {
@@ -123,9 +123,9 @@ function _buildArn(
         case 'metadata': {
             // arn:scality:metadata::<account-id>:<resource-type>/<resource>
             if (specificResource) {
-                return `arn:scality:metadata::${requesterInfo!.accountid}:` + `${generalResource}/${specificResource}`;
+                return `arn:scality:metadata::${requesterInfo!.accountid}:${generalResource}/${specificResource}`;
             }
-            return `arn:scality:metadata::${requesterInfo!.accountid}:` + `${generalResource}/`;
+            return `arn:scality:metadata::${requesterInfo!.accountid}:${generalResource}/`;
         }
         case 'sur': {
             return (

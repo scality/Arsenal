@@ -38,7 +38,7 @@ const failTests = [
 ];
 
 const generateXml = status =>
-    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' + `<LegalHold><Status>${status}</Status></LegalHold>`;
+    `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><LegalHold><Status>${status}</Status></LegalHold>`;
 
 describe('object legal hold helpers: parseLegalHoldXml', () => {
     failTests.forEach(test => {
