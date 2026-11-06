@@ -260,6 +260,7 @@ describe('level-net - LevelDB over network', () => {
                     if (nbGetDone === nbGet) {
                         return done();
                     }
+                    return undefined;
                 }
                 client.withRequestLogger(reqLogger).get(keyOfIter(randI), params, getCb);
             }
