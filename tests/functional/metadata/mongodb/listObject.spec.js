@@ -6,7 +6,7 @@ const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
 const BucketInfo = require('../../../../lib/models/BucketInfo').default;
 const MetadataWrapper = require('../../../../lib/storage/metadata/MetadataWrapper');
 const { versioning } = require('../../../../index');
-const { BucketVersioningKeyFormat } = versioning.VersioningConstants;
+const { BucketVersioningKeyFormat, DbPrefixes: DB_PREFIXES } = versioning.VersioningConstants;
 const sinon = require('sinon');
 const MongoReadStream = require('../../../../lib/storage/metadata/mongoclient/readStream');
 const MongoUtils = require('../../../../lib/storage/metadata/mongoclient/utils');
@@ -458,6 +458,69 @@ describe('MongoClientInterface::metadata.listObject', () => {
                                 assert.strictEqual(data.Contents[0].value.VersionId, versionId);
                                 return next();
                             }),
+                    ],
+                    done,
+                );
+            });
+
+            it(`Should only read the live masters when listing masters ${variation.it}`, done => {
+                const filterSpy = sinon.spy(DelimiterMaster.prototype, 'filter');
+                const versionParams = { versioning: true };
+                const deletedKeys = ['pfx1-deleted-a', 'pfx1-deleted-b', 'pfx1-deleted-c'];
+                async.series(
+                    [
+                        // each deleted key: one version, then a delete marker on top of it
+                        next =>
+                            async.eachSeries(
+                                deletedKeys,
+                                (key, cb) =>
+                                    async.series(
+                                        [
+                                            putCb =>
+                                                metadata.putObjectMD(
+                                                    BUCKET_NAME,
+                                                    key,
+                                                    { key, versionId: 'null' },
+                                                    versionParams,
+                                                    logger,
+                                                    putCb,
+                                                ),
+                                            putCb =>
+                                                metadata.putObjectMD(
+                                                    BUCKET_NAME,
+                                                    key,
+                                                    { key, versionId: 'null', isDeleteMarker: true },
+                                                    versionParams,
+                                                    logger,
+                                                    putCb,
+                                                ),
+                                        ],
+                                        cb,
+                                    ),
+                                next,
+                            ),
+                        next => {
+                            filterSpy.resetHistory();
+                            return metadata.listObject(
+                                BUCKET_NAME,
+                                { listingType: 'DelimiterMaster', maxKeys: 100 },
+                                logger,
+                                (err, data) => {
+                                    assert.ifError(err);
+                                    assert.deepStrictEqual(
+                                        data.Contents.map(c => c.key),
+                                        ['pfx1-test-object', 'pfx2-test-object', 'pfx3-test-object'],
+                                    );
+                                    // neither the 100 versions of each live object nor the
+                                    // delete markers reach the listing algorithm
+                                    assert.deepStrictEqual(
+                                        filterSpy.getCalls().map(call => call.args[0].key.replace(DB_PREFIXES.Master, '')),
+                                        ['pfx1-test-object', 'pfx2-test-object', 'pfx3-test-object'],
+                                    );
+                                    return next();
+                                },
+                            );
+                        },
                     ],
                     done,
                 );
