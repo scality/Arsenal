@@ -120,7 +120,7 @@ describe('auth.doAuth', () => {
         };
         // Mock the v4 authentication method
         const clock = fakeTimers.install({ now: new Date(xAmzDate).getTime() });
-        mockOptions = { get: true };
+        const mockOptions = { get: true };
 
         const authenticateV4RequestStub = sandbox.stub(vault, 'authenticateV4Request');
         authenticateV4RequestStub.callsFake((params, requestContexts, options, callback) => {
