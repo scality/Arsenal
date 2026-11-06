@@ -70,7 +70,7 @@ describe('auth.doAuth', () => {
             headers: {},
             query: {},
             _headers: {},
-            setHeader (name, value) {
+            setHeader(name, value) {
                 this._headers[name] = value;
                 this.headers[name] = value;
             },
