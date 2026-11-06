@@ -32,8 +32,8 @@ describe('Parse IP address', () => {
     it('should parse IPv6 address',
         () => parseValidIpCheck('2001:cdba::3257:9652', ipaddr.IPv6));
 
+    // ::ffff:c0a8:101 mapped for 192.168.1.1
     it('should parse IPv4 mapped IPv6 address',
-        // ::ffff:c0a8:101 mapped for 192.168.1.1
         () => parseValidIpCheck('::ffff:c0a8:101', ipaddr.IPv4));
 
     ['260.384.2.1', 'INVALID', '', null, undefined].forEach(item => {
