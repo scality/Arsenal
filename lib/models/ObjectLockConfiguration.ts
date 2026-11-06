@@ -180,8 +180,7 @@ export default class ObjectLockConfiguration {
                 return { error };
             }
             if (!drArray[0].Mode || (!drArray[0].Days && !drArray[0].Years)) {
-                const msg =
-                    'DefaultRetention request xml does not contain Mode or retention period (Days or Years)';
+                const msg = 'DefaultRetention request xml does not contain Mode or retention period (Days or Years)';
                 const error = errorInstances.MalformedXML.customizeDescription(msg);
                 return { error };
             }
