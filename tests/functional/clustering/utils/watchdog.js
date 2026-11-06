@@ -18,35 +18,37 @@ const ErrorCodes = {
 let result = ErrorCodes.noError;
 
 const clusters = new Clustering(4, log);
-clusters.start(current => {
-    http.createServer(req => {
-        if (req.url === '/crash') {
-            throw new Error('Wanted crash');
+clusters
+    .start(current => {
+        http.createServer(req => {
+            if (req.url === '/crash') {
+                throw new Error('Wanted crash');
+            }
+        }).listen(14000, () => {
+            log.info('listening', {
+                id: current.getIndex(),
+            });
+        });
+    })
+    .onExit(current => {
+        if (current.isMaster()) {
+            return setTimeout(() => {
+                if (result !== ErrorCodes.noError) {
+                    return process.exit(result);
+                }
+                current.getWorkers().forEach(worker => {
+                    if (worker) {
+                        result = ErrorCodes.WorkerNotExited;
+                    }
+                });
+                return process.exit(result);
+            }, 500);
         }
-    }).listen(14000, () => {
-        log.info('listening', {
+        log.info('exiting', {
             id: current.getIndex(),
         });
+        return process.exit(0);
     });
-}).onExit(current => {
-    if (current.isMaster()) {
-        return setTimeout(() => {
-            if (result !== ErrorCodes.noError) {
-                return process.exit(result);
-            }
-            current.getWorkers().forEach(worker => {
-                if (worker) {
-                    result = ErrorCodes.WorkerNotExited;
-                }
-            });
-            return process.exit(result);
-        }, 500);
-    }
-    log.info('exiting', {
-        id: current.getIndex(),
-    });
-    return process.exit(0);
-});
 
 if (Cluster.isMaster) {
     let kill = true;
@@ -55,10 +57,13 @@ if (Cluster.isMaster) {
         if (kill) {
             ++count;
             kill = false;
-            const req = http.get({
-                path: '/crash',
-                port: 14000,
-            }, () => {});
+            const req = http.get(
+                {
+                    path: '/crash',
+                    port: 14000,
+                },
+                () => {},
+            );
             req.on('error', () => {});
             return undefined;
         }

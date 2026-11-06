@@ -11,18 +11,14 @@ const messageFixtures = require('../../utils/kmip/messageFixtures');
 const { logger } = require('../../utils/kmip/ersatz.js');
 
 function newKMIP() {
-    return new KMIP(TTLVCodec,
-        class DummyTransport {},
-        { kmip: {} }, () => {});
+    return new KMIP(TTLVCodec, class DummyTransport {}, { kmip: {} }, () => {});
 }
 
 describe('KMIP TTLV Codec', () => {
     it('should map, encode and decode an extension', done => {
         const kmip = newKMIP();
         kmip.mapExtension('Dummy Extension', 0x54a000);
-        const msg = KMIP.Message([
-            KMIP.TextString('Dummy Extension', 'beautiful'),
-        ]);
+        const msg = KMIP.Message([KMIP.TextString('Dummy Extension', 'beautiful')]);
         const encodedMsg = kmip._encodeMessage(msg);
         const decodedMsg = kmip._decodeMessage(logger, encodedMsg);
         assert.deepStrictEqual(msg, decodedMsg);
@@ -47,18 +43,14 @@ describe('KMIP TTLV Codec', () => {
         const kmip = newKMIP();
         const msg = kmip._decodeMessage(logger, ttlvFixtures[1].response);
 
-        const supportedOperations =
-              msg.lookup('Response Message/Batch Item/' +
-                         'Response Payload/Operation');
-        const supportedObjectTypes =
-              msg.lookup('Response Message/Batch Item/' +
-                         'Response Payload/Object Type');
-        const protocolVersionMajor =
-              msg.lookup('Response Message/Response Header/' +
-                         'Protocol Version/Protocol Version Major');
-        const protocolVersionMinor =
-              msg.lookup('Response Message/Response Header/' +
-                         'Protocol Version/Protocol Version Minor');
+        const supportedOperations = msg.lookup('Response Message/Batch Item/' + 'Response Payload/Operation');
+        const supportedObjectTypes = msg.lookup('Response Message/Batch Item/' + 'Response Payload/Object Type');
+        const protocolVersionMajor = msg.lookup(
+            'Response Message/Response Header/' + 'Protocol Version/Protocol Version Major',
+        );
+        const protocolVersionMinor = msg.lookup(
+            'Response Message/Response Header/' + 'Protocol Version/Protocol Version Minor',
+        );
 
         assert(supportedOperations.includes('Encrypt'));
         assert(supportedOperations.includes('Decrypt'));
@@ -66,9 +58,7 @@ describe('KMIP TTLV Codec', () => {
         assert(supportedOperations.includes('Destroy'));
         assert(supportedOperations.includes('Query'));
         assert(supportedObjectTypes.includes('Symmetric Key'));
-        assert(protocolVersionMajor[0] >= 2 ||
-               (protocolVersionMajor[0] === 1 &&
-                protocolVersionMinor[0] >= 2));
+        assert(protocolVersionMajor[0] >= 2 || (protocolVersionMajor[0] === 1 && protocolVersionMinor[0] >= 2));
         done();
     });
 
@@ -76,9 +66,7 @@ describe('KMIP TTLV Codec', () => {
         const kmip = newKMIP();
         const msg = kmip._decodeMessage(logger, ttlvFixtures[2].response);
 
-        const supportedOperations =
-              msg.lookup('Response Message/Batch Item/' +
-                         'Response Payload/Operation');
+        const supportedOperations = msg.lookup('Response Message/Batch Item/' + 'Response Payload/Operation');
 
         assert(!supportedOperations.includes('Encrypt'));
         assert(!supportedOperations.includes('Decrypt'));
@@ -89,18 +77,14 @@ describe('KMIP TTLV Codec', () => {
         const kmip = newKMIP();
         const msg = kmip._decodeMessage(logger, ttlvFixtures[1].response);
 
-        const supportedOperations =
-              msg.lookup('/Response Message/Batch Item/' +
-                         'Response Payload/Operation');
-        const supportedObjectTypes =
-              msg.lookup('Response Message/Batch Item/' +
-                         'Response Payload/Object Type/');
-        const protocolVersionMajor =
-              msg.lookup('Response Message//Response Header///' +
-                         'Protocol Version////Protocol Version Major');
-        const protocolVersionMinor =
-              msg.lookup('/Response Message////Response Header///' +
-                         'Protocol Version//Protocol Version Minor/');
+        const supportedOperations = msg.lookup('/Response Message/Batch Item/' + 'Response Payload/Operation');
+        const supportedObjectTypes = msg.lookup('Response Message/Batch Item/' + 'Response Payload/Object Type/');
+        const protocolVersionMajor = msg.lookup(
+            'Response Message//Response Header///' + 'Protocol Version////Protocol Version Major',
+        );
+        const protocolVersionMinor = msg.lookup(
+            '/Response Message////Response Header///' + 'Protocol Version//Protocol Version Minor/',
+        );
 
         assert(supportedOperations.includes('Encrypt'));
         assert(supportedOperations.includes('Decrypt'));
@@ -108,9 +92,7 @@ describe('KMIP TTLV Codec', () => {
         assert(supportedOperations.includes('Destroy'));
         assert(supportedOperations.includes('Query'));
         assert(supportedObjectTypes.includes('Symmetric Key'));
-        assert(protocolVersionMajor[0] >= 2 ||
-               (protocolVersionMajor[0] === 1 &&
-                protocolVersionMinor[0] >= 2));
+        assert(protocolVersionMajor[0] >= 2 || (protocolVersionMajor[0] === 1 && protocolVersionMinor[0] >= 2));
         done();
     });
 
@@ -128,10 +110,10 @@ describe('KMIP TTLV Codec', () => {
     it('should encode/decode a bit mask', done => {
         const kmip = newKMIP();
         const usageMask = ['Encrypt', 'Decrypt', 'Export'];
-        const decodedMask =
-              kmip.decodeMask('Cryptographic Usage Mask',
-                  kmip.encodeMask('Cryptographic Usage Mask',
-                      usageMask));
+        const decodedMask = kmip.decodeMask(
+            'Cryptographic Usage Mask',
+            kmip.encodeMask('Cryptographic Usage Mask', usageMask),
+        );
         assert.deepStrictEqual(usageMask.sort(), decodedMask.sort());
         done();
     });
@@ -158,15 +140,14 @@ describe('KMIP TTLV Codec', () => {
     });
 
     badTtlvFixtures.forEach((rawMessage, idx) => {
-        it(`should fail to parse invalid TTLV message fixture[${idx}]`,
-            done => {
-                const kmip = newKMIP();
-                try {
-                    kmip._decodeMessage(logger, rawMessage);
-                    done(Error('Must not succeed'));
-                } catch (e) {
-                    done();
-                }
-            });
+        it(`should fail to parse invalid TTLV message fixture[${idx}]`, done => {
+            const kmip = newKMIP();
+            try {
+                kmip._decodeMessage(logger, rawMessage);
+                done(Error('Must not succeed'));
+            } catch (e) {
+                done();
+            }
+        });
     });
 });

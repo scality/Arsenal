@@ -19,31 +19,35 @@ class ReqStream extends stream.Readable {
 }
 
 describe('readJSONStreamObject', () => {
-    [{
-        desc: 'accept a valid JSON object',
-        contents: '{"foo":"bar","baz":42}',
-        error: false,
-        value: { foo: 'bar', baz: 42 },
-    }, {
-        desc: 'error with empty stream contents',
-        contents: '',
-        error: true,
-    }, {
-        desc: 'error if stream contents does not match against the validation schema',
-        contents: '"foo"',
-        joiSchema: joi.object(),
-        error: true,
-    }, {
-        desc: 'accept a large JSON payload',
-        contents: `[${new Array(10000).fill('"some-payload"').join(',')}]`,
-        error: false,
-        value: new Array(10000).fill('some-payload'),
-    }].forEach(testCase => {
+    [
+        {
+            desc: 'accept a valid JSON object',
+            contents: '{"foo":"bar","baz":42}',
+            error: false,
+            value: { foo: 'bar', baz: 42 },
+        },
+        {
+            desc: 'error with empty stream contents',
+            contents: '',
+            error: true,
+        },
+        {
+            desc: 'error if stream contents does not match against the validation schema',
+            contents: '"foo"',
+            joiSchema: joi.object(),
+            error: true,
+        },
+        {
+            desc: 'accept a large JSON payload',
+            contents: `[${new Array(10000).fill('"some-payload"').join(',')}]`,
+            error: false,
+            value: new Array(10000).fill('some-payload'),
+        },
+    ].forEach(testCase => {
         it(`should ${testCase.desc}`, async () => {
             let value;
             try {
-                value = await readJSONStreamObject(
-                    new ReqStream(testCase.contents), testCase.joiSchema);
+                value = await readJSONStreamObject(new ReqStream(testCase.contents), testCase.joiSchema);
             } catch (err) {
                 assert.strictEqual(testCase.error, true);
                 return undefined;
