@@ -2205,10 +2205,11 @@
   resolved "https://registry.yarnpkg.com/@protobufjs/utf8/-/utf8-1.1.2.tgz#78d476333d85d5b1c792e257bca74ba080da49a4"
   integrity sha512-b1UQwcEZ4yCnMCD8DAL1VlbvBJE9/IX4FTIp7BG1xYpf29SLazLSrqUkj4w7Y5y7cCVP6E5tcqqcI0xemPkHug==
 
-"@scality/eslint-config-scality@scality/Guidelines#8.3.3":
-  version "8.3.3"
-  resolved "https://codeload.github.com/scality/Guidelines/tar.gz/4f3f39e7def07df51264bb013e0978f02d110414"
+"@scality/eslint-config-scality@scality/Guidelines#improvement/GDL-18/prettier-eslint-config":
+  version "8.3.4"
+  resolved "https://codeload.github.com/scality/Guidelines/tar.gz/d13fcfa60c31102d6d0217429c081ddcadb8bff1"
   dependencies:
+    eslint-config-prettier "^10.1.8"
     globals "^14.0.0"
     markdownlint "0.38.0"
 
