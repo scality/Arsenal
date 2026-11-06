@@ -257,7 +257,7 @@ class SIOStreamSocket {
             log.debug("received 'stream-hangup' event", { streamId });
             const stream = this.localStreams[streamId];
             if (!stream) {
-                log.debug('no such local stream registered(may have already reached the end)', { streamId });
+                log.debug('no such local stream registered (may have already reached the end)', { streamId });
                 return;
             }
             this.destroyStream(streamId);

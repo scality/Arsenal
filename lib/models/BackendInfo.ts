@@ -162,7 +162,7 @@ export default class BackendInfo {
                 isValid: false,
                 description:
                     'Object Location Error - Your object location ' +
-                    `"${escapeForXml(objectLocationConstraint)}"is not  in your location config - Please update.`,
+                    `"${escapeForXml(objectLocationConstraint)}" is not in your location config - Please update.`,
             };
         }
         if (bucketLocationConstraint) {
