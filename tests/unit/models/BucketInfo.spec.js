@@ -447,8 +447,7 @@ Object.keys(acl).forEach(aclObj =>
                 assert.deepStrictEqual(dummyBucket.getLocationConstraint(), testLocationConstraint);
             });
             it(
-                'getReadLocationConstraint should return locationConstraint ' +
-                    "if readLocationConstraint hasn't been set",
+                "getReadLocationConstraint should return locationConstraint if readLocationConstraint hasn't been set",
                 () => {
                     assert.deepStrictEqual(dummyBucket.getReadLocationConstraint(), testLocationConstraint);
                 },

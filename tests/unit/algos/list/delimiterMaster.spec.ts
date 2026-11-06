@@ -47,8 +47,7 @@ function getListingKey(key, vFormat) {
 ['v0', 'v1'].forEach(vFormat => {
     describe(`DelimiterMaster listing algorithm vFormat=${vFormat}`, () => {
         it(
-            'should return SKIP_NONE for DelimiterMaster when both NextMarker ' +
-                'and NextContinuationToken are undefined',
+            'should return SKIP_NONE for DelimiterMaster when both NextMarker and NextContinuationToken are undefined',
             () => {
                 const delimiter = new DelimiterMaster({ delimiter: '/' }, fakeLogger, vFormat);
 
@@ -440,8 +439,7 @@ function getListingKey(key, vFormat) {
             });
 
             it(
-                'should skip a versioned entry when there is a delimiter and the key ' +
-                    'starts with the NextMarker value',
+                'should skip a versioned entry when there is a delimiter and the key starts with the NextMarker value',
                 () => {
                     const key = 'prefix/key';
                     const versionKey = `${key}${VID_SEP}version`;
@@ -1316,8 +1314,7 @@ describe('DelimiterMaster listing algorithm: gap caching and lookup', () => {
     });
 
     it(
-        'should cut the current gap when seeing a non-deleted object, and start a new ' +
-            'gap on the next deleted object',
+        'should cut the current gap when seeing a non-deleted object, and start a new gap on the next deleted object',
         () => {
             const listing = new DelimiterMaster({}, fakeLogger, 'v0');
             const gapCache = new GapCacheAsSet(100);

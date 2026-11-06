@@ -35,9 +35,8 @@ const serverExtensions = [
         tag: 0x542011,
         type: 7,
         value:
-            'I heard you like kmip, so I put a server in your client ' +
-            'so you can do both ends of the conversation while you are ' +
-            'talking about server side encryption',
+            'I heard you like kmip, so I put a server in your client so you can do both ' +
+            'ends of the conversation while you are talking about server side encryption',
     },
 ];
 

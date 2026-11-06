@@ -75,8 +75,7 @@ describe('parseRange function', () => {
 
     it(
         'should set the end of the range at the total object length minus 1 ' +
-            'if the provided end of range goes beyond the end of the object ' +
-            'length',
+            'if the provided end of range goes beyond the end of the object length',
         () => {
             checkParseRange('bytes=0-9', 8, [0, 7]);
         },
