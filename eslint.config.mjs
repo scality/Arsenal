@@ -21,6 +21,12 @@ export default tseslint.config(
     ...tseslint.configs.recommended,
     includeIgnoreFile(gitignorePath),
     {
+        // Many JavaScript files were not linted for a while and kept disable
+        // comments that no longer apply; removing them is left to the
+        // Prettier reformat, which rewrites these files anyway.
+        linterOptions: {
+            reportUnusedDisableDirectives: 'off',
+        },
         rules: {
             '@typescript-eslint/ban-ts-comment': 'off',
             '@typescript-eslint/no-require-imports': 'off',
