@@ -160,7 +160,7 @@ describe('GapCache', () => {
         expect(await gapCache.lookupGap('rat', 'tiger')).toEqual({ firstKey: 'lion', lastKey: 'seal', weight: 20 });
     });
 
-    it('removeOverlappingGaps() should invalidate gaps created later by setGap() but within the exposure delay', async () => {
+    it('removeOverlappingGaps() invalidates gaps created later by setGap() but within exposure delay', async () => {
         // wait for 80ms (slightly less than exposure delay of 100ms)
         // before calling removeOverlappingGaps(), so that the next
         // exposure timer kicks in before the call to setGap()
@@ -183,7 +183,7 @@ describe('GapCache', () => {
         expect(await gapCache.lookupGap('bat', 'zoo')).toEqual({ firstKey: 'goat', lastKey: 'hog', weight: 20 });
     });
 
-    it('removeOverlappingGaps() should not invalidate gaps created more than twice the exposure delay later', async () => {
+    it('removeOverlappingGaps() keeps gaps created more than twice the exposure delay later', async () => {
         // there is no exposed gap yet, so expect 0 gap removed
         expect(gapCache.removeOverlappingGaps(['dog'])).toEqual(0);
 

@@ -315,7 +315,12 @@ describe('test VRP', () => {
                         // showing it's a null version made by Cloudserver that works with null keys.
                         {
                             key: `bar${VID_SEP}`,
-                            value: '{"qux":"quz","versionId":"99999999999999999999PARIS  ","isNull":true,"isNull2":true}',
+                            value: JSON.stringify({
+                                qux: 'quz',
+                                versionId: '99999999999999999999PARIS  ',
+                                isNull: true,
+                                isNull2: true,
+                            }),
                         },
                         // the new version
                         {
@@ -379,7 +384,11 @@ describe('test VRP', () => {
                         // master version should have the provided version id and a reference of the null version id.
                         {
                             key: 'bar',
-                            value: `{"qux":"quz2","versionId":"${versionId}","nullVersionId":"99999999999999999999PARIS  "}`,
+                            value: JSON.stringify({
+                                qux: 'quz2',
+                                versionId,
+                                nullVersionId: '99999999999999999999PARIS  ',
+                            }),
                         },
                         // the "internal" master version should have the provided version id.
                         {

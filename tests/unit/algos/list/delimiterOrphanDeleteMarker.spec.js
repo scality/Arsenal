@@ -778,7 +778,11 @@ describe('DelimiterOrphanDeleteMarker over PHD master keys', () => {
 
         it('should cross a PHD desert longer than the scan limit and list the orphan DM beyond it', () => {
             const dmVersionId = 'vid-dm';
-            const dmValue = `{"versionId":"${dmVersionId}","last-modified":"1970-01-01T00:00:00.001Z","isDeleteMarker":true}`;
+            const dmValue = JSON.stringify({
+                'versionId': dmVersionId,
+                'last-modified': '1970-01-01T00:00:00.001Z',
+                'isDeleteMarker': true,
+            });
             const keyspace = [];
             for (let i = 1; i <= 8; i++) {
                 keyspace.push({ key: `img-00${i}`, value: valuePHD });
@@ -795,7 +799,11 @@ describe('DelimiterOrphanDeleteMarker over PHD master keys', () => {
 
         it('should emit an orphan DM held as candidate when the desert begins', () => {
             const dmVersionId = 'vid-dm';
-            const dmValue = `{"versionId":"${dmVersionId}","last-modified":"1970-01-01T00:00:00.001Z","isDeleteMarker":true}`;
+            const dmValue = JSON.stringify({
+                'versionId': dmVersionId,
+                'last-modified': '1970-01-01T00:00:00.001Z',
+                'isDeleteMarker': true,
+            });
             const keyspace = [
                 { key: 'banana', value: dmValue },
                 { key: `banana${VID_SEP}${dmVersionId}`, value: dmValue },
