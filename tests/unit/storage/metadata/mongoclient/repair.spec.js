@@ -22,7 +22,7 @@ const otel = makeOtelHelpers({
     inject: mockOtelInject,
 });
 
-describe('MongoClientInterface:repair trace-context plumbing', () => {
+describe('MongoClientInterface:repair trace context', () => {
     let client;
     let collection;
     let captured;
@@ -46,22 +46,19 @@ describe('MongoClientInterface:repair trace-context plumbing', () => {
         sinon.restore();
     });
 
-    it('stamps traceContext on the repair write when a span is active', done => {
+    it("keeps the promoted version's traceContext when a span is active", done => {
         otel.activateSpan();
-        client.repair(collection, 'bucket', 'example', { key: 'example' }, { versionId: 'v1' }, 'v0', logger, err => {
+        const objVal = { key: 'example', traceContext: { traceparent: 'version-trace' } };
+        client.repair(collection, 'bucket', 'example', objVal, { versionId: 'v1' }, 'v0', logger, err => {
             assert.ifError(err);
-            assert.deepStrictEqual(captured.value.traceContext, { traceparent: otel.TRACEPARENT });
+            assert.deepStrictEqual(captured.value.traceContext, { traceparent: 'version-trace' });
             done();
         });
     });
 
-    it('clears stale traceContext when no span is active', done => {
-        otel.deactivateSpan();
-        const objVal = {
-            key: 'example',
-            traceContext: { traceparent: 'stale-prior-trace' },
-        };
-        client.repair(collection, 'bucket', 'example', objVal, { versionId: 'v1' }, 'v0', logger, err => {
+    it('does not add a traceContext the promoted version does not have', done => {
+        otel.activateSpan();
+        client.repair(collection, 'bucket', 'example', { key: 'example' }, { versionId: 'v1' }, 'v0', logger, err => {
             assert.ifError(err);
             assert.strictEqual(captured.value.traceContext, undefined);
             done();

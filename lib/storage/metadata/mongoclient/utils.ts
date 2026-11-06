@@ -1,7 +1,6 @@
 import { supportedOperators, supportedStructuralOperators, validateConditionsObject } from '../conditions';
 import { VersioningConstants } from '../../../versioning/constants';
 import errors from '../../../errors';
-import { stampActiveTraceContext } from '../captureTraceContext';
 
 interface AuthCredentials {
     username?: string;
@@ -48,9 +47,6 @@ function serialize(objMD: ObjectMetadata): void {
     if (objMD.tags) {
         objMD.tags = escape(objMD.tags);
     }
-    // Stamp the active OTEL trace context onto every metadata write
-    // so the oplog carries traceparent forward to backbeat consumers.
-    stampActiveTraceContext(objMD);
 }
 
 function unserialize(objMD: ObjectMetadata): void {
