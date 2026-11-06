@@ -15,7 +15,7 @@ function generateRule(testParams) {
         return `<Rule>${testParams.value}</Rule>`;
     }
     if (testParams.key === 'DefaultRetention') {
-        return `<Rule><DefaultRetention>${testParams.value} ` + '</DefaultRetention></Rule>';
+        return `<Rule><DefaultRetention>${testParams.value} </DefaultRetention></Rule>`;
     }
     const mode = testParams.key === 'Mode' ? `<Mode>${testParams.value}</Mode>` : '<Mode>GOVERNANCE</Mode>';
 
@@ -41,7 +41,7 @@ function generateXml(testParams) {
     const ObjectLock =
         testParams.key === 'ObjectLockConfiguration'
             ? ''
-            : `<ObjectLockConfiguration>${Enabled}${Rule}` + '</ObjectLockConfiguration>';
+            : `<ObjectLockConfiguration>${Enabled}${Rule}</ObjectLockConfiguration>`;
     return ObjectLock;
 }
 

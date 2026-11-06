@@ -64,11 +64,11 @@ function checkBucketAndKey(
             log.debug('invalid object key', { objectKey });
             if (result.invalidPrefix) {
                 return errorInstances.InvalidArgument.customizeDescription(
-                    'Invalid ' + 'prefix - object key cannot start with ' + `"${result.invalidPrefix}".`,
+                    `Invalid prefix - object key cannot start with "${result.invalidPrefix}".`,
                 );
             }
             return errorInstances.KeyTooLong.customizeDescription(
-                'Object key is too ' + 'long. Maximum number of bytes allowed in keys is ' + `${objectKeyByteLimit}.`,
+                `Object key is too long. Maximum number of bytes allowed in keys is ${objectKeyByteLimit}.`,
             );
         }
     }

@@ -62,7 +62,7 @@ describe('s3middleware Azure MPU helper utility function', () => {
 
     subPartInfoTests.forEach(test => {
         const { desc, size, expectedNumberSubParts, expectedLastPartSize } = test;
-        it('getSubPartInfo should return correct result for ' + `dataContentLength of ${desc}`, done => {
+        it(`getSubPartInfo should return correct result for dataContentLength of ${desc}`, done => {
             const result = getSubPartInfo(size);
             const expectedLastPartIndex = expectedNumberSubParts - 1;
             assert.strictEqual(result.lastPartIndex, expectedLastPartIndex);

@@ -74,7 +74,7 @@ const primaryHandlers = {
 
 function respondOnTestFailure(message, error, results) {
     console.error(
-        'After sendWorkerCommand() resolve/reject: ' + `${message}, error=${error}, results=${JSON.stringify(results)}`,
+        `After sendWorkerCommand() resolve/reject: ${message}, error=${error}, results=${JSON.stringify(results)}`,
     );
     console.trace();
     throw errors.InternalError;

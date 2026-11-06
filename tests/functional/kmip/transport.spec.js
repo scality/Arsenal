@@ -11,7 +11,7 @@ describe('KMIP Transport Template Class', () => {
 
     pipelineDepths.forEach(pipelineDepth => {
         requestNumbers.forEach(iterations => {
-            it(`should survive ${iterations} iterations` + ` with ${pipelineDepth}way pipeline`, done => {
+            it(`should survive ${iterations} iterations with ${pipelineDepth}way pipeline`, done => {
                 const transport = new TransportTemplate(new EchoChannel(), {
                     pipelineDepth,
                     tls: {

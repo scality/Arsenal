@@ -295,7 +295,7 @@ class MongoClientInterface {
             locations,
         } = params;
         const cred = MongoUtils.credPrefix(authCredentials);
-        this.mongoUrl = `mongodb://${cred}${replicaSetHosts}/` + `?w=${writeConcern}&readPreference=${readPreference}`;
+        this.mongoUrl = `mongodb://${cred}${replicaSetHosts}/?w=${writeConcern}&readPreference=${readPreference}`;
 
         if (!shardCollections) {
             this.mongoUrl += `&replicaSet=${replicaSet}`;
