@@ -222,7 +222,7 @@ export default class V4Transform extends Transform {
 
         if (this.lastPieceDone) {
             const slice = chunk.slice(0, 10);
-            this.log.trace('received chunk after end.See first 10 bytes of chunk', { chunk: slice.toString() });
+            this.log.trace('received chunk after end. See first 10 bytes of chunk', { chunk: slice.toString() });
             return callback();
         }
         let unparsedChunk = chunk;

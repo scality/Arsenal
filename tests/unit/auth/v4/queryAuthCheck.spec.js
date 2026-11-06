@@ -188,7 +188,7 @@ describe('v4 queryAuthCheck', () => {
         done();
     });
 
-    it('should return error if scope date from X-Amz-Credential paramdoes not match date from X-Amz-Date param', done => {
+    it('should return error if scope date from X-Amz-Credential param does not match date from X-Amz-Date param', done => {
         const clock = fakeTimers.install({ now: 1454974984001 });
         const alteredRequest = createAlteredRequest(
             {

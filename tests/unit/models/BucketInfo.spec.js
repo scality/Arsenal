@@ -855,7 +855,7 @@ describe('ingest', () => {
         assert.strictEqual(dummyBucket.isIngestionEnabled(), true);
     });
 
-    it('should have ingestion as null if no ingestion param was sent onbucket creation', () => {
+    it('should have ingestion as null if no ingestion param was sent on bucket creation', () => {
         const dummyBucket = new BucketInfo(
             bucketName,
             owner,

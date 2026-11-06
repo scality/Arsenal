@@ -566,7 +566,7 @@ describe('GapSet', () => {
                 ]);
             });
 
-            it('should remove a single-key gap and two contiguous chained gaps each overlappingwith one key', () => {
+            it('should remove a single-key gap and two contiguous chained gaps each overlapping with one key', () => {
                 const nRemoved = gapSetWithChain.removeOverlappingGaps(['ape', 'bat', 'cow']);
                 expect(nRemoved).toEqual(3);
                 expect(gapSetWithChain.toArray()).toEqual([
