@@ -1,4 +1,4 @@
-'use strict'; // eslint-disable-line strict
+'use strict';
 
 const assert = require('assert');
 
@@ -614,7 +614,7 @@ describe('DelimiterOrphanDeleteMarker over PHD master keys', () => {
                 const masterKey = 'img-001';
                 const versionId = 'version1';
                 const date = '1970-01-01T00:00:00.000Z';
-                const value = `{"versionId":"${versionId}",` + `"last-modified":"${date}","isDeleteMarker":true}`;
+                const value = `{"versionId":"${versionId}","last-modified":"${date}","isDeleteMarker":true}`;
 
                 // the master still holds a PHD placeholder: the repair job has
                 // not promoted the surviving version back to master yet
@@ -647,7 +647,7 @@ describe('DelimiterOrphanDeleteMarker over PHD master keys', () => {
 
                 const masterKey = 'img-001';
                 const date = '1970-01-01T00:00:00.000Z';
-                const dmValue = `{"versionId":"version1",` + `"last-modified":"${date}","isDeleteMarker":true}`;
+                const dmValue = `{"versionId":"version1","last-modified":"${date}","isDeleteMarker":true}`;
                 const value2 = `{"versionId":"version2","last-modified":"${date}"}`;
 
                 assert.strictEqual(
@@ -683,7 +683,7 @@ describe('DelimiterOrphanDeleteMarker over PHD master keys', () => {
                 const delimiter = new DelimiterOrphanDeleteMarker({ maxScannedLifecycleListingEntries }, fakeLogger, v);
 
                 const date = '1970-01-01T00:00:00.000Z';
-                const dmValue = `{"versionId":"v1",` + `"last-modified":"${date}","isDeleteMarker":true}`;
+                const dmValue = `{"versionId":"v1","last-modified":"${date}","isDeleteMarker":true}`;
 
                 // aaa's delete marker is held as a candidate
                 assert.strictEqual(
@@ -779,8 +779,11 @@ describe('DelimiterOrphanDeleteMarker over PHD master keys', () => {
 
         it('should cross a PHD desert longer than the scan limit and list the orphan DM beyond it', () => {
             const dmVersionId = 'vid-dm';
-            const dmValue =
-                `{"versionId":"${dmVersionId}","last-modified":"1970-01-01T00:00:00.001Z",` + '"isDeleteMarker":true}';
+            const dmValue = JSON.stringify({
+                'versionId': dmVersionId,
+                'last-modified': '1970-01-01T00:00:00.001Z',
+                'isDeleteMarker': true,
+            });
             const keyspace = [];
             for (let i = 1; i <= 8; i++) {
                 keyspace.push({ key: `img-00${i}`, value: valuePHD });
@@ -797,8 +800,11 @@ describe('DelimiterOrphanDeleteMarker over PHD master keys', () => {
 
         it('should emit an orphan DM held as candidate when the desert begins', () => {
             const dmVersionId = 'vid-dm';
-            const dmValue =
-                `{"versionId":"${dmVersionId}","last-modified":"1970-01-01T00:00:00.001Z",` + '"isDeleteMarker":true}';
+            const dmValue = JSON.stringify({
+                'versionId': dmVersionId,
+                'last-modified': '1970-01-01T00:00:00.001Z',
+                'isDeleteMarker': true,
+            });
             const keyspace = [
                 { key: 'banana', value: dmValue },
                 { key: `banana${VID_SEP}${dmVersionId}`, value: dmValue },

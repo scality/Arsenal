@@ -43,13 +43,10 @@ describe('network.probe.Utils', () => {
         const mockRes = {
             writeHead: sinon.fake(status => assert.strictEqual(405, status)),
             end: sinon.fake(msg => {
-                assert.deepStrictEqual(
-                    JSON.parse(msg),
-                    {
-                        errorType: 'MethodNotAllowed',
-                        errorMessage: errorInstances.MethodNotAllowed.description,
-                    },
-                );
+                assert.deepStrictEqual(JSON.parse(msg), {
+                    errorType: 'MethodNotAllowed',
+                    errorMessage: errorInstances.MethodNotAllowed.description,
+                });
                 done();
             }),
         };
@@ -60,13 +57,10 @@ describe('network.probe.Utils', () => {
         const mockRes = {
             writeHead: sinon.fake(status => assert.strictEqual(405, status)),
             end: sinon.fake(msg => {
-                assert.deepStrictEqual(
-                    JSON.parse(msg),
-                    {
-                        errorType: 'MethodNotAllowed',
-                        errorMessage: 'Very much not allowed',
-                    },
-                );
+                assert.deepStrictEqual(JSON.parse(msg), {
+                    errorType: 'MethodNotAllowed',
+                    errorMessage: 'Very much not allowed',
+                });
                 done();
             }),
         };

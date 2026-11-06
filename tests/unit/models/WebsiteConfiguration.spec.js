@@ -1,8 +1,5 @@
 const assert = require('assert');
-const {
-    WebsiteConfiguration,
-    RoutingRule,
-} = require('../../../lib/models/WebsiteConfiguration');
+const { WebsiteConfiguration, RoutingRule } = require('../../../lib/models/WebsiteConfiguration');
 
 const testRoutingRuleParams = {
     redirect: {
@@ -28,24 +25,20 @@ describe('RoutingRule class', () => {
 
     it('should return a new routing rule', done => {
         const routingRule = new RoutingRule(testRoutingRuleParams);
-        assert.deepStrictEqual(routingRule._redirect,
-            testRoutingRuleParams.redirect);
-        assert.deepStrictEqual(routingRule._condition,
-            testRoutingRuleParams.condition);
+        assert.deepStrictEqual(routingRule._redirect, testRoutingRuleParams.redirect);
+        assert.deepStrictEqual(routingRule._condition, testRoutingRuleParams.condition);
         done();
     });
 
-    it('getRedirect should fetch the instance\'s redirect', done => {
+    it("getRedirect should fetch the instance's redirect", done => {
         const routingRule = new RoutingRule(testRoutingRuleParams);
-        assert.deepStrictEqual(routingRule.getRedirect(),
-            testRoutingRuleParams.redirect);
+        assert.deepStrictEqual(routingRule.getRedirect(), testRoutingRuleParams.redirect);
         done();
     });
 
-    it('getCondition should fetch the instance\'s condition', done => {
+    it("getCondition should fetch the instance's condition", done => {
         const routingRule = new RoutingRule(testRoutingRuleParams);
-        assert.deepStrictEqual(routingRule.getCondition(),
-            testRoutingRuleParams.condition);
+        assert.deepStrictEqual(routingRule.getCondition(), testRoutingRuleParams.condition);
         done();
     });
 });
@@ -60,8 +53,7 @@ describe('WebsiteConfiguration class', () => {
         done();
     });
 
-    it('should initialize indexDocument, errorDocument during construction ' +
-    'if provided in params', done => {
+    it('should initialize indexDocument, errorDocument during construction if provided in params', done => {
         const testWebsiteConfigParams = {
             indexDocument: 'index.html',
             errorDocument: 'error.html',
@@ -72,8 +64,7 @@ describe('WebsiteConfiguration class', () => {
         done();
     });
 
-    it('should initialize redirectAllRequestsTo during construction if ' +
-    'provided in params', done => {
+    it('should initialize redirectAllRequestsTo during construction if provided in params', done => {
         const testWebsiteConfigParams = {
             redirectAllRequestsTo: {
                 hostName: 'test',
@@ -81,15 +72,12 @@ describe('WebsiteConfiguration class', () => {
             },
         };
         const websiteConfig = new WebsiteConfiguration(testWebsiteConfigParams);
-        assert.strictEqual(websiteConfig._redirectAllRequestsTo.hostName,
-            'test');
-        assert.strictEqual(websiteConfig._redirectAllRequestsTo.protocol,
-            'https');
+        assert.strictEqual(websiteConfig._redirectAllRequestsTo.hostName, 'test');
+        assert.strictEqual(websiteConfig._redirectAllRequestsTo.protocol, 'https');
         done();
     });
 
-    it('should initialize routingRules properly during construction from ' +
-    'array of RoutingRule class instances', done => {
+    it('should initialize routingRules during construction from array of RoutingRule class instances', done => {
         const testWebsiteConfigParams = {
             routingRules: [],
         };
@@ -98,13 +86,11 @@ describe('WebsiteConfiguration class', () => {
         testWebsiteConfigParams.routingRules.push(testRoutingRule);
         testWebsiteConfigParams.routingRules.push(testRoutingRule);
         const websiteConfig = new WebsiteConfiguration(testWebsiteConfigParams);
-        assert.deepStrictEqual(websiteConfig._routingRules,
-            testWebsiteConfigParams.routingRules);
+        assert.deepStrictEqual(websiteConfig._routingRules, testWebsiteConfigParams.routingRules);
         done();
     });
 
-    it('should initialize routingRules properly during construction from ' +
-    'array of plain objects', done => {
+    it('should initialize routingRules properly during construction from array of plain objects', done => {
         const testWebsiteConfigParams = {
             routingRules: [],
         };
@@ -112,18 +98,12 @@ describe('WebsiteConfiguration class', () => {
         testWebsiteConfigParams.routingRules.push(testRoutingRuleParams);
         testWebsiteConfigParams.routingRules.push(testRoutingRuleParams);
         const websiteConfig = new WebsiteConfiguration(testWebsiteConfigParams);
-        assert.deepEqual(websiteConfig._routingRules[0]._condition,
-            testRoutingRuleParams.condition);
-        assert.deepEqual(websiteConfig._routingRules[1]._condition,
-            testRoutingRuleParams.condition);
-        assert.deepEqual(websiteConfig._routingRules[2]._condition,
-            testRoutingRuleParams.condition);
-        assert.deepEqual(websiteConfig._routingRules[0]._redirect,
-            testRoutingRuleParams.redirect);
-        assert.deepEqual(websiteConfig._routingRules[1]._redirect,
-            testRoutingRuleParams.redirect);
-        assert.deepEqual(websiteConfig._routingRules[2]._redirect,
-            testRoutingRuleParams.redirect);
+        assert.deepEqual(websiteConfig._routingRules[0]._condition, testRoutingRuleParams.condition);
+        assert.deepEqual(websiteConfig._routingRules[1]._condition, testRoutingRuleParams.condition);
+        assert.deepEqual(websiteConfig._routingRules[2]._condition, testRoutingRuleParams.condition);
+        assert.deepEqual(websiteConfig._routingRules[0]._redirect, testRoutingRuleParams.redirect);
+        assert.deepEqual(websiteConfig._routingRules[1]._redirect, testRoutingRuleParams.redirect);
+        assert.deepEqual(websiteConfig._routingRules[2]._redirect, testRoutingRuleParams.redirect);
         assert(websiteConfig._routingRules[0] instanceof RoutingRule);
         done();
     });
@@ -143,16 +123,14 @@ describe('WebsiteConfiguration class', () => {
             done();
         });
 
-        it('for redirectAllRequestsTo should get/set redirectAllRequestsTo ' +
-        'object', done => {
+        it('for redirectAllRequestsTo should get/set redirectAllRequestsTo object', done => {
             const websiteConfig = new WebsiteConfiguration();
             const redirectAllRequestsTo = {
                 hostName: 'test',
                 protocol: 'http',
             };
             websiteConfig.setRedirectAllRequestsTo(redirectAllRequestsTo);
-            assert.deepStrictEqual(websiteConfig.getRedirectAllRequestsTo(),
-                redirectAllRequestsTo);
+            assert.deepStrictEqual(websiteConfig.getRedirectAllRequestsTo(), redirectAllRequestsTo);
             done();
         });
 
@@ -160,10 +138,8 @@ describe('WebsiteConfiguration class', () => {
             const websiteConfig = new WebsiteConfiguration();
             const routingRules = [testRoutingRuleParams];
             websiteConfig.setRoutingRules(routingRules);
-            assert.strictEqual(websiteConfig.getRoutingRules()[0]._condition,
-                routingRules[0].condition);
-            assert.strictEqual(websiteConfig.getRoutingRules()[0]._redirect,
-                routingRules[0].redirect);
+            assert.strictEqual(websiteConfig.getRoutingRules()[0]._condition, routingRules[0].condition);
+            assert.strictEqual(websiteConfig.getRoutingRules()[0]._redirect, routingRules[0].redirect);
             assert(websiteConfig._routingRules[0] instanceof RoutingRule);
             done();
         });
@@ -174,10 +150,8 @@ describe('WebsiteConfiguration class', () => {
         websiteConfig.addRoutingRule(testRoutingRuleParams);
         assert(Array.isArray(websiteConfig._routingRules));
         assert.strictEqual(websiteConfig._routingRules.length, 1);
-        assert.strictEqual(websiteConfig._routingRules[0].getCondition(),
-            testRoutingRuleParams.condition);
-        assert.strictEqual(websiteConfig._routingRules[0].getRedirect(),
-            testRoutingRuleParams.redirect);
+        assert.strictEqual(websiteConfig._routingRules[0].getCondition(), testRoutingRuleParams.condition);
+        assert.strictEqual(websiteConfig._routingRules[0].getRedirect(), testRoutingRuleParams.redirect);
         done();
     });
 });

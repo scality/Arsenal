@@ -1,4 +1,4 @@
-'use strict'; // eslint-disable-line
+'use strict';
 
 const Logger = require('werelogs').Logger;
 const http = require('http');

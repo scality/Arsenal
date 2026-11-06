@@ -1,10 +1,9 @@
-
 export type LimitConfiguration = {
     Limit: number;
 };
 
 export type RateLimitConfigurationMetadata = {
-    RequestsPerSecond?: LimitConfiguration
+    RequestsPerSecond?: LimitConfiguration;
 };
 
 export default class RateLimitConfiguration {

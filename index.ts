@@ -108,7 +108,7 @@ export const storage = {
     metadata: {
         MetadataWrapper: require('./lib/storage/metadata/MetadataWrapper'),
         bucketclient: {
-            BucketClientInterface: require('./lib/storage/metadata/bucketclient/' + 'BucketClientInterface'),
+            BucketClientInterface: require('./lib/storage/metadata/bucketclient/BucketClientInterface'),
             LogConsumer: require('./lib/storage/metadata/bucketclient/LogConsumer'),
         },
         file: {
@@ -122,7 +122,7 @@ export const storage = {
             bucketUtilities: require('./lib/storage/metadata/in_memory/bucket_utilities'),
         },
         mongoclient: {
-            MongoClientInterface: require('./lib/storage/metadata/mongoclient/' + 'MongoClientInterface'),
+            MongoClientInterface: require('./lib/storage/metadata/mongoclient/MongoClientInterface'),
         },
         proxy: {
             Server: require('./lib/storage/metadata/proxy/Server'),

@@ -29,9 +29,7 @@ describe('ObjectMDArchive value', () => {
 describe('ObjectMDArchive setters/getters', () => {
     let archived = null;
     beforeEach(() => {
-        archived = new ObjectMDArchive(
-            testArchive.archiveInfo,
-        );
+        archived = new ObjectMDArchive(testArchive.archiveInfo);
     });
     it('should control the archiveInfo attribute', () => {
         const badArchiveInfo = 'bad';
@@ -39,8 +37,7 @@ describe('ObjectMDArchive setters/getters', () => {
             test: 'data',
         };
         archive.setArchiveInfo(info);
-        assert.deepStrictEqual(archive.getArchiveInfo(),
-            info);
+        assert.deepStrictEqual(archive.getArchiveInfo(), info);
         assert.throws(() => {
             archive.setArchiveInfo(badArchiveInfo);
         });
@@ -52,8 +49,7 @@ describe('ObjectMDArchive setters/getters', () => {
             archived.setRestoreRequestedAt(requestedAt);
         });
         archive.setRestoreRequestedAt(requestedAt);
-        assert.deepStrictEqual(archive.getRestoreRequestedAt(),
-            requestedAt);
+        assert.deepStrictEqual(archive.getRestoreRequestedAt(), requestedAt);
         assert.throws(() => {
             archive.setRestoreRequestedAt(wrongRestoreRequestedAt);
         });
@@ -65,8 +61,7 @@ describe('ObjectMDArchive setters/getters', () => {
             archived.setRestoreRequestedDays(requestedDays);
         });
         archive.setRestoreRequestedDays(requestedDays);
-        assert.deepStrictEqual(archive.getRestoreRequestedDays(),
-            requestedDays);
+        assert.deepStrictEqual(archive.getRestoreRequestedDays(), requestedDays);
         assert.throws(() => {
             archive.setRestoreRequestedDays(wrongRestoreRequestedDays);
         });
@@ -78,8 +73,7 @@ describe('ObjectMDArchive setters/getters', () => {
             archived.setRestoreCompletedAt(completedAt);
         });
         archive.setRestoreCompletedAt(completedAt);
-        assert.deepStrictEqual(archive.getRestoreCompletedAt(),
-            completedAt);
+        assert.deepStrictEqual(archive.getRestoreCompletedAt(), completedAt);
         assert.throws(() => {
             archive.setRestoreCompletedAt(wrongRestoreCompletedAt);
         });
@@ -91,15 +85,17 @@ describe('ObjectMDArchive setters/getters', () => {
             archived.setRestoreWillExpireAt(willExpireAt);
         });
         archive.setRestoreWillExpireAt(willExpireAt);
-        assert.deepStrictEqual(archive.getRestoreWillExpireAt(),
-            willExpireAt);
+        assert.deepStrictEqual(archive.getRestoreWillExpireAt(), willExpireAt);
         assert.throws(() => {
             archive.setRestoreWillExpireAt(wrongRestoreWillExpireAt);
         });
     });
     it('should return false if the provided object is not valid', () => {
-        assert.strictEqual(ObjectMDArchive.isValid({
-            wrong: 'data',
-        }), false);
+        assert.strictEqual(
+            ObjectMDArchive.isValid({
+                wrong: 'data',
+            }),
+            false,
+        );
     });
 });

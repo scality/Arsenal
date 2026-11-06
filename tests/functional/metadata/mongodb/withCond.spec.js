@@ -5,8 +5,7 @@ const { MongoMemoryReplSet } = require('mongodb-memory-server');
 const { errors, versioning } = require('../../../../index');
 const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
 const BucketInfo = require('../../../../lib/models/BucketInfo').default;
-const MetadataWrapper =
-    require('../../../../lib/storage/metadata/MetadataWrapper');
+const MetadataWrapper = require('../../../../lib/storage/metadata/MetadataWrapper');
 const { BucketVersioningKeyFormat } = versioning.VersioningConstants;
 
 const IMP_NAME = 'mongodb';
@@ -15,9 +14,7 @@ const BUCKET_NAME = 'testbucket';
 
 const mongoserver = new MongoMemoryReplSet({
     debug: false,
-    instanceOpts: [
-        { port: 27022 },
-    ],
+    instanceOpts: [{ port: 27022 }],
     replSet: {
         name: 'rs0',
         count: 1,
@@ -53,12 +50,17 @@ describe('MongoClientInterface:withCond', () => {
     });
 
     afterAll(done => {
-        async.series([
-            next => metadata.close(next),
-            next => mongoserver.stop()
-                .then(() => next())
-                .catch(next),
-        ], done);
+        async.series(
+            [
+                next => metadata.close(next),
+                next =>
+                    mongoserver
+                        .stop()
+                        .then(() => next())
+                        .catch(next),
+            ],
+            done,
+        );
     });
 
     variations.forEach(variation => {
@@ -91,13 +93,16 @@ describe('MongoClientInterface:withCond', () => {
                     _isNFS: null,
                     ingestion: null,
                 });
-                async.series([
-                    next => {
-                        metadata.client.defaultBucketKeyFormat = variation.vFormat;
-                        return next();
-                    },
-                    next => metadata.createBucket(BUCKET_NAME, bucketMD, logger, next),
-                ], done);
+                async.series(
+                    [
+                        next => {
+                            metadata.client.defaultBucketKeyFormat = variation.vFormat;
+                            return next();
+                        },
+                        next => metadata.createBucket(BUCKET_NAME, bucketMD, logger, next),
+                    ],
+                    done,
+                );
             });
 
             afterEach(done => {
@@ -186,37 +191,39 @@ describe('MongoClientInterface:withCond', () => {
                     },
                 ],
             ];
-            tests.forEach(([msg, testCase]) => it(msg, done => {
-                const objectKey = 'testkey';
-                const {
-                    initVal, upsertVal, conditions, expectedVal, error,
-                } = testCase;
-                const params = { conditions };
-                async.series([
-                    next => {
-                        if (!initVal) {
-                            return next();
-                        }
-                        return metadata.putObjectMD(BUCKET_NAME, objectKey, initVal,
-                            {}, logger, next);
-                    },
-                    next => metadata.putObjectWithCond(BUCKET_NAME, objectKey,
-                        upsertVal, params, logger, err => {
-                            if (error) {
-                                assert.deepStrictEqual(err, error);
-                                return next();
-                            }
-                            assert(!err);
-                            return next();
-                        }),
-                    next => metadata.getObjectMD(BUCKET_NAME, objectKey, {}, logger,
-                        (err, res) => {
-                            assert(!err);
-                            assert.deepStrictEqual(res, expectedVal);
-                            next();
-                        }),
-                ], done);
-            }));
+            tests.forEach(([msg, testCase]) =>
+                it(msg, done => {
+                    const objectKey = 'testkey';
+                    const { initVal, upsertVal, conditions, expectedVal, error } = testCase;
+                    const params = { conditions };
+                    async.series(
+                        [
+                            next => {
+                                if (!initVal) {
+                                    return next();
+                                }
+                                return metadata.putObjectMD(BUCKET_NAME, objectKey, initVal, {}, logger, next);
+                            },
+                            next =>
+                                metadata.putObjectWithCond(BUCKET_NAME, objectKey, upsertVal, params, logger, err => {
+                                    if (error) {
+                                        assert.deepStrictEqual(err, error);
+                                        return next();
+                                    }
+                                    assert(!err);
+                                    return next();
+                                }),
+                            next =>
+                                metadata.getObjectMD(BUCKET_NAME, objectKey, {}, logger, (err, res) => {
+                                    assert(!err);
+                                    assert.deepStrictEqual(res, expectedVal);
+                                    next();
+                                }),
+                        ],
+                        done,
+                    );
+                }),
+            );
         });
 
         describe('::deleteObjectWithCond', () => {
@@ -299,38 +306,42 @@ describe('MongoClientInterface:withCond', () => {
                     },
                 ],
             ];
-            tests.forEach(([msg, testCase]) => it(msg, done => {
-                const objectKey = 'testkey';
-                const { initVal, conditions, expectedVal, error } = testCase;
-                const params = { conditions };
-                async.series([
-                    next => {
-                        if (!initVal) {
-                            return next();
-                        }
-                        return metadata.putObjectMD(BUCKET_NAME, objectKey, initVal,
-                            {}, logger, next);
-                    },
-                    next => metadata.deleteObjectWithCond(BUCKET_NAME, objectKey,
-                        params, logger, err => {
-                            if (error) {
-                                assert.deepStrictEqual(err, error);
-                                return next();
-                            }
-                            assert(!err);
-                            return next();
-                        }),
-                    next => metadata.getObjectMD(BUCKET_NAME, objectKey, {}, logger,
-                        (err, res) => {
-                            if (expectedVal) {
-                                assert.deepStrictEqual(res, expectedVal);
-                            } else {
-                                assert.deepStrictEqual(err, errors.NoSuchKey);
-                            }
-                            return next();
-                        }),
-                ], done);
-            }));
+            tests.forEach(([msg, testCase]) =>
+                it(msg, done => {
+                    const objectKey = 'testkey';
+                    const { initVal, conditions, expectedVal, error } = testCase;
+                    const params = { conditions };
+                    async.series(
+                        [
+                            next => {
+                                if (!initVal) {
+                                    return next();
+                                }
+                                return metadata.putObjectMD(BUCKET_NAME, objectKey, initVal, {}, logger, next);
+                            },
+                            next =>
+                                metadata.deleteObjectWithCond(BUCKET_NAME, objectKey, params, logger, err => {
+                                    if (error) {
+                                        assert.deepStrictEqual(err, error);
+                                        return next();
+                                    }
+                                    assert(!err);
+                                    return next();
+                                }),
+                            next =>
+                                metadata.getObjectMD(BUCKET_NAME, objectKey, {}, logger, (err, res) => {
+                                    if (expectedVal) {
+                                        assert.deepStrictEqual(res, expectedVal);
+                                    } else {
+                                        assert.deepStrictEqual(err, errors.NoSuchKey);
+                                    }
+                                    return next();
+                                }),
+                        ],
+                        done,
+                    );
+                }),
+            );
         });
     });
 });

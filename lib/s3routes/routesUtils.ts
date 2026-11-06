@@ -701,10 +701,10 @@ export function responseStreamData(
         // locations to fetch
         const contentLength = resHeaders && resHeaders['Content-Length'];
         if (contentLength !== undefined && !_contentLengthMatchesLocations(contentLength, dataLocations)) {
-            log.error(
-                'logic error: total length of fetched data ' + 'locations does not match returned content-length',
-                { contentLength, dataLocations },
-            );
+            log.error('logic error: total length of fetched data locations does not match returned content-length', {
+                contentLength,
+                dataLocations,
+            });
             return XMLResponseBackend.errorResponse(errors.InternalError, response, log, resHeaders);
         }
     }

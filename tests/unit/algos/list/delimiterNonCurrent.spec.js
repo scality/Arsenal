@@ -1,4 +1,4 @@
-'use strict'; // eslint-disable-line strict
+'use strict';
 
 const assert = require('assert');
 
@@ -515,42 +515,38 @@ describe('DelimiterNonCurrent over PHD master keys', () => {
 
     ['v0', 'v1'].forEach(v => {
         describe(`with ${v} bucket format`, () => {
-            it(
-                'should set NextKeyMarker to the PHD key when truncation happens inside a run of ' +
-                    'dangling PHD masters',
-                () => {
-                    const maxScannedLifecycleListingEntries = 5;
-                    const delimiter = new DelimiterNonCurrent({ maxScannedLifecycleListingEntries }, fakeLogger, v);
+            it('should set NextKeyMarker to the PHD key when truncating inside a run of dangling PHD masters', () => {
+                const maxScannedLifecycleListingEntries = 5;
+                const delimiter = new DelimiterNonCurrent({ maxScannedLifecycleListingEntries }, fakeLogger, v);
 
-                    for (let i = 1; i <= 5; i++) {
-                        assert.strictEqual(
-                            delimiter.filter({
-                                key: getListingKey(`img-00${i}`, v),
-                                value: valuePHD,
-                            }),
-                            FILTER_ACCEPT,
-                        );
-                    }
+                for (let i = 1; i <= 5; i++) {
                     assert.strictEqual(
                         delimiter.filter({
-                            key: getListingKey('img-006', v),
+                            key: getListingKey(`img-00${i}`, v),
                             value: valuePHD,
                         }),
-                        FILTER_END,
+                        FILTER_ACCEPT,
                     );
+                }
+                assert.strictEqual(
+                    delimiter.filter({
+                        key: getListingKey('img-006', v),
+                        value: valuePHD,
+                    }),
+                    FILTER_END,
+                );
 
-                    const result = delimiter.result();
-                    assert.strictEqual(result.IsTruncated, true);
-                    // Before the fix, NextKeyMarker was undefined. The next listing
-                    // restarted from scratch on any desert longer than the scan limit.
-                    // The marker now stays one PHD key behind the last one scanned,
-                    // img-005. The next page re-scans img-005. That costs one entry,
-                    // and it keeps the versions of a PHD master that still has some.
-                    assert.strictEqual(result.NextKeyMarker, 'img-004');
-                    assert.strictEqual(result.NextVersionIdMarker, undefined);
-                    assert.deepStrictEqual(result.Contents, []);
-                },
-            );
+                const result = delimiter.result();
+                assert.strictEqual(result.IsTruncated, true);
+                // Before the fix, NextKeyMarker was undefined. The next listing
+                // restarted from scratch on any desert longer than the scan limit.
+                // The marker now stays one PHD key behind the last one scanned,
+                // img-005. The next page re-scans img-005. That costs one entry,
+                // and it keeps the versions of a PHD master that still has some.
+                assert.strictEqual(result.NextKeyMarker, 'img-004');
+                assert.strictEqual(result.NextVersionIdMarker, undefined);
+                assert.deepStrictEqual(result.Contents, []);
+            });
 
             it('should return a marker when a page starts on a PHD and truncates on the second', () => {
                 // No keyMarker, so nextKeyMarker starts empty. The first PHD
@@ -739,7 +735,7 @@ describe('DelimiterNonCurrent over PHD master keys', () => {
         // inc(VID_SEP)), so the listing skips that key's noncurrent work.
         // handlePHDMaster keeps the marker one PHD key behind instead. This needs
         // no versionIdMarker sentinel, because the next page re-scans the key.
-        it('should not skip the versions of a PHD master when the scan limit lands exactly ' + 'on the master', () => {
+        it('should not skip the versions of a PHD master when the scan limit lands exactly on the master', () => {
             const keyspace = [
                 { key: 'k1', value: '{"versionId":"k1-v1","last-modified":"1970-01-01T00:00:00.001Z"}' },
                 { key: 'k2', value: '{"versionId":"k2-v1","last-modified":"1970-01-01T00:00:00.001Z"}' },

@@ -7,19 +7,13 @@ const anotherAccountId = '098765432112';
 const defaultAccountArn = `arn:aws:iam::${defaultAccountId}:root`;
 const defaultUserArn = `arn:aws:iam::${defaultAccountId}:user/test`;
 const defaultRole = `arn:aws:iam::${defaultAccountId}:role/role1`;
-const defaultAssumedRole =
-    `arn:aws:sts::${defaultAccountId}:assumed-role/role1/session`;
-const defaultSamlProvider =
-    `arn:aws:iam::${defaultAccountId}:saml-provider/provider1`;
-const defaultFederatedUser =
-    `arn:aws:sts::${defaultAccountId}:federated-user/foo`;
+const defaultAssumedRole = `arn:aws:sts::${defaultAccountId}:assumed-role/role1/session`;
+const defaultSamlProvider = `arn:aws:iam::${defaultAccountId}:saml-provider/provider1`;
+const defaultFederatedUser = `arn:aws:sts::${defaultAccountId}:federated-user/foo`;
 const anotherAccountArn = `arn:aws:iam::${anotherAccountId}:root`;
 const anotherUserArn = `arn:aws:iam::${anotherAccountId}:user/test`;
 const defaultValids = {
-    AWS: [
-        defaultAccountId,
-        defaultAccountArn,
-    ],
+    AWS: [defaultAccountId, defaultAccountArn],
 };
 
 const defaultParams = {
@@ -117,8 +111,7 @@ describe('Principal evaluator', () => {
             result: 'Neutral',
         },
         {
-            name:
-                'multiple account as Principal (effect Allow) -> grant access',
+            name: 'multiple account as Principal (effect Allow) -> grant access',
             statement: {
                 Principal: {
                     AWS: [anotherAccountId, defaultAccountId],
@@ -169,8 +162,7 @@ describe('Principal evaluator', () => {
             result: 'Neutral',
         },
         {
-            name: 'account (arn) not in NotPrincipal (effect Allow) -> ' +
-                'grant access',
+            name: 'account (arn) not in NotPrincipal (effect Allow) -> grant access',
             statement: {
                 NotPrincipal: {
                     AWS: anotherAccountArn,
@@ -181,8 +173,7 @@ describe('Principal evaluator', () => {
             result: 'Allow',
         },
         {
-            name: 'account (arn) not in NotPrincipal (effect Deny) -> ' +
-                'deny access',
+            name: 'account (arn) not in NotPrincipal (effect Deny) -> deny access',
             statement: {
                 NotPrincipal: {
                     AWS: anotherAccountArn,
@@ -193,8 +184,7 @@ describe('Principal evaluator', () => {
             result: 'Deny',
         },
         {
-            name: 'Other entities than AWS in principal (effect Allow) -> ' +
-                'neutral',
+            name: 'Other entities than AWS in principal (effect Allow) -> neutral',
             statement: {
                 Principal: {
                     Service: 'backbeat',
@@ -205,8 +195,7 @@ describe('Principal evaluator', () => {
             result: 'Neutral',
         },
         {
-            name: 'Other entities than AWS in principal (effect Deny) -> ' +
-                'neutral',
+            name: 'Other entities than AWS in principal (effect Deny) -> neutral',
             statement: {
                 Principal: {
                     Service: 'backbeat',
@@ -266,8 +255,7 @@ describe('Principal evaluator', () => {
             valids: {
                 AWS: [
                     `arn:aws:iam::${defaultAccountId}:role/role1`,
-                    `arn:aws:iam::${defaultAccountId}:assumed-role` +
-                        '/role1/session',
+                    `arn:aws:iam::${defaultAccountId}:assumed-role/role1/session`,
                 ],
             },
             result: 'Allow',
@@ -283,16 +271,17 @@ describe('Principal evaluator', () => {
             valids: {
                 AWS: [
                     `arn:aws:iam::${defaultAccountId}:role/role1`,
-                    `arn:aws:iam::${defaultAccountId}:assumed-role` +
-                        '/role1/session',
+                    `arn:aws:iam::${defaultAccountId}:assumed-role/role1/session`,
                 ],
             },
             result: 'Deny',
         },
     ].forEach(test => {
         it(`_evaluatePrincipalField(): ${test.name}`, () => {
-            assert.strictEqual(Principal._evaluatePrincipalField(defaultParams,
-                test.statement, test.valids), test.result);
+            assert.strictEqual(
+                Principal._evaluatePrincipalField(defaultParams, test.statement, test.valids),
+                test.result,
+            );
         });
     });
 
@@ -357,8 +346,7 @@ describe('Principal evaluator', () => {
                 },
             };
             const valids = test.valids;
-            assert.strictEqual(Principal._evaluatePrincipal(params, valids),
-                test.result);
+            assert.strictEqual(Principal._evaluatePrincipal(params, valids), test.result);
         });
     });
 
@@ -623,14 +611,26 @@ describe('Principal evaluator', () => {
         },
     ].forEach(test => {
         it(`evaluatePrincipal(): ${test.name}`, () => {
-            const rc = new RequestContext({}, {}, '', '', '127.0.0.1',
-                false, 'assumeRole', 'sts', null, {
+            const rc = new RequestContext(
+                {},
+                {},
+                '',
+                '',
+                '127.0.0.1',
+                false,
+                'assumeRole',
+                'sts',
+                null,
+                {
                     accountid: test.requester.accountId,
                     arn: test.requester.arn,
                     parentArn: test.requester.parentArn,
                     principalType: test.requester.userType,
                     externalId: '4321',
-                }, 'v4', 'V4');
+                },
+                'v4',
+                'V4',
+            );
 
             const params = {
                 log: defaultParams.log,

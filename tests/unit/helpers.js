@@ -1,15 +1,13 @@
-'use strict'; // eslint-disable-line strict
+'use strict';
 
 const AuthInfo = require('../../lib/auth/AuthInfo');
 const constants = require('../../lib/constants');
 
 function makeid(size) {
     let text = '';
-    const possible =
-    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     for (let i = 0; i < size; i += 1) {
-        text += possible
-            .charAt(Math.floor(Math.random() * possible.length));
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
     }
     return text;
 }
@@ -18,13 +16,12 @@ function timeDiff(startTime) {
     const timeArray = process.hrtime(startTime);
     // timeArray[0] is whole seconds
     // timeArray[1] is remaining nanoseconds
-    const milliseconds = (timeArray[0] * 1000) + (timeArray[1] / 1e6);
+    const milliseconds = timeArray[0] * 1000 + timeArray[1] / 1e6;
     return milliseconds;
 }
 
 function makeAuthInfo(accessKey) {
-    const canonicalID = accessKey === constants.publicId ?
-        constants.publicId : `${accessKey}canonicalID`;
+    const canonicalID = accessKey === constants.publicId ? constants.publicId : `${accessKey}canonicalID`;
     return new AuthInfo({
         canonicalID,
         shortid: 'shortid',
@@ -33,8 +30,7 @@ function makeAuthInfo(accessKey) {
     });
 }
 
-function createAlteredRequest(alteredItems, objToAlter,
-    baseOuterObj, baseInnerObj) {
+function createAlteredRequest(alteredItems, objToAlter, baseOuterObj, baseInnerObj) {
     const alteredRequest = Object.assign({}, baseOuterObj);
     const alteredNestedObj = Object.assign({}, baseInnerObj);
     Object.keys(alteredItems).forEach(key => {

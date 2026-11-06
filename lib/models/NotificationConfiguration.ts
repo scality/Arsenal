@@ -1,10 +1,7 @@
 import assert from 'assert';
 import { v4 as uuid } from 'uuid';
 
-import {
-    supportedNotificationEvents,
-    notificationArnPrefix,
-} from '../constants';
+import { supportedNotificationEvents, notificationArnPrefix } from '../constants';
 import { errorInstances } from '../errors';
 import type { ArsenalError } from '../errors';
 import escapeForXml from '../s3middleware/escapeForXml';
@@ -30,28 +27,28 @@ import escapeForXml from '../s3middleware/escapeForXml';
  */
 
 /**
-  * Format of config:
-  *
-  * config = {
-  *     queueConfig: [
-  *         {
-  *         events: array,
-  *         queueArn: string,
-  *         filterRules: [
-  *             {
-  *                 name: string,
-  *                 value: string
-  *             },
-  *             {
-  *                 name: string,
-  *                 value:string
-  *             },
-  *         ],
-  *         id: string
-  *         }
-  *     ]
-  * }
-  */
+ * Format of config:
+ *
+ * config = {
+ *     queueConfig: [
+ *         {
+ *         events: array,
+ *         queueArn: string,
+ *         filterRules: [
+ *             {
+ *                 name: string,
+ *                 value: string
+ *             },
+ *             {
+ *                 name: string,
+ *                 value:string
+ *             },
+ *         ],
+ *         id: string
+ *         }
+ *     ]
+ * }
+ */
 
 export type NotificationConfigurationMetadata = {
     NotificationConfiguration: {
@@ -69,7 +66,7 @@ export type NotificationConfigurationMetadata = {
             Queue: string;
         }[];
     };
-}
+};
 
 export default class NotificationConfiguration {
     private parsedXml: NotificationConfigurationMetadata;
@@ -146,13 +143,13 @@ export default class NotificationConfiguration {
      */
     private parseNotificationConfig() {
         if (!this.parsedXml) {
-            return errorInstances.MalformedXML.customizeDescription(
-                'request xml is undefined or empty');
+            return errorInstances.MalformedXML.customizeDescription('request xml is undefined or empty');
         }
         const notificationConfig = this.parsedXml.NotificationConfiguration;
         if (!notificationConfig) {
             return errorInstances.MalformedXML.customizeDescription(
-                'request xml does not include NotificationConfiguration');
+                'request xml does not include NotificationConfiguration',
+            );
         }
         const queueConfig = notificationConfig.QueueConfiguration;
         if (!queueConfig || !queueConfig[0]) {
@@ -208,7 +205,7 @@ export default class NotificationConfiguration {
             const error = errorInstances.MalformedXML.customizeDescription(msg);
             return { error };
         }
-        const eventsObj: { error?: ArsenalError, events: any[] } = {
+        const eventsObj: { error?: ArsenalError; events: any[] } = {
             events: [] as any[],
         };
         for (const e of events) {
@@ -233,29 +230,38 @@ export default class NotificationConfiguration {
             return { filterRules: undefined };
         }
         if (!filter[0].S3Key || !filter[0].S3Key[0]) {
-            return { error: errorInstances.MalformedXML.customizeDescription(
-                'if included, queue configuration filter must contain S3Key') };
+            return {
+                error: errorInstances.MalformedXML.customizeDescription(
+                    'if included, queue configuration filter must contain S3Key',
+                ),
+            };
         }
         const filterRules = filter[0].S3Key[0];
         if (!filterRules.FilterRule || !filterRules.FilterRule[0]) {
-            return { error: errorInstances.MalformedXML.customizeDescription(
-                'if included, queue configuration filter must contain a rule') };
+            return {
+                error: errorInstances.MalformedXML.customizeDescription(
+                    'if included, queue configuration filter must contain a rule',
+                ),
+            };
         }
         const filterObj: { filterRules: { name: string; value: string }[] } = {
             filterRules: [],
         };
         const ruleArray = filterRules.FilterRule;
         for (let i = 0; i < ruleArray.length; i++) {
-            if (!ruleArray[i].Name
-                || !ruleArray[i].Name[0]
-                || !ruleArray[i].Value
-                || !ruleArray[i].Value[0]) {
-                return { error: errorInstances.MalformedXML.customizeDescription(
-                    'each included filter must contain a name and value') };
+            if (!ruleArray[i].Name || !ruleArray[i].Name[0] || !ruleArray[i].Value || !ruleArray[i].Value[0]) {
+                return {
+                    error: errorInstances.MalformedXML.customizeDescription(
+                        'each included filter must contain a name and value',
+                    ),
+                };
             }
             if (!['Prefix', 'Suffix'].includes(ruleArray[i].Name[0])) {
-                return { error: errorInstances.MalformedXML.customizeDescription(
-                    'filter Name must be one of Prefix or Suffix') };
+                return {
+                    error: errorInstances.MalformedXML.customizeDescription(
+                        'filter Name must be one of Prefix or Suffix',
+                    ),
+                };
             }
             filterObj.filterRules.push({
                 name: ruleArray[i].Name[0],
@@ -272,8 +278,11 @@ export default class NotificationConfiguration {
      */
     private parseId(id: string) {
         if (id && id[0].length > 255) {
-            return { error: errorInstances.InvalidArgument.customizeDescription(
-                'queue configuration ID is greater than 255 characters long') };
+            return {
+                error: errorInstances.InvalidArgument.customizeDescription(
+                    'queue configuration ID is greater than 255 characters long',
+                ),
+            };
         }
         let validId: string;
         if (!id || !id[0]) {
@@ -285,8 +294,9 @@ export default class NotificationConfiguration {
         }
         // Each ID in a list of rules must be unique.
         if (this.ids.has(validId)) {
-            return { error: errorInstances.InvalidRequest.customizeDescription(
-                'queue configuration ID must be unique') };
+            return {
+                error: errorInstances.InvalidRequest.customizeDescription('queue configuration ID must be unique'),
+            };
         }
         this.ids.add(validId);
         return { id: validId };
@@ -299,15 +309,16 @@ export default class NotificationConfiguration {
      */
     private parseArn(arn: string) {
         if (!arn || !arn[0]) {
-            return { error: errorInstances.MalformedXML.customizeDescription(
-                'each queue configuration must contain a queue arn'),
+            return {
+                error: errorInstances.MalformedXML.customizeDescription(
+                    'each queue configuration must contain a queue arn',
+                ),
             };
         }
         const splitArn = arn[0].split(':');
         const slicedArn = arn[0].slice(0, 23);
         if (splitArn.length !== 6 || slicedArn !== notificationArnPrefix) {
-            return { error: errorInstances.MalformedXML.customizeDescription(
-                'queue arn is invalid') };
+            return { error: errorInstances.MalformedXML.customizeDescription('queue arn is invalid') };
         }
         // remaining 3 parts of arn are evaluated in cloudserver
         return { arn: arn[0] };
@@ -341,8 +352,10 @@ export default class NotificationConfiguration {
                 if (c.filterRules) {
                     xmlArray.push('<Filter><S3Key>');
                     c.filterRules.forEach(r => {
-                        xmlArray.push(`<FilterRule><Name>${escapeForXml(r.name)}</Name>` +
-                            `<Value>${escapeForXml(r.value)}</Value></FilterRule>`);
+                        xmlArray.push(
+                            `<FilterRule><Name>${escapeForXml(r.name)}</Name>` +
+                                `<Value>${escapeForXml(r.value)}</Value></FilterRule>`,
+                        );
                     });
                     xmlArray.push('</S3Key></Filter>');
                 }
@@ -350,11 +363,13 @@ export default class NotificationConfiguration {
             });
         }
         const queueConfigXML = xmlArray.join('');
-        return '<?xml version="1.0" encoding="UTF-8"?>' +
+        return (
+            '<?xml version="1.0" encoding="UTF-8"?>' +
             '<NotificationConfiguration ' +
             'xmlns="http://s3.amazonaws.com/doc/2006-03-01/">' +
             `${queueConfigXML}` +
-            '</NotificationConfiguration>';
+            '</NotificationConfiguration>'
+        );
     }
 
     /**

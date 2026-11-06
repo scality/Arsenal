@@ -19,8 +19,7 @@ const VID_SEP = VersioningConstants.VersionId.Separator;
  */
 function getPrefixUpperBoundary(prefix: string): string {
     if (prefix) {
-        return prefix.slice(0, prefix.length - 1) +
-            String.fromCharCode(prefix.charCodeAt(prefix.length - 1) + 1);
+        return prefix.slice(0, prefix.length - 1) + String.fromCharCode(prefix.charCodeAt(prefix.length - 1) + 1);
     }
     return prefix;
 }
@@ -86,11 +85,7 @@ export default class VersioningRequestProcessor {
      * @param callback - callback function
      * @return - to finish the call
      */
-    get(
-        request: any,
-        logger: RequestLogger,
-        callback: (error: ArsenalError | null, data?: any) => void,
-    ) {
+    get(request: any, logger: RequestLogger, callback: (error: ArsenalError | null, data?: any) => void) {
         const { db, key, options } = request;
         logger.addDefaultFields({ bucket: db, key, options });
         if (options && options.versionId) {
@@ -140,44 +135,49 @@ export default class VersioningRequestProcessor {
             listingParams.limit = limit + 2;
         }
         const nullKeyLength = key.length + 1;
-        return this.wgm.list({
-            db,
-            params: listingParams,
-        }, logger, (err, rawVersions) => {
-            if (err) {
-                return callback(err);
-            }
-            if (rawVersions.length === 0) {
-                // object does not have any version key
-                return callback(null, null, []);
-            }
-            let versions = rawVersions;
-            // in v0 there is always a master key before versions
-            const master = versions.shift();
-            if (versions.length === 0) {
-                return callback(null, master, []);
-            }
-            const firstItem = versions[0];
-            if (firstItem.key.length === nullKeyLength) {
-                // first version is the null key
-                const nullVersion = Version.from(firstItem.value);
-                const nullVersionKey = formatVersionKey(key, <string> nullVersion.getVersionId());
-                // find null key's natural versioning order in the list
-                let nullPos = versions.findIndex(item => item.key > nullVersionKey);
-                if (nullPos === -1) {
-                    nullPos = versions.length;
+        return this.wgm.list(
+            {
+                db,
+                params: listingParams,
+            },
+            logger,
+            (err, rawVersions) => {
+                if (err) {
+                    return callback(err);
                 }
-                // move null key at the correct position and append its real version ID to the key
-                versions = versions.slice(1, nullPos)
-                    .concat([{ key: nullVersionKey, value: firstItem.value, isNullKey: true }])
-                    .concat(versions.slice(nullPos));
-            }
-            if (limit !== undefined) {
-                // truncate versions to 'limit' entries
-                versions.splice(limit);
-            }
-            return callback(null, master, versions);
-        });
+                if (rawVersions.length === 0) {
+                    // object does not have any version key
+                    return callback(null, null, []);
+                }
+                let versions = rawVersions;
+                // in v0 there is always a master key before versions
+                const master = versions.shift();
+                if (versions.length === 0) {
+                    return callback(null, master, []);
+                }
+                const firstItem = versions[0];
+                if (firstItem.key.length === nullKeyLength) {
+                    // first version is the null key
+                    const nullVersion = Version.from(firstItem.value);
+                    const nullVersionKey = formatVersionKey(key, <string>nullVersion.getVersionId());
+                    // find null key's natural versioning order in the list
+                    let nullPos = versions.findIndex(item => item.key > nullVersionKey);
+                    if (nullPos === -1) {
+                        nullPos = versions.length;
+                    }
+                    // move null key at the correct position and append its real version ID to the key
+                    versions = versions
+                        .slice(1, nullPos)
+                        .concat([{ key: nullVersionKey, value: firstItem.value, isNullKey: true }])
+                        .concat(versions.slice(nullPos));
+                }
+                if (limit !== undefined) {
+                    // truncate versions to 'limit' entries
+                    versions.splice(limit);
+                }
+                return callback(null, master, versions);
+            },
+        );
     }
 
     /**
@@ -193,11 +193,7 @@ export default class VersioningRequestProcessor {
      * @param callback - callback function
      * @return - to finish the call
      */
-    getByListing(
-        request: any,
-        logger: RequestLogger,
-        callback: (error: ArsenalError | null, data?: any) => void,
-    ) {
+    getByListing(request: any, logger: RequestLogger, callback: (error: ArsenalError | null, data?: any) => void) {
         // enqueue the get entry; do nothing if another is processing it
         // this is to manage the number of expensive listings when there
         // are multiple concurrent gets on the same key which is a PHD version
@@ -209,35 +205,39 @@ export default class VersioningRequestProcessor {
         const cacheKey = formatCacheKey(request.db, request.key);
         clearTimeout(this.repairing[cacheKey]);
         delete this.repairing[cacheKey];
-        return this.listVersionKeys(request.db, request.key, {
-            limit: 1,
-        }, logger, (err, master, versions) => {
-            logger.info('listing latest versions done', { err, master, versions });
-            if (err) {
-                return this.dequeueGet(request, err);
-            }
-            if (!master) {
-                return this.dequeueGet(request, errors.ObjNotFound);
-            }
-            if (!Version.isPHD(master.value)) {
-                return this.dequeueGet(request, null, master.value);
-            }
-            if (versions.length === 0) {
-                logger.info('no other versions');
-                this.dequeueGet(request, errors.ObjNotFound);
-                return this.repairMaster(request, logger,
-                    { type: 'del', value: master.value });
-            }
-            // need repair
-            logger.info('update master by the latest version');
-            const next = {
-                value: versions[0].value,
-                isNullKey: versions[0].isNullKey,
-            };
-            this.dequeueGet(request, null, next.value);
-            return this.repairMaster(request, logger,
-                { type: 'put', value: master.value, next });
-        });
+        return this.listVersionKeys(
+            request.db,
+            request.key,
+            {
+                limit: 1,
+            },
+            logger,
+            (err, master, versions) => {
+                logger.info('listing latest versions done', { err, master, versions });
+                if (err) {
+                    return this.dequeueGet(request, err);
+                }
+                if (!master) {
+                    return this.dequeueGet(request, errors.ObjNotFound);
+                }
+                if (!Version.isPHD(master.value)) {
+                    return this.dequeueGet(request, null, master.value);
+                }
+                if (versions.length === 0) {
+                    logger.info('no other versions');
+                    this.dequeueGet(request, errors.ObjNotFound);
+                    return this.repairMaster(request, logger, { type: 'del', value: master.value });
+                }
+                // need repair
+                logger.info('update master by the latest version');
+                const next = {
+                    value: versions[0].value,
+                    isNullKey: versions[0].isNullKey,
+                };
+                this.dequeueGet(request, null, next.value);
+                return this.repairMaster(request, logger, { type: 'put', value: master.value, next });
+            },
+        );
     }
 
     /**
@@ -284,8 +284,7 @@ export default class VersioningRequestProcessor {
                 if (err || value) {
                     return entry.callback(err, value);
                 }
-                return this.wgm.get(entry.request, entry.logger,
-                    entry.callback);
+                return this.wgm.get(entry.request, entry.logger, entry.callback);
             });
             delete this.queue[cacheKey];
         }
@@ -307,14 +306,18 @@ export default class VersioningRequestProcessor {
      * latest version is a null key
      * @return - to finish the call
      */
-    repairMaster(request: any, logger: RequestLogger, data: {
-        type: 'put' | 'del';
-        value: string;
-        next?: {
+    repairMaster(
+        request: any,
+        logger: RequestLogger,
+        data: {
+            type: 'put' | 'del';
             value: string;
-            isNullKey: boolean;
-        };
-    }) {
+            next?: {
+                value: string;
+                isNullKey: boolean;
+            };
+        },
+    ) {
         const { db, key } = request;
         logger.info('start repair process');
         this.writeCache.get({ db, key }, logger, (err, value) => {
@@ -368,11 +371,7 @@ export default class VersioningRequestProcessor {
      * @param callback - expect callback(err, data)
      * @return - to finish the call
      */
-    put(
-        request: any,
-        logger: RequestLogger,
-        callback: (error: ArsenalError | null, data?: any) => void,
-    ) {
+    put(request: any, logger: RequestLogger, callback: (error: ArsenalError | null, data?: any) => void) {
         const { db, key, value, options } = request;
         logger.addDefaultFields({ bucket: db, key, options });
         // valid combinations of versioning options:
@@ -382,29 +381,26 @@ export default class VersioningRequestProcessor {
         //              also update master version in case the put
         //              version is newer or same version than master.
         //              if versionId === '' update master version
-        const versioning = options &&
-            (options.versioning || options.versioning === '');
-        const versionId = options &&
-            (options.versionId || options.versionId === '');
+        const versioning = options && (options.versioning || options.versioning === '');
+        const versionId = options && (options.versionId || options.versionId === '');
 
         const versioningCb = (err, array, vid) => {
             if (err) {
                 return callback(err);
             }
-            return this.writeCache.batch({ db, array, options },
-                logger, err => callback(err, `{"versionId":"${vid}"}`));
+            return this.writeCache.batch({ db, array, options }, logger, err =>
+                callback(err, `{"versionId":"${vid}"}`),
+            );
         };
 
         if (versionId) {
-            return this.processVersionSpecificPut(request, logger,
-                versioningCb);
+            return this.processVersionSpecificPut(request, logger, versioningCb);
         }
         if (versioning) {
             return this.processNewVersionPut(request, logger, versioningCb);
         }
         // no versioning or versioning configuration off
-        return this.writeCache.batch({ db, array: [{ key, value }] },
-            logger, callback);
+        return this.writeCache.batch({ db, array: [{ key, value }] }, logger, callback);
     }
 
     /**
@@ -422,11 +418,7 @@ export default class VersioningRequestProcessor {
     processNewVersionPut(
         request: any,
         logger: RequestLogger,
-        callback: (
-            error: null,
-            data: { key: string; value: string }[],
-            versionId: string,
-        ) => void,
+        callback: (error: null, data: { key: string; value: string }[], versionId: string) => void,
     ) {
         logger.info('process new version put');
         // making a new versionId and a new version key
@@ -482,8 +474,7 @@ export default class VersioningRequestProcessor {
             const versionId = request.options.versionId;
             const versionKey = formatVersionKey(key, versionId);
             const ops: any = [];
-            const masterVersion = data !== undefined &&
-                  Version.from(data);
+            const masterVersion = data !== undefined && Version.from(data);
             // push a version key if we're not updating the null
             // version (or in legacy Cloudservers not sending the
             // 'isNull' parameter, but this has an issue, see S3C-7526)
@@ -495,8 +486,7 @@ export default class VersioningRequestProcessor {
                 // master key exists
                 // note that older versions have a greater version ID
                 const versionIdFromMaster = masterVersion.getVersionId();
-                if (versionIdFromMaster === undefined ||
-                    versionIdFromMaster >= versionId) {
+                if (versionIdFromMaster === undefined || versionIdFromMaster >= versionId) {
                     let value = request.value;
                     logger.debug('version to put is not older than master');
                     // Delete the deprecated, null key for backward compatibility
@@ -507,9 +497,12 @@ export default class VersioningRequestProcessor {
                     // Deprecated null key gets deleted when the new CloudServer:
                     // - updates metadata of a null master (options.isNull=true)
                     // - puts metadata on top of a master null key (options.isNull=false)
-                    if (request.options.isNull !== undefined && // new null key behavior when isNull is defined.
+                    if (
+                        request.options.isNull !== undefined && // new null key behavior when isNull is defined.
                         masterVersion.isNullVersion() && // master is null
-                        !masterVersion.isNull2Version()) { // master does not support the new null key behavior yet.
+                        !masterVersion.isNull2Version()
+                    ) {
+                        // master does not support the new null key behavior yet.
                         const masterNullVersionId = masterVersion.getVersionId();
                         // The deprecated null key is referenced in the "versionId" property of the master key.
                         if (masterNullVersionId) {
@@ -525,8 +518,7 @@ export default class VersioningRequestProcessor {
                     // contents to a new null version key (newer ones
                     // use special versionId="null" requests for this
                     // purpose).
-                    if (versionIdFromMaster !== versionId ||
-                        request.options.isNull === undefined) {
+                    if (versionIdFromMaster !== versionId || request.options.isNull === undefined) {
                         // master key is strictly older than the put version
                         let masterVersionId;
                         if (masterVersion.isNullVersion() && versionIdFromMaster) {
@@ -553,23 +545,21 @@ export default class VersioningRequestProcessor {
                             logger.debug('create version key from master version');
                             // isNull === false means Cloudserver supports null keys,
                             // so create a null key in this case, and a version key otherwise
-                            const masterKeyVersionId = request.options.isNull === false ?
-                                '' : masterVersionId;
+                            const masterKeyVersionId = request.options.isNull === false ? '' : masterVersionId;
                             const masterVersionKey = formatVersionKey(key, masterKeyVersionId);
                             masterVersion.setNullVersion();
                             // isNull === false means Cloudserver supports null keys,
                             // so create a null key with the isNull2 flag
                             if (request.options.isNull === false) {
                                 masterVersion.setNull2Version();
-                            // else isNull === undefined means Cloudserver does not support null keys,
-                            // and versionIdFromMaster !== versionId means that a version is PUT on top of a null 
-                            // version hence set/update the new master nullVersionId for backward compatibility
+                                // else isNull === undefined means Cloudserver does not support null keys,
+                                // and versionIdFromMaster !== versionId means that a version is PUT on top of a null
+                                // version hence set/update the new master nullVersionId for backward compatibility
                             } else if (versionIdFromMaster !== versionId) {
                                 // => set the nullVersionId to the master version if put version on top of null version.
                                 value = Version.updateOrAppendNullVersionId(request.value, masterVersionId);
                             }
-                            ops.push({ key: masterVersionKey,
-                                value: masterVersion.toString() });
+                            ops.push({ key: masterVersionKey, value: masterVersion.toString() });
                         }
                     } else {
                         logger.debug('version to put is the master');
@@ -595,30 +585,21 @@ export default class VersioningRequestProcessor {
         return null;
     }
 
-
-    del(
-        request: any,
-        logger: RequestLogger,
-        callback: (err: ArsenalError | null, data?: any) => void,
-    ) {
+    del(request: any, logger: RequestLogger, callback: (err: ArsenalError | null, data?: any) => void) {
         const { db, key, options } = request;
         logger.addDefaultFields({ bucket: db, key, options });
         // no versioning or versioning configuration off
         if (!(options && options.versionId)) {
             logger.info('process non-versioned delete');
-            return this.writeCache.batch({ db,
-                array: [{ key, type: 'del' }] },
-            logger, callback);
+            return this.writeCache.batch({ db, array: [{ key, type: 'del' }] }, logger, callback);
         }
         // version specific DELETE
-        return this.processVersionSpecificDelete(request, logger,
-            (err, array, vid) => {
-                if (err) {
-                    return callback(err);
-                }
-                return this.writeCache.batch({ db, array }, logger,
-                    err => callback(err, `{"versionId":"${vid}"}`));
-            });
+        return this.processVersionSpecificDelete(request, logger, (err, array, vid) => {
+            if (err) {
+                return callback(err);
+            }
+            return this.writeCache.batch({ db, array }, logger, err => callback(err, `{"versionId":"${vid}"}`));
+        });
     }
 
     /**
@@ -637,11 +618,7 @@ export default class VersioningRequestProcessor {
     processVersionSpecificDelete(
         request: any,
         logger: RequestLogger,
-        callback: (
-            error: ArsenalError | null,
-            batch?: any,
-            versionId?: string,
-        ) => void,
+        callback: (error: ArsenalError | null, batch?: any, versionId?: string) => void,
     ) {
         logger.info('process version specific delete');
         const { db, key, options } = request;
@@ -660,15 +637,13 @@ export default class VersioningRequestProcessor {
             const versionKey = formatVersionKey(key, keyVersionId);
             const ops: any = [{ key: versionKey, type: 'del' }];
             // update the master version as PHD if it is the deleting version
-            if (Version.isPHD(data) ||
-                Version.from(data).getVersionId() === versionId) {
+            if (Version.isPHD(data) || Version.from(data).getVersionId() === versionId) {
                 const _vid = this.generateVersionId();
                 ops.push({ key, value: Version.generatePHDVersion(_vid) });
                 // start the repair process later
                 const cacheKey = formatCacheKey(db, key);
                 clearTimeout(this.repairing[cacheKey]);
-                this.repairing[cacheKey] = setTimeout(() =>
-                    this.getByListing(request, logger, () => {}), 15000);
+                this.repairing[cacheKey] = setTimeout(() => this.getByListing(request, logger, () => {}), 15000);
             }
             return callback(null, ops, versionId);
         });

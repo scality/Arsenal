@@ -49,16 +49,7 @@ describe('routesUtils.responseStreamData', () => {
                 { size: 5, key: 'value2' },
             ];
 
-            responseStreamData(
-                null,
-                {},
-                resHeaders,
-                dataLocations,
-                { client: mockClient },
-                response,
-                undefined,
-                log,
-            );
+            responseStreamData(null, {}, resHeaders, dataLocations, { client: mockClient }, response, undefined, log);
 
             sinon.assert.calledWith(response.writeHead, 200);
         });
@@ -70,37 +61,16 @@ describe('routesUtils.responseStreamData', () => {
                 { size: 5, key: 'value2' },
             ];
 
-            responseStreamData(
-                null,
-                {},
-                resHeaders,
-                dataLocations,
-                { client: mockClient },
-                response,
-                undefined,
-                log,
-            );
+            responseStreamData(null, {}, resHeaders, dataLocations, { client: mockClient }, response, undefined, log);
 
             sinon.assert.calledWith(response.writeHead, 500);
         });
 
         it('should succeed when data locations do not specify size', () => {
             const resHeaders = { 'Content-Length': '15' };
-            const dataLocations = [
-                { key: 'value1' },
-                { key: 'value2' },
-            ];
+            const dataLocations = [{ key: 'value1' }, { key: 'value2' }];
 
-            responseStreamData(
-                null,
-                {},
-                resHeaders,
-                dataLocations,
-                { client: mockClient },
-                response,
-                undefined,
-                log,
-            );
+            responseStreamData(null, {}, resHeaders, dataLocations, { client: mockClient }, response, undefined, log);
 
             sinon.assert.calledWith(response.writeHead, 200);
         });
@@ -112,16 +82,7 @@ describe('routesUtils.responseStreamData', () => {
                 { size: 5, key: 'key2' },
             ];
 
-            responseStreamData(
-                null,
-                {},
-                resHeaders,
-                dataLocations,
-                { client: mockClient },
-                response,
-                undefined,
-                log,
-            );
+            responseStreamData(null, {}, resHeaders, dataLocations, { client: mockClient }, response, undefined, log);
 
             sinon.assert.calledWith(response.writeHead, 200);
         });
@@ -152,11 +113,13 @@ describe('routesUtils.responseStreamData', () => {
 
     beforeAll(done => {
         awsClient = new AwsClient(awsConfig);
-        httpServer = http.createServer((req, res) => {
-            const objStream = new DummyObjectStream(0, 10000000);
-            res.setHeader('content-length', 10000000);
-            objStream.pipe(res);
-        }).listen(8888);
+        httpServer = http
+            .createServer((req, res) => {
+                const objStream = new DummyObjectStream(0, 10000000);
+                res.setHeader('content-length', 10000000);
+                objStream.pipe(res);
+            })
+            .listen(8888);
         httpServer.on('listening', done);
         httpServer.on('error', err => assert.ifError(err));
         httpServer.on('connection', socket => {
@@ -174,30 +137,41 @@ describe('routesUtils.responseStreamData', () => {
         }
     });
 
-    it('should not leak socket if client closes the connection before ' +
-    'data backend starts streaming', done => {
-        responseStreamData(undefined, {}, {}, [{
-            key: 'foo',
-            size: 10000000,
-        }], {
-            client: awsClient,
-            implName: 'impl',
-            config: {},
-            locStorageCheckFn: () => {},
-        }, {
-            setHeader: () => {},
-            writeHead: () => {},
-            on: () => {},
-            once: () => {},
-            emit: () => {},
-            write: () => {},
-            end: () => setTimeout(() => {
-                const nOpenSockets = Object.keys(awsAgent.sockets).length;
-                assert.strictEqual(nOpenSockets, 0);
-                done();
-            }, 1000),
-            // fake a connection close from the S3 client by setting the "isclosed" flag
-            isclosed: true,
-        }, undefined, logger.newRequestLogger());
+    it('should not leak socket if client closes the connection before data backend starts streaming', done => {
+        responseStreamData(
+            undefined,
+            {},
+            {},
+            [
+                {
+                    key: 'foo',
+                    size: 10000000,
+                },
+            ],
+            {
+                client: awsClient,
+                implName: 'impl',
+                config: {},
+                locStorageCheckFn: () => {},
+            },
+            {
+                setHeader: () => {},
+                writeHead: () => {},
+                on: () => {},
+                once: () => {},
+                emit: () => {},
+                write: () => {},
+                end: () =>
+                    setTimeout(() => {
+                        const nOpenSockets = Object.keys(awsAgent.sockets).length;
+                        assert.strictEqual(nOpenSockets, 0);
+                        done();
+                    }, 1000),
+                // fake a connection close from the S3 client by setting the "isclosed" flag
+                isclosed: true,
+            },
+            undefined,
+            logger.newRequestLogger(),
+        );
     });
 });

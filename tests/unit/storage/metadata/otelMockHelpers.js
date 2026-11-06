@@ -13,9 +13,7 @@ function makeOtelHelpers(mocks) {
         TRACEPARENT,
         activateSpan(traceparent = TRACEPARENT) {
             mocks.active.mockReturnValue({ tag: 'mock-active-context' });
-            mocks.getSpan.mockReturnValue({
-                /* opaque span */
-            });
+            mocks.getSpan.mockReturnValue({/* opaque span */});
             mocks.inject.mockImplementation((ctx, carrier, setter) => {
                 setter.set(carrier, 'traceparent', traceparent);
             });

@@ -22,10 +22,7 @@ export default class AuthLoader {
     addAccounts(authData: Accounts, filePath?: string) {
         const isValid = this.#isAuthDataValid(authData, filePath);
         if (isValid) {
-            this.#authData.accounts = [
-                ...this.#authData.accounts,
-                ...authData.accounts,
-            ];
+            this.#authData.accounts = [...this.#authData.accounts, ...authData.accounts];
             // defer validity checking when getting data to avoid
             // logging multiple times the errors (we need to validate
             // all accounts at once to detect duplicate values)
@@ -100,13 +97,11 @@ export default class AuthLoader {
         if (account.arn.startsWith('aws:')) {
             const { name: accountName, arn: accountArn } = account;
             this.#log.error(
-                'account must have a valid AWS ARN, legacy examples ' +
-                    "starting with 'aws:' are not supported anymore. " +
-                    'Please convert to a proper account entry (see ' +
-                    'examples at https://github.com/scality/cloudserver/blob/' +
-                    'master/conf/authdata.json). Also note that support ' +
-                    'for account users has been dropped.',
-                { accountName, accountArn, filePath }
+                "account must have a valid AWS ARN, legacy examples starting with 'aws:' are " +
+                    'not supported anymore. Please convert to a proper account entry (see examples ' +
+                    'at https://github.com/scality/cloudserver/blob/master/conf/authdata.json). ' +
+                    'Also note that support for account users has been dropped.',
+                { accountName, accountArn, filePath },
             );
             return false;
         }
@@ -117,11 +112,9 @@ export default class AuthLoader {
         if (account.users) {
             const { name: accountName, arn: accountArn } = account;
             this.#log.error(
-                'support for account users has been dropped, consider ' +
-                    'turning users into account entries (see examples at ' +
-                    'https://github.com/scality/cloudserver/blob/HEAD/conf/' +
-                    'authdata.json)',
-                { accountName, accountArn, filePath }
+                'support for account users has been dropped, consider turning users into account entries ' +
+                    '(see examples at https://github.com/scality/cloudserver/blob/HEAD/conf/authdata.json)',
+                { accountName, accountArn, filePath },
             );
             return false;
         }
@@ -164,10 +157,9 @@ export default class AuthLoader {
             (account: Account) =>
                 this.#isNotLegacyAWSARN(account, filePath) &&
                 this.#isValidUsers(account, filePath) &&
-                this.#isValidARN(account, filePath)
+                this.#isValidARN(account, filePath),
         );
-        const areSomeInvalidAccounts =
-            validAccounts.length !== response.value.accounts.length;
+        const areSomeInvalidAccounts = validAccounts.length !== response.value.accounts.length;
         if (areSomeInvalidAccounts) {
             return false;
         }
@@ -195,10 +187,7 @@ export default class AuthLoader {
                     return { ...baseLogInfo, reason, context };
                 }
             };
-            this.#log.error(
-                'authentication config validation error',
-                logInfo()
-            );
+            this.#log.error('authentication config validation error', logInfo());
         });
     }
 }

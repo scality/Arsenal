@@ -15,7 +15,7 @@ describe('auth.doAuth', () => {
 
     const method = 'PUT';
     const path = '/mybucket';
-    const xAMZcontentSha256 = '771df8abbecb2265e9724e5dc4510dcc160' + '60c0513ae669baf35b255d465b63f';
+    const xAMZcontentSha256 = '771df8abbecb2265e9724e5dc4510dcc16060c0513ae669baf35b255d465b63f';
     const host = 'localhost:8000';
     const xAmzDate = '2027-02-08T20:14:05Z';
     const authorization =

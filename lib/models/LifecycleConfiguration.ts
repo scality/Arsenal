@@ -1274,8 +1274,7 @@ export default class LifecycleConfiguration {
                     tagXML = tags
                         .map(t => {
                             const { key, val } = t;
-                            const Tag =
-                                `<Tag><Key>${escapeForXml(key)}</Key>` + `<Value>${escapeForXml(val)}</Value></Tag>`;
+                            const Tag = `<Tag><Key>${escapeForXml(key)}</Key><Value>${escapeForXml(val)}</Value></Tag>`;
                             return Tag;
                         })
                         .join('');
@@ -1320,9 +1319,9 @@ export default class LifecycleConfiguration {
                             const Days = days !== undefined ? `<Days>${days}</Days>` : '';
                             const Date = date ? `<Date>${date}</Date>` : '';
                             const DelMarker = deleteMarker
-                                ? `<ExpiredObjectDeleteMarker>${deleteMarker}` + '</ExpiredObjectDeleteMarker>'
+                                ? `<ExpiredObjectDeleteMarker>${deleteMarker}</ExpiredObjectDeleteMarker>`
                                 : '';
-                            Action = `<${actionName}>${Days}${Date}${DelMarker}` + `</${actionName}>`;
+                            Action = `<${actionName}>${Days}${Date}${DelMarker}</${actionName}>`;
                         }
                         if (actionName === 'NoncurrentVersionTransition') {
                             const xml: string[] = [];
@@ -1330,7 +1329,7 @@ export default class LifecycleConfiguration {
                                 const { noncurrentDays, storageClass } = transition;
                                 xml.push(
                                     `<${actionName}>`,
-                                    `<NoncurrentDays>${noncurrentDays}` + '</NoncurrentDays>',
+                                    `<NoncurrentDays>${noncurrentDays}</NoncurrentDays>`,
                                     `<StorageClass>${storageClass}</StorageClass>`,
                                     `</${actionName}>`,
                                 );

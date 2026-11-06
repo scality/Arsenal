@@ -20,8 +20,7 @@ export function prepareStream(
     log: werelogs.RequestLogger,
     cb: any,
 ) {
-    if (stream.headers['x-amz-content-sha256'] ===
-        'STREAMING-AWS4-HMAC-SHA256-PAYLOAD') {
+    if (stream.headers['x-amz-content-sha256'] === 'STREAMING-AWS4-HMAC-SHA256-PAYLOAD') {
         const v4Transform = new V4Transform(streamingV4Params, vault, log, cb);
         stream.pipe(v4Transform);
         return v4Transform;

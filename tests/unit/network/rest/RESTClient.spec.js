@@ -24,10 +24,11 @@ describe('RESTClient single-callback guarantee (ARSN-594)', () => {
         sinon.restore();
     });
 
-    it('get() must invoke its callback at most once when the socket errors ' +
-       'after the response was received', done => {
+    it('get() must invoke its callback at most once when the socket errors after the response was received', done => {
         const client = new RESTClient({
-            host: 'localhost', port: 6677, logApi: clientLogApi,
+            host: 'localhost',
+            port: 6677,
+            logApi: clientLogApi,
         });
 
         // Fake ClientRequest we can drive: deliver a successful response,
@@ -49,8 +50,7 @@ describe('RESTClient single-callback guarantee (ARSN-594)', () => {
                 fakeResponse.push(null);
                 // a socket error arrives AFTER the response -> this would be a
                 // second callback invocation without the once() guard
-                process.nextTick(() =>
-                    fakeRequest.emit('error', new Error('socket hang up')));
+                process.nextTick(() => fakeRequest.emit('error', new Error('socket hang up')));
             });
             return fakeRequest;
         });
@@ -68,9 +68,11 @@ describe('RESTClient single-callback guarantee (ARSN-594)', () => {
 
         setTimeout(() => {
             client.destroy();
-            assert.strictEqual(callCount, 1,
-                'get callback should be called exactly once, was called ' +
-                `${callCount} times`);
+            assert.strictEqual(
+                callCount,
+                1,
+                `get callback should be called exactly once, was called ${callCount} times`,
+            );
             assert.ifError(firstErr);
             assert.strictEqual(firstRes, fakeResponse);
             done();

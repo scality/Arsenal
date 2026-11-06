@@ -15,17 +15,17 @@ export default class RedisClient {
                 method: 'RedisClient.constructor',
                 redisHost: config.host,
                 redisPort: config.port,
-            })
+            }),
         );
         return this;
     }
 
     /**
-    * scan a pattern and return matching keys
-    * @param pattern - string pattern to match with all existing keys
-    * @param [count=10] - scan count
-    * @param cb - callback (error, result)
-    */
+     * scan a pattern and return matching keys
+     * @param pattern - string pattern to match with all existing keys
+     * @param [count=10] - scan count
+     * @param cb - callback (error, result)
+     */
     scan(pattern: string, count = 10, cb: Callback) {
         const params = { match: pattern, count };
         const keys: any[] = [];
@@ -49,7 +49,10 @@ export default class RedisClient {
     incrEx(key: string, expiry: number, cb: Callback) {
         const exp = expiry.toString();
         return this._client
-            .multi([['incr', key], ['expire', key, exp]])
+            .multi([
+                ['incr', key],
+                ['expire', key, exp],
+            ])
             .exec(cb);
     }
 
@@ -73,7 +76,10 @@ export default class RedisClient {
         const am = amount.toString();
         const exp = expiry.toString();
         return this._client
-            .multi([['incrby', key, am], ['expire', key, exp]])
+            .multi([
+                ['incrby', key, am],
+                ['expire', key, exp],
+            ])
             .exec(cb);
     }
 
@@ -88,11 +94,11 @@ export default class RedisClient {
     }
 
     /**
-    * execute a batch of commands
-    * @param cmds - list of commands
-    * @param cb - callback
-    * @return
-    */
+     * execute a batch of commands
+     * @param cmds - list of commands
+     * @param cb - callback
+     * @return
+     */
     batch(cmds: string[][], cb: Callback) {
         return this._client.pipeline(cmds).exec(cb);
     }
@@ -187,12 +193,7 @@ export default class RedisClient {
      *   (can use "+inf")
      * @param cb - callback
      */
-    zrangebyscore(
-        key: string,
-        min: number | string,
-        max: number | string,
-        cb: Callback,
-    ) {
+    zrangebyscore(key: string, min: number | string, max: number | string, cb: Callback) {
         return this._client.zrangebyscore(key, min, max, cb);
     }
 

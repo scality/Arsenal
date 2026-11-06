@@ -67,8 +67,7 @@ export class BaseClient extends EventEmitter {
         streamMaxPendingAck?: number;
         streamAckTimeoutMs?: number;
     }) {
-        const { url, logger, callTimeoutMs,
-            streamMaxPendingAck, streamAckTimeoutMs } = params;
+        const { url, logger, callTimeoutMs, streamMaxPendingAck, streamAckTimeoutMs } = params;
         assert(url);
         assert(logger);
 
@@ -81,8 +80,7 @@ export class BaseClient extends EventEmitter {
         this.streamAckTimeoutMs = streamAckTimeoutMs;
 
         this.requestInfoProducers = [];
-        this.requestInfoProducers.push(
-            dbClient => ({ reqUids: dbClient.withReqUids }));
+        this.requestInfoProducers.push(dbClient => ({ reqUids: dbClient.withReqUids }));
     }
 
     /**
@@ -94,12 +92,10 @@ export class BaseClient extends EventEmitter {
      */
     _call(remoteCall: string, args: { rpcArgs: any[] }, cb: Callback) {
         const wrapCb = (err, data) => {
-            cb(reconstructError(err),
-                this.socketStreams.decodeStreams(data));
+            cb(reconstructError(err), this.socketStreams.decodeStreams(data));
         };
         this.logger.debug('remote call', { remoteCall, args });
-        this.socket.emit('call', remoteCall,
-            this.socketStreams.encodeStreams(args), wrapCb);
+        this.socket.emit('call', remoteCall, this.socketStreams.encodeStreams(args), wrapCb);
         return undefined;
     }
 
@@ -125,10 +121,12 @@ export class BaseClient extends EventEmitter {
             throw new Error(`argument cb=${cb} is not a callback`);
         }
         // @ts-ignore
-        async.timeout(this._call.bind(this), timeoutMs,
-            `operation ${remoteCall} timed out`)(remoteCall,
+        async.timeout(this._call.bind(this), timeoutMs, `operation ${remoteCall} timed out`)(
+            remoteCall,
             // @ts-ignore
-            args, cb);
+            args,
+            cb,
+        );
         return undefined;
     }
 
@@ -151,11 +149,11 @@ export class BaseClient extends EventEmitter {
             this.socket,
             this.logger,
             this.streamMaxPendingAck,
-            this.streamAckTimeoutMs);
+            this.streamAckTimeoutMs,
+        );
         const url = this.url;
         this.socket.on('error', err => {
-            this.logger.warn('connectivity error to the RPC service',
-                { url, error: err });
+            this.logger.warn('connectivity error to the RPC service', { url, error: err });
         });
         this.socket.on('connect', () => {
             this.emit('connect');
@@ -169,8 +167,7 @@ export class BaseClient extends EventEmitter {
         // @ts-expect-errors
         this.getManifest((err, manifest) => {
             if (err) {
-                this.logger.error('Error fetching manifest from RPC server',
-                    { error: err });
+                this.logger.error('Error fetching manifest from RPC server', { error: err });
             } else {
                 manifest.api.forEach(apiItem => {
                     this.createCall(apiItem.name);
@@ -286,12 +283,7 @@ export class BaseService {
      * @param {RPCServer} [params.server] - convenience parameter,
      * calls server.registerServices() automatically
      */
-    constructor(params: {
-        namespace: string;
-        logger: Logger;
-        apiVersion?: string;
-        server: any;
-    }) {
+    constructor(params: { namespace: string; logger: Logger; apiVersion?: string; server: any }) {
         const { namespace, logger, apiVersion, server } = params;
         assert(namespace);
         assert(namespace.startsWith('/'));
@@ -316,8 +308,7 @@ export class BaseService {
                 Object.keys(this.asyncAPI).forEach(callName => {
                     exposedAPI.push({ name: callName });
                 });
-                return { apiVersion: this.apiVersion,
-                    api: exposedAPI };
+                return { apiVersion: this.apiVersion, api: exposedAPI };
             },
         });
 
@@ -325,8 +316,7 @@ export class BaseService {
             const env: any = {};
             if (params.reqUids) {
                 env.reqUids = params.reqUids;
-                env.requestLogger = dbService.logger
-                    .newRequestLoggerFromSerializedUids(params.reqUids);
+                env.requestLogger = dbService.logger.newRequestLoggerFromSerializedUids(params.reqUids);
             } else {
                 env.requestLogger = dbService.logger.newRequestLogger();
             }
@@ -438,9 +428,11 @@ export class BaseService {
                 return cb(flattenError(err));
             }
         } else {
-            return cb(errorInstances.InvalidArgument.customizeDescription(
-                `Unknown remote call ${remoteCall} ` +
-                    `in namespace ${this.namespace}`));
+            return cb(
+                errorInstances.InvalidArgument.customizeDescription(
+                    `Unknown remote call ${remoteCall} in namespace ${this.namespace}`,
+                ),
+            );
         }
         return undefined;
     }
@@ -456,14 +448,12 @@ export class BaseService {
 
     onSyncCall(remoteCall: string, params: any) {
         const env = this._createCallEnv(params);
-        return this.syncAPI[remoteCall].apply(
-            this, [env].concat(params.rpcArgs));
+        return this.syncAPI[remoteCall].apply(this, [env].concat(params.rpcArgs));
     }
 
     onAsyncCall(remoteCall: string, params: any, cb: any) {
         const env = this._createCallEnv(params);
-        this.asyncAPI[remoteCall].apply(
-            this, [env].concat(params.rpcArgs).concat(cb));
+        this.asyncAPI[remoteCall].apply(this, [env].concat(params.rpcArgs).concat(cb));
     }
 }
 
@@ -489,11 +479,7 @@ export class BaseService {
  * @return a server object, not yet listening on a TCP port
  * (you must call listen(port) on the returned object)
  */
-export function RPCServer(params: {
-    logger: Logger;
-    streamMaxPendingAck?: number;
-    streamAckTimeoutMs?: number;
-}) {
+export function RPCServer(params: { logger: Logger; streamMaxPendingAck?: number; streamAckTimeoutMs?: number }) {
     assert(params.logger);
 
     const httpServer = http.createServer();
@@ -516,11 +502,11 @@ export function RPCServer(params: {
                     conn,
                     params.logger,
                     params.streamMaxPendingAck,
-                    params.streamAckTimeoutMs);
+                    params.streamAckTimeoutMs,
+                );
 
                 conn.on('error', err => {
-                    log.error('error on socket.io connection',
-                        { namespace: service.namespace, error: err });
+                    log.error('error on socket.io connection', { namespace: service.namespace, error: err });
                 });
                 conn.on('call', (remoteCall, args, cb) => {
                     const decodedArgs = streamsSocket.decodeStreams(args);
@@ -543,11 +529,9 @@ export function RPCServer(params: {
     return server;
 }
 
-
 function sendHTTPError(res: http.ServerResponse, err: ArsenalError) {
     res.writeHead(err.code || 500);
-    return res.end(`${JSON.stringify({ error: err.message,
-        message: err.description })}\n`);
+    return res.end(`${JSON.stringify({ error: err.message, message: err.description })}\n`);
 }
 
 /**
@@ -627,44 +611,50 @@ streamRPCJSONObj = function _streamRPCJSONObj(obj, wstream, cb) {
         if (Array.isArray(obj)) {
             let first = true;
             wstream.write('[');
-            return async.eachSeries(obj, (child, done) => {
-                if (first) {
-                    first = false;
-                } else {
-                    wstream.write(',');
-                }
-                streamRPCJSONObj(child, wstream, done);
-            },
-            err => {
-                if (err) {
-                    return cbOnce(err);
-                }
-                wstream.write(']');
-                return cbOnce(null);
-            });
+            return async.eachSeries(
+                obj,
+                (child, done) => {
+                    if (first) {
+                        first = false;
+                    } else {
+                        wstream.write(',');
+                    }
+                    streamRPCJSONObj(child, wstream, done);
+                },
+                err => {
+                    if (err) {
+                        return cbOnce(err);
+                    }
+                    wstream.write(']');
+                    return cbOnce(null);
+                },
+            );
         }
         if (obj) {
             let first = true;
             wstream.write('{');
-            return async.eachSeries(Object.keys(obj), (k, done) => {
-                if (obj[k] === undefined) {
-                    return done();
-                }
-                if (first) {
-                    first = false;
-                } else {
-                    wstream.write(',');
-                }
-                wstream.write(`${JSON.stringify(k)}:`);
-                return streamRPCJSONObj(obj[k], wstream, done);
-            },
-            err => {
-                if (err) {
-                    return cbOnce(err);
-                }
-                wstream.write('}');
-                return cbOnce(null);
-            });
+            return async.eachSeries(
+                Object.keys(obj),
+                (k, done) => {
+                    if (obj[k] === undefined) {
+                        return done();
+                    }
+                    if (first) {
+                        first = false;
+                    } else {
+                        wstream.write(',');
+                    }
+                    wstream.write(`${JSON.stringify(k)}:`);
+                    return streamRPCJSONObj(obj[k], wstream, done);
+                },
+                err => {
+                    if (err) {
+                        return cbOnce(err);
+                    }
+                    wstream.write('}');
+                    return cbOnce(null);
+                },
+            );
         }
     }
     // primitive types
@@ -697,17 +687,18 @@ export function RESTServer(params: { logger: Logger }) {
     const httpServer = http.createServer((req, res) => {
         if (req.method !== 'POST') {
             return sendHTTPError(
-                res, errorInstances.MethodNotAllowed.customizeDescription(
-                    'only POST requests are supported for RPC calls'));
+                res,
+                errorInstances.MethodNotAllowed.customizeDescription('only POST requests are supported for RPC calls'),
+            );
         }
         // @ts-expect-errors
         // TODO
-        const matchingService = httpServer.serviceList.find(
-            service => req.url === service.namespace);
+        const matchingService = httpServer.serviceList.find(service => req.url === service.namespace);
         if (!matchingService) {
             return sendHTTPError(
-                res, errorInstances.InvalidArgument.customizeDescription(
-                    `unknown service in URL ${req.url}`));
+                res,
+                errorInstances.InvalidArgument.customizeDescription(`unknown service in URL ${req.url}`),
+            );
         }
         const reqBody: any = [];
         req.on('data', data => {
@@ -720,8 +711,7 @@ export function RESTServer(params: { logger: Logger }) {
             try {
                 const jsonReq = JSON.parse(reqBody);
                 if (!jsonReq.call) {
-                    throw errorInstances.InvalidArgument.customizeDescription(
-                        'missing "call" JSON attribute');
+                    throw errorInstances.InvalidArgument.customizeDescription('missing "call" JSON attribute');
                 }
                 const args = jsonReq.args || {};
                 matchingService._onCall(jsonReq.call, args, (err, data) => {

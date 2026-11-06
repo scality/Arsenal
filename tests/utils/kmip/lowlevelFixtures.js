@@ -1,4 +1,4 @@
-'use strict'; // eslint-disable-line strict
+'use strict';
 /* eslint new-cap: "off" */
 
 const KMIP = require('../../../lib/network/kmip').default;
@@ -16,20 +16,16 @@ module.exports = [
         payload: () => [
             KMIP.Enumeration('Query Function', 'Query Operations'),
             KMIP.Enumeration('Query Function', 'Query Objects'),
-            KMIP.Enumeration('Query Function',
-                'Query Server Information'),
+            KMIP.Enumeration('Query Function', 'Query Server Information'),
             KMIP.Enumeration('Query Function', 'Query Profiles'),
             KMIP.Enumeration('Query Function', 'Query Capabilities'),
-            KMIP.Enumeration('Query Function',
-                'Query Application Namespaces'),
+            KMIP.Enumeration('Query Function', 'Query Application Namespaces'),
             KMIP.Enumeration('Query Function', 'Query Extension List'),
             KMIP.Enumeration('Query Function', 'Query Extension Map'),
-            KMIP.Enumeration('Query Function',
-                'Query Attestation Types'),
+            KMIP.Enumeration('Query Function', 'Query Attestation Types'),
             KMIP.Enumeration('Query Function', 'Query RNGs'),
             KMIP.Enumeration('Query Function', 'Query Validations'),
-            KMIP.Enumeration('Query Function',
-                'Query Client Registration Methods'),
+            KMIP.Enumeration('Query Function', 'Query Client Registration Methods'),
         ],
     },
     {
@@ -67,15 +63,14 @@ module.exports = [
             KMIP.Enumeration('Object Type', 'Symmetric Key'),
             KMIP.Structure('Template-Attribute', [
                 KMIP.Attribute('TextString', 'x-Name', 's3-thekey'),
-                KMIP.Attribute('Enumeration', 'Cryptographic Algorithm',
-                    'AES'),
+                KMIP.Attribute('Enumeration', 'Cryptographic Algorithm', 'AES'),
                 KMIP.Attribute('Integer', 'Cryptographic Length', 256),
-                KMIP.Attribute('Integer', 'Cryptographic Usage Mask',
-                    kmip.encodeMask(
-                        'Cryptographic Usage Mask',
-                        ['Encrypt', 'Decrypt'])),
-                KMIP.Attribute('Date-Time', 'Activation Date',
-                    new Date),
+                KMIP.Attribute(
+                    'Integer',
+                    'Cryptographic Usage Mask',
+                    kmip.encodeMask('Cryptographic Usage Mask', ['Encrypt', 'Decrypt']),
+                ),
+                KMIP.Attribute('Date-Time', 'Activation Date', new Date()),
             ]),
         ],
     },

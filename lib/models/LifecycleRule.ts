@@ -166,7 +166,7 @@ export default class LifecycleRule {
     /**
      * NoncurrentVersionExpiration
      * @param prop - Property must be defined in `validProps`
-     * @param value - integer for `NoncurrentDays` and `NewerNoncurrentVersions` 
+     * @param value - integer for `NoncurrentDays` and `NewerNoncurrentVersions`
      */
     addNCVExpiration(prop: 'NoncurrentDays' | 'NewerNoncurrentVersions', value: number): this;
     addNCVExpiration(prop: string, value: number) {
@@ -201,7 +201,7 @@ export default class LifecycleRule {
 
     /**
      * NonCurrentVersionTransitions
-     * @param nvcTransitions - NonCurrentVersionTransitions 
+     * @param nvcTransitions - NonCurrentVersionTransitions
      */
     addNCVTransitions(nvcTransitions: NoncurrentVersionTransition[]) {
         this.ncvTransitions = nvcTransitions;

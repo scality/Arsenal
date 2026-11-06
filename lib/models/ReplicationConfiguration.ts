@@ -762,11 +762,11 @@ export default class ReplicationConfiguration {
             .join('');
 
         return (
-            `<?xml version="1.0" encoding="UTF-8"?>` +
-            `<ReplicationConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">` +
+            '<?xml version="1.0" encoding="UTF-8"?>' +
+            '<ReplicationConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">' +
             `${rulesXML}` +
             `<Role>${escapeForXml(role)}</Role>` +
-            `</ReplicationConfiguration>`
+            '</ReplicationConfiguration>'
         );
     }
 

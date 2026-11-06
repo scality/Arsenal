@@ -64,11 +64,11 @@ function checkBucketAndKey(
             log.debug('invalid object key', { objectKey });
             if (result.invalidPrefix) {
                 return errorInstances.InvalidArgument.customizeDescription(
-                    'Invalid ' + 'prefix - object key cannot start with ' + `"${result.invalidPrefix}".`,
+                    `Invalid prefix - object key cannot start with "${result.invalidPrefix}".`,
                 );
             }
             return errorInstances.KeyTooLong.customizeDescription(
-                'Object key is too ' + 'long. Maximum number of bytes allowed in keys is ' + `${objectKeyByteLimit}.`,
+                `Object key is too long. Maximum number of bytes allowed in keys is ${objectKeyByteLimit}.`,
             );
         }
     }
@@ -257,7 +257,7 @@ export default function routes(
         log.debug('could not normalize request', { error: err.stack });
         return routesUtils.responseXMLBody(
             errorInstances.InvalidURI.customizeDescription(
-                'Could not parse the ' + 'specified URI. Check your restEndpoints configuration.',
+                'Could not parse the specified URI. Check your restEndpoints configuration.',
             ),
             null,
             res,

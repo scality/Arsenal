@@ -13,17 +13,17 @@ export default class BackendInfo {
     _legacyLocationConstraint?: string;
 
     /**
-    * Represents the info necessary to evaluate which data backend to use
-    * on a data put call.
-    * @constructor
-    * @param config - CloudServer config containing list of locations
-    * @param objectLocationConstraint - location constraint
-    * for object based on user meta header
-    * @param bucketLocationConstraint - location
-    * constraint for bucket based on bucket metadata
-    * @param requestEndpoint - endpoint to which request was made
-    * @param legacyLocationConstraint - legacy location constraint
-    */
+     * Represents the info necessary to evaluate which data backend to use
+     * on a data put call.
+     * @constructor
+     * @param config - CloudServer config containing list of locations
+     * @param objectLocationConstraint - location constraint
+     * for object based on user meta header
+     * @param bucketLocationConstraint - location
+     * constraint for bucket based on bucket metadata
+     * @param requestEndpoint - endpoint to which request was made
+     * @param legacyLocationConstraint - legacy location constraint
+     */
     constructor(
         config: CloudServerConfig,
         objectLocationConstraint: string | undefined,
@@ -52,10 +52,12 @@ export default class BackendInfo {
         locationConstraint: string | undefined,
         log: RequestLogger,
     ) {
-        if (!locationConstraint || !(locationConstraint in config.locationConstraints) ||
-            config.locationConstraints[locationConstraint].isCRR) {
-            log.trace('proposed locationConstraint is invalid',
-                { locationConstraint });
+        if (
+            !locationConstraint ||
+            !(locationConstraint in config.locationConstraints) ||
+            config.locationConstraints[locationConstraint].isCRR
+        ) {
+            log.trace('proposed locationConstraint is invalid', { locationConstraint });
             return false;
         }
         return true;
@@ -68,14 +70,9 @@ export default class BackendInfo {
      * @param log - werelogs logger
      * @return true if present, false if not
      */
-    static isRequestEndpointPresent(
-        config: CloudServerConfig,
-        requestEndpoint: string,
-        log: RequestLogger,
-    ) {
+    static isRequestEndpointPresent(config: CloudServerConfig, requestEndpoint: string, log: RequestLogger) {
         if (!(requestEndpoint in config.restEndpoints)) {
-            log.trace('requestEndpoint does not match config restEndpoints',
-                { requestEndpoint });
+            log.trace('requestEndpoint does not match config restEndpoints', { requestEndpoint });
             return false;
         }
         return true;
@@ -89,16 +86,13 @@ export default class BackendInfo {
      * @param log - werelogs logger
      * @return - true if matches, false if not
      */
-    static isRequestEndpointValueValid(
-        config: CloudServerConfig,
-        requestEndpoint: string,
-        log: RequestLogger,
-    ) {
+    static isRequestEndpointValueValid(config: CloudServerConfig, requestEndpoint: string, log: RequestLogger) {
         const restEndpoint = config.restEndpoints[requestEndpoint];
         if (!(restEndpoint in config.locationConstraints)) {
-            log.trace('the default locationConstraint for request' +
-                'Endpoint does not match any config locationConstraint',
-            { requestEndpoint });
+            log.trace(
+                'the default locationConstraint for requestEndpoint does not match any config locationConstraint',
+                { requestEndpoint },
+            );
             return false;
         }
         return true;
@@ -133,17 +127,11 @@ export default class BackendInfo {
      * @param log - werelogs logger
      * @return - true if valid, false if not
      */
-    static isValidRequestEndpointOrBackend(
-        config: CloudServerConfig,
-        requestEndpoint: string,
-        log: RequestLogger,
-    ) {
-        if (!BackendInfo.isRequestEndpointPresent(config, requestEndpoint,
-            log)) {
+    static isValidRequestEndpointOrBackend(config: CloudServerConfig, requestEndpoint: string, log: RequestLogger) {
+        if (!BackendInfo.isRequestEndpointPresent(config, requestEndpoint, log)) {
             return BackendInfo.isMemOrFileBackend(config, log);
         }
-        return BackendInfo.isRequestEndpointValueValid(config, requestEndpoint,
-            log);
+        return BackendInfo.isRequestEndpointValueValid(config, requestEndpoint, log);
     }
 
     /**
@@ -165,92 +153,99 @@ export default class BackendInfo {
         log: RequestLogger,
     ) {
         if (objectLocationConstraint) {
-            if (BackendInfo.isValidLocationConstraint(config,
-                objectLocationConstraint, log)) {
+            if (BackendInfo.isValidLocationConstraint(config, objectLocationConstraint, log)) {
                 log.trace('objectLocationConstraint is valid');
                 return { isValid: true };
             }
             log.trace('objectLocationConstraint is invalid');
-            return { isValid: false, description: 'Object Location Error - ' +
-            `Your object location "${escapeForXml(objectLocationConstraint)}"` +
-            'is not  in your location config - Please update.' };
+            return {
+                isValid: false,
+                description:
+                    'Object Location Error - ' +
+                    `Your object location "${escapeForXml(objectLocationConstraint)}"` +
+                    ' is not in your location config - Please update.',
+            };
         }
         if (bucketLocationConstraint) {
-            if (BackendInfo.isValidLocationConstraint(config,
-                bucketLocationConstraint, log)) {
+            if (BackendInfo.isValidLocationConstraint(config, bucketLocationConstraint, log)) {
                 log.trace('bucketLocationConstraint is valid');
                 return { isValid: true };
             }
             log.trace('bucketLocationConstraint is invalid');
-            return { isValid: false, description: 'Bucket Location Error - ' +
-            `Your bucket location "${escapeForXml(bucketLocationConstraint)}"` +
-            ' is not in your location config - Please update.' };
+            return {
+                isValid: false,
+                description:
+                    'Bucket Location Error - ' +
+                    `Your bucket location "${escapeForXml(bucketLocationConstraint)}"` +
+                    ' is not in your location config - Please update.',
+            };
         }
-        const legacyLocationConstraint =
-        BackendInfo.getLegacyLocationConstraint(config);
+        const legacyLocationConstraint = BackendInfo.getLegacyLocationConstraint(config);
         if (legacyLocationConstraint) {
             log.trace('legacy location is valid');
             return { isValid: true, legacyLocationConstraint };
         }
-        if (!BackendInfo.isValidRequestEndpointOrBackend(config,
-            requestEndpoint, log)) {
-            return { isValid: false, description: 'Endpoint Location Error - ' +
-            `Your endpoint "${requestEndpoint}" is not in restEndpoints ` +
-            'in your config OR the default location constraint for request ' +
-            `endpoint "${escapeForXml(requestEndpoint)}" does not ` +
-            'match any config locationConstraint - Please update.' };
+        if (!BackendInfo.isValidRequestEndpointOrBackend(config, requestEndpoint, log)) {
+            return {
+                isValid: false,
+                description:
+                    'Endpoint Location Error - ' +
+                    `Your endpoint "${requestEndpoint}" is not in restEndpoints ` +
+                    'in your config OR the default location constraint for request ' +
+                    `endpoint "${escapeForXml(requestEndpoint)}" does not ` +
+                    'match any config locationConstraint - Please update.',
+            };
         }
-        if (BackendInfo.isRequestEndpointPresent(config, requestEndpoint,
-            log)) {
+        if (BackendInfo.isRequestEndpointPresent(config, requestEndpoint, log)) {
             return { isValid: true };
         }
         return { isValid: true, defaultedToDataBackend: true };
     }
 
     /**
-    * Return legacyLocationConstraint
-    * @param config CloudServer config
-    * @return legacyLocationConstraint;
-    */
+     * Return legacyLocationConstraint
+     * @param config CloudServer config
+     * @return legacyLocationConstraint;
+     */
     static getLegacyLocationConstraint(config: CloudServerConfig) {
         return legacyLocations.find(ll => config.locationConstraints[ll]);
     }
 
     /**
-    * Return objectLocationConstraint
-    * @return objectLocationConstraint;
-    */
+     * Return objectLocationConstraint
+     * @return objectLocationConstraint;
+     */
     getObjectLocationConstraint() {
         return this._objectLocationConstraint;
     }
 
     /**
-    * Return bucketLocationConstraint
-    * @return bucketLocationConstraint;
-    */
+     * Return bucketLocationConstraint
+     * @return bucketLocationConstraint;
+     */
     getBucketLocationConstraint() {
         return this._bucketLocationConstraint;
     }
 
     /**
-    * Return requestEndpoint
-    * @return requestEndpoint;
-    */
+     * Return requestEndpoint
+     * @return requestEndpoint;
+     */
     getRequestEndpoint() {
         return this._requestEndpoint;
     }
 
     /**
-    * Return locationConstraint that should be used with put request
-    * Order of priority is:
-    * (1) objectLocationConstraint,
-    * (2) bucketLocationConstraint,
-    * (3) legacyLocationConstraint,
-    * (4) default locationConstraint for requestEndpoint  if requestEndpoint
-    *     is listed in restEndpoints in config.json
-    * (5) default data backend
-    * @return locationConstraint;
-    */
+     * Return locationConstraint that should be used with put request
+     * Order of priority is:
+     * (1) objectLocationConstraint,
+     * (2) bucketLocationConstraint,
+     * (3) legacyLocationConstraint,
+     * (4) default locationConstraint for requestEndpoint  if requestEndpoint
+     *     is listed in restEndpoints in config.json
+     * (5) default data backend
+     * @return locationConstraint;
+     */
     getControllingLocationConstraint(): string {
         const objectLC = this.getObjectLocationConstraint();
         const bucketLC = this.getBucketLocationConstraint();

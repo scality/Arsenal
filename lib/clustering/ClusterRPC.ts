@@ -114,13 +114,19 @@ type MarshalledResultObject = {
 
 type RPCCommandResultMessage = RPCMessage<'cluster-rpc:commandResult', MarshalledResultObject>;
 
-type RPCCommandResultsMessage = RPCMessage<'cluster-rpc:commandResults', {
-    results: MarshalledResultObject[];
-}>;
+type RPCCommandResultsMessage = RPCMessage<
+    'cluster-rpc:commandResults',
+    {
+        results: MarshalledResultObject[];
+    }
+>;
 
-type RPCCommandErrorMessage = RPCMessage<'cluster-rpc:commandError', {
-    error: string;
-}>;
+type RPCCommandErrorMessage = RPCMessage<
+    'cluster-rpc:commandError',
+    {
+        error: string;
+    }
+>;
 
 interface RPCSetupOptions {
     /**
@@ -130,7 +136,7 @@ interface RPCSetupOptions {
      * Use this to propagate werelogs config to arsenal's ClusterRPC.
      */
     werelogsConfig?: Parameters<typeof werelogs.configure>[0];
-};
+}
 
 /**
  * In primary: store worker IDs that are waiting to be dispatched
@@ -139,7 +145,6 @@ interface RPCSetupOptions {
 const uidsToWorkerId: {
     [index: string]: number;
 } = {};
-
 
 /**
  * In primary: store worker responses for commands in progress as a
@@ -166,12 +171,13 @@ const uidsToCommandPromise: {
     [index: string]: CommandPromise;
 } = {};
 
-
 function _isRpcMessage(message) {
-    return (message !== null &&
-            typeof message === 'object' &&
-            typeof message.type === 'string' &&
-            message.type.startsWith('cluster-rpc:'));
+    return (
+        message !== null &&
+        typeof message === 'object' &&
+        typeof message.type === 'string' &&
+        message.type.startsWith('cluster-rpc:')
+    );
 }
 
 /**
@@ -242,7 +248,7 @@ export async function sendWorkerCommand(
     toHandler: string,
     uids: string,
     payload: object,
-    timeoutMs: number = 60000
+    timeoutMs: number = 60000,
 ) {
     if (typeof uids !== 'string') {
         rpcLogger.error('missing or invalid "uids" field', { uids });
@@ -281,12 +287,7 @@ export function getPendingCommandsCount() {
     return Object.keys(uidsToCommandPromise).length;
 }
 
-
-function _dispatchCommandResultsToWorker(
-    worker: Worker,
-    uids: string,
-    resultsArray: MarshalledResultObject[]
-): void {
+function _dispatchCommandResultsToWorker(worker: Worker, uids: string, resultsArray: MarshalledResultObject[]): void {
     const message: RPCCommandResultsMessage = {
         type: 'cluster-rpc:commandResults',
         uids,
@@ -297,11 +298,7 @@ function _dispatchCommandResultsToWorker(
     worker.send(message);
 }
 
-function _dispatchCommandErrorToWorker(
-    worker: Worker,
-    uids: string,
-    error: Error,
-): void {
+function _dispatchCommandErrorToWorker(worker: Worker, uids: string, error: Error): void {
     const message: RPCCommandErrorMessage = {
         type: 'cluster-rpc:commandError',
         uids,
@@ -316,7 +313,7 @@ function _sendPrimaryCommandResult(
     worker: Worker,
     uids: string,
     error: (Error & { code?: number }) | null | undefined,
-    result?: any
+    result?: any,
 ): void {
     const message: RPCCommandResultsMessage = {
         type: 'cluster-rpc:commandResults',
@@ -332,13 +329,14 @@ function _handlePrimaryCommandMessage(
     fromWorker: Worker,
     logger: any,
     message: RPCCommandMessage,
-    handlers?: PrimaryHandlersMap
+    handlers?: PrimaryHandlersMap,
 ): void {
     const { toWorkers, toHandler, uids, payload } = message;
     if (toWorkers === '*') {
         if (uidsToWorkerId[uids] !== undefined) {
             logger.warn('new command already has a waiting worker with same uids', {
-                uids, workerId: uidsToWorkerId[uids],
+                uids,
+                workerId: uidsToWorkerId[uids],
             });
             return undefined;
         }
@@ -351,7 +349,9 @@ function _handlePrimaryCommandMessage(
 
         for (const [workerId, worker] of Object.entries(cluster.workers || {})) {
             logger.debug('sending command message to worker', {
-                workerId, toHandler, payload,
+                workerId,
+                toHandler,
+                payload,
             });
             if (worker) {
                 worker.send(message);
@@ -379,11 +379,7 @@ function _handlePrimaryCommandMessage(
     return undefined;
 }
 
-function _handlePrimaryCommandResultMessage(
-    fromWorkerId: number,
-    logger: any,
-    message: RPCCommandResultMessage
-): void {
+function _handlePrimaryCommandResultMessage(fromWorkerId: number, logger: any, message: RPCCommandResultMessage): void {
     const { uids, payload } = message;
     const commandResults = uidsToCommandResults[uids];
     if (!commandResults) {
@@ -411,7 +407,7 @@ function _handlePrimaryCommandResultMessage(
     const commandResultsArray = Object.values(commandResults);
     if (commandResultsArray.every(response => response !== null)) {
         logger.debug('all workers responded to command', { uids });
-        const completeCommandResultsArray = <MarshalledResultObject[]> commandResultsArray;
+        const completeCommandResultsArray = <MarshalledResultObject[]>commandResultsArray;
         const toWorkerId = uidsToWorkerId[uids];
         const toWorker = cluster.workers?.[toWorkerId];
 
@@ -420,7 +416,8 @@ function _handlePrimaryCommandResultMessage(
 
         if (!toWorker) {
             logger.warn('worker shut down while its command was executing', {
-                workerId: toWorkerId, uids,
+                workerId: toWorkerId,
+                uids,
             });
             return undefined;
         }
@@ -433,12 +430,13 @@ function _handlePrimaryCommandResultMessage(
 function _handlePrimaryMessage(
     fromWorker: Worker,
     message: RPCCommandMessage | RPCCommandResultMessage,
-    handlers?: PrimaryHandlersMap
+    handlers?: PrimaryHandlersMap,
 ): void {
     const { type: messageType, uids } = message;
     const logger = rpcLogger.newRequestLoggerFromSerializedUids(uids);
     logger.debug('primary received message from worker', {
-        workerId: fromWorker?.id, rpcMessage: message,
+        workerId: fromWorker?.id,
+        rpcMessage: message,
     });
     if (messageType === 'cluster-rpc:command') {
         return _handlePrimaryCommandMessage(fromWorker, logger, message, handlers);
@@ -447,16 +445,14 @@ function _handlePrimaryMessage(
         return _handlePrimaryCommandResultMessage(fromWorker?.id, logger, message);
     }
     logger.error('unsupported message type', {
-        workerId: fromWorker?.id, messageType, uids,
+        workerId: fromWorker?.id,
+        messageType,
+        uids,
     });
     return undefined;
 }
 
-function _sendWorkerCommandResult(
-    uids: string,
-    error: Error | null | undefined,
-    result?: any
-): void {
+function _sendWorkerCommandResult(uids: string, error: Error | null | undefined, result?: any): void {
     const message: RPCCommandResultMessage = {
         type: 'cluster-rpc:commandResult',
         uids,
@@ -468,11 +464,7 @@ function _sendWorkerCommandResult(
     process.send?.(message);
 }
 
-function _handleWorkerCommandMessage(
-    logger: any,
-    message: RPCCommandMessage,
-    handlers: HandlersMap
-): void {
+function _handleWorkerCommandMessage(logger: any, message: RPCCommandMessage, handlers: HandlersMap): void {
     const { toHandler, uids, payload } = message;
     const cb: HandlerCallback = (err, result) => _sendWorkerCommandResult(uids, err, result);
 
@@ -485,10 +477,7 @@ function _handleWorkerCommandMessage(
     return cb(errors.NotImplemented);
 }
 
-function _handleWorkerCommandResultsMessage(
-    logger: any,
-    message: RPCCommandResultsMessage,
-): void {
+function _handleWorkerCommandResultsMessage(logger: any, message: RPCCommandResultsMessage): void {
     const { uids, payload } = message;
     const { results } = payload;
     const commandPromise: CommandPromise = uidsToCommandPromise[uids];
@@ -521,10 +510,7 @@ function _handleWorkerCommandResultsMessage(
     return commandPromise.resolve(unmarshalledResults);
 }
 
-function _handleWorkerCommandErrorMessage(
-    logger: any,
-    message: RPCCommandErrorMessage,
-): void {
+function _handleWorkerCommandErrorMessage(logger: any, message: RPCCommandErrorMessage): void {
     const { uids, payload } = message;
     const { error } = payload;
     const commandPromise: CommandPromise = uidsToCommandPromise[uids];
@@ -542,18 +528,19 @@ function _handleWorkerCommandErrorMessage(
     } else {
         commandError = new Error(error);
     }
-    return commandPromise.reject(<Error> commandError);
+    return commandPromise.reject(<Error>commandError);
 }
 
 function _handleWorkerMessage(
     message: RPCCommandMessage | RPCCommandResultsMessage | RPCCommandErrorMessage,
-    handlers: HandlersMap
+    handlers: HandlersMap,
 ): void {
     const { type: messageType, uids } = message;
     const workerId = cluster.worker?.id;
     const logger = rpcLogger.newRequestLoggerFromSerializedUids(uids);
     logger.debug('worker received message from primary', {
-        workerId, rpcMessage: message,
+        workerId,
+        rpcMessage: message,
     });
     if (messageType === 'cluster-rpc:command') {
         return _handleWorkerCommandMessage(logger, message, handlers);
@@ -565,7 +552,8 @@ function _handleWorkerMessage(
         return _handleWorkerCommandErrorMessage(logger, message);
     }
     logger.error('unsupported message type', {
-        workerId, messageType,
+        workerId,
+        messageType,
     });
     return undefined;
 }

@@ -27,11 +27,12 @@ export function check(
     // Check to make sure timestamp is within 15 minutes of current time
     const timestamp = Date.parse(headers['x-amz-date'] || headers.date || '');
     if (!timestamp) {
-        log.debug('missing or invalid date header',
-            { method: 'auth/v2/headerAuthCheck.check' });
-        return { err: errorInstances.AccessDenied.
-            customizeDescription('Authentication requires a valid Date or ' +
-          'x-amz-date header') };
+        log.debug('missing or invalid date header', { method: 'auth/v2/headerAuthCheck.check' });
+        return {
+            err: errorInstances.AccessDenied.customizeDescription(
+                'Authentication requires a valid Date or x-amz-date header',
+            ),
+        };
     }
 
     const err = checkRequestExpiry(timestamp, log);
@@ -52,8 +53,7 @@ export function check(
         log.debug('invalid authorization header', { authInfo });
         return { err: errors.InvalidArgument };
     }
-    const accessKey = semicolonIndex > 4 ?
-        authInfo.substring(4, semicolonIndex).trim() : undefined;
+    const accessKey = semicolonIndex > 4 ? authInfo.substring(4, semicolonIndex).trim() : undefined;
     if (typeof accessKey !== 'string' || accessKey.length === 0) {
         log.trace('invalid authorization header', { authInfo });
         return { err: errors.MissingSecurityHeader };
