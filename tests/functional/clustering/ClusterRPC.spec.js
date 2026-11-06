@@ -17,11 +17,7 @@ let testServer = null;
  * from the client side.
  */
 function startTestServer(done) {
-    testServer = spawn('node', [
-        `${__dirname}/ClusterRPC-test-server.js`,
-        TEST_SERVER_PORT,
-        NB_WORKERS,
-    ]);
+    testServer = spawn('node', [`${__dirname}/ClusterRPC-test-server.js`, TEST_SERVER_PORT, NB_WORKERS]);
     // gather server stderr to display test failures info
     testServer.stdout.pipe(process.stdout);
     testServer.stderr.pipe(process.stderr);
@@ -70,10 +66,9 @@ function handleAssertionError(responseBody) {
 function runTest(testUrl, cb) {
     const req = http.request(`http://localhost:${TEST_SERVER_PORT}/${testUrl}`, res => {
         let responseBody = '';
-        res
-            .on('data', (chunk) => {
-                responseBody += chunk;
-            })
+        res.on('data', chunk => {
+            responseBody += chunk;
+        })
             .on('end', () => {
                 try {
                     handleAssertionError(responseBody);
@@ -88,9 +83,7 @@ function runTest(testUrl, cb) {
             })
             .on('error', err => cb(err));
     });
-    req
-        .end()
-        .on('error', err => cb(err));
+    req.end().on('error', err => cb(err));
 }
 
 describe('ClusterRPC', () => {
@@ -117,7 +110,7 @@ describe('ClusterRPC', () => {
         runTest('duplicate-uids', done);
     });
 
-    it('should timeout if one or more workers don\'t respond in allocated time', done => {
+    it("should timeout if one or more workers don't respond in allocated time", done => {
         runTest('worker-timeout', done);
     });
 

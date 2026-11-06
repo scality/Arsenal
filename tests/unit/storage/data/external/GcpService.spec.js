@@ -563,7 +563,7 @@ describe('GcpService helper behavior', () => {
                 Metadata: {
                     'aws-tag-owner': 'arsenal',
                     'aws-tag-color': 'blue',
-                    misc: 'ignored',
+                    'misc': 'ignored',
                 },
             }),
         );
