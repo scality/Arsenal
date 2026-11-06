@@ -557,7 +557,7 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, policy, 'Allow');
             });
 
-            it('should be neutral for DateEquals condition with ISO dateif do not meet condition', () => {
+            it('should be neutral for DateEquals condition with ISO date if do not meet condition', () => {
                 policy.Statement.Condition = { DateEquals: { 'aws:TokenIssueTime': '2016-06-30T19:42:23.531Z' } };
                 let rcModifiers = { _tokenIssueTime: '2016-06-30T19:42:23.431Z' };
                 check(requestContext, rcModifiers, policy, 'Neutral');
@@ -565,7 +565,7 @@ describe('policyEvaluator', () => {
                 check(requestContext, rcModifiers, policy, 'Neutral');
             });
 
-            it('should be neutral for DateEquals condition with epoch dateif do not meet condition', () => {
+            it('should be neutral for DateEquals condition with epoch date if do not meet condition', () => {
                 policy.Statement.Condition = { 'aws:EpochTime': '1467315743531' };
                 const rcModifiers = { _tokenIssueTime: '1467315743431' };
                 check(requestContext, rcModifiers, policy, 'Neutral');
@@ -586,7 +586,7 @@ describe('policyEvaluator', () => {
                 clock.uninstall();
             });
 
-            it('should be neutral for DateNotEquals condition with ISO timeif do not meet condition', () => {
+            it('should be neutral for DateNotEquals condition with ISO time if do not meet condition', () => {
                 policy.Statement.Condition = { DateNotEquals: { 'aws:TokenIssueTime': '2016-06-30T19:42:23.431Z' } };
                 let rcModifiers = { _tokenIssueTime: '2016-06-30T19:42:23.431Z' };
                 check(requestContext, rcModifiers, policy, 'Neutral');
@@ -601,7 +601,7 @@ describe('policyEvaluator', () => {
                 clock.uninstall();
             });
 
-            it('should allow access for DateNotEquals condition with ISO timeif meet condition', () => {
+            it('should allow access for DateNotEquals condition with ISO time if meet condition', () => {
                 policy.Statement.Condition = { DateNotEquals: { 'aws:TokenIssueTime': '2016-06-30T19:42:23.531Z' } };
                 let rcModifiers = { _tokenIssueTime: '2016-06-30T19:42:23.431Z' };
                 check(requestContext, rcModifiers, policy, 'Allow');

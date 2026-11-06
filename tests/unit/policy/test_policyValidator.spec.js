@@ -669,7 +669,7 @@ const resourceTests = [
     },
 ];
 
-describe('User policies validation - Statement::Resource_blockStatement::NotResource_block', () => {
+describe('User policies validation - Statement::Resource_block Statement::NotResource_block', () => {
     beforeEach(() => {
         userPolicy.Statement.Resource = undefined;
         userPolicy.Statement.NotResource = undefined;
