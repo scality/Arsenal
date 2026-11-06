@@ -27,9 +27,8 @@ describe('BackendInfo class', () => {
             assert(res.description.indexOf('Object Location Error') > -1);
         });
         it(
-            'should return object with applicable error if ' +
-                'bucketLocationConstraint is invalid and no ' +
-                'objectLocationConstraint was provided',
+            'should return object with applicable error if bucketLocationConstraint ' +
+                'is invalid and no objectLocationConstraint was provided',
             () => {
                 const res = BackendInfo.controllingBackendParam(dummyConfig, undefined, 'notValid', '127.0.0.1', log);
                 assert.equal(res.isValid, false);
@@ -37,9 +36,8 @@ describe('BackendInfo class', () => {
             },
         );
         it(
-            'If requestEndpoint is invalid, no objectLocationConstraint or ' +
-                'bucketLocationConstraint was provided, data backend is set to ' +
-                '"scality" should return "object with applicable error"',
+            'If requestEndpoint is invalid, no objectLocationConstraint or bucketLocationConstraint was ' +
+                'provided, data backend is set to "scality" should return "object with applicable error"',
             () => {
                 dummyConfig.backends.data = 'scality';
                 const res = BackendInfo.controllingBackendParam(dummyConfig, undefined, undefined, 'notValid', log);
@@ -49,9 +47,8 @@ describe('BackendInfo class', () => {
         );
 
         it(
-            'If requestEndpoint is invalid, no objectLocationConstraint or ' +
-                'bucketLocationConstraint was provided, data backend is set to ' +
-                '"scality" should return isValid if legacy location constraint',
+            'If requestEndpoint is invalid, no objectLocationConstraint or bucketLocationConstraint was ' +
+                'provided, data backend is set to "scality" should return isValid if legacy location constraint',
             () => {
                 dummyLegacyConfig.backends.data = 'scality';
                 const res = BackendInfo.controllingBackendParam(
@@ -67,9 +64,8 @@ describe('BackendInfo class', () => {
 
         it(
             'If requestEndpoint is invalid, no objectLocationConstraint or ' +
-                'bucketLocationConstraint was provided and data backend is set to ' +
-                '"multiple" and legacy location constraint should return ' +
-                '"object with applicable error"',
+                'bucketLocationConstraint was provided and data backend is set to "multiple" ' +
+                'and legacy location constraint should return "object with applicable error"',
             () => {
                 dummyConfig.backends.data = 'multiple';
                 const res = BackendInfo.controllingBackendParam(dummyConfig, undefined, undefined, 'notValid', log);
@@ -80,9 +76,8 @@ describe('BackendInfo class', () => {
 
         it(
             'If requestEndpoint is invalid, no objectLocationConstraint or ' +
-                'bucketLocationConstraint was provided and data backend is set to ' +
-                '"multiple" and legacy location constraint should return isValid if ' +
-                'legacy location constraint',
+                'bucketLocationConstraint was provided and data backend is set to "multiple" and ' +
+                'legacy location constraint should return isValid if legacy location constraint',
             () => {
                 dummyLegacyConfig.backends.data = 'multiple';
                 const res = BackendInfo.controllingBackendParam(

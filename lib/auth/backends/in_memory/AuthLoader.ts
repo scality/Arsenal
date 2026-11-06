@@ -97,12 +97,10 @@ export default class AuthLoader {
         if (account.arn.startsWith('aws:')) {
             const { name: accountName, arn: accountArn } = account;
             this.#log.error(
-                'account must have a valid AWS ARN, legacy examples ' +
-                    "starting with 'aws:' are not supported anymore. " +
-                    'Please convert to a proper account entry (see ' +
-                    'examples at https://github.com/scality/cloudserver/blob/' +
-                    'master/conf/authdata.json). Also note that support ' +
-                    'for account users has been dropped.',
+                "account must have a valid AWS ARN, legacy examples starting with 'aws:' are " +
+                    'not supported anymore. Please convert to a proper account entry (see examples ' +
+                    'at https://github.com/scality/cloudserver/blob/master/conf/authdata.json). ' +
+                    'Also note that support for account users has been dropped.',
                 { accountName, accountArn, filePath },
             );
             return false;
@@ -114,10 +112,8 @@ export default class AuthLoader {
         if (account.users) {
             const { name: accountName, arn: accountArn } = account;
             this.#log.error(
-                'support for account users has been dropped, consider ' +
-                    'turning users into account entries (see examples at ' +
-                    'https://github.com/scality/cloudserver/blob/HEAD/conf/' +
-                    'authdata.json)',
+                'support for account users has been dropped, consider turning users into account entries ' +
+                    '(see examples at https://github.com/scality/cloudserver/blob/HEAD/conf/authdata.json)',
                 { accountName, accountArn, filePath },
             );
             return false;

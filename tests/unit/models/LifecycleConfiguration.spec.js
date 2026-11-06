@@ -1011,8 +1011,7 @@ describe('LifecycleConfiguration', () => {
                 rule: getParsedXML().LifecycleConfiguration.Rule[0],
             });
             const msg =
-                "Found mixed 'Date' and 'Days' based Expiration and " +
-                "Transition actions in lifecycle rule for prefix ''";
+                "Found mixed 'Date' and 'Days' based Expiration and Transition actions in lifecycle rule for prefix ''";
             expect(error.is.InvalidRequest).toBeTruthy();
             expect(error.description).toEqual(msg);
         });
@@ -1169,10 +1168,8 @@ describe('LifecycleConfiguration', () => {
             rule.Transition[1].Days[0] = '0';
             const result = lifecycleConfiguration._parseTransition(rule);
             const msg =
-                "'Days' in the 'Transition' action for StorageClass " +
-                "'a' for prefix 'prefix' must be at least one day apart from " +
-                "prefix 'prefix' in the 'Transition' action for StorageClass " +
-                "'b'";
+                "'Days' in the 'Transition' action for StorageClass 'a' for prefix 'prefix' must be at " +
+                "least one day apart from prefix 'prefix' in the 'Transition' action for StorageClass 'b'";
             expect(result.error.is.InvalidArgument).toBeTruthy();
             expect(result.error.description).toEqual(msg);
         });
@@ -1195,10 +1192,8 @@ describe('LifecycleConfiguration', () => {
             };
             const result = lifecycleConfiguration._parseTransition(rule);
             const msg =
-                "'Date' in the 'Transition' action for StorageClass " +
-                "'a' for prefix 'prefix' must be at least one day apart from " +
-                "prefix 'prefix' in the 'Transition' action for StorageClass " +
-                "'b'";
+                "'Date' in the 'Transition' action for StorageClass 'a' for prefix 'prefix' must be at " +
+                "least one day apart from prefix 'prefix' in the 'Transition' action for StorageClass 'b'";
             expect(result.error.is.InvalidArgument).toBeTruthy();
             expect(result.error.description).toEqual(msg);
         });

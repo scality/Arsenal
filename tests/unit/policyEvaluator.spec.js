@@ -104,9 +104,8 @@ describe('policyEvaluator', () => {
             );
 
             it(
-                'should be neutral under a policy with a variable in the ' +
-                    'resource if the variable value is not supplied by the ' +
-                    'requestContext',
+                'should be neutral under a policy with a variable in the resource ' +
+                    'if the variable value is not supplied by the requestContext',
                 () => {
                     const rcModifiers = {
                         _apiMethod: 'objectPut',
@@ -616,8 +615,7 @@ describe('policyEvaluator', () => {
             });
 
             it(
-                'should be neutral for DateLessThan token issue time ' +
-                    'condition with ISO time if do not meet condition',
+                'should be neutral for DateLessThan token issue time condition with ISO time if do not meet condition',
                 () => {
                     policy.Statement.Condition = { DateLessThan: { 'aws:TokenIssueTime': '2016-06-30T19:42:23.431Z' } };
                     let rcModifiers = { _tokenIssueTime: '2016-06-30T19:42:23.531Z' };
@@ -633,8 +631,7 @@ describe('policyEvaluator', () => {
             });
 
             it(
-                'should be neutral for DateLessThan current time condition ' +
-                    'with epoch time if do not meet condition',
+                'should be neutral for DateLessThan current time condition with epoch time if do not meet condition',
                 () => {
                     policy.Statement.Condition = { DateLessThan: { 'aws:EpochTime': '1467315743431' } };
                     check(requestContext, {}, policy, 'Neutral');
@@ -695,8 +692,7 @@ describe('policyEvaluator', () => {
             });
 
             it(
-                'should allow access for DateLessThanEquals current time ' +
-                    'condition with ISO time if meet condition',
+                'should allow access for DateLessThanEquals current time condition with ISO time if meet condition',
                 () => {
                     policy.Statement.Condition = {
                         DateLessThanEquals: { 'aws:CurrentTime': '2099-06-30T19:42:23.431Z' },
@@ -714,8 +710,7 @@ describe('policyEvaluator', () => {
             });
 
             it(
-                'should be neutral for DateGreaterThan current time ' +
-                    'condition with ISO time if do not meet condition',
+                'should be neutral for DateGreaterThan current time condition with ISO time if do not meet condition',
                 () => {
                     policy.Statement.Condition = { DateGreaterThan: { 'aws:CurrentTime': '2099-06-30T19:42:23.431Z' } };
                     check(requestContext, {}, policy, 'Neutral');
@@ -734,8 +729,7 @@ describe('policyEvaluator', () => {
             });
 
             it(
-                'should be neutral for DateGreaterThanEquals token condition ' +
-                    'with ISO time if do not meet condition',
+                'should be neutral for DateGreaterThanEquals token condition with ISO time if do not meet condition',
                 () => {
                     policy.Statement.Condition = {
                         DateGreaterThanEquals: { 'aws:TokenIssueTime': '2016-06-30T19:42:23.431Z' },
@@ -765,8 +759,7 @@ describe('policyEvaluator', () => {
             });
 
             it(
-                'should allow access for DateGreaterThanEquals current ' +
-                    'time condition with ISO time if meet condition',
+                'should allow access for DateGreaterThanEquals current time condition with ISO time if meet condition',
                 () => {
                     policy.Statement.Condition = {
                         DateGreaterThanEquals: { 'aws:CurrentTime': '2016-06-30T19:42:23.431Z' },
@@ -842,8 +835,7 @@ describe('policyEvaluator', () => {
             });
 
             it(
-                'should be neutral for IpAddress condition ' +
-                    'if do not meet condition even if ipv4 address is mapped',
+                'should be neutral for IpAddress condition if do not meet condition even if ipv4 address is mapped',
                 () => {
                     policy.Statement.Condition = { IpAddress: { 'aws:SourceIp': '203.0.113.0/24' } };
                     const rcModifiers = { _requesterIp: '::ffff:203.0.114.255' };
@@ -892,8 +884,7 @@ describe('policyEvaluator', () => {
             );
 
             it(
-                'should allow access for NotIpAddress condition ' +
-                    'if meet condition even if ipv4 mapped address is used',
+                'should allow access for NotIpAddress condition if meet condition even if ipv4 mapped address is used',
                 () => {
                     policy.Statement.Condition = { NotIpAddress: { 'aws:SourceIp': '203.0.113.0/24' } };
                     const rcModifiers = { _requesterIp: '::ffff:203.0.112.254' };
@@ -1059,9 +1050,8 @@ describe('policyEvaluator', () => {
             });
 
             it(
-                'should be neutral with multiple operator conditions ' +
-                    'and multiple conditions under an operator if do not pass a ' +
-                    'condition',
+                'should be neutral with multiple operator conditions and ' +
+                    'multiple conditions under an operator if do not pass a condition',
                 () => {
                     policy.Statement.Action = 's3:ListBucket';
                     policy.Statement.Condition = {
@@ -1702,8 +1692,7 @@ describe('policyEvaluator for utapi', () => {
     });
 
     it(
-        'should be neutral on access to list metrics when accountid in ' +
-            'policy differs from accountid in requestContext',
+        'should be neutral on access to list metrics when accountid in policy differs from accountid in requestContext',
         () => {
             const requestContext = new RequestContext(
                 {},
@@ -1724,8 +1713,7 @@ describe('policyEvaluator for utapi', () => {
 describe('handleWildcards', () => {
     it(
         'should convert a string to a regEx string that will match * as ' +
-            'unlimited of any character and  will match ? as any single ' +
-            'character',
+            'unlimited of any character and  will match ? as any single character',
         () => {
             const result = handleWildcards('lsdkfj?lk*');
             assert.deepStrictEqual(result, '^lsdkfj.{1}lk.*?$');
@@ -1733,9 +1721,8 @@ describe('handleWildcards', () => {
     );
 
     it(
-        'should convert a string to a regEx string that matches ${*} as ' +
-            'the literal character *, matches ${?} as the literal character ? ' +
-            'and ${$} as the literal character $',
+        'should convert a string to a regEx string that matches ${*} as the literal character ' +
+            '*, matches ${?} as the literal character ? and ${$} as the literal character $',
         () => {
             const result = handleWildcards('abc${*}abc${?}abc${$}');
             assert.deepStrictEqual(result, '^abc\\*abc\\?abc\\$$');

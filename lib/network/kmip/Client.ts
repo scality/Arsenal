@@ -222,9 +222,8 @@ function _queryOperationsAndObjects(client: any, logger: werelogs.Logger, cb: an
                  * they announce to support.
                  */
                 logger.warn(
-                    'KMIP::queryOperationsAndObjects: ' +
-                        'The KMIP Server announces that it ' +
-                        'does not support all of the required features',
+                    'KMIP::queryOperationsAndObjects: The KMIP Server announces ' +
+                        'that it does not support all of the required features',
                     {
                         vendorIdentification: client.vendorIdentification,
                         serverInformation: client.serverInformation,
