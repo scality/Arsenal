@@ -1286,7 +1286,7 @@ class MongoClientInterface {
                         return cb(err);
                     }
 
-                    MongoUtils.serialize(mstObjVal);
+                    MongoUtils.serialize(mstObjVal!);
                     const ops: AnyBulkWriteOperation<ObjectMetastoreDocument>[] = [];
                     // filter to get master
                     const filter = {
@@ -1562,6 +1562,7 @@ class MongoClientInterface {
         cb: ArsenalCallback<string | void>,
     ): void {
         MongoUtils.serialize(objVal);
+        stampActiveTraceContext(objVal);
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
         const _params = Object.assign({}, params);
         return this.getBucketVFormat(bucketName, log, (err, vFormat?) => {
