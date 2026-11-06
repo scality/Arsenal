@@ -127,7 +127,7 @@ export default class Client implements KMSInterface {
         logger.debug('AWS KMS: creating master encryption key');
         this.client.send(new CreateKeyCommand({})).then(data => {
             const keyMetadata = data?.KeyMetadata;
-            logger.debug("AWS KMS: master encryption key created", { KeyMetadata: keyMetadata });
+            logger.debug('AWS KMS: master encryption key created', { KeyMetadata: keyMetadata });
             let keyId: string;
             if (this.noAwsArn) {
                 keyId = keyMetadata?.KeyId || '';
@@ -154,14 +154,14 @@ export default class Client implements KMSInterface {
     // To achieve this, Vault will call deleteMasterKey before deleting the account.
     destroyBucketKey(bucketKeyIdOrArn: string, logger: werelogs.Logger, cb: (err: Error | null) => void): void {
         const bucketKeyId = getKeyIdFromArn(bucketKeyIdOrArn);
-        logger.debug("AWS KMS: deleting encryption key managed at the bucket level",
+        logger.debug('AWS KMS: deleting encryption key managed at the bucket level',
             { bucketKeyId, bucketKeyIdOrArn });
         this.deleteMasterKey(bucketKeyId, logger, cb);
     }
 
     deleteMasterKey(masterKeyIdOrArn: string, logger: werelogs.Logger, cb: (err: Error | null) => void): void {
         const masterKeyId = getKeyIdFromArn(masterKeyIdOrArn);
-        logger.debug("AWS KMS: deleting master encryption key", { masterKeyId, masterKeyIdOrArn });
+        logger.debug('AWS KMS: deleting master encryption key', { masterKeyId, masterKeyIdOrArn });
         const params = {
             KeyId: masterKeyId,
             PendingWindowInDays: 7,
@@ -195,7 +195,7 @@ export default class Client implements KMSInterface {
         cb: (err: Error | null, plainTextDataKey?: Buffer, cipheredDataKey?: Buffer) => void
     ): void {
         const masterKeyId = getKeyIdFromArn(masterKeyIdOrArn);
-        logger.debug("AWS KMS: generating data key", { cryptoScheme, masterKeyId, masterKeyIdOrArn });
+        logger.debug('AWS KMS: generating data key', { cryptoScheme, masterKeyId, masterKeyIdOrArn });
         assert.strictEqual(cryptoScheme, 1);
         const params = {
             KeyId: masterKeyId,
@@ -203,8 +203,8 @@ export default class Client implements KMSInterface {
         };
         this.client.send(new GenerateDataKeyCommand(params)).then(data => {
             if (!data) {
-                const error = arsenalErrorAWSKMS("failed to generate data key: empty response");
-                logger.error("AWS KMS: failed to generate data key: empty response");
+                const error = arsenalErrorAWSKMS('failed to generate data key: empty response');
+                logger.error('AWS KMS: failed to generate data key: empty response');
                 cb(error);
                 return;
             }
@@ -227,7 +227,7 @@ export default class Client implements KMSInterface {
     ): void {
         const masterKeyId = getKeyIdFromArn(masterKeyIdOrArn);
 
-        logger.debug("AWS KMS: ciphering data key", { cryptoScheme, masterKeyId, masterKeyIdOrArn });
+        logger.debug('AWS KMS: ciphering data key', { cryptoScheme, masterKeyId, masterKeyIdOrArn });
         assert.strictEqual(cryptoScheme, 1);
 
         const params = {
@@ -237,8 +237,8 @@ export default class Client implements KMSInterface {
 
         this.client.send(new EncryptCommand(params)).then(data => {
             if (!data) {
-                const error = arsenalErrorAWSKMS("failed to cipher data key: empty response");
-                logger.error("AWS KMS: failed to cipher data key: empty response");
+                const error = arsenalErrorAWSKMS('failed to cipher data key: empty response');
+                logger.error('AWS KMS: failed to cipher data key: empty response');
                 cb(error);
                 return;
             }
@@ -261,7 +261,7 @@ export default class Client implements KMSInterface {
     ): void {
         const masterKeyId = getKeyIdFromArn(masterKeyIdOrArn);
 
-        logger.debug("AWS KMS: deciphering data key", { cryptoScheme, masterKeyId, masterKeyIdOrArn });
+        logger.debug('AWS KMS: deciphering data key', { cryptoScheme, masterKeyId, masterKeyIdOrArn });
         assert.strictEqual(cryptoScheme, 1);
 
         const params = {
@@ -270,8 +270,8 @@ export default class Client implements KMSInterface {
 
         this.client.send(new DecryptCommand(params)).then(data => {
             if (!data) {
-                const error = arsenalErrorAWSKMS("failed to decipher data key: empty response");
-                logger.error("AWS KMS: failed to decipher data key: empty response");
+                const error = arsenalErrorAWSKMS('failed to decipher data key: empty response');
+                logger.error('AWS KMS: failed to decipher data key: empty response');
                 cb(error);
                 return;
             }

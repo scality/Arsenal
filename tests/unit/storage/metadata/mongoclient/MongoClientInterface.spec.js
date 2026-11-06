@@ -1324,7 +1324,7 @@ describe('MongoClientInterface, putObjectVerCase4', () => {
         );
 
         assert(result, 'Expected result on success');
-        assert.strictEqual(result, `{"versionId": "undefined"}`, 'Expected versionId in result');
+        assert.strictEqual(result, '{"versionId": "undefined"}', 'Expected versionId in result');
         assert(updateOneStub.calledOnce, 'Expected updateOne to be called');
         assert(bulkWriteStub.calledOnce, 'Expected bulkWrite to be called');
         const bulkOps = bulkWriteStub.firstCall.args[0];

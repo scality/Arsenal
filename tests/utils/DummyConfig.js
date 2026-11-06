@@ -112,24 +112,24 @@ class DummyConfig extends EventEmitter {
                 },
             },
             'crr': {
-                type: "crr",
-                locationType: "location-scality-crr-v1",
-                objectId: "5899fb52-42da-11f0-a734-7e333cd8c777",
+                type: 'crr',
+                locationType: 'location-scality-crr-v1',
+                objectId: '5899fb52-42da-11f0-a734-7e333cd8c777',
                 legacyAwsBehavior: false,
                 isTransient: false,
                 isCold: false,
                 isCRR: true,
                 details: {
                     servers: [
-                        "s3.workloadplane.scality.local:80"
+                        's3.workloadplane.scality.local:80'
                     ],
                     sts: {
-                        accessKey: "VNZGSEHBFKZYN57GB8WT",
-                        host: "sts.workloadplane.scality.local",
-                        port: "80",
-                        secretKey: "7YYFe2bYMVa7r/IsiAfqnSwvvDsz8PrcwHpQcmwX"
+                        accessKey: 'VNZGSEHBFKZYN57GB8WT',
+                        host: 'sts.workloadplane.scality.local',
+                        port: '80',
+                        secretKey: '7YYFe2bYMVa7r/IsiAfqnSwvvDsz8PrcwHpQcmwX'
                     },
-                    transport: "http"
+                    transport: 'http'
                 },
             },
         };
@@ -169,7 +169,7 @@ class DummyConfig extends EventEmitter {
         this.outboundProxy = {};
         this.managementAgent = { host: 'localhost', port: 8010 };
         this.externalBackends = {
-            // eslint-disable-next-line camelcase
+             
             aws_s3: {
                 httpAgent: {
                     keepAlive: false,

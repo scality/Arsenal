@@ -88,7 +88,7 @@ describe('Auth Backend: Chain Backend', () => {
         ]],
     ].forEach(([msg, input]) => it(msg, () => {
         assert.throws(() => {
-            new ChainBackend('chain', input); // eslint-disable-line no-new
+            new ChainBackend('chain', input);  
         });
     }));
 
@@ -312,29 +312,29 @@ describe('Auth Backend: Chain Backend', () => {
                 {
                     message: {
                         body: [{
-                            accountId: "820584278927",
-                            canonicalId: "0b7738d4630bba4df490a30f35c94dc1ba01c47a9cb6342c8a50df6a78e11fe9",
-                            name: "account3",
+                            accountId: '820584278927',
+                            canonicalId: '0b7738d4630bba4df490a30f35c94dc1ba01c47a9cb6342c8a50df6a78e11fe9',
+                            name: 'account3',
                         }],
                         code: 200,
-                        message: "Attributes retrieved",
+                        message: 'Attributes retrieved',
                     }
                 },
                 {
                     message: {
                         body: [
                             {
-                                accountId: "988542727028",
-                                canonicalId: "8c9800244adbc7ea8cab0491061befa15f45c3b63db677f3a3cf7094493dd10a",
-                                name: "account1",
+                                accountId: '988542727028',
+                                canonicalId: '8c9800244adbc7ea8cab0491061befa15f45c3b63db677f3a3cf7094493dd10a',
+                                name: 'account1',
                             }, {
-                                accountId: "809872782425",
-                                canonicalId: "bcf336c310145dab60b3b67c7d4c14a074a07ae2d99eb4c8a4385a809f1ffd90",
-                                name: "account2",
+                                accountId: '809872782425',
+                                canonicalId: 'bcf336c310145dab60b3b67c7d4c14a074a07ae2d99eb4c8a4385a809f1ffd90',
+                                name: 'account2',
                             }
                         ],
                         code: 200,
-                        message: "Attributes retrieved",
+                        message: 'Attributes retrieved',
                     }
                 },
             ];

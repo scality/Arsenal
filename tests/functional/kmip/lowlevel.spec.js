@@ -1,4 +1,4 @@
-'use strict'; // eslint-disable-line strict
+'use strict';  
 
 const assert = require('assert');
 const TTLVCodec = require('../../../lib/network/kmip/codec/ttlv').default;

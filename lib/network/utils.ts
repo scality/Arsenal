@@ -75,7 +75,7 @@ export function arsenalErrorAWSKMS(err: string | Error | S3ServiceException) {
                 is_arsenal_error: true,
                 type: `KMS.${errorCode}`, // aws s3 prefix kms errors with KMS.
                 code: 500,
-                description: `unexpected AWS_KMS error`,
+                description: 'unexpected AWS_KMS error',
                 stack: err instanceof Error ? err.stack : undefined,
             });
         }

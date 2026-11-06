@@ -92,11 +92,11 @@ describe('round robin hosts', () => {
                 Error);
 
             // this is valid
-            // eslint-disable-next-line no-new
+             
             new RoundRobin([{ host: 'zenko.io', port: '42' }]);
-            // eslint-disable-next-line no-new
+             
             new RoundRobin(['zenko.io:42']);
-            // eslint-disable-next-line no-new
+             
             new RoundRobin(['zenko.io', 'zenka.ia']);
         });
 

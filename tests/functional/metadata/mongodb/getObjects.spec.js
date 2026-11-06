@@ -185,7 +185,7 @@ describe('MongoClientInterface::metadata.getObjectsMD', () => {
                                         return eachCb(err);
                                     }
                                     if (variation.versioning) {
-                                        // eslint-disable-next-line no-param-reassign
+                                         
                                         params.versionId = JSON.parse(res).versionId;
                                     }
                                     return eachCb(null);
