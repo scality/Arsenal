@@ -194,7 +194,7 @@ export const putSubParts = (
     const resultsCollector = new ResultsCollector();
     const hashedStream = new MD5Sum();
     const streamInterface = new SubStreamInterface(hashedStream);
-    log.trace('data length is greater than max subpart size;' + 'putting multiple parts');
+    log.trace('data length is greater than max subpart size;putting multiple parts');
 
     resultsCollector.on('error', (err, subPartIndex) => {
         log.error(`Error putting subpart to Azure: ${subPartIndex}`, { error: err.message, dataStoreName });

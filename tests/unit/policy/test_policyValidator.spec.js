@@ -34,7 +34,7 @@ const errDict = {
         Action: 'Policy statement must contain actions.',
     },
     pattern: {
-        Action: 'Actions/Conditions must be prefaced by a vendor,' + ' e.g., iam, sdb, ec2, etc.',
+        Action: 'Actions/Conditions must be prefaced by a vendor, e.g., iam, sdb, ec2, etc.',
         Resource: 'Resource must be in ARN format or "*".',
     },
     minItems: {
@@ -227,7 +227,7 @@ describe('Policies validation - Principal', () => {
         },
         {
             name: 'with canonical user id',
-            value: { CanonicalUser: '1examplecanonicalid12345678909876' + '54321qwerty12345asdfg67890z1x2c' },
+            value: { CanonicalUser: '1examplecanonicalid1234567890987654321qwerty12345asdfg67890z1x2c' },
             policyType: [resource],
         },
     ].forEach(test => {
@@ -347,7 +347,7 @@ describe('Policies validation - Principal', () => {
         },
         {
             name: 'invalid canonical user',
-            value: { CanonicalUser: '12345invalid-canonical-id$$$//098' + '7654321poiu1q2w3e4r5t6y7u8i9o0p' },
+            value: { CanonicalUser: '12345invalid-canonical-id$$$//0987654321poiu1q2w3e4r5t6y7u8i9o0p' },
             policyType: [resource],
         },
     ].forEach(test => {
@@ -589,7 +589,7 @@ const actionTests = [
     },
 ];
 
-describe('User policies validation - Statement::Action_block/' + 'Statement::NotAction_block', () => {
+describe('User policies validation - Statement::Action_block/Statement::NotAction_block', () => {
     beforeEach(() => {
         userPolicy.Statement.Action = undefined;
         userPolicy.Statement.NotAction = undefined;
@@ -669,7 +669,7 @@ const resourceTests = [
     },
 ];
 
-describe('User policies validation - Statement::Resource_block' + 'Statement::NotResource_block', () => {
+describe('User policies validation - Statement::Resource_blockStatement::NotResource_block', () => {
     beforeEach(() => {
         userPolicy.Statement.Resource = undefined;
         userPolicy.Statement.NotResource = undefined;

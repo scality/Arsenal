@@ -19,7 +19,7 @@ function assertHeaders(responseMock, expectedHeaders) {
 }
 
 describe('routesUtils.redirectRequestOnError', () => {
-    describe('from request on folder containing ' + 'index without trailing /', () => {
+    describe('from request on folder containing index without trailing /', () => {
         const errorHeaders = {
             'x-amz-error-code': errorInstances.Found.type,
             'x-amz-error-message': errorInstances.Found.description,

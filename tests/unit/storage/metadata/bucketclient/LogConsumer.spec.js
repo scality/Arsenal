@@ -131,12 +131,12 @@ describe('raft record log client', () => {
                     const entry = data.entries[1];
                     if (nbRecords === 0) {
                         assert.strictEqual(entry.type, 'put');
-                        assert.strictEqual(entry.key, 'coolkey0\u000098502347359531999999RG001  ' + '5.2375.2122');
+                        assert.strictEqual(entry.key, 'coolkey0\u000098502347359531999999RG001  5.2375.2122');
                         assert(entry.value.length > 0);
                     } else {
                         assert.strictEqual(nbRecords, 1);
                         assert.strictEqual(entry.type, 'put');
-                        assert.strictEqual(entry.key, 'coolkey0\u000098502347336011999999RG001  ' + '5.2376.2123');
+                        assert.strictEqual(entry.key, 'coolkey0\u000098502347336011999999RG001  5.2376.2123');
                         assert(entry.value.length > 0);
                     }
                     nbRecords += 1;

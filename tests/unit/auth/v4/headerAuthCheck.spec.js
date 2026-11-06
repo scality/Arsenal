@@ -14,7 +14,7 @@ const log = new DummyRequestLogger();
 
 const method = 'PUT';
 const path = '/mybucket';
-const xAMZcontentSha256 = '771df8abbecb2265e9724e5dc4510dcc160' + '60c0513ae669baf35b255d465b63f';
+const xAMZcontentSha256 = '771df8abbecb2265e9724e5dc4510dcc16060c0513ae669baf35b255d465b63f';
 const host = 'localhost:8000';
 const xAMZdate = '20160208T201405Z';
 const authorization =
@@ -108,7 +108,7 @@ describe('v4 headerAuthCheck', () => {
         done();
     });
 
-    it('should return error if an x-amz header is not included as signed ' + 'header but is in request', done => {
+    it('should return error if an x-amz header is not included as signed header but is in request', done => {
         const alteredRequest = createAlteredRequest(
             {
                 'x-amz-acl': 'public',
@@ -123,7 +123,7 @@ describe('v4 headerAuthCheck', () => {
     });
 
     it(
-        'should NOT return error if x-amz-content-sha256 is not included ' + 'as signed header but is in request',
+        'should NOT return error if x-amz-content-sha256 is not included as signed header but is in request',
         done => {
             // x-amz-content-sha256 is an exception - AWS does not require it
             // to be in the signed headers list
@@ -148,7 +148,7 @@ describe('v4 headerAuthCheck', () => {
         },
     );
 
-    it('should return error if an x-scal header is not included as signed ' + 'header but is in request', done => {
+    it('should return error if an x-scal header is not included as signed header but is in request', done => {
         const alteredRequest = createAlteredRequest(
             {
                 'x-scal-encryption': 'true',
@@ -235,13 +235,13 @@ describe('v4 headerAuthCheck', () => {
         assert.deepStrictEqual(
             res.err,
             errorInstances.AccessDenied.customizeDescription(
-                'Authentication requires a valid Date or ' + 'x-amz-date header',
+                'Authentication requires a valid Date or x-amz-date header',
             ),
         );
         done();
     });
 
-    it('should return error if scope date does not ' + 'match timestamp date', done => {
+    it('should return error if scope date does not match timestamp date', done => {
         // Different timestamp (2015 instead of 2016)
         const alteredRequest = createAlteredRequest(
             {
@@ -256,7 +256,7 @@ describe('v4 headerAuthCheck', () => {
         done();
     });
 
-    it('should return AccessDenied if timestamp from x-amz-date header' + 'is before epochTime', done => {
+    it('should return AccessDenied if timestamp from x-amz-date headeris before epochTime', done => {
         // Date from 1950 (before epoch time)
         const alteredRequest = createAlteredRequest(
             {
@@ -277,13 +277,13 @@ describe('v4 headerAuthCheck', () => {
         assert.deepStrictEqual(
             res.err,
             errorInstances.AccessDenied.customizeDescription(
-                'Authentication requires a valid Date or ' + 'x-amz-date header',
+                'Authentication requires a valid Date or x-amz-date header',
             ),
         );
         done();
     });
 
-    it('should return error if timestamp from x-amz-date header' + 'is in the future', done => {
+    it('should return error if timestamp from x-amz-date headeris in the future', done => {
         // Different date (2095 instead of 2016)
         const alteredRequest = createAlteredRequest(
             {
@@ -306,7 +306,7 @@ describe('v4 headerAuthCheck', () => {
     });
 
     it(
-        'should return error if timestamp from date header' + ' is in the future (and there is no x-amz-date header)',
+        'should return error if timestamp from date header is in the future (and there is no x-amz-date header)',
         done => {
             const alteredRequest = createAlteredRequest(
                 {
@@ -330,7 +330,7 @@ describe('v4 headerAuthCheck', () => {
         },
     );
 
-    it('should return error if timestamp from x-amz-date header' + 'is too old', done => {
+    it('should return error if timestamp from x-amz-date headeris too old', done => {
         // Different scope date and x-amz-date (2015 instead of 2016)
         const alteredRequest = createAlteredRequest(
             {
@@ -352,7 +352,7 @@ describe('v4 headerAuthCheck', () => {
         done();
     });
 
-    it('should return error if timestamp from date header' + 'is too old (and there is no x-amz-date header)', done => {
+    it('should return error if timestamp from date headeris too old (and there is no x-amz-date header)', done => {
         // Different scope date (2015 instead of 2016) and date in 2015
         const alteredRequest = createAlteredRequest(
             {

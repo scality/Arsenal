@@ -37,7 +37,7 @@ describe('round robin hosts', () => {
                 assert.strictEqual(hostsPickCount['1.2.3.2'], 30);
             });
 
-            it('should pick the same current host up to stickyCount ' + 'with pickHost()', () => {
+            it('should pick the same current host up to stickyCount with pickHost()', () => {
                 const hostsPickCount = {
                     '1.2.3.0': 0,
                     '1.2.3.1': 0,

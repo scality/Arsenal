@@ -565,10 +565,10 @@ Object.keys(acl).forEach(aclObj =>
                 dummyBucket.setCors(newCorsConfiguration);
                 assert.deepStrictEqual(dummyBucket.getCors(), newCorsConfiguration);
             });
-            it('setReplicationConfiguration should set replication ' + 'configuration', () => {
+            it('setReplicationConfiguration should set replication configuration', () => {
                 const newReplicationConfig = {
                     Role:
-                        'arn:aws:iam::123456789012:role/src-resource,' + 'arn:aws:iam::123456789012:role/dest-resource',
+                        'arn:aws:iam::123456789012:role/src-resource,arn:aws:iam::123456789012:role/dest-resource',
                     Rules: [
                         {
                             Destination: {
@@ -581,7 +581,7 @@ Object.keys(acl).forEach(aclObj =>
                 };
                 dummyBucket.setReplicationConfiguration(newReplicationConfig);
             });
-            it('setLifecycleConfiguration should set lifecycle ' + 'configuration', () => {
+            it('setLifecycleConfiguration should set lifecycle configuration', () => {
                 const newLifecycleConfig = {
                     rules: [
                         {
@@ -629,7 +629,7 @@ Object.keys(acl).forEach(aclObj =>
                 const azureInfo = dummyBucket.getAzureInfo();
                 assert.deepStrictEqual(azureInfo, dummyAzureInfo);
             });
-            it('setObjectLockConfiguration should set object lock ' + 'configuration', () => {
+            it('setObjectLockConfiguration should set object lock configuration', () => {
                 const newObjectLockConfig = {
                     rule: {
                         mode: 'COMPLIANCE',
@@ -860,7 +860,7 @@ describe('ingest', () => {
         assert.strictEqual(dummyBucket.isIngestionEnabled(), true);
     });
 
-    it('should have ingestion as null if no ingestion param was sent on' + 'bucket creation', () => {
+    it('should have ingestion as null if no ingestion param was sent onbucket creation', () => {
         const dummyBucket = new BucketInfo(
             bucketName,
             owner,

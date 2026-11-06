@@ -25,7 +25,7 @@ describe('RESTClient single-callback guarantee (ARSN-594)', () => {
     });
 
     it(
-        'get() must invoke its callback at most once when the socket errors ' + 'after the response was received',
+        'get() must invoke its callback at most once when the socket errors after the response was received',
         done => {
             const client = new RESTClient({
                 host: 'localhost',

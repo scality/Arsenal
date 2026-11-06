@@ -15,7 +15,7 @@ const keyutf8 =
     '鮕漨踒ꠍ픸Ä☶莒浏钸목탬툖氭ˠٸ൪㤌ᶟ訧ᜒೳ揪Ⴛ摖㸣᳑⹞걀ꢢ䏹ῖ"';
 
 describe('routesUtils.isValidObjectKey', () => {
-    it('should return isValid false if object key name starts with a ' + 'blacklisted prefix', () => {
+    it('should return isValid false if object key name starts with a blacklisted prefix', () => {
         const result = routesUtils.isValidObjectKey('bannedkey', [bannedStr]);
         // return { isValid: false, invalidPrefix };
         assert.strictEqual(result.isValid, false);

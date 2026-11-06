@@ -46,14 +46,14 @@ export default class ARN {
         if (!partition) {
             return {
                 error: errorInstances.InvalidArgument.customizeDescription(
-                    'bad ARN: must include a partition name, like "aws" in ' + '"arn:aws:..."',
+                    'bad ARN: must include a partition name, like "aws" in "arn:aws:..."',
                 ),
             };
         }
         if (!service) {
             return {
                 error: errorInstances.InvalidArgument.customizeDescription(
-                    'bad ARN: must include a service name, like "s3" in ' + '"arn:aws:s3:..."',
+                    'bad ARN: must include a service name, like "s3" in "arn:aws:s3:..."',
                 ),
             };
         }

@@ -129,7 +129,7 @@ describe('ObjectMD class setters/getters', () => {
                 content: ['DATA', 'METADATA'],
                 destination: 'destination-bucket',
                 storageClass: 'STANDARD',
-                role: 'arn:aws:iam::account-id:role/src-resource,' + 'arn:aws:iam::account-id:role/dest-resource',
+                role: 'arn:aws:iam::account-id:role/src-resource,arn:aws:iam::account-id:role/dest-resource',
                 storageType: 'aws_s3',
                 dataStoreVersionId: '',
                 isNFS: undefined,

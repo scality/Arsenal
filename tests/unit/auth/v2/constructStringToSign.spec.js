@@ -8,7 +8,7 @@ const DummyRequestLogger = require('../../helpers').DummyRequestLogger;
 const log = new DummyRequestLogger();
 
 describe('v2 constructStringToSign function', () => {
-    it('should construct a stringToSign with query params treated ' + 'like headers (e.g. x-amz-acl) for AWS', () => {
+    it('should construct a stringToSign with query params treated like headers (e.g. x-amz-acl) for AWS', () => {
         const request = {
             url:
                 '/noderocks/cuteotter.jpeg?AWSAccessKeyId' +
@@ -36,12 +36,12 @@ describe('v2 constructStringToSign function', () => {
             'x-amz-acl': 'public-read',
         };
         const expectedOutput =
-            'PUT\n\n' + 'image/jpeg\n' + '1472669382\n' + 'x-amz-acl:public-read\n' + '/noderocks/cuteotter.jpeg';
+            'PUT\n\nimage/jpeg\n1472669382\nx-amz-acl:public-read\n/noderocks/cuteotter.jpeg';
         const actualOutput = constructStringToSign(request, data, log);
         assert.strictEqual(actualOutput, expectedOutput);
     });
 
-    it('should construct a stringToSign with query params treated ' + 'like headers (e.g. x-goog-acl) for GCP', () => {
+    it('should construct a stringToSign with query params treated like headers (e.g. x-goog-acl) for GCP', () => {
         const request = {
             url:
                 '/noderocks/cuteotter.jpeg?AWSAccessKeyId' +
@@ -69,7 +69,7 @@ describe('v2 constructStringToSign function', () => {
             'x-goog-acl': 'public-read',
         };
         const expectedOutput =
-            'PUT\n\n' + 'image/jpeg\n' + '1472669382\n' + 'x-goog-acl:public-read\n' + '/noderocks/cuteotter.jpeg';
+            'PUT\n\nimage/jpeg\n1472669382\nx-goog-acl:public-read\n/noderocks/cuteotter.jpeg';
         const actualOutput = constructStringToSign(request, data, log, 'GCP');
         assert.strictEqual(actualOutput, expectedOutput);
     });

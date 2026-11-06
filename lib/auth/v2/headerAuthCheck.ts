@@ -30,7 +30,7 @@ export function check(
         log.debug('missing or invalid date header', { method: 'auth/v2/headerAuthCheck.check' });
         return {
             err: errorInstances.AccessDenied.customizeDescription(
-                'Authentication requires a valid Date or ' + 'x-amz-date header',
+                'Authentication requires a valid Date or x-amz-date header',
             ),
         };
     }

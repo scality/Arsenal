@@ -8,7 +8,7 @@ describe('createCanonicalRequest function', () => {
     // Example taken from: http://docs.aws.amazon.com/AmazonS3/
     // latest/API/sig-v4-header-based-auth.html
     it(
-        'should construct a canonical request in accordance ' + 'with AWS rules for a get object request (header auth)',
+        'should construct a canonical request in accordance with AWS rules for a get object request (header auth)',
         () => {
             const params = {
                 pHttpVerb: 'GET',
@@ -25,10 +25,10 @@ describe('createCanonicalRequest function', () => {
                         'f0e8bdb87c964420e857bd35b5d6ed310bd44f' +
                         '0170aba48dd91039c6036bdb41',
                     'range': 'bytes=0-9',
-                    'x-amz-content-sha256': 'e3b0c44298fc1c149afbf4c' + '8996fb92427ae41e4649b934ca495991b7852b855',
+                    'x-amz-content-sha256': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
                 },
                 pSignedHeaders: 'host;range;x-amz-content-sha256;x-amz-date',
-                payloadChecksum: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4' + '649b934ca495991b7852b855',
+                payloadChecksum: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
             };
             const expectedOutput =
                 'GET\n' +
@@ -46,7 +46,7 @@ describe('createCanonicalRequest function', () => {
         },
     );
 
-    const msg = 'S3C-820: aws java sdk should not encode * ' + 'character for signature';
+    const msg = 'S3C-820: aws java sdk should not encode * character for signature';
     it(msg, () => {
         const doc = JSON.stringify({
             Statement: [
@@ -72,7 +72,7 @@ describe('createCanonicalRequest function', () => {
                     'x-amz-content-sha256;x-amz-date,Signature=' +
                     'f0e8bdb87c964420e857bd35b5d6ed310bd44f' +
                     '0170aba48dd91039c6036bdb41',
-                'x-amz-content-sha256': 'e3b0c44298fc1c149afbf4c' + '8996fb92427ae41e4649b934ca495991b7852b855',
+                'x-amz-content-sha256': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
             },
             pSignedHeaders: 'host;user-agent;x-amz-content-sha256;x-amz-date',
         };
@@ -94,7 +94,7 @@ describe('createCanonicalRequest function', () => {
     // Example taken from: http://docs.aws.amazon.com/AmazonS3/
     // latest/API/sig-v4-header-based-auth.html
     it(
-        'should construct a canonical request in accordance ' + 'with AWS rules for a put object request (header auth)',
+        'should construct a canonical request in accordance with AWS rules for a put object request (header auth)',
         () => {
             const params = {
                 pHttpVerb: 'PUT',
@@ -112,10 +112,10 @@ describe('createCanonicalRequest function', () => {
                         '-class,Signature=98ad721746da40c64f1a55b78f14c2' +
                         '38d841ea1380cd77a1b5971af0ece108bd',
                     'x-amz-storage-class': 'REDUCED_REDUNDANCY',
-                    'x-amz-content-sha256': '44ce7dd67c959e0d3524ffac1' + '771dfbba87d2b6b4b4e99e42034a8b803f8b072',
+                    'x-amz-content-sha256': '44ce7dd67c959e0d3524ffac1771dfbba87d2b6b4b4e99e42034a8b803f8b072',
                 },
-                pSignedHeaders: 'date;host;x-amz-content-sha256;' + 'x-amz-date;x-amz-storage-class',
-                payloadChecksum: '44ce7dd67c959e0d3524ffac1771dfbba8' + '7d2b6b4b4e99e42034a8b803f8b072',
+                pSignedHeaders: 'date;host;x-amz-content-sha256;x-amz-date;x-amz-storage-class',
+                payloadChecksum: '44ce7dd67c959e0d3524ffac1771dfbba87d2b6b4b4e99e42034a8b803f8b072',
             };
             const expectedOutput =
                 'PUT\n' +
@@ -148,7 +148,7 @@ describe('createCanonicalRequest function', () => {
                     'X-Amz-SignedHeaders': 'host',
                     'X-Amz-Algorithm': 'AWS4-HMAC-SHA256',
                     'X-Amz-Date': '20130524T000000Z',
-                    'X-Amz-Credential': 'AKIAIOSFODNN7EXAMPLE/20130524/' + 'us-east-1/s3/aws4_request',
+                    'X-Amz-Credential': 'AKIAIOSFODNN7EXAMPLE/20130524/us-east-1/s3/aws4_request',
                 },
                 pHeaders: {
                     host: 'examplebucket.s3.amazonaws.com',
@@ -185,7 +185,7 @@ describe('createCanonicalRequest function', () => {
                     'X-Amz-Algorithm': 'AWS4-HMAC-SHA256',
                     'x-amz-acl': 'public',
                     'X-Amz-Date': '20130524T000000Z',
-                    'X-Amz-Credential': 'AKIAIOSFODNN7EXAMPLE/20130524/' + 'us-east-1/s3/aws4_request',
+                    'X-Amz-Credential': 'AKIAIOSFODNN7EXAMPLE/20130524/us-east-1/s3/aws4_request',
                     'X-Amz-Meta-camelCase': 'before',
                     'X-Amz-Meta-camelcase': 'after',
                 },
@@ -215,7 +215,7 @@ describe('createCanonicalRequest function', () => {
         },
     );
 
-    it('should construct a canonical request that contains a ' + 'signed header with an empty string value', () => {
+    it('should construct a canonical request that contains a signed header with an empty string value', () => {
         const params = {
             pHttpVerb: 'PUT',
             pResource: '/test.txt',
@@ -279,7 +279,7 @@ describe('createCanonicalRequest function', () => {
                     'user-agent': ' aws-cli/1.8.2   Python/2.7.12  Darwin/15.6.0  ',
                 },
                 pSignedHeaders: 'host;user-agent',
-                payloadChecksum: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4' + '649b934ca495991b7852b855',
+                payloadChecksum: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
             };
             const expectedOutput =
                 'GET\n' +
@@ -305,7 +305,7 @@ describe('createCanonicalRequest function', () => {
                 'x-amz-date': '20130524T000000Z',
             },
             pSignedHeaders: 'host;x-amz-custom-header;x-amz-date',
-            payloadChecksum: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4' + '649b934ca495991b7852b855',
+            payloadChecksum: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
         };
         const expectedOutput =
             'GET\n' +
@@ -330,7 +330,7 @@ describe('createCanonicalRequest function', () => {
                 'x-amz-date': '20130524T000000Z',
             },
             pSignedHeaders: 'host;x-amz-date;x-amz-number-header',
-            payloadChecksum: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4' + '649b934ca495991b7852b855',
+            payloadChecksum: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
         };
         const expectedOutput =
             'GET\n' +

@@ -1402,7 +1402,7 @@ describe('DelimiterMaster listing algorithm: gap caching and lookup', () => {
     });
 
     it(
-        'should trigger gap lookup and continue filtering without skipping when encountering ' + 'a delete marker',
+        'should trigger gap lookup and continue filtering without skipping when encountering a delete marker',
         () => {
             const listing = new DelimiterMaster({}, fakeLogger, 'v0');
             const gapsArray = [{ firstKey: 'pre/0002', lastKey: `pre/0003${VID_SEP}v100`, weight: 6 }];
@@ -1427,7 +1427,7 @@ describe('DelimiterMaster listing algorithm: gap caching and lookup', () => {
     );
 
     it(
-        'should cache a gap after lookup completes, and use it to skip over keys ' + 'within the gap range',
+        'should cache a gap after lookup completes, and use it to skip over keys within the gap range',
         async () => {
             const listing = new DelimiterMaster({}, fakeLogger, 'v0');
             const gapsArray = [{ firstKey: 'pre/0002', lastKey: `pre/0006${VID_SEP}v101`, weight: 14 }];

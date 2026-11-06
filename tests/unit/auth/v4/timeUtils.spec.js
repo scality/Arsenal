@@ -148,28 +148,28 @@ describe('checkTimeSkew function', () => {
 
     // Our default expiry for header auth check is 15 minutes (in secs)
     const expiry = 15 * 60;
-    it('should allow requests with timestamps under 15 minutes ' + 'in the future', () => {
+    it('should allow requests with timestamps under 15 minutes in the future', () => {
         const timestamp14MinInFuture = '20160317T183601033Z';
         const expectedOutput = false;
         const actualOutput = checkTimeSkew(timestamp14MinInFuture, expiry, log);
         assert.strictEqual(actualOutput, expectedOutput);
     });
 
-    it('should not allow requests with timestamps more than 15 minutes ' + 'in the future', () => {
+    it('should not allow requests with timestamps more than 15 minutes in the future', () => {
         const timestamp16MinInFuture = '20160317T183801033Z';
         const expectedOutput = true;
         const actualOutput = checkTimeSkew(timestamp16MinInFuture, expiry, log);
         assert.strictEqual(actualOutput, expectedOutput);
     });
 
-    it('should allow requests with timestamps earlier than the ' + 'the expiry', () => {
+    it('should allow requests with timestamps earlier than the the expiry', () => {
         const timestamp14MinInPast = '20160317T180801033Z';
         const expectedOutput = false;
         const actualOutput = checkTimeSkew(timestamp14MinInPast, expiry, log);
         assert.strictEqual(actualOutput, expectedOutput);
     });
 
-    it('should not allow requests with timestamps later ' + 'than the expiry', () => {
+    it('should not allow requests with timestamps later than the expiry', () => {
         const timestamp16MinInPast = '20160317T180601033Z';
         const expectedOutput = true;
         const actualOutput = checkTimeSkew(timestamp16MinInPast, expiry, log);

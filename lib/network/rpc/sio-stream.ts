@@ -257,7 +257,7 @@ class SIOStreamSocket {
             log.debug("received 'stream-hangup' event", { streamId });
             const stream = this.localStreams[streamId];
             if (!stream) {
-                log.debug('no such local stream registered' + '(may have already reached the end)', { streamId });
+                log.debug('no such local stream registered(may have already reached the end)', { streamId });
                 return;
             }
             this.destroyStream(streamId);
@@ -367,7 +367,7 @@ class SIOStreamSocket {
             } else if (arg.writable) {
                 stream = new SIOOutputStream(this, streamId, this.maxPendingAck, this.ackTimeoutMs);
             } else {
-                throw new Error("can't decode stream neither readable " + 'nor writable');
+                throw new Error("can't decode stream neither readable nor writable");
             }
             this.remoteStreams[streamId] = stream;
             if (arg.readable) {

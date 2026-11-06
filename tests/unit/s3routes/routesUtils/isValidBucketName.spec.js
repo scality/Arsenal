@@ -27,23 +27,23 @@ const invalidBucketNamesWithDotsAndHyphens = [
 ];
 
 describe('routesUtils.isValidBucketName', () => {
-    it('should return false if bucketname is fewer than ' + '3 characters long', () => {
+    it('should return false if bucketname is fewer than 3 characters long', () => {
         const result = routesUtils.isValidBucketName('no', prefixBlacklist);
         assert.strictEqual(result, false);
     });
 
-    it('should return false if bucketname is greater than ' + '63 characters long', () => {
-        const longString = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' + 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+    it('should return false if bucketname is greater than 63 characters long', () => {
+        const longString = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
         const result = routesUtils.isValidBucketName(longString, prefixBlacklist);
         assert.strictEqual(result, false);
     });
 
-    it('should return false if bucketname contains capital letters ' + 'and is not whitelisted', () => {
+    it('should return false if bucketname contains capital letters and is not whitelisted', () => {
         const result = routesUtils.isValidBucketName('noSHOUTING', prefixBlacklist);
         assert.strictEqual(result, false);
     });
 
-    it('should return true if bucketname contains capital letters ' + 'but is whitelisted', () => {
+    it('should return true if bucketname contains capital letters but is whitelisted', () => {
         const result = routesUtils.isValidBucketName('METADATA', prefixBlacklist);
         assert.strictEqual(result, true);
     });
@@ -68,7 +68,7 @@ describe('routesUtils.isValidBucketName', () => {
         assert.strictEqual(result, true);
     });
 
-    describe('should return true when bucket name has valid' + ' combination of dots and hyphens', () => {
+    describe('should return true when bucket name has valid combination of dots and hyphens', () => {
         validBucketNamesWithDotsAndHyphens.forEach(bucketName => {
             it(`should return true if bucketname is '${bucketName}'`, () => {
                 const result = routesUtils.isValidBucketName(bucketName, prefixBlacklist);
@@ -77,7 +77,7 @@ describe('routesUtils.isValidBucketName', () => {
         });
     });
 
-    describe('should return false when bucket name has invalid' + ' combination of dots and hyphens', () => {
+    describe('should return false when bucket name has invalid combination of dots and hyphens', () => {
         invalidBucketNamesWithDotsAndHyphens.forEach(bucketName => {
             it(`should return false if bucketname is '${bucketName}'`, () => {
                 const result = routesUtils.isValidBucketName(bucketName, prefixBlacklist);

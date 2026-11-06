@@ -53,7 +53,7 @@ describe('WebsiteConfiguration class', () => {
         done();
     });
 
-    it('should initialize indexDocument, errorDocument during construction ' + 'if provided in params', done => {
+    it('should initialize indexDocument, errorDocument during construction if provided in params', done => {
         const testWebsiteConfigParams = {
             indexDocument: 'index.html',
             errorDocument: 'error.html',
@@ -64,7 +64,7 @@ describe('WebsiteConfiguration class', () => {
         done();
     });
 
-    it('should initialize redirectAllRequestsTo during construction if ' + 'provided in params', done => {
+    it('should initialize redirectAllRequestsTo during construction if provided in params', done => {
         const testWebsiteConfigParams = {
             redirectAllRequestsTo: {
                 hostName: 'test',
@@ -78,7 +78,7 @@ describe('WebsiteConfiguration class', () => {
     });
 
     it(
-        'should initialize routingRules properly during construction from ' + 'array of RoutingRule class instances',
+        'should initialize routingRules properly during construction from array of RoutingRule class instances',
         done => {
             const testWebsiteConfigParams = {
                 routingRules: [],
@@ -93,7 +93,7 @@ describe('WebsiteConfiguration class', () => {
         },
     );
 
-    it('should initialize routingRules properly during construction from ' + 'array of plain objects', done => {
+    it('should initialize routingRules properly during construction from array of plain objects', done => {
         const testWebsiteConfigParams = {
             routingRules: [],
         };
@@ -126,7 +126,7 @@ describe('WebsiteConfiguration class', () => {
             done();
         });
 
-        it('for redirectAllRequestsTo should get/set redirectAllRequestsTo ' + 'object', done => {
+        it('for redirectAllRequestsTo should get/set redirectAllRequestsTo object', done => {
             const websiteConfig = new WebsiteConfiguration();
             const redirectAllRequestsTo = {
                 hostName: 'test',

@@ -43,13 +43,13 @@ describe('KMIP TTLV Codec', () => {
         const kmip = newKMIP();
         const msg = kmip._decodeMessage(logger, ttlvFixtures[1].response);
 
-        const supportedOperations = msg.lookup('Response Message/Batch Item/' + 'Response Payload/Operation');
-        const supportedObjectTypes = msg.lookup('Response Message/Batch Item/' + 'Response Payload/Object Type');
+        const supportedOperations = msg.lookup('Response Message/Batch Item/Response Payload/Operation');
+        const supportedObjectTypes = msg.lookup('Response Message/Batch Item/Response Payload/Object Type');
         const protocolVersionMajor = msg.lookup(
-            'Response Message/Response Header/' + 'Protocol Version/Protocol Version Major',
+            'Response Message/Response Header/Protocol Version/Protocol Version Major',
         );
         const protocolVersionMinor = msg.lookup(
-            'Response Message/Response Header/' + 'Protocol Version/Protocol Version Minor',
+            'Response Message/Response Header/Protocol Version/Protocol Version Minor',
         );
 
         assert(supportedOperations.includes('Encrypt'));
@@ -66,7 +66,7 @@ describe('KMIP TTLV Codec', () => {
         const kmip = newKMIP();
         const msg = kmip._decodeMessage(logger, ttlvFixtures[2].response);
 
-        const supportedOperations = msg.lookup('Response Message/Batch Item/' + 'Response Payload/Operation');
+        const supportedOperations = msg.lookup('Response Message/Batch Item/Response Payload/Operation');
 
         assert(!supportedOperations.includes('Encrypt'));
         assert(!supportedOperations.includes('Decrypt'));
@@ -77,13 +77,13 @@ describe('KMIP TTLV Codec', () => {
         const kmip = newKMIP();
         const msg = kmip._decodeMessage(logger, ttlvFixtures[1].response);
 
-        const supportedOperations = msg.lookup('/Response Message/Batch Item/' + 'Response Payload/Operation');
-        const supportedObjectTypes = msg.lookup('Response Message/Batch Item/' + 'Response Payload/Object Type/');
+        const supportedOperations = msg.lookup('/Response Message/Batch Item/Response Payload/Operation');
+        const supportedObjectTypes = msg.lookup('Response Message/Batch Item/Response Payload/Object Type/');
         const protocolVersionMajor = msg.lookup(
-            'Response Message//Response Header///' + 'Protocol Version////Protocol Version Major',
+            'Response Message//Response Header///Protocol Version////Protocol Version Major',
         );
         const protocolVersionMinor = msg.lookup(
-            '/Response Message////Response Header///' + 'Protocol Version//Protocol Version Minor/',
+            '/Response Message////Response Header///Protocol Version//Protocol Version Minor/',
         );
 
         assert(supportedOperations.includes('Encrypt'));

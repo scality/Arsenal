@@ -55,10 +55,10 @@ socket.on('data', data => {
     const decodedMessage = kmip.decodeMessage(logger, data);
     const summary = {
         major: decodedMessage.lookup(
-            'Response Message/Response Header/' + 'Protocol Version/Protocol Version Major',
+            'Response Message/Response Header/Protocol Version/Protocol Version Major',
         )[0],
         minor: decodedMessage.lookup(
-            'Response Message/Response Header/' + 'Protocol Version/Protocol Version Minor',
+            'Response Message/Response Header/Protocol Version/Protocol Version Minor',
         )[0],
         supportedOperations: decodedMessage.lookup('Response Message/Batch Item/Response Payload/Operation'),
         supportedObjectTypes: decodedMessage.lookup('Response Message/Batch Item/Response Payload/Object Type'),
@@ -70,10 +70,10 @@ socket.on('data', data => {
     //console.log(data.toString('hex'));
 
     const protocolVersionMajor = decodedMessage.lookup(
-        'Response Message/Response Header/' + 'Protocol Version/Protocol Version Major',
+        'Response Message/Response Header/Protocol Version/Protocol Version Major',
     );
     const protocolVersionMinor = decodedMessage.lookup(
-        'Response Message/Response Header/' + 'Protocol Version/Protocol Version Minor',
+        'Response Message/Response Header/Protocol Version/Protocol Version Minor',
     );
 
     assert(summary.supportedOperations.includes('Encrypt'));

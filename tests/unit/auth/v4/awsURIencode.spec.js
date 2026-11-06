@@ -10,11 +10,11 @@ const awsURIencode = require('../../../../lib/auth/v4/awsURIencode').default;
 describe('should URIencode in accordance with AWS rules', () => {
     it('should not encode / if give false argument', () => {
         const input1 = '/s3amazonaws.com/?$*@whateverASFEFWE()@)(*#@+  )';
-        const expectedOutput1 = '/s3amazonaws.com/%3F%24%2A%40whatever' + 'ASFEFWE%28%29%40%29%28%2A%23%40%2B%20%20%29';
+        const expectedOutput1 = '/s3amazonaws.com/%3F%24%2A%40whateverASFEFWE%28%29%40%29%28%2A%23%40%2B%20%20%29';
         const actualOutput1 = awsURIencode(input1, false);
         assert.strictEqual(actualOutput1, expectedOutput1);
         const input2 =
-            'jfwwe w55%% ljwelj SE#3ifo;/sihr3;f399evij' + 'cwn  k#@@#/ R#@) seifjF$E&&+@+**!^#*KL#Jsjcoi3(!)(#89u)';
+            'jfwwe w55%% ljwelj SE#3ifo;/sihr3;f399evijcwn  k#@@#/ R#@) seifjF$E&&+@+**!^#*KL#Jsjcoi3(!)(#89u)';
         const expectedOutput2 =
             'jfwwe%20w55%25%25%20ljwelj%20SE%233ifo%3B' +
             '/sihr3%3Bf399evijcwn%20%20k%23%40%40%23/%20R%23%40%29%20seifjF%' +
@@ -27,11 +27,11 @@ describe('should URIencode in accordance with AWS rules', () => {
     it('should encode / if no second argument given', () => {
         const input1 = '/s3amazonaws.com/?$*@whateverASFEFWE()@)(*#@+  )';
         const expectedOutput1 =
-            '%2Fs3amazonaws.com%2F%3F%24%2A%40whatever' + 'ASFEFWE%28%29%40%29%28%2A%23%40%2B%20%20%29';
+            '%2Fs3amazonaws.com%2F%3F%24%2A%40whateverASFEFWE%28%29%40%29%28%2A%23%40%2B%20%20%29';
         const actualOutput1 = awsURIencode(input1);
         assert.strictEqual(actualOutput1, expectedOutput1);
         const input2 =
-            'jfwwe w55%% ljwelj SE#3ifo;/sihr3;f399evij' + 'cwn  k#@@#/ R#@) seifjF$E&&+@+**!^#*KL#Jsjcoi3(!)(#89u)';
+            'jfwwe w55%% ljwelj SE#3ifo;/sihr3;f399evijcwn  k#@@#/ R#@) seifjF$E&&+@+**!^#*KL#Jsjcoi3(!)(#89u)';
         const expectedOutput2 =
             'jfwwe%20w55%25%25%20ljwelj%20SE%233if' +
             'o%3B%2Fsihr3%3Bf399evijcwn%20%20k%23%40%40%23%2F%20R%23%40%' +
@@ -64,7 +64,7 @@ describe('should URIencode in accordance with AWS rules', () => {
         assert.strictEqual(actualOutput, expectedOutput);
     });
 
-    it('should encode codepoints that use surrogate pairs in UTF-16 as a ' + 'single UTF-8 sequence', () => {
+    it('should encode codepoints that use surrogate pairs in UTF-16 as a single UTF-8 sequence', () => {
         const input = '/s3amazonaws.com/I-like-🌮s';
         const expectedOutput = '%2Fs3amazonaws.com%2FI-like-%F0%9F%8C%AEs';
         const actualOutput = awsURIencode(input);

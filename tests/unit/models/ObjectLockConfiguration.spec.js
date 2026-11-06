@@ -93,7 +93,7 @@ const failTests = [
         name: 'fail with empty DefaultRetention',
         params: { key: 'DefaultRetention', value: '' },
         error: 'MalformedXML',
-        errorMessage: 'DefaultRetention request xml does not contain Mode or ' + 'retention period (Days or Years)',
+        errorMessage: 'DefaultRetention request xml does not contain Mode or retention period (Days or Years)',
     },
     {
         name: 'fail with empty mode',
@@ -105,13 +105,13 @@ const failTests = [
         name: 'fail with invalid mode',
         params: { key: 'Mode', value: 'COMPLOVERNANCE' },
         error: 'MalformedXML',
-        errorMessage: 'Mode request xml must be one of "GOVERNANCE", ' + '"COMPLIANCE"',
+        errorMessage: 'Mode request xml must be one of "GOVERNANCE", "COMPLIANCE"',
     },
     {
         name: 'fail with lowercase mode',
         params: { key: 'Mode', value: 'governance' },
         error: 'MalformedXML',
-        errorMessage: 'Mode request xml must be one of "GOVERNANCE", ' + '"COMPLIANCE"',
+        errorMessage: 'Mode request xml must be one of "GOVERNANCE", "COMPLIANCE"',
     },
     {
         name: 'fail with empty retention period',
@@ -147,7 +147,7 @@ const failTests = [
 
 const passTests = [
     {
-        name: 'pass with GOVERNANCE retention mode and valid Days ' + 'retention period',
+        name: 'pass with GOVERNANCE retention mode and valid Days retention period',
         params: {},
     },
     {
@@ -173,7 +173,7 @@ const passTestsGetConfigXML = [
             },
         },
         expectedXml: expectedXml('Days', 90, 'COMPLIANCE'),
-        description: 'with COMPLIANCE retention mode ' + 'and valid Days retention period',
+        description: 'with COMPLIANCE retention mode and valid Days retention period',
     },
     {
         config: {
@@ -183,7 +183,7 @@ const passTestsGetConfigXML = [
             },
         },
         expectedXml: expectedXml('Days', 30, 'GOVERNANCE'),
-        description: 'with GOVERNANCE retention mode ' + 'and valid Days retention period',
+        description: 'with GOVERNANCE retention mode and valid Days retention period',
     },
     {
         config: {
@@ -193,7 +193,7 @@ const passTestsGetConfigXML = [
             },
         },
         expectedXml: expectedXml('Years', 1, 'COMPLIANCE'),
-        description: 'with COMPLIANCE retention mode ' + 'and valid Years retention period',
+        description: 'with COMPLIANCE retention mode and valid Years retention period',
     },
     {
         config: {
@@ -203,7 +203,7 @@ const passTestsGetConfigXML = [
             },
         },
         expectedXml: expectedXml('Years', 2, 'GOVERNANCE'),
-        description: 'with GOVERNANCE retention mode ' + 'and valid Years retention period',
+        description: 'with GOVERNANCE retention mode and valid Years retention period',
     },
     {
         config: {},
@@ -213,7 +213,7 @@ const passTestsGetConfigXML = [
             'xmlns="http://s3.amazonaws.com/doc/2006-03-01/">' +
             '<ObjectLockEnabled>Enabled</ObjectLockEnabled>' +
             '</ObjectLockConfiguration>',
-        description: 'without rule if object lock ' + 'configuration has not been set',
+        description: 'without rule if object lock configuration has not been set',
     },
 ];
 

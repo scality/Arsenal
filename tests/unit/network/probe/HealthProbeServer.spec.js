@@ -36,7 +36,7 @@ describe('network.probe.HealthProbeServer', () => {
             done();
         });
         healthcheckEndpoints.forEach(ep => {
-            it('should perform a GET and ' + 'return 200 OK', done => {
+            it('should perform a GET and return 200 OK', done => {
                 makeRequest('GET', ep)
                     .on('response', res => {
                         assert(res.statusCode === 200);
@@ -76,7 +76,7 @@ describe('network.probe.HealthProbeServer', () => {
         });
 
         healthcheckEndpoints.forEach(ep => {
-            it('should perform a GET and ' + 'return 503 ServiceUnavailable', done => {
+            it('should perform a GET and return 503 ServiceUnavailable', done => {
                 makeRequest('GET', ep)
                     .on('response', res => {
                         assert(res.statusCode === 503);
@@ -112,7 +112,7 @@ describe('network.probe.HealthProbeServer', () => {
         });
 
         healthcheckEndpoints.forEach(ep => {
-            it('should perform a POST and ' + 'return 405 MethodNotAllowed', done => {
+            it('should perform a POST and return 405 MethodNotAllowed', done => {
                 makeRequest('POST', ep)
                     .on('response', res => {
                         assert(res.statusCode === 405);
@@ -147,7 +147,7 @@ describe('network.probe.HealthProbeServer', () => {
         });
 
         badHealthcheckEndpoints.forEach(ep => {
-            it('should perform a GET and ' + 'return 400 InvalidURI', done => {
+            it('should perform a GET and return 400 InvalidURI', done => {
                 makeRequest('GET', ep)
                     .on('response', res => {
                         assert(res.statusCode === 400);

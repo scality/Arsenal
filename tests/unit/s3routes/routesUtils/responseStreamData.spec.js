@@ -137,7 +137,7 @@ describe('routesUtils.responseStreamData', () => {
         }
     });
 
-    it('should not leak socket if client closes the connection before ' + 'data backend starts streaming', done => {
+    it('should not leak socket if client closes the connection before data backend starts streaming', done => {
         responseStreamData(
             undefined,
             {},

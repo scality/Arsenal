@@ -13,7 +13,7 @@ const { resolveBatchSubLevels } = require('../../../../../lib/storage/metadata/f
 
 function randomName() {
     let text = '';
-    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' + 'abcdefghijklmnopqrstuvwxyz0123456789';
+    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
     for (let i = 0; i < 5; i++) {
         text += possible.charAt(Math.floor(Math.random() * possible.length));

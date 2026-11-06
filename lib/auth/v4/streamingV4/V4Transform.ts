@@ -124,7 +124,7 @@ export default class V4Transform extends Transform {
         const splitMeta = fullMetadata.toString().split(';');
         this.log.trace('parsed full metadata for chunk', { splitMeta });
         if (splitMeta.length !== 2) {
-            this.log.trace('chunk body did not contain correct ' + 'metadata format');
+            this.log.trace('chunk body did not contain correct metadata format');
             return { err: errors.InvalidArgument };
         }
         // chunk-size is sent in hex
@@ -222,7 +222,7 @@ export default class V4Transform extends Transform {
 
         if (this.lastPieceDone) {
             const slice = chunk.slice(0, 10);
-            this.log.trace('received chunk after end.' + 'See first 10 bytes of chunk', { chunk: slice.toString() });
+            this.log.trace('received chunk after end.See first 10 bytes of chunk', { chunk: slice.toString() });
             return callback();
         }
         let unparsedChunk = chunk;
@@ -233,7 +233,7 @@ export default class V4Transform extends Transform {
             // async function
             done => {
                 if (!this.haveMetadata) {
-                    this.log.trace('do not have metadata so calling ' + '_parseMetadata');
+                    this.log.trace('do not have metadata so calling _parseMetadata');
                     // need to parse our metadata
                     const parsedMetadataResults = this._parseMetadata(unparsedChunk);
                     if (parsedMetadataResults.err) {

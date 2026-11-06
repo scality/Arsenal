@@ -739,7 +739,7 @@ describe('DelimiterNonCurrent over PHD master keys', () => {
         // inc(VID_SEP)), so the listing skips that key's noncurrent work.
         // handlePHDMaster keeps the marker one PHD key behind instead. This needs
         // no versionIdMarker sentinel, because the next page re-scans the key.
-        it('should not skip the versions of a PHD master when the scan limit lands exactly ' + 'on the master', () => {
+        it('should not skip the versions of a PHD master when the scan limit lands exactly on the master', () => {
             const keyspace = [
                 { key: 'k1', value: '{"versionId":"k1-v1","last-modified":"1970-01-01T00:00:00.001Z"}' },
                 { key: 'k2', value: '{"versionId":"k2-v1","last-modified":"1970-01-01T00:00:00.001Z"}' },
