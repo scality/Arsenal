@@ -37,12 +37,9 @@ function sendPollutionMessage(message) {
     }
 }
 const ipcPolluterIntervals = [
-    setInterval(
-        () => sendPollutionMessage('string pollution'), 1500),
-    setInterval(
-        () => sendPollutionMessage({ pollution: 'bar' }), 2321),
-    setInterval(
-        () => sendPollutionMessage({ type: 'pollution', foo: { bar: 'baz' } }), 2777),
+    setInterval(() => sendPollutionMessage('string pollution'), 1500),
+    setInterval(() => sendPollutionMessage({ pollution: 'bar' }), 2321),
+    setInterval(() => sendPollutionMessage({ type: 'pollution', foo: { bar: 'baz' } }), 2777),
 ];
 
 function someTestHandlerFunc(payload, uids, callback) {
@@ -76,8 +73,9 @@ const primaryHandlers = {
 };
 
 function respondOnTestFailure(message, error, results) {
-    console.error('After sendWorkerCommand() resolve/reject: ' +
-                  `${message}, error=${error}, results=${JSON.stringify(results)}`);
+    console.error(
+        'After sendWorkerCommand() resolve/reject: ' + `${message}, error=${error}, results=${JSON.stringify(results)}`,
+    );
     console.trace();
     throw errors.InternalError;
 }
@@ -86,28 +84,20 @@ async function successfulCommandTestGeneric(nWorkers) {
     try {
         const results = await sendWorkerCommand('*', 'SomeTestHandler', genUIDS(), {});
         if (results.length !== nWorkers) {
-            return respondOnTestFailure(
-                `expected ${nWorkers} worker results, got ${results.length}`,
-                null, results);
+            return respondOnTestFailure(`expected ${nWorkers} worker results, got ${results.length}`, null, results);
         }
         for (const result of results) {
             if (typeof result !== 'object' || result === null) {
                 return respondOnTestFailure('not all results are objects', null, results);
             }
             if (result.error !== null) {
-                return respondOnTestFailure(
-                    'one or more workers had an unexpected error',
-                    null, results);
+                return respondOnTestFailure('one or more workers had an unexpected error', null, results);
             }
             if (typeof result.result !== 'object' || result.result === null) {
-                return respondOnTestFailure(
-                    'one or more workers did not return a result object',
-                    null, results);
+                return respondOnTestFailure('one or more workers did not return a result object', null, results);
             }
             if (result.result.someResponsePayload !== 'bar') {
-                return respondOnTestFailure(
-                    'one or more workers did not return the expected payload',
-                    null, results);
+                return respondOnTestFailure('one or more workers did not return the expected payload', null, results);
             }
         }
         return undefined;
@@ -140,9 +130,7 @@ async function unsupportedHandlerTest() {
     try {
         const results = await sendWorkerCommand('*', 'AWrongTestHandler', genUIDS(), {});
         if (results.length !== N_WORKERS) {
-            return respondOnTestFailure(
-                `expected ${N_WORKERS} worker results, got ${results.length}`,
-                null, results);
+            return respondOnTestFailure(`expected ${N_WORKERS} worker results, got ${results.length}`, null, results);
         }
         for (const result of results) {
             if (typeof result !== 'object' || result === null) {
@@ -151,7 +139,9 @@ async function unsupportedHandlerTest() {
             if (result.error === null || !result.error.is.NotImplemented) {
                 return respondOnTestFailure(
                     'one or more workers did not return the expected NotImplemented error',
-                    null, results);
+                    null,
+                    results,
+                );
             }
         }
         return undefined;
@@ -183,8 +173,7 @@ async function duplicateUidsTest() {
         return respondOnTestFailure('expected an error from the second call', null, null);
     }
     if (!results[1].reason.is.OperationAborted) {
-        return respondOnTestFailure(
-            'expected a OperationAborted error', results[1].reason, null);
+        return respondOnTestFailure('expected a OperationAborted error', results[1].reason, null);
     }
     return undefined;
 }
@@ -193,17 +182,11 @@ async function unsuccessfulWorkerTest() {
     try {
         const results = await sendWorkerCommand('*', 'TestHandlerWithFailure', genUIDS(), {});
         if (results.length !== N_WORKERS) {
-            return respondOnTestFailure(
-                `expected ${N_WORKERS} worker results, got ${results.length}`,
-                null, results);
+            return respondOnTestFailure(`expected ${N_WORKERS} worker results, got ${results.length}`, null, results);
         }
-        const nServiceFailures = results.filter(result => (
-            result.error && result.error.is.ServiceFailure
-        )).length;
+        const nServiceFailures = results.filter(result => result.error && result.error.is.ServiceFailure).length;
         if (nServiceFailures !== 1) {
-            return respondOnTestFailure(
-                'expected exactly one worker result to be ServiceFailure error',
-                null, results);
+            return respondOnTestFailure('expected exactly one worker result to be ServiceFailure error', null, results);
         }
         return undefined;
     } catch (err) {
@@ -213,8 +196,7 @@ async function unsuccessfulWorkerTest() {
 
 async function workerTimeoutTest() {
     try {
-        const results = await sendWorkerCommand(
-            '*', 'TestHandlerWithNoResponse', genUIDS(), {}, 1000);
+        const results = await sendWorkerCommand('*', 'TestHandlerWithNoResponse', genUIDS(), {}, 1000);
         return respondOnTestFailure('expected an error', null, results);
     } catch (err) {
         if (!err.is.RequestTimeout) {
@@ -259,18 +241,21 @@ const TEST_URLS = {
 };
 
 if (process.argv.length !== 4) {
-    console.error('ClusterRPC test server: GET requests on test URLs trigger test runs\n\n' +
-                  'Usage: node ClusterRPC-test-server.js <port> <nb-workers>\n\n' +
-                  'Available test URLs:');
-    console.error(`${Object.keys(TEST_URLS).map(url => `- ${url}\n`).join('')}`);
+    console.error(
+        'ClusterRPC test server: GET requests on test URLs trigger test runs\n\n' +
+            'Usage: node ClusterRPC-test-server.js <port> <nb-workers>\n\n' +
+            'Available test URLs:',
+    );
+    console.error(
+        `${Object.keys(TEST_URLS)
+            .map(url => `- ${url}\n`)
+            .join('')}`,
+    );
     process.exit(2);
 }
 
 /* eslint-disable prefer-const */
-[
-    SERVER_PORT,
-    N_WORKERS,
-] = process.argv.slice(2, 4).map(value => Number.parseInt(value, 10));
+[SERVER_PORT, N_WORKERS] = process.argv.slice(2, 4).map(value => Number.parseInt(value, 10));
 /* eslint-enable prefer-const */
 
 let server;
@@ -287,32 +272,36 @@ if (cluster.isPrimary) {
     // in worker
     server = http.createServer((req, res) => {
         if (req.url in TEST_URLS) {
-            return TEST_URLS[req.url]().then(() => {
-                if (getPendingCommandsCount() !== 0) {
-                    console.error(`There are still ${getPendingCommandsCount()} pending ` +
-                                  `RPC commands after test ${req.url} completed`);
-                    throw errors.InternalError;
-                }
-                res.writeHead(200);
-                res.end();
-            }).catch(err => {
-                // serialize AssertionError to be displayed nicely in jest
-                if (err instanceof assert.AssertionError) {
-                    const serializedErr = JSON.stringify({
-                        code: err.code,
-                        message: err.message,
-                        stack: err.stack,
-                        actual: err.actual,
-                        expected: err.expected,
-                        operator: err.operator,
-                    });
-                    res.writeHead(500);
-                    res.end(serializedErr);
-                } else {
-                    res.writeHead(err.code || 500);
-                    res.end(err.message);
-                }
-            });
+            return TEST_URLS[req.url]()
+                .then(() => {
+                    if (getPendingCommandsCount() !== 0) {
+                        console.error(
+                            `There are still ${getPendingCommandsCount()} pending ` +
+                                `RPC commands after test ${req.url} completed`,
+                        );
+                        throw errors.InternalError;
+                    }
+                    res.writeHead(200);
+                    res.end();
+                })
+                .catch(err => {
+                    // serialize AssertionError to be displayed nicely in jest
+                    if (err instanceof assert.AssertionError) {
+                        const serializedErr = JSON.stringify({
+                            code: err.code,
+                            message: err.message,
+                            stack: err.stack,
+                            actual: err.actual,
+                            expected: err.expected,
+                            operator: err.operator,
+                        });
+                        res.writeHead(500);
+                        res.end(serializedErr);
+                    } else {
+                        res.writeHead(err.code || 500);
+                        res.end(err.message);
+                    }
+                });
         }
         console.error(`Invalid test URL ${req.url}`);
         res.writeHead(400);

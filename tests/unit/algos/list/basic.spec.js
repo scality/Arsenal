@@ -1,4 +1,4 @@
-'use strict';  
+'use strict';
 
 const assert = require('assert');
 const Basic = require('../../../../lib/algos/list/basic').List;
@@ -42,27 +42,44 @@ describe('Basic listing algorithm', () => {
     });
 
     it('Should support entries with no key', () => {
-        const res1 = performListing([{
-            value: '{"data":"foo"}',
-        }], Basic, { maxKeys: 1 }, logger);
-        assert.deepStrictEqual(res1, [{
-            key: undefined,
-            value: '{"data":"foo"}',
-        }]);
+        const res1 = performListing(
+            [
+                {
+                    value: '{"data":"foo"}',
+                },
+            ],
+            Basic,
+            { maxKeys: 1 },
+            logger,
+        );
+        assert.deepStrictEqual(res1, [
+            {
+                key: undefined,
+                value: '{"data":"foo"}',
+            },
+        ]);
 
-        const res2 = performListing([{
-            key: undefined,
-            value: '{"data":"foo"}',
-        }], Basic, { maxKeys: 1 }, logger);
-        assert.deepStrictEqual(res2, [{
-            key: undefined,
-            value: '{"data":"foo"}',
-        }]);
+        const res2 = performListing(
+            [
+                {
+                    key: undefined,
+                    value: '{"data":"foo"}',
+                },
+            ],
+            Basic,
+            { maxKeys: 1 },
+            logger,
+        );
+        assert.deepStrictEqual(res2, [
+            {
+                key: undefined,
+                value: '{"data":"foo"}',
+            },
+        ]);
     });
 
     it('Should support key-only listing', () => {
-        const res = performListing(['key1', 'key2'],
-            Basic, { maxKeys: 1 }, logger);
+        const res = performListing(['key1', 'key2'], Basic, { maxKeys: 1 }, logger);
         assert.deepStrictEqual(res, ['key1']);
     });
 
@@ -91,37 +108,30 @@ describe('Basic listing algorithm', () => {
 
     it('Shall ignore custom attributes if no filter is specified', () => {
         const output = input;
-        const res = performListing(
-            input, Basic,
-            {},
-            logger);
+        const res = performListing(input, Basic, {}, logger);
         assert.deepStrictEqual(res, output);
     });
 
     it('Shall report nothing if filter does not match', () => {
         const output = [];
-        const res = performListing(
-            input, Basic,
-            { filterKey: 'do not exist' },
-            logger);
+        const res = performListing(input, Basic, { filterKey: 'do not exist' }, logger);
         assert.deepStrictEqual(res, output);
     });
 
     it('Shall find key in custom attributes', () => {
         const output = [attr3];
         const res = performListing(
-            input, Basic,
+            input,
+            Basic,
             { filterKey: 'cd_tenant_id%3D%3Dc486659c-8761-11eb-87c2-8b0faea3c595' },
-            logger);
+            logger,
+        );
         assert.deepStrictEqual(res, output);
     });
 
     it('Shall find key starting with a prefix in custom attributes', () => {
         const output = [attr3, attr4];
-        const res = performListing(
-            input, Basic,
-            { filterKeyStartsWith: 'cd_tenant_id%3D%3D' },
-            logger);
+        const res = performListing(input, Basic, { filterKeyStartsWith: 'cd_tenant_id%3D%3D' }, logger);
         assert.deepStrictEqual(res, output);
     });
 });

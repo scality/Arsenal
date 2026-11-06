@@ -21,8 +21,8 @@ import { errorInstances } from '../../errors';
  */
 export const errorMapping = {
     'Operation Failed': {
-        'Item Not Found':  errorInstances['KMS.NotFoundException'],
-    }
+        'Item Not Found': errorInstances['KMS.NotFoundException'],
+    },
 };
 
 /**

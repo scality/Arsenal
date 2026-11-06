@@ -40,8 +40,7 @@ export default class RoundRobin {
         options?: { stickyCount?: number; logger?: Logger; defaultPort?: string },
     ) {
         if (hostsList.length === 0) {
-            throw new Error(
-                'at least one host must be provided for round robin');
+            throw new Error('at least one host must be provided for round robin');
         }
         if (options && options.logger) {
             this.logger = options.logger;
@@ -73,40 +72,34 @@ export default class RoundRobin {
         if (typeof hostItem === 'string') {
             const hostParts = hostItem.split(':');
             if (hostParts.length > 2) {
-                throw new Error(`${hostItem}: ` +
-                                'bad round robin item: expect "host[:port]"');
+                throw new Error(`${hostItem}: ` + 'bad round robin item: expect "host[:port]"');
             }
             hostItemObj.host = hostParts[0];
             hostItemObj.port = hostParts[1];
         } else {
             if (typeof hostItem !== 'object') {
-                throw new Error(`${hostItem}: bad round robin item: ` +
-                                'must be a string or object');
+                throw new Error(`${hostItem}: bad round robin item: ` + 'must be a string or object');
             }
             hostItemObj.host = hostItem.host;
             hostItemObj.port = hostItem.port;
         }
         if (typeof hostItemObj.host !== 'string') {
-            throw new Error(`${hostItemObj.host}: ` +
-                            'bad round robin host name: not a string');
+            throw new Error(`${hostItemObj.host}: ` + 'bad round robin host name: not a string');
         }
         if (hostItemObj.port !== undefined) {
             if (/^[0-9]+$/.exec(hostItemObj.port) === null) {
-                throw new Error(`'${hostItemObj.port}': ` +
-                                'bad round robin host port: not a number');
+                throw new Error(`'${hostItemObj.port}': ` + 'bad round robin host port: not a number');
             }
             const parsedPort = Number.parseInt(hostItemObj.port, 10);
             if (parsedPort <= 0 || parsedPort > 65535) {
-                throw new Error(`'${hostItemObj.port}': bad round robin ` +
-                                'host port: not a valid port number');
+                throw new Error(`'${hostItemObj.port}': bad round robin ` + 'host port: not a valid port number');
             }
             return {
                 host: hostItemObj.host,
                 port: parsedPort,
             };
         }
-        return { host: hostItemObj.host,
-            port: this.defaultPort };
+        return { host: hostItemObj.host, port: this.defaultPort };
     }
 
     /**
@@ -122,8 +115,7 @@ export default class RoundRobin {
      */
     pickHost() {
         if (this.logger) {
-            this.logger.debug('pick host',
-                { host: this.getCurrentHost() });
+            this.logger.debug('pick host', { host: this.getCurrentHost() });
         }
         const curHost = this.getCurrentHost();
         ++this.pickCount;
@@ -174,8 +166,7 @@ export default class RoundRobin {
             }
         }
         if (this.logger) {
-            this.logger.debug('round robin host',
-                { newHost: this.getCurrentHost() });
+            this.logger.debug('round robin host', { newHost: this.getCurrentHost() });
         }
     }
 }

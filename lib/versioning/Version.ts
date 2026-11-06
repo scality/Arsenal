@@ -109,11 +109,7 @@ export class Version {
             index -= 1;
         }
         const needComma = stringifiedObject.charAt(index) !== '{';
-        return (
-            `${stringifiedObject.slice(0, stringifiedObject.length - 1)}${ 
-                needComma ? ',' : ''
-            }"${key}":"${value}"}`
-        );
+        return `${stringifiedObject.slice(0, stringifiedObject.length - 1)}${needComma ? ',' : ''}"${key}":"${value}"}`;
     }
 
     /**
@@ -130,21 +126,21 @@ export class Version {
     }
 
     /**
-    * Updates or appends a `nullVersionId` property to a JSON-formatted string.
-    * This function first checks if the `nullVersionId` property already exists within the input string.
-    * If it exists, the function updates the `nullVersionId` with the new value provided.
-    * If it does not exist, the function appends a `nullVersionId` property with the provided value.
-    *
-    * @static
-    * @param {string} value - The JSON-formatted string that may already contain a `nullVersionId` property.
-    * @param {string} nullVersionId - The new value for the `nullVersionId` property to be updated or appended.
-    * @returns {string} The updated JSON-formatted string with the new `nullVersionId` value.
-    */
+     * Updates or appends a `nullVersionId` property to a JSON-formatted string.
+     * This function first checks if the `nullVersionId` property already exists within the input string.
+     * If it exists, the function updates the `nullVersionId` with the new value provided.
+     * If it does not exist, the function appends a `nullVersionId` property with the provided value.
+     *
+     * @static
+     * @param {string} value - The JSON-formatted string that may already contain a `nullVersionId` property.
+     * @param {string} nullVersionId - The new value for the `nullVersionId` property to be updated or appended.
+     * @returns {string} The updated JSON-formatted string with the new `nullVersionId` value.
+     */
     static updateOrAppendNullVersionId(value: string, nullVersionId: string): string {
         // Check if "nullVersionId" already exists in the string
         const nullVersionIdPattern = /"nullVersionId":"[^"]*"/;
         const nullVersionIdExists = nullVersionIdPattern.test(value);
-    
+
         if (nullVersionIdExists) {
             // Replace the existing nullVersionId with the new one
             return value.replace(nullVersionIdPattern, `"nullVersionId":"${nullVersionId}"`);
@@ -255,7 +251,7 @@ export class Version {
 
     /**
      * Mark that the null version has been put with a Cloudserver handling null keys (i.e. supporting S3C-7352)
-     * 
+     *
      * If `isNull2` is set, `isNull` is also set to maintain consistency.
      * Explicitly setting both avoids misunderstandings and mistakes in future updates or fixes.
      * @return - the updated version

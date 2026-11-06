@@ -6,16 +6,12 @@ import * as crypto from 'crypto';
  * @param {string} algorithm - either SHA256 or SHA1
  * @return {string} reconstructed signature
  */
-export function hashSignature(
-    stringToSign: string,
-    secretKey: string,
-    algorithm: 'SHA256' | 'SHA1'
-): string {
+export function hashSignature(stringToSign: string, secretKey: string, algorithm: 'SHA256' | 'SHA1'): string {
     const hmacObject = crypto.createHmac(algorithm, secretKey);
     return hmacObject.update(stringToSign, 'binary').digest('base64');
 }
 
-const sha256Digest = (key: string | Buffer, data: string) => 
+const sha256Digest = (key: string | Buffer, data: string) =>
     crypto.createHmac('sha256', key).update(data, 'binary').digest();
 
 /** calculateSigningKey for v4 Auth
@@ -25,12 +21,7 @@ const sha256Digest = (key: string | Buffer, data: string) =>
  * @param {string} [service] - To specify another service than s3
  * @return {string} signingKey - signingKey to calculate signature
  */
-export function calculateSigningKey(
-    secretKey: string,
-    region: string,
-    scopeDate: string,
-    service?: string
-): Buffer {
+export function calculateSigningKey(secretKey: string, region: string, scopeDate: string, service?: string): Buffer {
     const dateKey = sha256Digest(`AWS4${secretKey}`, scopeDate);
     const dateRegionKey = sha256Digest(dateKey, region);
     const dateRegionServiceKey = sha256Digest(dateRegionKey, service || 's3');

@@ -51,11 +51,7 @@ export default class WriteCache {
      * @param callback - callback function: callback(error, value)
      * @return - to finish the call
      */
-    get(
-        request: any,
-        logger: RequestLogger,
-        callback: (err: ArsenalError | null, data?: any) => void
-    ) {
+    get(request: any, logger: RequestLogger, callback: (err: ArsenalError | null, data?: any) => void) {
         const { db, key } = request;
 
         const cacheKey = formatCacheKey(db, key);
@@ -87,10 +83,7 @@ export default class WriteCache {
      *                    entry in the queue (which will do the get from the
      *                    database), undefined otherwise
      */
-    _enqueue(
-        cacheKey: string,
-        callback: (err: ArsenalError | null, data?: any) => void
-    ) {
+    _enqueue(cacheKey: string, callback: (err: ArsenalError | null, data?: any) => void) {
         if (this.queue[cacheKey]) {
             this.queue[cacheKey].queue.push(callback);
             return undefined;
@@ -108,13 +101,7 @@ export default class WriteCache {
      * @param value - the value of the object to seed dequeueing
      * @param force - force dequeuing even on signature mismatch
      */
-    _dequeue(
-        cacheKey: string,
-        signature: number | null,
-        err: ArsenalError | null,
-        value: string,
-        force = false
-    ) {
+    _dequeue(cacheKey: string, signature: number | null, err: ArsenalError | null, value: string, force = false) {
         if (this.queue[cacheKey] === undefined) {
             return;
         }
@@ -161,7 +148,7 @@ export default class WriteCache {
     batch(
         request: { db: any; array: any[]; options?: any },
         logger: RequestLogger,
-        callback: (err: ArsenalError | null, data?: any) => void
+        callback: (err: ArsenalError | null, data?: any) => void,
     ) {
         const { db, array } = request;
         const signature = this._cacheWrite(db, array);

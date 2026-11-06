@@ -1,11 +1,10 @@
-'use strict';  
+'use strict';
 
 const assert = require('assert');
 const stream = require('stream');
 const errors = require('../../../../../lib/errors').default;
 
-const LogConsumer = require(
-    '../../../../../lib/storage/metadata/bucketclient/LogConsumer.js');
+const LogConsumer = require('../../../../../lib/storage/metadata/bucketclient/LogConsumer.js');
 
 /* eslint-disable max-len */
 const mockedLogResponseData = `{
@@ -84,22 +83,20 @@ const malformedLogEntry = new MockStream(malformedLogEntryData);
 class BucketClientMock {
     getRaftLog(raftId, start, limit, targetLeader, reqUids, callback) {
         switch (raftId) {
-        case 0:
-            return process.nextTick(() => callback(null, mockedLogResponse));
-        case 1:
-            return process.nextTick(() => callback(errors.NoSuchBucket));
-        case 2:
-            return process.nextTick(() => callback(errors.InvalidRange));
-        case 3:
-            return process.nextTick(() => callback(errors.InternalError));
-        case 4:
-            return process.nextTick(() => callback(null,
-                malformedLogResponse));
-        case 5:
-            return process.nextTick(() => callback(null,
-                malformedLogEntry));
-        default:
-            assert.fail();
+            case 0:
+                return process.nextTick(() => callback(null, mockedLogResponse));
+            case 1:
+                return process.nextTick(() => callback(errors.NoSuchBucket));
+            case 2:
+                return process.nextTick(() => callback(errors.InvalidRange));
+            case 3:
+                return process.nextTick(() => callback(errors.InternalError));
+            case 4:
+                return process.nextTick(() => callback(null, malformedLogResponse));
+            case 5:
+                return process.nextTick(() => callback(null, malformedLogEntry));
+            default:
+                assert.fail();
         }
         return undefined;
     }
@@ -111,8 +108,7 @@ describe('raft record log client', () => {
 
     function setup(done) {
         bucketClient = new BucketClientMock();
-        logClient = new LogConsumer({ bucketClient,
-            raftSession: 0 });
+        logClient = new LogConsumer({ bucketClient, raftSession: 0 });
         done();
     }
 
@@ -135,18 +131,12 @@ describe('raft record log client', () => {
                     const entry = data.entries[1];
                     if (nbRecords === 0) {
                         assert.strictEqual(entry.type, 'put');
-                        assert.strictEqual(
-                            entry.key,
-                            ('coolkey0\u000098502347359531999999RG001  ' +
-                             '5.2375.2122'));
+                        assert.strictEqual(entry.key, 'coolkey0\u000098502347359531999999RG001  ' + '5.2375.2122');
                         assert(entry.value.length > 0);
                     } else {
                         assert.strictEqual(nbRecords, 1);
                         assert.strictEqual(entry.type, 'put');
-                        assert.strictEqual(
-                            entry.key,
-                            ('coolkey0\u000098502347336011999999RG001  ' +
-                             '5.2376.2123'));
+                        assert.strictEqual(entry.key, 'coolkey0\u000098502347336011999999RG001  ' + '5.2376.2123');
                         assert(entry.value.length > 0);
                     }
                     nbRecords += 1;
@@ -160,28 +150,27 @@ describe('raft record log client', () => {
     });
     describe('error cases', () => {
         it('should handle 404 error gracefully', done => {
-            const logClient = new LogConsumer({ bucketClient,
-                raftSession: 1 });
+            const logClient = new LogConsumer({ bucketClient, raftSession: 1 });
             logClient.readRecords({}, (err, info) => {
                 assert.ifError(err);
                 assert.deepStrictEqual(info, {
-                    info: { start: null, end: null } });
+                    info: { start: null, end: null },
+                });
                 done();
             });
         });
         it('should handle 416 error gracefully', done => {
-            const logClient = new LogConsumer({ bucketClient,
-                raftSession: 2 });
+            const logClient = new LogConsumer({ bucketClient, raftSession: 2 });
             logClient.readRecords({}, (err, info) => {
                 assert.ifError(err);
                 assert.deepStrictEqual(info, {
-                    info: { start: null, end: null } });
+                    info: { start: null, end: null },
+                });
                 done();
             });
         });
         it('should handle other errors correctly', done => {
-            const logClient = new LogConsumer({ bucketClient,
-                raftSession: 3 });
+            const logClient = new LogConsumer({ bucketClient, raftSession: 3 });
             logClient.readRecords({}, err => {
                 assert(err);
                 assert(err.is.InternalError);
@@ -189,8 +178,7 @@ describe('raft record log client', () => {
             });
         });
         it('should return error with malformed log response', done => {
-            const logClient = new LogConsumer({ bucketClient,
-                raftSession: 4 });
+            const logClient = new LogConsumer({ bucketClient, raftSession: 4 });
             logClient.readRecords({}, err => {
                 assert(err);
                 assert(err.is.InternalError);
@@ -198,8 +186,7 @@ describe('raft record log client', () => {
             });
         });
         it('should emit error event if a log entry is malformed', done => {
-            const logClient = new LogConsumer({ bucketClient,
-                raftSession: 5 });
+            const logClient = new LogConsumer({ bucketClient, raftSession: 5 });
             logClient.readRecords({}, (err, res) => {
                 assert.ifError(err);
                 assert(res.info);

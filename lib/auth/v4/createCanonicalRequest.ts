@@ -11,17 +11,15 @@ import { normalizeHeaderValue } from '../../utils/normalizeHeaders';
  * payloadChecksum (from request)
  * @returns - canonicalRequest
  */
-export default function createCanonicalRequest(
-    params: {
-        pHttpVerb: string;
-        pResource: string;
-        pQuery: Record<string, string>;
-        pHeaders: any;
-        pSignedHeaders: any;
-        service: string;
-        payloadChecksum: string;
-    }
-) {
+export default function createCanonicalRequest(params: {
+    pHttpVerb: string;
+    pResource: string;
+    pQuery: Record<string, string>;
+    pHeaders: any;
+    pSignedHeaders: any;
+    service: string;
+    payloadChecksum: string;
+}) {
     const pHttpVerb = params.pHttpVerb;
     const pResource = params.pResource;
     const pQuery = params.pQuery;
@@ -31,8 +29,7 @@ export default function createCanonicalRequest(
     let payloadChecksum = params.payloadChecksum;
     if (!payloadChecksum) {
         if (pHttpVerb === 'GET') {
-            payloadChecksum = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b' +
-                '934ca495991b7852b855';
+            payloadChecksum = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b' + '934ca495991b7852b855';
         } else if (pHttpVerb === 'POST') {
             let notEncodeStar = false;
             // The java sdk does not encode the '*' parameter to compute the
@@ -42,12 +39,10 @@ export default function createCanonicalRequest(
                 notEncodeStar = true;
             }
             let payload = queryString.stringify(pQuery, undefined, undefined, {
-                encodeURIComponent: input => awsURIencode(input, true,
-                    notEncodeStar),
+                encodeURIComponent: input => awsURIencode(input, true, notEncodeStar),
             });
             payload = payload.replace(/%20/g, '+');
-            payloadChecksum = crypto.createHash('sha256')
-                .update(payload, 'binary').digest('hex').toLowerCase();
+            payloadChecksum = crypto.createHash('sha256').update(payload, 'binary').digest('hex').toLowerCase();
         }
     }
 
@@ -55,14 +50,14 @@ export default function createCanonicalRequest(
 
     // canonical query string
     let canonicalQueryStr = '';
-    if (pQuery && !((service === 'iam' || service === 'ring' ||
-        service === 'sts') &&
-        pHttpVerb === 'POST')) {
-        const sortedQueryParams = Object.keys(pQuery).sort().map(key => {
-            const encodedKey = awsURIencode(key);
-            const value = pQuery[key] ? awsURIencode(pQuery[key]) : '';
-            return `${encodedKey}=${value}`;
-        });
+    if (pQuery && !((service === 'iam' || service === 'ring' || service === 'sts') && pHttpVerb === 'POST')) {
+        const sortedQueryParams = Object.keys(pQuery)
+            .sort()
+            .map(key => {
+                const encodedKey = awsURIencode(key);
+                const value = pQuery[key] ? awsURIencode(pQuery[key]) : '';
+                return `${encodedKey}=${value}`;
+            });
         canonicalQueryStr = sortedQueryParams.join('&');
     }
 
@@ -79,8 +74,7 @@ export default function createCanonicalRequest(
             // strings, or other types. We need to normalize them before calling .trim()
             // Per HTTP spec and AWS Signature v4, multiple values are joined with commas
             const stringValue = normalizeHeaderValue(headerValue);
-            const trimmedHeader = stringValue
-                .trim().replace(/\s+/g, ' ');
+            const trimmedHeader = stringValue.trim().replace(/\s+/g, ' ');
             return `${signedHeader}:${trimmedHeader}\n`;
         }
         // nginx will strip the actual expect header so add value of
@@ -94,7 +88,8 @@ export default function createCanonicalRequest(
 
     const canonicalHeaders = canonicalHeadersList.join('');
 
-    const canonicalRequest = `${pHttpVerb}\n${canonicalURI}\n` +
+    const canonicalRequest =
+        `${pHttpVerb}\n${canonicalURI}\n` +
         `${canonicalQueryStr}\n${canonicalHeaders}\n` +
         `${signedHeaders}\n${payloadChecksum}`;
     return canonicalRequest;

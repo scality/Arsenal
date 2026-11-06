@@ -1,4 +1,4 @@
-'use strict';  
+'use strict';
 
 const assert = require('assert');
 const async = require('async');
@@ -24,8 +24,7 @@ const STATS_EXPIRY = 86400; // 24 hours
 const statsModel = new StatsModel(redisClient, STATS_INTERVAL, STATS_EXPIRY);
 
 function setExpectedStats(expected) {
-    return expected.concat(
-        Array((STATS_EXPIRY / STATS_INTERVAL) - expected.length).fill(0));
+    return expected.concat(Array(STATS_EXPIRY / STATS_INTERVAL - expected.length).fill(0));
 }
 
 // Since many methods were overwritten, these tests should validate the changes
@@ -37,23 +36,22 @@ describe('StatsModel class', () => {
 
     afterEach(() => redisClient.clear(() => {}));
 
-    it('should convert a 2d array columns into rows and vice versa using _zip',
-        () => {
-            const arrays = [
-                [1, 2, 3],
-                [4, 5, 6],
-                [7, 8, 9],
-            ];
+    it('should convert a 2d array columns into rows and vice versa using _zip', () => {
+        const arrays = [
+            [1, 2, 3],
+            [4, 5, 6],
+            [7, 8, 9],
+        ];
 
-            const res = statsModel._zip(arrays);
-            const expected = [
-                [1, 4, 7],
-                [2, 5, 8],
-                [3, 6, 9],
-            ];
+        const res = statsModel._zip(arrays);
+        const expected = [
+            [1, 4, 7],
+            [2, 5, 8],
+            [3, 6, 9],
+        ];
 
-            assert.deepStrictEqual(res, expected);
-        });
+        assert.deepStrictEqual(res, expected);
+    });
 
     it('_zip should return an empty array if given an invalid array', () => {
         const arrays = [];
@@ -63,24 +61,26 @@ describe('StatsModel class', () => {
         assert.deepStrictEqual(res, []);
     });
 
-    it('_getCount should return a an array of all valid integer values',
-        () => {
-            const res = statsModel._getCount([
-                [null, '1'],
-                [null, '2'],
-                [null, null],
-            ]);
-            assert.deepStrictEqual(res, setExpectedStats([1, 2, 0]));
-        });
+    it('_getCount should return a an array of all valid integer values', () => {
+        const res = statsModel._getCount([
+            [null, '1'],
+            [null, '2'],
+            [null, null],
+        ]);
+        assert.deepStrictEqual(res, setExpectedStats([1, 2, 0]));
+    });
 
-    it('should correctly record a new request by default one increment',
-        done => {
-            async.series([
+    it('should correctly record a new request by default one increment', done => {
+        async.series(
+            [
                 next => {
                     statsModel.reportNewRequest(id, (err, res) => {
                         assert.ifError(err);
 
-                        const expected = [[null, 1], [null, 1]];
+                        const expected = [
+                            [null, 1],
+                            [null, 1],
+                        ];
                         assert.deepStrictEqual(res, expected);
                         next();
                     });
@@ -89,138 +89,152 @@ describe('StatsModel class', () => {
                     statsModel.reportNewRequest(id, (err, res) => {
                         assert.ifError(err);
 
-                        const expected = [[null, 2], [null, 1]];
+                        const expected = [
+                            [null, 2],
+                            [null, 1],
+                        ];
                         assert.deepStrictEqual(res, expected);
                         next();
                     });
                 },
-            ], done);
-        });
+            ],
+            done,
+        );
+    });
 
     it('should record new requests by defined amount increments', done => {
         function noop() {}
 
-        async.series([
-            next => {
-                statsModel.reportNewRequest(id, 9);
-                statsModel.getStats(fakeLogger, id, (err, res) => {
-                    assert.ifError(err);
+        async.series(
+            [
+                next => {
+                    statsModel.reportNewRequest(id, 9);
+                    statsModel.getStats(fakeLogger, id, (err, res) => {
+                        assert.ifError(err);
 
-                    assert.deepStrictEqual(res.requests, setExpectedStats([9]));
-                    next();
-                });
-            },
-            next => {
-                statsModel.reportNewRequest(id);
-                statsModel.getStats(fakeLogger, id, (err, res) => {
-                    assert.ifError(err);
+                        assert.deepStrictEqual(res.requests, setExpectedStats([9]));
+                        next();
+                    });
+                },
+                next => {
+                    statsModel.reportNewRequest(id);
+                    statsModel.getStats(fakeLogger, id, (err, res) => {
+                        assert.ifError(err);
 
-                    assert.deepStrictEqual(res.requests,
-                        setExpectedStats([10]));
-                    next();
-                });
-            },
-            next => {
-                statsModel.reportNewRequest(id, noop);
-                statsModel.getStats(fakeLogger, id, (err, res) => {
-                    assert.ifError(err);
+                        assert.deepStrictEqual(res.requests, setExpectedStats([10]));
+                        next();
+                    });
+                },
+                next => {
+                    statsModel.reportNewRequest(id, noop);
+                    statsModel.getStats(fakeLogger, id, (err, res) => {
+                        assert.ifError(err);
 
-                    assert.deepStrictEqual(res.requests,
-                        setExpectedStats([11]));
-                    next();
-                });
-            },
-        ], done);
+                        assert.deepStrictEqual(res.requests, setExpectedStats([11]));
+                        next();
+                    });
+                },
+            ],
+            done,
+        );
     });
 
     it('should correctly record a 500 on the server', done => {
         statsModel.report500(id, (err, res) => {
             assert.ifError(err);
 
-            const expected = [[null, 1], [null, 1]];
+            const expected = [
+                [null, 1],
+                [null, 1],
+            ];
             assert.deepStrictEqual(res, expected);
             done();
         });
     });
 
     it('should respond back with total requests as an array', done => {
-        async.series([
-            next => {
-                statsModel.reportNewRequest(id, err => {
-                    assert.ifError(err);
-                    next();
-                });
-            },
-            next => {
-                statsModel.report500(id, err => {
-                    assert.ifError(err);
-                    next();
-                });
-            },
-            next => {
-                statsModel.getStats(fakeLogger, id, (err, res) => {
-                    assert.ifError(err);
+        async.series(
+            [
+                next => {
+                    statsModel.reportNewRequest(id, err => {
+                        assert.ifError(err);
+                        next();
+                    });
+                },
+                next => {
+                    statsModel.report500(id, err => {
+                        assert.ifError(err);
+                        next();
+                    });
+                },
+                next => {
+                    statsModel.getStats(fakeLogger, id, (err, res) => {
+                        assert.ifError(err);
 
-                    const expected = {
-                        'requests': setExpectedStats([1]),
-                        '500s': setExpectedStats([1]),
-                        'sampleDuration': STATS_EXPIRY,
-                    };
-                    assert.deepStrictEqual(res, expected);
-                    next();
-                });
-            },
-        ], done);
+                        const expected = {
+                            'requests': setExpectedStats([1]),
+                            '500s': setExpectedStats([1]),
+                            'sampleDuration': STATS_EXPIRY,
+                        };
+                        assert.deepStrictEqual(res, expected);
+                        next();
+                    });
+                },
+            ],
+            done,
+        );
     });
 
     it('should not crash on empty results', done => {
-        async.series([
-            next => {
-                statsModel.getStats(fakeLogger, id, (err, res) => {
-                    assert.ifError(err);
-                    const expected = {
-                        'requests': setExpectedStats([]),
-                        '500s': setExpectedStats([]),
-                        'sampleDuration': STATS_EXPIRY,
-                    };
-                    assert.deepStrictEqual(res, expected);
-                    next();
-                });
-            },
-            next => {
-                statsModel.getAllStats(fakeLogger, id, (err, res) => {
-                    assert.ifError(err);
-                    const expected = {
-                        'requests': setExpectedStats([]),
-                        '500s': setExpectedStats([]),
-                        'sampleDuration': STATS_EXPIRY,
-                    };
-                    assert.deepStrictEqual(res, expected);
-                    next();
-                });
-            },
-        ], done);
+        async.series(
+            [
+                next => {
+                    statsModel.getStats(fakeLogger, id, (err, res) => {
+                        assert.ifError(err);
+                        const expected = {
+                            'requests': setExpectedStats([]),
+                            '500s': setExpectedStats([]),
+                            'sampleDuration': STATS_EXPIRY,
+                        };
+                        assert.deepStrictEqual(res, expected);
+                        next();
+                    });
+                },
+                next => {
+                    statsModel.getAllStats(fakeLogger, id, (err, res) => {
+                        assert.ifError(err);
+                        const expected = {
+                            'requests': setExpectedStats([]),
+                            '500s': setExpectedStats([]),
+                            'sampleDuration': STATS_EXPIRY,
+                        };
+                        assert.deepStrictEqual(res, expected);
+                        next();
+                    });
+                },
+            ],
+            done,
+        );
     });
 
-    it('should return a zero-filled array if no ids are passed to getAllStats',
-        done => {
-            statsModel.getAllStats(fakeLogger, [], (err, res) => {
-                assert.ifError(err);
+    it('should return a zero-filled array if no ids are passed to getAllStats', done => {
+        statsModel.getAllStats(fakeLogger, [], (err, res) => {
+            assert.ifError(err);
 
-                assert.deepStrictEqual(res.requests, setExpectedStats([]));
-                assert.deepStrictEqual(res['500s'], setExpectedStats([]));
-                done();
-            });
+            assert.deepStrictEqual(res.requests, setExpectedStats([]));
+            assert.deepStrictEqual(res['500s'], setExpectedStats([]));
+            done();
         });
+    });
 
-    it('should get accurately reported data for given id from getAllStats',
-        done => {
-            statsModel.reportNewRequest(id, 9);
-            statsModel.reportNewRequest(id2, 2);
-            statsModel.reportNewRequest(id3, 3);
-            statsModel.report500(id);
+    it('should get accurately reported data for given id from getAllStats', done => {
+        statsModel.reportNewRequest(id, 9);
+        statsModel.reportNewRequest(id2, 2);
+        statsModel.reportNewRequest(id3, 3);
+        statsModel.report500(id);
 
-            async.series([
+        async.series(
+            [
                 next => {
                     statsModel.getAllStats(fakeLogger, [id], (err, res) => {
                         assert.ifError(err);
@@ -231,29 +245,28 @@ describe('StatsModel class', () => {
                     });
                 },
                 next => {
-                    statsModel.getAllStats(fakeLogger, [id, id2, id3],
-                        (err, res) => {
-                            assert.ifError(err);
+                    statsModel.getAllStats(fakeLogger, [id, id2, id3], (err, res) => {
+                        assert.ifError(err);
 
-                            assert.equal(res.requests[0], 14);
-                            assert.deepStrictEqual(res.requests,
-                                setExpectedStats([14]));
-                            next();
-                        });
+                        assert.equal(res.requests[0], 14);
+                        assert.deepStrictEqual(res.requests, setExpectedStats([14]));
+                        next();
+                    });
                 },
-            ], done);
-        });
+            ],
+            done,
+        );
+    });
 
-    it('should normalize to the nearest hour using normalizeTimestampByHour',
-        () => {
-            const date = new Date('2018-09-13T23:30:59.195Z');
-            const newDate = new Date(statsModel.normalizeTimestampByHour(date));
+    it('should normalize to the nearest hour using normalizeTimestampByHour', () => {
+        const date = new Date('2018-09-13T23:30:59.195Z');
+        const newDate = new Date(statsModel.normalizeTimestampByHour(date));
 
-            assert.strictEqual(date.getHours(), newDate.getHours());
-            assert.strictEqual(newDate.getMinutes(), 0);
-            assert.strictEqual(newDate.getSeconds(), 0);
-            assert.strictEqual(newDate.getMilliseconds(), 0);
-        });
+        assert.strictEqual(date.getHours(), newDate.getHours());
+        assert.strictEqual(newDate.getMinutes(), 0);
+        assert.strictEqual(newDate.getSeconds(), 0);
+        assert.strictEqual(newDate.getMilliseconds(), 0);
+    });
 
     it('should get previous hour using _getDatePreviousHour', () => {
         const date = new Date('2018-09-13T23:30:59.195Z');
@@ -263,23 +276,21 @@ describe('StatsModel class', () => {
         assert.strictEqual(date - newDate, millisecondsInOneHour);
     });
 
-    it('should get an array of hourly timestamps using getSortedSetHours',
-        () => {
-            const epoch = 1536882476501;
-            const millisecondsInOneHour = 3600000;
+    it('should get an array of hourly timestamps using getSortedSetHours', () => {
+        const epoch = 1536882476501;
+        const millisecondsInOneHour = 3600000;
 
-            const expected = [];
-            let dateInMilliseconds = statsModel.normalizeTimestampByHour(
-                new Date(epoch));
+        const expected = [];
+        let dateInMilliseconds = statsModel.normalizeTimestampByHour(new Date(epoch));
 
-            for (let i = 0; i < 24; i++) {
-                expected.push(dateInMilliseconds);
-                dateInMilliseconds -= millisecondsInOneHour;
-            }
-            const res = statsModel.getSortedSetHours(epoch);
+        for (let i = 0; i < 24; i++) {
+            expected.push(dateInMilliseconds);
+            dateInMilliseconds -= millisecondsInOneHour;
+        }
+        const res = statsModel.getSortedSetHours(epoch);
 
-            assert.deepStrictEqual(res, expected);
-        });
+        assert.deepStrictEqual(res, expected);
+    });
 
     it('should apply TTL on a new sorted set using addToSortedSet', done => {
         const key = 'a-test-key';
@@ -301,10 +312,8 @@ describe('StatsModel class', () => {
                 const adjustmentSecs = now - nearestHour;
                 const msInADay = 24 * 60 * 60 * 1000;
                 const msInAnHour = 60 * 60 * 1000;
-                const upperLimitSecs =
-                    Math.ceil((msInADay - adjustmentSecs) / 1000);
-                const lowerLimitSecs =
-                    Math.floor((msInADay - adjustmentSecs - msInAnHour) / 1000);
+                const upperLimitSecs = Math.ceil((msInADay - adjustmentSecs) / 1000);
+                const lowerLimitSecs = Math.floor((msInADay - adjustmentSecs - msInAnHour) / 1000);
 
                 // assert new ttl is between 23 and 24 hours adjusted by time
                 // elapsed since normalized hourly time

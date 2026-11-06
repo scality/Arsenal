@@ -14,8 +14,8 @@ function getDate(params) {
     const ageInMinutes = params.ageInMinutes || 0;
     const ageInS = params.ageInS || 0;
     const ageInMs = params.ageInMs || 0;
-    const milliseconds = (ageInDays * oneDay) + (ageInHours * oneHour) + (ageInMinutes * oneMinute) +
-    (ageInS * oneSecond) + ageInMs;
+    const milliseconds =
+        ageInDays * oneDay + ageInHours * oneHour + ageInMinutes * oneMinute + ageInS * oneSecond + ageInMs;
     const timestamp = Date.now() - milliseconds;
     return new Date(timestamp);
 }

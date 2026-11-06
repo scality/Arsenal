@@ -1,4 +1,4 @@
-'use strict';  
+'use strict';
 
 const temp = require('temp');
 const assert = require('assert');

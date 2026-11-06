@@ -10,11 +10,7 @@ import { ArsenalError } from '../../errors';
  * @param log - Werelogs instance for logging if you choose to
  * @param [message] - Message to send as response, defaults to OK
  */
-export function sendSuccess(
-    res: http.ServerResponse,
-    log: RequestLogger,
-    message = 'OK'
-) {
+export function sendSuccess(res: http.ServerResponse, log: RequestLogger, message = 'OK') {
     log.debug('replying with success');
     res.writeHead(200);
     res.end(message);
@@ -27,12 +23,7 @@ export function sendSuccess(
  * @param error - Error to send back to the user
  * @param [optMessage] - Message to use instead of the errors message
  */
-export function sendError(
-    res: http.ServerResponse,
-    log: RequestLogger,
-    error: ArsenalError,
-    optMessage?: string
-) {
+export function sendError(res: http.ServerResponse, log: RequestLogger, error: ArsenalError, optMessage?: string) {
     const message = optMessage || error.description || '';
     log.debug('sending back error response', {
         httpCode: error.code,
@@ -44,6 +35,6 @@ export function sendError(
         JSON.stringify({
             errorType: error.message,
             errorMessage: message,
-        })
+        }),
     );
 }

@@ -12,7 +12,6 @@ const ENDPOINT = 'http://otel-collector.test:4318/v1/traces';
 // Under jest, require.cache busting is a no-op, so the bootstrap module is a
 // singleton across tests; afterEach close()s it to reset module-level sdk.
 function freshTracing() {
-     
     return require(BOOTSTRAP_PATH);
 }
 

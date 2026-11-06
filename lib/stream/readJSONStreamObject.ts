@@ -12,7 +12,7 @@ import joi from 'joi';
  */
 export default async function readJSONStreamObject<Data = any>(
     s: stream.Readable,
-    joiSchema?: joi.Schema<Data>
+    joiSchema?: joi.Schema<Data>,
 ): Promise<Data> {
     return new Promise((resolve, reject) => {
         const contentsChunks: any = [];
@@ -30,11 +30,7 @@ export default async function readJSONStreamObject<Data = any>(
                 }
                 return resolve(parsedContents);
             } catch (err: any) {
-                return reject(
-                    errorInstances.InvalidArgument.customizeDescription(
-                        `invalid input: ${err.message}`
-                    )
-                );
+                return reject(errorInstances.InvalidArgument.customizeDescription(`invalid input: ${err.message}`));
             }
         });
         s.once('error', reject);

@@ -1,12 +1,10 @@
 const assert = require('assert');
 const { parseString } = require('xml2js');
 
-const ObjectLockConfiguration =
-    require('../../../lib/models/ObjectLockConfiguration').default;
+const ObjectLockConfiguration = require('../../../lib/models/ObjectLockConfiguration').default;
 
 function checkError(parsedXml, err, errMessage, cb) {
-    const config = new ObjectLockConfiguration(parsedXml).
-        getValidatedObjectLockConfiguration();
+    const config = new ObjectLockConfiguration(parsedXml).getValidatedObjectLockConfiguration();
     assert.strictEqual(config.error.is[err], true);
     assert.strictEqual(config.error.description, errMessage);
     cb();
@@ -17,11 +15,9 @@ function generateRule(testParams) {
         return `<Rule>${testParams.value}</Rule>`;
     }
     if (testParams.key === 'DefaultRetention') {
-        return `<Rule><DefaultRetention>${testParams.value} ` +
-            '</DefaultRetention></Rule>';
+        return `<Rule><DefaultRetention>${testParams.value} ` + '</DefaultRetention></Rule>';
     }
-    const mode = testParams.key === 'Mode' ?
-        `<Mode>${testParams.value}</Mode>` : '<Mode>GOVERNANCE</Mode>';
+    const mode = testParams.key === 'Mode' ? `<Mode>${testParams.value}</Mode>` : '<Mode>GOVERNANCE</Mode>';
 
     let time = '<Days>1</Days>';
     if (testParams.key === 'Days') {
@@ -37,13 +33,15 @@ function generateRule(testParams) {
 }
 
 function generateXml(testParams) {
-    const Enabled = testParams.key === 'ObjectLockEnabled' ?
-        `<ObjectLockEnabled>${testParams.value}</ObjectLockEnabled>` :
-        '<ObjectLockEnabled>Enabled</ObjectLockEnabled>';
+    const Enabled =
+        testParams.key === 'ObjectLockEnabled'
+            ? `<ObjectLockEnabled>${testParams.value}</ObjectLockEnabled>`
+            : '<ObjectLockEnabled>Enabled</ObjectLockEnabled>';
     const Rule = generateRule(testParams);
-    const ObjectLock = testParams.key === 'ObjectLockConfiguration' ? '' :
-        `<ObjectLockConfiguration>${Enabled}${Rule}` +
-        '</ObjectLockConfiguration>';
+    const ObjectLock =
+        testParams.key === 'ObjectLockConfiguration'
+            ? ''
+            : `<ObjectLockConfiguration>${Enabled}${Rule}` + '</ObjectLockConfiguration>';
     return ObjectLock;
 }
 
@@ -95,8 +93,7 @@ const failTests = [
         name: 'fail with empty DefaultRetention',
         params: { key: 'DefaultRetention', value: '' },
         error: 'MalformedXML',
-        errorMessage: 'DefaultRetention request xml does not contain Mode or ' +
-            'retention period (Days or Years)',
+        errorMessage: 'DefaultRetention request xml does not contain Mode or ' + 'retention period (Days or Years)',
     },
     {
         name: 'fail with empty mode',
@@ -108,15 +105,13 @@ const failTests = [
         name: 'fail with invalid mode',
         params: { key: 'Mode', value: 'COMPLOVERNANCE' },
         error: 'MalformedXML',
-        errorMessage: 'Mode request xml must be one of "GOVERNANCE", ' +
-            '"COMPLIANCE"',
+        errorMessage: 'Mode request xml must be one of "GOVERNANCE", ' + '"COMPLIANCE"',
     },
     {
         name: 'fail with lowercase mode',
         params: { key: 'Mode', value: 'governance' },
         error: 'MalformedXML',
-        errorMessage: 'Mode request xml must be one of "GOVERNANCE", ' +
-            '"COMPLIANCE"',
+        errorMessage: 'Mode request xml must be one of "GOVERNANCE", ' + '"COMPLIANCE"',
     },
     {
         name: 'fail with empty retention period',
@@ -152,8 +147,7 @@ const failTests = [
 
 const passTests = [
     {
-        name: 'pass with GOVERNANCE retention mode and valid Days ' +
-            'retention period',
+        name: 'pass with GOVERNANCE retention mode and valid Days ' + 'retention period',
         params: {},
     },
     {
@@ -179,8 +173,7 @@ const passTestsGetConfigXML = [
             },
         },
         expectedXml: expectedXml('Days', 90, 'COMPLIANCE'),
-        description: 'with COMPLIANCE retention mode ' +
-            'and valid Days retention period',
+        description: 'with COMPLIANCE retention mode ' + 'and valid Days retention period',
     },
     {
         config: {
@@ -190,8 +183,7 @@ const passTestsGetConfigXML = [
             },
         },
         expectedXml: expectedXml('Days', 30, 'GOVERNANCE'),
-        description: 'with GOVERNANCE retention mode ' +
-            'and valid Days retention period',
+        description: 'with GOVERNANCE retention mode ' + 'and valid Days retention period',
     },
     {
         config: {
@@ -201,8 +193,7 @@ const passTestsGetConfigXML = [
             },
         },
         expectedXml: expectedXml('Years', 1, 'COMPLIANCE'),
-        description: 'with COMPLIANCE retention mode ' +
-            'and valid Years retention period',
+        description: 'with COMPLIANCE retention mode ' + 'and valid Years retention period',
     },
     {
         config: {
@@ -212,47 +203,44 @@ const passTestsGetConfigXML = [
             },
         },
         expectedXml: expectedXml('Years', 2, 'GOVERNANCE'),
-        description: 'with GOVERNANCE retention mode ' +
-            'and valid Years retention period',
+        description: 'with GOVERNANCE retention mode ' + 'and valid Years retention period',
     },
     {
         config: {},
-        expectedXml: '<?xml version="1.0" encoding="UTF-8"?>' +
+        expectedXml:
+            '<?xml version="1.0" encoding="UTF-8"?>' +
             '<ObjectLockConfiguration ' +
             'xmlns="http://s3.amazonaws.com/doc/2006-03-01/">' +
             '<ObjectLockEnabled>Enabled</ObjectLockEnabled>' +
             '</ObjectLockConfiguration>',
-        description: 'without rule if object lock ' +
-            'configuration has not been set',
+        description: 'without rule if object lock ' + 'configuration has not been set',
     },
 ];
 
-describe('ObjectLockConfiguration class getValidatedObjectLockConfiguration',
-    () => {
-        it('should return MalformedXML error if request xml is empty', done => {
-            const errMessage = 'request xml is undefined or empty';
-            checkError('', 'MalformedXML', errMessage, done);
-        });
+describe('ObjectLockConfiguration class getValidatedObjectLockConfiguration', () => {
+    it('should return MalformedXML error if request xml is empty', done => {
+        const errMessage = 'request xml is undefined or empty';
+        checkError('', 'MalformedXML', errMessage, done);
+    });
 
-        failTests.forEach(test => {
-            it(`should ${test.name}`, done => {
-                generateParsedXml(test.params, xml => {
-                    checkError(xml, test.error, test.errorMessage, done);
-                });
-            });
-        });
-
-        passTests.forEach(test => {
-            it(`should ${test.name}`, done => {
-                generateParsedXml(test.params, xml => {
-                    const config = new ObjectLockConfiguration(xml).
-                        getValidatedObjectLockConfiguration();
-                    assert.ifError(config.error);
-                    done();
-                });
+    failTests.forEach(test => {
+        it(`should ${test.name}`, done => {
+            generateParsedXml(test.params, xml => {
+                checkError(xml, test.error, test.errorMessage, done);
             });
         });
     });
+
+    passTests.forEach(test => {
+        it(`should ${test.name}`, done => {
+            generateParsedXml(test.params, xml => {
+                const config = new ObjectLockConfiguration(xml).getValidatedObjectLockConfiguration();
+                assert.ifError(config.error);
+                done();
+            });
+        });
+    });
+});
 
 describe('ObjectLockConfiguration class getConfigXML', () => {
     passTestsGetConfigXML.forEach(test => {

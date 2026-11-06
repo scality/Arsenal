@@ -5,7 +5,7 @@ import errors from '../../errors';
 import ZenkoMetrics from '../../metrics/ZenkoMetrics';
 import { sendSuccess, sendError } from './Utils';
 
-function checkStub() { 
+function checkStub() {
     return true;
 }
 
@@ -58,11 +58,7 @@ export default class HealthProbeServer extends httpServer {
         }
     }
 
-    _onLiveness(
-        _req: http.IncomingMessage,
-        res: http.ServerResponse,
-        log: werelogs.RequestLogger,
-    ) {
+    _onLiveness(_req: http.IncomingMessage, res: http.ServerResponse, log: werelogs.RequestLogger) {
         if (this._livenessCheck(log)) {
             sendSuccess(res, log);
         } else {
@@ -70,11 +66,7 @@ export default class HealthProbeServer extends httpServer {
         }
     }
 
-    _onReadiness(
-        _req: http.IncomingMessage,
-        res: http.ServerResponse,
-        log: werelogs.RequestLogger,
-    ) {
+    _onReadiness(_req: http.IncomingMessage, res: http.ServerResponse, log: werelogs.RequestLogger) {
         if (this._readinessCheck(log)) {
             sendSuccess(res, log);
         } else {

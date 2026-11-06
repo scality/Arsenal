@@ -19,16 +19,7 @@ export default function constructStringToSign(params: {
     proxyPath?: string;
     awsService: string;
 }): string {
-    const {
-        request,
-        signedHeaders,
-        payloadChecksum,
-        credentialScope,
-        timestamp,
-        query,
-        log,
-        proxyPath,
-    } = params;
+    const { request, signedHeaders, payloadChecksum, credentialScope, timestamp, query, log, proxyPath } = params;
     const path = proxyPath || request.path;
 
     const canonicalReqResult = createCanonicalRequest({
@@ -45,9 +36,7 @@ export default function constructStringToSign(params: {
         log.debug('constructed canonicalRequest', { canonicalReqResult });
     }
     const sha256 = crypto.createHash('sha256');
-    const canonicalHex = sha256.update(canonicalReqResult, 'binary')
-        .digest('hex');
-    const stringToSign = `AWS4-HMAC-SHA256\n${timestamp}\n` +
-    `${credentialScope}\n${canonicalHex}`;
+    const canonicalHex = sha256.update(canonicalReqResult, 'binary').digest('hex');
+    const stringToSign = `AWS4-HMAC-SHA256\n${timestamp}\n` + `${credentialScope}\n${canonicalHex}`;
     return stringToSign;
 }

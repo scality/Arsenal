@@ -1,6 +1,5 @@
 const assert = require('assert');
-const { convertToXml, parseRestoreRequestXml } =
-    require('../../../lib/s3middleware/objectRestore');
+const { convertToXml, parseRestoreRequestXml } = require('../../../lib/s3middleware/objectRestore');
 const DummyRequestLogger = require('../helpers').DummyRequestLogger;
 
 const log = new DummyRequestLogger();
@@ -64,13 +63,12 @@ const failTests = [
         errMessage: `RestoreRequest.Days must be less than 2147483648. [${invalidDays3}]`,
     },
     {
-        description: 'should fail with RestoreRequest.Tier not in [\'Expedited\', \'Standard\', \'Bulk\']',
+        description: "should fail with RestoreRequest.Tier not in ['Expedited', 'Standard', 'Bulk']",
         requestXml: generateXml(validDay, invalidTier),
         error: 'MalformedXML',
         errMessage: `RestoreRequest.Tier is invalid value. [${invalidTier}]`,
     },
 ];
-
 
 describe('object restore: parseRestoreRequestXml', () => {
     failTests.forEach(test => {

@@ -4,10 +4,8 @@ import type { ArsenalError } from '../errors';
 
 export type Config = any;
 export type LockMode = 'GOVERNANCE' | 'COMPLIANCE';
-export type DefaultRetention = { Days?: string[], Years?: string[], Mode?: LockMode[] };
-export type ParsedRetention =
-    | { error: ArsenalError }
-    | { timeType: 'days' | 'years'; timeValue: number };
+export type DefaultRetention = { Days?: string[]; Years?: string[]; Mode?: LockMode[] };
+export type ParsedRetention = { error: ArsenalError } | { timeType: 'days' | 'years'; timeValue: number };
 
 /**
  * Format of xml request:
@@ -25,15 +23,15 @@ export type ParsedRetention =
  */
 
 /**
-  * Format of config:
-  *
-  * config = {
-  *     rule: {
-  *         mode: GOVERNANCE|COMPLIANCE,
-  *         days|years: integer,
-  *     }
-  * }
-  */
+ * Format of config:
+ *
+ * config = {
+ *     rule: {
+ *         mode: GOVERNANCE|COMPLIANCE,
+ *         days|years: integer,
+ *     }
+ * }
+ */
 
 export type ObjectLockConfigurationMetadata = {
     ObjectLockConfiguration: {
@@ -112,12 +110,12 @@ export default class ObjectLockConfiguration {
             const error = errorInstances.MalformedXML.customizeDescription(msg);
             return { error };
         }
-        const { timeRaw, timeMax, timeType } = function () {
+        const { timeRaw, timeMax, timeType } = (function () {
             if (dr.Days) {
                 return { timeRaw: dr.Days!, timeMax: 36500, timeType: 'Days' };
             }
             return { timeRaw: dr.Years!, timeMax: 100, timeType: 'Years' };
-        }();
+        })();
         if (timeRaw.length > 1) {
             const msg = 'request xml contains more than one retention period';
             const error = errorInstances.MalformedXML.customizeDescription(msg);
@@ -183,8 +181,7 @@ export default class ObjectLockConfiguration {
             }
             if (!drArray[0].Mode || (!drArray[0].Days && !drArray[0].Years)) {
                 const msg =
-                    'DefaultRetention request xml does not contain Mode or ' +
-                    'retention period (Days or Years)';
+                    'DefaultRetention request xml does not contain Mode or ' + 'retention period (Days or Years)';
                 const error = errorInstances.MalformedXML.customizeDescription(msg);
                 return { error };
             }
@@ -231,18 +228,21 @@ export default class ObjectLockConfiguration {
         // object lock is enabled on the bucket but object lock configuration
         // not set
         if (config.rule === undefined) {
-            return '<?xml version="1.0" encoding="UTF-8"?>' +
+            return (
+                '<?xml version="1.0" encoding="UTF-8"?>' +
                 '<ObjectLockConfiguration ' +
                 'xmlns="http://s3.amazonaws.com/doc/2006-03-01/">' +
                 '<ObjectLockEnabled>Enabled</ObjectLockEnabled>' +
-                '</ObjectLockConfiguration>';
+                '</ObjectLockConfiguration>'
+            );
         }
         const { days, years, mode } = config.rule;
         const Mode = `<Mode>${mode}</Mode>`;
         const Days = days !== undefined ? `<Days>${days}</Days>` : '';
         const Years = years !== undefined ? `<Years>${years}</Years>` : '';
         const Time = Days || Years;
-        return '<?xml version="1.0" encoding="UTF-8"?>' +
+        return (
+            '<?xml version="1.0" encoding="UTF-8"?>' +
             '<ObjectLockConfiguration ' +
             'xmlns="http://s3.amazonaws.com/doc/2006-03-01/">' +
             '<ObjectLockEnabled>Enabled</ObjectLockEnabled>' +
@@ -252,6 +252,7 @@ export default class ObjectLockConfiguration {
             `${Time}` +
             '</DefaultRetention>' +
             '</Rule>' +
-            '</ObjectLockConfiguration>';
+            '</ObjectLockConfiguration>'
+        );
     }
 }

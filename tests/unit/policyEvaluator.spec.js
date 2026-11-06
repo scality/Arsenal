@@ -1,4 +1,4 @@
-'use strict';  
+'use strict';
 
 const assert = require('assert');
 const fakeTimers = require('@sinonjs/fake-timers');
@@ -1090,8 +1090,8 @@ describe('policyEvaluator', () => {
                         _apiMethod: 'bucketGet',
                         _requesterInfo: { username: 'Pete' },
                         _query: {
-                            prefix: 'home/Pete',
-                            delimiter: 'ok',
+                            'prefix': 'home/Pete',
+                            'delimiter': 'ok',
                             'max-keys': '9',
                         },
                         _headers: { 'user-agent': 'CyberSquaw' },
@@ -1120,8 +1120,8 @@ describe('policyEvaluator', () => {
                         _apiMethod: 'bucketGet',
                         _requesterInfo: { username: 'Pete' },
                         _query: {
-                            prefix: 'home/Pete',
-                            delimiter: 'ok',
+                            'prefix': 'home/Pete',
+                            'delimiter': 'ok',
                             'max-keys': '11',
                         },
                         _headers: { 'user-agent': 'CyberSquaw' },

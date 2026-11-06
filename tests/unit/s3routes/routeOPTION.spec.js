@@ -64,9 +64,7 @@ describe('routeOPTIONS', () => {
 
         routeOPTIONS(request, response, api, log, statsClient);
 
-        expect(api.callApiMethod).toHaveBeenCalledWith(
-            'corsPreflight', request, response, log, expect.any(Function),
-        );
+        expect(api.callApiMethod).toHaveBeenCalledWith('corsPreflight', request, response, log, expect.any(Function));
     });
 
     it('should report 500 stats if corsPreflight method returns an error', () => {
@@ -81,8 +79,6 @@ describe('routeOPTIONS', () => {
 
         routeOPTIONS(request, response, api, log, statsClient);
 
-        expect(routesUtils.statsReport500).toHaveBeenCalledWith(
-            new ArsenalError('InternalError'), statsClient,
-        );
+        expect(routesUtils.statsReport500).toHaveBeenCalledWith(new ArsenalError('InternalError'), statsClient);
     });
 });

@@ -26,16 +26,22 @@ const validHosts = [
 describe('routesUtils.getBucketNameFromHost', () => {
     it('should extract valid buckets for one endpoint', () => {
         [
-            'b', 'mybucket',
-            'buck-et', '-buck-et', 'buck-et-',
-            'buck_et', '_buck_et', 'buck_et_',
-            'buck.et', 'bu.ck.et', 'bu.ck-et',
+            'b',
+            'mybucket',
+            'buck-et',
+            '-buck-et',
+            'buck-et-',
+            'buck_et',
+            '_buck_et',
+            'buck_et_',
+            'buck.et',
+            'bu.ck.et',
+            'bu.ck-et',
         ].forEach(bucket => {
             const headers = {
                 host: `${bucket}.s3.amazonaws.com`,
             };
-            const result =
-                routesUtils.getBucketNameFromHost({ headers }, validHosts);
+            const result = routesUtils.getBucketNameFromHost({ headers }, validHosts);
             assert.strictEqual(result, bucket);
         });
     });
@@ -49,19 +55,15 @@ describe('routesUtils.getBucketNameFromHost', () => {
             'in-french.bucket.is-seau.s3-website-ap-northeast-1.amazonaws.com',
         ].forEach(host => {
             const headers = { host };
-            const result =
-                routesUtils.getBucketNameFromHost({ headers }, validHosts);
+            const result = routesUtils.getBucketNameFromHost({ headers }, validHosts);
             assert.strictEqual(result, 'in-french.bucket.is-seau');
         });
     });
 
     it('should return undefined when non dns-style', () => {
-        [
-            's3.amazonaws.com',
-        ].forEach(host => {
+        ['s3.amazonaws.com'].forEach(host => {
             const headers = { host };
-            const result =
-                routesUtils.getBucketNameFromHost({ headers }, validHosts);
+            const result = routesUtils.getBucketNameFromHost({ headers }, validHosts);
             assert.strictEqual(result, undefined);
         });
     });
@@ -76,22 +78,18 @@ describe('routesUtils.getBucketNameFromHost', () => {
             '[::ffff:127.0.0.1]',
         ].forEach(host => {
             const headers = { host };
-            const result =
-                routesUtils.getBucketNameFromHost({ headers }, validHosts);
+            const result = routesUtils.getBucketNameFromHost({ headers }, validHosts);
             assert.strictEqual(result, undefined);
         });
     });
 
     it('should throw when bad request', () => {
-        [
-            {},
-            { host: '' },
-            { host: 'not/a/valid/endpoint' },
-            { host: 'this.domain.is.not.in.config' },
-        ].forEach(headers => {
-            assert.throws(() => {
-                routesUtils.getBucketNameFromHost({ headers }, validHosts);
-            });
-        });
+        [{}, { host: '' }, { host: 'not/a/valid/endpoint' }, { host: 'this.domain.is.not.in.config' }].forEach(
+            headers => {
+                assert.throws(() => {
+                    routesUtils.getBucketNameFromHost({ headers }, validHosts);
+                });
+            },
+        );
     });
 });

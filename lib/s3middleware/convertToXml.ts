@@ -10,7 +10,7 @@ export type Params = {
     eTag: string;
     uploadId: string;
     list: string;
-}
+};
 
 export type CompleteParams = {
     bucketName: string;
@@ -20,7 +20,7 @@ export type CompleteParams = {
     checksumAlgorithm?: ChecksumAlgorithm;
     checksumValue?: string;
     checksumType?: ChecksumType;
-}
+};
 export const completeMultipartUpload = (xmlParams: CompleteParams) => {
     const bucketName = escapeForXml(xmlParams.bucketName);
     const hostname = escapeForXml(xmlParams.hostname);
@@ -30,15 +30,15 @@ export const completeMultipartUpload = (xmlParams: CompleteParams) => {
 
     let checksumValXml = '';
     let checksumTypeXml = '';
-    if (xmlParams.checksumAlgorithm !== undefined &&
+    if (
+        xmlParams.checksumAlgorithm !== undefined &&
         xmlParams.checksumValue !== undefined &&
-        xmlParams.checksumType !== undefined) {
+        xmlParams.checksumType !== undefined
+    ) {
         const checksumTag = CHECKSUM_XML_TAGS[xmlParams.checksumAlgorithm];
         if (checksumTag !== undefined) {
-            checksumValXml =
-                `<${checksumTag}>${escapeForXml(xmlParams.checksumValue)}</${checksumTag}>`;
-            checksumTypeXml =
-                `<ChecksumType>${escapeForXml(xmlParams.checksumType)}</ChecksumType>`;
+            checksumValXml = `<${checksumTag}>${escapeForXml(xmlParams.checksumValue)}</${checksumTag}>`;
+            checksumTypeXml = `<ChecksumType>${escapeForXml(xmlParams.checksumType)}</ChecksumType>`;
         }
     }
 
@@ -67,8 +67,9 @@ export const completeMultipartUpload = (xmlParams: CompleteParams) => {
     `.trim();
 };
 
-export type InitParams = { bucketName: string; objectKey: string; uploadId: string }
-export const initiateMultipartUpload = (xmlParams: InitParams) => `
+export type InitParams = { bucketName: string; objectKey: string; uploadId: string };
+export const initiateMultipartUpload = (xmlParams: InitParams) =>
+    `
     <?xml version="1.0" encoding="UTF-8"?>
     <InitiateMultipartUploadResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
         <Bucket>${escapeForXml(xmlParams.bucketName)}</Bucket>
@@ -110,7 +111,7 @@ export type ListParams = {
     keyMarker: string;
     uploadIdMarker: string;
     prefix?: string;
-}
+};
 export const listMultipartUploads = (xmlParams: ListParams) => {
     const xml: string[] = [];
     const l = xmlParams.list;
@@ -127,17 +128,14 @@ export const listMultipartUploads = (xmlParams: ListParams) => {
         { tag: 'KeyMarker', value: xmlParams.keyMarker },
         { tag: 'UploadIdMarker', value: xmlParams.uploadIdMarker },
         { tag: 'NextKeyMarker', value: l.NextKeyMarker, optional: true },
-        { tag: 'NextUploadIdMarker', value: l.NextUploadIdMarker,
-            optional: true },
+        { tag: 'NextUploadIdMarker', value: l.NextUploadIdMarker, optional: true },
         { tag: 'Delimiter', value: l.Delimiter, optional: true },
         { tag: 'Prefix', value: xmlParams.prefix, optional: true },
     ];
 
     params.forEach(param => {
         if (param.value) {
-            xml.push(
-                `<${param.tag}>${escapeForXml(param.value)}</${param.tag}>`
-            );
+            xml.push(`<${param.tag}>${escapeForXml(param.value)}</${param.tag}>`);
         } else if (!param.optional) {
             xml.push(`<${param.tag} />`);
         }
@@ -155,10 +153,7 @@ export const listMultipartUploads = (xmlParams: ListParams) => {
             key = querystring.escape(key);
         }
 
-        xml.push(
-            '<Upload>',
-            `<Key>${escapeForXml(key)}</Key>`,
-        );
+        xml.push('<Upload>', `<Key>${escapeForXml(key)}</Key>`);
         if (!val.ChecksumIsDefault && val.ChecksumAlgorithm && val.ChecksumType) {
             xml.push(
                 `<ChecksumAlgorithm>${escapeForXml(val.ChecksumAlgorithm.toUpperCase())}</ChecksumAlgorithm>`,
@@ -188,11 +183,7 @@ export const listMultipartUploads = (xmlParams: ListParams) => {
     });
 
     l.CommonPrefixes.forEach(prefix => {
-        xml.push(
-            '<CommonPrefixes>',
-            `<Prefix>${escapeForXml(prefix)}</Prefix>`,
-            '</CommonPrefixes>',
-        );
+        xml.push('<CommonPrefixes>', `<Prefix>${escapeForXml(prefix)}</Prefix>`, '</CommonPrefixes>');
     });
 
     xml.push('</ListMultipartUploadsResult>');

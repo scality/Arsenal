@@ -57,7 +57,8 @@ describe('BucketLoggingStatus', () => {
     describe('fromXML', () => {
         describe('Success cases', () => {
             it('should parse XML with LoggingEnabled', () => {
-                const xml = '<?xml version="1.0" encoding="UTF-8"?>' +
+                const xml =
+                    '<?xml version="1.0" encoding="UTF-8"?>' +
                     '<BucketLoggingStatus xmlns="http://s3.amazonaws.com/doc/2006-03-01">' +
                     '<LoggingEnabled>' +
                     '<TargetBucket>loggingbucket</TargetBucket>' +
@@ -75,7 +76,8 @@ describe('BucketLoggingStatus', () => {
             });
 
             it('should parse XML without LoggingEnabled (empty config)', () => {
-                const xml = '<?xml version="1.0" encoding="UTF-8"?>' +
+                const xml =
+                    '<?xml version="1.0" encoding="UTF-8"?>' +
                     '<BucketLoggingStatus xmlns="http://s3.amazonaws.com/doc/2006-03-01">' +
                     '</BucketLoggingStatus>';
 
@@ -87,7 +89,8 @@ describe('BucketLoggingStatus', () => {
             });
 
             it('should parse XML without LoggingEnabled (self closing)', () => {
-                const xml = '<?xml version="1.0" encoding="UTF-8"?>' +
+                const xml =
+                    '<?xml version="1.0" encoding="UTF-8"?>' +
                     '<BucketLoggingStatus xmlns="http://s3.amazonaws.com/doc/2006-03-01" />';
 
                 const result = BucketLoggingStatus.fromXML(xml);
@@ -98,7 +101,8 @@ describe('BucketLoggingStatus', () => {
             });
 
             it('should parse XML with empty TargetPrefix', () => {
-                const xml = '<?xml version="1.0" encoding="UTF-8"?>' +
+                const xml =
+                    '<?xml version="1.0" encoding="UTF-8"?>' +
                     '<BucketLoggingStatus xmlns="http://s3.amazonaws.com/doc/2006-03-01">' +
                     '<LoggingEnabled>' +
                     '<TargetBucket>loggingbucket</TargetBucket>' +
@@ -139,8 +143,7 @@ describe('BucketLoggingStatus', () => {
             });
 
             it('should return error for XML without BucketLoggingStatus root tag', () => {
-                const xml = '<?xml version="1.0" encoding="UTF-8"?>' +
-                    '<WrongTag></WrongTag>';
+                const xml = '<?xml version="1.0" encoding="UTF-8"?>' + '<WrongTag></WrongTag>';
 
                 const result = BucketLoggingStatus.fromXML(xml);
 
@@ -151,7 +154,8 @@ describe('BucketLoggingStatus', () => {
             });
 
             it('should return error when TargetBucket is missing', () => {
-                const xml = '<?xml version="1.0" encoding="UTF-8"?>' +
+                const xml =
+                    '<?xml version="1.0" encoding="UTF-8"?>' +
                     '<BucketLoggingStatus xmlns="http://s3.amazonaws.com/doc/2006-03-01">' +
                     '<LoggingEnabled>' +
                     '<TargetPrefix>logs/</TargetPrefix>' +
@@ -167,7 +171,8 @@ describe('BucketLoggingStatus', () => {
             });
 
             it('should return error when TargetPrefix is missing', () => {
-                const xml = '<?xml version="1.0" encoding="UTF-8"?>' +
+                const xml =
+                    '<?xml version="1.0" encoding="UTF-8"?>' +
                     '<BucketLoggingStatus xmlns="http://s3.amazonaws.com/doc/2006-03-01">' +
                     '<LoggingEnabled>' +
                     '<TargetBucket>bucket</TargetBucket>' +
@@ -183,7 +188,8 @@ describe('BucketLoggingStatus', () => {
             });
 
             it('should return error when TargetBucket length is less than 3', () => {
-                const xml = '<?xml version="1.0" encoding="UTF-8"?>' +
+                const xml =
+                    '<?xml version="1.0" encoding="UTF-8"?>' +
                     '<BucketLoggingStatus xmlns="http://s3.amazonaws.com/doc/2006-03-01">' +
                     '<LoggingEnabled>' +
                     '<TargetBucket>ab</TargetBucket>' +
@@ -201,7 +207,8 @@ describe('BucketLoggingStatus', () => {
 
             it('should return error when TargetBucket length is greater than 255', () => {
                 const longBucketName = 'a'.repeat(256);
-                const xml = '<?xml version="1.0" encoding="UTF-8"?>' +
+                const xml =
+                    '<?xml version="1.0" encoding="UTF-8"?>' +
                     '<BucketLoggingStatus xmlns="http://s3.amazonaws.com/doc/2006-03-01">' +
                     '<LoggingEnabled>' +
                     `<TargetBucket>${longBucketName}</TargetBucket>` +
@@ -219,7 +226,8 @@ describe('BucketLoggingStatus', () => {
 
             it('should return error when TargetPrefix length is greater than 800', () => {
                 const longPrefix = 'a'.repeat(801);
-                const xml = '<?xml version="1.0" encoding="UTF-8"?>' +
+                const xml =
+                    '<?xml version="1.0" encoding="UTF-8"?>' +
                     '<BucketLoggingStatus xmlns="http://s3.amazonaws.com/doc/2006-03-01">' +
                     '<LoggingEnabled>' +
                     '<TargetBucket>bucket</TargetBucket>' +
@@ -238,7 +246,8 @@ describe('BucketLoggingStatus', () => {
 
         describe('Error cases - NotImplemented', () => {
             it('should return NotImplemented error when TargetGrants is present', () => {
-                const xml = '<?xml version="1.0" encoding="UTF-8"?>' +
+                const xml =
+                    '<?xml version="1.0" encoding="UTF-8"?>' +
                     '<BucketLoggingStatus xmlns="http://s3.amazonaws.com/doc/2006-03-01">' +
                     '<LoggingEnabled>' +
                     '<TargetBucket>bucket</TargetBucket>' +
@@ -252,13 +261,13 @@ describe('BucketLoggingStatus', () => {
 
                 assert(result.error);
                 assert.strictEqual(result.error.arsenalError.NotImplemented, true);
-                assert.strictEqual(result.error.details,
-                    'TargetGrants field in LoggingEnabled is not implemented');
+                assert.strictEqual(result.error.details, 'TargetGrants field in LoggingEnabled is not implemented');
                 assert.strictEqual(result.res, undefined);
             });
 
             it('should return NotImplemented error when TargetObjectKeyFormat is present', () => {
-                const xml = '<?xml version="1.0" encoding="UTF-8"?>' +
+                const xml =
+                    '<?xml version="1.0" encoding="UTF-8"?>' +
                     '<BucketLoggingStatus xmlns="http://s3.amazonaws.com/doc/2006-03-01">' +
                     '<LoggingEnabled>' +
                     '<TargetBucket>bucket</TargetBucket>' +
@@ -271,8 +280,10 @@ describe('BucketLoggingStatus', () => {
 
                 assert(result.error);
                 assert.strictEqual(result.error.arsenalError.NotImplemented, true);
-                assert.strictEqual(result.error.details,
-                    'TargetObjectKeyFormat field in LoggingEnabled is not implemented');
+                assert.strictEqual(
+                    result.error.details,
+                    'TargetObjectKeyFormat field in LoggingEnabled is not implemented',
+                );
                 assert.strictEqual(result.res, undefined);
             });
         });
@@ -327,7 +338,7 @@ describe('BucketLoggingStatus', () => {
                         assert.strictEqual(logging.TargetPrefix, `logs/app${char}env/`);
                         done();
                     });
-                })
+                }),
             );
         });
     });

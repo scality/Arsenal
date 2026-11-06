@@ -1,4 +1,4 @@
-'use strict';  
+'use strict';
 
 const spawn = require('child_process').spawn;
 

@@ -12,16 +12,13 @@ export type Errors = { [_ in Name]: ArsenalError };
 
 // This object is reused constantly through createIs, we store it there
 // to avoid recomputation.
-const isBase = Object.fromEntries(
-    Object.keys(rawErrors).map(key => [key, false])
-) as Is;
+const isBase = Object.fromEntries(Object.keys(rawErrors).map(key => [key, false])) as Is;
 
 // This allows to conditionally add the old behavior of errors to properly
 // test migration.
 // Activate CI tests with `ALLOW_UNSAFE_ERROR_COMPARISON=false yarn test`.
 // Remove this mechanism in ARSN-176.
-export const allowUnsafeErrComp = (
-    process.env.ALLOW_UNSAFE_ERROR_COMPARISON ?? 'true') === 'true';
+export const allowUnsafeErrComp = (process.env.ALLOW_UNSAFE_ERROR_COMPARISON ?? 'true') === 'true';
 
 // This contains some metaprog. Be careful.
 // Proxy can be found on MDN.
@@ -42,9 +39,10 @@ const createIs = (type: Name): Is => {
  * Adds +1.3 MB of js objects but greatly increase speed when using errors
  * And avoid gc.
  */
-const isPreCreated = Object.fromEntries(
-    (Object.keys(rawErrors) as Name[]).map(key => [key, createIs(key)])
-) as Record<Name, Is>;
+const isPreCreated = Object.fromEntries((Object.keys(rawErrors) as Name[]).map(key => [key, createIs(key)])) as Record<
+    Name,
+    Is
+>;
 
 export class ArsenalError extends Error {
     /** HTTP status code. Example: 401, 403, 500, ... */
@@ -60,8 +58,7 @@ export class ArsenalError extends Error {
      * that only show in debug mode) */
     #metadata: Map<string, object[]>;
 
-    private constructor(type: Name, code: number, description: string,
-        metadata?: Map<string, object[]>) {
+    private constructor(type: Name, code: number, description: string, metadata?: Map<string, object[]>) {
         super(type);
         this.#code = code;
         this.#description = description;
@@ -92,7 +89,7 @@ export class ArsenalError extends Error {
             code: this.#code,
             description: this.#description,
             type: this.#type,
-            stack: this.stack
+            stack: this.stack,
         };
     }
 
@@ -101,11 +98,7 @@ export class ArsenalError extends Error {
             return null;
         }
 
-        const err = new ArsenalError(
-            flat_obj.type,
-            flat_obj.code,
-            flat_obj.description
-        );
+        const err = new ArsenalError(flat_obj.type, flat_obj.code, flat_obj.description);
         err.stack = flat_obj.stack;
         return err;
     }
@@ -197,10 +190,10 @@ export class ArsenalError extends Error {
      * Like errors but generate singleton instances of errors.
      * These pre-created instances avoid the performance cost of creating new ArsenalError
      * objects, stack traces, and metadata Maps on every error creation.
-     * 
+     *
      * Use these instances in hot paths where errors are frequently created as part of
      * normal operation flow, and traces are not needed, to reduce CPU usage and GC pressure.
-     * 
+     *
      * To use before .customizeDescription to avoid intermediate instance.
      * Adds +0.2 MB in heap at startup.
      */
@@ -228,9 +221,9 @@ export default ArsenalError.errors();
 /**
  * Pre-instantiated error instances for performance-critical code paths.
  * These errors do not have stack traces.
- * 
+ *
  * Usage: errorInstances.NoSuchKey, errorInstances.AccessDenied.customizeDescription('msg')
- * 
+ *
  * Performance benefit: Avoids creating new ArsenalError objects, stack traces, and metadata
  * Maps on every error creation, reducing CPU usage and GC pressure.
  */

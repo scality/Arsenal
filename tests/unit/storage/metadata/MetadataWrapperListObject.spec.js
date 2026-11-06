@@ -12,7 +12,7 @@ describe('MetadataWrapper listObject parsing', () => {
     let metadataWrapper;
 
     const bucketName = 'test-bucket';
-    
+
     beforeEach(() => {
         sandbox = sinon.createSandbox();
         mockClient = {
@@ -62,8 +62,8 @@ describe('MetadataWrapper listObject parsing', () => {
                 key: 'obj1',
                 value: JSON.stringify({
                     'content-length': 100,
-                    checksumValue: 'base64-checksum-value',
-                    checksumAlgorithm: 'sha256',
+                    'checksumValue': 'base64-checksum-value',
+                    'checksumAlgorithm': 'sha256',
                 }),
             },
         ];
@@ -169,7 +169,7 @@ describe('MetadataWrapper listObject parsing', () => {
             done();
         });
     });
-    
+
     it('should parse restore status for versions listing', done => {
         const rawEntries = [
             {

@@ -31,11 +31,7 @@ export function createAggregateETag(partETags: string[]) {
     // Convert the buffer to a binary string
     const binaryString = bufferedHex.toString('binary');
     // Get the md5 of the binary string and the hex digest of the md5
-    const md5Hash =
-        crypto
-            .createHash('md5')
-            .update(binaryString, 'binary')
-            .digest('hex');
+    const md5Hash = crypto.createHash('md5').update(binaryString, 'binary').digest('hex');
     // Add the number of parts at the end
     return `${md5Hash}-${partETags.length}`;
 }
@@ -130,8 +126,7 @@ export function validateAndFilterMpuParts(
             key: item.key,
             ETag: `"${item.value.ETag}"`,
             size: item.value.Size,
-            locations: Array.isArray(item.value.partLocations) ?
-                item.value.partLocations : [item.value.partLocations],
+            locations: Array.isArray(item.value.partLocations) ? item.value.partLocations : [item.value.partLocations],
         });
     });
     keysToDelete.push(mpuOverviewKey);
@@ -156,8 +151,7 @@ export function validateAndFilterMpuParts(
         // the complete multipart upload request is not
         // in ascending order return an error
         if (i > 0) {
-            const previousPartNumber =
-                Number.parseInt(jsonList.Part[i - 1].PartNumber[0], 10);
+            const previousPartNumber = Number.parseInt(jsonList.Part[i - 1].PartNumber[0], 10);
             if (partNumber <= previousPartNumber) {
                 filteredPartsObj.error = errors.InvalidPartOrder;
                 return filteredPartsObj;
@@ -167,8 +161,7 @@ export function validateAndFilterMpuParts(
         let isPartUploaded = false;
         while (storedPartsCopy.length > 0 && !isPartUploaded) {
             const storedPart = storedPartsCopy[0];
-            const storedPartNumber =
-                Number.parseInt(storedPart.key.split(splitter)[1], 10);
+            const storedPartNumber = Number.parseInt(storedPart.key.split(splitter)[1], 10);
 
             if (storedPartNumber === partNumber) {
                 isPartUploaded = true;
@@ -179,8 +172,7 @@ export function validateAndFilterMpuParts(
                 // 32 chars = 16 bytes(2 chars-per-byte) = 128 bits of
                 // MD5 hex
                 if (partETag.length !== 32) {
-                    const buffered = Buffer.from(part.ETag[0], 'base64')
-                        .toString('hex');
+                    const buffered = Buffer.from(part.ETag[0], 'base64').toString('hex');
                     partETag = `${buffered}`;
                 }
                 partETag = `"${partETag}"`;
@@ -194,15 +186,16 @@ export function validateAndFilterMpuParts(
 
                 // If any part other than the last part is less than
                 // 5MB, return an error
-                const storedPartSize =
-                    Number.parseInt(storedPart.size, 10);
+                const storedPartSize = Number.parseInt(storedPart.size, 10);
                 // allow smaller parts for testing
                 if (MPU_TESTING) {
                     log.info('MPU_TESTING env variable setting', { setting: MPU_TESTING });
                 }
-                if (MPU_TESTING !== 'yes' &&
+                if (
+                    MPU_TESTING !== 'yes' &&
                     i < jsonList.Part.length - 1 &&
-                    storedPartSize < constants.minimumAllowedPartSize) {
+                    storedPartSize < constants.minimumAllowedPartSize
+                ) {
                     log.debug('part too small on complete mpu');
                     filteredPartsObj.error = errors.EntityTooSmall;
                     return filteredPartsObj;

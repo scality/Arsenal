@@ -4,10 +4,10 @@ import { type ArsenalRequest } from '../types/ArsenalRequest';
 
 export interface S3Config {
     requests: {
-        trustedProxyCIDRs: string[],
-        extractClientIPFromHeader: string,
-        extractProtocolFromHeader: string,
-    }
+        trustedProxyCIDRs: string[];
+        extractClientIPFromHeader: string;
+        extractProtocolFromHeader: string;
+    };
 }
 
 /**

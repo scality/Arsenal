@@ -2,8 +2,7 @@ const assert = require('assert');
 const sinon = require('sinon');
 const werelogs = require('werelogs');
 
-const BucketClientInterface = require(
-    '../../../../../lib/storage/metadata/bucketclient/BucketClientInterface');
+const BucketClientInterface = require('../../../../../lib/storage/metadata/bucketclient/BucketClientInterface');
 const BucketInfo = require('../../../../../lib/models/BucketInfo').default;
 
 const logger = new werelogs.Logger('BucketClientInterface', 'debug', 'debug');
@@ -84,7 +83,7 @@ describe('BucketClientInterface', () => {
     });
 
     describe('getBucketAttributes', () => {
-        it('should propagate raftSessionId as third callback parameter when present', (done) => {
+        it('should propagate raftSessionId as third callback parameter when present', done => {
             mockRESTClient.getBucketAttributes.callsFake((bucketName, uid, callback) => {
                 process.nextTick(() => callback(null, mockBucketData, testRaftSessionId));
             });
@@ -97,7 +96,7 @@ describe('BucketClientInterface', () => {
             });
         });
 
-        it('should handle undefined raftSessionId', (done) => {
+        it('should handle undefined raftSessionId', done => {
             mockRESTClient.getBucketAttributes.callsFake((bucketName, uid, callback) => {
                 process.nextTick(() => callback(null, mockBucketData, undefined));
             });
@@ -110,7 +109,7 @@ describe('BucketClientInterface', () => {
             });
         });
 
-        it('should not propagate raftSessionId when error occurs', (done) => {
+        it('should not propagate raftSessionId when error occurs', done => {
             const testError = new Error('Test error');
             mockRESTClient.getBucketAttributes.callsFake((bucketName, uid, callback) => {
                 process.nextTick(() => callback(testError));
@@ -125,7 +124,7 @@ describe('BucketClientInterface', () => {
     });
 
     describe('getBucketAndObject', () => {
-        it('should propagate raftSessionId when present', (done) => {
+        it('should propagate raftSessionId when present', done => {
             mockRESTClient.getBucketAndObject.callsFake((bucket, obj, uid, callback) => {
                 process.nextTick(() => callback(null, mockObjectData, testRaftSessionId));
             });
@@ -138,7 +137,7 @@ describe('BucketClientInterface', () => {
             });
         });
 
-        it('should handle undefined raftSessionId', (done) => {
+        it('should handle undefined raftSessionId', done => {
             mockRESTClient.getBucketAndObject.callsFake((bucket, obj, uid, callback) => {
                 process.nextTick(() => callback(null, mockObjectData, undefined));
             });
@@ -151,7 +150,7 @@ describe('BucketClientInterface', () => {
             });
         });
 
-        it('should not propagate raftSessionId when error occurs', (done) => {
+        it('should not propagate raftSessionId when error occurs', done => {
             const testError = new Error('error message');
             testError.is = { SomeError: true };
 

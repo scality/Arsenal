@@ -1,4 +1,4 @@
-'use strict';  
+'use strict';
 
 const Logger = require('werelogs').Logger;
 const http = require('http');

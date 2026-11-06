@@ -15,11 +15,11 @@ const resourcePolicyValidate = ajValidate.compile(resourcePolicySchema);
  * @property valid - true/false depending on the validation result
  */
 export type ValidationResult = {
-    error: ArsenalError | null
-    valid: boolean
-}
+    error: ArsenalError | null;
+    valid: boolean;
+};
 
-export type PolicyType = 'user' | 'resource'
+export type PolicyType = 'user' | 'resource';
 
 const errDict = {
     required: {
@@ -27,8 +27,7 @@ const errDict = {
         Action: 'Policy statement must contain actions.',
     },
     pattern: {
-        Action: 'Actions/Conditions must be prefaced by a vendor,' +
-            ' e.g., iam, sdb, ec2, etc.',
+        Action: 'Actions/Conditions must be prefaced by a vendor,' + ' e.g., iam, sdb, ec2, etc.',
         Resource: 'Resource must be in ARN format or "*".',
     },
     minItems: {
@@ -50,25 +49,23 @@ function _parseErrors(ajvErrors: Ajv.ErrorObject[], policyType: PolicyType) {
         const resource = err.dataPath;
         const field = (err.params as Ajv.RequiredParams | undefined)?.missingProperty;
         const errType = err.keyword;
-        if (errType === 'type' && (resource === '.Statement' ||
-            resource.includes('.Resource') ||
-            resource.includes('.NotResource'))) {
+        if (
+            errType === 'type' &&
+            (resource === '.Statement' || resource.includes('.Resource') || resource.includes('.NotResource'))
+        ) {
             // skip this as this doesn't have enough error context
             return false;
         }
         if (err.keyword === 'required' && field && errDict.required[field]) {
             parsedErr = parsedErr?.customizeDescription(errDict.required[field]);
-        } else if (err.keyword === 'pattern' &&
-            (resource.includes('.Action') ||
-                resource.includes('.NotAction'))) {
+        } else if (err.keyword === 'pattern' && (resource.includes('.Action') || resource.includes('.NotAction'))) {
             parsedErr = parsedErr?.customizeDescription(errDict.pattern.Action);
-        } else if (err.keyword === 'pattern' &&
-            (resource.includes('.Resource') ||
-                resource.includes('.NotResource'))) {
+        } else if (err.keyword === 'pattern' && (resource.includes('.Resource') || resource.includes('.NotResource'))) {
             parsedErr = parsedErr?.customizeDescription(errDict.pattern.Resource);
-        } else if (err.keyword === 'minItems' &&
-            (resource.includes('.Resource') ||
-                resource.includes('.NotResource'))) {
+        } else if (
+            err.keyword === 'minItems' &&
+            (resource.includes('.Resource') || resource.includes('.NotResource'))
+        ) {
             parsedErr = parsedErr?.customizeDescription(errDict.minItems.Resource);
         }
         return true;
@@ -94,8 +91,7 @@ function _validatePolicy(type: PolicyType, policy: string): ValidationResult {
         }
         userPolicyValidate(parseRes);
         if (userPolicyValidate.errors) {
-            return { error: _parseErrors(userPolicyValidate.errors, 'user'),
-                valid: false };
+            return { error: _parseErrors(userPolicyValidate.errors, 'user'), valid: false };
         }
         return { error: null, valid: true };
     }
@@ -106,29 +102,28 @@ function _validatePolicy(type: PolicyType, policy: string): ValidationResult {
         }
         resourcePolicyValidate(parseRes);
         if (resourcePolicyValidate.errors) {
-            return { error: _parseErrors(resourcePolicyValidate.errors,
-                'resource'), valid: false };
+            return { error: _parseErrors(resourcePolicyValidate.errors, 'resource'), valid: false };
         }
         return { error: null, valid: true };
     }
     return { error: errors.NotImplemented, valid: false };
 }
 /**
-* Validates user policy
-* @param policy - policy json
-* @returns - returns object with properties error and value
-* @returns - result of the validation
-*/
+ * Validates user policy
+ * @param policy - policy json
+ * @returns - returns object with properties error and value
+ * @returns - result of the validation
+ */
 export function validateUserPolicy(policy: string) {
     return _validatePolicy('user', policy);
 }
 
 /**
-* Validates resource policy
-* @param policy - policy json
-* @returns - returns object with properties error and value
-* @returns - result of the validation
-*/
+ * Validates resource policy
+ * @param policy - policy json
+ * @returns - returns object with properties error and value
+ * @returns - result of the validation
+ */
 export function validateResourcePolicy(policy: string) {
     return _validatePolicy('resource', policy);
 }

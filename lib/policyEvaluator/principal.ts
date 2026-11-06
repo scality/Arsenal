@@ -2,15 +2,15 @@ import { meetConditions } from './evaluator';
 import RequestContext from './RequestContext';
 import { Logger } from 'werelogs';
 
-export type Params = { rc: RequestContext; log: Logger; trustedPolicy: any; targetAccountId: string }
-export type Valid = { Federated: any; AWS: any; Service: any }
+export type Params = { rc: RequestContext; log: Logger; trustedPolicy: any; targetAccountId: string };
+export type Valid = { Federated: any; AWS: any; Service: any };
 export type Statement = {
     Condition: any;
     NotPrincipal?: Valid;
     Principal?: Valid;
     Effect: any;
     Federated: boolean;
-}
+};
 
 /**
  * Class with methods to manage the policy 'principal' validation
@@ -23,10 +23,7 @@ export default class Principal {
      * @param statement - Statement policy field
      * @return True if meet conditions
      */
-    static _evaluateStatement(
-        params: Params,
-        statement: Statement,
-    ): 'Neutral' | 'Allow' | 'Deny' {
+    static _evaluateStatement(params: Params, statement: Statement): 'Neutral' | 'Allow' | 'Deny' {
         const reverse = !!statement.NotPrincipal;
         if (reverse) {
             // In case of anonymous NotPrincipal, this will neutral everyone
@@ -50,11 +47,7 @@ export default class Principal {
      * @return result of principal evaluation, either 'Neutral',
      *  'Allow' or 'Deny'
      */
-    static _evaluatePrincipalField(
-        params: Params,
-        statement: Statement,
-        valids: Valid,
-    ): 'Neutral' | 'Allow' | 'Deny' {
+    static _evaluatePrincipalField(params: Params, statement: Statement, valids: Valid): 'Neutral' | 'Allow' | 'Deny' {
         const principal = (statement.Principal || statement.NotPrincipal)!;
         const reverse = !!statement.NotPrincipal;
         if (typeof principal === 'string') {
@@ -109,8 +102,7 @@ export default class Principal {
         let authorized: 'Allow' | 'Deny' = 'Deny';
         for (let i = 0; i < len; ++i) {
             const statement = statements[i];
-            const result = Principal._evaluatePrincipalField(params,
-                statement, valids);
+            const result = Principal._evaluatePrincipalField(params, statement, valids);
             if (result === 'Deny') {
                 return 'Deny';
             } else if (result === 'Allow') {
@@ -136,24 +128,15 @@ export default class Principal {
         const requesterType = params.rc.getRequesterType();
         if (account !== targetAccount) {
             valids = {
-                AWS: [
-                    account,
-                    accountArn,
-                    requesterArn,
-                ],
+                AWS: [account, accountArn, requesterArn],
             };
             checkAction = true;
         } else {
-            if (requesterType === 'User' || requesterType === 'AssumedRole' ||
-                requesterType === 'Federated') {
+            if (requesterType === 'User' || requesterType === 'AssumedRole' || requesterType === 'Federated') {
                 valids = {
-                    AWS: [
-                        account,
-                        accountArn,
-                    ],
+                    AWS: [account, accountArn],
                 };
-                if (requesterType === 'User' ||
-                    requesterType === 'AssumedRole') {
+                if (requesterType === 'User' || requesterType === 'AssumedRole') {
                     valids.AWS.push(requesterArn);
                     if (requesterEndArn !== requesterArn) {
                         valids.AWS.push(requesterEndArn);

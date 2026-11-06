@@ -7,14 +7,16 @@ import escapeForXml from './escapeForXml';
 export interface BucketTag {
     Key: string;
     Value: string;
-};
+}
 
-const errorInvalidArgument = () => errorInstances.InvalidArgument
-    .customizeDescription('The header \'x-amz-tagging\' shall be ' +
-  'encoded as UTF-8 then URLEncoded URL query parameters without ' +
-  'tag name duplicates.');
-const errorBadRequestLimit50 = () => errorInstances.BadRequest
-    .customizeDescription('Object tags cannot be greater than 50');
+const errorInvalidArgument = () =>
+    errorInstances.InvalidArgument.customizeDescription(
+        "The header 'x-amz-tagging' shall be " +
+            'encoded as UTF-8 then URLEncoded URL query parameters without ' +
+            'tag name duplicates.',
+    );
+const errorBadRequestLimit50 = () =>
+    errorInstances.BadRequest.customizeDescription('Object tags cannot be greater than 50');
 
 /*
     Format of xml request:
@@ -29,58 +31,65 @@ const errorBadRequestLimit50 = () => errorInstances.BadRequest
     </Tagging>
 */
 
-
 export const _validator = {
-    validateTagStructure: (tag: any) => tag
-        && Object.keys(tag).length === 2
-        && tag.Key && tag.Value
-        && tag.Key.length === 1 && tag.Value.length === 1
-        && tag.Key[0] !== undefined && tag.Value[0] !== undefined
-        && typeof tag.Key[0] === 'string' && typeof tag.Value[0] === 'string',
+    validateTagStructure: (tag: any) =>
+        tag &&
+        Object.keys(tag).length === 2 &&
+        tag.Key &&
+        tag.Value &&
+        tag.Key.length === 1 &&
+        tag.Value.length === 1 &&
+        tag.Key[0] !== undefined &&
+        tag.Value[0] !== undefined &&
+        typeof tag.Key[0] === 'string' &&
+        typeof tag.Value[0] === 'string',
 
     // Allowed characters are letters, whitespace, and numbers, plus
     // the following special characters: + - = . _ : /
     // Maximum key length: 128 Unicode characters
     // Maximum value length: 256 Unicode characters
-    validateTagObjectStructure: (tag: BucketTag) => tag
-        && Object.keys(tag).length === 2
-        && typeof tag.Key === 'string' && typeof tag.Value === 'string'
-        && tag.Key.length >= 1,
+    validateTagObjectStructure: (tag: BucketTag) =>
+        tag &&
+        Object.keys(tag).length === 2 &&
+        typeof tag.Key === 'string' &&
+        typeof tag.Value === 'string' &&
+        tag.Key.length >= 1,
 
     validateXMLStructure: (result: any) =>
-        result && Object.keys(result).length === 1 &&
+        result &&
+        Object.keys(result).length === 1 &&
         result.Tagging &&
         result.Tagging.TagSet &&
         result.Tagging.TagSet.length === 1 &&
-        (
-            result.Tagging.TagSet[0] === '' ||
-          result.Tagging.TagSet[0] &&
-          Object.keys(result.Tagging.TagSet[0]).length === 1 &&
-          result.Tagging.TagSet[0].Tag &&
-          Array.isArray(result.Tagging.TagSet[0].Tag)
-        ),
+        (result.Tagging.TagSet[0] === '' ||
+            (result.Tagging.TagSet[0] &&
+                Object.keys(result.Tagging.TagSet[0]).length === 1 &&
+                result.Tagging.TagSet[0].Tag &&
+                Array.isArray(result.Tagging.TagSet[0].Tag))),
 
     validateKeyValue: (key: string, value: any) => {
         if (key.length > 128) {
-            return errorInstances.InvalidTag.customizeDescription('The TagKey you ' +
-              'have provided is too long, max 128');
+            return errorInstances.InvalidTag.customizeDescription(
+                'The TagKey you ' + 'have provided is too long, max 128',
+            );
         }
         if (value.length > 256) {
-            return errorInstances.InvalidTag.customizeDescription('The TagValue you ' +
-              'have provided is too long, max 256');
+            return errorInstances.InvalidTag.customizeDescription(
+                'The TagValue you ' + 'have provided is too long, max 256',
+            );
         }
         return true;
     },
 };
 
 /** _validateTags - Validate tags, returning an error if tags are invalid
-* @param tags - tags parsed from xml to be validated
-* @param tags[].Key - Name of the tag
-* @param tags[].Value - Value of the tag
-* @return tagsResult - return object tags on success
-* { key: value}; error on failure
-*/
-function _validateTags(tags: Array<{ Key: string[], Value: string[] }>) {
+ * @param tags - tags parsed from xml to be validated
+ * @param tags[].Key - Name of the tag
+ * @param tags[].Value - Value of the tag
+ * @return tagsResult - return object tags on success
+ * { key: value}; error on failure
+ */
+function _validateTags(tags: Array<{ Key: string[]; Value: string[] }>) {
     if (tags.length === 0) {
         return {};
     }
@@ -98,8 +107,7 @@ function _validateTags(tags: Array<{ Key: string[], Value: string[] }>) {
         const value = tag.Value[0];
 
         if (!key) {
-            return errorInstances.InvalidTag.customizeDescription('The TagKey you ' +
-            'have provided is invalid');
+            return errorInstances.InvalidTag.customizeDescription('The TagKey you ' + 'have provided is invalid');
         }
 
         // Allowed characters are letters, whitespace, and numbers, plus
@@ -115,17 +123,15 @@ function _validateTags(tags: Array<{ Key: string[], Value: string[] }>) {
     }
     // not repeating keys
     if (tags.length > Object.keys(tagsResult).length) {
-        return errorInstances.InvalidTag.customizeDescription(
-            'Cannot provide multiple Tags with the same key'
-        );
+        return errorInstances.InvalidTag.customizeDescription('Cannot provide multiple Tags with the same key');
     }
     return tagsResult;
 }
 
 /** areTagsValid - Validate bucket tags
-* @param tags - tags parsed from xml to be validated
-* @return result - true if the tags are valide, false otherwise
-*/
+ * @param tags - tags parsed from xml to be validated
+ * @return result - true if the tags are valide, false otherwise
+ */
 export function areTagsValid(tags: Array<BucketTag>) {
     if (tags.length === 0) {
         return true;
@@ -157,13 +163,13 @@ export function areTagsValid(tags: Array<BucketTag>) {
 }
 
 /** parseTagXml - Parse and validate xml body, returning callback with object
-* tags : { key: value}
-* @param xml - xml body to parse and validate
-* @param log - Werelogs logger
-* @param cb - callback to server
-* @return - calls callback with tags object on success, error
-* on failure
-*/
+ * tags : { key: value}
+ * @param xml - xml body to parse and validate
+ * @param log - Werelogs logger
+ * @param cb - callback to server
+ * @return - calls callback with tags object on success, error
+ * on failure
+ */
 export function parseTagXml(
     xml: string,
     log: werelogs.Logger,
@@ -206,12 +212,10 @@ export function parseTagXml(
 
 export function convertToXml(objectTags?: any) {
     const xml: string[] = [];
-    xml.push('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
-        '<Tagging> <TagSet>');
+    xml.push('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>', '<Tagging> <TagSet>');
     if (objectTags && Object.keys(objectTags).length > 0) {
         Object.keys(objectTags).forEach(key => {
-            xml.push(`<Tag><Key>${escapeForXml(key)}</Key>` +
-            `<Value>${escapeForXml(objectTags[key])}</Value></Tag>`);
+            xml.push(`<Tag><Key>${escapeForXml(key)}</Key>` + `<Value>${escapeForXml(objectTags[key])}</Value></Tag>`);
         });
     }
     xml.push('</TagSet> </Tagging>');
@@ -219,11 +223,11 @@ export function convertToXml(objectTags?: any) {
 }
 
 /** parseTagFromQuery - Parse and validate x-amz-tagging header (URL query
-* parameter encoded), returning callback with object tags : { key: value}
-* @param tagQuery - tag(s) URL query parameter encoded
-* @return - calls callback with tags object on success, error
-* on failure
-*/
+ * parameter encoded), returning callback with object tags : { key: value}
+ * @param tagQuery - tag(s) URL query parameter encoded
+ * @return - calls callback with tags object on success, error
+ * on failure
+ */
 export function parseTagFromQuery(tagQuery: string) {
     const tagsResult = {};
     const pairs = tagQuery.split('&');

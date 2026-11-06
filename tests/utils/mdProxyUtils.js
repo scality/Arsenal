@@ -1,5 +1,4 @@
-'use strict';  
-
+'use strict';
 
 class DummyProxyResponse {
     /**
@@ -63,8 +62,7 @@ class DummyProxyRequest {
         this.method = params.method;
         this.url = params.url;
         this.json = params.json;
-        this.body = Buffer.from(
-            this.json ? JSON.stringify(params.body) : (params.body || ''));
+        this.body = Buffer.from(this.json ? JSON.stringify(params.body) : params.body || '');
         this.headers = params.headers;
         this.socket = {
             remoteAddress: '127.0.0.1',
@@ -83,30 +81,29 @@ class DummyProxyRequest {
      */
     on(event, callback) {
         switch (event) {
-        case 'data':
-            process.nextTick(() => {
-                callback(this.body);
-                this.dataConsummed = true;
-                if (this.endCB) {
-                    this.endCB();
-                }
-            });
-            break;
-        case 'end':
-            if (!this.dataConsummed) {
-                this.endCB = callback;
-            } else {
+            case 'data':
                 process.nextTick(() => {
-                    callback();
+                    callback(this.body);
+                    this.dataConsummed = true;
+                    if (this.endCB) {
+                        this.endCB();
+                    }
                 });
-            }
-            break;
-        case 'error':
-            // never happen with this mockup class
-            break;
-        default:
-            process.nextTick(() => callback(new Error(
-                `Unsupported DummyProxyRequest.on event '${event}'`)));
+                break;
+            case 'end':
+                if (!this.dataConsummed) {
+                    this.endCB = callback;
+                } else {
+                    process.nextTick(() => {
+                        callback();
+                    });
+                }
+                break;
+            case 'error':
+                // never happen with this mockup class
+                break;
+            default:
+                process.nextTick(() => callback(new Error(`Unsupported DummyProxyRequest.on event '${event}'`)));
         }
         return this;
     }
@@ -136,13 +133,16 @@ class RequestDispatcher {
      * @returns {undefined}
      */
     post(path, objectMD, callback) {
-        this.routes.dispatch(new DummyProxyRequest({
-            method: 'POST',
-            url: path,
-            json: true,
-            body: objectMD,
-            headers: {},
-        }), new DummyProxyResponse(callback));
+        this.routes.dispatch(
+            new DummyProxyRequest({
+                method: 'POST',
+                url: path,
+                json: true,
+                body: objectMD,
+                headers: {},
+            }),
+            new DummyProxyResponse(callback),
+        );
     }
 
     /**
@@ -154,13 +154,16 @@ class RequestDispatcher {
      * @returns {undefined}
      */
     get(path, callback) {
-        this.routes.dispatch(new DummyProxyRequest({
-            method: 'GET',
-            url: path,
-            json: true,
-            body: '',
-            headers: {},
-        }), new DummyProxyResponse(callback));
+        this.routes.dispatch(
+            new DummyProxyRequest({
+                method: 'GET',
+                url: path,
+                json: true,
+                body: '',
+                headers: {},
+            }),
+            new DummyProxyResponse(callback),
+        );
     }
 
     /**
@@ -172,13 +175,16 @@ class RequestDispatcher {
      * @returns {undefined}
      */
     delete(path, callback) {
-        this.routes.dispatch(new DummyProxyRequest({
-            method: 'DELETE',
-            url: path,
-            json: true,
-            body: '',
-            headers: {},
-        }), new DummyProxyResponse(callback));
+        this.routes.dispatch(
+            new DummyProxyRequest({
+                method: 'DELETE',
+                url: path,
+                json: true,
+                body: '',
+                headers: {},
+            }),
+            new DummyProxyResponse(callback),
+        );
     }
 }
 

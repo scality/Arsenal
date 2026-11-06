@@ -1,4 +1,4 @@
-'use strict'; 
+'use strict';
 
 const assert = require('assert');
 const crypto = require('crypto');
@@ -9,9 +9,9 @@ const ARRAY_LENGTH = 1000;
 const STRING_COUNT = 1000000;
 const ERROR = 20;
 
-
 function randomString(length) {
-    return crypto.randomBytes(Math.ceil(length / 2))
+    return crypto
+        .randomBytes(Math.ceil(length / 2))
         .toString('hex')
         .slice(0, length);
 }
@@ -31,16 +31,14 @@ describe('StringHash', () => {
         assert.notDeepStrictEqual(hash1, hash2);
         done();
     });
-    it(`Should distribute uniformly with a maximum of ${ERROR}% of deviation`,
-        (done) => {
-            jest.setTimeout(20000);
-            const strings = new Array(STRING_COUNT).fill('')
-                .map(() => randomString(10));
-            const arr = new Array(ARRAY_LENGTH).fill(0);
-            strings.forEach(string => {
-                const ind = stringHash(string) % ARRAY_LENGTH;
-                ++arr[ind];
-            });
-            done(check(arr));
+    it(`Should distribute uniformly with a maximum of ${ERROR}% of deviation`, done => {
+        jest.setTimeout(20000);
+        const strings = new Array(STRING_COUNT).fill('').map(() => randomString(10));
+        const arr = new Array(ARRAY_LENGTH).fill(0);
+        strings.forEach(string => {
+            const ind = stringHash(string) % ARRAY_LENGTH;
+            ++arr[ind];
         });
+        done(check(arr));
+    });
 });

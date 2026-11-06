@@ -40,20 +40,17 @@ export function validateCredentials(
     // convert timestamp to format of scopeDate YYYYMMDD
     const timestampDate = timestamp.split('T')[0];
     if (scopeDate.length !== 8 || scopeDate !== timestampDate) {
-        log.warn('scope date must be the same date as the timestamp date',
-            { scopeDate, timestampDate });
+        log.warn('scope date must be the same date as the timestamp date', { scopeDate, timestampDate });
         return errors.RequestTimeTooSkewed;
     }
-    if (service !== 's3' && service !== 'iam' && service !== 'ring' &&
-        service !== 'sts') {
+    if (service !== 's3' && service !== 'iam' && service !== 'ring' && service !== 'sts') {
         log.warn('service in credentials is not one of s3/iam/ring/sts', {
             service,
         });
         return errors.InvalidArgument;
     }
     if (requestType !== 'aws4_request') {
-        log.warn('requestType contained in params is not aws4_request',
-            { requestType });
+        log.warn('requestType contained in params is not aws4_request', { requestType });
         return errors.InvalidArgument;
     }
     return {};
@@ -65,10 +62,7 @@ export function validateCredentials(
  * @param log - logging object
  * @return object containing extracted query params for authV4
  */
-export function extractQueryParams(
-    queryObj: Record<string, string | undefined>,
-    log: RequestLogger,
-) {
+export function extractQueryParams(queryObj: Record<string, string | undefined>, log: RequestLogger) {
     const authParams: {
         signedHeaders?: string;
         signatureFromRequest?: string;
@@ -79,8 +73,7 @@ export function extractQueryParams(
 
     // Do not need the algorithm sent back
     if (queryObj['X-Amz-Algorithm'] !== 'AWS4-HMAC-SHA256') {
-        log.warn('algorithm param incorrect',
-            { algo: queryObj['X-Amz-Algorithm'] });
+        log.warn('algorithm param incorrect', { algo: queryObj['X-Amz-Algorithm'] });
         return authParams;
     }
 
@@ -92,7 +85,6 @@ export function extractQueryParams(
         log.warn('missing signedHeaders');
         return authParams;
     }
-
 
     const signature = queryObj['X-Amz-Signature'];
     if (signature && signature.length === 64) {
@@ -106,14 +98,13 @@ export function extractQueryParams(
     if (timestamp && timestamp.length === 16) {
         authParams.timestamp = timestamp;
     } else {
-        log.warn('missing or invalid timestamp',
-            { timestamp: queryObj['X-Amz-Date'] });
+        log.warn('missing or invalid timestamp', { timestamp: queryObj['X-Amz-Date'] });
         return authParams;
     }
 
     const expiry = Number.parseInt(queryObj['X-Amz-Expires'] ?? 'nope', 10);
     const sevenDays = 604800;
-    if (expiry && (expiry > 0 && expiry <= sevenDays)) {
+    if (expiry && expiry > 0 && expiry <= sevenDays) {
         authParams.expiry = expiry;
     } else {
         log.warn('invalid expiry', { expiry });
@@ -130,7 +121,6 @@ export function extractQueryParams(
     }
     return authParams;
 }
-
 
 /**
  * Extract and validate components from auth header
@@ -154,29 +144,21 @@ export function extractAuthItems(authHeader: string, log: RequestLogger) {
     const signedHeadersStr = authArray[1];
     const signatureStr = authArray[2];
     log.trace('credentials from request', { credentialStr });
-    if (
-        credentialStr &&
-        credentialStr.trim().startsWith('Credential=') &&
-        credentialStr.indexOf('/') > -1
-    ) {
+    if (credentialStr && credentialStr.trim().startsWith('Credential=') && credentialStr.indexOf('/') > -1) {
         // @ts-ignore
-        authItems.credentialsArr = credentialStr
-            .trim().replace('Credential=', '').split('/');
+        authItems.credentialsArr = credentialStr.trim().replace('Credential=', '').split('/');
     } else {
         log.warn('missing credentials');
     }
     log.trace('signed headers from request', { signedHeadersStr });
-    if (signedHeadersStr && signedHeadersStr.trim()
-        .startsWith('SignedHeaders=')) {
-        authItems.signedHeaders = signedHeadersStr
-            .trim().replace('SignedHeaders=', '');
+    if (signedHeadersStr && signedHeadersStr.trim().startsWith('SignedHeaders=')) {
+        authItems.signedHeaders = signedHeadersStr.trim().replace('SignedHeaders=', '');
     } else {
         log.warn('missing signed headers');
     }
     log.trace('signature from request', { signatureStr });
     if (signatureStr && signatureStr.trim().startsWith('Signature=')) {
-        authItems.signatureFromRequest = signatureStr
-            .trim().replace('Signature=', '');
+        authItems.signatureFromRequest = signatureStr.trim().replace('Signature=', '');
     } else {
         log.warn('missing signature');
     }
@@ -203,9 +185,10 @@ export function areSignedHeadersComplete(signedHeaders: string, allHeaders: Arse
             continue;
         }
 
-        if ((headers[i].startsWith('x-amz-')
-        || headers[i].startsWith('x-scal-'))
-        && signedHeadersList.indexOf(headers[i]) === -1) {
+        if (
+            (headers[i].startsWith('x-amz-') || headers[i].startsWith('x-scal-')) &&
+            signedHeadersList.indexOf(headers[i]) === -1
+        ) {
             return false;
         }
     }

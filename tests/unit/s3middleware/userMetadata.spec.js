@@ -5,8 +5,7 @@ const { maximumMetaHeadersSize } = require('../../../lib/constants');
 function genMaxSizeMetaHeaders() {
     const metaHeaders = {};
     const counter = 8;
-    const bytesPerHeader =
-        (maximumMetaHeadersSize / counter);
+    const bytesPerHeader = maximumMetaHeadersSize / counter;
     for (let i = 0; i < counter; i++) {
         const key = `x-amz-meta-header${i}`;
         const valueLength = bytesPerHeader - key.length;

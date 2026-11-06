@@ -724,33 +724,30 @@ describe('LifecycleUtils::getApplicableRules', () => {
             assert.strictEqual(rules.Transition, undefined);
         });
 
-        it(
-            'should not return NoncurrentVersionTransition already stored at the destination: multiple rules',
-            () => {
-                const applicableRules = [
-                    new LifecycleRule()
-                        .addNCVTransitions([
-                            {
-                                Days: 2,
-                                StorageClass: 'zenko',
-                            },
-                        ])
-                        .build(),
-                    new LifecycleRule()
-                        .addNCVTransitions([
-                            {
-                                Days: 1,
-                                StorageClass: 'STANDARD',
-                            },
-                        ])
-                        .build(),
-                ];
-                const lastModified = getDate({ numberOfDaysFromNow: -3 });
-                const object = getMetadataObject(lastModified, 'zenko');
-                const rules = lutils.getApplicableRules(applicableRules, object);
-                assert.strictEqual(rules.Transition, undefined);
-            },
-        );
+        it('should not return NoncurrentVersionTransition already stored at the destination: multiple rules', () => {
+            const applicableRules = [
+                new LifecycleRule()
+                    .addNCVTransitions([
+                        {
+                            Days: 2,
+                            StorageClass: 'zenko',
+                        },
+                    ])
+                    .build(),
+                new LifecycleRule()
+                    .addNCVTransitions([
+                        {
+                            Days: 1,
+                            StorageClass: 'STANDARD',
+                        },
+                    ])
+                    .build(),
+            ];
+            const lastModified = getDate({ numberOfDaysFromNow: -3 });
+            const object = getMetadataObject(lastModified, 'zenko');
+            const rules = lutils.getApplicableRules(applicableRules, object);
+            assert.strictEqual(rules.Transition, undefined);
+        });
     });
 });
 

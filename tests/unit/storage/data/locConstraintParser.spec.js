@@ -1,15 +1,11 @@
 const assert = require('assert');
-const parseLC =
-    require('../../../../lib/storage/data/LocationConstraintParser');
+const parseLC = require('../../../../lib/storage/data/LocationConstraintParser');
 const AwsClient = require('../../../../lib/storage/data/external/AwsClient');
-const AzureClient =
-    require('../../../../lib/storage/data/external/AzureClient');
+const AzureClient = require('../../../../lib/storage/data/external/AzureClient');
 const GcpClient = require('../../../../lib/storage/data/external/GcpClient');
 const PfsClient = require('../../../../lib/storage/data/external/PfsClient');
-const DataFileInterface =
-    require('../../../../lib/storage/data/file/DataFileInterface');
-const inMemory =
-    require('../../../../lib/storage/data/in_memory/datastore').backend;
+const DataFileInterface = require('../../../../lib/storage/data/file/DataFileInterface');
+const inMemory = require('../../../../lib/storage/data/in_memory/datastore').backend;
 const DummyConfig = require('../../../utils/DummyConfig');
 
 const memLocation = 'scality-internal-mem';

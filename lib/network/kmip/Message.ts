@@ -16,10 +16,8 @@ function _lookup(decodedTTLV: any[], path: string) {
                     res.push(cell[current].value);
                 } else {
                     const subPath = xpath.join('/');
-                    assert(current.length + 1 + subPath.length ===
-                           canonicalPath.length);
-                    const intermediate =
-                          _lookup(cell[current].value, subPath);
+                    assert(current.length + 1 + subPath.length === canonicalPath.length);
+                    const intermediate = _lookup(cell[current].value, subPath);
                     res = res.concat(intermediate);
                 }
             }

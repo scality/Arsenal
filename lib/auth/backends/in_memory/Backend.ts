@@ -5,8 +5,7 @@ import { calculateSigningKey, hashSignature } from './vaultUtilities';
 import Indexer from './Indexer';
 import BaseBackend from '../base';
 import { Accounts } from './types';
-import { AuthInfoType, AuthV4Results,
-    AccountCanonicalInfo, AccountCanonicalInfoResults } from '../../AuthInfo';
+import { AuthInfoType, AuthV4Results, AccountCanonicalInfo, AccountCanonicalInfoResults } from '../../AuthInfo';
 import { ArsenalCallback } from '../../../types';
 import { KmsType, KmsProtocol, makeScalityArnPrefix } from '../../../network/KMSInterface';
 
@@ -22,7 +21,7 @@ function _formatResponse(userInfo: AuthInfoType): { message: { body: AuthV4Resul
             },
         },
     };
-};
+}
 
 /**
  * Class that provides a memory backend for verifying signatures and getting
@@ -59,8 +58,7 @@ class InMemoryBackend extends BaseBackend {
             return callback(errors.InvalidAccessKeyId);
         }
         const secretKey = this.indexer.getSecretKey(entity, accessKey);
-        const reconstructedSig =
-            hashSignature(stringToSign, secretKey, options.algo);
+        const reconstructedSig = hashSignature(stringToSign, secretKey, options.algo);
         if (signatureFromRequest !== reconstructedSig) {
             return callback(errors.SignatureDoesNotMatch);
         }
@@ -90,8 +88,7 @@ class InMemoryBackend extends BaseBackend {
         }
         const secretKey = this.indexer.getSecretKey(entity, accessKey);
         const signingKey = calculateSigningKey(secretKey, region, scopeDate);
-        const reconstructedSig = crypto.createHmac('sha256', signingKey)
-            .update(stringToSign, 'binary').digest('hex');
+        const reconstructedSig = crypto.createHmac('sha256', signingKey).update(stringToSign, 'binary').digest('hex');
         if (signatureFromRequest !== reconstructedSig) {
             return callback(errors.SignatureDoesNotMatch);
         }
@@ -114,8 +111,7 @@ class InMemoryBackend extends BaseBackend {
             if (!entity) {
                 results[email] = 'NotFound';
             } else {
-                results[email] =
-                    entity.canonicalID;
+                results[email] = entity.canonicalID;
             }
         });
         const vaultReturnObject = {
@@ -192,7 +188,7 @@ class InMemoryBackend extends BaseBackend {
                 results.push({
                     accountId,
                     canonicalId: foundEntity.canonicalID,
-                    name : foundEntity.accountDisplayName,
+                    name: foundEntity.accountDisplayName,
                 });
             }
         });
@@ -213,10 +209,10 @@ class InMemoryBackend extends BaseBackend {
      *
      * @param {string} canonicalId - The canonical id of the account for which to retrieve or create the encryption key.
      * @param {any} _options - An options object, currently unused.
-     * @param {(err: Error | null, data?: { 
-     *    canonicalId: string, 
-     *    encryptionKeyId: string, 
-     *    action: 'retrieved' | 'created' 
+     * @param {(err: Error | null, data?: {
+     *    canonicalId: string,
+     *    encryptionKeyId: string,
+     *    action: 'retrieved' | 'created'
      * }) => void}
      *   - canonicalId: The canonical id of the account.
      *   - encryptionKeyId: The retrieved or newly created encryption key id.
@@ -225,10 +221,16 @@ class InMemoryBackend extends BaseBackend {
      * @returns {void}
      */
     getOrCreateEncryptionKeyId(
-        canonicalId: string, 
-        _options: any, 
-        cb: (err: null, data: { message: { 
-            body: { canonicalId: string, encryptionKeyId: string, action: string } } }) => void
+        canonicalId: string,
+        _options: any,
+        cb: (
+            err: null,
+            data: {
+                message: {
+                    body: { canonicalId: string; encryptionKeyId: string; action: string };
+                };
+            },
+        ) => void,
     ): void {
         const kmsProtocol = process.env.S3KMS === 'file' ? KmsProtocol.file : KmsProtocol.mem;
         const arnPrefix = makeScalityArnPrefix(KmsType.internal, kmsProtocol, 'scality');
@@ -238,12 +240,11 @@ class InMemoryBackend extends BaseBackend {
                     canonicalId,
                     encryptionKeyId: `${arnPrefix}account-level-master-encryption-key`,
                     action: 'retrieved',
-                }
-            }
+                },
+            },
         });
     }
 }
-
 
 class S3AuthBackend extends InMemoryBackend {
     /**

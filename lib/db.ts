@@ -66,17 +66,11 @@ export class IndexTransaction {
     push(op: { type: 'del'; key: string }): void;
     push(op: { type: 'put' | 'del'; key: string; value?: any }): void {
         if (this.closed) {
-            throw propError(
-                'pushOnCommittedTransaction',
-                'can not add ops to already committed transaction'
-            );
+            throw propError('pushOnCommittedTransaction', 'can not add ops to already committed transaction');
         }
 
         if (op.type !== 'put' && op.type !== 'del') {
-            throw propError(
-                'invalidTransactionVerb',
-                `unknown action type: ${op.type}`
-            );
+            throw propError('invalidTransactionVerb', `unknown action type: ${op.type}`);
         }
 
         if (op.key === undefined) {
@@ -137,22 +131,13 @@ export class IndexTransaction {
      */
     addCondition(condition: Record<string, string>) {
         if (this.closed) {
-            throw propError(
-                'pushOnCommittedTransaction',
-                'can not add conditions to already committed transaction'
-            );
+            throw propError('pushOnCommittedTransaction', 'can not add conditions to already committed transaction');
         }
         if (condition === undefined || Object.keys(condition).length === 0) {
-            throw propError(
-                'missingCondition',
-                'missing condition for conditional put'
-            );
+            throw propError('missingCondition', 'missing condition for conditional put');
         }
         if (typeof condition.notExists !== 'string' && typeof condition.exists !== 'string') {
-            throw propError(
-                'unsupportedConditionalOperation',
-                'missing key or supported condition'
-            );
+            throw propError('unsupportedConditionalOperation', 'missing key or supported condition');
         }
         this.conditions.push(condition);
     }
@@ -166,21 +151,11 @@ export class IndexTransaction {
      */
     commit(cb: (error: Error | null, data?: any) => void) {
         if (this.closed) {
-            return cb(
-                propError(
-                    'alreadyCommitted',
-                    'transaction was already committed'
-                )
-            );
+            return cb(propError('alreadyCommitted', 'transaction was already committed'));
         }
 
         if (this.operations.length === 0) {
-            return cb(
-                propError(
-                    'emptyTransaction',
-                    'tried to commit an empty transaction'
-                )
-            );
+            return cb(propError('emptyTransaction', 'tried to commit an empty transaction'));
         }
 
         this.closed = true;

@@ -38,39 +38,48 @@ export default class ARN {
     }
 
     static createFromString(arnStr: string) {
-        const [arn, partition, service, region, accountId,
-            resourceType, resource] = arnStr.split(':');
+        const [arn, partition, service, region, accountId, resourceType, resource] = arnStr.split(':');
 
         if (arn !== 'arn') {
-            return { error: errorInstances.InvalidArgument.customizeDescription(
-                'bad ARN: must start with "arn:"') };
+            return { error: errorInstances.InvalidArgument.customizeDescription('bad ARN: must start with "arn:"') };
         }
         if (!partition) {
-            return { error: errorInstances.InvalidArgument.customizeDescription(
-                'bad ARN: must include a partition name, like "aws" in ' +
-                    '"arn:aws:..."') };
+            return {
+                error: errorInstances.InvalidArgument.customizeDescription(
+                    'bad ARN: must include a partition name, like "aws" in ' + '"arn:aws:..."',
+                ),
+            };
         }
         if (!service) {
-            return { error: errorInstances.InvalidArgument.customizeDescription(
-                'bad ARN: must include a service name, like "s3" in ' +
-                    '"arn:aws:s3:..."') };
+            return {
+                error: errorInstances.InvalidArgument.customizeDescription(
+                    'bad ARN: must include a service name, like "s3" in ' + '"arn:aws:s3:..."',
+                ),
+            };
         }
         if (validServices[partition] === undefined) {
-            return { error: errorInstances.InvalidArgument.customizeDescription(
-                `bad ARN: unknown partition "${partition}", should be a ` +
-                    'valid partition name like "aws" in "arn:aws:..."') };
+            return {
+                error: errorInstances.InvalidArgument.customizeDescription(
+                    `bad ARN: unknown partition "${partition}", should be a ` +
+                        'valid partition name like "aws" in "arn:aws:..."',
+                ),
+            };
         }
         if (!validServices[partition].includes(service)) {
-            return { error: errorInstances.InvalidArgument.customizeDescription(
-                `bad ARN: unsupported ${partition} service "${service}"`) };
+            return {
+                error: errorInstances.InvalidArgument.customizeDescription(
+                    `bad ARN: unsupported ${partition} service "${service}"`,
+                ),
+            };
         }
         if (accountId && !/^([0-9]{12}|[*])$/.test(accountId)) {
-            return { error: errorInstances.InvalidArgument.customizeDescription(
-                `bad ARN: bad account ID "${accountId}": ` +
-                    'must be a 12-digit number or "*"') };
+            return {
+                error: errorInstances.InvalidArgument.customizeDescription(
+                    `bad ARN: bad account ID "${accountId}": ` + 'must be a 12-digit number or "*"',
+                ),
+            };
         }
-        const fullResource = (resource !== undefined ?
-            `${resourceType}:${resource}` : resourceType);
+        const fullResource = resource !== undefined ? `${resourceType}:${resource}` : resourceType;
         return new ARN(partition, service, region, accountId, fullResource);
     }
 
@@ -91,26 +100,33 @@ export default class ARN {
     }
 
     isIAMAccount() {
-        return this.getService() === 'iam'
-            && this.getAccountId() !== null
-            && this.getAccountId() !== '*'
-            && this.getResource() === 'root';
+        return (
+            this.getService() === 'iam' &&
+            this.getAccountId() !== null &&
+            this.getAccountId() !== '*' &&
+            this.getResource() === 'root'
+        );
     }
     isIAMUser() {
-        return this.getService() === 'iam'
-            && this.getAccountId() !== null
-            && this.getAccountId() !== '*'
-            && this.getResource().startsWith('user/');
+        return (
+            this.getService() === 'iam' &&
+            this.getAccountId() !== null &&
+            this.getAccountId() !== '*' &&
+            this.getResource().startsWith('user/')
+        );
     }
     isIAMRole() {
-        return this.getService() === 'iam'
-            && this.getAccountId() !== null
-            && this.getResource().startsWith('role');
+        return this.getService() === 'iam' && this.getAccountId() !== null && this.getResource().startsWith('role');
     }
 
     toString() {
-        return ['arn', this.getPartition(), this.getService(),
-            this.getRegion(), this.getAccountId(), this.getResource()]
-            .join(':');
+        return [
+            'arn',
+            this.getPartition(),
+            this.getService(),
+            this.getRegion(),
+            this.getAccountId(),
+            this.getResource(),
+        ].join(':');
     }
 }

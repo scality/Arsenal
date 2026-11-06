@@ -4,7 +4,7 @@ export enum BucketVersioningFormat {
     V0V1 = 'v0v1',
     V1MIG = 'v1mig',
     V1 = 'v1',
-};
+}
 
 export const VersioningConstants = {
     VersionId: {
@@ -24,5 +24,5 @@ export const VersioningConstants = {
         v1mig: BucketVersioningFormat.V1MIG,
         v1: BucketVersioningFormat.V1,
     },
-    ExternalNullVersionId: 'null', 
+    ExternalNullVersionId: 'null',
 };

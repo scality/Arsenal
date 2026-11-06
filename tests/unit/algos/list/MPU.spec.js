@@ -1,10 +1,9 @@
-'use strict';  
+'use strict';
 
 const assert = require('assert');
-const MultipartUploads =
-    require('../../../../lib/algos/list/MPU').MultipartUploads;
+const MultipartUploads = require('../../../../lib/algos/list/MPU').MultipartUploads;
 const werelogs = require('werelogs').Logger;
- 
+
 const logger = new werelogs('listMpuTest');
 const performListing = require('../../../utils/performListing');
 const VSConst = require('../../../../lib/versioning/constants').VersioningConstants;
@@ -17,14 +16,16 @@ describe('Multipart Uploads listing algorithm', () => {
     const initiator1 = { ID: '1', DisplayName: 'initiator1' };
     const initiator2 = { ID: '2', DisplayName: 'initiator2' };
     const keys = {
-        v0: [`${overviewPrefix}test/1${splitter}uploadId1`,
+        v0: [
+            `${overviewPrefix}test/1${splitter}uploadId1`,
             `${overviewPrefix}test/2${splitter}uploadId2`,
             `${overviewPrefix}test/3${splitter}uploadId3`,
             `${overviewPrefix}testMore/4${splitter}uploadId4`,
             `${overviewPrefix}testMore/5${splitter}uploadId5`,
             `${overviewPrefix}prefixTest/5${splitter}uploadId5`,
         ],
-        v1: [`${DbPrefixes.Master}${overviewPrefix}test/1${splitter}uploadId1`,
+        v1: [
+            `${DbPrefixes.Master}${overviewPrefix}test/1${splitter}uploadId1`,
             `${DbPrefixes.Master}${overviewPrefix}test/2${splitter}uploadId2`,
             `${DbPrefixes.Master}${overviewPrefix}test/3${splitter}uploadId3`,
             `${DbPrefixes.Master}${overviewPrefix}testMore/4${splitter}uploadId4`,
@@ -186,8 +187,7 @@ describe('Multipart Uploads listing algorithm', () => {
             value: values[i],
         }));
         it(`should perform a vFormat=${vFormat} listing of all keys`, () => {
-            const listingResult = performListing(dbListing, MultipartUploads,
-                listingParams, logger, vFormat);
+            const listingResult = performListing(dbListing, MultipartUploads, listingParams, logger, vFormat);
             assert.deepStrictEqual(listingResult, expectedResult);
         });
 
@@ -202,8 +202,7 @@ describe('Multipart Uploads listing algorithm', () => {
             expectedResult.NextKeyMarker = 'prefixTest/';
             expectedResult.NextUploadIdMarker = '';
 
-            const listingResult = performListing(dbListing, MultipartUploads,
-                listingParams, logger, vFormat);
+            const listingResult = performListing(dbListing, MultipartUploads, listingParams, logger, vFormat);
             assert.deepStrictEqual(listingResult, expectedResult);
         });
 
@@ -218,40 +217,28 @@ describe('Multipart Uploads listing algorithm', () => {
             expectedResult.IsTruncated = true;
             expectedResult.MaxKeys = 3;
 
-            const listingResult = performListing(dbListing, MultipartUploads,
-                listingParams, logger, vFormat);
+            const listingResult = performListing(dbListing, MultipartUploads, listingParams, logger, vFormat);
             assert.deepStrictEqual(listingResult, expectedResult);
         });
 
-        it('should pass through checksum fields ' +
-            `(vFormat=${vFormat})`, () => {
+        it('should pass through checksum fields ' + `(vFormat=${vFormat})`, () => {
             const checksumDbListing = checksumKeys[vFormat].map((key, i) => ({
                 key,
                 value: checksumValues[i],
             }));
-            const result = performListing(checksumDbListing, MultipartUploads,
-                listingParams, logger, vFormat);
+            const result = performListing(checksumDbListing, MultipartUploads, listingParams, logger, vFormat);
             // First upload: explicit checksum
-            assert.strictEqual(
-                result.Uploads[0].value.ChecksumAlgorithm, 'CRC32');
-            assert.strictEqual(
-                result.Uploads[0].value.ChecksumType, 'FULL_OBJECT');
-            assert.strictEqual(
-                result.Uploads[0].value.ChecksumIsDefault, false);
+            assert.strictEqual(result.Uploads[0].value.ChecksumAlgorithm, 'CRC32');
+            assert.strictEqual(result.Uploads[0].value.ChecksumType, 'FULL_OBJECT');
+            assert.strictEqual(result.Uploads[0].value.ChecksumIsDefault, false);
             // Second upload: default checksum
-            assert.strictEqual(
-                result.Uploads[1].value.ChecksumAlgorithm, 'SHA256');
-            assert.strictEqual(
-                result.Uploads[1].value.ChecksumType, 'COMPOSITE');
-            assert.strictEqual(
-                result.Uploads[1].value.ChecksumIsDefault, true);
+            assert.strictEqual(result.Uploads[1].value.ChecksumAlgorithm, 'SHA256');
+            assert.strictEqual(result.Uploads[1].value.ChecksumType, 'COMPOSITE');
+            assert.strictEqual(result.Uploads[1].value.ChecksumIsDefault, true);
             // Third upload: no checksum fields
-            assert.strictEqual(
-                result.Uploads[2].value.ChecksumAlgorithm, undefined);
-            assert.strictEqual(
-                result.Uploads[2].value.ChecksumType, undefined);
-            assert.strictEqual(
-                result.Uploads[2].value.ChecksumIsDefault, undefined);
+            assert.strictEqual(result.Uploads[2].value.ChecksumAlgorithm, undefined);
+            assert.strictEqual(result.Uploads[2].value.ChecksumType, undefined);
+            assert.strictEqual(result.Uploads[2].value.ChecksumIsDefault, undefined);
         });
     });
 });

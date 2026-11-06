@@ -452,7 +452,7 @@ describe('Index object transforms', () => {
             name: 'index1',
             key: {
                 'value.last-modified': 1,
-                _id: 1,
+                '_id': 1,
             },
         },
         {
@@ -460,7 +460,7 @@ describe('Index object transforms', () => {
             key: {
                 'value.dataStoreName': 1,
                 'value.last-modified': 1,
-                _id: 1,
+                '_id': 1,
             },
         },
     ];

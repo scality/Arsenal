@@ -14,10 +14,7 @@ function setRequestUids(reqHeaders: http.IncomingHttpHeaders, reqUids: string) {
     reqHeaders['X-Scal-Request-Uids'] = reqUids;
 }
 
-function setRange(
-    reqHeaders: http.IncomingHttpHeaders,
-    range: [number | undefined, number | undefined],
-) {
+function setRange(reqHeaders: http.IncomingHttpHeaders, range: [number | undefined, number | undefined]) {
     const rangeStart = range[0]?.toString() ?? '';
     const rangeEnd = range[1]?.toString() ?? '';
     // inhibit 'assignment to property of function parameter' -
@@ -25,10 +22,7 @@ function setRange(
     reqHeaders['Range'] = `bytes=${rangeStart}-${rangeEnd}`;
 }
 
-function setContentType(
-    reqHeaders: http.IncomingHttpHeaders,
-    contentType: string,
-) {
+function setContentType(reqHeaders: http.IncomingHttpHeaders, contentType: string) {
     // inhibit 'assignment to property of function parameter' -
     // this is what we want
     reqHeaders['Content-Type'] = contentType;
@@ -42,12 +36,11 @@ function setContentLength(reqHeaders: http.IncomingHttpHeaders, size: number) {
 
 function makeErrorFromHTTPResponse(response: http.IncomingMessage) {
     const rawBody = response.read();
-    const body = (rawBody !== null ? rawBody.toString() : '');
-    let error : ArsenalError | Error;
+    const body = rawBody !== null ? rawBody.toString() : '';
+    let error: ArsenalError | Error;
     try {
         const fields = JSON.parse(body);
-        error = errors[fields.errorType]
-            .customizeDescription(fields.errorMessage);
+        error = errors[fields.errorType].customizeDescription(fields.errorMessage);
     } catch {
         error = new Error(body);
     }
@@ -57,7 +50,6 @@ function makeErrorFromHTTPResponse(response: http.IncomingMessage) {
     error.remote = true;
     return error;
 }
-
 
 /**
  * @class
@@ -107,9 +99,7 @@ export default class RESTClient {
     }
 
     createLogger(reqUids?: string) {
-        return reqUids ?
-            this.logging.newRequestLoggerFromSerializedUids(reqUids) :
-            this.logging.newRequestLogger();
+        return reqUids ? this.logging.newRequestLoggerFromSerializedUids(reqUids) : this.logging.newRequestLogger();
     }
 
     doRequest(
@@ -121,8 +111,7 @@ export default class RESTClient {
     ) {
         const reqHeaders = headers || {};
         const urlKey = key || '';
-        const prefix = this.isPassthrough ?
-            constants.passthroughFileURL : constants.dataFileURL;
+        const prefix = this.isPassthrough ? constants.passthroughFileURL : constants.dataFileURL;
         const reqParams = {
             hostname: this.host,
             port: this.port,
@@ -135,7 +124,8 @@ export default class RESTClient {
             hostname: reqParams.hostname,
             port: reqParams.port,
             path: reqParams.path,
-            headers: reqParams.headers });
+            headers: reqParams.headers,
+        });
         const request = http.request(reqParams, responseCb);
 
         // disable nagle algorithm
@@ -177,23 +167,23 @@ export default class RESTClient {
                 // /DataFile/abcdef.
                 const location = response.headers.location;
                 if (location === undefined) {
-                    return cbOnce(new Error(
-                        'missing Location header in the response'));
+                    return cbOnce(new Error('missing Location header in the response'));
                 }
                 const locationInfo = utils.explodePath(location);
                 if (!locationInfo) {
-                    return cbOnce(new Error(
-                        `bad Location response header: ${location}`));
+                    return cbOnce(new Error(`bad Location response header: ${location}`));
                 }
                 return cbOnce(null, locationInfo.key);
             });
-        }).on('finish', () => {
-            log.debug('finished sending PUT data to the REST server', {
-                component: 'RESTClient',
-                method: 'put',
-                contentLength: size,
-            });
-        }).on('error', cbOnce);
+        })
+            .on('finish', () => {
+                log.debug('finished sending PUT data to the REST server', {
+                    component: 'RESTClient',
+                    method: 'put',
+                    contentLength: size,
+                });
+            })
+            .on('error', cbOnce);
 
         stream.pipe(request);
         stream.on('error', err => {
@@ -233,8 +223,7 @@ export default class RESTClient {
         }
         const request = this.doRequest('GET', headers, key, log, response => {
             response.once('readable', () => {
-                if (response.statusCode !== 200 &&
-                    response.statusCode !== 206) {
+                if (response.statusCode !== 200 && response.statusCode !== 206) {
                     return cbOnce(makeErrorFromHTTPResponse(response));
                 }
                 return cbOnce(null, response);
@@ -253,11 +242,7 @@ export default class RESTClient {
      * @param reqUids - The serialized request ids
      * @param callback - callback
      */
-    getAction(
-        action: string,
-        reqUids: string,
-        callback: (error: Error | null, stream?: stream.Readable) => void,
-    ) {
+    getAction(action: string, reqUids: string, callback: (error: Error | null, stream?: stream.Readable) => void) {
         // Guarantee a single callback invocation across the response and
         // request 'error' paths (see get()).
         const cbOnce = once(callback);
@@ -276,17 +261,19 @@ export default class RESTClient {
             hostname: reqParams.hostname,
             port: reqParams.port,
             path: reqParams.path,
-            headers: reqParams.headers });
+            headers: reqParams.headers,
+        });
 
-        const request = http.request(reqParams, response => {
-            response.once('readable', () => {
-                if (response.statusCode !== 200 &&
-                    response.statusCode !== 206) {
-                    return cbOnce(makeErrorFromHTTPResponse(response));
-                }
-                return cbOnce(null, response.read().toString());
-            });
-        }).on('error', cbOnce);
+        const request = http
+            .request(reqParams, response => {
+                response.once('readable', () => {
+                    if (response.statusCode !== 200 && response.statusCode !== 206) {
+                        return cbOnce(makeErrorFromHTTPResponse(response));
+                    }
+                    return cbOnce(null, response.read().toString());
+                });
+            })
+            .on('error', cbOnce);
 
         request.end();
     }
@@ -297,11 +284,7 @@ export default class RESTClient {
      * @param reqUids - The serialized request ids
      * @param callback - callback
      */
-    delete(
-        key: string,
-        reqUids: string,
-        callback: (error: Error | null) => void,
-    ) {
+    delete(key: string, reqUids: string, callback: (error: Error | null) => void) {
         // Guarantee a single callback invocation across the response and
         // request 'error' paths (see get()).
         const cbOnce = once(callback);
@@ -309,16 +292,14 @@ export default class RESTClient {
         const headers = {};
         setRequestUids(headers, reqUids);
 
-        const request = this.doRequest(
-            'DELETE', headers, key, log, response => {
-                response.once('readable', () => {
-                    if (response.statusCode !== 200 &&
-                        response.statusCode !== 204) {
-                        return cbOnce(makeErrorFromHTTPResponse(response));
-                    }
-                    return cbOnce(null);
-                });
-            }).on('error', cbOnce);
+        const request = this.doRequest('DELETE', headers, key, log, response => {
+            response.once('readable', () => {
+                if (response.statusCode !== 200 && response.statusCode !== 204) {
+                    return cbOnce(makeErrorFromHTTPResponse(response));
+                }
+                return cbOnce(null);
+            });
+        }).on('error', cbOnce);
         request.end();
     }
 }

@@ -73,8 +73,7 @@ class DummyConfig extends EventEmitter {
                 objectId: 'azurebackend',
                 legacyAwsBehavior: true,
                 details: {
-                    azureStorageEndpoint:
-                        'https://fakeaccountname.blob.core.fake.net/',
+                    azureStorageEndpoint: 'https://fakeaccountname.blob.core.fake.net/',
                     azureStorageAccountName: 'fakeaccountname',
                     azureStorageAccessKey: 'Fake00Key001',
                     bucketMatch: true,
@@ -120,16 +119,14 @@ class DummyConfig extends EventEmitter {
                 isCold: false,
                 isCRR: true,
                 details: {
-                    servers: [
-                        's3.workloadplane.scality.local:80'
-                    ],
+                    servers: ['s3.workloadplane.scality.local:80'],
                     sts: {
                         accessKey: 'VNZGSEHBFKZYN57GB8WT',
                         host: 'sts.workloadplane.scality.local',
                         port: '80',
-                        secretKey: '7YYFe2bYMVa7r/IsiAfqnSwvvDsz8PrcwHpQcmwX'
+                        secretKey: '7YYFe2bYMVa7r/IsiAfqnSwvvDsz8PrcwHpQcmwX',
                     },
-                    transport: 'http'
+                    transport: 'http',
                 },
             },
         };
@@ -169,7 +166,6 @@ class DummyConfig extends EventEmitter {
         this.outboundProxy = {};
         this.managementAgent = { host: 'localhost', port: 8010 };
         this.externalBackends = {
-             
             aws_s3: {
                 httpAgent: {
                     keepAlive: false,
@@ -193,8 +189,7 @@ class DummyConfig extends EventEmitter {
     getAzureEndpoint(locationConstraint) {
         let azureStorageEndpoint =
             process.env[`${locationConstraint}_AZURE_STORAGE_ENDPOINT`] ||
-            this.locationConstraints[locationConstraint]
-                .details.azureStorageEndpoint;
+            this.locationConstraints[locationConstraint].details.azureStorageEndpoint;
         if (!azureStorageEndpoint.endsWith('/')) {
             // append the trailing slash
             azureStorageEndpoint = `${azureStorageEndpoint}/`;
@@ -203,28 +198,25 @@ class DummyConfig extends EventEmitter {
     }
 
     getAzureStorageAccountName(locationConstraint) {
-        const { azureStorageAccountName } =
-            this.locationConstraints[locationConstraint].details;
-        const storageAccountNameFromEnv =
-            process.env[`${locationConstraint}_AZURE_STORAGE_ACCOUNT_NAME`];
+        const { azureStorageAccountName } = this.locationConstraints[locationConstraint].details;
+        const storageAccountNameFromEnv = process.env[`${locationConstraint}_AZURE_STORAGE_ACCOUNT_NAME`];
         return storageAccountNameFromEnv || azureStorageAccountName;
     }
 
     getAzureStorageCredentials(locationConstraint) {
-        const { azureStorageAccessKey } =
-            this.locationConstraints[locationConstraint].details;
-        const storageAccessKeyFromEnv =
-            process.env[`${locationConstraint}_AZURE_STORAGE_ACCESS_KEY`];
+        const { azureStorageAccessKey } = this.locationConstraints[locationConstraint].details;
+        const storageAccessKeyFromEnv = process.env[`${locationConstraint}_AZURE_STORAGE_ACCESS_KEY`];
         return {
-            storageAccountName:
-                this.getAzureStorageAccountName(locationConstraint),
+            storageAccountName: this.getAzureStorageAccountName(locationConstraint),
             storageAccessKey: storageAccessKeyFromEnv || azureStorageAccessKey,
         };
     }
 
     getPfsDaemonEndpoint(locationConstraint) {
-        return process.env[`${locationConstraint}_PFSD_ENDPOINT`] ||
-        this.locationConstraints[locationConstraint].details.pfsDaemonEndpoint;
+        return (
+            process.env[`${locationConstraint}_PFSD_ENDPOINT`] ||
+            this.locationConstraints[locationConstraint].details.pfsDaemonEndpoint
+        );
     }
 }
 

@@ -88,18 +88,24 @@ export default function routerGET(
             call('objectGetAttributes');
         } else {
             // GET object
-            api.callApiMethod('objectGet', request, response, log,
-                (err, dataGetInfo, resMetaHeaders, range) => {
-                    let contentLength = 0;
-                    if (resMetaHeaders && resMetaHeaders['Content-Length']) {
-                        contentLength = resMetaHeaders['Content-Length'];
-                    }
-                    log.end().addDefaultFields({ contentLength });
-                    routesUtils.statsReport500(err, statsClient);
-                    return routesUtils.responseStreamData(err, query,
-                        resMetaHeaders, dataGetInfo, dataRetrievalParams, response,
-                        range, log);
-                });
+            api.callApiMethod('objectGet', request, response, log, (err, dataGetInfo, resMetaHeaders, range) => {
+                let contentLength = 0;
+                if (resMetaHeaders && resMetaHeaders['Content-Length']) {
+                    contentLength = resMetaHeaders['Content-Length'];
+                }
+                log.end().addDefaultFields({ contentLength });
+                routesUtils.statsReport500(err, statsClient);
+                return routesUtils.responseStreamData(
+                    err,
+                    query,
+                    resMetaHeaders,
+                    dataGetInfo,
+                    dataRetrievalParams,
+                    response,
+                    range,
+                    log,
+                );
+            });
         }
     }
 }

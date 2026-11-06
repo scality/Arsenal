@@ -1,4 +1,4 @@
-'use strict';  
+'use strict';
 
 const assert = require('assert');
 const DelimiterVersions = require('../../../../lib/algos/list/delimiterVersions').DelimiterVersions;

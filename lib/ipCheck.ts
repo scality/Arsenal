@@ -7,10 +7,7 @@ import ipaddr from 'ipaddr.js';
  * @param ip - parsed ip address
  * @return true if in range, false if not
  */
-export function checkIPinRangeOrMatch(
-    cidr: string,
-    ip: ipaddr.IPv4 | ipaddr.IPv6,
-): boolean {
+export function checkIPinRangeOrMatch(cidr: string, ip: ipaddr.IPv4 | ipaddr.IPv6): boolean {
     // If there is an exact match of the ip address, no need to check ranges
     if (ip.toString() === cidr) {
         return true;
@@ -70,8 +67,7 @@ export function ipMatchCidrList(cidrList: string[], ip: string): boolean {
             }
         }
         return (
-            (parsedIp instanceof ipaddr.IPv4 ||
-                parsedIp instanceof ipaddr.IPv6) &&
+            (parsedIp instanceof ipaddr.IPv4 || parsedIp instanceof ipaddr.IPv6) &&
             checkIPinRangeOrMatch(cidr || item, parsedIp)
         );
     });
