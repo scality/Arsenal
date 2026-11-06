@@ -1719,36 +1719,36 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
 
         it('emits pure V1 with byte-stable legacy wire shape', () => {
             const xml =
-                `<?xml version="1.0" encoding="UTF-8"?>` +
-                `<ReplicationConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">` +
+                '<?xml version="1.0" encoding="UTF-8"?>' +
+                '<ReplicationConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">' +
                 `<Role>${TEST_ROLE}</Role>` +
-                `<Rule>` +
-                `<ID>rule1</ID>` +
-                `<Status>Enabled</Status>` +
-                `<Prefix>images/</Prefix>` +
-                `<Destination>` +
-                `<Bucket>arn:aws:s3:::bucket-a</Bucket>` +
-                `<StorageClass>STANDARD</StorageClass>` +
-                `</Destination>` +
-                `</Rule>` +
-                `</ReplicationConfiguration>`;
+                '<Rule>' +
+                '<ID>rule1</ID>' +
+                '<Status>Enabled</Status>' +
+                '<Prefix>images/</Prefix>' +
+                '<Destination>' +
+                '<Bucket>arn:aws:s3:::bucket-a</Bucket>' +
+                '<StorageClass>STANDARD</StorageClass>' +
+                '</Destination>' +
+                '</Rule>' +
+                '</ReplicationConfiguration>';
             const { emitted, meta1 } = roundTrip(xml);
             expect(meta1.format).toEqual('v1');
 
             const expected =
-                `<?xml version="1.0" encoding="UTF-8"?>` +
-                `<ReplicationConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">` +
-                `<Rule>` +
-                `<ID>rule1</ID>` +
-                `<Prefix>images/</Prefix>` +
-                `<Status>Enabled</Status>` +
-                `<Destination>` +
-                `<Bucket>arn:aws:s3:::bucket-a</Bucket>` +
-                `<StorageClass>STANDARD</StorageClass>` +
-                `</Destination>` +
-                `</Rule>` +
+                '<?xml version="1.0" encoding="UTF-8"?>' +
+                '<ReplicationConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">' +
+                '<Rule>' +
+                '<ID>rule1</ID>' +
+                '<Prefix>images/</Prefix>' +
+                '<Status>Enabled</Status>' +
+                '<Destination>' +
+                '<Bucket>arn:aws:s3:::bucket-a</Bucket>' +
+                '<StorageClass>STANDARD</StorageClass>' +
+                '</Destination>' +
+                '</Rule>' +
                 `<Role>${TEST_ROLE}</Role>` +
-                `</ReplicationConfiguration>`;
+                '</ReplicationConfiguration>';
             expect(emitted).toEqual(expected);
         });
 
@@ -1832,40 +1832,40 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
 
         it('emits V2 with Filter, Priority and Account on the wire', () => {
             const xml =
-                `<?xml version="1.0" encoding="UTF-8"?>` +
-                `<ReplicationConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">` +
+                '<?xml version="1.0" encoding="UTF-8"?>' +
+                '<ReplicationConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">' +
                 `<Role>${TEST_ROLE}</Role>` +
-                `<Rule>` +
-                `<ID>rule1</ID>` +
-                `<Status>Enabled</Status>` +
-                `<Priority>1</Priority>` +
-                `<Filter><Prefix>images/</Prefix></Filter>` +
-                `<Destination>` +
-                `<Bucket>arn:aws:s3:::bucket-a</Bucket>` +
-                `<StorageClass>ring</StorageClass>` +
-                `<Account>222222222222</Account>` +
-                `</Destination>` +
-                `</Rule>` +
-                `</ReplicationConfiguration>`;
+                '<Rule>' +
+                '<ID>rule1</ID>' +
+                '<Status>Enabled</Status>' +
+                '<Priority>1</Priority>' +
+                '<Filter><Prefix>images/</Prefix></Filter>' +
+                '<Destination>' +
+                '<Bucket>arn:aws:s3:::bucket-a</Bucket>' +
+                '<StorageClass>ring</StorageClass>' +
+                '<Account>222222222222</Account>' +
+                '</Destination>' +
+                '</Rule>' +
+                '</ReplicationConfiguration>';
             const { emitted, meta1 } = roundTrip(xml);
             expect(meta1.format).toEqual('v2');
 
             const expected =
-                `<?xml version="1.0" encoding="UTF-8"?>` +
-                `<ReplicationConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">` +
-                `<Rule>` +
-                `<ID>rule1</ID>` +
-                `<Priority>1</Priority>` +
-                `<Filter><Prefix>images/</Prefix></Filter>` +
-                `<Status>Enabled</Status>` +
-                `<Destination>` +
-                `<Bucket>arn:aws:s3:::bucket-a</Bucket>` +
-                `<StorageClass>ring</StorageClass>` +
-                `<Account>222222222222</Account>` +
-                `</Destination>` +
-                `</Rule>` +
+                '<?xml version="1.0" encoding="UTF-8"?>' +
+                '<ReplicationConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">' +
+                '<Rule>' +
+                '<ID>rule1</ID>' +
+                '<Priority>1</Priority>' +
+                '<Filter><Prefix>images/</Prefix></Filter>' +
+                '<Status>Enabled</Status>' +
+                '<Destination>' +
+                '<Bucket>arn:aws:s3:::bucket-a</Bucket>' +
+                '<StorageClass>ring</StorageClass>' +
+                '<Account>222222222222</Account>' +
+                '</Destination>' +
+                '</Rule>' +
                 `<Role>${TEST_ROLE}</Role>` +
-                `</ReplicationConfiguration>`;
+                '</ReplicationConfiguration>';
             expect(emitted).toEqual(expected);
         });
     });

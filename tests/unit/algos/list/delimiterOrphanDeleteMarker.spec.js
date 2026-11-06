@@ -1,4 +1,4 @@
-'use strict'; // eslint-disable-line strict
+'use strict';  
 
 const assert = require('assert');
 
@@ -647,7 +647,7 @@ describe('DelimiterOrphanDeleteMarker over PHD master keys', () => {
 
                 const masterKey = 'img-001';
                 const date = '1970-01-01T00:00:00.000Z';
-                const dmValue = `{"versionId":"version1",` + `"last-modified":"${date}","isDeleteMarker":true}`;
+                const dmValue = '{"versionId":"version1",' + `"last-modified":"${date}","isDeleteMarker":true}`;
                 const value2 = `{"versionId":"version2","last-modified":"${date}"}`;
 
                 assert.strictEqual(
@@ -683,7 +683,7 @@ describe('DelimiterOrphanDeleteMarker over PHD master keys', () => {
                 const delimiter = new DelimiterOrphanDeleteMarker({ maxScannedLifecycleListingEntries }, fakeLogger, v);
 
                 const date = '1970-01-01T00:00:00.000Z';
-                const dmValue = `{"versionId":"v1",` + `"last-modified":"${date}","isDeleteMarker":true}`;
+                const dmValue = '{"versionId":"v1",' + `"last-modified":"${date}","isDeleteMarker":true}`;
 
                 // aaa's delete marker is held as a candidate
                 assert.strictEqual(

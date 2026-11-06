@@ -78,7 +78,7 @@ describe('retrieveData', () => {
             let streamsEnded = 0;
             const checkEnd = () => {
                 streamsEnded++;
-                if (streamsEnded === 2) resolve();
+                if (streamsEnded === 2) {resolve();}
             };
             mockStream1.on('end', checkEnd);
             mockStream2.on('end', checkEnd);

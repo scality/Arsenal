@@ -1,4 +1,4 @@
-'use strict'; // eslint-disable-line strict
+'use strict';  
 
 const assert = require('assert');
 const fakeTimers = require('@sinonjs/fake-timers');
@@ -292,10 +292,10 @@ describe('v4 headerAuthCheck', () => {
     it('should not return error if proxy_path header is added', done => {
         // Freezes time so date created within function will be Feb 8, 2016
         const clock = fakeTimers.install({ now: 1454962445000 });
-        /* eslint-disable camelcase */
+         
         const alteredRequest = createAlteredRequest({
             proxy_path: 'proxy/1234' }, 'headers', request, headers);
-        /* eslint-enable camelcase */
+         
         const res = headerAuthCheck(alteredRequest, log);
         clock.uninstall();
         assert.strictEqual(res.err, null);
@@ -306,10 +306,10 @@ describe('v4 headerAuthCheck', () => {
         done => {
         // Freezes time so date created within function will be Feb 8, 2016
             const clock = fakeTimers.install({ now: 1454962445000 });
-            /* eslint-disable camelcase */
+             
             const alteredRequest = createAlteredRequest({
                 proxy_path: 'absc%2proxy/1234' }, 'headers', request, headers);
-            /* eslint-enable camelcase */
+             
             const res = headerAuthCheck(alteredRequest, log);
             clock.uninstall();
             assert.deepStrictEqual(res.err,
