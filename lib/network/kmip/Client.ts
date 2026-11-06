@@ -19,10 +19,8 @@ const CRYPTOGRAPHIC_USAGE_MASK = ['Encrypt', 'Decrypt'];
 const CRYPTOGRAPHIC_DEFAULT_IV = Buffer.alloc(16).fill(0);
 
 const searchFilter = {
-    protocolVersionMajor:
-        'Response Message/Batch Item/Response Payload/Protocol Version/Protocol Version Major',
-    protocolVersionMinor:
-        'Response Message/Batch Item/Response Payload/Protocol Version/Protocol Version Minor',
+    protocolVersionMajor: 'Response Message/Batch Item/Response Payload/Protocol Version/Protocol Version Major',
+    protocolVersionMinor: 'Response Message/Batch Item/Response Payload/Protocol Version/Protocol Version Minor',
     extensionName: 'Response Message/Batch Item/Response Payload/Extension Information/Extension Name',
     extensionTag: 'Response Message/Batch Item/Response Payload/Extension Information/Extension Tag',
     vendorIdentification: 'Response Message/Batch Item/Response Payload/Vendor Identification',

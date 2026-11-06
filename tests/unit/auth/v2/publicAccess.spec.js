@@ -51,40 +51,37 @@ describe('Public Access', () => {
         },
     );
 
-    it(
-        'should not grant access to a request that contains an authorization header without proper credentials',
-        done => {
-            const request = {
-                method: 'GET',
-                headers: {
-                    host: 's3.amazonaws.com',
-                    authorization: 'noAuth',
-                },
-                url: '/bucket',
-                query: {},
-            };
-            const requestContext = [
-                new RequestContext(
-                    request.headers,
-                    request.query,
-                    request.bucketName,
-                    request.objectKey,
-                    undefined,
-                    undefined,
-                    'bucketGet',
-                    's3',
-                ),
-            ];
-            auth(
-                request,
-                logger,
-                err => {
-                    assert.deepStrictEqual(err, errors.AccessDenied);
-                    done();
-                },
+    it('should not grant access to a request that contains an authorization header without proper credentials', done => {
+        const request = {
+            method: 'GET',
+            headers: {
+                host: 's3.amazonaws.com',
+                authorization: 'noAuth',
+            },
+            url: '/bucket',
+            query: {},
+        };
+        const requestContext = [
+            new RequestContext(
+                request.headers,
+                request.query,
+                request.bucketName,
+                request.objectKey,
+                undefined,
+                undefined,
+                'bucketGet',
                 's3',
-                requestContext,
-            );
-        },
-    );
+            ),
+        ];
+        auth(
+            request,
+            logger,
+            err => {
+                assert.deepStrictEqual(err, errors.AccessDenied);
+                done();
+            },
+            's3',
+            requestContext,
+        );
+    });
 });

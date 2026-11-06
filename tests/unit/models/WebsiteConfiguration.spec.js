@@ -77,21 +77,18 @@ describe('WebsiteConfiguration class', () => {
         done();
     });
 
-    it(
-        'should initialize routingRules properly during construction from array of RoutingRule class instances',
-        done => {
-            const testWebsiteConfigParams = {
-                routingRules: [],
-            };
-            const testRoutingRule = new RoutingRule(testRoutingRuleParams);
-            testWebsiteConfigParams.routingRules.push(testRoutingRule);
-            testWebsiteConfigParams.routingRules.push(testRoutingRule);
-            testWebsiteConfigParams.routingRules.push(testRoutingRule);
-            const websiteConfig = new WebsiteConfiguration(testWebsiteConfigParams);
-            assert.deepStrictEqual(websiteConfig._routingRules, testWebsiteConfigParams.routingRules);
-            done();
-        },
-    );
+    it('should initialize routingRules properly during construction from array of RoutingRule class instances', done => {
+        const testWebsiteConfigParams = {
+            routingRules: [],
+        };
+        const testRoutingRule = new RoutingRule(testRoutingRuleParams);
+        testWebsiteConfigParams.routingRules.push(testRoutingRule);
+        testWebsiteConfigParams.routingRules.push(testRoutingRule);
+        testWebsiteConfigParams.routingRules.push(testRoutingRule);
+        const websiteConfig = new WebsiteConfiguration(testWebsiteConfigParams);
+        assert.deepStrictEqual(websiteConfig._routingRules, testWebsiteConfigParams.routingRules);
+        done();
+    });
 
     it('should initialize routingRules properly during construction from array of plain objects', done => {
         const testWebsiteConfigParams = {
