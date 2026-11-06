@@ -46,18 +46,15 @@ function getListingKey(key, vFormat) {
 
 ['v0', 'v1'].forEach(vFormat => {
     describe(`DelimiterMaster listing algorithm vFormat=${vFormat}`, () => {
-        it(
-            'should return SKIP_NONE for DelimiterMaster when both NextMarker and NextContinuationToken are undefined',
-            () => {
-                const delimiter = new DelimiterMaster({ delimiter: '/' }, fakeLogger, vFormat);
+        it('should return SKIP_NONE for DelimiterMaster when both NextMarker and NextContinuationToken are undefined', () => {
+            const delimiter = new DelimiterMaster({ delimiter: '/' }, fakeLogger, vFormat);
 
-                assert.strictEqual(delimiter.nextMarker, undefined);
+            assert.strictEqual(delimiter.nextMarker, undefined);
 
-                // When there is no NextMarker or NextContinuationToken, it should
-                // return SKIP_NONE
-                assert.strictEqual(delimiter.skipping(), SKIP_NONE);
-            },
-        );
+            // When there is no NextMarker or NextContinuationToken, it should
+            // return SKIP_NONE
+            assert.strictEqual(delimiter.skipping(), SKIP_NONE);
+        });
 
         it('should accept a master version', () => {
             const delimiter = new DelimiterMaster({}, fakeLogger, vFormat);
@@ -438,25 +435,22 @@ function getListingKey(key, vFormat) {
                 });
             });
 
-            it(
-                'should skip a versioned entry when there is a delimiter and the key starts with the NextMarker value',
-                () => {
-                    const key = 'prefix/key';
-                    const versionKey = `${key}${VID_SEP}version`;
-                    const value = 'value';
+            it('should skip a versioned entry when there is a delimiter and the key starts with the NextMarker value', () => {
+                const key = 'prefix/key';
+                const versionKey = `${key}${VID_SEP}version`;
+                const value = 'value';
 
-                    const delimiter = new DelimiterMaster(
-                        {
-                            delimiter: '/',
-                            marker: key,
-                        },
-                        fakeLogger,
-                        vFormat,
-                    );
+                const delimiter = new DelimiterMaster(
+                    {
+                        delimiter: '/',
+                        marker: key,
+                    },
+                    fakeLogger,
+                    vFormat,
+                );
 
-                    assert.strictEqual(delimiter.filter({ key: versionKey, value }), FILTER_SKIP);
-                },
-            );
+                assert.strictEqual(delimiter.filter({ key: versionKey, value }), FILTER_SKIP);
+            });
 
             [undefined, '/'].forEach(delimiterChar => {
                 it(
@@ -1313,20 +1307,17 @@ describe('DelimiterMaster listing algorithm: gap caching and lookup', () => {
         );
     });
 
-    it(
-        'should cut the current gap when seeing a non-deleted object, and start a new gap on the next deleted object',
-        () => {
-            const listing = new DelimiterMaster({}, fakeLogger, 'v0');
-            const gapCache = new GapCacheAsSet(100);
-            listing.refreshGapCache(gapCache, 2); // minGapWeight=2
+    it('should cut the current gap when seeing a non-deleted object, and start a new gap on the next deleted object', () => {
+        const listing = new DelimiterMaster({}, fakeLogger, 'v0');
+        const gapCache = new GapCacheAsSet(100);
+        listing.refreshGapCache(gapCache, 2); // minGapWeight=2
 
-            filterEntries(listing, 'Vv Ddv Vv Ddv Vv', 'as ass as ass as');
-            expect(gapCache.toArray()).toEqual([
-                { firstKey: 'pre/0002', lastKey: `pre/0002${VID_SEP}v101`, weight: 3 },
-                { firstKey: 'pre/0004', lastKey: `pre/0004${VID_SEP}v101`, weight: 3 },
-            ]);
-        },
-    );
+        filterEntries(listing, 'Vv Ddv Vv Ddv Vv', 'as ass as ass as');
+        expect(gapCache.toArray()).toEqual([
+            { firstKey: 'pre/0002', lastKey: `pre/0002${VID_SEP}v101`, weight: 3 },
+            { firstKey: 'pre/0004', lastKey: `pre/0004${VID_SEP}v101`, weight: 3 },
+        ]);
+    });
 
     it('should complete the current gap when returning a result', () => {
         const listing = new DelimiterMaster({}, fakeLogger, 'v0');
