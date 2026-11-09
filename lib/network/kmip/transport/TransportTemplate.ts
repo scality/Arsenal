@@ -153,9 +153,13 @@ export default class TransportTemplate {
             // prefer close event from end event as it also trigger when tls session
             // is not established, like failure to connect, invalid cert
             socket.on('close', () => {
-                const error = Error('Conversation interrupted');
-                this.socket = null;
-                this._drainQueuesWithError(error);
+                // A failed socket can close after the next one is open: the
+                // queued requests are then those of the next socket
+                if (this.socket === socket) {
+                    const error = Error('Conversation interrupted');
+                    this.socket = null;
+                    this._drainQueuesWithError(error);
+                }
                 const onEnd = this.onEndCallback;
                 if (onEnd) {
                     this.onEndCallback = null;
