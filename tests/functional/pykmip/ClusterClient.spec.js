@@ -10,6 +10,7 @@ const util = require('util');
 const KmipClient = require('../../../lib/network/kmip/Client').default;
 const ClusterClient = require('../../../lib/network/kmip/ClusterClient').default;
 const { logger } = require('../../utils/kmip/ersatz');
+const { startKmipTestServer } = require('../../utils/kmip/tlsServer');
 
 jest.setTimeout(5000);
 
@@ -596,5 +597,58 @@ describe('KMIP ClusterClient with pykmip', () => {
                 );
             },
         );
+    });
+
+    describe('with a request time limit, for 1 host that does not answer + 1 host', () => {
+        const requestTimeoutMs = 1000;
+        let silentServer;
+
+        beforeEach(async () => {
+            silentServer = await startKmipTestServer();
+            silentServer.answerDelayMs = () => null;
+            const transports = [
+                { host: '127.0.0.1', port: silentServer.port },
+                { host: '127.0.0.2', port },
+            ].map(hostAndPort =>
+                Object.assign({}, transport, {
+                    requestTimeoutMs,
+                    tls: Object.assign({}, transport.tls, hostAndPort),
+                }),
+            );
+            client = new ClusterClient({
+                logger,
+                kmip: Object.assign({}, options.kmip, { transport: transports }),
+            });
+            healthyClients = client.clients;
+            unhealthyClients = client.unhealthyClients;
+            promises = promisify(client);
+        });
+
+        afterEach(async () => {
+            await silentServer.stop();
+        });
+
+        it('should mark the host that does not answer unhealthy after the time limit, and use the other host', async () => {
+            const start = Date.now();
+            await assert.doesNotReject(async () => {
+                kmsKey = await promises.createBucketKey('testBucket', logger);
+            }, showArsenalErr);
+            const elapsed = Date.now() - start;
+
+            assert.ok(
+                elapsed >= requestTimeoutMs - 1,
+                `The request should wait ${requestTimeoutMs} ms on the first host, waited ${elapsed} ms`,
+            );
+            assert.deepStrictEqual(
+                unhealthyClients.map(unhealthy => unhealthy.client.host),
+                ['127.0.0.1'],
+            );
+            assert.deepStrictEqual(
+                healthyClients.map(healthy => healthy.host),
+                ['127.0.0.2'],
+            );
+
+            await assert.doesNotReject(promises.cipherDataKey(1, kmsKey, dataKey, logger), showArsenalErr);
+        });
     });
 });

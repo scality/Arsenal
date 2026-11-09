@@ -7,6 +7,8 @@ const DEFAULT_KMIP_PORT = 5696;
 
 export type Options = {
     pipelineDepth: number;
+    /** Time limit of a request, from its submission to its response. No limit when not set */
+    requestTimeoutMs?: number;
     tls: {
         port: number;
     };
@@ -209,10 +211,49 @@ export default class TransportTemplate {
      */
     send(logger: werelogs.Logger, encodedMessage: Buffer, cb: KmipCallback) {
         assert(encodedMessage.length !== 0);
+        const limitedCb = this._limitRequestTime(cb);
         if (this.callbackPipeline.length >= this.pipelineDepth) {
-            return this.deferedRequests.push({ encodedMessage, cb, timestamp: Date.now() });
+            return this.deferedRequests.push({ encodedMessage, cb: limitedCb, timestamp: Date.now() });
         }
-        return this._doSend(logger, encodedMessage, cb);
+        return this._doSend(logger, encodedMessage, limitedCb);
+    }
+
+    /**
+     * Apply the request time limit to a request callback. When the limit
+     * passes, the conversation is dropped, since responses are matched to
+     * requests by order: the request fails with an ETIMEDOUT error, and the
+     * other requests as interrupted.
+     * @param cb - the callback of the request
+     * @returns the callback to queue for the request
+     */
+    _limitRequestTime(cb: KmipCallback): KmipCallback {
+        const { requestTimeoutMs } = this.options;
+        if (!requestTimeoutMs) {
+            return cb;
+        }
+        let timedOut = false;
+        const timer = setTimeout(() => {
+            timedOut = true;
+            this._dropConversation();
+        }, requestTimeoutMs);
+        return (error, socket, data, latencies, queues) => {
+            clearTimeout(timer);
+            const requestError = timedOut
+                ? Object.assign(new Error(`KMIP request timed out after ${requestTimeoutMs} ms`), { code: 'ETIMEDOUT' })
+                : error;
+            cb(requestError, socket, data, latencies, queues);
+        };
+    }
+
+    /**
+     * Destroy the socket and fail the outstanding and deferred requests at
+     * once, without waiting for the socket to close.
+     */
+    _dropConversation() {
+        const socket = this.socket;
+        this.socket = null;
+        this._drainQueuesWithError(Error('Conversation interrupted'));
+        socket?.destroy();
     }
 
     /**
