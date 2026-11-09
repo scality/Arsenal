@@ -18,32 +18,48 @@ const certs = {
  * response. `answerDelayMs(connection, request)`, given the index of the
  * connection and of the request on that connection, returns the delay before
  * the response, or null to never answer; by default every request is answered
- * at once.
+ * at once. When the client ends a connection, the server ends it once its
+ * pending responses are sent, so a late response still reaches the client.
  * @returns {Promise<object>} the server: `port`, `answerDelayMs`,
- * `connections` (one per accepted connection, with `reset()` to reset it) and
- * `stop()`
+ * `connections` (one per accepted connection, with a `closed` promise and
+ * `reset()` to reset it) and `stop()`
  */
 function startKmipTestServer() {
     const state = { answerDelayMs: () => 0, connections: [] };
-    const server = tls.createServer({ key: certs.serverKey, cert: certs.serverCert }, socket => {
+    const server = tls.createServer({ key: certs.serverKey, cert: certs.serverCert, allowHalfOpen: true }, socket => {
         const connectionIndex = state.connections.length;
         state.connections.push({
             socket,
+            closed: new Promise(resolve => socket.on('close', resolve)),
             // only the TCP socket under the TLS one can be reset
             reset: () => socket._parent.resetAndDestroy(),
         });
         let requestIndex = 0;
+        let pending = 0;
+        let ended = false;
+        const endWhenIdle = () => {
+            if (ended && pending === 0) {
+                socket.end();
+            }
+        };
         socket.on('data', data => {
             const delayMs = state.answerDelayMs(connectionIndex, requestIndex);
             requestIndex += 1;
             if (delayMs === null) {
                 return;
             }
+            pending += 1;
             setTimeout(() => {
+                pending -= 1;
                 if (!socket.destroyed) {
                     socket.write(data);
                 }
+                endWhenIdle();
             }, delayMs);
+        });
+        socket.on('end', () => {
+            ended = true;
+            endWhenIdle();
         });
         // the client closing a connection abruptly is expected
         socket.on('error', () => {});

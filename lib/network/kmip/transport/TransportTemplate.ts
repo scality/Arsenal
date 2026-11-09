@@ -1,4 +1,5 @@
 import assert from 'assert';
+import async from 'async';
 import tls from 'tls';
 import * as werelogs from 'werelogs';
 
@@ -7,6 +8,8 @@ const DEFAULT_KMIP_PORT = 5696;
 
 export type Options = {
     pipelineDepth: number;
+    /** Time limit of a request, from its submission to its response. No limit when not set */
+    requestTimeoutMs?: number;
     tls: {
         port: number;
     };
@@ -209,10 +212,51 @@ export default class TransportTemplate {
      */
     send(logger: werelogs.Logger, encodedMessage: Buffer, cb: KmipCallback) {
         assert(encodedMessage.length !== 0);
+        const { requestTimeoutMs } = this.options;
+        if (!requestTimeoutMs) {
+            return this._queueOrSend(logger, encodedMessage, cb);
+        }
+        // Arguments of the request's callback, unset when the time limit passes first
+        let answer: Parameters<KmipCallback> | undefined;
+        const timedSend = async.timeout(
+            (done: KmipCallback) =>
+                this._queueOrSend(logger, encodedMessage, (...args) => {
+                    answer = args;
+                    done(...args);
+                }),
+            requestTimeoutMs,
+        ) as (cb: KmipCallback) => void;
+        return timedSend((error, socket, data, latencies, queues) => {
+            if (answer) {
+                return cb(error, socket, data, latencies, queues);
+            }
+            // Responses are matched to requests by order, so the request
+            // fails with ETIMEDOUT and the others on the conversation as
+            // interrupted. The drain gives the request's latencies and queue
+            // sizes, which async does not pass on after the time limit.
+            this._dropConversation();
+            error!.message = `KMIP request timed out after ${requestTimeoutMs} ms`;
+            const [, , , drainedLatencies, drainedQueues] = answer!;
+            return cb(error, undefined, undefined, drainedLatencies, drainedQueues);
+        });
+    }
+
+    _queueOrSend(logger: werelogs.Logger, encodedMessage: Buffer, cb: KmipCallback) {
         if (this.callbackPipeline.length >= this.pipelineDepth) {
             return this.deferedRequests.push({ encodedMessage, cb, timestamp: Date.now() });
         }
         return this._doSend(logger, encodedMessage, cb);
+    }
+
+    /**
+     * Destroy the socket and fail the outstanding and deferred requests at
+     * once, without waiting for the socket to close.
+     */
+    _dropConversation() {
+        const socket = this.socket;
+        this.socket = null;
+        this._drainQueuesWithError(new Error('Conversation interrupted'));
+        socket?.destroy();
     }
 
     /**
