@@ -1,5 +1,7 @@
 const sinon = require('sinon');
 const assert = require('assert');
+const http = require('http');
+const net = require('net');
 const Client = require('../../../lib/network/kmsAWS/Client').default;
 const { NotFoundException, KMSInvalidStateException } = require('@aws-sdk/client-kms');
 
@@ -117,8 +119,10 @@ describe('KmsAWSClient', () => {
         client.createMasterKey(logger, (err, keyId, keyArn) => {
             assert.ifError(err);
             assert.strictEqual(keyId, 'arn:aws:kms:region:accountId:key/mock-key-id');
-            assert.strictEqual(keyArn,
-                'arn:scality:kms:external:aws_kms:tests:key/arn:aws:kms:region:accountId:key/mock-key-id');
+            assert.strictEqual(
+                keyArn,
+                'arn:scality:kms:external:aws_kms:tests:key/arn:aws:kms:region:accountId:key/mock-key-id',
+            );
             assert(sendStub.calledOnce);
             done();
         });
@@ -146,8 +150,10 @@ describe('KmsAWSClient', () => {
         client.createMasterKey(logger, (err, keyId, keyArn) => {
             assert.ifError(err);
             assert.strictEqual(keyId, 'arn:aws:kms:region:accountId:key/mock-key-id');
-            assert.strictEqual(keyArn,
-                'arn:scality:kms:external:aws_kms:tests:key/arn:aws:kms:region:accountId:key/mock-key-id');
+            assert.strictEqual(
+                keyArn,
+                'arn:scality:kms:external:aws_kms:tests:key/arn:aws:kms:region:accountId:key/mock-key-id',
+            );
             assert(sendStub.calledOnce);
             done();
         });
@@ -312,7 +318,7 @@ describe('KmsAWSClient', () => {
             message: 'The request key was not found',
             $metadata: {
                 httpStatusCode: 404,
-            }
+            },
         });
         sendStub = sinon.stub(client.client, 'send');
         sendStub.rejects(mockError);
@@ -329,7 +335,7 @@ describe('KmsAWSClient', () => {
             message: 'The request key is not in a valid state',
             $metadata: {
                 httpStatusCode: 400,
-            }
+            },
         });
 
         sendStub = sinon.stub(client.client, 'send');
@@ -370,14 +376,14 @@ describe('KmsAWSClient', () => {
             KeyId: 'mocked-kms-key-id',
             $metadata: {
                 httpStatusCode: 200,
-                requestId: 'mock-request-id'
-            }
+                requestId: 'mock-request-id',
+            },
         };
-        
+
         sendStub = sinon.stub(client.client, 'send');
         sendStub.resolves(mockResponse);
 
-        client.generateDataKey(1, key, logger, (err) => {
+        client.generateDataKey(1, key, logger, err => {
             assert.ifError(err);
             assert(sendStub.calledOnce);
             assert.strictEqual(sendStub.getCall(0).firstArg.input.KeyId, awsArn);
@@ -497,6 +503,79 @@ describe('KmsAWSClient', () => {
             assert.strictEqual(err.message, 'KMS.AccessDeniedException');
             assert(sendStub.calledOnce);
             done();
+        });
+    });
+});
+
+describe('KmsAWSClient request time limit', () => {
+    const logger = {
+        info: () => {},
+        debug: () => {},
+        error: () => {},
+        warn: () => {},
+    };
+    const requestTimeoutMs = 100;
+
+    let server;
+
+    beforeEach(done => {
+        // accepts requests and never answers them
+        server = http.createServer(() => {});
+        server.listen(0, '127.0.0.1', done);
+    });
+
+    afterEach(done => {
+        server.closeAllConnections();
+        server.close(done);
+    });
+
+    function createClient(endpoint) {
+        return new Client({
+            kmsAWS: { providerName: 'tests', region: 'us-east-1', endpoint, ak: 'ak', sk: 'sk', requestTimeoutMs },
+        });
+    }
+
+    /**
+     * Assert that a request failed on its time limit: the SDK also names a
+     * reset connection TimeoutError
+     * @param {Error} err - the error of the request
+     * @param {number} start - when the request was sent
+     * @returns {undefined}
+     */
+    function assertTimedOut(err, start) {
+        const elapsed = Date.now() - start;
+        assert.strictEqual(err.code, 500);
+        assert.strictEqual(err.message, 'KMS.TimeoutError');
+        assert.ok(
+            elapsed >= requestTimeoutMs - 1,
+            `The request should fail after its time limit of ${requestTimeoutMs} ms, failed after ${elapsed} ms`,
+        );
+    }
+
+    it('should fail a request without answer as a KMS error', done => {
+        const client = createClient(`http://127.0.0.1:${server.address().port}`);
+
+        const start = Date.now();
+        client.cipherDataKey(1, 'mock-key-id', Buffer.alloc(32), logger, err => {
+            assertTimedOut(err, start);
+            done();
+        });
+    });
+
+    it('should fail a request whose TLS connection is never established as a KMS error', done => {
+        // accepts connections and never answers the TLS handshake
+        const sockets = [];
+        const stalled = net.createServer(socket => sockets.push(socket));
+        stalled.listen(0, '127.0.0.1', () => {
+            const client = createClient(`https://127.0.0.1:${stalled.address().port}`);
+
+            const start = Date.now();
+            client.cipherDataKey(1, 'mock-key-id', Buffer.alloc(32), logger, err => {
+                sockets.forEach(socket => socket.destroy());
+                stalled.close();
+                assertTimedOut(err, start);
+                done();
+            });
         });
     });
 });

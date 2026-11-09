@@ -9,9 +9,8 @@ const util = require('util');
 
 const KmipClient = require('../../../lib/network/kmip/Client').default;
 const ClusterClient = require('../../../lib/network/kmip/ClusterClient').default;
-const {
-    logger,
-} = require('../../utils/kmip/ersatz');
+const { logger } = require('../../utils/kmip/ersatz');
+const { startKmipTestServer } = require('../../utils/kmip/tlsServer');
 
 jest.setTimeout(5000);
 
@@ -86,50 +85,66 @@ function showArsenalErr(err) {
 function assertClusterHealthcheck(healthy, unhealthy, spysHealthchecks) {
     assert.strictEqual(healthy.actual, healthy.expected);
     assert.strictEqual(unhealthy.actual, unhealthy.expected);
-    assert.ok(spysHealthchecks.every(spy => spy.callCount === 1),
-        `All ${spysHealthchecks.length} hosts should be healthchecked. Instead got ${
-            spysHealthchecks.map(spy => spy.callCount)}`);
+    assert.ok(
+        spysHealthchecks.every(spy => spy.callCount === 1),
+        `All ${spysHealthchecks.length} hosts should be healthchecked. Instead got ${spysHealthchecks.map(
+            spy => spy.callCount,
+        )}`,
+    );
 }
 
 function assertHealthcheck(healthy, unhealthy, spysHealthchecks) {
     // healthy and unhealthy depends on round robin
     const maxHealthy = healthy.expected + unhealthy.expected;
-    assert.ok(healthy.actual >= healthy.expected && healthy.actual <= spysHealthchecks.length,
-        `There can be between ${healthy.expected} and ${maxHealthy} healthy hosts. Got ${healthy.actual}`);
-    assert.ok(unhealthy.actual <= unhealthy.expected,
-        `There can be up to ${unhealthy.expected} unhealthy. Instead got ${unhealthy.actual}`);
+    assert.ok(
+        healthy.actual >= healthy.expected && healthy.actual <= spysHealthchecks.length,
+        `There can be between ${healthy.expected} and ${maxHealthy} healthy hosts. Got ${healthy.actual}`,
+    );
+    assert.ok(
+        unhealthy.actual <= unhealthy.expected,
+        `There can be up to ${unhealthy.expected} unhealthy. Instead got ${unhealthy.actual}`,
+    );
 
     const callCount = spysHealthchecks.map(spy => spy.callCount);
     const called = callCount.filter(x => x === 1).length;
     const expectedCalled = unhealthy.actual + (healthy.actual ? 1 : 0);
 
-    assert.strictEqual(called, expectedCalled,
+    assert.strictEqual(
+        called,
+        expectedCalled,
         `With round robin and ${unhealthy.actual} unhealthy and ${healthy.actual} healthy.
-        Instead got calls ${callCount}.`);
+        Instead got calls ${callCount}.`,
+    );
 }
 
 /** Authorize a approximation of +- 2 executions */
 const APPROX = 2;
 async function cipherAndAssert(cipherPromiseFct, executions, actual, expected, spysCipher, triggerUnhealthy) {
     const encryptedList = await Promise.all(
-        new Array(executions)
-            .fill()
-            .map(async () => {
-                let ciphered;
-                await assert.doesNotReject(async () => {
-                    ciphered = await cipherPromiseFct();
-                }, showArsenalErr);
-                return ciphered;
-            }),
+        new Array(executions).fill().map(async () => {
+            let ciphered;
+            await assert.doesNotReject(async () => {
+                ciphered = await cipherPromiseFct();
+            }, showArsenalErr);
+            return ciphered;
+        }),
     );
 
-    assert.ok(encryptedList.every(e => e.equals(encryptedList[0])),
-        `All ${executions} encrypt requests must return the same value`);
+    assert.ok(
+        encryptedList.every(e => e.equals(encryptedList[0])),
+        `All ${executions} encrypt requests must return the same value`,
+    );
 
-    assert.strictEqual(actual.healthy.length, expected.healthy,
-        `There should be ${expected.healthy} healthy clients instead of ${actual.healthy.length}`);
-    assert.strictEqual(actual.unhealthy.length, expected.unhealthy,
-        `There should be ${expected.unhealthy} unhealthy clients instead of ${actual.unhealthy.length}`);
+    assert.strictEqual(
+        actual.healthy.length,
+        expected.healthy,
+        `There should be ${expected.healthy} healthy clients instead of ${actual.healthy.length}`,
+    );
+    assert.strictEqual(
+        actual.unhealthy.length,
+        expected.unhealthy,
+        `There should be ${expected.unhealthy} unhealthy clients instead of ${actual.unhealthy.length}`,
+    );
 
     const { spysCipherHealthy, spysCipherUnhealthy } = spysCipher;
 
@@ -139,21 +154,22 @@ async function cipherAndAssert(cipherPromiseFct, executions, actual, expected, s
     const expectedCallsUnhealthy = triggerUnhealthy && allHosts !== 0 ? Math.floor(executions / allHosts) : 0;
 
     assert.ok(
-        spysCipherHealthy.every(
-            spy => Math.abs(spy.callCount - expectedCalls) <= APPROX),
-        `Each healthy hosts should have been called ${expectedCalls} (+-${APPROX}). Instead got ${
-            spysCipherHealthy.map(spy => spy.callCount)
-        }`);
+        spysCipherHealthy.every(spy => Math.abs(spy.callCount - expectedCalls) <= APPROX),
+        `Each healthy hosts should have been called ${expectedCalls} (+-${APPROX}). Instead got ${spysCipherHealthy.map(
+            spy => spy.callCount,
+        )}`,
+    );
     if (spysCipherUnhealthy) {
         assert.ok(
-            spysCipherUnhealthy.every(
-                spy => Math.abs(spy.callCount - expectedCallsUnhealthy) <= APPROX),
-            `Each unhealthy hosts should have been called ${expectedCalls} (+-${APPROX}). Instead got ${
-                spysCipherUnhealthy.map(spy => spy.callCount)
-            }. ${triggerUnhealthy
-                ? 'Because it received request in parallel, beore being marked unhealthy'
-                : 'Because it was already marked unhealthy'
-            }`);
+            spysCipherUnhealthy.every(spy => Math.abs(spy.callCount - expectedCallsUnhealthy) <= APPROX),
+            `Each unhealthy hosts should have been called ${expectedCalls} (+-${APPROX}). Instead got ${spysCipherUnhealthy.map(
+                spy => spy.callCount,
+            )}. ${
+                triggerUnhealthy
+                    ? 'Because it received request in parallel, beore being marked unhealthy'
+                    : 'Because it was already marked unhealthy'
+            }`,
+        );
     }
 }
 
@@ -200,8 +216,10 @@ function simpleTestKMIP(KmipClientClass, options) {
             deciphered = await promises.decipherDataKey(1, kmsKey, ciphered, logger);
         }, showArsenalErr);
 
-        assert.ok(dataKey.equals(deciphered),
-            `Deciphered key should equal dataKey. ${deciphered.toString('hex')} !== ${dataKey.toString('hex')}`);
+        assert.ok(
+            dataKey.equals(deciphered),
+            `Deciphered key should equal dataKey. ${deciphered.toString('hex')} !== ${dataKey.toString('hex')}`,
+        );
 
         await assert.doesNotReject(promises.destroyBucketKey(kmsKey, logger), showArsenalErr);
         kmsKey = null;
@@ -210,10 +228,11 @@ function simpleTestKMIP(KmipClientClass, options) {
 
 describe('KMIP with pykmip', () => {
     describe('simple KmipClient', () => simpleTestKMIP(KmipClient, options));
-    describe('simple ClusterClient with 1 host only', () => simpleTestKMIP(ClusterClient, {
-        logger,
-        kmip: Object.assign({}, options.kmip, { transport: [transport] }),
-    }));
+    describe('simple ClusterClient with 1 host only', () =>
+        simpleTestKMIP(ClusterClient, {
+            logger,
+            kmip: Object.assign({}, options.kmip, { transport: [transport] }),
+        }));
 });
 
 describe('KMIP ClusterClient with pykmip', () => {
@@ -233,11 +252,12 @@ describe('KMIP ClusterClient with pykmip', () => {
 
     const hostsToTest = new Array(NB_OF_HOSTS).fill().map((_, i) => i + 1);
 
-    describe.each(hostsToTest)('for %i hosts', (nb) => {
-        const transports = new Array(nb).fill().map((_, i) =>
-            Object.assign({}, transport,
-                { tls: Object.assign({}, transport.tls, { host: `127.0.0.${i + 1}` }) }),
-        );
+    describe.each(hostsToTest)('for %i hosts', nb => {
+        const transports = new Array(nb)
+            .fill()
+            .map((_, i) =>
+                Object.assign({}, transport, { tls: Object.assign({}, transport.tls, { host: `127.0.0.${i + 1}` }) }),
+            );
         const clusterOptions = {
             logger,
             kmip: Object.assign({}, options.kmip, { transport: transports }),
@@ -285,14 +305,20 @@ describe('KMIP ClusterClient with pykmip', () => {
         });
     });
 
-    describe.each(hostsToTest)('for %i hosts + 1 unhealthy at start', (nb) => {
-        const transports = new Array(nb).fill().map((_, i) =>
-            Object.assign({}, transport,
-                { tls: Object.assign({}, transport.tls, { host: `127.0.0.${i + 1}` }) }),
+    describe.each(hostsToTest)('for %i hosts + 1 unhealthy at start', nb => {
+        const transports = new Array(nb)
+            .fill()
+            .map((_, i) =>
+                Object.assign({}, transport, { tls: Object.assign({}, transport.tls, { host: `127.0.0.${i + 1}` }) }),
+            );
+        transports.push(
+            Object.assign(
+                {},
+                transport,
+                // Host not in TLS cert, used to simulate connection failure and trigger fallback logic
+                { tls: Object.assign({}, transport.tls, { host: '127.0.0.200' }) },
+            ),
         );
-        transports.push(Object.assign({}, transport,
-            // Host not in TLS cert, used to simulate connection failure and trigger fallback logic
-            { tls: Object.assign({}, transport.tls, { host: '127.0.0.200' }) }));
         const clusterOptions = {
             logger,
             kmip: Object.assign({}, options.kmip, { transport: transports }),
@@ -325,65 +351,77 @@ describe('KMIP ClusterClient with pykmip', () => {
             );
         });
 
-        it(`should encrypt x${NB_OF_ENCRYPTION} in round robin on each ${nb + 1} hosts. With unhealthy having`
-            + ' many parallel request before being marked and fallback retry', async () => {
-            await assert.doesNotReject(async () => {
-                kmsKey = await promises.createBucketKey('testBucket', logger);
-            }, showArsenalErr);
+        it(
+            `should encrypt x${NB_OF_ENCRYPTION} in round robin on each ${nb + 1} hosts. With unhealthy having` +
+                ' many parallel request before being marked and fallback retry',
+            async () => {
+                await assert.doesNotReject(async () => {
+                    kmsKey = await promises.createBucketKey('testBucket', logger);
+                }, showArsenalErr);
 
-            // extract unhealthy spy from healthy
-            const spysCipherUnhealthy = spys.cipherDataKeys.splice(spys.cipherDataKeys.length - 1, 1);
+                // extract unhealthy spy from healthy
+                const spysCipherUnhealthy = spys.cipherDataKeys.splice(spys.cipherDataKeys.length - 1, 1);
 
-            await cipherAndAssert(
-                promises.cipherDataKey.bind(null, 1, kmsKey, dataKey, logger),
-                NB_OF_ENCRYPTION,
-                { healthy: healthyClients, unhealthy: unhealthyClients },
-                { healthy: nb, unhealthy: 1 },
-                { spysCipherHealthy: spys.cipherDataKeys, spysCipherUnhealthy },
-                true,
-            );
-        });
+                await cipherAndAssert(
+                    promises.cipherDataKey.bind(null, 1, kmsKey, dataKey, logger),
+                    NB_OF_ENCRYPTION,
+                    { healthy: healthyClients, unhealthy: unhealthyClients },
+                    { healthy: nb, unhealthy: 1 },
+                    { spysCipherHealthy: spys.cipherDataKeys, spysCipherUnhealthy },
+                    true,
+                );
+            },
+        );
 
-        it(`should encrypt x${NB_OF_ENCRYPTION} in round robin on each ${nb} hosts. With unhealthy being`
-            + ' marked early, avoiding all parallel requests', async () => {
-            await assert.doesNotReject(async () => {
-                kmsKey = await promises.createBucketKey('testBucket', logger);
-            }, showArsenalErr);
+        it(
+            `should encrypt x${NB_OF_ENCRYPTION} in round robin on each ${nb} hosts. With unhealthy being` +
+                ' marked early, avoiding all parallel requests',
+            async () => {
+                await assert.doesNotReject(async () => {
+                    kmsKey = await promises.createBucketKey('testBucket', logger);
+                }, showArsenalErr);
 
-            await cipherAndAssert(
-                promises.cipherDataKey.bind(null, 1, kmsKey, dataKey, logger),
-                nb + 1,
-                { healthy: healthyClients, unhealthy: unhealthyClients },
-                { healthy: nb, unhealthy: 1 },
-                // consider unhealthy like healthy as it should receive 1 request
-                { spysCipherHealthy: spys.cipherDataKeys },
-                true,
-            );
+                await cipherAndAssert(
+                    promises.cipherDataKey.bind(null, 1, kmsKey, dataKey, logger),
+                    nb + 1,
+                    { healthy: healthyClients, unhealthy: unhealthyClients },
+                    { healthy: nb, unhealthy: 1 },
+                    // consider unhealthy like healthy as it should receive 1 request
+                    { spysCipherHealthy: spys.cipherDataKeys },
+                    true,
+                );
 
-            spys.cipherDataKeys.forEach(spy => spy.resetHistory());
+                spys.cipherDataKeys.forEach(spy => spy.resetHistory());
 
-            // extract unhealthy spy from healthy
-            const spysCipherUnhealthy = spys.cipherDataKeys.splice(spys.cipherDataKeys.length - 1, 1);
+                // extract unhealthy spy from healthy
+                const spysCipherUnhealthy = spys.cipherDataKeys.splice(spys.cipherDataKeys.length - 1, 1);
 
-            await cipherAndAssert(
-                promises.cipherDataKey.bind(null, 1, kmsKey, dataKey, logger),
-                NB_OF_ENCRYPTION,
-                { healthy: healthyClients, unhealthy: unhealthyClients },
-                { healthy: nb, unhealthy: 1 },
-                { spysCipherHealthy: spys.cipherDataKeys, spysCipherUnhealthy },
-                false,
-            );
-        });
+                await cipherAndAssert(
+                    promises.cipherDataKey.bind(null, 1, kmsKey, dataKey, logger),
+                    NB_OF_ENCRYPTION,
+                    { healthy: healthyClients, unhealthy: unhealthyClients },
+                    { healthy: nb, unhealthy: 1 },
+                    { spysCipherHealthy: spys.cipherDataKeys, spysCipherUnhealthy },
+                    false,
+                );
+            },
+        );
     });
 
-    describe.each(hostsToTest)('for %i hosts + 1 host disconnecting and reconnecting', (nb) => {
-        const transports = new Array(nb).fill().map((_, i) =>
-            Object.assign({}, transport,
-                { tls: Object.assign({}, transport.tls, { host: `127.0.0.${i + 1}` }) }),
+    describe.each(hostsToTest)('for %i hosts + 1 host disconnecting and reconnecting', nb => {
+        const transports = new Array(nb)
+            .fill()
+            .map((_, i) =>
+                Object.assign({}, transport, { tls: Object.assign({}, transport.tls, { host: `127.0.0.${i + 1}` }) }),
+            );
+        transports.push(
+            Object.assign(
+                {},
+                transport,
+                // socat port that relays connection to pykmip
+                { tls: Object.assign({}, transport.tls, { host: 'localhost', port: 5797 }) },
+            ),
         );
-        transports.push(Object.assign({}, transport,
-            // socat port that relays connection to pykmip
-            { tls: Object.assign({}, transport.tls, { host: 'localhost', port: 5797 }) }));
         const clusterOptions = {
             logger,
             kmip: Object.assign({}, options.kmip, { transport: transports }),
@@ -412,7 +450,8 @@ describe('KMIP ClusterClient with pykmip', () => {
                     spawnTimeout = setTimeout(() => {
                         if (child.exitCode !== null || child.signalCode !== null) {
                             const err = `socat closed after spawn with code ${
-                                child.exitCode} and signal ${child.signalCode}.\nStderr: ${stderr}`;
+                                child.exitCode
+                            } and signal ${child.signalCode}.\nStderr: ${stderr}`;
                             reject(err);
                         } else {
                             resolve(child);
@@ -435,7 +474,7 @@ describe('KMIP ClusterClient with pykmip', () => {
         }
 
         async function stopSocat(socat) {
-            await new Promise((resolve) => {
+            await new Promise(resolve => {
                 socat.on('close', resolve);
                 socat.kill('SIGKILL');
             });
@@ -471,77 +510,145 @@ describe('KMIP ClusterClient with pykmip', () => {
             );
         });
 
-        it(`should encrypt x${NB_OF_ENCRYPTION} in round robin on each ${nb + 1} hosts or ${nb} hosts.`
-            + ' With 1 host disconnecting and reconnecting', async () => {
+        it(
+            `should encrypt x${NB_OF_ENCRYPTION} in round robin on each ${nb + 1} hosts or ${nb} hosts.` +
+                ' With 1 host disconnecting and reconnecting',
+            async () => {
+                await assert.doesNotReject(async () => {
+                    kmsKey = await promises.createBucketKey('testBucket', logger);
+                }, showArsenalErr);
+
+                await cipherAndAssert(
+                    promises.cipherDataKey.bind(null, 1, kmsKey, dataKey, logger),
+                    nb + 1,
+                    { healthy: healthyClients, unhealthy: unhealthyClients },
+                    { healthy: nb + 1, unhealthy: 0 },
+                    { spysCipherHealthy: spys.cipherDataKeys },
+                    false,
+                );
+
+                spys.cipherDataKeys.forEach(spy => spy.resetHistory());
+
+                await stopSocat(socatProcess);
+
+                // extract unhealthy spy from healthy
+                const spysCipherUnhealthy = spys.cipherDataKeys.splice(spys.cipherDataKeys.length - 1, 1);
+
+                await cipherAndAssert(
+                    promises.cipherDataKey.bind(null, 1, kmsKey, dataKey, logger),
+                    nb + 1,
+                    { healthy: healthyClients, unhealthy: unhealthyClients },
+                    { healthy: nb, unhealthy: 1 },
+                    { spysCipherHealthy: spys.cipherDataKeys, spysCipherUnhealthy },
+                    true,
+                );
+
+                // pass the 30s unhealthy timeout
+                clock.tick(31000);
+                assert.strictEqual(
+                    healthyClients.length,
+                    nb + 1,
+                    `There should be ${nb + 1} healthy clients instead of ${healthyClients.length}`,
+                );
+                assert.strictEqual(
+                    unhealthyClients.length,
+                    0,
+                    `There should be 0 unhealthy clients instead of ${unhealthyClients.length}`,
+                );
+
+                spys.cipherDataKeys.forEach(spy => spy.resetHistory());
+                spysCipherUnhealthy.forEach(spy => spy.resetHistory());
+
+                // host not reconnected will go back to unhealthy
+                await cipherAndAssert(
+                    promises.cipherDataKey.bind(null, 1, kmsKey, dataKey, logger),
+                    nb + 1,
+                    { healthy: healthyClients, unhealthy: unhealthyClients },
+                    { healthy: nb, unhealthy: 1 },
+                    { spysCipherHealthy: spys.cipherDataKeys, spysCipherUnhealthy },
+                    true,
+                );
+
+                // pass the 30s unhealthy timeout
+                clock.tick(31000);
+                assert.strictEqual(
+                    healthyClients.length,
+                    nb + 1,
+                    `There should be ${nb + 1} healthy clients instead of ${healthyClients.length}`,
+                );
+                assert.strictEqual(
+                    unhealthyClients.length,
+                    0,
+                    `There should be 0 unhealthy clients instead of ${unhealthyClients.length}`,
+                );
+
+                socatProcess = await spawnSocat();
+                spys.cipherDataKeys.forEach(spy => spy.resetHistory());
+                spysCipherUnhealthy.forEach(spy => spy.resetHistory());
+
+                // now host is reconnected
+                await cipherAndAssert(
+                    promises.cipherDataKey.bind(null, 1, kmsKey, dataKey, logger),
+                    nb + 1,
+                    { healthy: healthyClients, unhealthy: unhealthyClients },
+                    { healthy: nb + 1, unhealthy: 0 },
+                    { spysCipherHealthy: spys.cipherDataKeys, spysCipherUnhealthy },
+                    true,
+                );
+            },
+        );
+    });
+
+    describe('with a request time limit, for 1 host that does not answer + 1 host', () => {
+        const requestTimeoutMs = 1000;
+        let silentServer;
+
+        beforeEach(async () => {
+            silentServer = await startKmipTestServer();
+            silentServer.answerDelayMs = () => null;
+            const transports = [
+                { host: '127.0.0.1', port: silentServer.port },
+                { host: '127.0.0.2', port },
+            ].map(hostAndPort =>
+                Object.assign({}, transport, {
+                    requestTimeoutMs,
+                    tls: Object.assign({}, transport.tls, hostAndPort),
+                }),
+            );
+            client = new ClusterClient({
+                logger,
+                kmip: Object.assign({}, options.kmip, { transport: transports }),
+            });
+            healthyClients = client.clients;
+            unhealthyClients = client.unhealthyClients;
+            promises = promisify(client);
+        });
+
+        afterEach(async () => {
+            await silentServer.stop();
+        });
+
+        it('should mark the host that does not answer unhealthy after the time limit, and use the other host', async () => {
+            const start = Date.now();
             await assert.doesNotReject(async () => {
                 kmsKey = await promises.createBucketKey('testBucket', logger);
             }, showArsenalErr);
+            const elapsed = Date.now() - start;
 
-            await cipherAndAssert(
-                promises.cipherDataKey.bind(null, 1, kmsKey, dataKey, logger),
-                nb + 1,
-                { healthy: healthyClients, unhealthy: unhealthyClients },
-                { healthy: nb + 1, unhealthy: 0 },
-                { spysCipherHealthy: spys.cipherDataKeys },
-                false,
+            assert.ok(
+                elapsed >= requestTimeoutMs - 1,
+                `The request should wait ${requestTimeoutMs} ms on the first host, waited ${elapsed} ms`,
+            );
+            assert.deepStrictEqual(
+                unhealthyClients.map(unhealthy => unhealthy.client.host),
+                ['127.0.0.1'],
+            );
+            assert.deepStrictEqual(
+                healthyClients.map(healthy => healthy.host),
+                ['127.0.0.2'],
             );
 
-            spys.cipherDataKeys.forEach(spy => spy.resetHistory());
-
-            await stopSocat(socatProcess);
-
-            // extract unhealthy spy from healthy
-            const spysCipherUnhealthy = spys.cipherDataKeys.splice(spys.cipherDataKeys.length - 1, 1);
-
-            await cipherAndAssert(
-                promises.cipherDataKey.bind(null, 1, kmsKey, dataKey, logger),
-                nb + 1,
-                { healthy: healthyClients, unhealthy: unhealthyClients },
-                { healthy: nb, unhealthy: 1 },
-                { spysCipherHealthy: spys.cipherDataKeys, spysCipherUnhealthy },
-                true,
-            );
-
-            // pass the 30s unhealthy timeout
-            clock.tick(31000);
-            assert.strictEqual(healthyClients.length, nb + 1,
-                `There should be ${nb + 1} healthy clients instead of ${healthyClients.length}`);
-            assert.strictEqual(unhealthyClients.length, 0,
-                `There should be 0 unhealthy clients instead of ${unhealthyClients.length}`);
-
-            spys.cipherDataKeys.forEach(spy => spy.resetHistory());
-            spysCipherUnhealthy.forEach(spy => spy.resetHistory());
-
-            // host not reconnected will go back to unhealthy
-            await cipherAndAssert(
-                promises.cipherDataKey.bind(null, 1, kmsKey, dataKey, logger),
-                nb + 1,
-                { healthy: healthyClients, unhealthy: unhealthyClients },
-                { healthy: nb, unhealthy: 1 },
-                { spysCipherHealthy: spys.cipherDataKeys, spysCipherUnhealthy },
-                true,
-            );
-
-            // pass the 30s unhealthy timeout
-            clock.tick(31000);
-            assert.strictEqual(healthyClients.length, nb + 1,
-                `There should be ${nb + 1} healthy clients instead of ${healthyClients.length}`);
-            assert.strictEqual(unhealthyClients.length, 0,
-                `There should be 0 unhealthy clients instead of ${unhealthyClients.length}`);
-
-            socatProcess = await spawnSocat();
-            spys.cipherDataKeys.forEach(spy => spy.resetHistory());
-            spysCipherUnhealthy.forEach(spy => spy.resetHistory());
-
-            // now host is reconnected
-            await cipherAndAssert(
-                promises.cipherDataKey.bind(null, 1, kmsKey, dataKey, logger),
-                nb + 1,
-                { healthy: healthyClients, unhealthy: unhealthyClients },
-                { healthy: nb + 1, unhealthy: 0 },
-                { spysCipherHealthy: spys.cipherDataKeys, spysCipherUnhealthy },
-                true,
-            );
+            await assert.doesNotReject(promises.cipherDataKey(1, kmsKey, dataKey, logger), showArsenalErr);
         });
     });
 });

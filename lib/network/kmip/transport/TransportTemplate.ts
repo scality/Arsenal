@@ -7,23 +7,25 @@ const DEFAULT_KMIP_PORT = 5696;
 
 export type Options = {
     pipelineDepth: number;
+    /** Time limit of a request, from its submission to its response. No limit when not set */
+    requestTimeoutMs?: number;
     tls: {
         port: number;
     };
-}
+};
 
 interface KmipLatencies {
     /** Timestamp when request was defered */
     defered?: number;
     /** Timestamp when request was sent. Missing if defered queue is drained with error */
     req?: number;
-};
+}
 interface QueueSizes {
     /** Number of messages in the defered queue */
     deferred: number;
     /** Number of messages sent waiting for response */
     req: number;
-};
+}
 type KmipCallback = (
     error: Error | null,
     socket: tls.TLSSocket | undefined,
@@ -36,7 +38,7 @@ export default class TransportTemplate {
     channel: typeof tls;
     options: Options;
     pipelineDepth: number;
-    callbackPipeline: { cb: KmipCallback, latencies: KmipLatencies }[];
+    callbackPipeline: { cb: KmipCallback; latencies: KmipLatencies }[];
     deferedRequests: Array<{
         encodedMessage: Buffer;
         timestamp: number;
@@ -59,8 +61,7 @@ export default class TransportTemplate {
     constructor(channel: typeof tls, options: Options) {
         this.channel = channel;
         this.options = options;
-        this.pipelineDepth = Math.max(1, options.pipelineDepth ||
-                                      DEFAULT_PIPELINE_DEPTH);
+        this.pipelineDepth = Math.max(1, options.pipelineDepth || DEFAULT_PIPELINE_DEPTH);
         this.callbackPipeline = [];
         this.deferedRequests = [];
         this.pipelineDrainedCallback = null;
@@ -96,12 +97,7 @@ export default class TransportTemplate {
      * message is sent.
      * @param handshakeFunction - (logger: Object, cb: Function(err))
      */
-    registerHandshakeFunction(
-        handshakeFunction: (
-            logger: werelogs.Logger,
-            cb: (error: Error | null) => void,
-        ) => void,
-    ) {
+    registerHandshakeFunction(handshakeFunction: (logger: werelogs.Logger, cb: (error: Error | null) => void) => void) {
         this.handshakeFunction = handshakeFunction;
     }
 
@@ -119,16 +115,13 @@ export default class TransportTemplate {
         skipHandshake: boolean = false,
     ) {
         try {
-            const socket = this.channel.connect(
-                this.options.tls.port || DEFAULT_KMIP_PORT,
-                this.options.tls,
-                () => {
-                    if (!skipHandshake && this.handshakeFunction) {
-                        this.handshakeFunction(logger, readyCallback);
-                    } else {
-                        readyCallback(null);
-                    }
-                });
+            const socket = this.channel.connect(this.options.tls.port || DEFAULT_KMIP_PORT, this.options.tls, () => {
+                if (!skipHandshake && this.handshakeFunction) {
+                    this.handshakeFunction(logger, readyCallback);
+                } else {
+                    readyCallback(null);
+                }
+            });
             socket.on('data', data => {
                 const queuedCallback = this.callbackPipeline.shift();
                 if (queuedCallback) {
@@ -138,21 +131,23 @@ export default class TransportTemplate {
                     });
                 }
 
-                if (this.callbackPipeline.length <
-                    this.pipelineDepth &&
-                    this.deferedRequests.length > 0) {
+                if (this.callbackPipeline.length < this.pipelineDepth && this.deferedRequests.length > 0) {
                     const deferedRequest = this.deferedRequests.shift();
                     process.nextTick(() => {
                         if (deferedRequest) {
-                            this._doSend(logger,
+                            this._doSend(
+                                logger,
                                 deferedRequest.encodedMessage,
                                 deferedRequest.cb,
-                                deferedRequest.timestamp);
+                                deferedRequest.timestamp,
+                            );
                         }
                     });
-                } else if (this.callbackPipeline.length === 0 &&
-                           this.deferedRequests.length === 0 &&
-                           this.pipelineDrainedCallback) {
+                } else if (
+                    this.callbackPipeline.length === 0 &&
+                    this.deferedRequests.length === 0 &&
+                    this.pipelineDrainedCallback
+                ) {
                     this.pipelineDrainedCallback();
                     this.pipelineDrainedCallback = null;
                 }
@@ -160,9 +155,13 @@ export default class TransportTemplate {
             // prefer close event from end event as it also trigger when tls session
             // is not established, like failure to connect, invalid cert
             socket.on('close', () => {
-                const error = Error('Conversation interrupted');
-                this.socket = null;
-                this._drainQueuesWithError(error);
+                // A failed socket can close after the next one is open: the
+                // queued requests are then those of the next socket
+                if (this.socket === socket) {
+                    const error = Error('Conversation interrupted');
+                    this.socket = null;
+                    this._drainQueuesWithError(error);
+                }
                 const onEnd = this.onEndCallback;
                 if (onEnd) {
                     this.onEndCallback = null;
@@ -189,14 +188,8 @@ export default class TransportTemplate {
         }
     }
 
-    _doSend(
-        logger: werelogs.Logger,
-        encodedMessage: Buffer,
-        cb: KmipCallback,
-        deferedTimestamp?: number,
-    ) {
-        this.callbackPipeline.push({ cb,
-            latencies: { req: Date.now(), defered: deferedTimestamp } });
+    _doSend(logger: werelogs.Logger, encodedMessage: Buffer, cb: KmipCallback, deferedTimestamp?: number) {
+        this.callbackPipeline.push({ cb, latencies: { req: Date.now(), defered: deferedTimestamp } });
         if (this.socket === null || this.socket.destroyed) {
             this._createConversation(logger, () => {});
         }
@@ -216,16 +209,51 @@ export default class TransportTemplate {
      *                                  server
      * @param cb - (err, conversation, rawResponse)
      */
-    send(
-        logger: werelogs.Logger,
-        encodedMessage: Buffer,
-        cb: KmipCallback
-    ) {
+    send(logger: werelogs.Logger, encodedMessage: Buffer, cb: KmipCallback) {
         assert(encodedMessage.length !== 0);
+        const limitedCb = this._limitRequestTime(cb);
         if (this.callbackPipeline.length >= this.pipelineDepth) {
-            return this.deferedRequests.push({ encodedMessage, cb, timestamp: Date.now() });
+            return this.deferedRequests.push({ encodedMessage, cb: limitedCb, timestamp: Date.now() });
         }
-        return this._doSend(logger, encodedMessage, cb);
+        return this._doSend(logger, encodedMessage, limitedCb);
+    }
+
+    /**
+     * Apply the request time limit to a request callback. When the limit
+     * passes, the conversation is dropped, since responses are matched to
+     * requests by order: the request fails with an ETIMEDOUT error, and the
+     * other requests as interrupted.
+     * @param cb - the callback of the request
+     * @returns the callback to queue for the request
+     */
+    _limitRequestTime(cb: KmipCallback): KmipCallback {
+        const { requestTimeoutMs } = this.options;
+        if (!requestTimeoutMs) {
+            return cb;
+        }
+        let timedOut = false;
+        const timer = setTimeout(() => {
+            timedOut = true;
+            this._dropConversation();
+        }, requestTimeoutMs);
+        return (error, socket, data, latencies, queues) => {
+            clearTimeout(timer);
+            const requestError = timedOut
+                ? Object.assign(new Error(`KMIP request timed out after ${requestTimeoutMs} ms`), { code: 'ETIMEDOUT' })
+                : error;
+            cb(requestError, socket, data, latencies, queues);
+        };
+    }
+
+    /**
+     * Destroy the socket and fail the outstanding and deferred requests at
+     * once, without waiting for the socket to close.
+     */
+    _dropConversation() {
+        const socket = this.socket;
+        this.socket = null;
+        this._drainQueuesWithError(Error('Conversation interrupted'));
+        socket?.destroy();
     }
 
     /**
@@ -242,8 +270,7 @@ export default class TransportTemplate {
         if (onEndCallback) {
             this.onEndCallback = onEndCallback;
         }
-        if (this.callbackPipeline.length !== 0 ||
-            this.deferedRequests.length !== 0) {
+        if (this.callbackPipeline.length !== 0 || this.deferedRequests.length !== 0) {
             this.pipelineDrainedCallback = this.socket.end.bind(this.socket);
         } else {
             this.socket.end();
