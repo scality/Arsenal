@@ -18,31 +18,33 @@ const ErrorCodes = {
 let result = ErrorCodes.noError;
 
 const clusters = new Clustering(4, log);
-clusters.start(current => {
-    http.createServer(() => {}).listen(14000, () => {
-        log.info('listening', {
+clusters
+    .start(current => {
+        http.createServer(() => {}).listen(14000, () => {
+            log.info('listening', {
+                id: current.getIndex(),
+            });
+        });
+    })
+    .onExit(current => {
+        if (current.isMaster()) {
+            return setTimeout(() => {
+                if (result !== ErrorCodes.noError) {
+                    return process.exit(result);
+                }
+                current.getWorkers().forEach(worker => {
+                    if (worker) {
+                        result = ErrorCodes.WorkerNotExited;
+                    }
+                });
+                return process.exit(result);
+            }, 500);
+        }
+        log.info('exiting', {
             id: current.getIndex(),
         });
+        return process.exit(0);
     });
-}).onExit(current => {
-    if (current.isMaster()) {
-        return setTimeout(() => {
-            if (result !== ErrorCodes.noError) {
-                return process.exit(result);
-            }
-            current.getWorkers().forEach(worker => {
-                if (worker) {
-                    result = ErrorCodes.WorkerNotExited;
-                }
-            });
-            return process.exit(result);
-        }, 500);
-    }
-    log.info('exiting', {
-        id: current.getIndex(),
-    });
-    return process.exit(0);
-});
 
 if (Cluster.isMaster) {
     setTimeout(() => {
@@ -56,7 +58,7 @@ if (Cluster.isMaster) {
             }
             try {
                 return process.kill(worker.process.pid, 0);
-            } catch (e) {
+            } catch {
                 log.error('Worker not started', {
                     id: i,
                 });

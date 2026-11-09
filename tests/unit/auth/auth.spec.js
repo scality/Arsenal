@@ -1,13 +1,12 @@
 const DummyRequestLogger = require('../helpers').DummyRequestLogger;
 const fakeTimers = require('@sinonjs/fake-timers');
-const { server: authServer, setHandler, doAuth } = require('../../../lib/auth/auth');
+const { server: authServer, setHandler } = require('../../../lib/auth/auth');
 const AuthInfo = require('../../../lib/auth/AuthInfo').default;
 const Vault = require('../../../lib/auth/Vault').default;
 const assert = require('assert');
 const sinon = require('sinon');
 
 describe('auth.doAuth', () => {
-    let request;
     let log;
     let cb;
     let vault;
@@ -70,7 +69,7 @@ describe('auth.doAuth', () => {
             headers: {},
             query: {},
             _headers: {},
-            setHeader: function (name, value) {
+            setHeader(name, value) {
                 this._headers[name] = value;
                 this.headers[name] = value;
             },
@@ -121,7 +120,7 @@ describe('auth.doAuth', () => {
         };
         // Mock the v4 authentication method
         const clock = fakeTimers.install({ now: new Date(xAmzDate).getTime() });
-        mockOptions = { get: true };
+        const mockOptions = { get: true };
 
         const authenticateV4RequestStub = sandbox.stub(vault, 'authenticateV4Request');
         authenticateV4RequestStub.callsFake((params, requestContexts, options, callback) => {
