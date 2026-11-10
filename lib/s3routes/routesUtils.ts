@@ -1177,9 +1177,8 @@ export function isValidObjectKey(objectKey: string, prefixBlacklist: string[]) {
 export function validateObjectKeyLength(objectKey: string, maxByteLength?: number) {
     if (maxByteLength !== 0 && Buffer.byteLength(objectKey, 'utf8') > (maxByteLength || objectKeyByteLimit)) {
         return errorInstances.KeyTooLong.customizeDescription(
-            'Object key is too ' +
-                'long. Maximum number of bytes allowed in keys is ' +
-                `${maxByteLength || objectKeyByteLimit}.`,
+            'Object key is too long. Maximum number of bytes allowed ' +
+                `in keys is ${maxByteLength || objectKeyByteLimit}.`,
         );
     }
     return null;

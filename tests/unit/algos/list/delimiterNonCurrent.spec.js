@@ -684,8 +684,7 @@ describe('DelimiterNonCurrent over PHD master keys', () => {
                 versionIdMarker = result.NextVersionIdMarker;
             }
             throw new Error(
-                `listing did not terminate within ${maxPages} pages: ` +
-                    'markerless truncation restarts it from scratch',
+                `listing did not terminate within ${maxPages} pages: markerless truncation restarts it from scratch`,
             );
         }
 

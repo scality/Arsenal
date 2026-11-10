@@ -161,9 +161,8 @@ export default class BackendInfo {
             return {
                 isValid: false,
                 description:
-                    'Object Location Error - ' +
-                    `Your object location "${escapeForXml(objectLocationConstraint)}"` +
-                    'is not  in your location config - Please update.',
+                    'Object Location Error - Your object location ' +
+                    `"${escapeForXml(objectLocationConstraint)}"is not  in your location config - Please update.`,
             };
         }
         if (bucketLocationConstraint) {
@@ -175,9 +174,8 @@ export default class BackendInfo {
             return {
                 isValid: false,
                 description:
-                    'Bucket Location Error - ' +
-                    `Your bucket location "${escapeForXml(bucketLocationConstraint)}"` +
-                    ' is not in your location config - Please update.',
+                    `Bucket Location Error - Your bucket location "${escapeForXml(bucketLocationConstraint)}" ` +
+                    'is not in your location config - Please update.',
             };
         }
         const legacyLocationConstraint = BackendInfo.getLegacyLocationConstraint(config);
@@ -189,11 +187,9 @@ export default class BackendInfo {
             return {
                 isValid: false,
                 description:
-                    'Endpoint Location Error - ' +
-                    `Your endpoint "${requestEndpoint}" is not in restEndpoints ` +
-                    'in your config OR the default location constraint for request ' +
-                    `endpoint "${escapeForXml(requestEndpoint)}" does not ` +
-                    'match any config locationConstraint - Please update.',
+                    `Endpoint Location Error - Your endpoint "${requestEndpoint}" is not in restEndpoints in your ` +
+                    'config OR the default location constraint for request endpoint ' +
+                    `"${escapeForXml(requestEndpoint)}" does not match any config locationConstraint - Please update.`,
             };
         }
         if (BackendInfo.isRequestEndpointPresent(config, requestEndpoint, log)) {

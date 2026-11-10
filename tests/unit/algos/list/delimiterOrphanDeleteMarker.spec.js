@@ -772,8 +772,7 @@ describe('DelimiterOrphanDeleteMarker over PHD master keys', () => {
                 marker = result.NextMarker;
             }
             throw new Error(
-                `listing did not terminate within ${maxPages} pages: ` +
-                    'markerless truncation restarts it from scratch',
+                `listing did not terminate within ${maxPages} pages: markerless truncation restarts it from scratch`,
             );
         }
 
