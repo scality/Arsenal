@@ -1,5 +1,11 @@
 const async = require('async');
 const assert = require('assert');
+const sinon = require('sinon');
+const { Collection } = require('mongodb');
+const { context, propagation, trace } = require('@opentelemetry/api');
+const { AsyncLocalStorageContextManager } = require('@opentelemetry/context-async-hooks');
+const { W3CTraceContextPropagator } = require('@opentelemetry/core');
+const { BasicTracerProvider } = require('@opentelemetry/sdk-trace-base');
 const werelogs = require('werelogs');
 const { MongoMemoryReplSet } = require('mongodb-memory-server');
 const { errors, versioning } = require('../../../../index');
@@ -145,6 +151,9 @@ describe('MongoClientInterface::metadata.deleteObjectMD', () => {
             });
 
             afterEach(done => {
+                context.disable();
+                propagation.disable();
+                trace.disable();
                 metadata.deleteBucket(BUCKET_NAME, logger, done);
             });
 
@@ -405,6 +414,73 @@ describe('MongoClientInterface::metadata.deleteObjectMD', () => {
                                 assert.strictEqual(count, 2);
                                 return next();
                             });
+                        },
+                    ],
+                    done,
+                );
+            });
+
+            it(`Should stamp both deletes of the last version the same ${variation.vFormat}`, done => {
+                const objName = 'test-object';
+                const versionId = generateVersionId();
+                const objVal = { key: objName, versionId };
+                const deleted = [];
+                // same OTEL context manager as the NodeSDK default, to check the
+                // request span stays active through the async chain of the delete
+                context.setGlobalContextManager(new AsyncLocalStorageContextManager().enable());
+                propagation.setGlobalPropagator(new W3CTraceContextPropagator());
+                trace.setGlobalTracerProvider(new BasicTracerProvider());
+                const span = trace.getTracer('test').startSpan('request');
+                return async.series(
+                    [
+                        next =>
+                            metadata.putObjectMD(
+                                BUCKET_NAME,
+                                objName,
+                                objVal,
+                                { versioning: true, versionId },
+                                logger,
+                                next,
+                            ),
+                        next => {
+                            const bulkWrite = sinon.spy(Collection.prototype, 'bulkWrite');
+                            context.with(trace.setSpan(context.active(), span), () =>
+                                metadata.deleteObjectMD(
+                                    BUCKET_NAME,
+                                    objName,
+                                    { versionId },
+                                    logger,
+                                    err => {
+                                        // as serialized in the oplog
+                                        bulkWrite.args.forEach(([ops]) =>
+                                            deleted.push(
+                                                JSON.parse(JSON.stringify(ops[0].updateOne.update.$set.value)),
+                                            ),
+                                        );
+                                        bulkWrite.restore();
+                                        // leave the metadata promise chain before asserting
+                                        setImmediate(() => next(err));
+                                    },
+                                    's3:LifecycleExpiration:Delete',
+                                ),
+                            );
+                        },
+                        next => {
+                            // version delete, then placeholder master delete
+                            assert.strictEqual(deleted.length, 2);
+                            const [version, master] = deleted;
+                            assert.strictEqual(version.originOp, 's3:LifecycleExpiration:Delete');
+                            assert.strictEqual(
+                                version.traceContext.traceparent.split('-')[2],
+                                span.spanContext().spanId,
+                            );
+                            assert.strictEqual(master.isPHD, true);
+                            assert.notStrictEqual(master.versionId, version.versionId);
+                            delete master.isPHD;
+                            delete master.versionId;
+                            delete version.versionId;
+                            assert.deepStrictEqual(master, version);
+                            return next();
                         },
                     ],
                     done,

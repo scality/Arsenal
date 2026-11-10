@@ -2456,7 +2456,7 @@ describe('MongoClientInterface, internalDeleteObject', () => {
             conditions: {},
         };
 
-        client.internalDeleteObject(collection, bucketName, key, {}, params, logger, err => {
+        client.internalDeleteObject(collection, bucketName, key, {}, params, undefined, logger, err => {
             try {
                 assert(err, 'Expected an error to be returned');
                 assert(err.is.DeleteConflict, 'Expected DeleteConflict error');
@@ -2498,7 +2498,7 @@ describe('MongoClientInterface, internalDeleteObject', () => {
             conditions: {},
         };
 
-        client.internalDeleteObject(collection, bucketName, key, {}, params, logger, err => {
+        client.internalDeleteObject(collection, bucketName, key, {}, params, undefined, logger, err => {
             try {
                 assert(err, 'Expected an error to be returned');
                 assert(err.is.DeleteConflict, 'Expected DeleteConflict error');
@@ -2535,7 +2535,7 @@ describe('MongoClientInterface, internalDeleteObject', () => {
             conditions: {},
         };
 
-        client.internalDeleteObject(collection, bucketName, key, {}, params, logger, err => {
+        client.internalDeleteObject(collection, bucketName, key, {}, params, undefined, logger, err => {
             try {
                 assert(err, 'Expected an error to be returned');
                 assert(err.is.InternalError, 'Expected InternalError');
@@ -2563,7 +2563,7 @@ describe('MongoClientInterface, internalDeleteObject', () => {
             conditions: {},
         };
 
-        client.internalDeleteObject(collection, bucketName, key, {}, params, logger, err => {
+        client.internalDeleteObject(collection, bucketName, key, {}, params, undefined, logger, err => {
             try {
                 assert(err, 'Expected an error to be returned');
                 assert(err.is.NoSuchKey, 'Expected NoSuchKey error');
@@ -2589,7 +2589,7 @@ describe('MongoClientInterface, internalDeleteObject', () => {
             conditions: {},
         };
 
-        client.internalDeleteObject(collection, bucketName, key, {}, params, logger, err => {
+        client.internalDeleteObject(collection, bucketName, key, {}, params, undefined, logger, err => {
             try {
                 assert(err, 'Expected an error to be returned');
                 assert(err.is.InternalError, 'Expected InternalError');
@@ -2618,7 +2618,7 @@ describe('MongoClientInterface, internalDeleteObject', () => {
             conditions: {},
         };
 
-        client.internalDeleteObject(collection, bucketName, key, {}, params, logger, err => {
+        client.internalDeleteObject(collection, bucketName, key, {}, params, undefined, logger, err => {
             try {
                 assert(err, 'Expected an error to be returned');
                 assert(err.is.NoSuchKey, 'Expected NoSuchKey error');
@@ -2645,7 +2645,7 @@ describe('MongoClientInterface, internalDeleteObject', () => {
             conditions: {},
         };
 
-        client.internalDeleteObject(collection, bucketName, key, {}, params, logger, err => {
+        client.internalDeleteObject(collection, bucketName, key, {}, params, undefined, logger, err => {
             try {
                 assert(err, 'Expected an error to be returned');
                 assert(err.is.InternalError, 'Expected InternalError');
@@ -2687,7 +2687,7 @@ describe('MongoClientInterface, internalDeleteObject', () => {
             conditions: {},
         };
 
-        client.internalDeleteObject(collection, bucketName, key, {}, params, logger, (err, result) => {
+        client.internalDeleteObject(collection, bucketName, key, {}, params, undefined, logger, (err, result) => {
             try {
                 assert.ifError(err);
                 assert.strictEqual(result, undefined, 'Expected  result');
@@ -2716,7 +2716,7 @@ describe('MongoClientInterface, internalDeleteObject', () => {
             conditions: {},
         };
 
-        client.internalDeleteObject(collection, bucketName, key, {}, params, logger, (err, result) => {
+        client.internalDeleteObject(collection, bucketName, key, {}, params, undefined, logger, (err, result) => {
             try {
                 assert.ifError(err);
                 assert.strictEqual(result, undefined, 'Expected undefined result');
