@@ -8,7 +8,15 @@ import * as werelogs from 'werelogs';
 import { arsenalErrorKMIP } from '../utils';
 import { errorInstances } from '../../errors';
 import { kmipMsg } from './errorMapping';
-import { KMSInterface, getKeyIdFromArn, KmsBackend, KmsProtocol, KmsType, makeBackend } from '../KMSInterface';
+import {
+    KMSInterface,
+    getKeyIdFromArn,
+    KmsBackend,
+    KmsProtocol,
+    KmsType,
+    makeBackend,
+    OnKmsRequestDone,
+} from '../KMSInterface';
 
 const CRYPTOGRAPHIC_OBJECT_TYPE = 'Symmetric Key';
 const CRYPTOGRAPHIC_ALGORITHM = 'AES';
@@ -264,6 +272,8 @@ export interface KmipClientOptions {
             compoundCreateActivate: any;
             bucketNameAttributeName: any;
         };
+        /** Called once for each request sent to the KMS */
+        onRequestDone?: OnKmsRequestDone;
     };
 }
 
@@ -292,6 +302,8 @@ export default class Client implements KMSInterface {
      *                 of the bucket name as a key attribute.
      * @param options.kmip.codec - KMIP Codec options
      * @param options.kmip.transport - KMIP Transport options
+     * @param options.kmip.onRequestDone - called once for each request sent
+     *                 to the KMS
      * @param CodecClass - diversion for the Codec class,
      *                             defaults to TTLVCodec
      * @param TransportClass - diversion for the Transport class,
