@@ -148,7 +148,7 @@ describe('MongoClientInterface::_isReplicationEntryStalled', () => {
                 _id: 'testkey',
                 value: {
                     'last-modified': new Date(testDate.getTime() - hr),
-                    replicationInfo: {
+                    'replicationInfo': {
                         status: 'FAILED',
                         backends: [
                             {
@@ -164,9 +164,9 @@ describe('MongoClientInterface::_isReplicationEntryStalled', () => {
                         dataStoreVersionId: '',
                         isNFS: null,
                     },
-                    dataStoreName: 'us-east-1',
+                    'dataStoreName': 'us-east-1',
                     'content-length': 42,
-                    versionId: '0123456789abcdefg',
+                    'versionId': '0123456789abcdefg',
                 },
             },
             false,
@@ -177,7 +177,7 @@ describe('MongoClientInterface::_isReplicationEntryStalled', () => {
                 _id: 'testkey',
                 value: {
                     'last-modified': new Date(testDate.getTime() + hr),
-                    replicationInfo: {
+                    'replicationInfo': {
                         status: 'PENDING',
                         backends: [
                             {
@@ -193,9 +193,9 @@ describe('MongoClientInterface::_isReplicationEntryStalled', () => {
                         dataStoreVersionId: '',
                         isNFS: null,
                     },
-                    dataStoreName: 'us-east-1',
+                    'dataStoreName': 'us-east-1',
                     'content-length': 42,
-                    versionId: '0123456789abcdefg',
+                    'versionId': '0123456789abcdefg',
                 },
             },
             false,
@@ -206,7 +206,7 @@ describe('MongoClientInterface::_isReplicationEntryStalled', () => {
                 _id: 'testkey',
                 value: {
                     'last-modified': new Date(testDate.getTime() - hr),
-                    replicationInfo: {
+                    'replicationInfo': {
                         status: 'PENDING',
                         backends: [
                             {
@@ -222,9 +222,9 @@ describe('MongoClientInterface::_isReplicationEntryStalled', () => {
                         dataStoreVersionId: '',
                         isNFS: null,
                     },
-                    dataStoreName: 'us-east-1',
+                    'dataStoreName': 'us-east-1',
                     'content-length': 42,
-                    versionId: '0123456789abcdefg',
+                    'versionId': '0123456789abcdefg',
                 },
             },
             true,
@@ -547,14 +547,14 @@ describe('MongoClientInterface, tests', () => {
         const bucketName = 'foo';
         const objectName = 'bar';
         const tags = {
-            tag1: 'value1',
-            tag2: 'value.2',
+            'tag1': 'value1',
+            'tag2': 'value.2',
             'tag.3': 'value3',
             'tag.4': 'value.4',
-            tag6: 'value6',
-            tag7: 'value$7',
-            tag$8: 'value8',
-            tag$9: 'value$9',
+            'tag6': 'value6',
+            'tag7': 'value$7',
+            'tag$8': 'value8',
+            'tag$9': 'value$9',
         };
         async.waterfall(
             [
@@ -582,12 +582,12 @@ describe('MongoClientInterface, tests', () => {
                                 return next(new Error('key not found'));
                             }
                             assert.deepStrictEqual(doc.value.tags, {
-                                tag1: 'value1',
-                                tag2: 'value.2',
+                                'tag1': 'value1',
+                                'tag2': 'value.2',
                                 'tag\uFF0E3': 'value3',
                                 'tag\uFF0E4': 'value.4',
-                                tag6: 'value6',
-                                tag7: 'value$7',
+                                'tag6': 'value6',
+                                'tag7': 'value$7',
                                 'tag\uFF048': 'value8',
                                 'tag\uFF049': 'value$9',
                             });
@@ -2456,7 +2456,7 @@ describe('MongoClientInterface, internalDeleteObject', () => {
             conditions: {},
         };
 
-        client.internalDeleteObject(collection, bucketName, key, {}, params, logger, err => {
+        client.internalDeleteObject(collection, bucketName, key, {}, params, undefined, logger, err => {
             try {
                 assert(err, 'Expected an error to be returned');
                 assert(err.is.DeleteConflict, 'Expected DeleteConflict error');
@@ -2498,7 +2498,7 @@ describe('MongoClientInterface, internalDeleteObject', () => {
             conditions: {},
         };
 
-        client.internalDeleteObject(collection, bucketName, key, {}, params, logger, err => {
+        client.internalDeleteObject(collection, bucketName, key, {}, params, undefined, logger, err => {
             try {
                 assert(err, 'Expected an error to be returned');
                 assert(err.is.DeleteConflict, 'Expected DeleteConflict error');
@@ -2535,7 +2535,7 @@ describe('MongoClientInterface, internalDeleteObject', () => {
             conditions: {},
         };
 
-        client.internalDeleteObject(collection, bucketName, key, {}, params, logger, err => {
+        client.internalDeleteObject(collection, bucketName, key, {}, params, undefined, logger, err => {
             try {
                 assert(err, 'Expected an error to be returned');
                 assert(err.is.InternalError, 'Expected InternalError');
@@ -2563,7 +2563,7 @@ describe('MongoClientInterface, internalDeleteObject', () => {
             conditions: {},
         };
 
-        client.internalDeleteObject(collection, bucketName, key, {}, params, logger, err => {
+        client.internalDeleteObject(collection, bucketName, key, {}, params, undefined, logger, err => {
             try {
                 assert(err, 'Expected an error to be returned');
                 assert(err.is.NoSuchKey, 'Expected NoSuchKey error');
@@ -2589,7 +2589,7 @@ describe('MongoClientInterface, internalDeleteObject', () => {
             conditions: {},
         };
 
-        client.internalDeleteObject(collection, bucketName, key, {}, params, logger, err => {
+        client.internalDeleteObject(collection, bucketName, key, {}, params, undefined, logger, err => {
             try {
                 assert(err, 'Expected an error to be returned');
                 assert(err.is.InternalError, 'Expected InternalError');
@@ -2618,7 +2618,7 @@ describe('MongoClientInterface, internalDeleteObject', () => {
             conditions: {},
         };
 
-        client.internalDeleteObject(collection, bucketName, key, {}, params, logger, err => {
+        client.internalDeleteObject(collection, bucketName, key, {}, params, undefined, logger, err => {
             try {
                 assert(err, 'Expected an error to be returned');
                 assert(err.is.NoSuchKey, 'Expected NoSuchKey error');
@@ -2645,7 +2645,7 @@ describe('MongoClientInterface, internalDeleteObject', () => {
             conditions: {},
         };
 
-        client.internalDeleteObject(collection, bucketName, key, {}, params, logger, err => {
+        client.internalDeleteObject(collection, bucketName, key, {}, params, undefined, logger, err => {
             try {
                 assert(err, 'Expected an error to be returned');
                 assert(err.is.InternalError, 'Expected InternalError');
@@ -2687,7 +2687,7 @@ describe('MongoClientInterface, internalDeleteObject', () => {
             conditions: {},
         };
 
-        client.internalDeleteObject(collection, bucketName, key, {}, params, logger, (err, result) => {
+        client.internalDeleteObject(collection, bucketName, key, {}, params, undefined, logger, (err, result) => {
             try {
                 assert.ifError(err);
                 assert.strictEqual(result, undefined, 'Expected  result');
@@ -2716,7 +2716,7 @@ describe('MongoClientInterface, internalDeleteObject', () => {
             conditions: {},
         };
 
-        client.internalDeleteObject(collection, bucketName, key, {}, params, logger, (err, result) => {
+        client.internalDeleteObject(collection, bucketName, key, {}, params, undefined, logger, (err, result) => {
             try {
                 assert.ifError(err);
                 assert.strictEqual(result, undefined, 'Expected undefined result');
