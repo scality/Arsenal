@@ -3,6 +3,7 @@ import Message from './Message';
 import * as werelogs from 'werelogs';
 import { errorMapping, kmipMsg } from './errorMapping';
 import { errorInstances } from '../../errors';
+import { KmsRequestOutcome, OnKmsRequestDone, reportKmsRequest } from '../KMSInterface';
 
 type UUIDOptions = { random?: number[]; rng?: () => number[] } | null;
 function uuidv4(options: UUIDOptions, buffer: Buffer, offset?: number): Buffer;
@@ -46,7 +47,12 @@ function isThalesInternalTokenError(status, reason, message) {
     );
 }
 
-export type Options = { codec: any; transport: any };
+export type Options = {
+    codec: any;
+    transport: any;
+    /** Called once for each request sent to the KMS */
+    onRequestDone?: OnKmsRequestDone;
+};
 export default class KMIP {
     protocolVersion: {
         major: number;
@@ -353,7 +359,15 @@ export default class KMIP {
                 },
                 queues,
             };
+            const reportRequest = (outcome: KmsRequestOutcome) =>
+                reportKmsRequest(
+                    this.options.onRequestDone,
+                    { operation, outcome, durationMs: kmipLog.latencyMs.total },
+                    logger,
+                );
             if (err) {
+                // The request time limit fails the request with ETIMEDOUT
+                reportRequest(err.code === 'ETIMEDOUT' ? 'timeout' : 'error');
                 // Retryable most likely network related
                 const error = errorInstances.InternalError
                     // For internal errors like ECONNREFUSED the message can contain
@@ -389,6 +403,7 @@ export default class KMIP {
                     expected: operation,
                 });
             }
+            reportRequest(resultStatus === 'Success' && errorList.length === 0 ? 'success' : 'error');
             if (resultStatus !== 'Success') {
                 const resultReason = response.lookup('Response Message/Batch Item/Result Reason')[0];
                 const resultMessage = response.lookup('Response Message/Batch Item/Result Message')[0];

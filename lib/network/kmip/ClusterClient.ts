@@ -62,17 +62,19 @@ export default class ClusterClient implements KMSInterface {
      *                 of the bucket name as a key attribute.
      * @param options.kmip.codec - KMIP Codec options
      * @param options.kmip.transport - KMIP Transport options
+     * @param options.kmip.onRequestDone - called once for each request sent
+     *                 to the KMS
      * @param CodecClass - diversion for the Codec class,
      *                             defaults to TTLVCodec
      * @param TransportClass - diversion for the Transport class,
      *                                 defaults to TlsTransport
      */
     constructor(options: KmipClientOptions & ClusterClientOptions, CodecClass: any, TransportClass: any) {
-        const { codec, client, providerName } = options.kmip;
+        const { codec, client, providerName, onRequestDone } = options.kmip;
         this.clients = options.kmip.transport.map(
             transport =>
                 new KMIPClient(
-                    { kmip: { codec, transport, client, providerName } },
+                    { kmip: { codec, transport, client, providerName, onRequestDone } },
                     CodecClass || TTLVCodec,
                     TransportClass || TlsTransport,
                 ),
