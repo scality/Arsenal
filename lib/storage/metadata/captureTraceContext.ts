@@ -9,11 +9,8 @@ import ObjectMD from '../../models/ObjectMD';
  * traceContext so stale context loaded from storage is not carried
  * forward into a new oplog entry.
  *
- * Mongo writes go through `MongoUtils.serialize`, which calls this — so
- * callers there don't invoke this directly. Use this helper directly
- * only at write sites that bypass serialize (e.g. paths that hand off
- * a pre-built `ObjectMDData` to bulkWrite without going through tag
- * escape).
+ * Call it at each write site of a new value. A stored version copied
+ * as is to the master keeps its own trace context and is not stamped.
  *
  * Accepts either an `ObjectMD` instance (stamps onto its underlying
  * `getValue()` object) or a raw metadata object.

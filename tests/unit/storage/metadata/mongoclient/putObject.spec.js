@@ -624,6 +624,26 @@ describe('MongoClientInterface:putObjectVerCase4', () => {
             return done();
         });
     });
+
+    it("should keep the master's version traceContext", done => {
+        otel.activateSpan();
+        sinon
+            .stub(client, 'getLatestVersion')
+            .callsFake((...args) =>
+                args[4](null, { versionId: '1234', traceContext: { traceparent: 'version-trace' } }),
+            );
+        const collection = {
+            updateOne: () => Promise.resolve(),
+            bulkWrite: sinon.stub().resolves({}),
+        };
+        client.putObjectVerCase4(collection, 'example-bucket', 'example-object', {}, {}, logger, err => {
+            assert.ifError(err);
+            const master = collection.bulkWrite.args[0][0][0].updateOne.update.$set.value;
+            assert.deepStrictEqual(master.traceContext, { traceparent: 'version-trace' });
+            otel.resetMocks();
+            return done();
+        });
+    });
 });
 
 describe('MongoClientInterface: non-localized versions never become master', () => {
