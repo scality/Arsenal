@@ -58,9 +58,8 @@ describe('KMIP High Level Driver', () => {
                 },
             };
             it(
-                'should work with' +
-                    ` x-name attribute: ${!!bucketNameAttributeName},` +
-                    ` compound creation: ${compoundCreateActivate}`,
+                `should work with x-name attribute: ${!!bucketNameAttributeName}, ` +
+                    `compound creation: ${compoundCreateActivate}`,
                 done => {
                     kmipClient = new KMIPClient(options, TTLVCodec, LoopbackServerTransport);
                     const plaintext = Buffer.from(crypto.randomBytes(32));
