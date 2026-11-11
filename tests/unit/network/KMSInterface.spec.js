@@ -101,12 +101,16 @@ describe('KMSInterface', () => {
     });
 
     describe('isValidProvider', () => {
-        it('should return true for lowercase alphanumeric', () => {
-            assert.strictEqual(isValidProvider('scality01'), true);
-        });
-        it('should return false not lowercase alphanumeric', () => {
-            assert.strictEqual(isValidProvider('A BAD PROVIDER !!!'), false);
-        });
+        ['scality01', 'thales-preprod', 'thales_preprod', 'a-b_c', 'a--b'].forEach(provider =>
+            it(`should return true for "${provider}"`, () => {
+                assert.strictEqual(isValidProvider(provider), true);
+            }),
+        );
+        ['A BAD PROVIDER !!!', 'Thales', '-thales', 'thales-', '_thales', 'thales_', '-', ''].forEach(provider =>
+            it(`should return false for "${provider}"`, () => {
+                assert.strictEqual(isValidProvider(provider), false);
+            }),
+        );
     });
 
     describe('extractDetailFromArn', () => {
