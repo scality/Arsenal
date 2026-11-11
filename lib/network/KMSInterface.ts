@@ -102,9 +102,9 @@ export function isValidProtocol<T extends KmsType = KmsType>(
     return (kmsTypeProtocolMapping[type] as unknown as KmsProtocol[] | undefined)
         ?.includes(protocol as KmsProtocol) || false;
 }
-/** must be lowercase alphanumeric */
+/** must be lowercase alphanumeric, with "-" or "_" only between alphanumerics */
 export function isValidProvider(provider: string) {
-    return /^[a-z0-9]+$/.test(provider);
+    return /^[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?$/.test(provider);
 }
 // end of functions to validate configuration
 
