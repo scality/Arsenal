@@ -2,6 +2,7 @@ const sinon = require('sinon');
 const assert = require('assert');
 const http = require('http');
 const net = require('net');
+const WerelogsLogger = require('werelogs/lib/Logger');
 const Client = require('../../../lib/network/kmsAWS/Client').default;
 const { NotFoundException, KMSInvalidStateException } = require('@aws-sdk/client-kms');
 
@@ -576,6 +577,138 @@ describe('KmsAWSClient request time limit', () => {
                 assertTimedOut(err, start);
                 done();
             });
+        });
+    });
+});
+
+describe('KmsAWSClient request report', () => {
+    const logger = {
+        info: () => {},
+        debug: () => {},
+        error: () => {},
+        warn: () => {},
+    };
+    const requestTimeoutMs = 100;
+
+    let server;
+    /** Answers a request: `(req, res) => void`, does not answer when null */
+    let answer;
+    let reports;
+
+    beforeEach(done => {
+        reports = [];
+        server = http.createServer((req, res) => {
+            req.resume();
+            req.on('end', () => answer?.(req, res));
+        });
+        server.listen(0, '127.0.0.1', done);
+    });
+
+    afterEach(done => {
+        sinon.restore();
+        server.closeAllConnections();
+        server.close(done);
+    });
+
+    function createClient() {
+        return new Client({
+            kmsAWS: {
+                providerName: 'tests',
+                region: 'us-east-1',
+                endpoint: `http://127.0.0.1:${server.address().port}`,
+                ak: 'ak',
+                sk: 'sk',
+                requestTimeoutMs,
+                onRequestDone: report => reports.push(report),
+            },
+        });
+    }
+
+    function answerJson(statusCode, body) {
+        return (req, res) => {
+            res.writeHead(statusCode, { 'Content-Type': 'application/x-amz-json-1.1' });
+            res.end(JSON.stringify(body));
+        };
+    }
+
+    it('should report a request the KMS answers as a success, with its operation and duration', done => {
+        answer = answerJson(200, { CiphertextBlob: Buffer.from('ciphered').toString('base64'), KeyId: 'key' });
+        const client = createClient();
+
+        client.cipherDataKey(1, 'key', Buffer.alloc(32), logger, err => {
+            assert.ifError(err);
+            assert.strictEqual(reports.length, 1);
+            const [{ operation, outcome, durationMs }] = reports;
+            assert.strictEqual(operation, 'Encrypt');
+            assert.strictEqual(outcome, 'success');
+            assert.ok(Number.isInteger(durationMs) && durationMs >= 0, `durationMs: ${durationMs}`);
+            done();
+        });
+    });
+
+    it('should keep the outcome of a request whose report fails, and log the failure', done => {
+        answer = answerJson(200, { CiphertextBlob: Buffer.from('ciphered').toString('base64'), KeyId: 'key' });
+        const error = new Error('report failed');
+        // onRequestDone pushes each report
+        sinon.stub(reports, 'push').throws(error);
+        // the client logs with a logger of its own
+        const logError = sinon.stub(WerelogsLogger.prototype, 'error');
+        const client = createClient();
+
+        client.cipherDataKey(1, 'key', Buffer.alloc(32), logger, err => {
+            assert.ifError(err);
+            sinon.assert.calledOnceWithExactly(
+                logError,
+                'KMS request report failed',
+                sinon.match({ error, report: sinon.match({ operation: 'Encrypt', outcome: 'success' }) }),
+            );
+            done();
+        });
+    });
+
+    it('should report a request the KMS answers with an error as an error', done => {
+        answer = answerJson(400, { __type: 'NotFoundException', message: 'no such key' });
+        const client = createClient();
+
+        client.generateDataKey(1, 'key', logger, err => {
+            assert.ok(err);
+            assert.deepStrictEqual(
+                reports.map(({ operation, outcome }) => ({ operation, outcome })),
+                [{ operation: 'GenerateDataKey', outcome: 'error' }],
+            );
+            done();
+        });
+    });
+
+    it('should report each attempt of a request whose connection is reset as an error', done => {
+        answer = req => req.socket.destroy();
+        const client = createClient();
+
+        client.cipherDataKey(1, 'key', Buffer.alloc(32), logger, err => {
+            assert.ok(err);
+            // the SDK makes 3 attempts
+            assert.deepStrictEqual(
+                reports.map(({ operation, outcome }) => ({ operation, outcome })),
+                Array(3).fill({ operation: 'Encrypt', outcome: 'error' }),
+            );
+            done();
+        });
+    });
+
+    it('should report each attempt of a request without answer as a timeout, after the time limit', done => {
+        answer = null;
+        const client = createClient();
+
+        client.decipherDataKey(1, 'key', Buffer.from('ciphered'), logger, err => {
+            assert.ok(err);
+            // the SDK makes 3 attempts
+            assert.strictEqual(reports.length, 3);
+            reports.forEach(({ operation, outcome, durationMs }) => {
+                assert.strictEqual(operation, 'Decrypt');
+                assert.strictEqual(outcome, 'timeout');
+                assert.ok(durationMs >= requestTimeoutMs - 1, `durationMs: ${durationMs}`);
+            });
+            done();
         });
     });
 });

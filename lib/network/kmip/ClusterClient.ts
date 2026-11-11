@@ -12,14 +12,14 @@ import { ArsenalError, errorInstances } from '../../errors';
 import { kmipMsg } from './errorMapping';
 
 interface UnhealthyClient {
-    client: KMIPClient,
-    healthcheckTimeout: ReturnType<typeof setTimeout>,
-};
+    client: KMIPClient;
+    healthcheckTimeout: ReturnType<typeof setTimeout>;
+}
 
 /** Array without last item */
 type ArrayPopped<Type extends unknown[]> = Type extends [...infer R, unknown] ? R : never;
 /** Array's last item */
-type ArrayLast<Type extends unknown[]> = Type extends [...unknown[], infer R] ? R : never
+type ArrayLast<Type extends unknown[]> = Type extends [...unknown[], infer R] ? R : never;
 
 interface actions {
     createBucketKey: Parameters<ClusterClient['createBucketKey']>;
@@ -27,12 +27,12 @@ interface actions {
     cipherDataKey: Parameters<ClusterClient['cipherDataKey']>;
     decipherDataKey: Parameters<ClusterClient['decipherDataKey']>;
     healthcheck: Parameters<ClusterClient['healthcheck']>;
-};
+}
 
 interface ClusterClientOptions {
     logger: Logger;
     retries?: number;
-};
+}
 
 const UNHEALTHY_DURATION = 30_000; // 30s
 
@@ -62,22 +62,23 @@ export default class ClusterClient implements KMSInterface {
      *                 of the bucket name as a key attribute.
      * @param options.kmip.codec - KMIP Codec options
      * @param options.kmip.transport - KMIP Transport options
+     * @param options.kmip.onRequestDone - called once for each request sent
+     *                 to the KMS
      * @param CodecClass - diversion for the Codec class,
      *                             defaults to TTLVCodec
      * @param TransportClass - diversion for the Transport class,
      *                                 defaults to TlsTransport
      */
-    constructor(
-        options: KmipClientOptions & ClusterClientOptions,
-        CodecClass: any,
-        TransportClass: any,
-    ) {
-        const { codec, client, providerName } = options.kmip;
-        this.clients = options.kmip.transport.map(transport => new KMIPClient(
-            { kmip: { codec, transport, client, providerName } },
-            CodecClass || TTLVCodec,
-            TransportClass || TlsTransport,
-        ));
+    constructor(options: KmipClientOptions & ClusterClientOptions, CodecClass: any, TransportClass: any) {
+        const { codec, client, providerName, onRequestDone } = options.kmip;
+        this.clients = options.kmip.transport.map(
+            transport =>
+                new KMIPClient(
+                    { kmip: { codec, transport, client, providerName, onRequestDone } },
+                    CodecClass || TTLVCodec,
+                    TransportClass || TlsTransport,
+                ),
+        );
         this.backend = this.clients[0].backend;
         this.logger = options.logger;
         // if retries is not configured, we retry as much host there are in the cluster
@@ -188,8 +189,11 @@ export default class ClusterClient implements KMSInterface {
 
         if (this.clients.length === 0) {
             logger.warn('kmip cluster has no healthy hosts');
-            return originalCallback(errorInstances.InternalError.customizeDescription(
-                kmipMsg('Create', args[0], 'kmip cluster has no healthy hosts')));
+            return originalCallback(
+                errorInstances.InternalError.customizeDescription(
+                    kmipMsg('Create', args[0], 'kmip cluster has no healthy hosts'),
+                ),
+            );
         }
 
         const client = this.next();
@@ -208,8 +212,11 @@ export default class ClusterClient implements KMSInterface {
 
         if (this.clients.length === 0) {
             logger.warn('kmip cluster has no healthy hosts');
-            return originalCallback(errorInstances.InternalError.customizeDescription(
-                kmipMsg('Destroy', args[0], 'kmip cluster has no healthy hosts')));
+            return originalCallback(
+                errorInstances.InternalError.customizeDescription(
+                    kmipMsg('Destroy', args[0], 'kmip cluster has no healthy hosts'),
+                ),
+            );
         }
 
         const client = this.next();
@@ -228,8 +235,11 @@ export default class ClusterClient implements KMSInterface {
 
         if (this.clients.length === 0) {
             logger.warn('kmip cluster has no healthy hosts');
-            return originalCallback(errorInstances.InternalError.customizeDescription(
-                kmipMsg('Encrypt', args[1], 'kmip cluster has no healthy hosts')));
+            return originalCallback(
+                errorInstances.InternalError.customizeDescription(
+                    kmipMsg('Encrypt', args[1], 'kmip cluster has no healthy hosts'),
+                ),
+            );
         }
 
         const client = this.next();
@@ -248,8 +258,11 @@ export default class ClusterClient implements KMSInterface {
 
         if (this.clients.length === 0) {
             logger.warn('kmip cluster has no healthy hosts');
-            return originalCallback(errorInstances.InternalError.customizeDescription(
-                kmipMsg('Decrypt', args[1], 'kmip cluster has no healthy hosts')));
+            return originalCallback(
+                errorInstances.InternalError.customizeDescription(
+                    kmipMsg('Decrypt', args[1], 'kmip cluster has no healthy hosts'),
+                ),
+            );
         }
 
         const client = this.next();
@@ -278,16 +291,16 @@ export default class ClusterClient implements KMSInterface {
 
         if (this.clients.length === 0) {
             logger.warn('kmip cluster has no healthy hosts');
-            return originalCallback(errorInstances.InternalError.customizeDescription(
-                kmipMsg('Healthcheck', '', 'kmip cluster has no healthy hosts')));
+            return originalCallback(
+                errorInstances.InternalError.customizeDescription(
+                    kmipMsg('Healthcheck', '', 'kmip cluster has no healthy hosts'),
+                ),
+            );
         }
 
         const client = this.next();
 
-        client.healthcheck(
-            ...poppedArgs,
-            this.callback(client, 'healthcheck', poppedArgs, logger, originalCallback),
-        );
+        client.healthcheck(...poppedArgs, this.callback(client, 'healthcheck', poppedArgs, logger, originalCallback));
         return undefined;
     }
 
@@ -302,9 +315,9 @@ export default class ClusterClient implements KMSInterface {
                     this.clients.map(c => next => c.stop(next)),
                     errHealthy => {
                         cb?.(errHealthy ?? errUnhealthy ?? null);
-                    }
+                    },
                 );
-            }
+            },
         );
     }
 }
