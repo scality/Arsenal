@@ -56,7 +56,7 @@ export default class Principal {
             }
             return 'Deny';
         }
-        let ref = [];
+        let ref;
         let toCheck: string[] = [];
         if (valids.Federated && principal.Federated) {
             ref = valids.Federated;

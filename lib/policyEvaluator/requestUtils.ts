@@ -37,7 +37,7 @@ export function computeIpAndHttpProtocolSecurity(request: ArsenalRequest, s3conf
             if (ipFromHeader && ipFromHeader.trim().length) {
                 finalIp = ipFromHeader.split(',')[0].trim();
             }
-            let isSecure = false;
+            let isSecure;
             if (extractProtocolFromHeader) {
                 isSecure = request.headers[extractProtocolFromHeader] === 'https';
             } else {
