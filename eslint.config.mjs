@@ -11,17 +11,28 @@ const gitignorePath = path.resolve(__dirname, '.gitignore');
 
 export default tseslint.config(
     ...scality,
-    ...tseslint.configs.recommended,
+    ...tseslint.configs.recommended.map(config => ({ ...config, files: ['**/*.ts'] })),
     includeIgnoreFile(gitignorePath),
     {
+        files: ['**/*.js'],
+        languageOptions: {
+            sourceType: 'commonjs',
+        },
+    },
+    {
+        rules: {
+            'camelcase': 'off',
+            'no-param-reassign': 'off',
+            'new-cap': 'off',
+        },
+    },
+    {
+        files: ['**/*.ts'],
         rules: {
             '@typescript-eslint/ban-ts-comment': 'off',
             '@typescript-eslint/no-require-imports': 'off',
             '@typescript-eslint/no-explicit-any': 'off',
             '@typescript-eslint/no-empty-object-type': 'off',
-            'camelcase': 'off',
-            'no-param-reassign': 'off',
-            'new-cap': 'off',
             '@typescript-eslint/no-unsafe-function-type': 'off',
         },
     },
