@@ -522,7 +522,7 @@ function _handleWorkerCommandErrorMessage(logger: any, message: RPCCommandErrorM
         clearTimeout(commandPromise.timeout);
     }
     delete uidsToCommandPromise[uids];
-    let commandError: Error | null = null;
+    let commandError: Error;
     if (error in errors) {
         commandError = errors[error];
     } else {

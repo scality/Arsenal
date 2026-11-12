@@ -288,7 +288,7 @@ describe('MongoClientInterface::metadata.getObjectsMD', () => {
                 return async.series(
                     [
                         next => {
-                            let objectName = null;
+                            let objectName;
                             if (variations.versioning) {
                                 objectName = formatVersionKey(
                                     paramsArr[N - 1].key,
