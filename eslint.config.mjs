@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { defineConfig } from 'eslint/config';
 import tseslint from 'typescript-eslint';
 import { includeIgnoreFile } from '@eslint/compat';
 import scality from '@scality/eslint-config-scality';
@@ -9,9 +10,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const gitignorePath = path.resolve(__dirname, '.gitignore');
 
-export default tseslint.config(
+export default defineConfig(
     ...scality,
-    ...tseslint.configs.recommended.map(config => ({ ...config, files: ['**/*.ts'] })),
     includeIgnoreFile(gitignorePath),
     {
         files: ['**/*.js'],
@@ -27,7 +27,8 @@ export default tseslint.config(
         },
     },
     {
-        files: ['**/*.ts'],
+        files: [tseslint.globs.ts],
+        extends: [tseslint.configs.recommended],
         rules: {
             '@typescript-eslint/ban-ts-comment': 'off',
             '@typescript-eslint/no-require-imports': 'off',
