@@ -112,7 +112,6 @@
         "lint": "eslint $(git ls-files '*.ts' '*.js')",
         "lint_md": "mdlint $(git ls-files '*.md')",
         "lint_yml": "yamllint $(git ls-files '*.yml')",
-        "prettier": "prettier",
         "prettier:check": "prettier --check .",
         "prepare": "yarn build",
         "test": "export NODE_OPTIONS=\"--tls-max-v1.2\" && jest tests/unit --detectOpenHandles"
