@@ -73,12 +73,7 @@ export default class Clustering {
      * @param code - Exit code
      * @param signal - Exit signal
      */
-    _workerExited(
-        worker: Worker,
-        i: number,
-        code: number,
-        signal: string,
-    ) {
+    _workerExited(worker: Worker, i: number, code: number, signal: string) {
         // If the worker:
         //   - was killed by a signal
         //   - return an error code
@@ -140,8 +135,7 @@ export default class Clustering {
                 this._workers[i]!.send({ msg: 'setup', id: i });
             }
         });
-        this._workers[i]!.on('exit', (code, signal) =>
-            this._workerExited(this._workers[i]!, i, code, signal));
+        this._workers[i]!.on('exit', (code, signal) => this._workerExited(this._workers[i]!, i, code, signal));
         // Trigger when the worker was started
         this._workers[i]!.on('online', () => {
             this._logger.info('Worker started', {

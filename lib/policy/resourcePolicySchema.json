@@ -366,9 +366,7 @@
         "Statement": {
             "oneOf": [
                 {
-                    "type": [
-                        "array"
-                    ],
+                    "type": ["array"],
                     "minItems": 1,
                     "items": {
                         "type": "object",
@@ -392,10 +390,7 @@
                             },
                             "Effect": {
                                 "type": "string",
-                                "enum": [
-                                    "Allow",
-                                    "Deny"
-                                ]
+                                "enum": ["Allow", "Deny"]
                             },
                             "Principal": {
                                 "$ref": "#/definitions/principalItem"
@@ -418,18 +413,11 @@
                                 "$ref": "#/definitions/conditions"
                             }
                         },
-                        "required": [
-                            "Action",
-                            "Effect",
-                            "Principal",
-                            "Resource"
-                        ]
+                        "required": ["Action", "Effect", "Principal", "Resource"]
                     }
                 },
                 {
-                    "type": [
-                        "object"
-                    ],
+                    "type": ["object"],
                     "properties": {
                         "Sid": {
                             "type": "string",
@@ -450,10 +438,7 @@
                         },
                         "Effect": {
                             "type": "string",
-                            "enum": [
-                                "Allow",
-                                "Deny"
-                            ]
+                            "enum": ["Allow", "Deny"]
                         },
                         "Principal": {
                             "$ref": "#/definitions/principalItem"
@@ -476,19 +461,11 @@
                             "$ref": "#/definitions/conditions"
                         }
                     },
-                    "required": [
-                        "Action",
-                        "Effect",
-                        "Resource",
-                        "Principal"
-                    ]
+                    "required": ["Action", "Effect", "Resource", "Principal"]
                 }
             ]
         }
     },
-    "required": [
-        "Version",
-        "Statement"
-    ],
+    "required": ["Version", "Statement"],
     "additionalProperties": false
 }

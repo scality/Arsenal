@@ -3,38 +3,31 @@ import GapSet from '../../../../lib/algos/cache/GapSet';
 
 function genRandomKey(): string {
     const CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789';
-    return new Array(16).fill(undefined).map(
-        () => CHARS[Math.trunc(Math.random() * CHARS.length)]
-    ).join('');
+    return new Array(16)
+        .fill(undefined)
+        .map(() => CHARS[Math.trunc(Math.random() * CHARS.length)])
+        .join('');
 }
 
 function genRandomUnchainedGaps(nGaps) {
-    const gapBounds = new Array(nGaps * 2).fill(undefined).map(
-        () => genRandomKey()
-    );
+    const gapBounds = new Array(nGaps * 2).fill(undefined).map(() => genRandomKey());
     gapBounds.sort();
-    const gapsArray = new Array(nGaps).fill(undefined).map(
-        (_, i) => ({
-            firstKey: gapBounds[2 * i],
-            lastKey: gapBounds[2 * i + 1],
-            weight: 10,
-        })
-    );
+    const gapsArray = new Array(nGaps).fill(undefined).map((_, i) => ({
+        firstKey: gapBounds[2 * i],
+        lastKey: gapBounds[2 * i + 1],
+        weight: 10,
+    }));
     return gapsArray;
 }
 
 function genRandomChainedGaps(nGaps) {
-    const gapBounds = new Array(nGaps + 1).fill(undefined).map(
-        () => genRandomKey()
-    );
+    const gapBounds = new Array(nGaps + 1).fill(undefined).map(() => genRandomKey());
     gapBounds.sort();
-    const gapsArray = new Array(nGaps).fill(undefined).map(
-        (_, i) => ({
-            firstKey: gapBounds[i],
-            lastKey: gapBounds[i + 1],
-            weight: 10,
-        })
-    );
+    const gapsArray = new Array(nGaps).fill(undefined).map((_, i) => ({
+        firstKey: gapBounds[i],
+        lastKey: gapBounds[i + 1],
+        weight: 10,
+    }));
     return gapsArray;
 }
 
@@ -75,13 +68,9 @@ describe('GapSet', () => {
     let gapsArrayWithChain;
     let gapSetWithChain;
     beforeEach(() => {
-        gapsArray = JSON.parse(
-            JSON.stringify(INITIAL_GAPSET)
-        );
+        gapsArray = JSON.parse(JSON.stringify(INITIAL_GAPSET));
         gapSet = GapSet.createFromArray(gapsArray, 100);
-        gapsArrayWithChain = JSON.parse(
-            JSON.stringify(INITIAL_GAPSET_WITH_CHAIN)
-        );
+        gapsArrayWithChain = JSON.parse(JSON.stringify(INITIAL_GAPSET_WITH_CHAIN));
         gapSetWithChain = GapSet.createFromArray(gapsArrayWithChain, 100);
     });
 
@@ -119,9 +108,7 @@ describe('GapSet', () => {
             const emptyGapSet = new GapSet(100);
             const gap = emptyGapSet.setGap('foo', 'foo', 1);
             expect(gap).toEqual({ firstKey: 'foo', lastKey: 'foo', weight: 1 });
-            expect(emptyGapSet.toArray()).toEqual([
-                { firstKey: 'foo', lastKey: 'foo', weight: 1 },
-            ]);
+            expect(emptyGapSet.toArray()).toEqual([{ firstKey: 'foo', lastKey: 'foo', weight: 1 }]);
         });
 
         it('should start a gap with a single key in non-empty gap set', () => {
@@ -138,9 +125,7 @@ describe('GapSet', () => {
             const emptyGapSet = new GapSet(100);
             const gap = emptyGapSet.setGap('foo', 'qux', 5);
             expect(gap).toEqual({ firstKey: 'foo', lastKey: 'qux', weight: 5 });
-            expect(emptyGapSet.toArray()).toEqual([
-                { firstKey: 'foo', lastKey: 'qux', weight: 5 },
-            ]);
+            expect(emptyGapSet.toArray()).toEqual([{ firstKey: 'foo', lastKey: 'qux', weight: 5 }]);
         });
 
         it('should return a new object rather than a gap managed by GapSet', () => {
@@ -148,9 +133,7 @@ describe('GapSet', () => {
             const gap = emptyGapSet.setGap('foo', 'qux', 5);
             gap.lastKey = 'quz';
             // check that modifying the returned gap doesn't affect the GapSet
-            expect(emptyGapSet.toArray()).toEqual([
-                { firstKey: 'foo', lastKey: 'qux', weight: 5 },
-            ]);
+            expect(emptyGapSet.toArray()).toEqual([{ firstKey: 'foo', lastKey: 'qux', weight: 5 }]);
         });
 
         it('should return an existing gap that includes the wanted gap', () => {
@@ -183,9 +166,7 @@ describe('GapSet', () => {
 
             const extendedGap = singleKeyGapSet.setGap('foo', 'qux', 30);
             expect(extendedGap).toEqual({ firstKey: 'foo', lastKey: 'qux', weight: 31 });
-            expect(singleKeyGapSet.toArray()).toEqual([
-                { firstKey: 'foo', lastKey: 'qux', weight: 31 },
-            ]);
+            expect(singleKeyGapSet.toArray()).toEqual([{ firstKey: 'foo', lastKey: 'qux', weight: 31 }]);
         });
 
         it('should extend a gap with no next gap', () => {
@@ -218,19 +199,15 @@ describe('GapSet', () => {
             ]);
         });
 
-        it('should merge with next gap with single-key overlap if total weight is ' +
-        'under maxWeight', () => {
+        it('should merge with next gap with single-key overlap if total weight is under maxWeight', () => {
             const extendedGap = gapSet.setGap('bar', 'qux', 80);
             // updated weight is accurately set as the sum of
             // overlapping individual gap weights
             expect(extendedGap).toEqual({ firstKey: 'bar', lastKey: 'quz', weight: 80 + 20 });
-            expect(gapSet.toArray()).toEqual([
-                { firstKey: 'bar', lastKey: 'quz', weight: 80 + 20 },
-            ]);
+            expect(gapSet.toArray()).toEqual([{ firstKey: 'bar', lastKey: 'quz', weight: 80 + 20 }]);
         });
 
-        it('should chain with next gap with single-key overlap if total weight is ' +
-        'above maxWeight', () => {
+        it('should chain with next gap with single-key overlap if total weight is above maxWeight', () => {
             const extendedGap = gapSet.setGap('bar', 'qux', 90);
             expect(extendedGap).toEqual({ firstKey: 'qux', lastKey: 'quz', weight: 20 });
             expect(gapSet.toArray()).toEqual([
@@ -239,66 +216,80 @@ describe('GapSet', () => {
             ]);
         });
 
-        it('should merge with both previous and next gap if bounds overlap by a ' +
-        'single key and total weight is under maxWeight', () => {
-            const extendedGap = gapSet.setGap('baz', 'qux', 30);
-            // updated weight is accurately set as the sum of
-            // overlapping individual gap weights
-            expect(extendedGap).toEqual({ firstKey: 'bar', lastKey: 'quz', weight: 10 + 30 + 20 });
-            expect(gapSet.toArray()).toEqual([
-                { firstKey: 'bar', lastKey: 'quz', weight: 10 + 30 + 20 },
-            ]);
-        });
+        it(
+            'should merge with both previous and next gap if bounds overlap by a ' +
+                'single key and total weight is under maxWeight',
+            () => {
+                const extendedGap = gapSet.setGap('baz', 'qux', 30);
+                // updated weight is accurately set as the sum of
+                // overlapping individual gap weights
+                expect(extendedGap).toEqual({ firstKey: 'bar', lastKey: 'quz', weight: 10 + 30 + 20 });
+                expect(gapSet.toArray()).toEqual([{ firstKey: 'bar', lastKey: 'quz', weight: 10 + 30 + 20 }]);
+            },
+        );
 
-        it('should merge with previous gap and chain with next gap if bounds overlap by a ' +
-        'single key on either side and weight is above maxWeight when merging on right side', () => {
-            const extendedGap = gapSet.setGap('baz', 'qux', 90);
-            expect(extendedGap).toEqual({ firstKey: 'qux', lastKey: 'quz', weight: 20 });
-            expect(gapSet.toArray()).toEqual([
-                { firstKey: 'bar', lastKey: 'qux', weight: 100 },
-                { firstKey: 'qux', lastKey: 'quz', weight: 20 },
-            ]);
-        });
+        it(
+            'should merge with previous gap and chain with next gap if bounds overlap by a ' +
+                'single key on either side and weight is above maxWeight when merging on right side',
+            () => {
+                const extendedGap = gapSet.setGap('baz', 'qux', 90);
+                expect(extendedGap).toEqual({ firstKey: 'qux', lastKey: 'quz', weight: 20 });
+                expect(gapSet.toArray()).toEqual([
+                    { firstKey: 'bar', lastKey: 'qux', weight: 100 },
+                    { firstKey: 'qux', lastKey: 'quz', weight: 20 },
+                ]);
+            },
+        );
 
-        it('should chain with previous gap and merge with next gap if bounds overlap by a ' +
-        'single key on either side and weight is above maxWeight when merging on left side', () => {
-            // modified version of the common test set with increased weight
-            // for 'bar' -> 'baz'
-            const gapSet = GapSet.createFromArray([
-                { firstKey: 'bar', lastKey: 'baz', weight: 80 },
-                { firstKey: 'qux', lastKey: 'quz', weight: 20 },
-            ], 100);
-            const extendedGap = gapSet.setGap('baz', 'qux', 70);
-            expect(extendedGap).toEqual({ firstKey: 'baz', lastKey: 'quz', weight: 90 });
-            expect(gapSet.toArray()).toEqual([
-                { firstKey: 'bar', lastKey: 'baz', weight: 80 },
-                { firstKey: 'baz', lastKey: 'quz', weight: 90 },
-            ]);
-        });
+        it(
+            'should chain with previous gap and merge with next gap if bounds overlap by a ' +
+                'single key on either side and weight is above maxWeight when merging on left side',
+            () => {
+                // modified version of the common test set with increased weight
+                // for 'bar' -> 'baz'
+                const gapSet = GapSet.createFromArray(
+                    [
+                        { firstKey: 'bar', lastKey: 'baz', weight: 80 },
+                        { firstKey: 'qux', lastKey: 'quz', weight: 20 },
+                    ],
+                    100,
+                );
+                const extendedGap = gapSet.setGap('baz', 'qux', 70);
+                expect(extendedGap).toEqual({ firstKey: 'baz', lastKey: 'quz', weight: 90 });
+                expect(gapSet.toArray()).toEqual([
+                    { firstKey: 'bar', lastKey: 'baz', weight: 80 },
+                    { firstKey: 'baz', lastKey: 'quz', weight: 90 },
+                ]);
+            },
+        );
 
-        it('should merge with both previous and next gap if left bound overlaps by a ' +
-        'single key and total weight is under maxWeight', () => {
-            const extendedGap = gapSet.setGap('baz', 'quxxx', 40);
-            // updated weight is heuristically set as the sum of the
-            // previous chained gap's weight and the new weight
-            // (excluding the overlapping gap on right side)
-            expect(extendedGap).toEqual({ firstKey: 'bar', lastKey: 'quz', weight: 10 + 40 });
-            expect(gapSet.toArray()).toEqual([
-                { firstKey: 'bar', lastKey: 'quz', weight: 10 + 40 },
-            ]);
-        });
+        it(
+            'should merge with both previous and next gap if left bound overlaps by a ' +
+                'single key and total weight is under maxWeight',
+            () => {
+                const extendedGap = gapSet.setGap('baz', 'quxxx', 40);
+                // updated weight is heuristically set as the sum of the
+                // previous chained gap's weight and the new weight
+                // (excluding the overlapping gap on right side)
+                expect(extendedGap).toEqual({ firstKey: 'bar', lastKey: 'quz', weight: 10 + 40 });
+                expect(gapSet.toArray()).toEqual([{ firstKey: 'bar', lastKey: 'quz', weight: 10 + 40 }]);
+            },
+        );
 
-        it('should chain with previous gap and merge with next gap if left bound overlaps by a ' +
-        'single key and total weight is above maxWeight', () => {
-            const extendedGap = gapSet.setGap('baz', 'quxxx', 95);
-            // updated weight is accurately set as the sum of
-            // overlapping individual gap weights
-            expect(extendedGap).toEqual({ firstKey: 'baz', lastKey: 'quz', weight: 95 });
-            expect(gapSet.toArray()).toEqual([
-                { firstKey: 'bar', lastKey: 'baz', weight: 10 },
-                { firstKey: 'baz', lastKey: 'quz', weight: 95 },
-            ]);
-        });
+        it(
+            'should chain with previous gap and merge with next gap if left bound overlaps by a ' +
+                'single key and total weight is above maxWeight',
+            () => {
+                const extendedGap = gapSet.setGap('baz', 'quxxx', 95);
+                // updated weight is accurately set as the sum of
+                // overlapping individual gap weights
+                expect(extendedGap).toEqual({ firstKey: 'baz', lastKey: 'quz', weight: 95 });
+                expect(gapSet.toArray()).toEqual([
+                    { firstKey: 'bar', lastKey: 'baz', weight: 10 },
+                    { firstKey: 'baz', lastKey: 'quz', weight: 95 },
+                ]);
+            },
+        );
 
         it('should extend a gap with overlap with next gap and large weight', () => {
             const extendedGap = gapSet.setGap('bar', 'quxxx', 80);
@@ -306,9 +297,7 @@ describe('GapSet', () => {
             // gap weight which is larger than the sum of the existing merged
             // gap weights
             expect(extendedGap).toEqual({ firstKey: 'bar', lastKey: 'quz', weight: 80 });
-            expect(gapSet.toArray()).toEqual([
-                { firstKey: 'bar', lastKey: 'quz', weight: 80 },
-            ]);
+            expect(gapSet.toArray()).toEqual([{ firstKey: 'bar', lastKey: 'quz', weight: 80 }]);
         });
 
         it('should extend a gap with overlap with next gap and small weight', () => {
@@ -316,22 +305,17 @@ describe('GapSet', () => {
             // updated weight is heuristically chosen to be the sum of the existing merged
             // gap weights which is larger than the new gap weight
             expect(extendedGap).toEqual({ firstKey: 'bar', lastKey: 'quz', weight: 10 + 20 });
-            expect(gapSet.toArray()).toEqual([
-                { firstKey: 'bar', lastKey: 'quz', weight: 10 + 20 },
-            ]);
+            expect(gapSet.toArray()).toEqual([{ firstKey: 'bar', lastKey: 'quz', weight: 10 + 20 }]);
         });
 
         it('should extend a gap with overlap beyond last key of next gap', () => {
             const extendedGap = gapSet.setGap('bar', 'rat', 80);
             // updated weight is the new gap weight
             expect(extendedGap).toEqual({ firstKey: 'bar', lastKey: 'rat', weight: 80 });
-            expect(gapSet.toArray()).toEqual([
-                { firstKey: 'bar', lastKey: 'rat', weight: 80 },
-            ]);
+            expect(gapSet.toArray()).toEqual([{ firstKey: 'bar', lastKey: 'rat', weight: 80 }]);
         });
 
-        it('should extend a gap with overlap beyond last key of next gap with a chained gap ' +
-        'if above maxWeight', () => {
+        it('should extend a gap with overlap beyond last key of next gap with a chained gap if above maxWeight', () => {
             // gapSet was initialized with maxWeight=100
             const extendedGap = gapSet.setGap('bar', 'rat', 105);
             // returned new gap is the right-side chained gap
@@ -358,30 +342,27 @@ describe('GapSet', () => {
             ]);
         });
 
-        it('should merge and extend + update weight a gap with overlap not past end of chained gaps',
-            () => {
-                const extendedGap = gapSetWithChain.setGap('baz', 'sea', 80);
-                expect(extendedGap).toEqual({ firstKey: 'baz', lastKey: 'yak', weight: 90 });
-                expect(gapSetWithChain.toArray()).toEqual([
-                    { firstKey: 'ape', lastKey: 'ape', weight: 1 },
-                    { firstKey: 'bar', lastKey: 'baz', weight: 10 },
-                    { firstKey: 'baz', lastKey: 'yak', weight: 90 },
-                ]);
-            });
+        it('should merge and extend + update weight a gap with overlap not past end of chained gaps', () => {
+            const extendedGap = gapSetWithChain.setGap('baz', 'sea', 80);
+            expect(extendedGap).toEqual({ firstKey: 'baz', lastKey: 'yak', weight: 90 });
+            expect(gapSetWithChain.toArray()).toEqual([
+                { firstKey: 'ape', lastKey: 'ape', weight: 1 },
+                { firstKey: 'bar', lastKey: 'baz', weight: 10 },
+                { firstKey: 'baz', lastKey: 'yak', weight: 90 },
+            ]);
+        });
 
-        it('should merge and extend + update weight a gap with overlap past end of chained gaps',
-            () => {
-                const extendedGap = gapSetWithChain.setGap('baz', 'zoo', 95);
-                expect(extendedGap).toEqual({ firstKey: 'baz', lastKey: 'zoo', weight: 95 });
-                expect(gapSetWithChain.toArray()).toEqual([
-                    { firstKey: 'ape', lastKey: 'ape', weight: 1 },
-                    { firstKey: 'bar', lastKey: 'baz', weight: 10 },
-                    { firstKey: 'baz', lastKey: 'zoo', weight: 95 },
-                ]);
-            });
+        it('should merge and extend + update weight a gap with overlap past end of chained gaps', () => {
+            const extendedGap = gapSetWithChain.setGap('baz', 'zoo', 95);
+            expect(extendedGap).toEqual({ firstKey: 'baz', lastKey: 'zoo', weight: 95 });
+            expect(gapSetWithChain.toArray()).toEqual([
+                { firstKey: 'ape', lastKey: 'ape', weight: 1 },
+                { firstKey: 'bar', lastKey: 'baz', weight: 10 },
+                { firstKey: 'baz', lastKey: 'zoo', weight: 95 },
+            ]);
+        });
 
-        it('should extend gap + update weight with overlap past end of chained gaps and ' +
-        'above maxWeight', () => {
+        it('should extend gap + update weight with overlap past end of chained gaps and above maxWeight', () => {
             const extendedGap = gapSetWithChain.setGap('baz', 'zoo', 105);
             // updated weight is the new gap weight minus the left-side chained gap's weight
             expect(extendedGap).toEqual({ firstKey: 'qux', lastKey: 'zoo', weight: 105 - 15 });
@@ -539,18 +520,16 @@ describe('GapSet', () => {
                 ]);
             });
 
-            it('should not remove any gap if both keys straddle an existing gap without overlap',
-                () => {
-                    const nRemoved = gapSet.removeOverlappingGaps(['cow', 'ape']);
-                    expect(nRemoved).toEqual(0);
-                    expect(gapSet.toArray()).toEqual([
-                        { firstKey: 'bar', lastKey: 'baz', weight: 10 },
-                        { firstKey: 'qux', lastKey: 'quz', weight: 20 },
-                    ]);
-                });
+            it('should not remove any gap if both keys straddle an existing gap without overlap', () => {
+                const nRemoved = gapSet.removeOverlappingGaps(['cow', 'ape']);
+                expect(nRemoved).toEqual(0);
+                expect(gapSet.toArray()).toEqual([
+                    { firstKey: 'bar', lastKey: 'baz', weight: 10 },
+                    { firstKey: 'qux', lastKey: 'quz', weight: 20 },
+                ]);
+            });
 
-            it('should remove the two last gaps in chained gaps if last gap bounds match ' +
-            'the two keys', () => {
+            it('should remove the two last gaps in chained gaps if last gap bounds match the two keys', () => {
                 const nRemoved = gapSetWithChain.removeOverlappingGaps(['yak', 'rat']);
                 expect(nRemoved).toEqual(2);
                 expect(gapSetWithChain.toArray()).toEqual([
@@ -563,8 +542,7 @@ describe('GapSet', () => {
                 ]);
             });
 
-            it('should remove first and last gap in chained gaps if their bounds match ' +
-            'the two keys', () => {
+            it('should remove first and last gap in chained gaps if their bounds match the two keys', () => {
                 const nRemoved = gapSetWithChain.removeOverlappingGaps(['yak', 'bar']);
                 expect(nRemoved).toEqual(2);
                 expect(gapSetWithChain.toArray()).toEqual([
@@ -588,8 +566,7 @@ describe('GapSet', () => {
                 ]);
             });
 
-            it('should remove a single-key gap and two contiguous chained gaps each overlapping' +
-            'with one key', () => {
+            it('should remove a single-key gap and two contiguous chained gaps each overlapping with one key', () => {
                 const nRemoved = gapSetWithChain.removeOverlappingGaps(['ape', 'bat', 'cow']);
                 expect(nRemoved).toEqual(3);
                 expect(gapSetWithChain.toArray()).toEqual([
@@ -627,8 +604,7 @@ describe('GapSet', () => {
 
         describe('with a OrderedSet of three keys as parameter', () => {
             it('should remove a single gap if only median key overlaps with gap', () => {
-                const nRemoved = gapSet.removeOverlappingGaps(
-                    new OrderedSet(['ape', 'bat', 'cow']));
+                const nRemoved = gapSet.removeOverlappingGaps(new OrderedSet(['ape', 'bat', 'cow']));
                 expect(nRemoved).toEqual(1);
                 expect(gapSet.toArray()).toEqual([
                     // removed: { firstKey: 'bar', lastKey: 'baz', weight: 10 },
@@ -648,16 +624,14 @@ describe('GapSet', () => {
             for (const key of sortedKeys) {
                 // for all gaps not overlapping with any key in 'sortedKeys',
                 // check that they are still in 'newGapsArray'
-                while (oldGapIdx < oldGapsArray.length &&
-                       oldGapsArray[oldGapIdx].lastKey < key) {
+                while (oldGapIdx < oldGapsArray.length && oldGapsArray[oldGapIdx].lastKey < key) {
                     expect(oldGapsArray[oldGapIdx]).toEqual(newGapsArray[newGapIdx]);
                     oldGapIdx += 1;
                     newGapIdx += 1;
                 }
                 // for the gap(s) overlapping with the current key,
                 // check that they have been removed from 'newGapsArray'
-                while (oldGapIdx < oldGapsArray.length &&
-                       oldGapsArray[oldGapIdx].firstKey <= key) {
+                while (oldGapIdx < oldGapsArray.length && oldGapsArray[oldGapIdx].firstKey <= key) {
                     if (newGapIdx < newGapsArray.length) {
                         expect(oldGapsArray[oldGapIdx]).not.toEqual(newGapsArray[newGapIdx]);
                     }
@@ -679,22 +653,24 @@ describe('GapSet', () => {
                 let largeGapsArray;
                 let largeGapSet;
                 beforeEach(() => {
-                    largeGapsArray = chained ?
-                        genRandomChainedGaps(10000) :
-                        genRandomUnchainedGaps(10000);
+                    largeGapsArray = chained ? genRandomChainedGaps(10000) : genRandomUnchainedGaps(10000);
                     largeGapSet = GapSet.createFromArray(largeGapsArray, 100);
                 });
 
-                [{
-                    desc: 'equal to their first key',
-                    getGapKey: gap => gap.firstKey,
-                }, {
-                    desc: 'equal to their last key',
-                    getGapKey: gap => gap.lastKey,
-                }, {
-                    desc: 'neither their first nor last key',
-                    getGapKey: gap => `${gap.firstKey}/foo`,
-                }].forEach(testCase => {
+                [
+                    {
+                        desc: 'equal to their first key',
+                        getGapKey: gap => gap.firstKey,
+                    },
+                    {
+                        desc: 'equal to their last key',
+                        getGapKey: gap => gap.lastKey,
+                    },
+                    {
+                        desc: 'neither their first nor last key',
+                        getGapKey: gap => `${gap.firstKey}/foo`,
+                    },
+                ].forEach(testCase => {
                     it(`should remove the overlapping gap(s) with one key ${testCase.desc}`, () => {
                         const gapIndex = 5000;
                         const gap = largeGapsArray[gapIndex];
@@ -713,40 +689,35 @@ describe('GapSet', () => {
                         }
                         const expectedGaps = [
                             ...largeGapsArray.slice(0, firstRemovedGapIndex),
-                            ...largeGapsArray.slice(lastRemovedGapIndex + 1)
+                            ...largeGapsArray.slice(lastRemovedGapIndex + 1),
                         ];
                         const newGaps = largeGapSet.toArray();
                         expect(newGaps).toEqual(expectedGaps);
                     });
 
-                    it(`should remove all gaps when they all overlap with one key ${testCase.desc}`,
-                        () => {
-                            // simulate a scenario made of 200 batches of 50 operations, each with
-                            // random keys scattered across all gaps that each overlaps a distinct gap
-                            // (supposedly a worst-case performance scenario for such batch sizes)
-                            const overlappingKeys = largeGapsArray.map(testCase.getGapKey);
-                            shuffleArray(overlappingKeys);
-                            for (let i = 0; i < overlappingKeys.length; i += 50) {
-                                const nRemoved = largeGapSet.removeOverlappingGaps(
-                                    overlappingKeys.slice(i, i + 50));
-                                // with unchained gaps, we expect to have removed exactly
-                                // 50 gaps (the size of 'overlappingKeys').
-                                if (!chained) {
-                                    expect(nRemoved).toEqual(50);
-                                }
+                    it(`should remove all gaps when they all overlap with one key ${testCase.desc}`, () => {
+                        // simulate a scenario made of 200 batches of 50 operations, each with
+                        // random keys scattered across all gaps that each overlaps a distinct gap
+                        // (supposedly a worst-case performance scenario for such batch sizes)
+                        const overlappingKeys = largeGapsArray.map(testCase.getGapKey);
+                        shuffleArray(overlappingKeys);
+                        for (let i = 0; i < overlappingKeys.length; i += 50) {
+                            const nRemoved = largeGapSet.removeOverlappingGaps(overlappingKeys.slice(i, i + 50));
+                            // with unchained gaps, we expect to have removed exactly
+                            // 50 gaps (the size of 'overlappingKeys').
+                            if (!chained) {
+                                expect(nRemoved).toEqual(50);
                             }
-                            const newGaps = largeGapSet.toArray();
-                            expect(newGaps).toEqual([]);
-                        });
+                        }
+                        const newGaps = largeGapSet.toArray();
+                        expect(newGaps).toEqual([]);
+                    });
                 });
 
                 it('should remove only and all overlapping gaps with 50K randomized keys', () => {
-                    const randomizedKeys = new Array(50000).fill(undefined).map(
-                        () => genRandomKey()
-                    );
+                    const randomizedKeys = new Array(50000).fill(undefined).map(() => genRandomKey());
                     for (let i = 0; i < randomizedKeys.length; i += 50) {
-                        largeGapSet.removeOverlappingGaps(
-                            randomizedKeys.slice(i, i + 50));
+                        largeGapSet.removeOverlappingGaps(randomizedKeys.slice(i, i + 50));
                     }
                     const newGaps = largeGapSet.toArray();
                     randomizedKeys.sort();
@@ -782,9 +753,9 @@ describe('GapSet', () => {
 
         it('should coalesce a chain of one thousand gaps', async () => {
             const getKey = i => `000${i}`.slice(-4);
-            const thousandGapsArray = new Array(1000).fill(undefined).map(
-                (_, i) => ({ firstKey: getKey(i), lastKey: getKey(i + 1), weight: 10 })
-            );
+            const thousandGapsArray = new Array(1000)
+                .fill(undefined)
+                .map((_, i) => ({ firstKey: getKey(i), lastKey: getKey(i + 1), weight: 10 }));
             const thousandGapsSet = GapSet.createFromArray(thousandGapsArray, 100);
             const gap = { firstKey: '0000', lastKey: '0001', weight: 10 };
             const coalescedGap = await thousandGapsSet._coalesceGapChain(gap);
@@ -792,19 +763,20 @@ describe('GapSet', () => {
         });
 
         it('should coalesce a single-key gap', async () => {
-            const singleKeyGapSet = GapSet.createFromArray([
-                { firstKey: '0000', lastKey: '0000', weight: 1 },
-            ], 100);
+            const singleKeyGapSet = GapSet.createFromArray([{ firstKey: '0000', lastKey: '0000', weight: 1 }], 100);
             const gap = { firstKey: '0000', lastKey: '0000', weight: 1 };
             const coalescedGap = await singleKeyGapSet._coalesceGapChain(gap);
             expect(coalescedGap).toEqual({ firstKey: '0000', lastKey: '0000', weight: 1 });
         });
 
         it('should coalesce a chain of two gaps ending with a single-key gap', async () => {
-            const singleKeyGapSet = GapSet.createFromArray([
-                { firstKey: '0000', lastKey: '0003', weight: 9 },
-                { firstKey: '0003', lastKey: '0003', weight: 1 },
-            ], 100);
+            const singleKeyGapSet = GapSet.createFromArray(
+                [
+                    { firstKey: '0000', lastKey: '0003', weight: 9 },
+                    { firstKey: '0003', lastKey: '0003', weight: 1 },
+                ],
+                100,
+            );
             const gap = { firstKey: '0000', lastKey: '0003', weight: 9 };
             const coalescedGap = await singleKeyGapSet._coalesceGapChain(gap);
             expect(coalescedGap).toEqual({ firstKey: '0000', lastKey: '0003', weight: 9 });
@@ -846,11 +818,10 @@ describe('GapSet', () => {
             expect(gap).toEqual({ firstKey: 'bar', lastKey: 'baz', weight: 10 });
         });
 
-        it('should return an existing gap that overlaps just with minKey when no maxKey is provided',
-            async () => {
-                const gap = await gapSet.lookupGap('ape');
-                expect(gap).toEqual({ firstKey: 'bar', lastKey: 'baz', weight: 10 });
-            });
+        it('should return an existing gap that overlaps just with minKey when no maxKey is provided', async () => {
+            const gap = await gapSet.lookupGap('ape');
+            expect(gap).toEqual({ firstKey: 'bar', lastKey: 'baz', weight: 10 });
+        });
 
         it('should return an existing gap that overlaps with maxKey but not minKey', async () => {
             const gap = await gapSet.lookupGap('bat', 'cat');
@@ -867,10 +838,9 @@ describe('GapSet', () => {
             expect(gap).toEqual({ firstKey: 'bar', lastKey: 'yak', weight: 100 });
         });
 
-        it('should return a coalesced gap from chained gaps that contain [minKey, maxKey] strictly',
-            async () => {
-                const gap = await gapSetWithChain.lookupGap('bog', 'dog');
-                expect(gap).toEqual({ firstKey: 'baz', lastKey: 'yak', weight: 90 });
-            });
+        it('should return a coalesced gap from chained gaps that contain [minKey, maxKey] strictly', async () => {
+            const gap = await gapSetWithChain.lookupGap('bog', 'dog');
+            expect(gap).toEqual({ firstKey: 'baz', lastKey: 'yak', weight: 90 });
+        });
     });
 });

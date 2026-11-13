@@ -691,10 +691,9 @@ export default class LifecycleConfiguration {
             const filterMsg = this._getRuleFilterDesc(rule);
             const compareStorageClass = invalidTransition.StorageClass[0];
             const msg =
-                `'${timeType}' in the 'Transition' action for ` +
-                `StorageClass '${storageClass}' for ${filterMsg} must be at ` +
-                `least one day apart from ${filterMsg} in the 'Transition' ` +
-                `action for StorageClass '${compareStorageClass}'`;
+                `'${timeType}' in the 'Transition' action for StorageClass '${storageClass}' ` +
+                `for ${filterMsg} must be at least one day apart from ${filterMsg} in the ` +
+                `'Transition' action for StorageClass '${compareStorageClass}'`;
             return errorInstances.InvalidArgument.customizeDescription(msg);
         }
         return null;
@@ -719,17 +718,15 @@ export default class LifecycleConfiguration {
         const { usedTimeType, currentTimeType, rule } = params;
         if (usedTimeType && usedTimeType !== currentTimeType) {
             const msg =
-                "Found mixed 'Date' and 'Days' based Transition " +
-                'actions in lifecycle rule for ' +
-                `${this._getRuleFilterDesc(rule)}`;
+                "Found mixed 'Date' and 'Days' based Transition actions " +
+                `in lifecycle rule for ${this._getRuleFilterDesc(rule)}`;
             return errorInstances.InvalidRequest.customizeDescription(msg);
         }
         // Transition time type cannot differ from the expiration, if provided.
         if (rule.Expiration && rule.Expiration[0][currentTimeType] === undefined) {
             const msg =
-                "Found mixed 'Date' and 'Days' based Expiration and " +
-                'Transition actions in lifecycle rule for ' +
-                `${this._getRuleFilterDesc(rule)}`;
+                "Found mixed 'Date' and 'Days' based Expiration and Transition " +
+                `actions in lifecycle rule for ${this._getRuleFilterDesc(rule)}`;
             return errorInstances.InvalidRequest.customizeDescription(msg);
         }
         return null;
@@ -1274,8 +1271,7 @@ export default class LifecycleConfiguration {
                     tagXML = tags
                         .map(t => {
                             const { key, val } = t;
-                            const Tag =
-                                `<Tag><Key>${escapeForXml(key)}</Key>` + `<Value>${escapeForXml(val)}</Value></Tag>`;
+                            const Tag = `<Tag><Key>${escapeForXml(key)}</Key><Value>${escapeForXml(val)}</Value></Tag>`;
                             return Tag;
                         })
                         .join('');
@@ -1320,9 +1316,9 @@ export default class LifecycleConfiguration {
                             const Days = days !== undefined ? `<Days>${days}</Days>` : '';
                             const Date = date ? `<Date>${date}</Date>` : '';
                             const DelMarker = deleteMarker
-                                ? `<ExpiredObjectDeleteMarker>${deleteMarker}` + '</ExpiredObjectDeleteMarker>'
+                                ? `<ExpiredObjectDeleteMarker>${deleteMarker}</ExpiredObjectDeleteMarker>`
                                 : '';
-                            Action = `<${actionName}>${Days}${Date}${DelMarker}` + `</${actionName}>`;
+                            Action = `<${actionName}>${Days}${Date}${DelMarker}</${actionName}>`;
                         }
                         if (actionName === 'NoncurrentVersionTransition') {
                             const xml: string[] = [];
@@ -1330,7 +1326,7 @@ export default class LifecycleConfiguration {
                                 const { noncurrentDays, storageClass } = transition;
                                 xml.push(
                                     `<${actionName}>`,
-                                    `<NoncurrentDays>${noncurrentDays}` + '</NoncurrentDays>',
+                                    `<NoncurrentDays>${noncurrentDays}</NoncurrentDays>`,
                                     `<StorageClass>${storageClass}</StorageClass>`,
                                     `</${actionName}>`,
                                 );

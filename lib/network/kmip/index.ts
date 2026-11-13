@@ -368,9 +368,9 @@ export default class KMIP {
                 return cb(error);
             }
             const response = this._decodeMessage(logger, rawResponse);
-            const performedOperation = response.lookup('Response Message/' + 'Batch Item/Operation')[0];
-            const resultStatus = response.lookup('Response Message/' + 'Batch Item/Result Status')[0];
-            const resultUniqueBatchItemID = response.lookup('Response Message/' + 'Batch Item/Unique Batch Item ID')[0];
+            const performedOperation = response.lookup('Response Message/Batch Item/Operation')[0];
+            const resultStatus = response.lookup('Response Message/Batch Item/Result Status')[0];
+            const resultUniqueBatchItemID = response.lookup('Response Message/Batch Item/Unique Batch Item ID')[0];
             /** Collect all possible error from the response */
             const errorList: { msg: string; got: any; expected: any }[] = [];
             if (!resultUniqueBatchItemID || resultUniqueBatchItemID.compare(uuid) !== 0) {

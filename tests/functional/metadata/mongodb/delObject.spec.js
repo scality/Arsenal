@@ -5,8 +5,7 @@ const { MongoMemoryReplSet } = require('mongodb-memory-server');
 const { errors, versioning } = require('../../../../index');
 const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
 const BucketInfo = require('../../../../lib/models/BucketInfo').default;
-const MetadataWrapper =
-    require('../../../../lib/storage/metadata/MetadataWrapper');
+const MetadataWrapper = require('../../../../lib/storage/metadata/MetadataWrapper');
 const genVID = require('../../../../lib/versioning/VersionID').generateVersionId;
 const { BucketVersioningKeyFormat } = versioning.VersioningConstants;
 
@@ -17,9 +16,7 @@ const replicationGroupId = 'RG001';
 
 const mongoserver = new MongoMemoryReplSet({
     debug: false,
-    instanceOpts: [
-        { port: 27018 },
-    ],
+    instanceOpts: [{ port: 27018 }],
     replSet: {
         name: 'rs0',
         count: 1,
@@ -30,8 +27,7 @@ const mongoserver = new MongoMemoryReplSet({
 
 let uidCounter = 0;
 function generateVersionId() {
-    return genVID(`${process.pid}.${uidCounter++}`,
-        replicationGroupId);
+    return genVID(`${process.pid}.${uidCounter++}`, replicationGroupId);
 }
 
 const variations = [
@@ -43,20 +39,27 @@ describe('MongoClientInterface::metadata.deleteObjectMD', () => {
     let collection;
 
     function getObjectCount(cb) {
-        collection.countDocuments()
+        collection
+            .countDocuments()
             .then(count => cb(null, count))
             .catch(err => cb(err));
     }
 
     function getObject(key, cb) {
-        collection.findOne({
-            _id: key,
-        }, {}).then(doc => {
-            if (!doc) {
-                return cb(errors.NoSuchKey);
-            }
-            return cb(null, doc.value);
-        }).catch(err => cb(err));
+        collection
+            .findOne(
+                {
+                    _id: key,
+                },
+                {},
+            )
+            .then(doc => {
+                if (!doc) {
+                    return cb(errors.NoSuchKey);
+                }
+                return cb(null, doc.value);
+            })
+            .catch(err => cb(err));
     }
 
     beforeAll(done => {
@@ -78,12 +81,17 @@ describe('MongoClientInterface::metadata.deleteObjectMD', () => {
     });
 
     afterAll(done => {
-        async.series([
-            next => metadata.close(next),
-            next => mongoserver.stop()
-                .then(() => next())
-                .catch(next),
-        ], done);
+        async.series(
+            [
+                next => metadata.close(next),
+                next =>
+                    mongoserver
+                        .stop()
+                        .then(() => next())
+                        .catch(next),
+            ],
+            done,
+        );
     });
 
     variations.forEach(variation => {
@@ -117,19 +125,23 @@ describe('MongoClientInterface::metadata.deleteObjectMD', () => {
                     _isNFS: null,
                     ingestion: null,
                 });
-                async.series([
-                    next => {
-                        metadata.client.defaultBucketKeyFormat = variation.vFormat;
-                        return next();
-                    },
-                    next => metadata.createBucket(BUCKET_NAME, bucketMD, logger, err => {
-                        if (err) {
-                            return next(err);
-                        }
-                        collection = metadata.client.getCollection(BUCKET_NAME);
-                        return next();
-                    }),
-                ], done);
+                async.series(
+                    [
+                        next => {
+                            metadata.client.defaultBucketKeyFormat = variation.vFormat;
+                            return next();
+                        },
+                        next =>
+                            metadata.createBucket(BUCKET_NAME, bucketMD, logger, err => {
+                                if (err) {
+                                    return next(err);
+                                }
+                                collection = metadata.client.getCollection(BUCKET_NAME);
+                                return next();
+                            }),
+                    ],
+                    done,
+                );
             });
 
             afterEach(done => {
@@ -149,39 +161,54 @@ describe('MongoClientInterface::metadata.deleteObjectMD', () => {
                     versionId: null,
                     repairMaster: null,
                 };
-                return async.series([
-                    next => {
-                        // we put the master version of object
-                        metadata.putObjectMD(BUCKET_NAME, params.objName, params.objVal,
-                            versionParams, logger, next);
-                    },
-                    next => {
-                        // we put the master version of a second object
-                        params.objName = 'object-to-deleted';
-                        params.objVal.key = 'object-to-deleted';
-                        metadata.putObjectMD(BUCKET_NAME, params.objName, params.objVal,
-                            versionParams, logger, next);
-                    },
-                    next => {
-                        // We delete the first object
-                        metadata.deleteObjectMD(BUCKET_NAME, params.objName, null, logger, next);
-                    },
-                    next => {
-                        // Object must be removed
-                        metadata.getObjectMD(BUCKET_NAME, params.objName, null, logger, err => {
-                            assert.deepStrictEqual(err, errors.NoSuchKey);
-                            return next();
-                        });
-                    },
-                    next => {
-                        // only 1 object remaining in db
-                        getObjectCount((err, count) => {
-                            assert.deepStrictEqual(err, null);
-                            assert.strictEqual(count, 1);
-                            return next();
-                        });
-                    },
-                ], done);
+                return async.series(
+                    [
+                        next => {
+                            // we put the master version of object
+                            metadata.putObjectMD(
+                                BUCKET_NAME,
+                                params.objName,
+                                params.objVal,
+                                versionParams,
+                                logger,
+                                next,
+                            );
+                        },
+                        next => {
+                            // we put the master version of a second object
+                            params.objName = 'object-to-deleted';
+                            params.objVal.key = 'object-to-deleted';
+                            metadata.putObjectMD(
+                                BUCKET_NAME,
+                                params.objName,
+                                params.objVal,
+                                versionParams,
+                                logger,
+                                next,
+                            );
+                        },
+                        next => {
+                            // We delete the first object
+                            metadata.deleteObjectMD(BUCKET_NAME, params.objName, null, logger, next);
+                        },
+                        next => {
+                            // Object must be removed
+                            metadata.getObjectMD(BUCKET_NAME, params.objName, null, logger, err => {
+                                assert.deepStrictEqual(err, errors.NoSuchKey);
+                                return next();
+                            });
+                        },
+                        next => {
+                            // only 1 object remaining in db
+                            getObjectCount((err, count) => {
+                                assert.deepStrictEqual(err, null);
+                                assert.strictEqual(count, 1);
+                                return next();
+                            });
+                        },
+                    ],
+                    done,
+                );
             });
 
             it(`Should not throw error when object non existent ${variation.vFormat}`, done => {
@@ -215,52 +242,78 @@ describe('MongoClientInterface::metadata.deleteObjectMD', () => {
                     versionId: null,
                     repairMaster: null,
                 };
-                return async.series([
-                    next => {
-                        // we start by creating a new version and master
-                        versionId1 = generateVersionId(this.replicationGroupId);
-                        params.versionId = versionId1;
-                        params.objVal.versionId = versionId1;
-                        versionParams.versionId = versionId1;
-                        metadata.putObjectMD(BUCKET_NAME, params.objName, params.objVal,
-                            versionParams, logger, next);
-                    },
-                    next => {
-                        // we create a second version of the same object (master is updated)
-                        params.objVal.versionId = 'version2';
-                        versionParams.versionId = null;
-                        metadata.putObjectMD(BUCKET_NAME, params.objName, params.objVal,
-                            versionParams, logger, next);
-                    },
-                    next => {
-                        // we delete the first version
-                        metadata.deleteObjectMD(BUCKET_NAME, params.objName, { versionId: versionId1 },
-                            logger, next);
-                    },
-                    next => {
-                        // the first version should no longer be available
-                        metadata.getObjectMD(BUCKET_NAME, params.objName, { versionId: versionId1 }, logger, err => {
-                            assert.deepStrictEqual(err, errors.NoSuchKey);
-                            return next();
-                        });
-                    },
-                    next => {
-                        // master must be containing second version metadata
-                        metadata.getObjectMD(BUCKET_NAME, params.objName, null, logger, (err, data) => {
-                            assert.deepStrictEqual(err, null);
-                            assert.notStrictEqual(data.versionId, versionId1);
-                            return next();
-                        });
-                    },
-                    next => {
-                        // master and one version remaining in db
-                        getObjectCount((err, count) => {
-                            assert.deepStrictEqual(err, null);
-                            assert.strictEqual(count, 2);
-                            return next();
-                        });
-                    },
-                ], done);
+                return async.series(
+                    [
+                        next => {
+                            // we start by creating a new version and master
+                            versionId1 = generateVersionId(this.replicationGroupId);
+                            params.versionId = versionId1;
+                            params.objVal.versionId = versionId1;
+                            versionParams.versionId = versionId1;
+                            metadata.putObjectMD(
+                                BUCKET_NAME,
+                                params.objName,
+                                params.objVal,
+                                versionParams,
+                                logger,
+                                next,
+                            );
+                        },
+                        next => {
+                            // we create a second version of the same object (master is updated)
+                            params.objVal.versionId = 'version2';
+                            versionParams.versionId = null;
+                            metadata.putObjectMD(
+                                BUCKET_NAME,
+                                params.objName,
+                                params.objVal,
+                                versionParams,
+                                logger,
+                                next,
+                            );
+                        },
+                        next => {
+                            // we delete the first version
+                            metadata.deleteObjectMD(
+                                BUCKET_NAME,
+                                params.objName,
+                                { versionId: versionId1 },
+                                logger,
+                                next,
+                            );
+                        },
+                        next => {
+                            // the first version should no longer be available
+                            metadata.getObjectMD(
+                                BUCKET_NAME,
+                                params.objName,
+                                { versionId: versionId1 },
+                                logger,
+                                err => {
+                                    assert.deepStrictEqual(err, errors.NoSuchKey);
+                                    return next();
+                                },
+                            );
+                        },
+                        next => {
+                            // master must be containing second version metadata
+                            metadata.getObjectMD(BUCKET_NAME, params.objName, null, logger, (err, data) => {
+                                assert.deepStrictEqual(err, null);
+                                assert.notStrictEqual(data.versionId, versionId1);
+                                return next();
+                            });
+                        },
+                        next => {
+                            // master and one version remaining in db
+                            getObjectCount((err, count) => {
+                                assert.deepStrictEqual(err, null);
+                                assert.strictEqual(count, 2);
+                                return next();
+                            });
+                        },
+                    ],
+                    done,
+                );
             });
 
             it(`Master should be updated when last version is deleted ${variation.vFormat}`, done => {
@@ -280,56 +333,82 @@ describe('MongoClientInterface::metadata.deleteObjectMD', () => {
                     versionId: null,
                     repairMaster: null,
                 };
-                return async.series([
-                    next => {
-                        // we start by creating a new version and master
-                        versionId1 = generateVersionId(this.replicationGroupId);
-                        params.versionId = versionId1;
-                        params.objVal.versionId = versionId1;
-                        versionParams.versionId = versionId1;
-                        metadata.putObjectMD(BUCKET_NAME, params.objName, params.objVal,
-                            versionParams, logger, next);
-                    },
-                    next => {
-                        // we create a second version of the same object (master is updated)
-                        // params.objVal.versionId = 'version2';
-                        // versionParams.versionId = null;
-                        versionId2 = generateVersionId(this.replicationGroupId);
-                        params.versionId = versionId2;
-                        params.objVal.versionId = versionId2;
-                        versionParams.versionId = versionId2;
-                        metadata.putObjectMD(BUCKET_NAME, params.objName, params.objVal,
-                            versionParams, logger, next);
-                    },
-                    next => {
-                        // deleting latest version
-                        metadata.deleteObjectMD(BUCKET_NAME, params.objName, { versionId: versionId2 },
-                            logger, next);
-                    },
-                    next => {
-                        // latest version must be removed
-                        metadata.getObjectMD(BUCKET_NAME, params.objName, { versionId: versionId2 }, logger, err => {
-                            assert.deepStrictEqual(err, errors.NoSuchKey);
-                            return next();
-                        });
-                    },
-                    next => {
-                        // master must be updated to contain first version data
-                        metadata.getObjectMD(BUCKET_NAME, params.objName, null, logger, (err, data) => {
-                            assert.deepStrictEqual(err, null);
-                            assert.strictEqual(data.versionId, versionId1);
-                            return next();
-                        });
-                    },
-                    next => {
-                        // one master and version in the db
-                        getObjectCount((err, count) => {
-                            assert.deepStrictEqual(err, null);
-                            assert.strictEqual(count, 2);
-                            return next();
-                        });
-                    },
-                ], done);
+                return async.series(
+                    [
+                        next => {
+                            // we start by creating a new version and master
+                            versionId1 = generateVersionId(this.replicationGroupId);
+                            params.versionId = versionId1;
+                            params.objVal.versionId = versionId1;
+                            versionParams.versionId = versionId1;
+                            metadata.putObjectMD(
+                                BUCKET_NAME,
+                                params.objName,
+                                params.objVal,
+                                versionParams,
+                                logger,
+                                next,
+                            );
+                        },
+                        next => {
+                            // we create a second version of the same object (master is updated)
+                            // params.objVal.versionId = 'version2';
+                            // versionParams.versionId = null;
+                            versionId2 = generateVersionId(this.replicationGroupId);
+                            params.versionId = versionId2;
+                            params.objVal.versionId = versionId2;
+                            versionParams.versionId = versionId2;
+                            metadata.putObjectMD(
+                                BUCKET_NAME,
+                                params.objName,
+                                params.objVal,
+                                versionParams,
+                                logger,
+                                next,
+                            );
+                        },
+                        next => {
+                            // deleting latest version
+                            metadata.deleteObjectMD(
+                                BUCKET_NAME,
+                                params.objName,
+                                { versionId: versionId2 },
+                                logger,
+                                next,
+                            );
+                        },
+                        next => {
+                            // latest version must be removed
+                            metadata.getObjectMD(
+                                BUCKET_NAME,
+                                params.objName,
+                                { versionId: versionId2 },
+                                logger,
+                                err => {
+                                    assert.deepStrictEqual(err, errors.NoSuchKey);
+                                    return next();
+                                },
+                            );
+                        },
+                        next => {
+                            // master must be updated to contain first version data
+                            metadata.getObjectMD(BUCKET_NAME, params.objName, null, logger, (err, data) => {
+                                assert.deepStrictEqual(err, null);
+                                assert.strictEqual(data.versionId, versionId1);
+                                return next();
+                            });
+                        },
+                        next => {
+                            // one master and version in the db
+                            getObjectCount((err, count) => {
+                                assert.deepStrictEqual(err, null);
+                                assert.strictEqual(count, 2);
+                                return next();
+                            });
+                        },
+                    ],
+                    done,
+                );
             });
 
             it(`Should fail when version id non existent ${variation.vFormat}`, done => {
@@ -353,51 +432,67 @@ describe('MongoClientInterface::metadata.deleteObjectMD', () => {
                 };
                 let firstVersionVersionId;
                 let deleteMarkerVersionId;
-                async.series([
-                    // We first create a new version and master
-                    next => metadata.putObjectMD(BUCKET_NAME, 'test-object', objVal, params, logger, (err, res) => {
-                        if (err) {
-                            return next(err);
-                        }
-                        firstVersionVersionId = JSON.parse(res).versionId;
-                        return next();
-                    }),
-                    // putting a delete marker as last version
-                    next => {
-                        objVal.isDeleteMarker = true;
-                        params.versionId = null;
-                        return metadata.putObjectMD(BUCKET_NAME, 'test-object', objVal, params, logger, (err, res) => {
-                            if (err) {
-                                return next(err);
-                            }
-                            deleteMarkerVersionId = JSON.parse(res).versionId;
-                            return next();
-                        });
-                    },
-                    next => {
-                        // using fake clock to override the setTimeout used by the repair
-                        jest.useFakeTimers({ legacyFakeTimers : true});
-                        return metadata.deleteObjectMD(BUCKET_NAME, 'test-object', { versionId: deleteMarkerVersionId },
-                            logger, () => {
-                                // running the repair callback
-                                jest.runAllTimers();
-                                jest.useRealTimers();
+                async.series(
+                    [
+                        // We first create a new version and master
+                        next =>
+                            metadata.putObjectMD(BUCKET_NAME, 'test-object', objVal, params, logger, (err, res) => {
+                                if (err) {
+                                    return next(err);
+                                }
+                                firstVersionVersionId = JSON.parse(res).versionId;
+                                return next();
+                            }),
+                        // putting a delete marker as last version
+                        next => {
+                            objVal.isDeleteMarker = true;
+                            params.versionId = null;
+                            return metadata.putObjectMD(
+                                BUCKET_NAME,
+                                'test-object',
+                                objVal,
+                                params,
+                                logger,
+                                (err, res) => {
+                                    if (err) {
+                                        return next(err);
+                                    }
+                                    deleteMarkerVersionId = JSON.parse(res).versionId;
+                                    return next();
+                                },
+                            );
+                        },
+                        next => {
+                            // using fake clock to override the setTimeout used by the repair
+                            jest.useFakeTimers({ legacyFakeTimers: true });
+                            return metadata.deleteObjectMD(
+                                BUCKET_NAME,
+                                'test-object',
+                                { versionId: deleteMarkerVersionId },
+                                logger,
+                                () => {
+                                    // running the repair callback
+                                    jest.runAllTimers();
+                                    jest.useRealTimers();
+                                    return next();
+                                },
+                            );
+                        },
+                        // waiting for the repair callback to finish
+                        next => setTimeout(next, 100),
+                        // master should be created
+                        next => {
+                            getObject('\x7fMtest-object', (err, object) => {
+                                assert.deepStrictEqual(err, null);
+                                assert.strictEqual(object.key, 'test-object');
+                                assert.strictEqual(object.versionId, firstVersionVersionId);
+                                assert.strictEqual(object.isDeleteMarker, false);
                                 return next();
                             });
-                    },
-                    // waiting for the repair callback to finish
-                    next => setTimeout(next, 100),
-                    // master should be created
-                    next => {
-                        getObject('\x7fMtest-object', (err, object) => {
-                            assert.deepStrictEqual(err, null);
-                            assert.strictEqual(object.key, 'test-object');
-                            assert.strictEqual(object.versionId, firstVersionVersionId);
-                            assert.strictEqual(object.isDeleteMarker, false);
-                            return next();
-                        });
-                    },
-                ], done);
+                        },
+                    ],
+                    done,
+                );
             });
 
             itOnlyInV1(`Should delete master when delete marker becomes last version ${variation.vFormat}`, done => {
@@ -411,47 +506,56 @@ describe('MongoClientInterface::metadata.deleteObjectMD', () => {
                     repairMaster: null,
                 };
                 let versionId;
-                async.series([
-                    // We first create a new version and master
-                    next => metadata.putObjectMD(BUCKET_NAME, 'test-object', objVal, params, logger, next),
-                    // putting a delete marker as last version
-                    next => {
-                        objVal.isDeleteMarker = true;
-                        params.versionId = null;
-                        return metadata.putObjectMD(BUCKET_NAME, 'test-object', objVal, params, logger, next);
-                    },
-                    // putting new version on top of delete marker
-                    next => {
-                        objVal.isDeleteMarker = false;
-                        return metadata.putObjectMD(BUCKET_NAME, 'test-object', objVal, params, logger, (err, res) => {
-                            if (err) {
-                                return next(err);
-                            }
-                            versionId = JSON.parse(res).versionId;
-                            return next();
-                        });
-                    },
-                    next => {
-                        // using fake clock to override the setTimeout used by the repair
-                        jest.useFakeTimers({ legacyFakeTimers : true});
-                        return metadata.deleteObjectMD(BUCKET_NAME, 'test-object', { versionId },
-                            logger, () => {
+                async.series(
+                    [
+                        // We first create a new version and master
+                        next => metadata.putObjectMD(BUCKET_NAME, 'test-object', objVal, params, logger, next),
+                        // putting a delete marker as last version
+                        next => {
+                            objVal.isDeleteMarker = true;
+                            params.versionId = null;
+                            return metadata.putObjectMD(BUCKET_NAME, 'test-object', objVal, params, logger, next);
+                        },
+                        // putting new version on top of delete marker
+                        next => {
+                            objVal.isDeleteMarker = false;
+                            return metadata.putObjectMD(
+                                BUCKET_NAME,
+                                'test-object',
+                                objVal,
+                                params,
+                                logger,
+                                (err, res) => {
+                                    if (err) {
+                                        return next(err);
+                                    }
+                                    versionId = JSON.parse(res).versionId;
+                                    return next();
+                                },
+                            );
+                        },
+                        next => {
+                            // using fake clock to override the setTimeout used by the repair
+                            jest.useFakeTimers({ legacyFakeTimers: true });
+                            return metadata.deleteObjectMD(BUCKET_NAME, 'test-object', { versionId }, logger, () => {
                                 // running the repair callback
                                 jest.runAllTimers();
                                 jest.useRealTimers();
                                 return next();
                             });
-                    },
-                    // waiting for the repair callback to finish
-                    next => setTimeout(next, 100),
-                    // master must be deleted
-                    next => {
-                        getObject('\x7fMtest-object', err => {
-                            assert.deepStrictEqual(err, errors.NoSuchKey);
-                            return next();
-                        });
-                    },
-                ], done);
+                        },
+                        // waiting for the repair callback to finish
+                        next => setTimeout(next, 100),
+                        // master must be deleted
+                        next => {
+                            getObject('\x7fMtest-object', err => {
+                                assert.deepStrictEqual(err, errors.NoSuchKey);
+                                return next();
+                            });
+                        },
+                    ],
+                    done,
+                );
             });
 
             it('should delete the object directly if params.doesNotNeedOpogUpdate is true', done => {
@@ -465,27 +569,36 @@ describe('MongoClientInterface::metadata.deleteObjectMD', () => {
                     versionId: null,
                     repairMaster: null,
                 };
-                async.series([
-                    next => {
-                        metadata.putObjectMD(BUCKET_NAME, objName, objVal, versionParams, logger, next);
-                    },
-                    next => {
-                        metadata.deleteObjectMD(BUCKET_NAME, objName, { doesNotNeedOpogUpdate: true }, logger, next);
-                    },
-                    next => {
-                        metadata.getObjectMD(BUCKET_NAME, objName, null, logger, err => {
-                            assert.deepStrictEqual(err, errors.NoSuchKey);
-                            return next();
-                        });
-                    },
-                    next => {
-                        getObjectCount((err, count) => {
-                            assert.deepStrictEqual(err, null);
-                            assert.strictEqual(count, 0);
-                            return next();
-                        });
-                    },
-                ], done);
+                async.series(
+                    [
+                        next => {
+                            metadata.putObjectMD(BUCKET_NAME, objName, objVal, versionParams, logger, next);
+                        },
+                        next => {
+                            metadata.deleteObjectMD(
+                                BUCKET_NAME,
+                                objName,
+                                { doesNotNeedOpogUpdate: true },
+                                logger,
+                                next,
+                            );
+                        },
+                        next => {
+                            metadata.getObjectMD(BUCKET_NAME, objName, null, logger, err => {
+                                assert.deepStrictEqual(err, errors.NoSuchKey);
+                                return next();
+                            });
+                        },
+                        next => {
+                            getObjectCount((err, count) => {
+                                assert.deepStrictEqual(err, null);
+                                assert.strictEqual(count, 0);
+                                return next();
+                            });
+                        },
+                    ],
+                    done,
+                );
             });
 
             it('should throw an error if params.doesNotNeedOpogUpdate is true and object does not exist', done => {

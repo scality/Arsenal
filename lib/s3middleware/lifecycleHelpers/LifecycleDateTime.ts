@@ -49,17 +49,14 @@ export default class LifecycleDateTime {
      * @param lastModified - The object's last modified date
      * @return - The normalized transition timestamp
      */
-    getTransitionTimestamp(
-        transition: { Date?: string | number; Days?: number },
-        lastModified: string,
-    ) {
+    getTransitionTimestamp(transition: { Date?: string | number; Days?: number }, lastModified: string) {
         if (transition.Date !== undefined) {
             return this.getTimestamp(transition.Date);
         }
         if (transition.Days !== undefined) {
             const lastModifiedTime = this.getTimestamp(lastModified);
             const timeTravel = this._transitionOneDayEarlier ? -msInOneDay : 0;
-            return lastModifiedTime + (transition.Days * this._scaledMsPerDay) + timeTravel;
+            return lastModifiedTime + transition.Days * this._scaledMsPerDay + timeTravel;
         }
         return null;
     }
@@ -70,14 +67,11 @@ export default class LifecycleDateTime {
      * @param lastModified - The object's last modified date
      * @return - The normalized transition timestamp
      */
-    getNCVTransitionTimestamp(
-        transition: { NoncurrentDays?: number },
-        lastModified: string,
-    ) {
+    getNCVTransitionTimestamp(transition: { NoncurrentDays?: number }, lastModified: string) {
         if (transition.NoncurrentDays !== undefined) {
             const lastModifiedTime = this.getTimestamp(lastModified);
             const timeTravel = this._transitionOneDayEarlier ? -msInOneDay : 0;
-            return lastModifiedTime + (transition.NoncurrentDays * this._scaledMsPerDay) + timeTravel;
+            return lastModifiedTime + transition.NoncurrentDays * this._scaledMsPerDay + timeTravel;
         }
         return undefined;
     }

@@ -4,8 +4,7 @@ const werelogs = require('werelogs');
 const { MongoMemoryReplSet } = require('mongodb-memory-server');
 const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
 const BucketInfo = require('../../../../lib/models/BucketInfo').default;
-const MetadataWrapper =
-    require('../../../../lib/storage/metadata/MetadataWrapper');
+const MetadataWrapper = require('../../../../lib/storage/metadata/MetadataWrapper');
 
 const IMPL_NAME = 'mongodb';
 const DB_NAME = 'metadata';
@@ -39,9 +38,7 @@ const BUCKET_MD = {
 
 const mongoserver = new MongoMemoryReplSet({
     debug: false,
-    instanceOpts: [
-        { port: 27023 },
-    ],
+    instanceOpts: [{ port: 27023 }],
     replSet: {
         name: 'rs0',
         count: 1,

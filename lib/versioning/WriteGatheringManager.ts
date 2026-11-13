@@ -29,19 +29,11 @@ export default class WriteGatheringManager {
      * @param callback - callback function: callback(error, value)
      * @return - to finish the call
      */
-    get(
-        request: any,
-        logger: RequestLogger,
-        callback: (error: ArsenalError | null, data?: any) => void,
-    ) {
+    get(request: any, logger: RequestLogger, callback: (error: ArsenalError | null, data?: any) => void) {
         return this.db.get(request, logger, callback);
     }
 
-    list(
-        request: any,
-        logger: RequestLogger,
-        callback: (error: ArsenalError | null, data?: any) => void,
-    ) {
+    list(request: any, logger: RequestLogger, callback: (error: ArsenalError | null, data?: any) => void) {
         return this.db.list(request, logger, callback);
     }
 
@@ -55,11 +47,7 @@ export default class WriteGatheringManager {
      * @param callback - callback(err)
      * @return - return this
      */
-    batch(
-        request: any,
-        logger: RequestLogger,
-        callback: (error: ArsenalError | null, data?: any) => void,
-    ) {
+    batch(request: any, logger: RequestLogger, callback: (error: ArsenalError | null, data?: any) => void) {
         const { db, array } = request;
         if (this.dbState[db] === undefined) {
             this.dbState[db] = { db, isCommitting: false };

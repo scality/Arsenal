@@ -29,21 +29,21 @@ export class RoutingRule {
     _condition?: Condition;
 
     /**
-    * Represents a routing rule in a website configuration.
-    * @constructor
-    * @param params - object containing redirect and condition objects
-    * @param params.redirect - specifies how to redirect requests
-    * @param [params.condition] - specifies conditions for a redirect
-    */
+     * Represents a routing rule in a website configuration.
+     * @constructor
+     * @param params - object containing redirect and condition objects
+     * @param params.redirect - specifies how to redirect requests
+     * @param [params.condition] - specifies conditions for a redirect
+     */
     constructor(params: { redirect: Redirect; condition?: Condition }) {
         this._redirect = params?.redirect;
         this._condition = params?.condition;
     }
 
     /**
-    * Return copy of rule as plain object
-    * @return rule;
-    */
+     * Return copy of rule as plain object
+     * @return rule;
+     */
     getRuleObject() {
         const rule = {
             redirect: this._redirect!,
@@ -53,17 +53,17 @@ export class RoutingRule {
     }
 
     /**
-    * Return the condition object
-    * @return condition;
-    */
+     * Return the condition object
+     * @return condition;
+     */
     getCondition() {
         return this._condition;
     }
 
     /**
-    * Return the redirect object
-    * @return redirect;
-    */
+     * Return the redirect object
+     * @return redirect;
+     */
     getRedirect() {
         return this._redirect;
     }
@@ -78,7 +78,7 @@ export type WebsiteConfigurationParams = {
     indexDocument?: string;
     errorDocument?: string;
     redirectAllRequestsTo?: RedirectAllRequestsTo;
-    routingRules?: RoutingRuleParams[],
+    routingRules?: RoutingRuleParams[];
 };
 
 export class WebsiteConfiguration {
@@ -88,21 +88,21 @@ export class WebsiteConfiguration {
     _routingRules?: RoutingRule[];
 
     /**
-    * Object that represents website configuration
-    * @constructor
-    * @param params - object containing params to construct Object
-    * @param params.indexDocument - key for index document object
-    *   required when redirectAllRequestsTo is undefined
-    * @param [params.errorDocument] - key for error document object
-    * @param params.redirectAllRequestsTo - object containing info
-    *   about how to redirect all requests
-    * @param params.redirectAllRequestsTo.hostName - hostName to use
-    *   when redirecting all requests
-    * @param [params.redirectAllRequestsTo.protocol] - protocol to use
-    *   when redirecting all requests ('http' or 'https')
-    * @param params.routingRules - array of Routing
-    *   Rule instances or plain routing rule objects to cast as RoutingRule's
-    */
+     * Object that represents website configuration
+     * @constructor
+     * @param params - object containing params to construct Object
+     * @param params.indexDocument - key for index document object
+     *   required when redirectAllRequestsTo is undefined
+     * @param [params.errorDocument] - key for error document object
+     * @param params.redirectAllRequestsTo - object containing info
+     *   about how to redirect all requests
+     * @param params.redirectAllRequestsTo.hostName - hostName to use
+     *   when redirecting all requests
+     * @param [params.redirectAllRequestsTo.protocol] - protocol to use
+     *   when redirecting all requests ('http' or 'https')
+     * @param params.routingRules - array of Routing
+     *   Rule instances or plain routing rule objects to cast as RoutingRule's
+     */
     constructor(params: WebsiteConfigurationParams) {
         if (params) {
             this._indexDocument = params.indexDocument;
@@ -113,9 +113,9 @@ export class WebsiteConfiguration {
     }
 
     /**
-    * Return plain object with configuration info
-    * @return - Object copy of class instance
-    */
+     * Return plain object with configuration info
+     * @return - Object copy of class instance
+     */
     getConfig(): WebsiteConfigurationParams {
         const base = {
             indexDocument: this._indexDocument,
@@ -132,27 +132,27 @@ export class WebsiteConfiguration {
     }
 
     /**
-    * Set the redirectAllRequestsTo
-    * @param obj - object to set as redirectAllRequestsTo
-    * @param obj.hostName - hostname for redirecting all requests
-    * @param [obj.protocol] - protocol for redirecting all requests
-    */
+     * Set the redirectAllRequestsTo
+     * @param obj - object to set as redirectAllRequestsTo
+     * @param obj.hostName - hostname for redirecting all requests
+     * @param [obj.protocol] - protocol for redirecting all requests
+     */
     setRedirectAllRequestsTo(obj: { hostName: string; protocol?: string }) {
         this._redirectAllRequestsTo = obj;
     }
 
     /**
-    * Return the redirectAllRequestsTo object
-    * @return redirectAllRequestsTo;
-    */
+     * Return the redirectAllRequestsTo object
+     * @return redirectAllRequestsTo;
+     */
     getRedirectAllRequestsTo() {
         return this._redirectAllRequestsTo;
     }
 
     /**
-    * Set the index document object name
-    * @param suffix - index document object key
-    */
+     * Set the index document object name
+     * @param suffix - index document object key
+     */
     setIndexDocument(suffix: string) {
         this._indexDocument = suffix;
     }
@@ -182,9 +182,9 @@ export class WebsiteConfiguration {
     }
 
     /**
-    * Set the whole RoutingRules array
-    * @param array - array to set as instance's RoutingRules
-    */
+     * Set the whole RoutingRules array
+     * @param array - array to set as instance's RoutingRules
+     */
     setRoutingRules(array?: RoutingRuleParams[]) {
         if (array) {
             this._routingRules = array.map(rule => {

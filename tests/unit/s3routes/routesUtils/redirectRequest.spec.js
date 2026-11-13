@@ -30,8 +30,13 @@ describe('routesUtils.redirectRequest', () => {
                 hostName: 'scality.com/test',
             };
             routesUtils.redirectRequest(
-                routing, objectKey, encrypted, responseMock, hostHeader,
-                corsHeaders, new DummyRequestLogger(),
+                routing,
+                objectKey,
+                encrypted,
+                responseMock,
+                hostHeader,
+                corsHeaders,
+                new DummyRequestLogger(),
             );
             assert.strictEqual(responseMock.statusCode, 301);
             assert.strictEqual(responseMock._body, null);
@@ -47,8 +52,13 @@ describe('routesUtils.redirectRequest', () => {
                 replaceKeyWith: 'testing/redirect.html',
             };
             routesUtils.redirectRequest(
-                routing, objectKey, encrypted, responseMock, hostHeader,
-                corsHeaders, new DummyRequestLogger(),
+                routing,
+                objectKey,
+                encrypted,
+                responseMock,
+                hostHeader,
+                corsHeaders,
+                new DummyRequestLogger(),
             );
             assert.strictEqual(responseMock.statusCode, 301);
             assert.strictEqual(responseMock._body, null);
@@ -65,8 +75,13 @@ describe('routesUtils.redirectRequest', () => {
                 replaceKeyWith: '',
             };
             routesUtils.redirectRequest(
-                routing, objectKey, encrypted, responseMock, hostHeader,
-                corsHeaders, new DummyRequestLogger(),
+                routing,
+                objectKey,
+                encrypted,
+                responseMock,
+                hostHeader,
+                corsHeaders,
+                new DummyRequestLogger(),
             );
             assert.strictEqual(responseMock.statusCode, 301);
             assert.strictEqual(responseMock._body, null);

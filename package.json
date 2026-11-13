@@ -78,20 +78,17 @@
     "devDependencies": {
         "@babel/preset-env": "^7.28.3",
         "@babel/preset-typescript": "^7.27.1",
-        "@eslint/compat": "^1.4.0",
-        "@eslint/plugin-kit": "^0.4.0",
+        "@eslint/compat": "^2.1.1",
         "@opentelemetry/context-async-hooks": "^2.12.0",
         "@opentelemetry/core": "^2.12.0",
-        "@scality/eslint-config-scality": "scality/Guidelines#8.3.3",
+        "@scality/eslint-config-scality": "scality/Guidelines#improvement/GDL-18/prettier-eslint-config",
         "@sinonjs/fake-timers": "^15.0.0",
         "@types/async": "^3.2.24",
         "@types/jest": "^29.5.13",
         "@types/node": "^22.7.6",
         "@types/utf8": "^3.0.3",
         "@types/xml2js": "^0.4.14",
-        "eslint": "^9.37.0",
-        "eslint-config-prettier": "^10.1.8",
-        "eslint-plugin-react": "^7.37.1",
+        "eslint": "^10.14.0",
         "globals": "^16.4.0",
         "jest": "^29.7.0",
         "mongodb-memory-server": "^10.2.3",
@@ -103,7 +100,7 @@
         "ts-jest": "^29.4.5",
         "ts-node": "^10.9.2",
         "typescript": "^5.6.3",
-        "typescript-eslint": "^8.46.1"
+        "typescript-eslint": "^8.67.0"
     },
     "scripts": {
         "build": "tsc",
@@ -115,8 +112,7 @@
         "lint": "eslint $(git ls-files '*.ts' '*.js')",
         "lint_md": "mdlint $(git ls-files '*.md')",
         "lint_yml": "yamllint $(git ls-files '*.yml')",
-        "prettier": "prettier",
-        "prettier:diff": "scality-prettier-diff",
+        "prettier:check": "prettier --check .",
         "prepare": "yarn build",
         "test": "export NODE_OPTIONS=\"--tls-max-v1.2\" && jest tests/unit --detectOpenHandles"
     },

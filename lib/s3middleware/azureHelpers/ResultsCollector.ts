@@ -60,7 +60,7 @@ export default class ResultsCollector extends EventEmitter {
     }
 
     _resultsComplete() {
-        return (this._queue === 0 && this._streamingFinished);
+        return this._queue === 0 && this._streamingFinished;
     }
 }
 
@@ -73,8 +73,8 @@ export default class ResultsCollector extends EventEmitter {
  * @property {number} results[].subPartIndex - index of the subpart
  */
 /**
-  * "error" event
-  * @event ResultCollector#error
-  * @type {(Error|undefined)} error - error returned by Azure last subpart
-  * @type {number} subPartIndex - index of the subpart
-  */
+ * "error" event
+ * @event ResultCollector#error
+ * @type {(Error|undefined)} error - error returned by Azure last subpart
+ * @type {number} subPartIndex - index of the subpart
+ */

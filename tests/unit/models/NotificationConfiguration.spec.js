@@ -1,13 +1,11 @@
 const assert = require('assert');
 const { parseString } = require('xml2js');
 
-const NotificationConfiguration =
-    require('../../../lib/models/NotificationConfiguration').default;
+const NotificationConfiguration = require('../../../lib/models/NotificationConfiguration').default;
 const { supportedNotificationEvents } = require('../../../lib/constants');
 
 function checkError(parsedXml, err, errMessage, cb) {
-    const config = new NotificationConfiguration(parsedXml).
-        getValidatedNotificationConfiguration();
+    const config = new NotificationConfiguration(parsedXml).getValidatedNotificationConfiguration();
     expect(config.error.is[err]).toBeTruthy();
     expect(config.error.description).toEqual(errMessage);
     cb();
@@ -40,12 +38,10 @@ function generateFilter(testParams) {
     if (testParams.key === 'FilterRule') {
         if (Array.isArray(testParams.value)) {
             testParams.value.forEach(v => {
-                filter = `${filter}<Filter><S3Key><FilterRule>${v}` +
-                    '</FilterRule></S3Key></Filter>';
+                filter = `${filter}<Filter><S3Key><FilterRule>${v}</FilterRule></S3Key></Filter>`;
             });
         } else {
-            filter = `<Filter><S3Key><FilterRule>${testParams.value}` +
-                '</FilterRule></S3Key></Filter>';
+            filter = `<Filter><S3Key><FilterRule>${testParams.value}</FilterRule></S3Key></Filter>`;
         }
     }
     return filter;
@@ -53,13 +49,13 @@ function generateFilter(testParams) {
 
 function generateXml(testParams) {
     const id = testParams.key === 'Id' ? `<Id>${testParams.value}</Id>` : '<Id>queue-id</Id>';
-    const arn = testParams.key === 'QueueArn' ?
-        `<Queue>${testParams.value}</Queue>` :
-        '<Queue>arn:scality:bucketnotif:::target</Queue>';
+    const arn =
+        testParams.key === 'QueueArn'
+            ? `<Queue>${testParams.value}</Queue>`
+            : '<Queue>arn:scality:bucketnotif:::target</Queue>';
     const event = generateEvent(testParams);
     const filter = generateFilter(testParams);
-    let queueConfig = `<QueueConfiguration>${id}${arn}${event}${filter}` +
-        '</QueueConfiguration>';
+    let queueConfig = `<QueueConfiguration>${id}${arn}${event}${filter}</QueueConfiguration>`;
     if (testParams.key === 'QueueConfiguration') {
         if (testParams.value === 'double') {
             queueConfig = `${queueConfig}${queueConfig}`;
@@ -67,8 +63,10 @@ function generateXml(testParams) {
             queueConfig = testParams.value;
         }
     }
-    const notification = testParams.key === 'NotificationConfiguration' ? '' :
-        `<NotificationConfiguration>${queueConfig}</NotificationConfiguration>`;
+    const notification =
+        testParams.key === 'NotificationConfiguration'
+            ? ''
+            : `<NotificationConfiguration>${queueConfig}</NotificationConfiguration>`;
     return notification;
 }
 
@@ -169,50 +167,51 @@ const passTests = [
     {
         name: 'pass with multiple events in one queue configuration',
         params: {
-            key: 'Event', value: ['s3:ObjectCreated:Put', 's3:ObjectCreated:Copy'],
+            key: 'Event',
+            value: ['s3:ObjectCreated:Put', 's3:ObjectCreated:Copy'],
         },
     },
     {
         name: 'pass with multiple filter rules',
         params: {
             key: 'FilterRule',
-            value: ['<Name>Prefix</Name><Value>logs/</Value>', '<Name>Suffix</Name><Value>.pdf</Value>'] },
+            value: ['<Name>Prefix</Name><Value>logs/</Value>', '<Name>Suffix</Name><Value>.pdf</Value>'],
+        },
     },
     {
         name: 'pass with no id',
         params: { key: 'Id', value: '' },
     },
     {
-        name: 'pass with basic config', params: {},
+        name: 'pass with basic config',
+        params: {},
     },
 ];
 
-describe('NotificationConfiguration class getValidatedNotificationConfiguration',
-    () => {
-        it('should return MalformedXML error if request xml is empty', done => {
-            const errMessage = 'request xml is undefined or empty';
-            checkError('', 'MalformedXML', errMessage, done);
-        });
+describe('NotificationConfiguration class getValidatedNotificationConfiguration', () => {
+    it('should return MalformedXML error if request xml is empty', done => {
+        const errMessage = 'request xml is undefined or empty';
+        checkError('', 'MalformedXML', errMessage, done);
+    });
 
-        failTests.forEach(test => {
-            it(`should ${test.name}`, done => {
-                generateParsedXml(test.params, xml => {
-                    checkError(xml, test.error, test.errorMessage, done);
-                });
-            });
-        });
-
-        passTests.forEach(test => {
-            it(`should ${test.name}`, done => {
-                generateParsedXml(test.params, xml => {
-                    const config = new NotificationConfiguration(xml).
-                        getValidatedNotificationConfiguration();
-                    assert.ifError(config.error);
-                    done();
-                });
+    failTests.forEach(test => {
+        it(`should ${test.name}`, done => {
+            generateParsedXml(test.params, xml => {
+                checkError(xml, test.error, test.errorMessage, done);
             });
         });
     });
+
+    passTests.forEach(test => {
+        it(`should ${test.name}`, done => {
+            generateParsedXml(test.params, xml => {
+                const config = new NotificationConfiguration(xml).getValidatedNotificationConfiguration();
+                assert.ifError(config.error);
+                done();
+            });
+        });
+    });
+});
 
 describe('NotificationConfiguration.restrictSupportedNotificationBasedOnLifecycle', () => {
     // Store original events to restore after each test
@@ -297,12 +296,14 @@ describe('NotificationConfiguration.getConfigXML - XML escaping for special char
     specialCharacters.forEach(char => {
         it(`should escape \`${char}\` in notification ID and generate valid XML`, done => {
             const config = {
-                queueConfig: [{
-                    id: `test-id${char}value`,
-                    queueArn: 'arn:scality:bucketnotif:::target',
-                    events: ['s3:ObjectCreated:*'],
-                    filterRules: [],
-                }],
+                queueConfig: [
+                    {
+                        id: `test-id${char}value`,
+                        queueArn: 'arn:scality:bucketnotif:::target',
+                        events: ['s3:ObjectCreated:*'],
+                        filterRules: [],
+                    },
+                ],
             };
 
             const xml = NotificationConfiguration.getConfigXML(config);
@@ -317,12 +318,14 @@ describe('NotificationConfiguration.getConfigXML - XML escaping for special char
 
         it(`should escape \`${char}\` in queue ARN`, done => {
             const config = {
-                queueConfig: [{
-                    id: 'test-id',
-                    queueArn: `arn:scality:bucketnotif:::queue${char}name`,
-                    events: ['s3:ObjectCreated:*'],
-                    filterRules: [],
-                }],
+                queueConfig: [
+                    {
+                        id: 'test-id',
+                        queueArn: `arn:scality:bucketnotif:::queue${char}name`,
+                        events: ['s3:ObjectCreated:*'],
+                        filterRules: [],
+                    },
+                ],
             };
 
             const xml = NotificationConfiguration.getConfigXML(config);
@@ -337,15 +340,19 @@ describe('NotificationConfiguration.getConfigXML - XML escaping for special char
 
         it(`should escape \`${char}\` in filter rule name and value`, done => {
             const config = {
-                queueConfig: [{
-                    id: 'test-id',
-                    queueArn: 'arn:scality:bucketnotif:::target',
-                    events: ['s3:ObjectCreated:*'],
-                    filterRules: [{
-                        name: `Prefix${char}Name`,
-                        value: `logs/${char}path`,
-                    }],
-                }],
+                queueConfig: [
+                    {
+                        id: 'test-id',
+                        queueArn: 'arn:scality:bucketnotif:::target',
+                        events: ['s3:ObjectCreated:*'],
+                        filterRules: [
+                            {
+                                name: `Prefix${char}Name`,
+                                value: `logs/${char}path`,
+                            },
+                        ],
+                    },
+                ],
             };
 
             const xml = NotificationConfiguration.getConfigXML(config);

@@ -1,4 +1,4 @@
-'use strict'; // eslint-disable-line strict
+'use strict';
 /* eslint new-cap: "off" */
 /* eslint dot-notation: "off" */
 
@@ -6,10 +6,7 @@ const assert = require('assert');
 const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 
-const {
-    EchoChannel,
-    logger,
-} = require('./ersatz.js');
+const { EchoChannel, logger } = require('./ersatz.js');
 
 const expectedObjectType = 'Symmetric Key';
 const expectedAlgorithm = 'AES';
@@ -37,24 +34,20 @@ const serverExtensions = [
         name: 'Yo Dawg',
         tag: 0x542011,
         type: 7,
-        value: 'I heard you like kmip, so I put a server in your client ' +
-            'so you can do both ends of the conversation while you are ' +
-            'talking about server side encryption',
+        value:
+            'I heard you like kmip, so I put a server in your client so you can do both ' +
+            'ends of the conversation while you are talking about server side encryption',
     },
 ];
 
-
 class DummyServerTransport {
     registerHandshakeFunction() {
-        throw new Error('DummyServerTransport::registerHandshakeFunction: ' +
-                        'Client side operations not implemented');
+        throw new Error('DummyServerTransport::registerHandshakeFunction: Client side operations not implemented');
     }
     send() {
-        throw new Error('DummyServerTransport::send: ' +
-                        'Client side operations not implemented');
+        throw new Error('DummyServerTransport::send: Client side operations not implemented');
     }
 }
-
 
 class LoopbackServerChannel extends EchoChannel {
     constructor(KMIPClass, Codec, options) {
@@ -66,8 +59,7 @@ class LoopbackServerChannel extends EchoChannel {
             },
         };
         this.KMIP = KMIPClass;
-        this.kmip = new KMIPClass(Codec, DummyServerTransport,
-            this.options);
+        this.kmip = new KMIPClass(Codec, DummyServerTransport, this.options);
         serverExtensions.forEach(extension => {
             this.kmip.mapExtension(extension.name, extension.tag);
         });
@@ -76,56 +68,50 @@ class LoopbackServerChannel extends EchoChannel {
 
     write(data) {
         const request = this.kmip._decodeMessage(logger, data);
-        const requestOperation = request.lookup(
-            'Request Message/Batch Item/Operation')[0];
-        this.routeRequest(
-            requestOperation, request, (err, responsePayload) => {
-                const uniqueBatchItemID = request.lookup(
-                    'Request Message/Batch Item/Unique Batch Item ID')[0];
-                const requestProtocolVersionMinor = request.lookup(
-                    'Request Message/Request Header/Protocol Version/' +
-                        'Protocol Version Minor')[0];
-                const requestProtocolVersionMajor = request.lookup(
-                    'Request Message/Request Header/Protocol Version/' +
-                        'Protocol Version Major')[0];
+        const requestOperation = request.lookup('Request Message/Batch Item/Operation')[0];
+        this.routeRequest(requestOperation, request, (err, responsePayload) => {
+            const uniqueBatchItemID = request.lookup('Request Message/Batch Item/Unique Batch Item ID')[0];
+            const requestProtocolVersionMinor = request.lookup(
+                'Request Message/Request Header/Protocol Version/Protocol Version Minor',
+            )[0];
+            const requestProtocolVersionMajor = request.lookup(
+                'Request Message/Request Header/Protocol Version/Protocol Version Major',
+            )[0];
 
-                let result;
-                if (err) {
-                    logger.error('Request processing failed', { error: err });
-                    result = err;
-                } else {
-                    // if the result is stubbed and should be used as is, set
-                    // kmipClient.kmip.transport.channel.stubbedResult = true;
-                    result = this.stubbedResult ? responsePayload : [
-                        this.KMIP.Enumeration('Result Status', 'Success'),
-                        this.KMIP.Structure('Response Payload',
-                            responsePayload),
-                    ];
-                }
+            let result;
+            if (err) {
+                logger.error('Request processing failed', { error: err });
+                result = err;
+            } else {
+                // if the result is stubbed and should be used as is, set
+                // kmipClient.kmip.transport.channel.stubbedResult = true;
+                result = this.stubbedResult
+                    ? responsePayload
+                    : [
+                          this.KMIP.Enumeration('Result Status', 'Success'),
+                          this.KMIP.Structure('Response Payload', responsePayload),
+                      ];
+            }
 
-                const response = this.KMIP.Message([
-                    this.KMIP.Structure('Response Message', [
-                        this.KMIP.Structure('Response Header', [
-                            this.KMIP.Structure('Protocol Version', [
-                                this.KMIP.Integer('Protocol Version Major',
-                                    requestProtocolVersionMajor),
-                                this.KMIP.Integer('Protocol Version Minor',
-                                    requestProtocolVersionMinor),
-                            ]),
-                            this.KMIP.DateTime('Time Stamp', new Date),
-                            this.KMIP.Integer('Batch Count', 1),
+            const response = this.KMIP.Message([
+                this.KMIP.Structure('Response Message', [
+                    this.KMIP.Structure('Response Header', [
+                        this.KMIP.Structure('Protocol Version', [
+                            this.KMIP.Integer('Protocol Version Major', requestProtocolVersionMajor),
+                            this.KMIP.Integer('Protocol Version Minor', requestProtocolVersionMinor),
                         ]),
-                        this.KMIP.Structure('Batch Item', [
-                            this.KMIP.Enumeration('Operation',
-                                requestOperation),
-                            this.KMIP.ByteString('Unique Batch Item ID',
-                                uniqueBatchItemID),
-                            ...result,
-                        ]),
+                        this.KMIP.DateTime('Time Stamp', new Date()),
+                        this.KMIP.Integer('Batch Count', 1),
                     ]),
-                ]);
-                super.write(this.kmip._encodeMessage(response));
-            });
+                    this.KMIP.Structure('Batch Item', [
+                        this.KMIP.Enumeration('Operation', requestOperation),
+                        this.KMIP.ByteString('Unique Batch Item ID', uniqueBatchItemID),
+                        ...result,
+                    ]),
+                ]),
+            ]);
+            super.write(this.kmip._encodeMessage(response));
+        });
         return this;
     }
 
@@ -139,22 +125,29 @@ class LoopbackServerChannel extends EchoChannel {
 
     routeRequest(operation, request, cb) {
         switch (operation) {
-        case 'Query': return this.routeQuery(request, cb);
-        case 'Discover Versions':
-            return this.routeDiscoverVersions(request, cb);
-        case 'Create': return this.routeCreate(request, cb);
-        case 'Activate': return this.routeActivate(request, cb);
-        case 'Encrypt': return this.routeEncrypt(request, cb);
-        case 'Decrypt': return this.routeDecrypt(request, cb);
-        case 'Revoke': return this.routeRevoke(request, cb);
-        case 'Destroy': return this.routeDestroy(request, cb);
-        default: return cb(new Error(`Unknown Operation: ${operation}`));
+            case 'Query':
+                return this.routeQuery(request, cb);
+            case 'Discover Versions':
+                return this.routeDiscoverVersions(request, cb);
+            case 'Create':
+                return this.routeCreate(request, cb);
+            case 'Activate':
+                return this.routeActivate(request, cb);
+            case 'Encrypt':
+                return this.routeEncrypt(request, cb);
+            case 'Decrypt':
+                return this.routeDecrypt(request, cb);
+            case 'Revoke':
+                return this.routeRevoke(request, cb);
+            case 'Destroy':
+                return this.routeDestroy(request, cb);
+            default:
+                return cb(new Error(`Unknown Operation: ${operation}`));
         }
     }
 
     routeQuery(request, cb) {
-        const queryFunctions = request.lookup(
-            'Request Message/Batch Item/Request Payload/Query Function');
+        const queryFunctions = request.lookup('Request Message/Batch Item/Request Payload/Query Function');
         const response = [];
         if (queryFunctions.includes('Query Operations')) {
             response.push(
@@ -165,22 +158,20 @@ class LoopbackServerChannel extends EchoChannel {
                 this.KMIP.Enumeration('Operation', 'Encrypt'),
                 this.KMIP.Enumeration('Operation', 'Decrypt'),
                 this.KMIP.Enumeration('Operation', 'Revoke'),
-                this.KMIP.Enumeration('Operation', 'Destroy'));
+                this.KMIP.Enumeration('Operation', 'Destroy'),
+            );
         }
         if (queryFunctions.includes('Query Objects')) {
-            response.push(
-                this.KMIP.Enumeration('Object Type', 'Symmetric Key'));
+            response.push(this.KMIP.Enumeration('Object Type', 'Symmetric Key'));
         }
         if (queryFunctions.includes('Query Server Information')) {
             response.push(
-                this.KMIP.TextString('Vendor Identification',
-                    vendorIdentification),
-                this.KMIP.Structure('Server Information',
-                    serverExtensions.map(extension =>
-                        this.KMIP.TextString(
-                            extension.name,
-                            extension.value),
-                    )));
+                this.KMIP.TextString('Vendor Identification', vendorIdentification),
+                this.KMIP.Structure(
+                    'Server Information',
+                    serverExtensions.map(extension => this.KMIP.TextString(extension.name, extension.value)),
+                ),
+            );
         }
         if (queryFunctions.includes('Query Extension Map')) {
             serverExtensions.forEach(extension => {
@@ -192,7 +183,8 @@ class LoopbackServerChannel extends EchoChannel {
                          * this implenetation, it could be anything
                          * without changing the behavior of the client code. */
                         this.KMIP.Integer('Extension Type', 7),
-                    ]));
+                    ]),
+                );
             });
         }
         return cb(null, response);
@@ -213,36 +205,33 @@ class LoopbackServerChannel extends EchoChannel {
         let cryptographicLength;
         let cryptographicUsageMask;
         let activationDate;
-        const attributes = request.lookup(
-            'Request Message/Batch Item/Request Payload/Template-Attribute')[0];
+        const attributes = request.lookup('Request Message/Batch Item/Request Payload/Template-Attribute')[0];
         attributes.forEach(item => {
             const attribute = item['Attribute'];
             const attributeValue = attribute.value[1]['Attribute Value'];
             const diversion = attributeValue.diversion;
             const value = attributeValue.value;
             switch (diversion) {
-            case 'Cryptographic Algorithm':
-                assert(!cryptographicAlgorithm);
-                cryptographicAlgorithm = value;
-                break;
-            case 'Cryptographic Length':
-                assert(!cryptographicLength);
-                cryptographicLength = value;
-                break;
-            case 'Cryptographic Usage Mask':
-                assert(!cryptographicUsageMask);
-                cryptographicUsageMask = value;
-                break;
-            case 'Activation Date':
-                assert(!activationDate);
-                activationDate = value;
-                break;
-            default:
+                case 'Cryptographic Algorithm':
+                    assert(!cryptographicAlgorithm);
+                    cryptographicAlgorithm = value;
+                    break;
+                case 'Cryptographic Length':
+                    assert(!cryptographicLength);
+                    cryptographicLength = value;
+                    break;
+                case 'Cryptographic Usage Mask':
+                    assert(!cryptographicUsageMask);
+                    cryptographicUsageMask = value;
+                    break;
+                case 'Activation Date':
+                    assert(!activationDate);
+                    activationDate = value;
+                    break;
+                default:
             }
         });
-        const decodedUsageMask =
-              this.kmip.decodeMask('Cryptographic Usage Mask',
-                  cryptographicUsageMask);
+        const decodedUsageMask = this.kmip.decodeMask('Cryptographic Usage Mask', cryptographicUsageMask);
         assert(cryptographicAlgorithm === expectedAlgorithm);
         assert(cryptographicLength === expectedLength);
         assert(decodedUsageMask.includes('Encrypt'));
@@ -261,15 +250,11 @@ class LoopbackServerChannel extends EchoChannel {
     }
 
     routeActivate(request, cb) {
-        const keyIdentifier = (
-            request.lookup(
-                'Request Message/Batch Item/Request Payload/' +
-                    'Unique Identifier') || [undefined])[0];
-        this.managedKeys[keyIdentifier].activationDate =
-            new Date;
-        const response = [
-            this.KMIP.TextString('Unique Identifier', keyIdentifier),
-        ];
+        const keyIdentifier = (request.lookup('Request Message/Batch Item/Request Payload/Unique Identifier') || [
+            undefined,
+        ])[0];
+        this.managedKeys[keyIdentifier].activationDate = new Date();
+        const response = [this.KMIP.TextString('Unique Identifier', keyIdentifier)];
         return cb(null, response);
     }
 
@@ -277,10 +262,7 @@ class LoopbackServerChannel extends EchoChannel {
         /* Having / in the path is not a good idea for the server side.
          * Because of this, Message::lookup() cannot be directly used to
          * extract the IV, hence this function */
-        const requestPayload = (
-            request.lookup(
-                'Request Message/Batch Item/Request Payload')
-                || [undefined])[0];
+        const requestPayload = (request.lookup('Request Message/Batch Item/Request Payload') || [undefined])[0];
         let ivCounterNonce;
         requestPayload.forEach(attr => {
             const ivCounterNonceAttr = attr['IV/Counter/Nonce'];
@@ -292,37 +274,26 @@ class LoopbackServerChannel extends EchoChannel {
     }
 
     _transform(cipherFunc, request, cb) {
-        const keyIdentifier = (
-            request.lookup(
-                'Request Message/Batch Item/Request Payload/' +
-                    'Unique Identifier') || [undefined])[0];
-        const blockCipherMode = (
-            request.lookup(
-                'Request Message/Batch Item/Request Payload/' +
-                    'Cryptographic Parameters/Block Cipher Mode')
-                || [undefined])[0];
-        const paddingMethod = (
-            request.lookup(
-                'Request Message/Batch Item/Request Payload/' +
-                    'Cryptographic Parameters/Padding Method')
-                || [undefined])[0];
-        const cryptographicAlgorithm = (
-            request.lookup(
-                'Request Message/Batch Item/Request Payload/' +
-                    'Cryptographic Parameters/Cryptographic Algorithm')
-                || [undefined])[0];
+        const keyIdentifier = (request.lookup('Request Message/Batch Item/Request Payload/Unique Identifier') || [
+            undefined,
+        ])[0];
+        const blockCipherMode = (request.lookup(
+            'Request Message/Batch Item/Request Payload/Cryptographic Parameters/Block Cipher Mode',
+        ) || [undefined])[0];
+        const paddingMethod = (request.lookup(
+            'Request Message/Batch Item/Request Payload/Cryptographic Parameters/Padding Method',
+        ) || [undefined])[0];
+        const cryptographicAlgorithm = (request.lookup(
+            'Request Message/Batch Item/Request Payload/Cryptographic Parameters/Cryptographic Algorithm',
+        ) || [undefined])[0];
         const ivCounterNonce = this._getIvCounterNonce(request);
-        const data = (
-            request.lookup(
-                'Request Message/Batch Item/Request Payload/' +
-                    'Data')
-                || [undefined])[0];
+        const data = (request.lookup('Request Message/Batch Item/Request Payload/Data') || [undefined])[0];
         assert(blockCipherMode === expectedBlockCipherMode);
         assert(paddingMethod === expectedPaddingMethod);
         assert(cryptographicAlgorithm === expectedAlgorithm);
         assert(expectedIV.compare(ivCounterNonce) === 0);
         const keySpec = this.managedKeys[keyIdentifier];
-        const now = new Date;
+        const now = new Date();
         assert(keySpec.activationDate && keySpec.activationDate <= now);
         const cipher = cipherFunc('aes-256-cbc', keySpec.key, ivCounterNonce);
         let cipheredData = cipher.update(data);
@@ -346,27 +317,21 @@ class LoopbackServerChannel extends EchoChannel {
     }
 
     routeRevoke(request, cb) {
-        const keyIdentifier = (
-            request.lookup(
-                'Request Message/Batch Item/Request Payload/' +
-                    'Unique Identifier') || [undefined])[0];
+        const keyIdentifier = (request.lookup('Request Message/Batch Item/Request Payload/Unique Identifier') || [
+            undefined,
+        ])[0];
         this.managedKeys[keyIdentifier].activationDate = null;
-        const response = [
-            this.KMIP.TextString('Unique Identifier', keyIdentifier),
-        ];
+        const response = [this.KMIP.TextString('Unique Identifier', keyIdentifier)];
         return cb(null, response);
     }
 
     routeDestroy(request, cb) {
-        const keyIdentifier = (
-            request.lookup(
-                'Request Message/Batch Item/Request Payload/' +
-                    'Unique Identifier') || [undefined])[0];
+        const keyIdentifier = (request.lookup('Request Message/Batch Item/Request Payload/Unique Identifier') || [
+            undefined,
+        ])[0];
         assert(!this.managedKeys[keyIdentifier].activationDate);
         this.managedKeys[keyIdentifier] = null;
-        const response = [
-            this.KMIP.TextString('Unique Identifier', keyIdentifier),
-        ];
+        const response = [this.KMIP.TextString('Unique Identifier', keyIdentifier)];
         return cb(null, response);
     }
 }

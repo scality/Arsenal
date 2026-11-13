@@ -1,4 +1,4 @@
-'use strict'; // eslint-disable-line strict
+'use strict';
 
 const assert = require('assert');
 
@@ -33,7 +33,7 @@ describe('canonicalization', () => {
         );
     });
 
-    it('should return an empty string as the canonicalized ' + 'header if no amz headers', () => {
+    it('should return an empty string as the canonicalized header if no amz headers', () => {
         const headers = {
             'date': 'Mon, 21 Sep 2015 22:29:27 GMT',
             'authorization': 'AWS accessKey1:V8g5UJUFmMzruMqUHVT6ZwvUw+M=',
@@ -74,7 +74,7 @@ describe('canonicalization', () => {
         },
     );
 
-    it('should sort the subresources (included query params) in ' + 'lexicographical order for AWS', () => {
+    it('should sort the subresources (included query params) in lexicographical order for AWS', () => {
         const request = {
             headers: { host: 's3.amazonaws.com:80' },
             url: '/',
@@ -111,7 +111,7 @@ describe('canonicalization', () => {
         );
     });
 
-    it('should return an empty string as the canonicalized ' + 'header if no goog headers', () => {
+    it('should return an empty string as the canonicalized header if no goog headers', () => {
         const headers = {
             'date': 'Mon, 21 Sep 2015 22:29:27 GMT',
             'authorization': 'GOOG1 accessKey1:V8g5UJUFmMzruMqUHVT6ZwvUw+M=',
@@ -152,7 +152,7 @@ describe('canonicalization', () => {
         },
     );
 
-    it('should sort the subresources (included query params) in ' + 'lexicographical order for GCP', () => {
+    it('should sort the subresources (included query params) in lexicographical order for GCP', () => {
         const request = {
             headers: { host: 'storage.googleapis.com:80' },
             url: '/',
@@ -176,7 +176,7 @@ describe('canonicalization', () => {
         const canonicalizedHeader = getCanonicalizedAmzHeaders(headers);
         assert.strictEqual(
             canonicalizedHeader,
-            'x-amz-array-header:value1,value2,value3\n' + 'x-amz-meta-meta:something very meta\n',
+            'x-amz-array-header:value1,value2,value3\nx-amz-meta-meta:something very meta\n',
         );
     });
 
@@ -189,10 +189,7 @@ describe('canonicalization', () => {
             'host': 's3.amazonaws.com:80',
         };
         const canonicalizedHeader = getCanonicalizedAmzHeaders(headers);
-        assert.strictEqual(
-            canonicalizedHeader,
-            'x-amz-meta-meta:something very meta\n' + 'x-amz-number-header:12345\n',
-        );
+        assert.strictEqual(canonicalizedHeader, 'x-amz-meta-meta:something very meta\nx-amz-number-header:12345\n');
     });
 
     it('should handle header values that are arrays for GCP', () => {
@@ -206,7 +203,7 @@ describe('canonicalization', () => {
         const canonicalizedHeader = getCanonicalizedGcpHeaders(headers);
         assert.strictEqual(
             canonicalizedHeader,
-            'x-goog-array-header:gcp-val1,gcp-val2\n' + 'x-goog-meta-meta:something very meta\n',
+            'x-goog-array-header:gcp-val1,gcp-val2\nx-goog-meta-meta:something very meta\n',
         );
     });
 
@@ -221,7 +218,7 @@ describe('canonicalization', () => {
         const canonicalizedHeader = getCanonicalizedAmzHeaders(headers);
         assert.strictEqual(
             canonicalizedHeader,
-            'x-amz-meta-meta:something very meta\n' + 'x-amz-spaced-header:value1  ,  value2\n',
+            'x-amz-meta-meta:something very meta\nx-amz-spaced-header:value1  ,  value2\n',
         );
     });
 

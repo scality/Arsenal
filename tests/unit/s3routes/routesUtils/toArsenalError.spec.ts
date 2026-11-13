@@ -18,7 +18,7 @@ describe('toArsenalError', () => {
         const error = {
             code: 'InvalidAccessKeyId',
             description: 'The AWS access key Id you provided does not exist in our records.',
-            InvalidAccessKeyId: true
+            InvalidAccessKeyId: true,
         };
         const result = toArsenalError(error);
         expect(result).toBe(errorInstances.InvalidAccessKeyId);

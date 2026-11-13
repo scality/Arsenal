@@ -26,15 +26,12 @@ export default function routeOPTIONS(
     if (['GET', 'PUT', 'HEAD', 'POST', 'DELETE'].indexOf(corsMethod ?? '') < 0) {
         const msg = `Invalid Access-Control-Request-Method: ${corsMethod}`;
         const err = errorInstances.BadRequest.customizeDescription(msg);
-        log.debug('invalid Access-Control-Request-Method',
-            { method: 'routeOPTIONS', error: err });
+        log.debug('invalid Access-Control-Request-Method', { method: 'routeOPTIONS', error: err });
         return routesUtils.responseXMLBody(err, null, response, log);
     }
 
-    return api.callApiMethod('corsPreflight', request, response, log,
-        (err, resHeaders) => {
-            routesUtils.statsReport500(err, statsClient);
-            return routesUtils.responseNoBody(err, resHeaders, response, 200,
-                log);
-        });
+    return api.callApiMethod('corsPreflight', request, response, log, (err, resHeaders) => {
+        routesUtils.statsReport500(err, statsClient);
+        return routesUtils.responseNoBody(err, resHeaders, response, 200, log);
+    });
 }

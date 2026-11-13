@@ -12,11 +12,11 @@ export type Callback = (error: Error | null, value?: any) => void;
  */
 export default class StatsModel extends StatsClient {
     /**
-    * Utility method to convert 2d array rows to columns, and vice versa
-    * See also: https://docs.ruby-lang.org/en/2.0.0/Array.html#method-i-zip
-    * @param arrays - 2d array of integers
-    * @return converted array
-    */
+     * Utility method to convert 2d array rows to columns, and vice versa
+     * See also: https://docs.ruby-lang.org/en/2.0.0/Array.html#method-i-zip
+     * @param arrays - 2d array of integers
+     * @return converted array
+     */
     _zip(arrays: number[][]) {
         if (arrays.length > 0 && arrays.every(a => Array.isArray(a))) {
             return arrays[0].map((_, i) => arrays.map(a => a[i]));
@@ -25,24 +25,24 @@ export default class StatsModel extends StatsClient {
     }
 
     /**
-    * normalize to the nearest interval
-    * @param d - Date instance
-    * @return timestamp - normalized to the nearest interval
-    */
+     * normalize to the nearest interval
+     * @param d - Date instance
+     * @return timestamp - normalized to the nearest interval
+     */
     _normalizeTimestamp(d: Date) {
         const m = d.getMinutes();
-        return d.setMinutes(m - m % (Math.floor(this._interval / 60)), 0, 0);
+        return d.setMinutes(m - (m % Math.floor(this._interval / 60)), 0, 0);
     }
 
     /**
-    * override the method to get the count as an array of integers separated
-    * by each interval
-    * typical input looks like [[null, '1'], [null, '2'], [null, null]...]
-    * @param arr - each index contains the result of each batch command
-    *   where index 0 signifies the error and index 1 contains the result
-    * @return array of integers, ordered from most recent interval to
-    *   oldest interval with length of (expiry / interval)
-    */
+     * override the method to get the count as an array of integers separated
+     * by each interval
+     * typical input looks like [[null, '1'], [null, '2'], [null, null]...]
+     * @param arr - each index contains the result of each batch command
+     *   where index 0 signifies the error and index 1 contains the result
+     * @return array of integers, ordered from most recent interval to
+     *   oldest interval with length of (expiry / interval)
+     */
     // @ts-expect-errors
     _getCount(arr: [any, string | null][]): number[] {
         const size = Math.floor(this._expiry / this._interval);
@@ -60,12 +60,12 @@ export default class StatsModel extends StatsClient {
     }
 
     /**
-    * wrapper on `getStats` that handles a list of keys
-    * override the method to reduce the returned 2d array from `_getCount`
-    * @param log - Werelogs request logger
-    * @param ids - service identifiers
-    * @param cb - callback to call with the err/result
-    */
+     * wrapper on `getStats` that handles a list of keys
+     * override the method to reduce the returned 2d array from `_getCount`
+     * @param log - Werelogs request logger
+     * @param ids - service identifiers
+     * @param cb - callback to call with the err/result
+     */
     getAllStats(log: Logger, ids: string[], cb: Callback) {
         if (!this._redis) {
             return cb(null, {});
@@ -85,31 +85,34 @@ export default class StatsModel extends StatsClient {
         }
 
         // for now set concurrency to default of 10
-        return async.eachLimit(ids, 10, (id, done) => {
-            this.getStats(log, id, (err, res) => {
-                if (err) {
-                    return done(err);
-                }
-                requests.push(res.requests);
-                errors.push(res['500s']);
-                return done();
-            });
-        }, error => {
-            if (error) {
-                log.error('error getting stats', {
-                    error,
-                    method: 'StatsModel.getAllStats',
+        return async.eachLimit(
+            ids,
+            10,
+            (id, done) => {
+                this.getStats(log, id, (err, res) => {
+                    if (err) {
+                        return done(err);
+                    }
+                    requests.push(res.requests);
+                    errors.push(res['500s']);
+                    return done();
                 });
+            },
+            error => {
+                if (error) {
+                    log.error('error getting stats', {
+                        error,
+                        method: 'StatsModel.getAllStats',
+                    });
+                    return cb(null, statsRes);
+                }
+
+                statsRes.requests = this._zip(requests).map(arr => arr.reduce((acc, i) => acc + i), 0);
+                statsRes['500s'] = this._zip(errors).map(arr => arr.reduce((acc, i) => acc + i), 0);
+
                 return cb(null, statsRes);
-            }
-
-            statsRes.requests = this._zip(requests).map(arr =>
-                arr.reduce((acc, i) => acc + i), 0);
-            statsRes['500s'] = this._zip(errors).map(arr =>
-                arr.reduce((acc, i) => acc + i), 0);
-
-            return cb(null, statsRes);
-        });
+            },
+        );
     }
 
     /**
@@ -119,7 +122,7 @@ export default class StatsModel extends StatsClient {
      * @param cb - Callback
      */
     getAllGlobalStats(ids: string[], log: Logger, cb: Callback) {
-        const reqsKeys = ids.map(key => (['get', key]));
+        const reqsKeys = ids.map(key => ['get', key]);
         return this._redis.batch(reqsKeys, (err, res) => {
             const statsRes = { requests: 0 };
             if (err) {
@@ -193,12 +196,7 @@ export default class StatsModel extends StatsClient {
      * @param value - value to store
      * @param cb - callback
      */
-    addToSortedSet(
-        key: string,
-        score: number,
-        value: string,
-        cb: (error?: Error | null, value?: any) => void,
-    ) {
+    addToSortedSet(key: string, score: number, value: string, cb: (error?: Error | null, value?: any) => void) {
         this._redis.exists(key, (err, resCode) => {
             if (err) {
                 return cb(err);
@@ -208,8 +206,7 @@ export default class StatsModel extends StatsClient {
                 const msInADay = 24 * 60 * 60 * 1000;
                 const nearestHour = this.normalizeTimestampByHour(new Date());
                 // in seconds
-                const ttl = Math.ceil(
-                    (msInADay - (Date.now() - nearestHour)) / 1000);
+                const ttl = Math.ceil((msInADay - (Date.now() - nearestHour)) / 1000);
                 const cmds = [
                     ['zadd', key, score.toString(), value],
                     ['expire', key, ttl.toString()],

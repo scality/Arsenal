@@ -27,8 +27,7 @@ function batchDelayGen() {
  *                    or the input if it is not valid
  */
 function inc(str) {
-    return str ? (str.slice(0, str.length - 1) +
-            String.fromCharCode(str.charCodeAt(str.length - 1) + 1)) : str;
+    return str ? str.slice(0, str.length - 1) + String.fromCharCode(str.charCodeAt(str.length - 1) + 1) : str;
 }
 
 const VID_SEP = VersioningConstants.VersionId.Separator;
@@ -62,21 +61,23 @@ const dbapi = {
         }),
     list: (request, logger, callback) =>
         setTimeout(() => {
-            const allKeys = Object.keys(keyValueStore).filter(k => {
-                if (request.gte !== undefined && request.gte > k) {
-                    return false;
-                }
-                if (request.gt !== undefined && request.gt >= k) {
-                    return false;
-                }
-                if (request.lte !== undefined && request.lte < k) {
-                    return false;
-                }
-                if (request.lt !== undefined && request.lt <= k) {
-                    return false;
-                }
-                return true;
-            }).sort();
+            const allKeys = Object.keys(keyValueStore)
+                .filter(k => {
+                    if (request.gte !== undefined && request.gte > k) {
+                        return false;
+                    }
+                    if (request.gt !== undefined && request.gt >= k) {
+                        return false;
+                    }
+                    if (request.lte !== undefined && request.lte < k) {
+                        return false;
+                    }
+                    if (request.lt !== undefined && request.lt <= k) {
+                        return false;
+                    }
+                    return true;
+                })
+                .sort();
             const res = [];
             allKeys.forEach(k => res.push({ key: k, value: keyValueStore[k] }));
             callback(null, res);
@@ -99,15 +100,19 @@ const writeCache = new WriteCache(wgm);
 const vrp = new VRP(writeCache, wgm, vcfg);
 
 function batch(callback) {
-    async.times(OP_COUNT, (i, next) => {
-        const request = {
-            db: 'foo',
-            key: `bar${i}`,
-            value: '{"qux":"quz"}',
-            options: { versioning: true },
-        };
-        setTimeout(() => vrp.put(request, logger, next), i);
-    }, callback);
+    async.times(
+        OP_COUNT,
+        (i, next) => {
+            const request = {
+                db: 'foo',
+                key: `bar${i}`,
+                value: '{"qux":"quz"}',
+                options: { versioning: true },
+            };
+            setTimeout(() => vrp.put(request, logger, next), i);
+        },
+        callback,
+    );
 }
 
 function randkey(length = 15) {
@@ -124,13 +129,11 @@ function getVersionKey(key, versionId) {
 
 const fixedVersionId = '98512315901154999993SCALI 0.2eae83fb';
 
-
 describe('test VRP', () => {
     afterEach(() => _cleanupKeyValueStore());
 
     it('should run a batch of operations correctly', done => {
-        async.times(THREADS,
-            (i, next) => setTimeout(() => batch(next), i), done);
+        async.times(THREADS, (i, next) => setTimeout(() => batch(next), i), done);
     });
 
     it('should be able to repair a PHD master version', done => {
@@ -141,703 +144,755 @@ describe('test VRP', () => {
             options: { versioning: true },
         };
         const getRequest = { db: 'foo', key: 'bar' };
-        async.waterfall([
-            callback => async.times(OP_COUNT, (i, next) =>
-                vrp.put(putRequest, logger, next), (err, res) => {
-                assert.strictEqual(err, null);
-                const vidCount = res.sort().reverse().length;
-                assert.strictEqual(vidCount, OP_COUNT);
-                const latestVID = JSON.parse(res[vidCount - 1]).versionId;
-                const nextVID = JSON.parse(res[vidCount - 2]).versionId;
-                callback(null, latestVID, nextVID);
-            }),
-            (latestVID, nextVID, callback) => {
-                const deleteRequest = { db: 'foo', key: 'bar',
-                    options: { versionId: latestVID }, type: 'del' };
-                vrp.del(deleteRequest, logger, err => {
-                    assert.strictEqual(err, null);
-                    callback(null, nextVID);
-                });
-            },
-            (nextVID, callback) => wgm.list({}, logger, (err, list) => {
-                assert.strictEqual(err, null);
-                // listing result has the master version
-                assert.strictEqual(list.length, OP_COUNT);
-                assert(Version.isPHD(list[0].value),
-                    'latest version must be a PHD version');
-                // force repairing using a get request so that
-                // we do not need to wait the scheduled repair
-                callback(null, nextVID);
-            }),
-            (nextVID, callback) => vrp.get(getRequest, logger, (err, res) => {
-                assert.strictEqual(err, null);
-                assert.strictEqual(Version.from(res).getVersionId(), nextVID);
-                // repairing using a get still takes time so we
-                // just need to wait a bit
-                setTimeout(() => wgm.list({}, logger, (err, list) => {
-                    assert.strictEqual(err, null);
-                    // listing result has the master version
-                    assert.strictEqual(list.length, OP_COUNT);
-                    assert.strictEqual(list[0].value, res,
-                        'latest version is not repaired');
-                    callback();
-                }), 1000);
-            }),
-        ], done);
+        async.waterfall(
+            [
+                callback =>
+                    async.times(
+                        OP_COUNT,
+                        (i, next) => vrp.put(putRequest, logger, next),
+                        (err, res) => {
+                            assert.strictEqual(err, null);
+                            const vidCount = res.sort().reverse().length;
+                            assert.strictEqual(vidCount, OP_COUNT);
+                            const latestVID = JSON.parse(res[vidCount - 1]).versionId;
+                            const nextVID = JSON.parse(res[vidCount - 2]).versionId;
+                            callback(null, latestVID, nextVID);
+                        },
+                    ),
+                (latestVID, nextVID, callback) => {
+                    const deleteRequest = { db: 'foo', key: 'bar', options: { versionId: latestVID }, type: 'del' };
+                    vrp.del(deleteRequest, logger, err => {
+                        assert.strictEqual(err, null);
+                        callback(null, nextVID);
+                    });
+                },
+                (nextVID, callback) =>
+                    wgm.list({}, logger, (err, list) => {
+                        assert.strictEqual(err, null);
+                        // listing result has the master version
+                        assert.strictEqual(list.length, OP_COUNT);
+                        assert(Version.isPHD(list[0].value), 'latest version must be a PHD version');
+                        // force repairing using a get request so that
+                        // we do not need to wait the scheduled repair
+                        callback(null, nextVID);
+                    }),
+                (nextVID, callback) =>
+                    vrp.get(getRequest, logger, (err, res) => {
+                        assert.strictEqual(err, null);
+                        assert.strictEqual(Version.from(res).getVersionId(), nextVID);
+                        // repairing using a get still takes time so we
+                        // just need to wait a bit
+                        setTimeout(
+                            () =>
+                                wgm.list({}, logger, (err, list) => {
+                                    assert.strictEqual(err, null);
+                                    // listing result has the master version
+                                    assert.strictEqual(list.length, OP_COUNT);
+                                    assert.strictEqual(list[0].value, res, 'latest version is not repaired');
+                                    callback();
+                                }),
+                            1000,
+                        );
+                    }),
+            ],
+            done,
+        );
     });
     it('should allow to write a specific version + update master', done => {
         let v1;
         let v2;
 
-        async.waterfall([next => {
-            const request = {
-                db: 'foo',
-                key: 'bar',
-                value: '{"qux":"quz"}',
-                options: { versioning: true },
-            };
-            vrp.put(request, logger, next);
-        },
-        (res, next) => {
-            v1 = Version.from(res).getVersionId();
-            const request = {
-                db: 'foo',
-                key: 'bar',
-                value: '{"qux":"quz2"}',
-                options: { versioning: true },
-            };
-            vrp.put(request, logger, next);
-        },
-        (res, next) => {
-            v2 = Version.from(res).getVersionId();
+        async.waterfall(
+            [
+                next => {
+                    const request = {
+                        db: 'foo',
+                        key: 'bar',
+                        value: '{"qux":"quz"}',
+                        options: { versioning: true },
+                    };
+                    vrp.put(request, logger, next);
+                },
+                (res, next) => {
+                    v1 = Version.from(res).getVersionId();
+                    const request = {
+                        db: 'foo',
+                        key: 'bar',
+                        value: '{"qux":"quz2"}',
+                        options: { versioning: true },
+                    };
+                    vrp.put(request, logger, next);
+                },
+                (res, next) => {
+                    v2 = Version.from(res).getVersionId();
 
-            // overwriting v1: master should not be updated
-            const request = {
-                db: 'foo',
-                key: 'bar',
-                value: '{"qux":"quz1.1"}',
-                options: { versioning: true,
-                    versionId: v1 },
-            };
-            vrp.put(request, logger, next);
-        },
-        (res, next) => {
-            const request = {
-                db: 'foo',
-                key: 'bar',
-            };
-            vrp.get(request, logger, next);
-        },
-        (res, next) => {
-            assert.strictEqual(JSON.parse(res).qux, 'quz2');
+                    // overwriting v1: master should not be updated
+                    const request = {
+                        db: 'foo',
+                        key: 'bar',
+                        value: '{"qux":"quz1.1"}',
+                        options: { versioning: true, versionId: v1 },
+                    };
+                    vrp.put(request, logger, next);
+                },
+                (res, next) => {
+                    const request = {
+                        db: 'foo',
+                        key: 'bar',
+                    };
+                    vrp.get(request, logger, next);
+                },
+                (res, next) => {
+                    assert.strictEqual(JSON.parse(res).qux, 'quz2');
 
-            // overwriting v2: master should be updated
-            const request = {
-                db: 'foo',
-                key: 'bar',
-                value: '{"qux":"quz2.1"}',
-                options: { versioning: true,
-                    versionId: v2 },
-            };
-            vrp.put(request, logger, next);
-        },
-        (res, next) => {
-            const request = {
-                db: 'foo',
-                key: 'bar',
-            };
-            vrp.get(request, logger, next);
-        },
-        (res, next) => {
-            assert.strictEqual(JSON.parse(res).qux, 'quz2.1');
-            next();
-        }],
-        done);
+                    // overwriting v2: master should be updated
+                    const request = {
+                        db: 'foo',
+                        key: 'bar',
+                        value: '{"qux":"quz2.1"}',
+                        options: { versioning: true, versionId: v2 },
+                    };
+                    vrp.put(request, logger, next);
+                },
+                (res, next) => {
+                    const request = {
+                        db: 'foo',
+                        key: 'bar',
+                    };
+                    vrp.get(request, logger, next);
+                },
+                (res, next) => {
+                    assert.strictEqual(JSON.parse(res).qux, 'quz2.1');
+                    next();
+                },
+            ],
+            done,
+        );
     });
 
     it('should be able to put Metadata on top of a standalone null version', done => {
         const versionId = '00000000000000999999PARIS  ';
 
-        async.waterfall([next => {
-            // simulate the creation of a standalone null version.
-            const request = {
-                db: 'foo',
-                key: 'bar',
-                value: '{"qux":"quz"}',
-                options: {},
-            };
-            vrp.put(request, logger, next);
-        },
-        (res, next) => {
-            // simulate a BackbeatClient.putMetadata
-            const request = {
-                db: 'foo',
-                key: 'bar',
-                value: `{"qux":"quz2","versionId":"${versionId}"}`,
-                options: {
-                    versioning: true,
-                    versionId,
-                    // isNull === false means Cloudserver supports the new "null key" logic.
-                    isNull: false,
+        async.waterfall(
+            [
+                next => {
+                    // simulate the creation of a standalone null version.
+                    const request = {
+                        db: 'foo',
+                        key: 'bar',
+                        value: '{"qux":"quz"}',
+                        options: {},
+                    };
+                    vrp.put(request, logger, next);
                 },
-            };
-            vrp.put(request, logger, next);
-        },
-        (res, next) => {
-            wgm.list({}, logger, next);
-        },
-        (res, next) => {
-            const expectedListing = [
-                // master version should have the provided version id
-                {
-                    key: 'bar',
-                    value: `{"qux":"quz2","versionId":"${versionId}"}`,
+                (res, next) => {
+                    // simulate a BackbeatClient.putMetadata
+                    const request = {
+                        db: 'foo',
+                        key: 'bar',
+                        value: `{"qux":"quz2","versionId":"${versionId}"}`,
+                        options: {
+                            versioning: true,
+                            versionId,
+                            // isNull === false means Cloudserver supports the new "null key" logic.
+                            isNull: false,
+                        },
+                    };
+                    vrp.put(request, logger, next);
                 },
-                // The null version will get the highest version number.
-                // It should have "isNull" and "isNul2" set to true,
-                // showing it's a null version made by Cloudserver that works with null keys.
-                {
-                    key: `bar${VID_SEP}`,
-                    value: '{"qux":"quz","versionId":"99999999999999999999PARIS  ","isNull":true,"isNull2":true}',
+                (res, next) => {
+                    wgm.list({}, logger, next);
                 },
-                // the new version
-                {
-                    key: `bar${VID_SEP}${versionId}`,
-                    value: `{"qux":"quz2","versionId":"${versionId}"}`,
+                (res, next) => {
+                    const expectedListing = [
+                        // master version should have the provided version id
+                        {
+                            key: 'bar',
+                            value: `{"qux":"quz2","versionId":"${versionId}"}`,
+                        },
+                        // The null version will get the highest version number.
+                        // It should have "isNull" and "isNul2" set to true,
+                        // showing it's a null version made by Cloudserver that works with null keys.
+                        {
+                            key: `bar${VID_SEP}`,
+                            value: JSON.stringify({
+                                qux: 'quz',
+                                versionId: '99999999999999999999PARIS  ',
+                                isNull: true,
+                                isNull2: true,
+                            }),
+                        },
+                        // the new version
+                        {
+                            key: `bar${VID_SEP}${versionId}`,
+                            value: `{"qux":"quz2","versionId":"${versionId}"}`,
+                        },
+                    ];
+                    assert.deepStrictEqual(res, expectedListing);
+                    const request = {
+                        db: 'foo',
+                        key: 'bar',
+                    };
+                    vrp.get(request, logger, next);
                 },
-            ];
-            assert.deepStrictEqual(res, expectedListing);
-            const request = {
-                db: 'foo',
-                key: 'bar',
-            };
-            vrp.get(request, logger, next);
-        },
-        (res, next) => {
-            const expectedGet = {
-                qux: 'quz2',
-                versionId,
-            };
-            assert.deepStrictEqual(JSON.parse(res), expectedGet);
-            next();
-        }],
-        done);
+                (res, next) => {
+                    const expectedGet = {
+                        qux: 'quz2',
+                        versionId,
+                    };
+                    assert.deepStrictEqual(JSON.parse(res), expectedGet);
+                    next();
+                },
+            ],
+            done,
+        );
     });
 
     it('should be able to put Metadata on top of a standalone null version in backward compatibility mode', done => {
         const versionId = '00000000000000999999PARIS  ';
 
-        async.waterfall([next => {
-            // simulate the creation of a standalone null version.
-            const request = {
-                db: 'foo',
-                key: 'bar',
-                value: '{"qux":"quz"}',
-                options: {},
-            };
-            vrp.put(request, logger, next);
-        },
-        (res, next) => {
-            // simulate a BackbeatClient.putMetadata
-            const request = {
-                db: 'foo',
-                key: 'bar',
-                value: `{"qux":"quz2","versionId":"${versionId}"}`,
-                options: {
-                    versioning: true,
-                    versionId,
+        async.waterfall(
+            [
+                next => {
+                    // simulate the creation of a standalone null version.
+                    const request = {
+                        db: 'foo',
+                        key: 'bar',
+                        value: '{"qux":"quz"}',
+                        options: {},
+                    };
+                    vrp.put(request, logger, next);
                 },
-            };
-            vrp.put(request, logger, next);
-        },
-        (res, next) => {
-            wgm.list({}, logger, next);
-        },
-        (res, next) => {
-            const expectedListing = [
-                // master version should have the provided version id and a reference of the null version id.
-                {
-                    key: 'bar',
-                    value: `{"qux":"quz2","versionId":"${versionId}","nullVersionId":"99999999999999999999PARIS  "}`,
+                (res, next) => {
+                    // simulate a BackbeatClient.putMetadata
+                    const request = {
+                        db: 'foo',
+                        key: 'bar',
+                        value: `{"qux":"quz2","versionId":"${versionId}"}`,
+                        options: {
+                            versioning: true,
+                            versionId,
+                        },
+                    };
+                    vrp.put(request, logger, next);
                 },
-                // the "internal" master version should have the provided version id.
-                {
-                    key: `bar${VID_SEP}${versionId}`,
-                    value: `{"qux":"quz2","versionId":"${versionId}"}`,
+                (res, next) => {
+                    wgm.list({}, logger, next);
                 },
-                // should create a version that represents the old null master with the infinite version id and
-                // the isNull property set to true.
-                {
-                    key: `bar${VID_SEP}99999999999999999999PARIS  `,
-                    value: '{"qux":"quz","versionId":"99999999999999999999PARIS  ","isNull":true}',
+                (res, next) => {
+                    const expectedListing = [
+                        // master version should have the provided version id and a reference of the null version id.
+                        {
+                            key: 'bar',
+                            value: JSON.stringify({
+                                qux: 'quz2',
+                                versionId,
+                                nullVersionId: '99999999999999999999PARIS  ',
+                            }),
+                        },
+                        // the "internal" master version should have the provided version id.
+                        {
+                            key: `bar${VID_SEP}${versionId}`,
+                            value: `{"qux":"quz2","versionId":"${versionId}"}`,
+                        },
+                        // should create a version that represents the old null master with the infinite version id and
+                        // the isNull property set to true.
+                        {
+                            key: `bar${VID_SEP}99999999999999999999PARIS  `,
+                            value: '{"qux":"quz","versionId":"99999999999999999999PARIS  ","isNull":true}',
+                        },
+                    ];
+                    assert.deepStrictEqual(res, expectedListing);
+                    const request = {
+                        db: 'foo',
+                        key: 'bar',
+                    };
+                    vrp.get(request, logger, next);
                 },
-            ];
-            assert.deepStrictEqual(res, expectedListing);
-            const request = {
-                db: 'foo',
-                key: 'bar',
-            };
-            vrp.get(request, logger, next);
-        },
-        (res, next) => {
-            const expectedGet = {
-                qux: 'quz2',
-                versionId,
-                nullVersionId: '99999999999999999999PARIS  ',
-            };
-            assert.deepStrictEqual(JSON.parse(res), expectedGet);
-            next();
-        }],
-        done);
+                (res, next) => {
+                    const expectedGet = {
+                        qux: 'quz2',
+                        versionId,
+                        nullVersionId: '99999999999999999999PARIS  ',
+                    };
+                    assert.deepStrictEqual(JSON.parse(res), expectedGet);
+                    next();
+                },
+            ],
+            done,
+        );
     });
 
     it('should be able to put Metadata on top of a null suspended version', done => {
         const versionId = '00000000000000999999PARIS  ';
         let nullVersionId;
 
-        async.waterfall([next => {
-            // simulate the creation of a null suspended version.
-            const request = {
-                db: 'foo',
-                key: 'bar',
-                value: '{"qux":"quz","isNull":true}',
-                options: {
-                    versionId: '',
+        async.waterfall(
+            [
+                next => {
+                    // simulate the creation of a null suspended version.
+                    const request = {
+                        db: 'foo',
+                        key: 'bar',
+                        value: '{"qux":"quz","isNull":true}',
+                        options: {
+                            versionId: '',
+                        },
+                    };
+                    vrp.put(request, logger, next);
                 },
-            };
-            vrp.put(request, logger, next);
-        },
-        (res, next) => {
-            nullVersionId = JSON.parse(res).versionId;
-            // simulate a BackbeatClient.putMetadata
-            const request = {
-                db: 'foo',
-                key: 'bar',
-                value: `{"qux":"quz2","versionId":"${versionId}"}`,
-                options: {
-                    versioning: true,
-                    versionId,
-                    // isNull === false means Cloudserver supports the new "null key" logic.
-                    isNull: false,
+                (res, next) => {
+                    nullVersionId = JSON.parse(res).versionId;
+                    // simulate a BackbeatClient.putMetadata
+                    const request = {
+                        db: 'foo',
+                        key: 'bar',
+                        value: `{"qux":"quz2","versionId":"${versionId}"}`,
+                        options: {
+                            versioning: true,
+                            versionId,
+                            // isNull === false means Cloudserver supports the new "null key" logic.
+                            isNull: false,
+                        },
+                    };
+                    vrp.put(request, logger, next);
                 },
-            };
-            vrp.put(request, logger, next);
-        },
-        (res, next) => {
-            wgm.list({}, logger, next);
-        },
-        (res, next) => {
-            const expectedListing = [
-                // master version should have the provided version id
-                {
-                    key: 'bar',
-                    value: `{"qux":"quz2","versionId":"${versionId}"}`,
+                (res, next) => {
+                    wgm.list({}, logger, next);
                 },
-                // The null version will get the highest version number.
-                // It should have "isNull" and "isNul2" set to true,
-                // showing it's a null version made by Cloudserver that works with null keys.
-                {
-                    key: `bar${VID_SEP}`,
-                    value: `{"qux":"quz","isNull":true,"versionId":"${nullVersionId}","isNull2":true}`,
+                (res, next) => {
+                    const expectedListing = [
+                        // master version should have the provided version id
+                        {
+                            key: 'bar',
+                            value: `{"qux":"quz2","versionId":"${versionId}"}`,
+                        },
+                        // The null version will get the highest version number.
+                        // It should have "isNull" and "isNul2" set to true,
+                        // showing it's a null version made by Cloudserver that works with null keys.
+                        {
+                            key: `bar${VID_SEP}`,
+                            value: `{"qux":"quz","isNull":true,"versionId":"${nullVersionId}","isNull2":true}`,
+                        },
+                        // the new version
+                        {
+                            key: `bar${VID_SEP}${versionId}`,
+                            value: `{"qux":"quz2","versionId":"${versionId}"}`,
+                        },
+                    ];
+                    assert.deepStrictEqual(res, expectedListing);
+                    const request = {
+                        db: 'foo',
+                        key: 'bar',
+                    };
+                    vrp.get(request, logger, next);
                 },
-                // the new version
-                {
-                    key: `bar${VID_SEP}${versionId}`,
-                    value: `{"qux":"quz2","versionId":"${versionId}"}`,
+                (res, next) => {
+                    const expectedGet = {
+                        qux: 'quz2',
+                        versionId,
+                    };
+                    assert.deepStrictEqual(JSON.parse(res), expectedGet);
+                    next();
                 },
-            ];
-            assert.deepStrictEqual(res, expectedListing);
-            const request = {
-                db: 'foo',
-                key: 'bar',
-            };
-            vrp.get(request, logger, next);
-        },
-        (res, next) => {
-            const expectedGet = {
-                qux: 'quz2',
-                versionId,
-            };
-            assert.deepStrictEqual(JSON.parse(res), expectedGet);
-            next();
-        }],
-        done);
+            ],
+            done,
+        );
     });
 
     it('should be able to put Metadata on top of a null suspended version in backward compatibility mode', done => {
         const versionId = '00000000000000999999PARIS  ';
         let nullVersionId;
 
-        async.waterfall([next => {
-            // simulate the creation of a null suspended version.
-            const request = {
-                db: 'foo',
-                key: 'bar',
-                value: '{"qux":"quz","isNull":true}',
-                options: {
-                    versionId: '',
+        async.waterfall(
+            [
+                next => {
+                    // simulate the creation of a null suspended version.
+                    const request = {
+                        db: 'foo',
+                        key: 'bar',
+                        value: '{"qux":"quz","isNull":true}',
+                        options: {
+                            versionId: '',
+                        },
+                    };
+                    vrp.put(request, logger, next);
                 },
-            };
-            vrp.put(request, logger, next);
-        },
-        (res, next) => {
-            nullVersionId = JSON.parse(res).versionId;
-            // simulate a BackbeatClient.putMetadata
-            const request = {
-                db: 'foo',
-                key: 'bar',
-                value: `{"qux":"quz2","versionId":"${versionId}"}`,
-                options: {
-                    versioning: true,
-                    versionId,
+                (res, next) => {
+                    nullVersionId = JSON.parse(res).versionId;
+                    // simulate a BackbeatClient.putMetadata
+                    const request = {
+                        db: 'foo',
+                        key: 'bar',
+                        value: `{"qux":"quz2","versionId":"${versionId}"}`,
+                        options: {
+                            versioning: true,
+                            versionId,
+                        },
+                    };
+                    vrp.put(request, logger, next);
                 },
-            };
-            vrp.put(request, logger, next);
-        },
-        (res, next) => {
-            wgm.list({}, logger, next);
-        },
-        (res, next) => {
-            const expectedListing = [
-                // master version should have the provided version id and a reference of the null version id.
-                {
-                    key: 'bar',
-                    value: `{"qux":"quz2","versionId":"${versionId}","nullVersionId":"${nullVersionId}"}`,
+                (res, next) => {
+                    wgm.list({}, logger, next);
                 },
-                // the "internal" master version should have the provided version id.
-                {
-                    key: `bar${VID_SEP}${versionId}`,
-                    value: `{"qux":"quz2","versionId":"${versionId}"}`,
+                (res, next) => {
+                    const expectedListing = [
+                        // master version should have the provided version id and a reference of the null version id.
+                        {
+                            key: 'bar',
+                            value: `{"qux":"quz2","versionId":"${versionId}","nullVersionId":"${nullVersionId}"}`,
+                        },
+                        // the "internal" master version should have the provided version id.
+                        {
+                            key: `bar${VID_SEP}${versionId}`,
+                            value: `{"qux":"quz2","versionId":"${versionId}"}`,
+                        },
+                        // should create a version that represents the old null master with the infinite version id and
+                        // the isNull property set to true.
+                        {
+                            key: `bar${VID_SEP}${nullVersionId}`,
+                            value: `{"qux":"quz","isNull":true,"versionId":"${nullVersionId}"}`,
+                        },
+                    ];
+                    assert.deepStrictEqual(res, expectedListing);
+                    const request = {
+                        db: 'foo',
+                        key: 'bar',
+                    };
+                    vrp.get(request, logger, next);
                 },
-                // should create a version that represents the old null master with the infinite version id and
-                // the isNull property set to true.
-                {
-                    key: `bar${VID_SEP}${nullVersionId}`,
-                    value: `{"qux":"quz","isNull":true,"versionId":"${nullVersionId}"}`,
+                (res, next) => {
+                    const expectedGet = {
+                        qux: 'quz2',
+                        versionId,
+                        nullVersionId,
+                    };
+                    assert.deepStrictEqual(JSON.parse(res), expectedGet);
+                    next();
                 },
-            ];
-            assert.deepStrictEqual(res, expectedListing);
-            const request = {
-                db: 'foo',
-                key: 'bar',
-            };
-            vrp.get(request, logger, next);
-        },
-        (res, next) => {
-            const expectedGet = {
-                qux: 'quz2',
-                versionId,
-                nullVersionId,
-            };
-            assert.deepStrictEqual(JSON.parse(res), expectedGet);
-            next();
-        }],
-        done);
+            ],
+            done,
+        );
     });
 
     it('should be able to update a null suspended version in backward compatibility mode', done => {
         let nullVersionId;
 
-        async.waterfall([next => {
-            // simulate the creation of a null suspended version.
-            const request = {
-                db: 'foo',
-                key: 'bar',
-                value: '{"qux":"quz","isNull":true}',
-                options: {
-                    versionId: '',
+        async.waterfall(
+            [
+                next => {
+                    // simulate the creation of a null suspended version.
+                    const request = {
+                        db: 'foo',
+                        key: 'bar',
+                        value: '{"qux":"quz","isNull":true}',
+                        options: {
+                            versionId: '',
+                        },
+                    };
+                    vrp.put(request, logger, next);
                 },
-            };
-            vrp.put(request, logger, next);
-        },
-        (res, next) => {
-            nullVersionId = JSON.parse(res).versionId;
-            // simulate update null version with BackbeatClient.putMetadata
-            const request = {
-                db: 'foo',
-                key: 'bar',
-                value: `{"qux":"quz2","isNull":true,"versionId":"${nullVersionId}"}`,
-                options: {
-                    versioning: true,
-                    versionId: nullVersionId,
+                (res, next) => {
+                    nullVersionId = JSON.parse(res).versionId;
+                    // simulate update null version with BackbeatClient.putMetadata
+                    const request = {
+                        db: 'foo',
+                        key: 'bar',
+                        value: `{"qux":"quz2","isNull":true,"versionId":"${nullVersionId}"}`,
+                        options: {
+                            versioning: true,
+                            versionId: nullVersionId,
+                        },
+                    };
+                    vrp.put(request, logger, next);
                 },
-            };
-            vrp.put(request, logger, next);
-        },
-        (res, next) => {
-            wgm.list({}, logger, next);
-        },
-        (res, next) => {
-            const expectedListing = [
-                // NOTE: should not set nullVersionId to the master version if updating a null version.
-                {
-                    key: 'bar',
-                    value: `{"qux":"quz2","isNull":true,"versionId":"${nullVersionId}"}`,
+                (res, next) => {
+                    wgm.list({}, logger, next);
                 },
-                {
-                    key: `bar\x00${nullVersionId}`,
-                    value: `{"qux":"quz","isNull":true,"versionId":"${nullVersionId}"}`,
-                },
-            ];
-            assert.deepStrictEqual(res, expectedListing);
+                (res, next) => {
+                    const expectedListing = [
+                        // NOTE: should not set nullVersionId to the master version if updating a null version.
+                        {
+                            key: 'bar',
+                            value: `{"qux":"quz2","isNull":true,"versionId":"${nullVersionId}"}`,
+                        },
+                        {
+                            key: `bar\x00${nullVersionId}`,
+                            value: `{"qux":"quz","isNull":true,"versionId":"${nullVersionId}"}`,
+                        },
+                    ];
+                    assert.deepStrictEqual(res, expectedListing);
 
-            const request = {
-                db: 'foo',
-                key: 'bar',
-            };
-            vrp.get(request, logger, next);
-        },
-        (res, next) => {
-            const expectedGet = {
-                qux: 'quz2',
-                isNull: true,
-                versionId: nullVersionId,
-            };
-            assert.deepStrictEqual(JSON.parse(res), expectedGet);
-            next();
-        }],
-        done);
+                    const request = {
+                        db: 'foo',
+                        key: 'bar',
+                    };
+                    vrp.get(request, logger, next);
+                },
+                (res, next) => {
+                    const expectedGet = {
+                        qux: 'quz2',
+                        isNull: true,
+                        versionId: nullVersionId,
+                    };
+                    assert.deepStrictEqual(JSON.parse(res), expectedGet);
+                    next();
+                },
+            ],
+            done,
+        );
     });
 
     it('should delete the deprecated null key after put Metadata on top of an old null master', done => {
         const versionId = '00000000000000999999PARIS  ';
         let nullVersionId;
 
-        async.waterfall([next => {
-            // simulate the creation of a null suspended version.
-            const request = {
-                db: 'foo',
-                key: 'bar',
-                value: '{"qux":"quz","isNull":true}',
-                options: {
-                    versionId: '',
+        async.waterfall(
+            [
+                next => {
+                    // simulate the creation of a null suspended version.
+                    const request = {
+                        db: 'foo',
+                        key: 'bar',
+                        value: '{"qux":"quz","isNull":true}',
+                        options: {
+                            versionId: '',
+                        },
+                    };
+                    vrp.put(request, logger, next);
                 },
-            };
-            vrp.put(request, logger, next);
-        },
-        (res, next) => {
-            nullVersionId = JSON.parse(res).versionId;
-            // update metadata of the same null version with compat mode (options.isNull not defined)
-            // to generate a deprecated null key.
-            const request = {
-                db: 'foo',
-                key: 'bar',
-                value: `{"qux":"quz2","isNull":true,"versionId":"${nullVersionId}"}`,
-                options: {
-                    versionId: nullVersionId,
+                (res, next) => {
+                    nullVersionId = JSON.parse(res).versionId;
+                    // update metadata of the same null version with compat mode (options.isNull not defined)
+                    // to generate a deprecated null key.
+                    const request = {
+                        db: 'foo',
+                        key: 'bar',
+                        value: `{"qux":"quz2","isNull":true,"versionId":"${nullVersionId}"}`,
+                        options: {
+                            versionId: nullVersionId,
+                        },
+                    };
+                    vrp.put(request, logger, next);
                 },
-            };
-            vrp.put(request, logger, next);
-        },
-        (res, next) => {
-            // put metadata with the new keys implementation (options.isNull defined)
-            // on top of the null master with a deprecated null key.
-            const request = {
-                db: 'foo',
-                key: 'bar',
-                value: `{"qux":"quz3","versionId":"${versionId}"}`,
-                options: {
-                    versionId,
-                    isNull: false,
+                (res, next) => {
+                    // put metadata with the new keys implementation (options.isNull defined)
+                    // on top of the null master with a deprecated null key.
+                    const request = {
+                        db: 'foo',
+                        key: 'bar',
+                        value: `{"qux":"quz3","versionId":"${versionId}"}`,
+                        options: {
+                            versionId,
+                            isNull: false,
+                        },
+                    };
+                    vrp.put(request, logger, next);
                 },
-            };
-            vrp.put(request, logger, next);
-        },
-        (res, next) => {
-            wgm.list({}, logger, next);
-        },
-        (res, next) => {
-            const expectedListing = [
-                // master version should have the provided version id.
-                {
-                    key: 'bar',
-                    value: `{"qux":"quz3","versionId":"${versionId}"}`,
+                (res, next) => {
+                    wgm.list({}, logger, next);
                 },
-                // the null key
-                {
-                    key: `bar${VID_SEP}`,
-                    value: `{"qux":"quz2","isNull":true,"versionId":"${nullVersionId}","isNull2":true}`,
+                (res, next) => {
+                    const expectedListing = [
+                        // master version should have the provided version id.
+                        {
+                            key: 'bar',
+                            value: `{"qux":"quz3","versionId":"${versionId}"}`,
+                        },
+                        // the null key
+                        {
+                            key: `bar${VID_SEP}`,
+                            value: `{"qux":"quz2","isNull":true,"versionId":"${nullVersionId}","isNull2":true}`,
+                        },
+                        // version key
+                        {
+                            key: `bar${VID_SEP}${versionId}`,
+                            value: `{"qux":"quz3","versionId":"${versionId}"}`,
+                        },
+                    ];
+                    assert.deepStrictEqual(res, expectedListing);
+                    const request = {
+                        db: 'foo',
+                        key: 'bar',
+                    };
+                    vrp.get(request, logger, next);
                 },
-                // version key
-                {
-                    key: `bar${VID_SEP}${versionId}`,
-                    value: `{"qux":"quz3","versionId":"${versionId}"}`,
+                (res, next) => {
+                    const expectedGet = {
+                        qux: 'quz3',
+                        versionId,
+                    };
+                    assert.deepStrictEqual(JSON.parse(res), expectedGet);
+                    next();
                 },
-            ];
-            assert.deepStrictEqual(res, expectedListing);
-            const request = {
-                db: 'foo',
-                key: 'bar',
-            };
-            vrp.get(request, logger, next);
-        },
-        (res, next) => {
-            const expectedGet = {
-                qux: 'quz3',
-                versionId,
-            };
-            assert.deepStrictEqual(JSON.parse(res), expectedGet);
-            next();
-        }],
-        done);
+            ],
+            done,
+        );
     });
 
     it('should delete the deprecated null key after updating metadata of an old null master', done => {
         let nullVersionId;
 
-        async.waterfall([next => {
-            // simulate the creation of a null suspended version.
-            const request = {
-                db: 'foo',
-                key: 'bar',
-                value: '{"qux":"quz","isNull":true}',
-                options: {
-                    versionId: '',
+        async.waterfall(
+            [
+                next => {
+                    // simulate the creation of a null suspended version.
+                    const request = {
+                        db: 'foo',
+                        key: 'bar',
+                        value: '{"qux":"quz","isNull":true}',
+                        options: {
+                            versionId: '',
+                        },
+                    };
+                    vrp.put(request, logger, next);
                 },
-            };
-            vrp.put(request, logger, next);
-        },
-        (res, next) => {
-            nullVersionId = JSON.parse(res).versionId;
-            // update metadata of the same null version with compat mode (options.isNull not defined)
-            // to generate a deprecated null key.
-            const request = {
-                db: 'foo',
-                key: 'bar',
-                value: `{"qux":"quz2","isNull":true,"versionId":"${nullVersionId}"}`,
-                options: {
-                    versionId: nullVersionId,
+                (res, next) => {
+                    nullVersionId = JSON.parse(res).versionId;
+                    // update metadata of the same null version with compat mode (options.isNull not defined)
+                    // to generate a deprecated null key.
+                    const request = {
+                        db: 'foo',
+                        key: 'bar',
+                        value: `{"qux":"quz2","isNull":true,"versionId":"${nullVersionId}"}`,
+                        options: {
+                            versionId: nullVersionId,
+                        },
+                    };
+                    vrp.put(request, logger, next);
                 },
-            };
-            vrp.put(request, logger, next);
-        },
-        (res, next) => {
-            // update the null version metadata with the new keys implementation (options.isNull defined)
-            const request = {
-                db: 'foo',
-                key: 'bar',
-                value: `{"qux":"quz3","isNull2":true,"isNull":true,"versionId":"${nullVersionId}"}`,
-                options: {
-                    versionId: nullVersionId,
-                    isNull: true,
+                (res, next) => {
+                    // update the null version metadata with the new keys implementation (options.isNull defined)
+                    const request = {
+                        db: 'foo',
+                        key: 'bar',
+                        value: `{"qux":"quz3","isNull2":true,"isNull":true,"versionId":"${nullVersionId}"}`,
+                        options: {
+                            versionId: nullVersionId,
+                            isNull: true,
+                        },
+                    };
+                    vrp.put(request, logger, next);
                 },
-            };
-            vrp.put(request, logger, next);
-        },
-        (res, next) => {
-            wgm.list({}, logger, next);
-        },
-        (res, next) => {
-            const expectedListing = [
-                // the internal null version should be deleted.
-                {
-                    key: 'bar',
-                    value: `{"qux":"quz3","isNull2":true,"isNull":true,"versionId":"${nullVersionId}"}`,
+                (res, next) => {
+                    wgm.list({}, logger, next);
                 },
-            ];
-            assert.deepStrictEqual(res, expectedListing);
-            const request = {
-                db: 'foo',
-                key: 'bar',
-            };
-            vrp.get(request, logger, next);
-        },
-        (res, next) => {
-            const expectedGet = {
-                qux: 'quz3',
-                isNull2: true,
-                isNull: true,
-                versionId: nullVersionId,
-            };
-            assert.deepStrictEqual(JSON.parse(res), expectedGet);
-            next();
-        }],
-        done);
+                (res, next) => {
+                    const expectedListing = [
+                        // the internal null version should be deleted.
+                        {
+                            key: 'bar',
+                            value: `{"qux":"quz3","isNull2":true,"isNull":true,"versionId":"${nullVersionId}"}`,
+                        },
+                    ];
+                    assert.deepStrictEqual(res, expectedListing);
+                    const request = {
+                        db: 'foo',
+                        key: 'bar',
+                    };
+                    vrp.get(request, logger, next);
+                },
+                (res, next) => {
+                    const expectedGet = {
+                        qux: 'quz3',
+                        isNull2: true,
+                        isNull: true,
+                        versionId: nullVersionId,
+                    };
+                    assert.deepStrictEqual(JSON.parse(res), expectedGet);
+                    next();
+                },
+            ],
+            done,
+        );
     });
 
     it('should delete the deprecated null key after updating a non-latest null key', done => {
         const versionId = '00000000000000999999PARIS  ';
         let nullVersionId;
 
-        async.waterfall([next => {
-            // simulate the creation of a null suspended version.
-            const request = {
-                db: 'foo',
-                key: 'bar',
-                value: '{"qux":"quz","isNull":true}',
-                options: {
-                    versionId: '',
+        async.waterfall(
+            [
+                next => {
+                    // simulate the creation of a null suspended version.
+                    const request = {
+                        db: 'foo',
+                        key: 'bar',
+                        value: '{"qux":"quz","isNull":true}',
+                        options: {
+                            versionId: '',
+                        },
+                    };
+                    vrp.put(request, logger, next);
                 },
-            };
-            vrp.put(request, logger, next);
-        },
-        (res, next) => {
-            nullVersionId = JSON.parse(res).versionId;
-            // simulate a BackbeatClient.putMetadata
-            // null key is not the latest = master is not null.
-            const request = {
-                db: 'foo',
-                key: 'bar',
-                value: `{"qux":"quz2","versionId":"${versionId}"}`,
-                options: {
-                    versioning: true,
-                    versionId,
+                (res, next) => {
+                    nullVersionId = JSON.parse(res).versionId;
+                    // simulate a BackbeatClient.putMetadata
+                    // null key is not the latest = master is not null.
+                    const request = {
+                        db: 'foo',
+                        key: 'bar',
+                        value: `{"qux":"quz2","versionId":"${versionId}"}`,
+                        options: {
+                            versioning: true,
+                            versionId,
+                        },
+                    };
+                    vrp.put(request, logger, next);
                 },
-            };
-            vrp.put(request, logger, next);
-        },
-        (res, next) => {
-            // update the null version metadata with the new keys implementation (options.isNull defined)
-            const request = {
-                db: 'foo',
-                key: 'bar',
-                value: `{"qux":"quz3","isNull2":true,"isNull":true,"versionId":"${nullVersionId}"}`,
-                options: {
-                    versionId: nullVersionId,
-                    isNull: true,
+                (res, next) => {
+                    // update the null version metadata with the new keys implementation (options.isNull defined)
+                    const request = {
+                        db: 'foo',
+                        key: 'bar',
+                        value: `{"qux":"quz3","isNull2":true,"isNull":true,"versionId":"${nullVersionId}"}`,
+                        options: {
+                            versionId: nullVersionId,
+                            isNull: true,
+                        },
+                    };
+                    vrp.put(request, logger, next);
                 },
-            };
-            vrp.put(request, logger, next);
-        },
-        (res, next) => {
-            wgm.list({}, logger, next);
-        },
-        (res, next) => {
-            const expectedListing = [
-                {
-                    key: 'bar',
-                    value: `{"qux":"quz2","versionId":"${versionId}","nullVersionId":"${nullVersionId}"}`,
+                (res, next) => {
+                    wgm.list({}, logger, next);
                 },
-                {
-                    key: 'bar\x00',
-                    value: `{"qux":"quz3","isNull2":true,"isNull":true,"versionId":"${nullVersionId}"}`,
-                },
-                {
-                    key: `bar\x00${versionId}`,
-                    value: `{"qux":"quz2","versionId":"${versionId}"}`,
-                },
-            ];
-            assert.deepStrictEqual(res, expectedListing);
+                (res, next) => {
+                    const expectedListing = [
+                        {
+                            key: 'bar',
+                            value: `{"qux":"quz2","versionId":"${versionId}","nullVersionId":"${nullVersionId}"}`,
+                        },
+                        {
+                            key: 'bar\x00',
+                            value: `{"qux":"quz3","isNull2":true,"isNull":true,"versionId":"${nullVersionId}"}`,
+                        },
+                        {
+                            key: `bar\x00${versionId}`,
+                            value: `{"qux":"quz2","versionId":"${versionId}"}`,
+                        },
+                    ];
+                    assert.deepStrictEqual(res, expectedListing);
 
-            const request = {
-                db: 'foo',
-                key: 'bar',
-            };
-            vrp.get(request, logger, next);
-        },
-        (res, next) => {
-            const expectedGet = {
-                qux: 'quz2',
-                versionId,
-                nullVersionId,
-            };
-            assert.deepStrictEqual(JSON.parse(res), expectedGet);
-            next();
-        }],
-        done);
+                    const request = {
+                        db: 'foo',
+                        key: 'bar',
+                    };
+                    vrp.get(request, logger, next);
+                },
+                (res, next) => {
+                    const expectedGet = {
+                        qux: 'quz2',
+                        versionId,
+                        nullVersionId,
+                    };
+                    assert.deepStrictEqual(JSON.parse(res), expectedGet);
+                    next();
+                },
+            ],
+            done,
+        );
     });
 });
-
 
 class TestReplicator {
     constructor(expectedCalls, onLastExpectedCallCb) {
@@ -877,7 +932,8 @@ class TestReplicator {
         ++this.pendingCalls;
         return setTimeout(
             () => callback(expectedCall.returnedError || null, expectedCall.returnedValue),
-            expectedCall.returnDelay || 0);
+            expectedCall.returnDelay || 0,
+        );
     }
 
     writeCacheGet(request, logger, callback) {
@@ -896,12 +952,10 @@ class TestReplicator {
         this._onCalled('WGM::list', request, callback);
     }
 
-    reset() {
-    }
+    reset() {}
 
     onTestEnd() {
-        assert.deepStrictEqual(this.expectedCalls, [],
-            `missing calls: ${JSON.stringify(this.expectedCalls)}`);
+        assert.deepStrictEqual(this.expectedCalls, [], `missing calls: ${JSON.stringify(this.expectedCalls)}`);
         this.testEnded = true;
     }
 }
@@ -918,10 +972,7 @@ describe('test versioning request processor', () => {
     it('process versioning put request: creating new version', done => {
         const key = randkey();
         replicator = new TestReplicator();
-        const pro = new VRP(
-            replicator.getWriteCacheProxy(),
-            replicator.getWGMProxy(),
-            vcfg);
+        const pro = new VRP(replicator.getWriteCacheProxy(), replicator.getWGMProxy(), vcfg);
         const value = '{}';
         const options = { versioning: true };
         const req = { db: 'dbv0', key, value, options };
@@ -943,31 +994,22 @@ describe('test versioning request processor', () => {
         const options = { versionId: '' };
         const req = { db: 'dbv0', key, value, options };
         replicator = new TestReplicator();
-        const pro = new VRP(
-            replicator.getWriteCacheProxy(),
-            replicator.getWGMProxy(),
-            vcfg);
+        const pro = new VRP(replicator.getWriteCacheProxy(), replicator.getWGMProxy(), vcfg);
         pro.processVersionSpecificPut(req, logger, (err, ops, versionId) => {
             assert.ifError(err);
             const versionValue = `{"foo":"bar","versionId":"${versionId}"}`;
-            assert.deepStrictEqual(ops, [
-                { key, value: versionValue },
-            ]);
+            assert.deepStrictEqual(ops, [{ key, value: versionValue }]);
             done();
         });
     });
 
-    it('process version specific put request: non-deleted versionId === "" ' +
-    'with deleteNullKey=true', done => {
+    it('process version specific put request: non-deleted versionId === "" with deleteNullKey=true', done => {
         const key = randkey();
         const value = '{"foo":"bar"}';
         const options = { versionId: '', deleteNullKey: true };
         const req = { db: 'dbv0', key, value, options };
         replicator = new TestReplicator();
-        const pro = new VRP(
-            replicator.getWriteCacheProxy(),
-            replicator.getWGMProxy(),
-            vcfg);
+        const pro = new VRP(replicator.getWriteCacheProxy(), replicator.getWGMProxy(), vcfg);
         pro.processVersionSpecificPut(req, logger, (err, ops, versionId) => {
             assert.ifError(err);
             const versionValue = `{"foo":"bar","versionId":"${versionId}"}`;
@@ -985,24 +1027,15 @@ describe('test versioning request processor', () => {
         const options = { versionId: 'null' };
         const req = { db: 'dbv0', key, value, options };
         replicator = new TestReplicator();
-        const pro = new VRP(
-            replicator.getWriteCacheProxy(),
-            replicator.getWGMProxy(),
-            vcfg);
+        const pro = new VRP(replicator.getWriteCacheProxy(), replicator.getWGMProxy(), vcfg);
         pro.processVersionSpecificPut(req, logger, (err, ops) => {
             assert.ifError(err);
-            assert.deepStrictEqual(ops, [
-                { key: `${key}${VID_SEP}`, value },
-            ]);
+            assert.deepStrictEqual(ops, [{ key: `${key}${VID_SEP}`, value }]);
             done();
         });
     });
 
-    [
-        {},
-        { isNull: false },
-        { isNull: true },
-    ].forEach(extraParams => {
+    [{}, { isNull: false }, { isNull: true }].forEach(extraParams => {
         let extraDesc = '';
         if (extraParams.isNull !== undefined) {
             extraDesc = ` with isNull=${extraParams.isNull.toString()}`;
@@ -1014,24 +1047,21 @@ describe('test versioning request processor', () => {
             const versionKey = getVersionKey(key, versionId);
             const options = Object.assign({ versionId }, extraParams);
             const req = { db: 'dbv0', key, value, options };
-            replicator = new TestReplicator([{
-                method: 'WriteCache::get',
-                request: {
-                    db: 'dbv0',
-                    key,
+            replicator = new TestReplicator([
+                {
+                    method: 'WriteCache::get',
+                    request: {
+                        db: 'dbv0',
+                        key,
+                    },
+                    returnedValue: `{"versionId":"${versionId}"}`,
                 },
-                returnedValue: `{"versionId":"${versionId}"}`,
-            }]);
-            const pro = new VRP(
-                replicator.getWriteCacheProxy(),
-                replicator.getWGMProxy(),
-                vcfg);
+            ]);
+            const pro = new VRP(replicator.getWriteCacheProxy(), replicator.getWGMProxy(), vcfg);
             pro.processVersionSpecificPut(req, logger, (err, ops, versionId) => {
                 assert.strictEqual(versionId, fixedVersionId);
                 if (extraParams.isNull) {
-                    assert.deepStrictEqual(ops, [
-                        { key, value },
-                    ]);
+                    assert.deepStrictEqual(ops, [{ key, value }]);
                 } else {
                     assert.deepStrictEqual(ops, [
                         { key: versionKey, value },
@@ -1048,24 +1078,15 @@ describe('test versioning request processor', () => {
         const options = { versionId: 'null' };
         const req = { db: 'dbv0', key, type: 'del', options };
         replicator = new TestReplicator();
-        const pro = new VRP(
-            replicator.getWriteCacheProxy(),
-            replicator.getWGMProxy(),
-            vcfg);
+        const pro = new VRP(replicator.getWriteCacheProxy(), replicator.getWGMProxy(), vcfg);
         pro.processVersionSpecificDelete(req, logger, (err, ops) => {
             assert.ifError(err);
-            assert.deepStrictEqual(ops, [
-                { key: `${key}${VID_SEP}`, type: 'del' },
-            ]);
+            assert.deepStrictEqual(ops, [{ key: `${key}${VID_SEP}`, type: 'del' }]);
             done();
         });
     });
 
-    [
-        {},
-        { isNull: false },
-        { isNull: true },
-    ].forEach(extraParams => {
+    [{}, { isNull: false }, { isNull: true }].forEach(extraParams => {
         let extraDesc = '';
         if (extraParams.isNull !== undefined) {
             extraDesc = ` with isNull=${extraParams.isNull.toString()}`;
@@ -1076,19 +1097,18 @@ describe('test versioning request processor', () => {
             const versionKey = getVersionKey(key, versionId);
             const options = Object.assign({ versionId }, extraParams);
             const req = { db: 'dbv0', key, type: 'del', options };
-            replicator = new TestReplicator([{
-                method: 'WriteCache::get',
-                request: {
-                    db: 'dbv0',
-                    key,
+            replicator = new TestReplicator([
+                {
+                    method: 'WriteCache::get',
+                    request: {
+                        db: 'dbv0',
+                        key,
+                    },
+                    params: { getTemporaryValue: true },
+                    returnedValue: `{"versionId":"${fixedVersionId}"}`,
                 },
-                params: { getTemporaryValue: true },
-                returnedValue: `{"versionId":"${fixedVersionId}"}`,
-            }]);
-            const pro = new VRP(
-                replicator.getWriteCacheProxy(),
-                replicator.getWGMProxy(),
-                vcfg);
+            ]);
+            const pro = new VRP(replicator.getWriteCacheProxy(), replicator.getWGMProxy(), vcfg);
             pro.processVersionSpecificDelete(req, logger, (err, ops, versionId) => {
                 assert.ifError(err);
                 // expected operation array:
@@ -1110,38 +1130,31 @@ describe('test versioning request processor', () => {
 
         it(`process version specific delete request: non-latest version${extraDesc}`, done => {
             const key = randkey();
-            const versionId = VID.generateVersionId(
-                Math.random().toString(16), vcfg.replicationGroupId);
+            const versionId = VID.generateVersionId(Math.random().toString(16), vcfg.replicationGroupId);
             const versionKey = getVersionKey(key, versionId);
-            const latestVersionId = VID.generateVersionId(
-                Math.random().toString(16), vcfg.replicationGroupId);
+            const latestVersionId = VID.generateVersionId(Math.random().toString(16), vcfg.replicationGroupId);
             const options = Object.assign({ versionId }, extraParams);
             const req = { db: 'dbv0', key, type: 'del', options };
-            replicator = new TestReplicator([{
-                method: 'WriteCache::get',
-                request: {
-                    db: 'dbv0',
-                    key,
+            replicator = new TestReplicator([
+                {
+                    method: 'WriteCache::get',
+                    request: {
+                        db: 'dbv0',
+                        key,
+                    },
+                    params: { getTemporaryValue: true },
+                    returnedValue: `{"versionId":"${latestVersionId}"}`,
                 },
-                params: { getTemporaryValue: true },
-                returnedValue: `{"versionId":"${latestVersionId}"}`,
-            }]);
-            const pro = new VRP(
-                replicator.getWriteCacheProxy(),
-                replicator.getWGMProxy(),
-                vcfg);
+            ]);
+            const pro = new VRP(replicator.getWriteCacheProxy(), replicator.getWGMProxy(), vcfg);
             pro.processVersionSpecificDelete(req, logger, (err, ops, _versionId) => {
                 assert.ifError(err);
                 assert.strictEqual(_versionId, versionId);
                 if (extraParams.isNull) {
                     const nullKey = getVersionKey(key, '');
-                    assert.deepStrictEqual(ops, [
-                        { key: nullKey, type: 'del' },
-                    ]);
+                    assert.deepStrictEqual(ops, [{ key: nullKey, type: 'del' }]);
                 } else {
-                    assert.deepStrictEqual(ops, [
-                        { key: versionKey, type: 'del' },
-                    ]);
+                    assert.deepStrictEqual(ops, [{ key: versionKey, type: 'del' }]);
                 }
                 done();
             });
@@ -1150,19 +1163,18 @@ describe('test versioning request processor', () => {
 
     it('get: with versionId', done => {
         const key = randkey();
-        replicator = new TestReplicator([{
-            method: 'WGM::get',
-            request: {
-                db: 'dbv0',
-                key: `${key}${VID_SEP}${fixedVersionId}`,
+        replicator = new TestReplicator([
+            {
+                method: 'WGM::get',
+                request: {
+                    db: 'dbv0',
+                    key: `${key}${VID_SEP}${fixedVersionId}`,
+                },
+                params: null,
+                returnedValue: `{"versionId":"${fixedVersionId}"}`,
             },
-            params: null,
-            returnedValue: `{"versionId":"${fixedVersionId}"}`,
-        }]);
-        const pro = new VRP(
-            replicator.getWriteCacheProxy(),
-            replicator.getWGMProxy(),
-            vcfg);
+        ]);
+        const pro = new VRP(replicator.getWriteCacheProxy(), replicator.getWGMProxy(), vcfg);
         const options = { versionId: fixedVersionId };
         const req = { db: 'dbv0', key, options };
         pro.get(req, logger, (err, data) => {
@@ -1174,19 +1186,18 @@ describe('test versioning request processor', () => {
 
     it('get: with versionId="null"', done => {
         const key = randkey();
-        replicator = new TestReplicator([{
-            method: 'WGM::get',
-            request: {
-                db: 'dbv0',
-                key: `${key}${VID_SEP}`,
+        replicator = new TestReplicator([
+            {
+                method: 'WGM::get',
+                request: {
+                    db: 'dbv0',
+                    key: `${key}${VID_SEP}`,
+                },
+                params: null,
+                returnedValue: `{"versionId":"${fixedVersionId}"}`,
             },
-            params: null,
-            returnedValue: `{"versionId":"${fixedVersionId}"}`,
-        }]);
-        const pro = new VRP(
-            replicator.getWriteCacheProxy(),
-            replicator.getWGMProxy(),
-            vcfg);
+        ]);
+        const pro = new VRP(replicator.getWriteCacheProxy(), replicator.getWGMProxy(), vcfg);
         const options = { versionId: 'null' };
         const req = { db: 'dbv0', key, options };
         pro.get(req, logger, (err, data) => {
@@ -1227,10 +1238,12 @@ describe('test versioning request processor', () => {
                     gte: 'key',
                     lt: `key${VID_SEPPLUS}`,
                 },
-                listValues: [{
-                    key: 'key',
-                    value: '{}',
-                }],
+                listValues: [
+                    {
+                        key: 'key',
+                        value: '{}',
+                    },
+                ],
                 expectedMaster: {
                     key: 'key',
                     value: '{}',
@@ -1244,21 +1257,26 @@ describe('test versioning request processor', () => {
                     gte: 'key',
                     lt: `key${VID_SEPPLUS}`,
                 },
-                listValues: [{
-                    key: 'key',
-                    value: '{"versionId":"v1"}',
-                }, {
-                    key: `key${VID_SEP}v1`,
-                    value: '{"versionId":"v1"}',
-                }],
+                listValues: [
+                    {
+                        key: 'key',
+                        value: '{"versionId":"v1"}',
+                    },
+                    {
+                        key: `key${VID_SEP}v1`,
+                        value: '{"versionId":"v1"}',
+                    },
+                ],
                 expectedMaster: {
                     key: 'key',
                     value: '{"versionId":"v1"}',
                 },
-                expectedVersions: [{
-                    key: `key${VID_SEP}v1`,
-                    value: '{"versionId":"v1"}',
-                }],
+                expectedVersions: [
+                    {
+                        key: `key${VID_SEP}v1`,
+                        value: '{"versionId":"v1"}',
+                    },
+                ],
             },
             {
                 desc: 'master key and one version key',
@@ -1270,13 +1288,16 @@ describe('test versioning request processor', () => {
                     lt: `key${VID_SEPPLUS}`,
                     limit: 2,
                 },
-                listValues: [{
-                    key: 'key',
-                    value: '{"versionId":"v1"}',
-                }, {
-                    key: `key${VID_SEP}v1`,
-                    value: '{"versionId":"v1"}',
-                }],
+                listValues: [
+                    {
+                        key: 'key',
+                        value: '{"versionId":"v1"}',
+                    },
+                    {
+                        key: `key${VID_SEP}v1`,
+                        value: '{"versionId":"v1"}',
+                    },
+                ],
                 expectedMaster: {
                     key: 'key',
                     value: '{"versionId":"v1"}',
@@ -1293,30 +1314,38 @@ describe('test versioning request processor', () => {
                     lt: `key${VID_SEPPLUS}`,
                     limit: 4,
                 },
-                listValues: [{
-                    key: 'key',
-                    value: '{"versionId":"v1"}',
-                }, {
-                    key: `key${VID_SEP}v1`,
-                    value: '{"versionId":"v1"}',
-                }, {
-                    key: `key${VID_SEP}v2`,
-                    value: '{"versionId":"v2"}',
-                }, {
-                    key: `key${VID_SEP}v3`,
-                    value: '{"versionId":"v3"}',
-                }],
+                listValues: [
+                    {
+                        key: 'key',
+                        value: '{"versionId":"v1"}',
+                    },
+                    {
+                        key: `key${VID_SEP}v1`,
+                        value: '{"versionId":"v1"}',
+                    },
+                    {
+                        key: `key${VID_SEP}v2`,
+                        value: '{"versionId":"v2"}',
+                    },
+                    {
+                        key: `key${VID_SEP}v3`,
+                        value: '{"versionId":"v3"}',
+                    },
+                ],
                 expectedMaster: {
                     key: 'key',
                     value: '{"versionId":"v1"}',
                 },
-                expectedVersions: [{
-                    key: `key${VID_SEP}v1`,
-                    value: '{"versionId":"v1"}',
-                }, {
-                    key: `key${VID_SEP}v2`,
-                    value: '{"versionId":"v2"}',
-                }],
+                expectedVersions: [
+                    {
+                        key: `key${VID_SEP}v1`,
+                        value: '{"versionId":"v1"}',
+                    },
+                    {
+                        key: `key${VID_SEP}v2`,
+                        value: '{"versionId":"v2"}',
+                    },
+                ],
             },
             {
                 desc: 'PHD master key and null key',
@@ -1325,22 +1354,27 @@ describe('test versioning request processor', () => {
                     gte: 'key',
                     lt: `key${VID_SEPPLUS}`,
                 },
-                listValues: [{
-                    key: 'key',
-                    value: '{"isPHD":true}',
-                }, {
-                    key: `key${VID_SEP}`,
-                    value: '{"versionId":"v2","isNull":true}',
-                }],
+                listValues: [
+                    {
+                        key: 'key',
+                        value: '{"isPHD":true}',
+                    },
+                    {
+                        key: `key${VID_SEP}`,
+                        value: '{"versionId":"v2","isNull":true}',
+                    },
+                ],
                 expectedMaster: {
                     key: 'key',
                     value: '{"isPHD":true}',
                 },
-                expectedVersions: [{
-                    key: `key${VID_SEP}v2`,
-                    value: '{"versionId":"v2","isNull":true}',
-                    isNullKey: true,
-                }],
+                expectedVersions: [
+                    {
+                        key: `key${VID_SEP}v2`,
+                        value: '{"versionId":"v2","isNull":true}',
+                        isNullKey: true,
+                    },
+                ],
             },
             {
                 desc: 'PHD master key, versions and newest null key',
@@ -1352,31 +1386,39 @@ describe('test versioning request processor', () => {
                     lt: `key${VID_SEPPLUS}`,
                     limit: 4,
                 },
-                listValues: [{
-                    key: 'key',
-                    value: '{"isPHD":true}',
-                }, {
-                    key: `key${VID_SEP}`,
-                    value: '{"versionId":"v1","isNull":true}',
-                }, {
-                    key: `key${VID_SEP}v2`,
-                    value: '{"versionId":"v2"}',
-                }, {
-                    key: `key${VID_SEP}v3`,
-                    value: '{"versionId":"v3"}',
-                }],
+                listValues: [
+                    {
+                        key: 'key',
+                        value: '{"isPHD":true}',
+                    },
+                    {
+                        key: `key${VID_SEP}`,
+                        value: '{"versionId":"v1","isNull":true}',
+                    },
+                    {
+                        key: `key${VID_SEP}v2`,
+                        value: '{"versionId":"v2"}',
+                    },
+                    {
+                        key: `key${VID_SEP}v3`,
+                        value: '{"versionId":"v3"}',
+                    },
+                ],
                 expectedMaster: {
                     key: 'key',
                     value: '{"isPHD":true}',
                 },
-                expectedVersions: [{
-                    key: `key${VID_SEP}v1`,
-                    value: '{"versionId":"v1","isNull":true}',
-                    isNullKey: true,
-                }, {
-                    key: `key${VID_SEP}v2`,
-                    value: '{"versionId":"v2"}',
-                }],
+                expectedVersions: [
+                    {
+                        key: `key${VID_SEP}v1`,
+                        value: '{"versionId":"v1","isNull":true}',
+                        isNullKey: true,
+                    },
+                    {
+                        key: `key${VID_SEP}v2`,
+                        value: '{"versionId":"v2"}',
+                    },
+                ],
             },
             {
                 desc: 'PHD master key, versions and oldest null key',
@@ -1388,30 +1430,38 @@ describe('test versioning request processor', () => {
                     lt: `key${VID_SEPPLUS}`,
                     limit: 4,
                 },
-                listValues: [{
-                    key: 'key',
-                    value: '{"isPHD":true}',
-                }, {
-                    key: `key${VID_SEP}`,
-                    value: '{"versionId":"v3","isNull":true}',
-                }, {
-                    key: `key${VID_SEP}v1`,
-                    value: '{"versionId":"v1"}',
-                }, {
-                    key: `key${VID_SEP}v2`,
-                    value: '{"versionId":"v2"}',
-                }],
+                listValues: [
+                    {
+                        key: 'key',
+                        value: '{"isPHD":true}',
+                    },
+                    {
+                        key: `key${VID_SEP}`,
+                        value: '{"versionId":"v3","isNull":true}',
+                    },
+                    {
+                        key: `key${VID_SEP}v1`,
+                        value: '{"versionId":"v1"}',
+                    },
+                    {
+                        key: `key${VID_SEP}v2`,
+                        value: '{"versionId":"v2"}',
+                    },
+                ],
                 expectedMaster: {
                     key: 'key',
                     value: '{"isPHD":true}',
                 },
-                expectedVersions: [{
-                    key: `key${VID_SEP}v1`,
-                    value: '{"versionId":"v1"}',
-                }, {
-                    key: `key${VID_SEP}v2`,
-                    value: '{"versionId":"v2"}',
-                }],
+                expectedVersions: [
+                    {
+                        key: `key${VID_SEP}v1`,
+                        value: '{"versionId":"v1"}',
+                    },
+                    {
+                        key: `key${VID_SEP}v2`,
+                        value: '{"versionId":"v2"}',
+                    },
+                ],
             },
             {
                 desc: 'PHD master key, versions and null key in between versions',
@@ -1423,56 +1473,62 @@ describe('test versioning request processor', () => {
                     lt: `key${VID_SEPPLUS}`,
                     limit: 4,
                 },
-                listValues: [{
-                    key: 'key',
-                    value: '{"isPHD":true}',
-                }, {
-                    key: `key${VID_SEP}`,
-                    value: '{"versionId":"v2","isNull":true}',
-                }, {
-                    key: `key${VID_SEP}v1`,
-                    value: '{"versionId":"v1"}',
-                }, {
-                    key: `key${VID_SEP}v3`,
-                    value: '{"versionId":"v3"}',
-                }],
+                listValues: [
+                    {
+                        key: 'key',
+                        value: '{"isPHD":true}',
+                    },
+                    {
+                        key: `key${VID_SEP}`,
+                        value: '{"versionId":"v2","isNull":true}',
+                    },
+                    {
+                        key: `key${VID_SEP}v1`,
+                        value: '{"versionId":"v1"}',
+                    },
+                    {
+                        key: `key${VID_SEP}v3`,
+                        value: '{"versionId":"v3"}',
+                    },
+                ],
                 expectedMaster: {
                     key: 'key',
                     value: '{"isPHD":true}',
                 },
-                expectedVersions: [{
-                    key: `key${VID_SEP}v1`,
-                    value: '{"versionId":"v1"}',
-                }, {
-                    key: `key${VID_SEP}v2`,
-                    value: '{"versionId":"v2","isNull":true}',
-                    isNullKey: true,
-                }],
+                expectedVersions: [
+                    {
+                        key: `key${VID_SEP}v1`,
+                        value: '{"versionId":"v1"}',
+                    },
+                    {
+                        key: `key${VID_SEP}v2`,
+                        value: '{"versionId":"v2","isNull":true}',
+                        isNullKey: true,
+                    },
+                ],
             },
         ].forEach(testCase => {
-            it(`${testCase.desc}, options=${JSON.stringify(testCase.options)}`,
-                done => {
-                    const db = 'dbv0';
-                    replicator = new TestReplicator([{
+            it(`${testCase.desc}, options=${JSON.stringify(testCase.options)}`, done => {
+                const db = 'dbv0';
+                replicator = new TestReplicator([
+                    {
                         method: 'WGM::list',
                         request: {
                             db,
                             params: testCase.expectedListParams,
                         },
                         returnedValue: testCase.listValues,
-                    }]);
-                    const pro = new VRP(
-                        replicator.getWriteCacheProxy(),
-                        replicator.getWGMProxy(),
-                        vcfg);
-                    const { options } = testCase;
-                    pro.listVersionKeys(db, 'key', options, logger, (err, master, versions) => {
-                        assert.ifError(err);
-                        assert.deepStrictEqual(master, testCase.expectedMaster);
-                        assert.deepStrictEqual(versions, testCase.expectedVersions);
-                        done();
-                    });
+                    },
+                ]);
+                const pro = new VRP(replicator.getWriteCacheProxy(), replicator.getWGMProxy(), vcfg);
+                const { options } = testCase;
+                pro.listVersionKeys(db, 'key', options, logger, (err, master, versions) => {
+                    assert.ifError(err);
+                    assert.deepStrictEqual(master, testCase.expectedMaster);
+                    assert.deepStrictEqual(versions, testCase.expectedVersions);
+                    done();
                 });
+            });
         });
     });
 });

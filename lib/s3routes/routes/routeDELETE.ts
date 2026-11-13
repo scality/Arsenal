@@ -13,10 +13,11 @@ export default function routeDELETE(
     log: RequestLogger,
     statsClient?: StatsClient,
 ) {
-    const call = (name: string) => api.callApiMethod(name, request, response, log, (err, corsHeaders) => {
-        routesUtils.statsReport500(err, statsClient);
-        return routesUtils.responseNoBody(err, corsHeaders, response, 204, log);
-    });
+    const call = (name: string) =>
+        api.callApiMethod(name, request, response, log, (err, corsHeaders) => {
+            routesUtils.statsReport500(err, statsClient);
+            return routesUtils.responseNoBody(err, corsHeaders, response, 204, log);
+        });
     log.debug('routing request', { method: 'routeDELETE' });
 
     const { query, objectKey } = request;
@@ -52,23 +53,17 @@ export default function routeDELETE(
         if (query?.tagging !== undefined) {
             return call('objectDeleteTagging');
         }
-        return api.callApiMethod('objectDelete', request, response, log,
-            (err, corsHeaders) => {
-                /*
-                 * Since AWS expects a 204 regardless of the existence of
-                 * the object, the errors NoSuchKey and NoSuchVersion should not
-                 * be sent back as a response.
-                 */
-                if (err && (
-                    !(err instanceof ArsenalError) ||
-                    (!err.is.NoSuchKey && !err.is.NoSuchVersion)
-                )) {
-                    return routesUtils.responseNoBody(err, corsHeaders,
-                        response, undefined, log);
-                }
-                routesUtils.statsReport500(err, statsClient);
-                return routesUtils.responseNoBody(null, corsHeaders, response,
-                    204, log);
-            });
+        return api.callApiMethod('objectDelete', request, response, log, (err, corsHeaders) => {
+            /*
+             * Since AWS expects a 204 regardless of the existence of
+             * the object, the errors NoSuchKey and NoSuchVersion should not
+             * be sent back as a response.
+             */
+            if (err && (!(err instanceof ArsenalError) || (!err.is.NoSuchKey && !err.is.NoSuchVersion))) {
+                return routesUtils.responseNoBody(err, corsHeaders, response, undefined, log);
+            }
+            routesUtils.statsReport500(err, statsClient);
+            return routesUtils.responseNoBody(null, corsHeaders, response, 204, log);
+        });
     }
 }

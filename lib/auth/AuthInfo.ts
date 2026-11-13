@@ -10,46 +10,46 @@ export type AuthInfoType = {
 };
 
 export type AuthorizationResults = {
-    isAllowed: boolean,
-    isImplicit: boolean,
-    arn: string,
-    action: string,
-    versionId?: string,
+    isAllowed: boolean;
+    isImplicit: boolean;
+    arn: string;
+    action: string;
+    versionId?: string;
 }[];
 
 export type AccountQuota = {
-    account: string,
-    quota: bigint,
+    account: string;
+    quota: bigint;
 };
 
 export type AccountLimits = {
     RequestsPerSecond?: {
-        Limit: number,
-    },
-}
+        Limit: number;
+    };
+};
 
 export type AccountInfos = {
-    accountQuota?: AccountQuota,
-    limits?: AccountLimits,
+    accountQuota?: AccountQuota;
+    limits?: AccountLimits;
 };
 
 export type AuthV4Results = {
-    userInfo: AuthInfoType,
-    authorizationResults?: AuthorizationResults,
-    accountQuota: AccountQuota,
-    limits?: AccountLimits,
+    userInfo: AuthInfoType;
+    authorizationResults?: AuthorizationResults;
+    accountQuota: AccountQuota;
+    limits?: AccountLimits;
 };
 
 export type AccountCanonicalInfo = {
     accountId: string;
     canonicalId: string;
     name: string;
-}
+};
 
 export type AccountCanonicalInfoResults = {
     message: {
-        body: AccountCanonicalInfo[],
-    },
+        body: AccountCanonicalInfo[];
+    };
 };
 
 /**
@@ -69,12 +69,7 @@ export default class AuthInfo {
     authType?: string;
     accessKey?: string;
 
-    constructor(
-        objectFromVault: any,
-        authVersion?: string,
-        authType?: string,
-        accessKey?: string,
-    ) {
+    constructor(objectFromVault: any, authVersion?: string, authType?: string, accessKey?: string) {
         // amazon resource name for IAM user (if applicable)
         this.arn = objectFromVault.arn;
         // account canonicalID
@@ -91,21 +86,21 @@ export default class AuthInfo {
         this.authVersion = authVersion;
         // QueryString or AuthHeader
         switch (authType) {
-        case 'REST-QUERY-STRING':
-            this.authType = 'QueryString';
-            break;
-        case 'query':
-            this.authType = 'QueryString';
-            break;
-        case 'REST-HEADER':
-            this.authType = 'AuthHeader';
-            break;
-        case 'header':
-            this.authType = 'AuthHeader';
-            break;
-        default:
-            this.authType = authType;
-            break;
+            case 'REST-QUERY-STRING':
+                this.authType = 'QueryString';
+                break;
+            case 'query':
+                this.authType = 'QueryString';
+                break;
+            case 'REST-HEADER':
+                this.authType = 'AuthHeader';
+                break;
+            case 'header':
+                this.authType = 'AuthHeader';
+                break;
+            default:
+                this.authType = authType;
+                break;
         }
         this.accessKey = accessKey;
     }
@@ -144,8 +139,7 @@ export default class AuthInfo {
         return this.canonicalID === constants.publicId;
     }
     isRequesterAServiceAccount() {
-        return this.canonicalID.startsWith(
-            `${constants.zenkoServiceAccount}/`);
+        return this.canonicalID.startsWith(`${constants.zenkoServiceAccount}/`);
     }
     isRequesterThisServiceAccount(serviceName: string) {
         const computedCanonicalID = `${constants.zenkoServiceAccount}/${serviceName}`;

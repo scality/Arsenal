@@ -5,7 +5,8 @@ const bannedStr = 'banned';
 const prefixBlacklist = [];
 
 // byte size of 915
-const keyutf8 = '%EA%9D%8B崰㈌㒈保轖䳷䀰⺩ቆ楪秲ⴝ㿅鼎ꓜ퇬枅࿷염곞召㸾⌙ꪊᆐ庍뉆䌗幐鸆䛃➟녩' +
+const keyutf8 =
+    '%EA%9D%8B崰㈌㒈保轖䳷䀰⺩ቆ楪秲ⴝ㿅鼎ꓜ퇬枅࿷염곞召㸾⌙ꪊᆐ庍뉆䌗幐鸆䛃➟녩' +
     'ˍ뙪臅⠙≼绒벊냂詴 끴鹲萯⇂㭢䈊퉉楝舳㷖족痴䧫㾵᏷ำꎆ꼵껪멷㄀誕㳓腜쒃컹㑻鳃삚舿췈孨੦⮀Ǌ곓⵪꺼꜈' +
     '嗼뫘悕錸瑺⁤륒㜓垻ㆩꝿ詀펉ᆙ舑䜾힑藪碙ꀎꂰ췊Ᏻ  㘺幽醛잯ද汧Ꟑꛒⶨ쪸숞헹㭔ꡔᘼ뺓ᡆ᡾ᑟ䅅퀭耓弧⢠⇙' +
     '폪ް蛧⃪Ἔ돫ꕢ븥ヲ캂䝄쟐颺ᓾ둾Ұ껗礞ᾰ瘹蒯硳풛瞋襎奺熝妒컚쉴⿂㽝㝳駵鈚䄖戭䌸᫲ᇁ䙪鸮ᐴ稫ⶭ뀟ھ⦿' +
@@ -14,8 +15,7 @@ const keyutf8 = '%EA%9D%8B崰㈌㒈保轖䳷䀰⺩ቆ楪秲ⴝ㿅鼎ꓜ퇬枅࿷
     '鮕漨踒ꠍ픸Ä☶莒浏钸목탬툖氭ˠٸ൪㤌ᶟ訧ᜒೳ揪Ⴛ摖㸣᳑⹞걀ꢢ䏹ῖ"';
 
 describe('routesUtils.isValidObjectKey', () => {
-    it('should return isValid false if object key name starts with a ' +
-    'blacklisted prefix', () => {
+    it('should return isValid false if object key name starts with a blacklisted prefix', () => {
         const result = routesUtils.isValidObjectKey('bannedkey', [bannedStr]);
         // return { isValid: false, invalidPrefix };
         assert.strictEqual(result.isValid, false);

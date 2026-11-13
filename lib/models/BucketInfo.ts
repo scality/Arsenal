@@ -47,47 +47,47 @@ export type VersioningConfiguration = {
  * capacity-related fields are bigints. Used by nodejs internally.
  */
 export type Capabilities = {
-    VeeamSOSApi?: VeeamSOSApiSchema,
+    VeeamSOSApi?: VeeamSOSApiSchema;
 };
 
-export type ACL = OACL & { WRITE: string[] }
+export type ACL = OACL & { WRITE: string[] };
 
 export type BucketMetadata = {
     acl: ACL;
-    name: string,
-    owner: string,
-    ownerDisplayName: string,
-    creationDate: string,
-    mdBucketModelVersion: number,
-    transient: boolean,
-    deleted: boolean,
-    serverSideEncryption?: SSE,
-    versioningConfiguration?: VersioningConfiguration,
-    locationConstraint?: string,
-    readLocationConstraint?: string,
-    websiteConfiguration?: WebsiteConfigurationParams,
-    cors?: CORS,
-    replicationConfiguration?: ReplicationConfigurationMetadata,
-    lifecycleConfiguration?: LifecycleConfigurationMetadata,
-    bucketPolicy?: BucketPolicyMetadata,
-    uid: string,
-    isNFS?: boolean,
-    ingestion?: { status: 'enabled' | 'disabled' },
-    azureInfo?: AzureInfoMetadata,
-    objectLockEnabled?: boolean,
-    objectLockConfiguration?: ObjectLockConfigurationMetadata,
-    notificationConfiguration?: NotificationConfigurationMetadata,
-    tags: Array<BucketTag>,
-    capabilities?: Capabilities,
-    quotaMax: bigint | number,
-    bucketLoggingStatus?: BucketLoggingStatus,
-    rateLimitConfiguration?: RateLimitConfigurationMetadata,
+    name: string;
+    owner: string;
+    ownerDisplayName: string;
+    creationDate: string;
+    mdBucketModelVersion: number;
+    transient: boolean;
+    deleted: boolean;
+    serverSideEncryption?: SSE;
+    versioningConfiguration?: VersioningConfiguration;
+    locationConstraint?: string;
+    readLocationConstraint?: string;
+    websiteConfiguration?: WebsiteConfigurationParams;
+    cors?: CORS;
+    replicationConfiguration?: ReplicationConfigurationMetadata;
+    lifecycleConfiguration?: LifecycleConfigurationMetadata;
+    bucketPolicy?: BucketPolicyMetadata;
+    uid: string;
+    isNFS?: boolean;
+    ingestion?: { status: 'enabled' | 'disabled' };
+    azureInfo?: AzureInfoMetadata;
+    objectLockEnabled?: boolean;
+    objectLockConfiguration?: ObjectLockConfigurationMetadata;
+    notificationConfiguration?: NotificationConfigurationMetadata;
+    tags: Array<BucketTag>;
+    capabilities?: Capabilities;
+    quotaMax: bigint | number;
+    bucketLoggingStatus?: BucketLoggingStatus;
+    rateLimitConfiguration?: RateLimitConfigurationMetadata;
 };
 
 export type BucketMetadataJSON = Omit<BucketMetadata, 'quotaMax' | 'capabilities'> & {
     quotaMax: string;
     capabilities: {
-        VeeamSOSApi?: VeeamSOSApiSerializable,
+        VeeamSOSApi?: VeeamSOSApiSerializable;
     };
 };
 
@@ -123,62 +123,62 @@ export default class BucketInfo implements BucketMetadata {
     private _rateLimitConfiguration?: RateLimitConfiguration;
 
     /**
-    * Represents all bucket information.
-    * @constructor
-    * @param name - bucket name
-    * @param owner - bucket owner's name
-    * @param ownerDisplayName - owner's display name
-    * @param creationDate - creation date of bucket
-    * @param mdBucketModelVersion - bucket model version
-    * @param [acl] - bucket ACLs (no need to copy
-    * ACL object since referenced object will not be used outside of
-    * BucketInfo instance)
-    * @param transient - flag indicating whether bucket is transient
-    * @param deleted - flag indicating whether attempt to delete
-    * @param serverSideEncryption - sse information for this bucket
-    * @param serverSideEncryption.cryptoScheme -
-    * cryptoScheme used
-    * @param serverSideEncryption.algorithm -
-    * algorithm to use
-    * @param serverSideEncryption.masterKeyId -
-    * key to get master key
-    * @param serverSideEncryption.configuredMasterKeyId -
-    * custom KMS key id specified by user
-    * @param serverSideEncryption.mandatory -
-    * true for mandatory encryption
-    * bucket has been made
-    * @param versioningConfiguration - versioning configuration
-    * @param versioningConfiguration.Status - versioning status
-    * @param versioningConfiguration.MfaDelete - versioning mfa delete
-    * @param locationConstraint - locationConstraint for bucket that
-    * also includes the ingestion flag
-    * @param [websiteConfiguration] - website
-    * configuration
-    * @param [cors] - collection of CORS rules to apply
-    * @param [cors[].id] - optional ID to identify rule
-    * @param cors[].allowedMethods - methods allowed for CORS request
-    * @param cors[].allowedOrigins - origins allowed for CORS request
-    * @param [cors[].allowedHeaders] - headers allowed in an OPTIONS
-    * request via the Access-Control-Request-Headers header
-    * @param [cors[].maxAgeSeconds] - seconds browsers should cache
-    * OPTIONS response
-    * @param [cors[].exposeHeaders] - headers expose to applications
-    * @param [replicationConfiguration] - replication configuration
-    * @param [lifecycleConfiguration] - lifecycle configuration
-    * @param [bucketPolicy] - bucket policy
-    * @param [uid] - unique identifier for the bucket, necessary
-    * @param readLocationConstraint - readLocationConstraint for bucket
-    * addition for use with lifecycle operations
-    * @param [isNFS] - whether the bucket is on NFS
-    * @param [ingestionConfig] - object for ingestion status: en/dis
-    * @param [azureInfo] - Azure storage account specific info
-    * @param [objectLockEnabled] - true when object lock enabled
-    * @param [objectLockConfiguration] - object lock configuration
-    * @param [notificationConfiguration] - bucket notification configuration
-    * @param [tags] - bucket tag set
-    * @param [capabilities] - capabilities for the bucket
-    * @param quotaMax - bucket quota
-    */
+     * Represents all bucket information.
+     * @constructor
+     * @param name - bucket name
+     * @param owner - bucket owner's name
+     * @param ownerDisplayName - owner's display name
+     * @param creationDate - creation date of bucket
+     * @param mdBucketModelVersion - bucket model version
+     * @param [acl] - bucket ACLs (no need to copy
+     * ACL object since referenced object will not be used outside of
+     * BucketInfo instance)
+     * @param transient - flag indicating whether bucket is transient
+     * @param deleted - flag indicating whether attempt to delete
+     * @param serverSideEncryption - sse information for this bucket
+     * @param serverSideEncryption.cryptoScheme -
+     * cryptoScheme used
+     * @param serverSideEncryption.algorithm -
+     * algorithm to use
+     * @param serverSideEncryption.masterKeyId -
+     * key to get master key
+     * @param serverSideEncryption.configuredMasterKeyId -
+     * custom KMS key id specified by user
+     * @param serverSideEncryption.mandatory -
+     * true for mandatory encryption
+     * bucket has been made
+     * @param versioningConfiguration - versioning configuration
+     * @param versioningConfiguration.Status - versioning status
+     * @param versioningConfiguration.MfaDelete - versioning mfa delete
+     * @param locationConstraint - locationConstraint for bucket that
+     * also includes the ingestion flag
+     * @param [websiteConfiguration] - website
+     * configuration
+     * @param [cors] - collection of CORS rules to apply
+     * @param [cors[].id] - optional ID to identify rule
+     * @param cors[].allowedMethods - methods allowed for CORS request
+     * @param cors[].allowedOrigins - origins allowed for CORS request
+     * @param [cors[].allowedHeaders] - headers allowed in an OPTIONS
+     * request via the Access-Control-Request-Headers header
+     * @param [cors[].maxAgeSeconds] - seconds browsers should cache
+     * OPTIONS response
+     * @param [cors[].exposeHeaders] - headers expose to applications
+     * @param [replicationConfiguration] - replication configuration
+     * @param [lifecycleConfiguration] - lifecycle configuration
+     * @param [bucketPolicy] - bucket policy
+     * @param [uid] - unique identifier for the bucket, necessary
+     * @param readLocationConstraint - readLocationConstraint for bucket
+     * addition for use with lifecycle operations
+     * @param [isNFS] - whether the bucket is on NFS
+     * @param [ingestionConfig] - object for ingestion status: en/dis
+     * @param [azureInfo] - Azure storage account specific info
+     * @param [objectLockEnabled] - true when object lock enabled
+     * @param [objectLockConfiguration] - object lock configuration
+     * @param [notificationConfiguration] - bucket notification configuration
+     * @param [tags] - bucket tag set
+     * @param [capabilities] - capabilities for the bucket
+     * @param quotaMax - bucket quota
+     */
     constructor(
         name: string,
         owner: string,
@@ -227,13 +227,14 @@ export default class BucketInfo implements BucketMetadata {
         }
         if (serverSideEncryption) {
             assert.strictEqual(typeof serverSideEncryption, 'object');
-            const { cryptoScheme, algorithm, masterKeyId,
-                configuredMasterKeyId, mandatory } = serverSideEncryption;
+            const { cryptoScheme, algorithm, masterKeyId, configuredMasterKeyId, mandatory } = serverSideEncryption;
             assert.strictEqual(typeof cryptoScheme, 'number');
             assert.strictEqual(typeof algorithm, 'string');
             assert.strictEqual(typeof mandatory, 'boolean');
-            assert.ok(masterKeyId !== undefined || configuredMasterKeyId !== undefined,
-                'At least one of masterKeyId or configuredMasterKeyId must be defined');
+            assert.ok(
+                masterKeyId !== undefined || configuredMasterKeyId !== undefined,
+                'At least one of masterKeyId or configuredMasterKeyId must be defined',
+            );
             if (masterKeyId !== undefined) {
                 assert.strictEqual(typeof masterKeyId, 'string', 'masterKeyId must be a string');
             }
@@ -244,12 +245,8 @@ export default class BucketInfo implements BucketMetadata {
         if (versioningConfiguration) {
             assert.strictEqual(typeof versioningConfiguration, 'object');
             const { Status, MfaDelete } = versioningConfiguration;
-            assert(Status === undefined ||
-                Status === 'Enabled' ||
-                Status === 'Suspended');
-            assert(MfaDelete === undefined ||
-                MfaDelete === 'Enabled' ||
-                MfaDelete === 'Disabled');
+            assert(Status === undefined || Status === 'Enabled' || Status === 'Suspended');
+            assert(MfaDelete === undefined || MfaDelete === 'Enabled' || MfaDelete === 'Disabled');
         }
         if (locationConstraint) {
             assert.strictEqual(typeof locationConstraint, 'string');
@@ -269,27 +266,23 @@ export default class BucketInfo implements BucketMetadata {
             const errorDocument = websiteConfiguration.getErrorDocument();
             const redirectAllRequestsTo = websiteConfiguration.getRedirectAllRequestsTo();
             const routingRules = websiteConfiguration.getRoutingRules();
-            assert(indexDocument === undefined ||
-                typeof indexDocument === 'string');
-            assert(errorDocument === undefined ||
-                typeof errorDocument === 'string');
-            assert(redirectAllRequestsTo === undefined ||
-                typeof redirectAllRequestsTo === 'object');
-            assert(routingRules === undefined ||
-                Array.isArray(routingRules));
+            assert(indexDocument === undefined || typeof indexDocument === 'string');
+            assert(errorDocument === undefined || typeof errorDocument === 'string');
+            assert(redirectAllRequestsTo === undefined || typeof redirectAllRequestsTo === 'object');
+            assert(routingRules === undefined || Array.isArray(routingRules));
         }
         if (capabilities?.VeeamSOSApi?.CapacityInfo) {
             assert(
                 typeof capabilities.VeeamSOSApi.CapacityInfo.Capacity === 'bigint' ||
-                typeof capabilities.VeeamSOSApi.CapacityInfo.Capacity === 'number'
+                    typeof capabilities.VeeamSOSApi.CapacityInfo.Capacity === 'number',
             );
             assert(
                 typeof capabilities.VeeamSOSApi.CapacityInfo.Available === 'bigint' ||
-                typeof capabilities.VeeamSOSApi.CapacityInfo.Available === 'number'
+                    typeof capabilities.VeeamSOSApi.CapacityInfo.Available === 'number',
             );
             assert(
                 typeof capabilities.VeeamSOSApi.CapacityInfo.Used === 'bigint' ||
-                typeof capabilities.VeeamSOSApi.CapacityInfo.Used === 'number'
+                    typeof capabilities.VeeamSOSApi.CapacityInfo.Used === 'number',
             );
             assert(capabilities.VeeamSOSApi.CapacityInfo.Capacity >= -1);
             assert(capabilities.VeeamSOSApi.CapacityInfo.Available >= -1);
@@ -369,8 +362,7 @@ export default class BucketInfo implements BucketMetadata {
 
         this._capabilities = capabilities && {
             ...capabilities,
-            VeeamSOSApi: capabilities.VeeamSOSApi &&
-                VeeamCapability.toBigInt(capabilities.VeeamSOSApi),
+            VeeamSOSApi: capabilities.VeeamSOSApi && VeeamCapability.toBigInt(capabilities.VeeamSOSApi),
         };
 
         this._quotaMax = BigInt(quotaMax || 0n);
@@ -411,8 +403,8 @@ export default class BucketInfo implements BucketMetadata {
             tags: this._tags,
             capabilities: this._capabilities && {
                 ...this._capabilities,
-                VeeamSOSApi: this._capabilities.VeeamSOSApi &&
-                    VeeamCapability.serialize(this._capabilities.VeeamSOSApi),
+                VeeamSOSApi:
+                    this._capabilities.VeeamSOSApi && VeeamCapability.serialize(this._capabilities.VeeamSOSApi),
             },
             quotaMax: this._quotaMax.toString(),
             bucketLoggingStatus: this._bucketLoggingStatus,
@@ -420,9 +412,9 @@ export default class BucketInfo implements BucketMetadata {
         };
         const final = this._websiteConfiguration
             ? {
-                ...bucketInfos,
-                websiteConfiguration: this._websiteConfiguration.getConfig(),
-            }
+                  ...bucketInfos,
+                  websiteConfiguration: this._websiteConfiguration.getConfig(),
+              }
             : bucketInfos;
         return final;
     }
@@ -444,24 +436,46 @@ export default class BucketInfo implements BucketMetadata {
         const obj: BucketMetadataJSON = JSON.parse(stringBucket);
         const capabilities = obj.capabilities && {
             ...obj.capabilities,
-            VeeamSOSApi: obj.capabilities?.VeeamSOSApi &&
-                VeeamCapability.parse(obj.capabilities?.VeeamSOSApi),
+            VeeamSOSApi: obj.capabilities?.VeeamSOSApi && VeeamCapability.parse(obj.capabilities?.VeeamSOSApi),
         };
-        const websiteConfig = obj.websiteConfiguration ?
-            new WebsiteConfiguration(obj.websiteConfiguration) : undefined;
-        const bucketLoggingStatus = obj.bucketLoggingStatus ?
-            new BucketLoggingStatus((obj.bucketLoggingStatus as any)._loggingEnabled) : undefined;
-        const rateLimitConfiguration = obj.rateLimitConfiguration ?
-            new RateLimitConfiguration(obj.rateLimitConfiguration) : undefined;
-        return new BucketInfo(obj.name, obj.owner, obj.ownerDisplayName,
-            obj.creationDate, obj.mdBucketModelVersion, obj.acl,
-            obj.transient, obj.deleted, obj.serverSideEncryption,
-            obj.versioningConfiguration, obj.locationConstraint, websiteConfig,
-            obj.cors, obj.replicationConfiguration, obj.lifecycleConfiguration,
-            obj.bucketPolicy, obj.uid, obj.readLocationConstraint, obj.isNFS,
-            obj.ingestion, obj.azureInfo, obj.objectLockEnabled,
-            obj.objectLockConfiguration, obj.notificationConfiguration, obj.tags,
-            capabilities, BigInt(obj.quotaMax || 0n), bucketLoggingStatus, rateLimitConfiguration);
+        const websiteConfig = obj.websiteConfiguration ? new WebsiteConfiguration(obj.websiteConfiguration) : undefined;
+        const bucketLoggingStatus = obj.bucketLoggingStatus
+            ? new BucketLoggingStatus((obj.bucketLoggingStatus as any)._loggingEnabled)
+            : undefined;
+        const rateLimitConfiguration = obj.rateLimitConfiguration
+            ? new RateLimitConfiguration(obj.rateLimitConfiguration)
+            : undefined;
+        return new BucketInfo(
+            obj.name,
+            obj.owner,
+            obj.ownerDisplayName,
+            obj.creationDate,
+            obj.mdBucketModelVersion,
+            obj.acl,
+            obj.transient,
+            obj.deleted,
+            obj.serverSideEncryption,
+            obj.versioningConfiguration,
+            obj.locationConstraint,
+            websiteConfig,
+            obj.cors,
+            obj.replicationConfiguration,
+            obj.lifecycleConfiguration,
+            obj.bucketPolicy,
+            obj.uid,
+            obj.readLocationConstraint,
+            obj.isNFS,
+            obj.ingestion,
+            obj.azureInfo,
+            obj.objectLockEnabled,
+            obj.objectLockConfiguration,
+            obj.notificationConfiguration,
+            obj.tags,
+            capabilities,
+            BigInt(obj.quotaMax || 0n),
+            bucketLoggingStatus,
+            rateLimitConfiguration,
+        );
     }
 
     /**
@@ -481,21 +495,39 @@ export default class BucketInfo implements BucketMetadata {
     static fromObj(data: any) {
         const capabilities: Capabilities = data._capabilities && {
             ...data._capabilities,
-            VeeamSOSApi: data._capabilities?.VeeamSOSApi &&
-                VeeamCapability.parse(data._capabilities?.VeeamSOSApi),
+            VeeamSOSApi: data._capabilities?.VeeamSOSApi && VeeamCapability.parse(data._capabilities?.VeeamSOSApi),
         };
-        return new BucketInfo(data._name, data._owner, data._ownerDisplayName,
-            data._creationDate, data._mdBucketModelVersion, data._acl,
-            data._transient, data._deleted, data._serverSideEncryption,
-            data._versioningConfiguration, data._locationConstraint,
-            data._websiteConfiguration, data._cors,
-            data._replicationConfiguration, data._lifecycleConfiguration,
-            data._bucketPolicy, data._uid, data._readLocationConstraint,
-            data._isNFS, data._ingestion, data._azureInfo,
-            data._objectLockEnabled, data._objectLockConfiguration,
-            data._notificationConfiguration, data._tags, capabilities,
-            BigInt(data._quotaMax || 0n), data._bucketLoggingStatus,
-            data._rateLimitConfiguration);
+        return new BucketInfo(
+            data._name,
+            data._owner,
+            data._ownerDisplayName,
+            data._creationDate,
+            data._mdBucketModelVersion,
+            data._acl,
+            data._transient,
+            data._deleted,
+            data._serverSideEncryption,
+            data._versioningConfiguration,
+            data._locationConstraint,
+            data._websiteConfiguration,
+            data._cors,
+            data._replicationConfiguration,
+            data._lifecycleConfiguration,
+            data._bucketPolicy,
+            data._uid,
+            data._readLocationConstraint,
+            data._isNFS,
+            data._ingestion,
+            data._azureInfo,
+            data._objectLockEnabled,
+            data._objectLockConfiguration,
+            data._notificationConfiguration,
+            data._tags,
+            capabilities,
+            BigInt(data._quotaMax || 0n),
+            data._bucketLoggingStatus,
+            data._rateLimitConfiguration,
+        );
     }
 
     /**
@@ -505,57 +537,79 @@ export default class BucketInfo implements BucketMetadata {
      * @return Return an BucketInfo
      */
     static fromJson(data: BucketMetadataJSON) {
-        const bucketLoggingStatus = data.bucketLoggingStatus ?
-            new BucketLoggingStatus((data.bucketLoggingStatus as any)._loggingEnabled) : undefined;
-        const rateLimitConfiguration = data.rateLimitConfiguration ?
-            new RateLimitConfiguration(data.rateLimitConfiguration) : undefined;
-        return new BucketInfo(data.name, data.owner, data.ownerDisplayName,
-            data.creationDate, data.mdBucketModelVersion, data.acl,
-            data.transient, data.deleted, data.serverSideEncryption,
-            data.versioningConfiguration, data.locationConstraint,
+        const bucketLoggingStatus = data.bucketLoggingStatus
+            ? new BucketLoggingStatus((data.bucketLoggingStatus as any)._loggingEnabled)
+            : undefined;
+        const rateLimitConfiguration = data.rateLimitConfiguration
+            ? new RateLimitConfiguration(data.rateLimitConfiguration)
+            : undefined;
+        return new BucketInfo(
+            data.name,
+            data.owner,
+            data.ownerDisplayName,
+            data.creationDate,
+            data.mdBucketModelVersion,
+            data.acl,
+            data.transient,
+            data.deleted,
+            data.serverSideEncryption,
+            data.versioningConfiguration,
+            data.locationConstraint,
             data.websiteConfiguration && new WebsiteConfiguration(data.websiteConfiguration),
-            data.cors, data.replicationConfiguration, data.lifecycleConfiguration,
-            data.bucketPolicy, data.uid, data.readLocationConstraint,
-            data.isNFS, data.ingestion, data.azureInfo,
-            data.objectLockEnabled, data.objectLockConfiguration,
-            data.notificationConfiguration, data.tags, {
+            data.cors,
+            data.replicationConfiguration,
+            data.lifecycleConfiguration,
+            data.bucketPolicy,
+            data.uid,
+            data.readLocationConstraint,
+            data.isNFS,
+            data.ingestion,
+            data.azureInfo,
+            data.objectLockEnabled,
+            data.objectLockConfiguration,
+            data.notificationConfiguration,
+            data.tags,
+            {
                 ...data.capabilities,
-                VeeamSOSApi: data.capabilities?.VeeamSOSApi &&
-                    VeeamCapability.parse(data.capabilities?.VeeamSOSApi),
-            }, BigInt(data.quotaMax || 0n), bucketLoggingStatus, rateLimitConfiguration);
+                VeeamSOSApi: data.capabilities?.VeeamSOSApi && VeeamCapability.parse(data.capabilities?.VeeamSOSApi),
+            },
+            BigInt(data.quotaMax || 0n),
+            bucketLoggingStatus,
+            rateLimitConfiguration,
+        );
     }
 
     /**
-    * Get the ACLs.
-    * @return acl
-    */
+     * Get the ACLs.
+     * @return acl
+     */
     getAcl() {
         return this._acl;
     }
     /**
-    * Set the canned acl's.
-    * @param cannedACL - canned ACL being set
-    * @return - bucket info instance
-    */
+     * Set the canned acl's.
+     * @param cannedACL - canned ACL being set
+     * @return - bucket info instance
+     */
     setCannedAcl(cannedACL: string) {
         this._acl.Canned = cannedACL;
         return this;
     }
     /**
-    * Set a specific ACL.
-    * @param canonicalID - id for account being given access
-    * @param typeOfGrant - type of grant being granted
-    * @return - bucket info instance
-    */
+     * Set a specific ACL.
+     * @param canonicalID - id for account being given access
+     * @param typeOfGrant - type of grant being granted
+     * @return - bucket info instance
+     */
     setSpecificAcl(canonicalID: string, typeOfGrant: string) {
         this._acl[typeOfGrant].push(canonicalID);
         return this;
     }
     /**
-    * Set all ACLs.
-    * @param acl - new set of ACLs
-    * @return - bucket info instance
-    */
+     * Set all ACLs.
+     * @param acl - new set of ACLs
+     * @return - bucket info instance
+     */
     setFullAcl(acl: ACL) {
         this._acl = acl;
         return this;
@@ -762,82 +816,82 @@ export default class BucketInfo implements BucketMetadata {
         return this._serverSideEncryption.isAccountEncryptionEnabled;
     }
     /**
-    * Get bucket name.
-    * @return - bucket name
-    */
+     * Get bucket name.
+     * @return - bucket name
+     */
     getName() {
         return this._name;
     }
     /**
-    * Set bucket name.
-    * @param bucketName - new bucket name
-    * @return - bucket info instance
-    */
+     * Set bucket name.
+     * @param bucketName - new bucket name
+     * @return - bucket info instance
+     */
     setName(bucketName: string) {
         this._name = bucketName;
         return this;
     }
     /**
-    * Get bucket owner.
-    * @return - bucket owner's canonicalID
-    */
+     * Get bucket owner.
+     * @return - bucket owner's canonicalID
+     */
     getOwner() {
         return this._owner;
     }
     /**
-    * Set bucket owner.
-    * @param ownerCanonicalID - bucket owner canonicalID
-    * @return - bucket info instance
-    */
+     * Set bucket owner.
+     * @param ownerCanonicalID - bucket owner canonicalID
+     * @return - bucket info instance
+     */
     setOwner(ownerCanonicalID: string) {
         this._owner = ownerCanonicalID;
         return this;
     }
     /**
-    * Get bucket owner display name.
-    * @return - bucket owner dispaly name
-    */
+     * Get bucket owner display name.
+     * @return - bucket owner dispaly name
+     */
     getOwnerDisplayName() {
         return this._ownerDisplayName;
     }
     /**
-    * Set bucket owner display name.
-    * @param ownerDisplayName - bucket owner display name
-    * @return - bucket info instance
-    */
+     * Set bucket owner display name.
+     * @param ownerDisplayName - bucket owner display name
+     * @return - bucket info instance
+     */
     setOwnerDisplayName(ownerDisplayName: string) {
         this._ownerDisplayName = ownerDisplayName;
         return this;
     }
     /**
-    * Get bucket creation date.
-    * @return - bucket creation date
-    */
+     * Get bucket creation date.
+     * @return - bucket creation date
+     */
     getCreationDate() {
         return this._creationDate;
     }
     /**
-    * Set location constraint.
-    * @param location - bucket location constraint
-    * @return - bucket info instance
-    */
+     * Set location constraint.
+     * @param location - bucket location constraint
+     * @return - bucket info instance
+     */
     setLocationConstraint(location: string) {
         this._locationConstraint = location;
         return this;
     }
 
     /**
-    * Get location constraint.
-    * @return - bucket location constraint
-    */
+     * Get location constraint.
+     * @return - bucket location constraint
+     */
     getLocationConstraint() {
         return this._locationConstraint;
     }
 
     /**
-    * Get read location constraint.
-    * @return - bucket read location constraint
-    */
+     * Get read location constraint.
+     * @return - bucket read location constraint
+     */
     getReadLocationConstraint() {
         if (this._readLocationConstraint) {
             return this._readLocationConstraint;
@@ -864,48 +918,48 @@ export default class BucketInfo implements BucketMetadata {
         return this._mdBucketModelVersion;
     }
     /**
-    * Add transient flag.
-    * @return - bucket info instance
-    */
+     * Add transient flag.
+     * @return - bucket info instance
+     */
     addTransientFlag() {
         this._transient = true;
         return this;
     }
     /**
-    * Remove transient flag.
-    * @return - bucket info instance
-    */
+     * Remove transient flag.
+     * @return - bucket info instance
+     */
     removeTransientFlag() {
         this._transient = false;
         return this;
     }
     /**
-    * Check transient flag.
-    * @return - depending on whether transient flag in place
-    */
+     * Check transient flag.
+     * @return - depending on whether transient flag in place
+     */
     hasTransientFlag() {
         return !!this._transient;
     }
     /**
-    * Add deleted flag.
-    * @return - bucket info instance
-    */
+     * Add deleted flag.
+     * @return - bucket info instance
+     */
     addDeletedFlag() {
         this._deleted = true;
         return this;
     }
     /**
-    * Remove deleted flag.
-    * @return - bucket info instance
-    */
+     * Remove deleted flag.
+     * @return - bucket info instance
+     */
     removeDeletedFlag() {
         this._deleted = false;
         return this;
     }
     /**
-    * Check deleted flag.
-    * @return - depending on whether deleted flag in place
-    */
+     * Check deleted flag.
+     * @return - depending on whether deleted flag in place
+     */
     hasDeletedFlag() {
         return !!this._deleted;
     }
@@ -914,8 +968,7 @@ export default class BucketInfo implements BucketMetadata {
      * @return - versioning mode status
      */
     isVersioningOn() {
-        return this._versioningConfiguration &&
-            this._versioningConfiguration.Status === 'Enabled';
+        return this._versioningConfiguration && this._versioningConfiguration.Status === 'Enabled';
     }
     /**
      * Get unique id of bucket.
@@ -1015,17 +1068,17 @@ export default class BucketInfo implements BucketMetadata {
         return this;
     }
     /**
-    * Check if object lock is enabled.
-    * @return - depending on whether object lock is enabled
-    */
+     * Check if object lock is enabled.
+     * @return - depending on whether object lock is enabled
+     */
     isObjectLockEnabled() {
         return !!this._objectLockEnabled;
     }
     /**
-    * Set the value of objectLockEnabled field.
-    * @param enabled - true if object lock enabled else false.
-    * @return - bucket info instance
-    */
+     * Set the value of objectLockEnabled field.
+     * @param enabled - true if object lock enabled else false.
+     * @return - bucket info instance
+     */
     setObjectLockEnabled(enabled: boolean) {
         this._objectLockEnabled = enabled;
         return this;
@@ -1062,7 +1115,7 @@ export default class BucketInfo implements BucketMetadata {
      * @param capability? - if provided, will return a specific capacity
      * @return - capability of the bucket
      */
-    getCapability(capability: string) : Capabilities[keyof Capabilities] | undefined {
+    getCapability(capability: string): Capabilities[keyof Capabilities] | undefined {
         if (capability && this._capabilities && this._capabilities[capability]) {
             return this._capabilities[capability];
         }
@@ -1100,7 +1153,7 @@ export default class BucketInfo implements BucketMetadata {
      * Get bucket logging status
      * @returns - bucket logging status
      */
-    getBucketLoggingStatus() : BucketLoggingStatus | undefined {
+    getBucketLoggingStatus(): BucketLoggingStatus | undefined {
         return this._bucketLoggingStatus;
     }
 
@@ -1109,7 +1162,7 @@ export default class BucketInfo implements BucketMetadata {
      * @param bucketLoggingStatus - bucket logging status
      * @returns - this
      */
-    setBucketLoggingStatus(bucketLoggingStatus : BucketLoggingStatus) {
+    setBucketLoggingStatus(bucketLoggingStatus: BucketLoggingStatus) {
         this._bucketLoggingStatus = bucketLoggingStatus;
         return this;
     }

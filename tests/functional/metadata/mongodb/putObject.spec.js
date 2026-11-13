@@ -658,7 +658,7 @@ describe('MongoClientInterface:metadata.putObjectMD', () => {
                     assert.strictEqual(object.number, 24);
                 });
 
-                it(`should keep the stored version when the condition references a missing field ${variation.it}`, async () => {
+                it(`should keep stored version when the condition uses a missing field ${variation.it}`, async () => {
                     const objVal = { key: OBJECT_NAME, versionId: VERSION_ID };
                     await putObjectMD(BUCKET_NAME, OBJECT_NAME, objVal, baseParams, logger);
                     const params = { ...baseParams, conditions: { number: { $gt: 42 } } };

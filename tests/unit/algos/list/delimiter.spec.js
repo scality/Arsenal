@@ -1,10 +1,8 @@
-'use strict'; // eslint-disable-line strict
+'use strict';
 
 const assert = require('assert');
-const Delimiter =
-    require('../../../../lib/algos/list/delimiter').Delimiter;
-const DelimiterMaster =
-    require('../../../../lib/algos/list/delimiterMaster').DelimiterMaster;
+const Delimiter = require('../../../../lib/algos/list/delimiter').Delimiter;
+const DelimiterMaster = require('../../../../lib/algos/list/delimiterMaster').DelimiterMaster;
 const Werelogs = require('werelogs').Logger;
 const logger = new Werelogs('listTest');
 const zpad = require('../../helpers').zpad;
@@ -79,620 +77,724 @@ const dataVersioned = [
 const receivedData = data.map(item => ({ key: item.key, value: item.value }));
 
 const tests = [
-    new Test('all elements', {}, {
-        v0: {},
-        v1: {
-            gte: DbPrefixes.Master,
-            lt: inc(DbPrefixes.Master),
+    new Test(
+        'all elements',
+        {},
+        {
+            v0: {},
+            v1: {
+                gte: DbPrefixes.Master,
+                lt: inc(DbPrefixes.Master),
+            },
         },
-    }, {
-        Contents: receivedData,
-        CommonPrefixes: [],
-        Delimiter: undefined,
-        IsTruncated: false,
-        NextMarker: undefined,
-    }),
-    new Test('with valid marker', {
-        marker: receivedData[4].key,
-    }, {
-        v0: {
-            gt: receivedData[4].key,
+        {
+            Contents: receivedData,
+            CommonPrefixes: [],
+            Delimiter: undefined,
+            IsTruncated: false,
+            NextMarker: undefined,
         },
-        v1: {
-            gt: `${DbPrefixes.Master}${receivedData[4].key}`,
-            lt: inc(DbPrefixes.Master),
+    ),
+    new Test(
+        'with valid marker',
+        {
+            marker: receivedData[4].key,
         },
-    }, {
-        Contents: [
-            receivedData[5],
-            receivedData[6],
-            receivedData[7],
-            receivedData[8],
-            receivedData[9],
-        ],
-        CommonPrefixes: [],
-        Delimiter: undefined,
-        IsTruncated: false,
-        NextMarker: undefined,
-    }),
-    new Test('with bad marker', {
-        marker: 'zzzz',
-        delimiter: '/',
-    }, {
-        v0: {
-            gt: 'zzzz',
+        {
+            v0: {
+                gt: receivedData[4].key,
+            },
+            v1: {
+                gt: `${DbPrefixes.Master}${receivedData[4].key}`,
+                lt: inc(DbPrefixes.Master),
+            },
         },
-        v1: {
-            gt: `${DbPrefixes.Master}zzzz`,
-            lt: inc(DbPrefixes.Master),
+        {
+            Contents: [receivedData[5], receivedData[6], receivedData[7], receivedData[8], receivedData[9]],
+            CommonPrefixes: [],
+            Delimiter: undefined,
+            IsTruncated: false,
+            NextMarker: undefined,
         },
-    }, {
-        Contents: [],
-        CommonPrefixes: [],
-        Delimiter: '/',
-        IsTruncated: false,
-        NextMarker: undefined,
-    }),
-    new Test('with makKeys', {
-        maxKeys: 3,
-    }, {
-        v0: {},
-        v1: {
-            gte: DbPrefixes.Master,
-            lt: inc(DbPrefixes.Master),
+    ),
+    new Test(
+        'with bad marker',
+        {
+            marker: 'zzzz',
+            delimiter: '/',
         },
-    }, {
-        Contents: receivedData.slice(0, 3),
-        CommonPrefixes: [],
-        Delimiter: undefined,
-        IsTruncated: true,
-        NextMarker: undefined,
-    }),
-    new Test('with big makKeys', {
-        maxKeys: 15000,
-    }, {
-        v0: {},
-        v1: {
-            gte: DbPrefixes.Master,
-            lt: inc(DbPrefixes.Master),
+        {
+            v0: {
+                gt: 'zzzz',
+            },
+            v1: {
+                gt: `${DbPrefixes.Master}zzzz`,
+                lt: inc(DbPrefixes.Master),
+            },
         },
-    }, {
-        Contents: receivedData,
-        CommonPrefixes: [],
-        Delimiter: undefined,
-        IsTruncated: false,
-        NextMarker: undefined,
-    }),
-    new Test('with delimiter', {
-        delimiter: '/',
-    }, {
-        v0: {},
-        v1: {
-            gte: DbPrefixes.Master,
-            lt: inc(DbPrefixes.Master),
+        {
+            Contents: [],
+            CommonPrefixes: [],
+            Delimiter: '/',
+            IsTruncated: false,
+            NextMarker: undefined,
         },
-    }, {
-        Contents: [
-            receivedData[0],
-        ],
-        CommonPrefixes: ['notes/'],
-        Delimiter: '/',
-        IsTruncated: false,
-        NextMarker: undefined,
-    }),
-    new Test('with long delimiter', {
-        delimiter: 'notes/summer',
-    }, {
-        v0: {},
-        v1: {
-            gte: DbPrefixes.Master,
-            lt: inc(DbPrefixes.Master),
+    ),
+    new Test(
+        'with makKeys',
+        {
+            maxKeys: 3,
         },
-    }, {
-        Contents: [
-            receivedData[0],
-            receivedData[1],
-            receivedData[2],
-            receivedData[3],
-            receivedData[7],
-            receivedData[8],
-            receivedData[9],
-        ],
-        CommonPrefixes: ['notes/summer'],
-        Delimiter: 'notes/summer',
-        IsTruncated: false,
-        NextMarker: undefined,
-    }),
-    new Test('bad marker and good prefix', {
-        delimiter: '/',
-        prefix: 'notes/summer/',
-        marker: 'notes/summer0',
-    }, {
-        v0: {
-            gt: 'notes/summer0',
-            lt: 'notes/summer0',
+        {
+            v0: {},
+            v1: {
+                gte: DbPrefixes.Master,
+                lt: inc(DbPrefixes.Master),
+            },
         },
-        v1: {
-            gt: `${DbPrefixes.Master}notes/summer0`,
-            lt: `${DbPrefixes.Master}notes/summer0`,
+        {
+            Contents: receivedData.slice(0, 3),
+            CommonPrefixes: [],
+            Delimiter: undefined,
+            IsTruncated: true,
+            NextMarker: undefined,
         },
-    }, {
-        Contents: [],
-        CommonPrefixes: [],
-        Delimiter: '/',
-        IsTruncated: false,
-        NextMarker: undefined,
-    }),
-    new Test('delimiter and prefix (related to #147)', {
-        delimiter: '/',
-        prefix: 'notes/',
-    }, {
-        v0: {
-            gte: 'notes/',
-            lt: 'notes0',
+    ),
+    new Test(
+        'with big makKeys',
+        {
+            maxKeys: 15000,
         },
-        v1: {
-            gte: `${DbPrefixes.Master}notes/`,
-            lt: `${DbPrefixes.Master}notes0`,
+        {
+            v0: {},
+            v1: {
+                gte: DbPrefixes.Master,
+                lt: inc(DbPrefixes.Master),
+            },
         },
-    }, {
-        Contents: [
-            receivedData[7],
-            receivedData[8],
-        ],
-        CommonPrefixes: [
-            'notes/spring/',
-            'notes/summer/',
-            'notes/zaphod/',
-        ],
-        Delimiter: '/',
-        IsTruncated: false,
-        NextMarker: undefined,
-    }),
-    new Test('delimiter, prefix and marker (related to #147)', {
-        delimiter: '/',
-        prefix: 'notes/',
-        marker: 'notes/year.txt',
-    }, {
-        v0: {
-            gt: 'notes/year.txt',
-            lt: 'notes0',
+        {
+            Contents: receivedData,
+            CommonPrefixes: [],
+            Delimiter: undefined,
+            IsTruncated: false,
+            NextMarker: undefined,
         },
-        v1: {
-            gt: `${DbPrefixes.Master}notes/year.txt`,
-            lt: `${DbPrefixes.Master}notes0`,
+    ),
+    new Test(
+        'with delimiter',
+        {
+            delimiter: '/',
         },
-    }, {
-        Contents: [
-            receivedData[8],
-        ],
-        CommonPrefixes: [
-            'notes/zaphod/',
-        ],
-        Delimiter: '/',
-        IsTruncated: false,
-        NextMarker: undefined,
-    }),
-    new Test('all parameters 1/5', {
-        delimiter: '/',
-        prefix: 'notes/',
-        marker: 'notes/',
-        maxKeys: 1,
-    }, {
-        v0: {
-            gt: 'notes/',
-            lt: 'notes0',
+        {
+            v0: {},
+            v1: {
+                gte: DbPrefixes.Master,
+                lt: inc(DbPrefixes.Master),
+            },
         },
-        v1: {
-            gt: `${DbPrefixes.Master}notes/`,
-            lt: `${DbPrefixes.Master}notes0`,
+        {
+            Contents: [receivedData[0]],
+            CommonPrefixes: ['notes/'],
+            Delimiter: '/',
+            IsTruncated: false,
+            NextMarker: undefined,
         },
-    }, {
-        Contents: [],
-        CommonPrefixes: ['notes/spring/'],
-        Delimiter: '/',
-        IsTruncated: true,
-        NextMarker: 'notes/spring/',
-    }),
+    ),
+    new Test(
+        'with long delimiter',
+        {
+            delimiter: 'notes/summer',
+        },
+        {
+            v0: {},
+            v1: {
+                gte: DbPrefixes.Master,
+                lt: inc(DbPrefixes.Master),
+            },
+        },
+        {
+            Contents: [
+                receivedData[0],
+                receivedData[1],
+                receivedData[2],
+                receivedData[3],
+                receivedData[7],
+                receivedData[8],
+                receivedData[9],
+            ],
+            CommonPrefixes: ['notes/summer'],
+            Delimiter: 'notes/summer',
+            IsTruncated: false,
+            NextMarker: undefined,
+        },
+    ),
+    new Test(
+        'bad marker and good prefix',
+        {
+            delimiter: '/',
+            prefix: 'notes/summer/',
+            marker: 'notes/summer0',
+        },
+        {
+            v0: {
+                gt: 'notes/summer0',
+                lt: 'notes/summer0',
+            },
+            v1: {
+                gt: `${DbPrefixes.Master}notes/summer0`,
+                lt: `${DbPrefixes.Master}notes/summer0`,
+            },
+        },
+        {
+            Contents: [],
+            CommonPrefixes: [],
+            Delimiter: '/',
+            IsTruncated: false,
+            NextMarker: undefined,
+        },
+    ),
+    new Test(
+        'delimiter and prefix (related to #147)',
+        {
+            delimiter: '/',
+            prefix: 'notes/',
+        },
+        {
+            v0: {
+                gte: 'notes/',
+                lt: 'notes0',
+            },
+            v1: {
+                gte: `${DbPrefixes.Master}notes/`,
+                lt: `${DbPrefixes.Master}notes0`,
+            },
+        },
+        {
+            Contents: [receivedData[7], receivedData[8]],
+            CommonPrefixes: ['notes/spring/', 'notes/summer/', 'notes/zaphod/'],
+            Delimiter: '/',
+            IsTruncated: false,
+            NextMarker: undefined,
+        },
+    ),
+    new Test(
+        'delimiter, prefix and marker (related to #147)',
+        {
+            delimiter: '/',
+            prefix: 'notes/',
+            marker: 'notes/year.txt',
+        },
+        {
+            v0: {
+                gt: 'notes/year.txt',
+                lt: 'notes0',
+            },
+            v1: {
+                gt: `${DbPrefixes.Master}notes/year.txt`,
+                lt: `${DbPrefixes.Master}notes0`,
+            },
+        },
+        {
+            Contents: [receivedData[8]],
+            CommonPrefixes: ['notes/zaphod/'],
+            Delimiter: '/',
+            IsTruncated: false,
+            NextMarker: undefined,
+        },
+    ),
+    new Test(
+        'all parameters 1/5',
+        {
+            delimiter: '/',
+            prefix: 'notes/',
+            marker: 'notes/',
+            maxKeys: 1,
+        },
+        {
+            v0: {
+                gt: 'notes/',
+                lt: 'notes0',
+            },
+            v1: {
+                gt: `${DbPrefixes.Master}notes/`,
+                lt: `${DbPrefixes.Master}notes0`,
+            },
+        },
+        {
+            Contents: [],
+            CommonPrefixes: ['notes/spring/'],
+            Delimiter: '/',
+            IsTruncated: true,
+            NextMarker: 'notes/spring/',
+        },
+    ),
 
-    new Test('all parameters 2/5', {
-        delimiter: '/',
-        prefix: 'notes/',
-        marker: 'notes/spring/',
-        maxKeys: 1,
-    }, {
-        v0: {
-            gte: 'notes/spring0',
-            lt: 'notes0',
+    new Test(
+        'all parameters 2/5',
+        {
+            delimiter: '/',
+            prefix: 'notes/',
+            marker: 'notes/spring/',
+            maxKeys: 1,
         },
-        v1: {
-            gte: `${DbPrefixes.Master}notes/spring0`,
-            lt: `${DbPrefixes.Master}notes0`,
+        {
+            v0: {
+                gte: 'notes/spring0',
+                lt: 'notes0',
+            },
+            v1: {
+                gte: `${DbPrefixes.Master}notes/spring0`,
+                lt: `${DbPrefixes.Master}notes0`,
+            },
         },
-    }, {
-        Contents: [],
-        CommonPrefixes: ['notes/summer/'],
-        Delimiter: '/',
-        IsTruncated: true,
-        NextMarker: 'notes/summer/',
-    }),
+        {
+            Contents: [],
+            CommonPrefixes: ['notes/summer/'],
+            Delimiter: '/',
+            IsTruncated: true,
+            NextMarker: 'notes/summer/',
+        },
+    ),
 
-    new Test('all parameters 3/5', {
-        delimiter: '/',
-        prefix: 'notes/',
-        marker: 'notes/summer/',
-        maxKeys: 1,
-    }, {
-        v0: {
-            gte: 'notes/summer0',
-            lt: 'notes0',
+    new Test(
+        'all parameters 3/5',
+        {
+            delimiter: '/',
+            prefix: 'notes/',
+            marker: 'notes/summer/',
+            maxKeys: 1,
         },
-        v1: {
-            gte: `${DbPrefixes.Master}notes/summer0`,
-            lt: `${DbPrefixes.Master}notes0`,
+        {
+            v0: {
+                gte: 'notes/summer0',
+                lt: 'notes0',
+            },
+            v1: {
+                gte: `${DbPrefixes.Master}notes/summer0`,
+                lt: `${DbPrefixes.Master}notes0`,
+            },
         },
-    }, {
-        Contents: [
-            receivedData[7],
-        ],
-        CommonPrefixes: [],
-        Delimiter: '/',
-        IsTruncated: true,
-        NextMarker: 'notes/year.txt',
-    }),
+        {
+            Contents: [receivedData[7]],
+            CommonPrefixes: [],
+            Delimiter: '/',
+            IsTruncated: true,
+            NextMarker: 'notes/year.txt',
+        },
+    ),
 
-    new Test('all parameters 4/5', {
-        delimiter: '/',
-        prefix: 'notes/',
-        marker: 'notes/year.txt',
-        maxKeys: 1,
-    }, {
-        v0: {
-            gt: 'notes/year.txt',
-            lt: 'notes0',
+    new Test(
+        'all parameters 4/5',
+        {
+            delimiter: '/',
+            prefix: 'notes/',
+            marker: 'notes/year.txt',
+            maxKeys: 1,
         },
-        v1: {
-            gt: `${DbPrefixes.Master}notes/year.txt`,
-            lt: `${DbPrefixes.Master}notes0`,
+        {
+            v0: {
+                gt: 'notes/year.txt',
+                lt: 'notes0',
+            },
+            v1: {
+                gt: `${DbPrefixes.Master}notes/year.txt`,
+                lt: `${DbPrefixes.Master}notes0`,
+            },
         },
-    }, {
-        Contents: [
-            receivedData[8],
-        ],
-        CommonPrefixes: [],
-        Delimiter: '/',
-        IsTruncated: true,
-        NextMarker: 'notes/yore.rs',
-    }),
+        {
+            Contents: [receivedData[8]],
+            CommonPrefixes: [],
+            Delimiter: '/',
+            IsTruncated: true,
+            NextMarker: 'notes/yore.rs',
+        },
+    ),
 
-    new Test('all parameters 5/5', {
-        delimiter: '/',
-        prefix: 'notes/',
-        marker: 'notes/yore.rs',
-        maxKeys: 1,
-    }, {
-        v0: {
-            gt: 'notes/yore.rs',
-            lt: 'notes0',
+    new Test(
+        'all parameters 5/5',
+        {
+            delimiter: '/',
+            prefix: 'notes/',
+            marker: 'notes/yore.rs',
+            maxKeys: 1,
         },
-        v1: {
-            gt: `${DbPrefixes.Master}notes/yore.rs`,
-            lt: `${DbPrefixes.Master}notes0`,
+        {
+            v0: {
+                gt: 'notes/yore.rs',
+                lt: 'notes0',
+            },
+            v1: {
+                gt: `${DbPrefixes.Master}notes/yore.rs`,
+                lt: `${DbPrefixes.Master}notes0`,
+            },
         },
-    }, {
-        Contents: [],
-        CommonPrefixes: ['notes/zaphod/'],
-        Delimiter: '/',
-        IsTruncated: false,
-        NextMarker: undefined,
-    }),
+        {
+            Contents: [],
+            CommonPrefixes: ['notes/zaphod/'],
+            Delimiter: '/',
+            IsTruncated: false,
+            NextMarker: undefined,
+        },
+    ),
 
-    new Test('marker inside common prefix', {
-        delimiter: '/',
-        prefix: 'notes/',
-        marker: 'notes/spring/1.txt',
-        maxKeys: 1,
-    }, {
-        v0: {
-            gte: 'notes/spring0',
-            lt: 'notes0',
+    new Test(
+        'marker inside common prefix',
+        {
+            delimiter: '/',
+            prefix: 'notes/',
+            marker: 'notes/spring/1.txt',
+            maxKeys: 1,
         },
-        v1: {
-            gte: `${DbPrefixes.Master}notes/spring0`,
-            lt: `${DbPrefixes.Master}notes0`,
+        {
+            v0: {
+                gte: 'notes/spring0',
+                lt: 'notes0',
+            },
+            v1: {
+                gte: `${DbPrefixes.Master}notes/spring0`,
+                lt: `${DbPrefixes.Master}notes0`,
+            },
         },
-    }, {
-        Contents: [],
-        CommonPrefixes: ['notes/summer/'],
-        Delimiter: '/',
-        IsTruncated: true,
-        NextMarker: 'notes/summer/',
-    }),
+        {
+            Contents: [],
+            CommonPrefixes: ['notes/summer/'],
+            Delimiter: '/',
+            IsTruncated: true,
+            NextMarker: 'notes/summer/',
+        },
+    ),
 
-    new Test('all elements v2', {
-        v2: true,
-    }, {
-        v0: {},
-        v1: {
-            gte: DbPrefixes.Master,
-            lt: inc(DbPrefixes.Master),
+    new Test(
+        'all elements v2',
+        {
+            v2: true,
         },
-    }, {
-        Contents: receivedData,
-        CommonPrefixes: [],
-        Delimiter: undefined,
-        IsTruncated: false,
-        NextContinuationToken: undefined,
-    }),
-    new Test('with valid startAfter', {
-        startAfter: receivedData[4].key,
-        v2: true,
-    }, {
-        v0: {
-            gt: receivedData[4].key,
+        {
+            v0: {},
+            v1: {
+                gte: DbPrefixes.Master,
+                lt: inc(DbPrefixes.Master),
+            },
         },
-        v1: {
-            gt: `${DbPrefixes.Master}${receivedData[4].key}`,
-            lt: inc(DbPrefixes.Master),
+        {
+            Contents: receivedData,
+            CommonPrefixes: [],
+            Delimiter: undefined,
+            IsTruncated: false,
+            NextContinuationToken: undefined,
         },
-    }, {
-        Contents: [
-            receivedData[5],
-            receivedData[6],
-            receivedData[7],
-            receivedData[8],
-            receivedData[9],
-        ],
-        CommonPrefixes: [],
-        Delimiter: undefined,
-        IsTruncated: false,
-        NextContinuationToken: undefined,
-    }),
-    new Test('with bad startAfter', {
-        startAfter: 'zzzz',
-        delimiter: '/',
-        v2: true,
-    }, {
-        v0: {
-            gt: 'zzzz',
+    ),
+    new Test(
+        'with valid startAfter',
+        {
+            startAfter: receivedData[4].key,
+            v2: true,
         },
-        v1: {
-            gt: `${DbPrefixes.Master}zzzz`,
-            lt: inc(DbPrefixes.Master),
+        {
+            v0: {
+                gt: receivedData[4].key,
+            },
+            v1: {
+                gt: `${DbPrefixes.Master}${receivedData[4].key}`,
+                lt: inc(DbPrefixes.Master),
+            },
         },
-    }, {
-        Contents: [],
-        CommonPrefixes: [],
-        Delimiter: '/',
-        IsTruncated: false,
-        NextContinuationToken: undefined,
-    }),
-    new Test('with valid continuationToken', {
-        continuationToken: receivedData[4].key,
-        v2: true,
-    }, {
-        v0: {
-            gt: receivedData[4].key,
+        {
+            Contents: [receivedData[5], receivedData[6], receivedData[7], receivedData[8], receivedData[9]],
+            CommonPrefixes: [],
+            Delimiter: undefined,
+            IsTruncated: false,
+            NextContinuationToken: undefined,
         },
-        v1: {
-            gt: `${DbPrefixes.Master}${receivedData[4].key}`,
-            lt: inc(DbPrefixes.Master),
+    ),
+    new Test(
+        'with bad startAfter',
+        {
+            startAfter: 'zzzz',
+            delimiter: '/',
+            v2: true,
         },
-    }, {
-        Contents: [
-            receivedData[5],
-            receivedData[6],
-            receivedData[7],
-            receivedData[8],
-            receivedData[9],
-        ],
-        CommonPrefixes: [],
-        Delimiter: undefined,
-        IsTruncated: false,
-        NextContinuationToken: undefined,
-    }),
-    new Test('with bad continuationToken', {
-        continuationToken: 'zzzz',
-        delimiter: '/',
-        v2: true,
-    }, {
-        v0: {
-            gt: 'zzzz',
+        {
+            v0: {
+                gt: 'zzzz',
+            },
+            v1: {
+                gt: `${DbPrefixes.Master}zzzz`,
+                lt: inc(DbPrefixes.Master),
+            },
         },
-        v1: {
-            gt: `${DbPrefixes.Master}zzzz`,
-            lt: inc(DbPrefixes.Master),
+        {
+            Contents: [],
+            CommonPrefixes: [],
+            Delimiter: '/',
+            IsTruncated: false,
+            NextContinuationToken: undefined,
         },
-    }, {
-        Contents: [],
-        CommonPrefixes: [],
-        Delimiter: '/',
-        IsTruncated: false,
-        NextContinuationToken: undefined,
-    }),
-    new Test('bad startAfter and good prefix', {
-        delimiter: '/',
-        prefix: 'notes/summer/',
-        startAfter: 'notes/summer0',
-        v2: true,
-    }, {
-        v0: {
-            gt: 'notes/summer0',
-            lt: 'notes/summer0',
+    ),
+    new Test(
+        'with valid continuationToken',
+        {
+            continuationToken: receivedData[4].key,
+            v2: true,
         },
-        v1: {
-            gt: `${DbPrefixes.Master}notes/summer0`,
-            lt: `${DbPrefixes.Master}notes/summer0`,
+        {
+            v0: {
+                gt: receivedData[4].key,
+            },
+            v1: {
+                gt: `${DbPrefixes.Master}${receivedData[4].key}`,
+                lt: inc(DbPrefixes.Master),
+            },
         },
-    }, {
-        Contents: [],
-        CommonPrefixes: [],
-        Delimiter: '/',
-        IsTruncated: false,
-        NextContinuationToken: undefined,
-    }),
-    new Test('bad continuation token and good prefix', {
-        delimiter: '/',
-        prefix: 'notes/summer/',
-        continuationToken: 'notes/summer0',
-        v2: true,
-    }, {
-        v0: {
-            gt: 'notes/summer0',
-            lt: 'notes/summer0',
+        {
+            Contents: [receivedData[5], receivedData[6], receivedData[7], receivedData[8], receivedData[9]],
+            CommonPrefixes: [],
+            Delimiter: undefined,
+            IsTruncated: false,
+            NextContinuationToken: undefined,
         },
-        v1: {
-            gt: `${DbPrefixes.Master}notes/summer0`,
-            lt: `${DbPrefixes.Master}notes/summer0`,
+    ),
+    new Test(
+        'with bad continuationToken',
+        {
+            continuationToken: 'zzzz',
+            delimiter: '/',
+            v2: true,
         },
-    }, {
-        Contents: [],
-        CommonPrefixes: [],
-        Delimiter: '/',
-        IsTruncated: false,
-        NextContinuationToken: undefined,
-    }),
+        {
+            v0: {
+                gt: 'zzzz',
+            },
+            v1: {
+                gt: `${DbPrefixes.Master}zzzz`,
+                lt: inc(DbPrefixes.Master),
+            },
+        },
+        {
+            Contents: [],
+            CommonPrefixes: [],
+            Delimiter: '/',
+            IsTruncated: false,
+            NextContinuationToken: undefined,
+        },
+    ),
+    new Test(
+        'bad startAfter and good prefix',
+        {
+            delimiter: '/',
+            prefix: 'notes/summer/',
+            startAfter: 'notes/summer0',
+            v2: true,
+        },
+        {
+            v0: {
+                gt: 'notes/summer0',
+                lt: 'notes/summer0',
+            },
+            v1: {
+                gt: `${DbPrefixes.Master}notes/summer0`,
+                lt: `${DbPrefixes.Master}notes/summer0`,
+            },
+        },
+        {
+            Contents: [],
+            CommonPrefixes: [],
+            Delimiter: '/',
+            IsTruncated: false,
+            NextContinuationToken: undefined,
+        },
+    ),
+    new Test(
+        'bad continuation token and good prefix',
+        {
+            delimiter: '/',
+            prefix: 'notes/summer/',
+            continuationToken: 'notes/summer0',
+            v2: true,
+        },
+        {
+            v0: {
+                gt: 'notes/summer0',
+                lt: 'notes/summer0',
+            },
+            v1: {
+                gt: `${DbPrefixes.Master}notes/summer0`,
+                lt: `${DbPrefixes.Master}notes/summer0`,
+            },
+        },
+        {
+            Contents: [],
+            CommonPrefixes: [],
+            Delimiter: '/',
+            IsTruncated: false,
+            NextContinuationToken: undefined,
+        },
+    ),
 
-    new Test('no delimiter v2', {
-        startAfter: 'notes/year.txt',
-        maxKeys: 1,
-        v2: true,
-    }, {
-        v0: {
-            gt: 'notes/year.txt',
+    new Test(
+        'no delimiter v2',
+        {
+            startAfter: 'notes/year.txt',
+            maxKeys: 1,
+            v2: true,
         },
-        v1: {
-            gt: `${DbPrefixes.Master}notes/year.txt`,
-            lt: inc(DbPrefixes.Master),
+        {
+            v0: {
+                gt: 'notes/year.txt',
+            },
+            v1: {
+                gt: `${DbPrefixes.Master}notes/year.txt`,
+                lt: inc(DbPrefixes.Master),
+            },
         },
-    }, {
-        Contents: [
-            receivedData[8],
-        ],
-        CommonPrefixes: [],
-        Delimiter: undefined,
-        IsTruncated: true,
-        NextContinuationToken: 'notes/yore.rs',
-    }),
+        {
+            Contents: [receivedData[8]],
+            CommonPrefixes: [],
+            Delimiter: undefined,
+            IsTruncated: true,
+            NextContinuationToken: 'notes/yore.rs',
+        },
+    ),
 
-    new Test('all parameters v2 1/5', {
-        delimiter: '/',
-        prefix: 'notes/',
-        startAfter: 'notes/',
-        maxKeys: 1,
-        v2: true,
-    }, {
-        v0: {
-            gt: 'notes/',
-            lt: 'notes0',
+    new Test(
+        'all parameters v2 1/5',
+        {
+            delimiter: '/',
+            prefix: 'notes/',
+            startAfter: 'notes/',
+            maxKeys: 1,
+            v2: true,
         },
-        v1: {
-            gt: `${DbPrefixes.Master}notes/`,
-            lt: `${DbPrefixes.Master}notes0`,
+        {
+            v0: {
+                gt: 'notes/',
+                lt: 'notes0',
+            },
+            v1: {
+                gt: `${DbPrefixes.Master}notes/`,
+                lt: `${DbPrefixes.Master}notes0`,
+            },
         },
-    }, {
-        Contents: [],
-        CommonPrefixes: ['notes/spring/'],
-        Delimiter: '/',
-        IsTruncated: true,
-        NextContinuationToken: 'notes/spring/',
-    }),
+        {
+            Contents: [],
+            CommonPrefixes: ['notes/spring/'],
+            Delimiter: '/',
+            IsTruncated: true,
+            NextContinuationToken: 'notes/spring/',
+        },
+    ),
 
-    new Test('all parameters v2 2/5', {
-        delimiter: '/',
-        prefix: 'notes/',
-        continuationToken: 'notes/spring/',
-        maxKeys: 1,
-        v2: true,
-    }, {
-        v0: {
-            gte: 'notes/spring0',
-            lt: 'notes0',
+    new Test(
+        'all parameters v2 2/5',
+        {
+            delimiter: '/',
+            prefix: 'notes/',
+            continuationToken: 'notes/spring/',
+            maxKeys: 1,
+            v2: true,
         },
-        v1: {
-            gte: `${DbPrefixes.Master}notes/spring0`,
-            lt: `${DbPrefixes.Master}notes0`,
+        {
+            v0: {
+                gte: 'notes/spring0',
+                lt: 'notes0',
+            },
+            v1: {
+                gte: `${DbPrefixes.Master}notes/spring0`,
+                lt: `${DbPrefixes.Master}notes0`,
+            },
         },
-    }, {
-        Contents: [],
-        CommonPrefixes: ['notes/summer/'],
-        Delimiter: '/',
-        IsTruncated: true,
-        NextContinuationToken: 'notes/summer/',
-    }),
+        {
+            Contents: [],
+            CommonPrefixes: ['notes/summer/'],
+            Delimiter: '/',
+            IsTruncated: true,
+            NextContinuationToken: 'notes/summer/',
+        },
+    ),
 
-    new Test('all parameters v2 3/5', {
-        delimiter: '/',
-        prefix: 'notes/',
-        continuationToken: 'notes/summer/',
-        maxKeys: 1,
-        v2: true,
-    }, {
-        v0: {
-            gte: 'notes/summer0',
-            lt: 'notes0',
+    new Test(
+        'all parameters v2 3/5',
+        {
+            delimiter: '/',
+            prefix: 'notes/',
+            continuationToken: 'notes/summer/',
+            maxKeys: 1,
+            v2: true,
         },
-        v1: {
-            gte: `${DbPrefixes.Master}notes/summer0`,
-            lt: `${DbPrefixes.Master}notes0`,
+        {
+            v0: {
+                gte: 'notes/summer0',
+                lt: 'notes0',
+            },
+            v1: {
+                gte: `${DbPrefixes.Master}notes/summer0`,
+                lt: `${DbPrefixes.Master}notes0`,
+            },
         },
-    }, {
-        Contents: [
-            receivedData[7],
-        ],
-        CommonPrefixes: [],
-        Delimiter: '/',
-        IsTruncated: true,
-        NextContinuationToken: 'notes/year.txt',
-    }),
+        {
+            Contents: [receivedData[7]],
+            CommonPrefixes: [],
+            Delimiter: '/',
+            IsTruncated: true,
+            NextContinuationToken: 'notes/year.txt',
+        },
+    ),
 
-    new Test('all parameters v2 4/5', {
-        delimiter: '/',
-        prefix: 'notes/',
-        startAfter: 'notes/year.txt',
-        maxKeys: 1,
-        v2: true,
-    }, {
-        v0: {
-            gt: 'notes/year.txt',
-            lt: 'notes0',
+    new Test(
+        'all parameters v2 4/5',
+        {
+            delimiter: '/',
+            prefix: 'notes/',
+            startAfter: 'notes/year.txt',
+            maxKeys: 1,
+            v2: true,
         },
-        v1: {
-            gt: `${DbPrefixes.Master}notes/year.txt`,
-            lt: `${DbPrefixes.Master}notes0`,
+        {
+            v0: {
+                gt: 'notes/year.txt',
+                lt: 'notes0',
+            },
+            v1: {
+                gt: `${DbPrefixes.Master}notes/year.txt`,
+                lt: `${DbPrefixes.Master}notes0`,
+            },
         },
-    }, {
-        Contents: [
-            receivedData[8],
-        ],
-        CommonPrefixes: [],
-        Delimiter: '/',
-        IsTruncated: true,
-        NextContinuationToken: 'notes/yore.rs',
-    }),
+        {
+            Contents: [receivedData[8]],
+            CommonPrefixes: [],
+            Delimiter: '/',
+            IsTruncated: true,
+            NextContinuationToken: 'notes/yore.rs',
+        },
+    ),
 
-    new Test('all parameters v2 5/5', {
-        delimiter: '/',
-        prefix: 'notes/',
-        startAfter: 'notes/yore.rs',
-        maxKeys: 1,
-        v2: true,
-    }, {
-        v0: {
-            gt: 'notes/yore.rs',
-            lt: 'notes0',
+    new Test(
+        'all parameters v2 5/5',
+        {
+            delimiter: '/',
+            prefix: 'notes/',
+            startAfter: 'notes/yore.rs',
+            maxKeys: 1,
+            v2: true,
         },
-        v1: {
-            gt: `${DbPrefixes.Master}notes/yore.rs`,
-            lt: `${DbPrefixes.Master}notes0`,
+        {
+            v0: {
+                gt: 'notes/yore.rs',
+                lt: 'notes0',
+            },
+            v1: {
+                gt: `${DbPrefixes.Master}notes/yore.rs`,
+                lt: `${DbPrefixes.Master}notes0`,
+            },
         },
-    }, {
-        Contents: [],
-        CommonPrefixes: ['notes/zaphod/'],
-        Delimiter: '/',
-        IsTruncated: false,
-        NextContinuationToken: undefined,
-    }),
+        {
+            Contents: [],
+            CommonPrefixes: ['notes/zaphod/'],
+            Delimiter: '/',
+            IsTruncated: false,
+            NextContinuationToken: undefined,
+        },
+    ),
 ];
 
 function getTestListing(mdParams, data, vFormat) {
@@ -709,10 +811,11 @@ function getTestListing(mdParams, data, vFormat) {
             }
             return assert.fail(`bad format ${vFormat}`);
         })
-        .filter(e =>
-            (!mdParams.gt || e.key > mdParams.gt) &&
-            (!mdParams.gte || e.key >= mdParams.gte) &&
-            (!mdParams.lt || e.key < mdParams.lt),
+        .filter(
+            e =>
+                (!mdParams.gt || e.key > mdParams.gt) &&
+                (!mdParams.gte || e.key >= mdParams.gte) &&
+                (!mdParams.lt || e.key < mdParams.lt),
         );
 }
 
@@ -726,8 +829,7 @@ function getTestListing(mdParams, data, vFormat) {
                     value: '{}',
                 });
             }
-            assert.strictEqual(delimiter.skipping(),
-                `${vFormat === 'v1' ? DbPrefixes.Master : ''}foo0`);
+            assert.strictEqual(delimiter.skipping(), `${vFormat === 'v1' ? DbPrefixes.Master : ''}foo0`);
         });
 
         tests.forEach(test => {
