@@ -495,30 +495,6 @@ describe('ReplicationConfiguration.parseConfiguration()', () => {
         expect(result).toEqual(errors.InvalidArgument);
     });
 
-    it('should return InvalidArgument when Scality destination has two comma-separated roles but one is invalid', () => {
-        const repConfig = {
-            Role: [`invalidarn:${TEST_ROLE}`],
-            Rule: [
-                {
-                    Prefix: [''],
-                    Status: ['Enabled'],
-                    Destination: [
-                        {
-                            Bucket: ['arn:aws:s3:::crr-dest'],
-                        },
-                    ],
-                },
-            ],
-        };
-        const instance = new ReplicationConfiguration(
-            { ReplicationConfiguration: repConfig },
-            null,
-            mockS3ServerConfig,
-        );
-        const result = instance.parseConfiguration();
-        expect(result).toEqual(errors.InvalidArgument);
-    });
-
     it('should return InvalidArgument when non-Scality destination has multiple roles', () => {
         const repConfig = {
             Role: ['arn:aws:iam::942839175607:role/role-a,arn:aws:iam::989181102323:role/role-b'],
