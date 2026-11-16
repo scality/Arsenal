@@ -6,7 +6,7 @@ type ResultObject = {
         value: string;
     }[];
     IsTruncated: boolean;
-    NextMarker ?: string;
+    NextMarker?: string;
 };
 
 /**
@@ -34,7 +34,7 @@ class DelimiterCurrent extends DelimiterMaster {
 
     genMDParamsV0() {
         const params = super.genMDParamsV0();
-        // lastModified and dataStoreName parameters are used by metadata that enables built-in filtering, 
+        // lastModified and dataStoreName parameters are used by metadata that enables built-in filtering,
         // a feature currently exclusive to MongoDB
         if (this.beforeDate) {
             params.lastModified = {
@@ -54,16 +54,18 @@ class DelimiterCurrent extends DelimiterMaster {
         // a limit, MongoDB must sort all matching documents — which can
         // exceed the 100MB memory cap and spill to disk.
         // We use maxScannedLifecycleListingEntries (default 10,000) as the
-        // bound because it counts documents scanned, which maps directly
-        // to cursor documents regardless of bucket format (v0 or v1).
+        // bound, scaled to cursor documents by the factor below.
         // The +1 allows the listing algorithm to detect truncation.
         if (this.maxScannedLifecycleListingEntries) {
-        // In v0 versioned buckets, the cursor iterates both master
-        // and version keys interleaved, so we multiply by 2 to
-        // ensure enough master keys pass through the limit.
-        // In v1 format, only master keys are iterated.
+            // scannedKeys is incremented in addContents(), which only master
+            // keys reach. In v0 versioned buckets the cursor also iterates the
+            // version keys interleaved with them, and those consume the limit
+            // without counting, so we multiply by 2 to ensure enough master
+            // keys pass through. In v1 format, only master keys are iterated.
+            // NOTE: listings whose counter lives in filter() see every entry
+            // and must NOT copy this factor -- see DelimiterVersions._cursorLimit().
             const factor = this.vFormat === 'v0' ? 2 : 1;
-            params.limit = (this.maxScannedLifecycleListingEntries * factor) + 1;
+            params.limit = this.maxScannedLifecycleListingEntries * factor + 1;
         }
 
         return params;
@@ -79,9 +81,7 @@ class DelimiterCurrent extends DelimiterMaster {
         try {
             p = JSON.parse(s);
         } catch (e: any) {
-            this.logger.warn(
-                'Could not parse Object Metadata while listing',
-                { err: e.toString() });
+            this.logger.warn('Could not parse Object Metadata while listing', { err: e.toString() });
         }
         return p;
     }
@@ -98,11 +98,10 @@ class DelimiterCurrent extends DelimiterMaster {
     _reachedMaxKeys(): boolean {
         if (this.maxScannedLifecycleListingEntries && this.scannedKeys >= this.maxScannedLifecycleListingEntries) {
             this.IsTruncated = true;
-            this.logger.info('listing stopped due to reaching the maximum scanned entries limit',
-                {
-                    maxScannedLifecycleListingEntries: this.maxScannedLifecycleListingEntries,
-                    scannedKeys: this.scannedKeys,
-                });
+            this.logger.info('listing stopped due to reaching the maximum scanned entries limit', {
+                maxScannedLifecycleListingEntries: this.maxScannedLifecycleListingEntries,
+                scannedKeys: this.scannedKeys,
+            });
             return true;
         }
         return super._reachedMaxKeys();
@@ -117,8 +116,10 @@ class DelimiterCurrent extends DelimiterMaster {
             const dataStoreName = parsedValue.dataStoreName;
             // We then check if the current version is older than the "beforeDate" and
             // "excludedDataStoreName" is not specified or if specified and the data store name is different.
-            if ((!this.beforeDate || (lastModified && lastModified < this.beforeDate)) &&
-                (!this.excludedDataStoreName || dataStoreName !== this.excludedDataStoreName)) {
+            if (
+                (!this.beforeDate || (lastModified && lastModified < this.beforeDate)) &&
+                (!this.excludedDataStoreName || dataStoreName !== this.excludedDataStoreName)
+            ) {
                 super.addContents(key, value);
             }
             // In the event of a timeout occurring before any content is added,
