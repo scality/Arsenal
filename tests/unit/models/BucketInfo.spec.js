@@ -372,7 +372,7 @@ Object.keys(acl).forEach(
         });
 
         describe('constructor', () => {
-            it('this should have the right BucketInfo types',
+            it('this should have the right BucketInfo types (uid)',
                 () => {
                     assert.strictEqual(typeof dummyBucket.getName(), 'string');
                     assert.strictEqual(typeof dummyBucket.getOwner(), 'string');
@@ -382,7 +382,7 @@ Object.keys(acl).forEach(
                         'string');
                     assert.strictEqual(typeof dummyBucket.getUid(), 'string');
                 });
-            it('this should have the right BucketInfo types', () => {
+            it('this should have the right BucketInfo types (object lock)', () => {
                 assert.strictEqual(typeof dummyBucket.getName(), 'string');
                 assert.strictEqual(typeof dummyBucket.getOwner(), 'string');
                 assert.strictEqual(typeof dummyBucket.getOwnerDisplayName(),
@@ -728,7 +728,7 @@ Object.keys(acl).forEach(
                 assert.deepStrictEqual(
                     dummyBucket.getQuota(), testQuota);
             });
-            it('setQuota should set bucket quota', () => {
+            it('setQuota should default bucket quota to 0n when none is given', () => {
                 dummyBucket.setQuota();
                 assert.deepStrictEqual(
                     dummyBucket.getQuota(), 0n);

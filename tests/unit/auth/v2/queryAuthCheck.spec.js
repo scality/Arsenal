@@ -7,7 +7,7 @@ const DummyRequestLogger = require('../../helpers').DummyRequestLogger;
 
 const log = new DummyRequestLogger();
 
-describe('v2: queryAuthCheck', () => {
+describe('v2: queryAuthCheck security token', () => {
     [
         { token: undefined, error: false },
         { token: 'invalid-token', error: true },
@@ -28,7 +28,7 @@ describe('v2: queryAuthCheck', () => {
     }));
 });
 
-describe('v2: queryAuthCheck', () => {
+describe('v2: queryAuthCheck pre-signed URL expiry', () => {
     let clock;
 
     beforeEach(() => {

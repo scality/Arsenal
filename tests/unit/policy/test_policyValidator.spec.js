@@ -423,15 +423,15 @@ describe('Policies validation - Statement', () => {
         });
     });
 
-    it('user policy should succeed for a valid object', () => {
+    it('user policy should succeed for a single Statement object', () => {
         check(userPolicy, successRes, user);
     });
 
-    it('resource policy should succeed for a valid object', () => {
+    it('resource policy should succeed for a single-statement array', () => {
         check(resourcePolicy, successRes, resource);
     });
 
-    it('user policy should succeed for a valid object', () => {
+    it('user policy should succeed for a Statement array of several statements', () => {
         userPolicy.Statement = [
             {
                 Effect: 'Allow',
@@ -447,7 +447,7 @@ describe('Policies validation - Statement', () => {
         check(userPolicy, successRes, user);
     });
 
-    it('resource policy should succeed for a valid object', () => {
+    it('resource policy should succeed for a Statement array of several statements', () => {
         resourcePolicy.Statement = [
             {
                 Effect: 'Allow',

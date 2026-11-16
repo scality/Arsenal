@@ -34,7 +34,7 @@ describe('MongoClientInterface:putObjectWithCond', () => {
         });
     });
 
-    it('should fail when getBucketVFormat fails', done => {
+    it('should fail when translateConditions throws', done => {
         sinon.stub(client, 'getCollection').callsFake(() => ({}));
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null));
         sinon.stub(utils, 'translateConditions').callsFake(() => {throw errors.InternalError;});
@@ -85,7 +85,7 @@ describe('MongoClientInterface:deleteObjectWithCond', () => {
         });
     });
 
-    it('should fail when getBucketVFormat fails', done => {
+    it('should fail when translateConditions throws', done => {
         sinon.stub(client, 'getCollection').callsFake(() => ({}));
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null));
         sinon.stub(utils, 'translateConditions').callsFake(() => {throw errors.InternalError;});

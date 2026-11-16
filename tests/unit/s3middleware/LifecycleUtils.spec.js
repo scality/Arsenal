@@ -473,7 +473,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
         });
     });
 
-    it('should return Transition when multiple rule transitions', () => {
+    it('should return NoncurrentVersionTransition when multiple rule transitions', () => {
         const applicableRules = [
             new LifecycleRule()
                 .addNCVTransitions([
@@ -499,7 +499,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
         });
     });
 
-    it('should return Transition across many rules: first rule', () => {
+    it('should return NoncurrentVersionTransition across many rules: first rule', () => {
         const applicableRules = [
             new LifecycleRule()
                 .addNCVTransitions([
@@ -529,7 +529,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
         });
     });
 
-    it('should return Transition across many rules: second rule', () => {
+    it('should return NoncurrentVersionTransition across many rules: second rule', () => {
         const applicableRules = [
             new LifecycleRule()
                 .addNCVTransitions([
@@ -559,7 +559,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
         });
     });
 
-    it('should return Transition across many rules: first rule with ' + 'multiple transitions', () => {
+    it('should return NoncurrentVersionTransition across many rules: first rule with multiple transitions', () => {
         const applicableRules = [
             new LifecycleRule()
                 .addNCVTransitions([
@@ -593,7 +593,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
         });
     });
 
-    it('should return Transition across many rules: second rule with ' + 'multiple transitions', () => {
+    it('should return NoncurrentVersionTransition across many rules: second rule with multiple transitions', () => {
         const applicableRules = [
             new LifecycleRule()
                 .addNCVTransitions([
@@ -631,7 +631,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
         });
     });
 
-    it('should not return transition when Transitions has no applicable ' + 'rule: Days', () => {
+    it('should not return NoncurrentVersionTransition when it has no applicable rule: NoncurrentDays', () => {
         const applicableRules = [
             new LifecycleRule()
                 .addNCVTransitions([
@@ -648,7 +648,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
         assert.strictEqual(rules.Transition, undefined);
     });
 
-    it('should not return transition when Transitions is an empty ' + 'array', () => {
+    it('should not return NoncurrentVersionTransition when NoncurrentVersionTransitions is an empty array', () => {
         const applicableRules = [new LifecycleRule().addNCVTransitions([]).build()];
         const rules = lutils.getApplicableRules(applicableRules, {});
         assert.strictEqual(rules.Transition, undefined);
@@ -707,7 +707,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
             },
         );
 
-        it('should not return transition when applicable transition is ' + 'already stored at the destination', () => {
+        it('should not return NoncurrentVersionTransition already stored at the destination', () => {
             const applicableRules = [
                 new LifecycleRule()
                     .addNCVTransitions([
@@ -725,8 +725,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
         });
 
         it(
-            'should not return transition when applicable transition is ' +
-                'already stored at the destination: multiple rules',
+            'should not return NoncurrentVersionTransition already stored at the destination: multiple rules',
             () => {
                 const applicableRules = [
                     new LifecycleRule()

@@ -19,14 +19,14 @@ describe('s3middleware object utilities', () => {
         done();
     });
 
-    it('should convert base 64 MD5 string to hexadecimal', done => {
+    it('should convert base 64 MD5 string to a binary buffer', done => {
         const hash = crypto.createHash('md5').digest('base64');
         const hashBuffer = objectUtils.getMD5Buffer(hash);
         assert.ok(base64Buffer.equals(hashBuffer));
         done();
     });
 
-    it('should convert base 64 MD5 buffer to hexadecimal', done => {
+    it('should return a binary MD5 buffer unchanged', done => {
         const hash = crypto.createHash('md5').digest();
         const hashBuffer = objectUtils.getMD5Buffer(hash);
         assert.ok(base64Buffer.equals(hashBuffer));
@@ -40,7 +40,7 @@ describe('s3middleware object utilities', () => {
         done();
     });
 
-    it('should convert base 64 MD5 buffer to hexadecimal', done => {
+    it('should convert binary MD5 buffer to hexadecimal', done => {
         const hash = crypto.createHash('md5').digest();
         const convertedHash = objectUtils.getHexMD5(hash);
         assert.strictEqual(convertedHash, hexHash);
