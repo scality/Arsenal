@@ -15,8 +15,7 @@ describe('ObjectMDAmzRestore setters/getters', () => {
         const ongoing = true;
         const wrongOngoingRequest = 'bad';
         amzRestore.setOngoingRequest(ongoing);
-        assert.deepStrictEqual(amzRestore.getOngoingRequest(),
-            ongoing);
+        assert.deepStrictEqual(amzRestore.getOngoingRequest(), ongoing);
         assert.throws(() => {
             amzRestore.setOngoingRequest();
         });
@@ -28,8 +27,7 @@ describe('ObjectMDAmzRestore setters/getters', () => {
         const expiry = new Date(100);
         const wrongExpiryDate = 'bad';
         amzRestore.setExpiryDate(expiry);
-        assert.deepStrictEqual(amzRestore.getExpiryDate(),
-            expiry);
+        assert.deepStrictEqual(amzRestore.getExpiryDate(), expiry);
         assert.throws(() => {
             amzRestore.setExpiryDate(wrongExpiryDate);
         });

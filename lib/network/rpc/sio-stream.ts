@@ -18,12 +18,7 @@ class SIOOutputStream extends stream.Writable {
     ackTimeoutMs: number;
     nPendingAck: number;
 
-    constructor(
-        socket: SIOStreamSocket,
-        streamId: string,
-        maxPendingAck: number,
-        ackTimeoutMs: number,
-    ) {
+    constructor(socket: SIOStreamSocket, streamId: string, maxPendingAck: number, ackTimeoutMs: number) {
         super({ objectMode: true });
         this.socket = socket;
         this.streamId = streamId;
@@ -58,26 +53,31 @@ class SIOOutputStream extends stream.Writable {
 
         debug(`_writev(${JSON.stringify(payload)}, ...)`);
         this.nPendingAck += 1;
-        const timeoutInfo =
-            `stream timeout: did not receive ack after ${this.ackTimeoutMs}ms`;
-        async.timeout((cb: any) => {
-            this.socket._write(this.streamId, payload, cb);
-        }, this.ackTimeoutMs, timeoutInfo)(
-            err => {
-                debug(`ack stream-data ${this.streamId}
-                      (${JSON.stringify(payload)}):`, err);
-                if (this.nPendingAck === this.maxPendingAck) {
-                    callback();
-                }
-                this.nPendingAck -= 1;
-                if (err) {
-                    // notify remote of the error (timeout notably)
-                    debug('stream error:', err);
-                    this.socket._error(this.streamId, err);
-                    // stop the producer
-                    this.socket.destroyStream(this.streamId);
-                }
-            });
+        const timeoutInfo = `stream timeout: did not receive ack after ${this.ackTimeoutMs}ms`;
+        async.timeout(
+            (cb: any) => {
+                this.socket._write(this.streamId, payload, cb);
+            },
+            this.ackTimeoutMs,
+            timeoutInfo,
+        )(err => {
+            debug(
+                `ack stream-data ${this.streamId}
+                      (${JSON.stringify(payload)}):`,
+                err,
+            );
+            if (this.nPendingAck === this.maxPendingAck) {
+                callback();
+            }
+            this.nPendingAck -= 1;
+            if (err) {
+                // notify remote of the error (timeout notably)
+                debug('stream error:', err);
+                this.socket._error(this.streamId, err);
+                // stop the producer
+                this.socket.destroyStream(this.streamId);
+            }
+        });
         if (this.nPendingAck < this.maxPendingAck) {
             callback();
         }
@@ -185,12 +185,7 @@ class SIOStreamSocket {
     remoteStreams: any;
     localStreams: any;
 
-    constructor(
-        socket: any,
-        logger: Logger,
-        maxPendingAck: number,
-        ackTimeoutMs: number,
-    ) {
+    constructor(socket: any, logger: Logger, maxPendingAck: number, ackTimeoutMs: number) {
         assert(socket);
         assert(logger);
 
@@ -221,8 +216,7 @@ class SIOStreamSocket {
         // stream data message, contains an array of one or more data objects
         this.socket.on('stream-data', (payload: any, cb: any) => {
             const { streamId, data } = payload;
-            log.debug('received \'stream-data\' event',
-                { streamId, size: data.length });
+            log.debug("received 'stream-data' event", { streamId, size: data.length });
             const stream = this.remoteStreams[streamId];
             if (!stream) {
                 log.debug('no such remote stream registered', { streamId });
@@ -235,7 +229,7 @@ class SIOStreamSocket {
         // signals normal end of stream to the consumer
         this.socket.on('stream-end', (payload: any, cb: any) => {
             const { streamId } = payload;
-            log.debug('received \'stream-end\' event', { streamId });
+            log.debug("received 'stream-end' event", { streamId });
             const stream = this.remoteStreams[streamId];
             if (!stream) {
                 log.debug('no such remote stream registered', { streamId });
@@ -248,7 +242,7 @@ class SIOStreamSocket {
         // error message sent by the stream producer to the consumer
         this.socket.on('stream-error', (payload: any) => {
             const { streamId, error } = payload;
-            log.debug('received \'stream-error\' event', { streamId, error });
+            log.debug("received 'stream-error' event", { streamId, error });
             const stream = this.remoteStreams[streamId];
             if (!stream) {
                 log.debug('no such remote stream registered', { streamId });
@@ -260,11 +254,10 @@ class SIOStreamSocket {
         // hangup message sent by the stream consumer to the producer
         this.socket.on('stream-hangup', (payload: any) => {
             const { streamId } = payload;
-            log.debug('received \'stream-hangup\' event', { streamId });
+            log.debug("received 'stream-hangup' event", { streamId });
             const stream = this.localStreams[streamId];
             if (!stream) {
-                log.debug('no such local stream registered' +
-                          '(may have already reached the end)', { streamId });
+                log.debug('no such local stream registered (may have already reached the end)', { streamId });
                 return;
             }
             this.destroyStream(streamId);
@@ -287,9 +280,8 @@ class SIOStreamSocket {
             return arg;
         }
         const log = this.logger;
-        const isReadStream = (typeof arg.pipe === 'function'
-                              && typeof (arg.read) === 'function');
-        let isWriteStream = (typeof arg.write === 'function');
+        const isReadStream = typeof arg.pipe === 'function' && typeof arg.read === 'function';
+        let isWriteStream = typeof arg.write === 'function';
 
         if (isReadStream || isWriteStream) {
             if (isReadStream && isWriteStream) {
@@ -307,16 +299,13 @@ class SIOStreamSocket {
             };
             let transportStream;
             if (isReadStream) {
-                transportStream = new SIOOutputStream(this, streamId,
-                    this.maxPendingAck,
-                    this.ackTimeoutMs);
+                transportStream = new SIOOutputStream(this, streamId, this.maxPendingAck, this.ackTimeoutMs);
             } else {
                 transportStream = new SIOInputStream(this, streamId);
             }
             this.localStreams[streamId] = arg;
             arg.once('close', () => {
-                log.debug('stream closed, removing from local streams',
-                    { streamId });
+                log.debug('stream closed, removing from local streams', { streamId });
                 delete this.localStreams[streamId];
             });
             arg.on('error', error => {
@@ -376,25 +365,20 @@ class SIOStreamSocket {
             if (arg.readable) {
                 stream = new SIOInputStream(this, streamId);
             } else if (arg.writable) {
-                stream = new SIOOutputStream(this, streamId,
-                    this.maxPendingAck,
-                    this.ackTimeoutMs);
+                stream = new SIOOutputStream(this, streamId, this.maxPendingAck, this.ackTimeoutMs);
             } else {
-                throw new Error('can\'t decode stream neither readable ' +
-                                'nor writable');
+                throw new Error("can't decode stream neither readable nor writable");
             }
             this.remoteStreams[streamId] = stream;
             if (arg.readable) {
                 stream.once('close', () => {
-                    log.debug('stream closed, removing from remote streams',
-                        { streamId });
+                    log.debug('stream closed, removing from remote streams', { streamId });
                     delete this.remoteStreams[streamId];
                 });
             }
             if (arg.writable) {
                 stream.once('finish', () => {
-                    log.debug('stream finished, removing from remote streams',
-                        { streamId });
+                    log.debug('stream finished, removing from remote streams', { streamId });
                     delete this.remoteStreams[streamId];
                 });
             }
@@ -424,24 +408,22 @@ class SIOStreamSocket {
     }
 
     _write(streamId: string, data: any, cb: any) {
-        this.logger.debug('emit \'stream-data\' event',
-            { streamId, size: data.length });
+        this.logger.debug("emit 'stream-data' event", { streamId, size: data.length });
         this.socket.emit('stream-data', { streamId, data }, cb);
     }
 
     _finish(streamId: string, cb: any) {
-        this.logger.debug('emit \'stream-end\' event', { streamId });
+        this.logger.debug("emit 'stream-end' event", { streamId });
         this.socket.emit('stream-end', { streamId }, cb);
     }
 
     _error(streamId: string, error: Error) {
-        this.logger.debug('emit \'stream-error\' event', { streamId, error });
-        this.socket.emit('stream-error', { streamId,
-            error: flattenError(error) });
+        this.logger.debug("emit 'stream-error' event", { streamId, error });
+        this.socket.emit('stream-error', { streamId, error: flattenError(error) });
     }
 
     _hangup(streamId: string) {
-        this.logger.debug('emit \'stream-hangup\' event', { streamId });
+        this.logger.debug("emit 'stream-hangup' event", { streamId });
         this.socket.emit('stream-hangup', { streamId });
     }
 
@@ -466,4 +448,4 @@ export function createSocket(
     ackTimeoutMs = DEFAULT_ACK_TIMEOUT_MS,
 ) {
     return new SIOStreamSocket(socket, logger, maxPendingAck, ackTimeoutMs);
-};
+}

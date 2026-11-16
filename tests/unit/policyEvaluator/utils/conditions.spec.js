@@ -7,7 +7,7 @@ const RequestContext = require('../../../../lib/policyEvaluator/RequestContext')
 
 describe('policyEvaluator utils: findConditionKey', () => {
     const headers = {
-        referer: 'http://example.com',
+        'referer': 'http://example.com',
         'user-agent': 'aws-sdk-js/2.0',
         'x-amz-acl': 'public-read',
         'x-amz-grant-read': 'id=canonical-id-read',
@@ -23,10 +23,10 @@ describe('policyEvaluator utils: findConditionKey', () => {
         'x-amz-meta-scal-location-constraint': 'us-east-2',
     };
     const query = {
-        versionId: 'version-id-1',
-        delimiter: '/',
+        'versionId': 'version-id-1',
+        'delimiter': '/',
         'max-keys': '100',
-        prefix: 'photos/',
+        'prefix': 'photos/',
     };
     const requesterInfo = {
         arn: 'arn:aws:iam::123456789012:user/johndoe',

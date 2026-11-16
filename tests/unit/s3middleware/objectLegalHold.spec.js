@@ -1,6 +1,5 @@
 const assert = require('assert');
-const { convertToXml, parseLegalHoldXml } =
-    require('../../../lib/s3middleware/objectLegalHold');
+const { convertToXml, parseLegalHoldXml } = require('../../../lib/s3middleware/objectLegalHold');
 const DummyRequestLogger = require('../helpers').DummyRequestLogger;
 
 const log = new DummyRequestLogger();
@@ -39,8 +38,7 @@ const failTests = [
 ];
 
 const generateXml = status =>
-    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
-    `<LegalHold><Status>${status}</Status></LegalHold>`;
+    `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><LegalHold><Status>${status}</Status></LegalHold>`;
 
 describe('object legal hold helpers: parseLegalHoldXml', () => {
     failTests.forEach(test => {

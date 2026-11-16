@@ -89,8 +89,7 @@ export default class ObjectMDAzureInfo {
     }
 
     setContainerStoredAccessPolicies(containerStoredAccessPolicies: any[]) {
-        this.data.containerStoredAccessPolicies =
-            containerStoredAccessPolicies;
+        this.data.containerStoredAccessPolicies = containerStoredAccessPolicies;
         return this;
     }
 

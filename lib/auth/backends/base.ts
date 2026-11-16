@@ -20,23 +20,22 @@ export default class BaseBackend {
     }
 
     /** verifySignatureV2
-    * @param stringToSign - string to sign built per AWS rules
-    * @param signatureFromRequest - signature sent with request
-    * @param accessKey - account accessKey
-    * @param options - contains algorithm (SHA1 or SHA256)
-    * @param callback - callback with either error or user info
-    * @return calls callback
-    */
+     * @param stringToSign - string to sign built per AWS rules
+     * @param signatureFromRequest - signature sent with request
+     * @param accessKey - account accessKey
+     * @param options - contains algorithm (SHA1 or SHA256)
+     * @param callback - callback with either error or user info
+     * @return calls callback
+     */
     verifySignatureV2(
         stringToSign: string,
         signatureFromRequest: string,
         accessKey: string,
         options: any,
-        callback: any
+        callback: any,
     ) {
         return callback(errors.AuthMethodNotImplemented);
     }
-
 
     /** verifySignatureV4
      * @param stringToSign - string to sign built per AWS rules
@@ -56,7 +55,7 @@ export default class BaseBackend {
         region: string,
         scopeDate: string,
         options: any,
-        callback: any
+        callback: any,
     ) {
         return callback(errors.AuthMethodNotImplemented);
     }
@@ -99,7 +98,7 @@ export default class BaseBackend {
      */
     getCanonicalIdsByAccountIds(
         accountIds: string[],
-        options: { reqUid: string, logger: RequestLogger },
+        options: { reqUid: string; logger: RequestLogger },
         callback: ArsenalCallback<AccountCanonicalInfoResults>,
     ) {
         return callback(errors.AuthMethodNotImplemented);

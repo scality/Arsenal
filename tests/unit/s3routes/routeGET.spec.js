@@ -34,12 +34,7 @@ describe('routerGET', () => {
 
         routerGET(request, response, api, log, statsClient, dataRetrievalParams);
 
-        expect(routesUtils.responseXMLBody).toHaveBeenCalledWith(
-            new ArsenalError('NoSuchBucket'),
-            null,
-            response,
-            log,
-        );
+        expect(routesUtils.responseXMLBody).toHaveBeenCalledWith(new ArsenalError('NoSuchBucket'), null, response, log);
     });
 
     it('should call serviceGet when bucketName and objectKey are undefined', () => {
@@ -49,9 +44,7 @@ describe('routerGET', () => {
 
         routerGET(request, response, api, log, statsClient, dataRetrievalParams);
 
-        expect(api.callApiMethod).toHaveBeenCalledWith(
-            'serviceGet', request, response, log, expect.any(Function),
-        );
+        expect(api.callApiMethod).toHaveBeenCalledWith('serviceGet', request, response, log, expect.any(Function));
     });
 
     it('should call bucketGetACL when bucketName is defined and query.acl is present', () => {
@@ -61,9 +54,7 @@ describe('routerGET', () => {
 
         routerGET(request, response, api, log, statsClient, dataRetrievalParams);
 
-        expect(api.callApiMethod).toHaveBeenCalledWith(
-            'bucketGetACL', request, response, log, expect.any(Function),
-        );
+        expect(api.callApiMethod).toHaveBeenCalledWith('bucketGetACL', request, response, log, expect.any(Function));
     });
 
     it('should call objectGet when both bucketName and objectKey are defined and no specific query is present', () => {
@@ -73,20 +64,22 @@ describe('routerGET', () => {
 
         routerGET(request, response, api, log, statsClient, dataRetrievalParams);
 
-        expect(api.callApiMethod).toHaveBeenCalledWith(
-            'objectGet', request, response, log, expect.any(Function),
-        );
+        expect(api.callApiMethod).toHaveBeenCalledWith('objectGet', request, response, log, expect.any(Function));
     });
 
     it('should call objectGetAttributes when query.attributes is present', () => {
         request.bucketName = 'bucketName';
         request.objectKey = 'objectKey';
-        request.query = { 'attributes': true };
+        request.query = { attributes: true };
 
         routerGET(request, response, api, log, statsClient, dataRetrievalParams);
 
         expect(api.callApiMethod).toHaveBeenCalledWith(
-            'objectGetAttributes', request, response, log, expect.any(Function),
+            'objectGetAttributes',
+            request,
+            response,
+            log,
+            expect.any(Function),
         );
     });
 
@@ -97,9 +90,7 @@ describe('routerGET', () => {
 
         routerGET(request, response, api, log, statsClient, dataRetrievalParams);
 
-        expect(api.callApiMethod).toHaveBeenCalledWith(
-            'objectGetACL', request, response, log, expect.any(Function),
-        );
+        expect(api.callApiMethod).toHaveBeenCalledWith('objectGetACL', request, response, log, expect.any(Function));
     });
 
     it('should call bucketGetLogging when query.logging is present', () => {
@@ -109,7 +100,11 @@ describe('routerGET', () => {
         routerGET(request, response, api, log, statsClient, dataRetrievalParams);
 
         expect(api.callApiMethod).toHaveBeenCalledWith(
-            'bucketGetLogging', request, response, log, expect.any(Function),
+            'bucketGetLogging',
+            request,
+            response,
+            log,
+            expect.any(Function),
         );
     });
 
@@ -120,7 +115,11 @@ describe('routerGET', () => {
         routerGET(request, response, api, log, statsClient, dataRetrievalParams);
 
         expect(api.callApiMethod).toHaveBeenCalledWith(
-            'bucketGetRateLimit', request, response, log, expect.any(Function),
+            'bucketGetRateLimit',
+            request,
+            response,
+            log,
+            expect.any(Function),
         );
     });
 
@@ -158,27 +157,25 @@ describe('routerGET', () => {
 
         routerGET(request, response, api, log, statsClient, dataRetrievalParams);
 
-        expect(routesUtils.statsReport500).toHaveBeenCalledWith(
-            new ArsenalError('InternalError'), statsClient,
-        );
+        expect(routesUtils.statsReport500).toHaveBeenCalledWith(new ArsenalError('InternalError'), statsClient);
     });
 
     it('should call the appropriate bucket query methods based on query parameters', () => {
         const queryMethods = {
-            acl: 'bucketGetACL',
-            replication: 'bucketGetReplication',
-            cors: 'bucketGetCors',
-            versioning: 'bucketGetVersioning',
-            website: 'bucketGetWebsite',
-            tagging: 'bucketGetTagging',
-            lifecycle: 'bucketGetLifecycle',
-            uploads: 'listMultipartUploads',
-            location: 'bucketGetLocation',
-            policy: 'bucketGetPolicy',
+            'acl': 'bucketGetACL',
+            'replication': 'bucketGetReplication',
+            'cors': 'bucketGetCors',
+            'versioning': 'bucketGetVersioning',
+            'website': 'bucketGetWebsite',
+            'tagging': 'bucketGetTagging',
+            'lifecycle': 'bucketGetLifecycle',
+            'uploads': 'listMultipartUploads',
+            'location': 'bucketGetLocation',
+            'policy': 'bucketGetPolicy',
             'object-lock': 'bucketGetObjectLock',
-            notification: 'bucketGetNotification',
-            encryption: 'bucketGetEncryption',
-            search: 'metadataSearch',
+            'notification': 'bucketGetNotification',
+            'encryption': 'bucketGetEncryption',
+            'search': 'metadataSearch',
         };
 
         Object.keys(queryMethods).forEach(queryParam => {
@@ -189,11 +186,14 @@ describe('routerGET', () => {
             routerGET(request, response, api, log, statsClient, dataRetrievalParams);
 
             expect(api.callApiMethod).toHaveBeenCalledWith(
-                queryMethods[queryParam], request, response, log, expect.any(Function),
+                queryMethods[queryParam],
+                request,
+                response,
+                log,
+                expect.any(Function),
             );
 
             api.callApiMethod.mockClear();
         });
     });
-
 });

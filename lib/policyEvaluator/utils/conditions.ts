@@ -432,7 +432,7 @@ export function convertConditionOperator(operator: string): boolean {
         // the six colon-delimited ARN components separately, and support the
         // * / ? wildcards: ArnEquals behaves identically to ArnLike, and each
         // Not variant is the negation of its counterpart.
-        // https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_condition_operators.html#Conditions_ARN
+        // https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_condition_operators.html
         ArnEquals: function ArnEquals(key: string, value: string[]) {
             return operatorMap.ArnLike(key, value);
         },

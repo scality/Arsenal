@@ -1,4 +1,4 @@
-'use strict'; // eslint-disable-line
+'use strict';
 
 const assert = require('assert');
 const constants = require('../../../../lib/constants');
@@ -15,17 +15,15 @@ describe('parseURL function', () => {
             expectedKey: 'test with spaces',
         },
         {
-            inputUrl: `${constants.passthroughFileURL}` +
-                '/test%20with%20encoded%20spaces',
+            inputUrl: `${constants.passthroughFileURL}/test%20with%20encoded%20spaces`,
             expectedKey: 'test with encoded spaces',
         },
     ].forEach(testCase => {
         const { inputUrl, expectedKey } = testCase;
 
-        it(`should return ${expectedKey} with url "${inputUrl}"`,
-            () => {
-                const pathInfo = parseURL(inputUrl, true);
-                assert.strictEqual(pathInfo.key, expectedKey);
-            });
+        it(`should return ${expectedKey} with url "${inputUrl}"`, () => {
+            const pathInfo = parseURL(inputUrl, true);
+            assert.strictEqual(pathInfo.key, expectedKey);
+        });
     });
 });

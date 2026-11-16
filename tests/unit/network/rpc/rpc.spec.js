@@ -1,11 +1,10 @@
-'use strict'; // eslint-disable-line
+'use strict';
 
 const assert = require('assert');
 
 const Logger = require('werelogs').Logger;
 
 const rpc = require('../../../../lib/network/rpc/rpc');
-
 
 const miscSyncCommands = {
     ping: function ping(env) {
@@ -25,14 +24,11 @@ const miscAsyncCommands = {
     },
 };
 
-
 describe('rpc - generic client/server RPC system', () => {
     let server;
     let miscClient;
-    const srvLogger = new Logger('rpc:test-server',
-        { level: 'info', dump: 'error' });
-    const cliLogger = new Logger('rpc:test-client',
-        { level: 'info', dump: 'error' });
+    const srvLogger = new Logger('rpc:test-server', { level: 'info', dump: 'error' });
+    const cliLogger = new Logger('rpc:test-client', { level: 'info', dump: 'error' });
     const reqLogger = cliLogger.newRequestLoggerFromSerializedUids('foo');
 
     function setupRPC(done) {
@@ -42,7 +38,8 @@ describe('rpc - generic client/server RPC system', () => {
         const miscService = new rpc.BaseService({
             server,
             namespace: '/test/misc',
-            logger: srvLogger });
+            logger: srvLogger,
+        });
         miscService.registerSyncAPI(miscSyncCommands);
         miscService.registerAsyncAPI(miscAsyncCommands);
 
@@ -100,8 +97,7 @@ describe('rpc - generic client/server RPC system', () => {
         });
         it('should throw if last argument of call is not a callback', done => {
             assert.throws(() => {
-                miscClient.withRequestLogger(reqLogger).pingAsync(
-                    'not a callback');
+                miscClient.withRequestLogger(reqLogger).pingAsync('not a callback');
             }, Error);
             done();
         });

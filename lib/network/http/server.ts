@@ -273,8 +273,7 @@ export default class Server {
      * @return itself
      */
     onListening(cb: () => void) {
-        assert.strictEqual(typeof cb, 'function',
-            'Callback must be a function');
+        assert.strictEqual(typeof cb, 'function', 'Callback must be a function');
         this._cbOnListening = cb;
         return this;
     }
@@ -286,8 +285,7 @@ export default class Server {
      * @return itself
      */
     onRequest(cb: (req: http.IncomingMessage, res: http.ServerResponse) => void) {
-        assert.strictEqual(typeof cb, 'function',
-            'Callback must be a function');
+        assert.strictEqual(typeof cb, 'function', 'Callback must be a function');
         this._cbOnRequest = cb;
         return this;
     }
@@ -299,8 +297,7 @@ export default class Server {
      * @return itself
      */
     onCheckExpectation(cb: (req: http.IncomingMessage, res: http.ServerResponse) => void) {
-        assert.strictEqual(typeof cb, 'function',
-            'Callback must be a function');
+        assert.strictEqual(typeof cb, 'function', 'Callback must be a function');
         this._cbOnCheckExpectation = cb;
         return this;
     }
@@ -312,8 +309,7 @@ export default class Server {
      * @return itself
      */
     onCheckContinue(cb: (req: http.IncomingMessage, res: http.ServerResponse) => void) {
-        assert.strictEqual(typeof cb, 'function',
-            'Callback must be a function');
+        assert.strictEqual(typeof cb, 'function', 'Callback must be a function');
         this._cbOnCheckContinue = cb;
         return this;
     }
@@ -326,8 +322,7 @@ export default class Server {
      * @return itself
      */
     onError(cb: (err: Error) => boolean) {
-        assert.strictEqual(typeof cb, 'function',
-            'Callback must be a function');
+        assert.strictEqual(typeof cb, 'function', 'Callback must be a function');
         this._cbOnError = cb;
         return this;
     }
@@ -339,8 +334,7 @@ export default class Server {
      * @return itself
      */
     onStop(cb: () => void) {
-        assert.strictEqual(typeof cb, 'function',
-            'Callback must be a function');
+        assert.strictEqual(typeof cb, 'function', 'Callback must be a function');
         this._cbOnStop = cb;
         return this;
     }
@@ -415,39 +409,33 @@ export default class Server {
                     // main server, as it might be able to serve more clients.
                     maxSockets: false,
                 });
-                this._server = https.createServer(this._https,
-                    (req, res) => this._onRequest(req, res));
+                this._server = https.createServer(this._https, (req, res) => this._onRequest(req, res));
             } else {
                 this._logger.info('starting Server under http', {
                     method: 'arsenal.network.Server.start',
                     port: this._port,
                 });
-                this._server = http.createServer(
-                    (req, res) => this._onRequest(req, res));
+                this._server = http.createServer((req, res) => this._onRequest(req, res));
             }
             if (this._keepAliveTimeout) {
                 this._server.keepAliveTimeout = this._keepAliveTimeout;
             }
 
             this._server.on('error', err => this._onError(err));
-            this._server.on('secureConnection',
-                sock => this._onSecureConnection(sock));
+            this._server.on('secureConnection', sock => this._onSecureConnection(sock));
             this._server.on('connection', sock => {
                 // Setting no delay of the socket to the value configured
                 // TODO fix this
                 sock.setNoDelay(this.isNoDelay());
-                sock.on('error', err => this._logger.info(
-                    'socket error - request rejected', { error: err }));
+                sock.on('error', err => this._logger.info('socket error - request rejected', { error: err }));
             });
-            this._server.on('tlsClientError', (err, sock) =>
-                this._onClientError(err, sock));
+            this._server.on('tlsClientError', (err, sock) => this._onClientError(err, sock));
             this._server.on('clientError', (err, sock) =>
                 // @ts-expect-errors
-                this._onClientError(err, sock));
-            this._server.on('checkContinue', (req, res) =>
-                this._onCheckContinue(req, res));
-            this._server.on('checkExpectation', (req, res) =>
-                this._onCheckExpectation(req, res));
+                this._onClientError(err, sock),
+            );
+            this._server.on('checkContinue', (req, res) => this._onCheckContinue(req, res));
+            this._server.on('checkExpectation', (req, res) => this._onCheckExpectation(req, res));
             this._server.on('listening', () => this._onListening());
         }
         this._server.listen(this._port, this._address);

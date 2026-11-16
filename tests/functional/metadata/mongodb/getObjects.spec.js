@@ -5,8 +5,7 @@ const { MongoMemoryReplSet } = require('mongodb-memory-server');
 const { versioning } = require('../../../../index');
 const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
 const BucketInfo = require('../../../../lib/models/BucketInfo').default;
-const MetadataWrapper =
-    require('../../../../lib/storage/metadata/MetadataWrapper');
+const MetadataWrapper = require('../../../../lib/storage/metadata/MetadataWrapper');
 const genVID = versioning.VersionID.generateVersionId;
 const { BucketVersioningKeyFormat } = versioning.VersioningConstants;
 const { formatMasterKey, formatVersionKey } = require('../../../../lib/storage/metadata/mongoclient/utils');
@@ -19,9 +18,7 @@ const N = 10;
 
 const mongoserver = new MongoMemoryReplSet({
     debug: false,
-    instanceOpts: [
-        { port: 27019 },
-    ],
+    instanceOpts: [{ port: 27019 }],
     replSet: {
         name: 'rs0',
         count: 1,
@@ -32,8 +29,7 @@ const mongoserver = new MongoMemoryReplSet({
 
 let uidCounter = 0;
 function generateVersionId() {
-    return genVID(`${process.pid}.${uidCounter++}`,
-        replicationGroupId);
+    return genVID(`${process.pid}.${uidCounter++}`, replicationGroupId);
 }
 
 const variations = [
@@ -58,25 +54,30 @@ describe('MongoClientInterface::metadata.getObjectsMD', () => {
 
     function updateMasterObject(objName, versionId, objVal, vFormat, cb) {
         const mKey = formatMasterKey(objName, vFormat);
-        collection.updateOne(
-            {
-                _id: mKey,
-                $or: [{
-                    'value.versionId': {
-                        $exists: false,
-                    },
+        collection
+            .updateOne(
+                {
+                    _id: mKey,
+                    $or: [
+                        {
+                            'value.versionId': {
+                                $exists: false,
+                            },
+                        },
+                        {
+                            'value.versionId': {
+                                $gt: versionId,
+                            },
+                        },
+                    ],
                 },
                 {
-                    'value.versionId': {
-                        $gt: versionId,
-                    },
+                    $set: { _id: mKey, value: objVal },
                 },
-                ],
-            },
-            {
-                $set: { _id: mKey, value: objVal },
-            },
-            { upsert: true }).then(() => cb(null)).catch(err => cb(err));
+                { upsert: true },
+            )
+            .then(() => cb(null))
+            .catch(err => cb(err));
     }
 
     /**
@@ -86,10 +87,10 @@ describe('MongoClientInterface::metadata.getObjectsMD', () => {
      * @return {undefined}
      */
     function flagObjectForDeletion(key, cb) {
-        collection.updateMany(
-            { 'value.key': key },
-            { $set: { 'value.deleted': true } },
-            { upsert: false }).then(() => cb()).catch(err => cb(err));
+        collection
+            .updateMany({ 'value.key': key }, { $set: { 'value.deleted': true } }, { upsert: false })
+            .then(() => cb())
+            .catch(err => cb(err));
     }
 
     beforeAll(done => {
@@ -111,12 +112,17 @@ describe('MongoClientInterface::metadata.getObjectsMD', () => {
     });
 
     afterAll(done => {
-        async.series([
-            next => metadata.close(next),
-            next => mongoserver.stop()
-                .then(() => next())
-                .catch(next),
-        ], done);
+        async.series(
+            [
+                next => metadata.close(next),
+                next =>
+                    mongoserver
+                        .stop()
+                        .then(() => next())
+                        .catch(next),
+            ],
+            done,
+        );
     });
 
     variations.forEach(variation => {
@@ -165,48 +171,67 @@ describe('MongoClientInterface::metadata.getObjectsMD', () => {
                     versionId: null,
                     repairMaster: null,
                 };
-                async.series([
-                    next => {
-                        metadata.client.defaultBucketKeyFormat = variation.vFormat;
-                        return next();
-                    },
-                    next => metadata.createBucket(BUCKET_NAME, bucketMD, logger, err => {
-                        if (err) {
-                            return next(err);
-                        }
-                        collection = metadata.client.getCollection(BUCKET_NAME);
-                        return next();
-                    }),
-                    next => {
-                        async.eachSeries(paramsArr, (params, eachCb) => {
-                            metadata.putObjectMD(BUCKET_NAME, params.key, params.objVal,
-                                versionParams, logger, (err, res) => {
-                                    if (err) {
-                                        return eachCb(err);
-                                    }
-                                    if (variation.versioning) {
-                                        // eslint-disable-next-line no-param-reassign
-                                        params.versionId = JSON.parse(res).versionId;
-                                    }
-                                    return eachCb(null);
-                                });
-                        }, next);
-                    },
-                    next => {
-                        metadata.putObjectMD(BUCKET_NAME, paramsArr[N - 1].key, paramsArr[N - 1].objVal,
-                            versionParams, logger, (err, res) => {
+                async.series(
+                    [
+                        next => {
+                            metadata.client.defaultBucketKeyFormat = variation.vFormat;
+                            return next();
+                        },
+                        next =>
+                            metadata.createBucket(BUCKET_NAME, bucketMD, logger, err => {
                                 if (err) {
                                     return next(err);
                                 }
-                                if (variation.versioning) {
-                                    versionId2 = JSON.parse(res).versionId;
-                                } else {
-                                    versionId2 = 'null';
-                                }
-                                return next(null);
-                            });
-                    },
-                ], done);
+                                collection = metadata.client.getCollection(BUCKET_NAME);
+                                return next();
+                            }),
+                        next => {
+                            async.eachSeries(
+                                paramsArr,
+                                (params, eachCb) => {
+                                    metadata.putObjectMD(
+                                        BUCKET_NAME,
+                                        params.key,
+                                        params.objVal,
+                                        versionParams,
+                                        logger,
+                                        (err, res) => {
+                                            if (err) {
+                                                return eachCb(err);
+                                            }
+                                            if (variation.versioning) {
+                                                params.versionId = JSON.parse(res).versionId;
+                                            }
+                                            return eachCb(null);
+                                        },
+                                    );
+                                },
+                                next,
+                            );
+                        },
+                        next => {
+                            metadata.putObjectMD(
+                                BUCKET_NAME,
+                                paramsArr[N - 1].key,
+                                paramsArr[N - 1].objVal,
+                                versionParams,
+                                logger,
+                                (err, res) => {
+                                    if (err) {
+                                        return next(err);
+                                    }
+                                    if (variation.versioning) {
+                                        versionId2 = JSON.parse(res).versionId;
+                                    } else {
+                                        versionId2 = 'null';
+                                    }
+                                    return next(null);
+                                },
+                            );
+                        },
+                    ],
+                    done,
+                );
             });
 
             afterEach(done => {
@@ -234,12 +259,14 @@ describe('MongoClientInterface::metadata.getObjectsMD', () => {
             });
 
             it('should not throw an error if object or version is inexistent and return null doc', done => {
-                const request = [{
-                    key: 'nonexistent',
-                    params: {
-                        versionId: variation.versioning ? 'nonexistent' : null,
+                const request = [
+                    {
+                        key: 'nonexistent',
+                        params: {
+                            versionId: variation.versioning ? 'nonexistent' : null,
+                        },
                     },
-                }];
+                ];
                 metadata.getObjectsMD(BUCKET_NAME, request, logger, (err, objects) => {
                     assert.strictEqual(err, null);
                     assert.strictEqual(objects.length, 1);
@@ -258,37 +285,49 @@ describe('MongoClientInterface::metadata.getObjectsMD', () => {
                         versionId: variation.versioning ? objVal.versionId : null,
                     },
                 }));
-                return async.series([
-                    next => {
-                        let objectName = null;
-                        if (variations.versioning) {
-                            objectName =
-                                formatVersionKey(paramsArr[N - 1].key, paramsArr[N - 1].versionId, variation.vFormat);
-                        } else {
-                            objectName = formatMasterKey(paramsArr[N - 1].key, variation.vFormat);
-                        }
-                        // adding isPHD flag to master
-                        const phdVersionId = generateVersionId();
-                        paramsArr[N - 1].objVal.versionId = phdVersionId;
-                        paramsArr[N - 1].objVal.isPHD = true;
-                        updateMasterObject(objectName, phdVersionId, paramsArr[N - 1].objVal,
-                            variation.vFormat, next);
-                    },
-                    // Should return latest object version
-                    next => metadata.getObjectsMD(BUCKET_NAME, request, logger, (err, objects) => {
-                        assert.deepStrictEqual(err, null);
-                        objects.forEach((obj, i) => {
-                            assert.strictEqual(obj.doc.key, paramsArr[i].objVal.key);
-                            if (variation.versioning && i === N - 1) {
-                                assert.strictEqual(obj.doc.versionId, versionId2);
+                return async.series(
+                    [
+                        next => {
+                            let objectName;
+                            if (variations.versioning) {
+                                objectName = formatVersionKey(
+                                    paramsArr[N - 1].key,
+                                    paramsArr[N - 1].versionId,
+                                    variation.vFormat,
+                                );
                             } else {
-                                assert.strictEqual(obj.doc.versionId, paramsArr[i].objVal.versionId);
+                                objectName = formatMasterKey(paramsArr[N - 1].key, variation.vFormat);
                             }
-                        });
-                        delete params.isPHD;
-                        return next();
-                    }),
-                ], done);
+                            // adding isPHD flag to master
+                            const phdVersionId = generateVersionId();
+                            paramsArr[N - 1].objVal.versionId = phdVersionId;
+                            paramsArr[N - 1].objVal.isPHD = true;
+                            updateMasterObject(
+                                objectName,
+                                phdVersionId,
+                                paramsArr[N - 1].objVal,
+                                variation.vFormat,
+                                next,
+                            );
+                        },
+                        // Should return latest object version
+                        next =>
+                            metadata.getObjectsMD(BUCKET_NAME, request, logger, (err, objects) => {
+                                assert.deepStrictEqual(err, null);
+                                objects.forEach((obj, i) => {
+                                    assert.strictEqual(obj.doc.key, paramsArr[i].objVal.key);
+                                    if (variation.versioning && i === N - 1) {
+                                        assert.strictEqual(obj.doc.versionId, versionId2);
+                                    } else {
+                                        assert.strictEqual(obj.doc.versionId, paramsArr[i].objVal.versionId);
+                                    }
+                                });
+                                delete params.isPHD;
+                                return next();
+                            }),
+                    ],
+                    done,
+                );
             });
 
             it('should fail to get an object tagged for deletion', done => {
@@ -309,22 +348,32 @@ describe('MongoClientInterface::metadata.getObjectsMD', () => {
                     versionId: null,
                     repairMaster: null,
                 };
-                async.series([
-                    // putting a delete marker as last version
-                    next => {
-                        paramsArr[0].versionId = null;
-                        paramsArr[0].objVal.isDeleteMarker = true;
-                        return metadata.putObjectMD(BUCKET_NAME, paramsArr[0].key, paramsArr[0].objVal,
-                            versioningParams, logger, next);
-                    },
-                    next => metadata.getObjectsMD(BUCKET_NAME, [{ key: paramsArr[0].key }], logger, (err, objects) => {
-                        assert.strictEqual(err, null);
-                        assert.strictEqual(objects[0].doc.key, paramsArr[0].key);
-                        assert.strictEqual(objects[0].doc.isDeleteMarker, true);
-                        paramsArr[0].objVal.isDeleteMarker = null;
-                        return next();
-                    }),
-                ], done);
+                async.series(
+                    [
+                        // putting a delete marker as last version
+                        next => {
+                            paramsArr[0].versionId = null;
+                            paramsArr[0].objVal.isDeleteMarker = true;
+                            return metadata.putObjectMD(
+                                BUCKET_NAME,
+                                paramsArr[0].key,
+                                paramsArr[0].objVal,
+                                versioningParams,
+                                logger,
+                                next,
+                            );
+                        },
+                        next =>
+                            metadata.getObjectsMD(BUCKET_NAME, [{ key: paramsArr[0].key }], logger, (err, objects) => {
+                                assert.strictEqual(err, null);
+                                assert.strictEqual(objects[0].doc.key, paramsArr[0].key);
+                                assert.strictEqual(objects[0].doc.isDeleteMarker, true);
+                                paramsArr[0].objVal.isDeleteMarker = null;
+                                return next();
+                            }),
+                    ],
+                    done,
+                );
             });
         });
     });

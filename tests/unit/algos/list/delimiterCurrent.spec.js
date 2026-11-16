@@ -1,15 +1,10 @@
-'use strict'; // eslint-disable-line strict
+'use strict';
 
 const assert = require('assert');
 
-const DelimiterCurrent =
-    require('../../../../lib/algos/list/delimiterCurrent').DelimiterCurrent;
-const {
-    FILTER_ACCEPT,
-    FILTER_END,
-} = require('../../../../lib/algos/list/tools');
-const VSConst =
-    require('../../../../lib/versioning/constants').VersioningConstants;
+const DelimiterCurrent = require('../../../../lib/algos/list/delimiterCurrent').DelimiterCurrent;
+const { FILTER_ACCEPT, FILTER_END } = require('../../../../lib/algos/list/tools');
+const VSConst = require('../../../../lib/versioning/constants').VersioningConstants;
 const { DbPrefixes } = VSConst;
 
 const fakeLogger = {
@@ -39,13 +34,17 @@ function getListingKey(key, vFormat) {
             const beforeDate = '1970-01-01T00:00:00.005Z';
             const excludedDataStoreName = 'location1';
             const maxScannedLifecycleListingEntries = 2;
-            const delimiter = new DelimiterCurrent({
-                prefix,
-                marker,
-                beforeDate,
-                excludedDataStoreName,
-                maxScannedLifecycleListingEntries,
-            }, fakeLogger, v);
+            const delimiter = new DelimiterCurrent(
+                {
+                    prefix,
+                    marker,
+                    beforeDate,
+                    excludedDataStoreName,
+                    maxScannedLifecycleListingEntries,
+                },
+                fakeLogger,
+                v,
+            );
 
             const expectedParams = {
                 dataStoreName: {
@@ -56,9 +55,7 @@ function getListingKey(key, vFormat) {
                 },
                 gt: getListingKey('premark', v),
                 lt: getListingKey('prf', v),
-                limit:
-                    (maxScannedLifecycleListingEntries *
-                        (v === 'v0' ? 2 : 1)) + 1,
+                limit: maxScannedLifecycleListingEntries * (v === 'v0' ? 2 : 1) + 1,
             };
             assert.deepStrictEqual(delimiter.genMDParams(), expectedParams);
             assert.strictEqual(delimiter.maxScannedLifecycleListingEntries, 2);
@@ -86,17 +83,20 @@ function getListingKey(key, vFormat) {
         });
 
         it('should accept a master and return it', () => {
-            const delimiter = new DelimiterCurrent({ }, fakeLogger, v);
+            const delimiter = new DelimiterCurrent({}, fakeLogger, v);
 
             const masterKey = 'key';
 
             const date1 = '1970-01-01T00:00:00.001Z';
             const value1 = `{"last-modified": "${date1}"}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(masterKey, v),
-                value: value1,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(masterKey, v),
+                    value: value1,
+                }),
+                FILTER_ACCEPT,
+            );
 
             const expectedResult = {
                 Contents: [
@@ -118,19 +118,25 @@ function getListingKey(key, vFormat) {
             const date1 = '1970-01-01T00:00:00.001Z';
             const value1 = `{"last-modified": "${date1}"}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(masterKey1, v),
-                value: value1,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(masterKey1, v),
+                    value: value1,
+                }),
+                FILTER_ACCEPT,
+            );
 
             const masterKey2 = 'key2';
             const date2 = '1970-01-01T00:00:00.000Z';
             const value2 = `{"last-modified": "${date2}"}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(masterKey2, v),
-                value: value2,
-            }), FILTER_END);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(masterKey2, v),
+                    value: value2,
+                }),
+                FILTER_END,
+            );
 
             const expectedResult = {
                 Contents: [
@@ -154,19 +160,25 @@ function getListingKey(key, vFormat) {
             const date1 = '1970-01-01T00:00:00.004Z';
             const value1 = `{"last-modified": "${date1}"}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(masterKey1, v),
-                value: value1,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(masterKey1, v),
+                    value: value1,
+                }),
+                FILTER_ACCEPT,
+            );
 
             const masterKey2 = 'key2';
             const date2 = '1970-01-01T00:00:00.000Z';
             const value2 = `{"last-modified": "${date2}"}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(masterKey2, v),
-                value: value2,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(masterKey2, v),
+                    value: value2,
+                }),
+                FILTER_ACCEPT,
+            );
 
             const expectedResult = {
                 Contents: [
@@ -188,10 +200,13 @@ function getListingKey(key, vFormat) {
             const masterKey0 = 'key0';
             const value0 = '{"last-modified": ""}';
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(masterKey0, v),
-                value: value0,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(masterKey0, v),
+                    value: value0,
+                }),
+                FILTER_ACCEPT,
+            );
 
             const expectedResult = {
                 Contents: [],
@@ -208,10 +223,13 @@ function getListingKey(key, vFormat) {
             const masterKey0 = 'key0';
             const value0 = '{}';
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(masterKey0, v),
-                value: value0,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(masterKey0, v),
+                    value: value0,
+                }),
+                FILTER_ACCEPT,
+            );
 
             const expectedResult = {
                 Contents: [],
@@ -230,19 +248,25 @@ function getListingKey(key, vFormat) {
             const date1 = '1970-01-01T00:00:00.004Z';
             const value1 = `{"last-modified": "${date1}", "dataStoreName": "valid"}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(masterKey1, v),
-                value: value1,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(masterKey1, v),
+                    value: value1,
+                }),
+                FILTER_ACCEPT,
+            );
 
             const masterKey2 = 'key2';
             const date2 = '1970-01-01T00:00:00.000Z';
             const value2 = `{"last-modified": "${date2}", "dataStoreName": "${excludedDataStoreName}"}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(masterKey2, v),
-                value: value2,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(masterKey2, v),
+                    value: value2,
+                }),
+                FILTER_ACCEPT,
+            );
 
             const expectedResult = {
                 Contents: [
@@ -266,19 +290,25 @@ function getListingKey(key, vFormat) {
             const date1 = '1970-01-01T00:00:00.004Z';
             const value1 = `{"last-modified": "${date1}", "dataStoreName": "valid"}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(masterKey1, v),
-                value: value1,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(masterKey1, v),
+                    value: value1,
+                }),
+                FILTER_ACCEPT,
+            );
 
             const masterKey2 = 'key2';
             const date2 = '1970-01-01T00:00:00.000Z';
             const value2 = `{"last-modified": "${date2}", "dataStoreName": "${excludedDataStoreName}"}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(masterKey2, v),
-                value: value2,
-            }), FILTER_END);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(masterKey2, v),
+                    value: value2,
+                }),
+                FILTER_END,
+            );
 
             const expectedResult = {
                 Contents: [
@@ -303,28 +333,37 @@ function getListingKey(key, vFormat) {
             const date1 = '1970-01-01T00:00:00.004Z';
             const value1 = `{"last-modified": "${date1}", "dataStoreName": "valid"}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(masterKey1, v),
-                value: value1,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(masterKey1, v),
+                    value: value1,
+                }),
+                FILTER_ACCEPT,
+            );
 
             const masterKey2 = 'key2';
             const date2 = '1970-01-01T00:00:00.001Z';
             const value2 = `{"last-modified": "${date2}", "dataStoreName": "valid"}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(masterKey2, v),
-                value: value2,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(masterKey2, v),
+                    value: value2,
+                }),
+                FILTER_ACCEPT,
+            );
 
             const masterKey3 = 'key3';
             const date3 = '1970-01-01T00:00:00.000Z';
             const value3 = `{"last-modified": "${date3}", "dataStoreName": "${excludedDataStoreName}"}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(masterKey3, v),
-                value: value3,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(masterKey3, v),
+                    value: value3,
+                }),
+                FILTER_ACCEPT,
+            );
 
             const expectedResult = {
                 Contents: [
@@ -348,28 +387,37 @@ function getListingKey(key, vFormat) {
             const date1 = '1970-01-01T00:00:00.000Z';
             const value1 = `{"last-modified": "${date1}"}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(masterKey1, v),
-                value: value1,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(masterKey1, v),
+                    value: value1,
+                }),
+                FILTER_ACCEPT,
+            );
 
             const masterKey2 = 'key2';
             const date2 = '1970-01-01T00:00:00.001Z';
             const value2 = `{"last-modified": "${date2}"}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(masterKey2, v),
-                value: value2,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(masterKey2, v),
+                    value: value2,
+                }),
+                FILTER_ACCEPT,
+            );
 
             const masterKey3 = 'key3';
             const date3 = '1970-01-01T00:00:00.002Z';
             const value3 = `{"last-modified": "${date3}"}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(masterKey3, v),
-                value: value3,
-            }), FILTER_END);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(masterKey3, v),
+                    value: value3,
+                }),
+                FILTER_END,
+            );
 
             const expectedResult = {
                 Contents: [
@@ -398,28 +446,37 @@ function getListingKey(key, vFormat) {
             const date1 = '1970-01-01T00:00:00.004Z';
             const value1 = `{"last-modified": "${date1}"}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(masterKey1, v),
-                value: value1,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(masterKey1, v),
+                    value: value1,
+                }),
+                FILTER_ACCEPT,
+            );
 
             const masterKey2 = 'key2';
             const date2 = '1970-01-01T00:00:00.005Z';
             const value2 = `{"last-modified": "${date2}"}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(masterKey2, v),
-                value: value2,
-            }), FILTER_ACCEPT);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(masterKey2, v),
+                    value: value2,
+                }),
+                FILTER_ACCEPT,
+            );
 
             const masterKey3 = 'key3';
             const date3 = '1970-01-01T00:00:00.006Z';
             const value3 = `{"last-modified": "${date3}"}`;
 
-            assert.strictEqual(delimiter.filter({
-                key: getListingKey(masterKey3, v),
-                value: value3,
-            }), FILTER_END);
+            assert.strictEqual(
+                delimiter.filter({
+                    key: getListingKey(masterKey3, v),
+                    value: value3,
+                }),
+                FILTER_END,
+            );
 
             const expectedResult = {
                 Contents: [],

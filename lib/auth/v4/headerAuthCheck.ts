@@ -2,16 +2,8 @@ import { RequestLogger } from 'werelogs';
 import errors, { errorInstances, ArsenalError } from '../../../lib/errors';
 import * as constants from '../../constants';
 import constructStringToSign from './constructStringToSign';
-import {
-    checkTimeSkew,
-    convertUTCtoISO8601,
-    parseISO8601Compact,
-} from './timeUtils';
-import {
-    extractAuthItems,
-    validateCredentials,
-    areSignedHeadersComplete,
-} from './validateInputs';
+import { checkTimeSkew, convertUTCtoISO8601, parseISO8601Compact } from './timeUtils';
+import { extractAuthItems, validateCredentials, areSignedHeadersComplete } from './validateInputs';
 import { AuthV4RequestParams } from '../Vault';
 import { AuthResult } from '../auth';
 import { type ArsenalRequest } from '../../types/ArsenalRequest';
@@ -28,7 +20,7 @@ export function check(
     request: ArsenalRequest,
     log: RequestLogger,
     data: Record<string, string>,
-    awsService: string
+    awsService: string,
 ): AuthResult<AuthV4RequestParams> {
     log.trace('running header auth check');
 
@@ -59,8 +51,7 @@ export function check(
     if (payloadChecksum === 'STREAMING-AWS4-HMAC-SHA256-PAYLOAD') {
         log.trace('requesting streaming v4 auth');
         if (request.method !== 'PUT') {
-            log.debug('streaming v4 auth for put only',
-                { method: 'auth/v4/headerAuthCheck.check' });
+            log.debug('streaming v4 auth for put only', { method: 'auth/v4/headerAuthCheck.check' });
             return { err: errors.InvalidArgument };
         }
         if (!request.headers['x-amz-decoded-content-length']) {
@@ -108,11 +99,15 @@ export function check(
     }
     const beforeEpoch = timestampParsed && timestampParsed.getTime() < 0;
     if (!timestampCompact || !timestampParsed || beforeEpoch) {
-        log.debug('missing or invalid date header',
-            { 'method': 'auth/v4/headerAuthCheck.check', 'x-amz-date': xAmzDate, 'Date': request.headers.date });
+        log.debug('missing or invalid date header', {
+            'method': 'auth/v4/headerAuthCheck.check',
+            'x-amz-date': xAmzDate,
+            'Date': request.headers.date,
+        });
         return {
-            err: errorInstances.AccessDenied.
-                customizeDescription('Authentication requires a valid Date or x-amz-date header')
+            err: errorInstances.AccessDenied.customizeDescription(
+                'Authentication requires a valid Date or x-amz-date header',
+            ),
         };
     }
 

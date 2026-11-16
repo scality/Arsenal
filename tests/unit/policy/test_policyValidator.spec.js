@@ -1,4 +1,4 @@
-'use strict'; // eslint-disable-line strict
+'use strict';
 
 const { validateUserPolicy, validateResourcePolicy } = require('../../../lib/policy/policyValidator');
 const { default: errors, ArsenalError } = require('../../../lib/errors');
@@ -34,7 +34,7 @@ const errDict = {
         Action: 'Policy statement must contain actions.',
     },
     pattern: {
-        Action: 'Actions/Conditions must be prefaced by a vendor,' + ' e.g., iam, sdb, ec2, etc.',
+        Action: 'Actions/Conditions must be prefaced by a vendor, e.g., iam, sdb, ec2, etc.',
         Resource: 'Resource must be in ARN format or "*".',
     },
     minItems: {
@@ -188,7 +188,10 @@ describe('Policies validation - Principal', () => {
         {
             name: 'user arn with vault made path',
             value: {
-                AWS: 'arn:aws:iam::767707094035:user/user2/TENANT_USER/null/5417be27-8709-48bd-adfb-865ebc58b9f0/1a464be02ea631bdaf2a9ee884434233374a457460e925bf10d9e4665f8fa796/c1d83067-a3f3-41a4-bd45-d6bf47270bd0',
+                AWS:
+                    'arn:aws:iam::767707094035:user/user2/TENANT_USER/null/5417be27-8709-48bd-adfb-865ebc58b9f0/' +
+                    '1a464be02ea631bdaf2a9ee884434233374a457460e925bf10d9e4665f8fa796/' +
+                    'c1d83067-a3f3-41a4-bd45-d6bf47270bd0',
             },
             policyType: [user, resource],
         },
@@ -227,7 +230,7 @@ describe('Policies validation - Principal', () => {
         },
         {
             name: 'with canonical user id',
-            value: { CanonicalUser: '1examplecanonicalid12345678909876' + '54321qwerty12345asdfg67890z1x2c' },
+            value: { CanonicalUser: '1examplecanonicalid1234567890987654321qwerty12345asdfg67890z1x2c' },
             policyType: [resource],
         },
     ].forEach(test => {
@@ -347,7 +350,7 @@ describe('Policies validation - Principal', () => {
         },
         {
             name: 'invalid canonical user',
-            value: { CanonicalUser: '12345invalid-canonical-id$$$//098' + '7654321poiu1q2w3e4r5t6y7u8i9o0p' },
+            value: { CanonicalUser: '12345invalid-canonical-id$$$//0987654321poiu1q2w3e4r5t6y7u8i9o0p' },
             policyType: [resource],
         },
     ].forEach(test => {
@@ -399,15 +402,15 @@ describe('Policies validation - Statement', () => {
         });
     });
 
-    it('user policy should succeed for a valid object', () => {
+    it('user policy should succeed for a single Statement object', () => {
         check(userPolicy, successRes, user);
     });
 
-    it('resource policy should succeed for a valid object', () => {
+    it('resource policy should succeed for a single-statement array', () => {
         check(resourcePolicy, successRes, resource);
     });
 
-    it('user policy should succeed for a valid object', () => {
+    it('user policy should succeed for a Statement array of several statements', () => {
         userPolicy.Statement = [
             {
                 Effect: 'Allow',
@@ -423,7 +426,7 @@ describe('Policies validation - Statement', () => {
         check(userPolicy, successRes, user);
     });
 
-    it('resource policy should succeed for a valid object', () => {
+    it('resource policy should succeed for a Statement array of several statements', () => {
         resourcePolicy.Statement = [
             {
                 Effect: 'Allow',
@@ -589,7 +592,7 @@ const actionTests = [
     },
 ];
 
-describe('User policies validation - Statement::Action_block/' + 'Statement::NotAction_block', () => {
+describe('User policies validation - Statement::Action_block/Statement::NotAction_block', () => {
     beforeEach(() => {
         userPolicy.Statement.Action = undefined;
         userPolicy.Statement.NotAction = undefined;
@@ -669,7 +672,7 @@ const resourceTests = [
     },
 ];
 
-describe('User policies validation - Statement::Resource_block' + 'Statement::NotResource_block', () => {
+describe('User policies validation - Statement::Resource_block Statement::NotResource_block', () => {
     beforeEach(() => {
         userPolicy.Statement.Resource = undefined;
         userPolicy.Statement.NotResource = undefined;

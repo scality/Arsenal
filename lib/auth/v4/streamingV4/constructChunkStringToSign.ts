@@ -25,12 +25,13 @@ export default function constructChunkStringToSign(
     } else {
         const hash = crypto.createHash('sha256');
         // Strings must stay in binary form to match AWS chunk signing format.
-        const chunkHash = typeof justDataChunk === 'string'
-            ? hash.update(justDataChunk, 'binary')
-            : hash.update(justDataChunk);
+        const chunkHash =
+            typeof justDataChunk === 'string' ? hash.update(justDataChunk, 'binary') : hash.update(justDataChunk);
         currentChunkHash = chunkHash.digest('hex');
     }
-    return `AWS4-HMAC-SHA256-PAYLOAD\n${timestamp}\n` +
+    return (
+        `AWS4-HMAC-SHA256-PAYLOAD\n${timestamp}\n` +
         `${credentialScope}\n${lastSignature}\n` +
-        `${constants.emptyStringHash}\n${currentChunkHash}`;
+        `${constants.emptyStringHash}\n${currentChunkHash}`
+    );
 }

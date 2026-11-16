@@ -5,10 +5,10 @@
  * Avoid any error that might leak sensitive information such as hostnames
  * or IP addresses from network related errors.
  * KeyId is not considered sensitive.
- * 
+ *
  * Reference: https://docs.aws.amazon.com/kms/latest/APIReference/CommonErrors.html
  * See specific actions like CreateKey, Encrypt, Decrypt, etc. for more details.
- * 
+ *
  * Other errors not listed will return only the same error code but HTTP status 500,
  * and message will be generic and details will be in logs only.
  */
@@ -39,7 +39,8 @@ export const allowedKmsErrors = {
     },
     InvalidCiphertextException: {
         code: 400,
-        description: 'The request was rejected because the specified ciphertext, or additional authenticated data, ' +
+        description:
+            'The request was rejected because the specified ciphertext, or additional authenticated data, ' +
             'is corrupted, missing, or otherwise invalid.',
     },
     InvalidGrantTokenException: {
@@ -61,8 +62,8 @@ export const allowedKmsErrors = {
     },
     KeyUnavailableException: {
         code: 500,
-        description: 'The request was rejected because the specified KMS key was not available. ' +
-            'You can retry the request.',
+        description:
+            'The request was rejected because the specified KMS key was not available. You can retry the request.',
     },
     LimitExceededException: {
         code: 400,
@@ -84,7 +85,8 @@ export const allowedKmsErrors = {
     },
     UnsupportedOperationException: {
         code: 400,
-        description: 'The request was rejected because a specified parameter is not supported or a specified ' +
+        description:
+            'The request was rejected because a specified parameter is not supported or a specified ' +
             'resource is not valid for this operation.',
     },
 } as const;

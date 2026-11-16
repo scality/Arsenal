@@ -8,10 +8,10 @@ import { Accounts, Account, Entity } from './types';
  */
 export default class Indexer {
     accountsBy: {
-        canId: { [id: string]: Entity | undefined },
-        shortId: { [id: string]: Entity | undefined },
-        accessKey: { [id: string]: Entity | undefined },
-        email: { [id: string]: Entity | undefined },
+        canId: { [id: string]: Entity | undefined };
+        shortId: { [id: string]: Entity | undefined };
+        accessKey: { [id: string]: Entity | undefined };
+        email: { [id: string]: Entity | undefined };
     };
 
     constructor(authdata?: Accounts) {

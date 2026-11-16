@@ -20,7 +20,7 @@ export default class ObjectMDAmzRestore {
      * @param [expiryDate] expiry-date
      * @throws case of invalid parameter
      */
-    constructor(ongoingRequest: boolean, expiryDate?: Date | string) {
+    'constructor'(ongoingRequest: boolean, expiryDate?: Date | string) {
         this.setOngoingRequest(ongoingRequest);
         this.setExpiryDate(expiryDate);
     }
@@ -30,7 +30,7 @@ export default class ObjectMDAmzRestore {
      * @param data archiveInfo
      * @returns true if the provided object is valid
      */
-    static isValid(data: { 'ongoing-request': boolean; 'expiry-date': Date | string }) {
+    static 'isValid'(data: { 'ongoing-request': boolean; 'expiry-date': Date | string }) {
         try {
             new ObjectMDAmzRestore(data['ongoing-request'], data['expiry-date']);
             return true;
@@ -43,7 +43,7 @@ export default class ObjectMDAmzRestore {
      *
      * @returns ongoing-request
      */
-    getOngoingRequest() {
+    'getOngoingRequest'() {
         return this['ongoing-request'];
     }
 
@@ -52,7 +52,7 @@ export default class ObjectMDAmzRestore {
      * @param value ongoing-request
      * @throws case of invalid parameter
      */
-    setOngoingRequest(value?: boolean) {
+    'setOngoingRequest'(value?: boolean) {
         if (value === undefined) {
             throw new Error('ongoing-request is required.');
         } else if (typeof value !== 'boolean') {
@@ -65,7 +65,7 @@ export default class ObjectMDAmzRestore {
      *
      * @returns expiry-date
      */
-    getExpiryDate() {
+    'getExpiryDate'() {
         return this['expiry-date'];
     }
 
@@ -74,9 +74,9 @@ export default class ObjectMDAmzRestore {
      * @param value expiry-date
      * @throws case of invalid parameter
      */
-    setExpiryDate(value?: Date | string) {
+    'setExpiryDate'(value?: Date | string) {
         if (value) {
-            const checkWith = (new Date(value)).getTime();
+            const checkWith = new Date(value).getTime();
             if (Number.isNaN(Number(checkWith))) {
                 throw new Error('expiry-date is must be a valid Date.');
             }
@@ -88,7 +88,7 @@ export default class ObjectMDAmzRestore {
      *
      * @returns itself
      */
-    getValue() {
+    'getValue'() {
         return this;
     }
 }

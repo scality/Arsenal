@@ -30,11 +30,7 @@ function _toHexUTF8(char: string) {
     return res;
 }
 
-export default function awsURIencode(
-    input: string,
-    encodeSlash?: boolean,
-    noEncodeStar?: boolean
-) {
+export default function awsURIencode(input: string, encodeSlash?: boolean, noEncodeStar?: boolean) {
     /**
      * Duplicate query params are not suppported by AWS S3 APIs. These params
      * are parsed as Arrays by Node.js HTTP parser which breaks this method
@@ -42,16 +38,20 @@ export default function awsURIencode(
     if (typeof input !== 'string') {
         return '';
     }
-    let encoded = "";
+    let encoded = '';
     const slash = encodeSlash === undefined || encodeSlash ? '%2F' : '/';
     const star = noEncodeStar !== undefined && noEncodeStar ? '*' : '%2A';
     for (let i = 0; i < input.length; i++) {
         let ch = input.charAt(i);
-        if ((ch >= 'A' && ch <= 'Z') ||
+        if (
+            (ch >= 'A' && ch <= 'Z') ||
             (ch >= 'a' && ch <= 'z') ||
             (ch >= '0' && ch <= '9') ||
-            ch === '_' || ch === '-' ||
-            ch === '~' || ch === '.') {
+            ch === '_' ||
+            ch === '-' ||
+            ch === '~' ||
+            ch === '.'
+        ) {
             encoded = encoded.concat(ch);
         } else if (ch === ' ') {
             encoded = encoded.concat('%20');

@@ -9,22 +9,23 @@ import { fifteenMinutesInMilliseconds } from '../../constants';
 export function convertAmzTimeToMs(timestamp: string) {
     const arr = timestamp.split('');
     // Convert to YYYY-MM-DDTHH:mm:ss.sssZ
-    const ISO8601time = `${arr.slice(0, 4).join('')}-${arr[4]}${arr[5]}` +
+    const ISO8601time =
+        `${arr.slice(0, 4).join('')}-${arr[4]}${arr[5]}` +
         `-${arr.slice(6, 11).join('')}:${arr[11]}${arr[12]}:${arr[13]}` +
         `${arr[14]}.000Z`;
     return Date.parse(ISO8601time);
 }
 
 /**
-* Convert UTC timestamp to ISO 8601 compact format
-* @param timestamp - UTC timestamp (e.g., 'Fri, 10 Feb 2012 21:34:55 GMT') or Unix timestamp
-* @return ISO8601 timestamp of form YYYYMMDDTHHMMSSZ, or undefined if invalid
-*
-* @example
-* convertUTCtoISO8601('Fri, 10 Feb 2012 21:34:55 GMT'); // '20120210T213455Z'
-* convertUTCtoISO8601(1328910895000); // '20120210T213455Z'
-* convertUTCtoISO8601('invalid'); // undefined
-*/
+ * Convert UTC timestamp to ISO 8601 compact format
+ * @param timestamp - UTC timestamp (e.g., 'Fri, 10 Feb 2012 21:34:55 GMT') or Unix timestamp
+ * @return ISO8601 timestamp of form YYYYMMDDTHHMMSSZ, or undefined if invalid
+ *
+ * @example
+ * convertUTCtoISO8601('Fri, 10 Feb 2012 21:34:55 GMT'); // '20120210T213455Z'
+ * convertUTCtoISO8601(1328910895000); // '20120210T213455Z'
+ * convertUTCtoISO8601('invalid'); // undefined
+ */
 export function convertUTCtoISO8601(timestamp: string | number): string | undefined {
     if (timestamp == null) {
         return undefined;
@@ -56,10 +57,10 @@ export function convertUTCtoISO8601(timestamp: string | number): string | undefi
 export function checkTimeSkew(timestamp: string, expiry: number, log: RequestLogger) {
     const currentTime = Date.now();
     const parsedTimestamp = convertAmzTimeToMs(timestamp);
-    if ((currentTime + fifteenMinutesInMilliseconds) < parsedTimestamp) {
+    if (currentTime + fifteenMinutesInMilliseconds < parsedTimestamp) {
         log.debug('current time pre-dates timestamp', {
             parsedTimestamp,
-            currentTimeInMilliseconds: currentTime
+            currentTimeInMilliseconds: currentTime,
         });
         return true;
     }
@@ -68,13 +69,12 @@ export function checkTimeSkew(timestamp: string, expiry: number, log: RequestLog
         log.debug('signature has expired', {
             parsedTimestamp,
             expiry,
-            currentTimeInMilliseconds: currentTime
+            currentTimeInMilliseconds: currentTime,
         });
         return true;
     }
     return false;
 }
-
 
 /**
  * Parses an ISO 8601 compact timestamp string into a Date object.
@@ -123,4 +123,3 @@ export function parseISO8601Compact(str: string): Date | undefined {
         return undefined;
     }
 }
-

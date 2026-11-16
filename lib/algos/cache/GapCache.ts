@@ -1,8 +1,5 @@
 import { OrderedSet } from '@js-sdsl/ordered-set';
-import {
-    default as GapSet,
-    GapSetEntry,
-} from './GapSet';
+import { default as GapSet, GapSetEntry } from './GapSet';
 
 // the API is similar but is not strictly a superset of GapSetInterface
 // so we don't extend from it
@@ -16,7 +13,7 @@ export interface GapCacheInterface {
     lookupGap: (minKey: string, maxKey?: string) => Promise<GapSetEntry | null>;
     [Symbol.iterator]: () => Iterator<GapSetEntry>;
     toArray: () => GapSetEntry[];
-};
+}
 
 class GapCacheUpdateSet {
     newGaps: GapSet;
@@ -30,7 +27,7 @@ class GapCacheUpdateSet {
     addUpdateBatch(updatedKeys: OrderedSet<string>): void {
         this.updatedKeys.union(updatedKeys);
     }
-};
+}
 
 /**
  * Cache of listing "gaps" i.e. ranges of keys that can be skipped
@@ -113,7 +110,7 @@ export default class GapCache implements GapCacheInterface {
         gaps: GapSetEntry[],
         exposureDelayMs: number,
         maxGaps: number,
-        maxGapWeight: number
+        maxGapWeight: number,
     ): GapCache {
         const gapCache = new GapCache(exposureDelayMs, maxGaps, maxGapWeight);
         gapCache._exposedGaps = GapSet.createFromArray(gaps, maxGapWeight);
@@ -183,9 +180,7 @@ export default class GapCache implements GapCacheInterface {
         if (this._exposeFrozenInterval) {
             return;
         }
-        this._exposeFrozenInterval = setInterval(
-            () => this._exposeFrozen(),
-            this._exposureDelayMs);
+        this._exposeFrozenInterval = setInterval(() => this._exposeFrozen(), this._exposureDelayMs);
     }
 
     /**

@@ -6,8 +6,8 @@ The bucket API will be used for managing buckets behind the S3 interface.
 
 We plan to have only 2 backends using this interface:
 
-* One production backend
-* One debug backend purely in memory
+- One production backend
+- One debug backend purely in memory
 
 One important remark here is that we don't want an abstraction but a
 duck-typing style interface (different classes MemoryBucket and Bucket having
@@ -50,7 +50,7 @@ under CommonPrefixes are not returned elsewhere in the response.
 
 maxKeys: Sets the maximum number of keys returned in the response body. You can
 add this to your request if you want to retrieve fewer than the default 1000
-keys.  The response might contain fewer keys but will never contain more. If
+keys. The response might contain fewer keys but will never contain more. If
 there are additional keys that satisfy the search criteria but were not
 returned because maxKeys was exceeded, the response contains an attribute of
 IsTruncated set to true and a NextMarker. To return the additional keys, call

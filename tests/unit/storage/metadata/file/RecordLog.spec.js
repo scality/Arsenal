@@ -1,4 +1,4 @@
-'use strict'; //eslint-disable-line
+'use strict';
 
 const assert = require('assert');
 const temp = require('temp');
@@ -13,7 +13,7 @@ const { resolveBatchSubLevels } = require('../../../../../lib/storage/metadata/f
 
 function randomName() {
     let text = '';
-    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' + 'abcdefghijklmnopqrstuvwxyz0123456789';
+    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
     for (let i = 0; i < 5; i++) {
         text += possible.charAt(Math.floor(Math.random() * possible.length));

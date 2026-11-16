@@ -7,9 +7,9 @@ import { AuthV2RequestParams } from '../Vault';
 import { AuthResult } from '../auth';
 import { type ArsenalRequest } from '../../types/ArsenalRequest';
 
-export const PRE_SIGN_URL_EXPIRY = process.env.PRE_SIGN_URL_EXPIRY ?
-    Number.parseInt(process.env.PRE_SIGN_URL_EXPIRY, 10) :
-    constants.defaultPreSignedURLExpiry * 1000;
+export const PRE_SIGN_URL_EXPIRY = process.env.PRE_SIGN_URL_EXPIRY
+    ? Number.parseInt(process.env.PRE_SIGN_URL_EXPIRY, 10)
+    : constants.defaultPreSignedURLExpiry * 1000;
 
 export function check(
     request: ArsenalRequest,
@@ -38,8 +38,7 @@ export function check(
     */
     const expirationTime = parseInt(data.Expires, 10) * 1000;
     if (Number.isNaN(expirationTime)) {
-        log.debug('invalid expires parameter',
-            { expires: data.Expires });
+        log.debug('invalid expires parameter', { expires: data.Expires });
         return { err: errors.MissingSecurityHeader };
     }
 
@@ -48,13 +47,11 @@ export function check(
     const preSignedURLExpiry = PRE_SIGN_URL_EXPIRY;
 
     if (expirationTime > currentTime + preSignedURLExpiry) {
-        log.debug('expires parameter too far in future',
-            { expires: request.query.Expires });
+        log.debug('expires parameter too far in future', { expires: request.query.Expires });
         return { err: errors.AccessDenied };
     }
     if (currentTime > expirationTime) {
-        log.debug('current time exceeds expires time',
-            { expires: request.query.Expires });
+        log.debug('current time exceeds expires time', { expires: request.query.Expires });
         return { err: errors.RequestTimeTooSkewed };
     }
     const accessKey = data.AWSAccessKeyId;

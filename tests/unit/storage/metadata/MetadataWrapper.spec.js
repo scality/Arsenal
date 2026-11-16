@@ -69,7 +69,7 @@ describe('MetadataWrapper::raftSessionId propagation', () => {
             metadataWrapper.client = mockClient;
         });
 
-        it('should propagate raftSessionId as third callback parameter when present', (done) => {
+        it('should propagate raftSessionId as third callback parameter when present', done => {
             mockClient.getBucketAttributes.callsFake((bucketName, log, callback) => {
                 process.nextTick(() => callback(null, testBucketMD, testRaftSessionId));
             });
@@ -83,7 +83,7 @@ describe('MetadataWrapper::raftSessionId propagation', () => {
             });
         });
 
-        it('should work without raftSessionId', (done) => {
+        it('should work without raftSessionId', done => {
             mockClient.getBucketAttributes.callsFake((bucketName, log, callback) => {
                 process.nextTick(() => callback(null, testBucketMD, undefined));
             });
@@ -96,7 +96,7 @@ describe('MetadataWrapper::raftSessionId propagation', () => {
             });
         });
 
-        it('should not return raftSessionId when error occurs', (done) => {
+        it('should not return raftSessionId when error occurs', done => {
             const testError = new Error('Test error');
             mockClient.getBucketAttributes.callsFake((bucketName, log, callback) => {
                 process.nextTick(() => callback(testError));
@@ -118,7 +118,7 @@ describe('MetadataWrapper::raftSessionId propagation', () => {
             metadataWrapper.client = mockClient;
         });
 
-        it('should propagate raftSessionId from backend', (done) => {
+        it('should propagate raftSessionId from backend', done => {
             mockClient.getBucketAndObject.callsFake((bucket, obj, params, log, callback) => {
                 process.nextTick(() => callback(null, testObjectData, testRaftSessionId));
             });
@@ -131,7 +131,7 @@ describe('MetadataWrapper::raftSessionId propagation', () => {
             });
         });
 
-        it('should work without raftSessionId', (done) => {
+        it('should work without raftSessionId', done => {
             mockClient.getBucketAndObject.callsFake((bucket, obj, params, log, callback) => {
                 process.nextTick(() => callback(null, testObjectData, undefined));
             });
@@ -144,7 +144,7 @@ describe('MetadataWrapper::raftSessionId propagation', () => {
             });
         });
 
-        it('should not propagate raftSessionId when error occurs', (done) => {
+        it('should not propagate raftSessionId when error occurs', done => {
             const testError = new Error('Test error');
             mockClient.getBucketAndObject.callsFake((bucket, obj, params, log, callback) => {
                 process.nextTick(() => callback(testError));

@@ -177,7 +177,7 @@ export function validateKeyDetail(
         );
     }
     if (!keyDetail.id) {
-        return errors.InvalidArgument.customizeDescription(`Invalid KMS Scality KeyArn, missing KeyId`);
+        return errors.InvalidArgument.customizeDescription('Invalid KMS Scality KeyArn, missing KeyId');
     }
 
     return null;

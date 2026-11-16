@@ -117,8 +117,10 @@ describe('KmsAWSClient', () => {
         client.createMasterKey(logger, (err, keyId, keyArn) => {
             assert.ifError(err);
             assert.strictEqual(keyId, 'arn:aws:kms:region:accountId:key/mock-key-id');
-            assert.strictEqual(keyArn,
-                'arn:scality:kms:external:aws_kms:tests:key/arn:aws:kms:region:accountId:key/mock-key-id');
+            assert.strictEqual(
+                keyArn,
+                'arn:scality:kms:external:aws_kms:tests:key/arn:aws:kms:region:accountId:key/mock-key-id',
+            );
             assert(sendStub.calledOnce);
             done();
         });
@@ -146,8 +148,10 @@ describe('KmsAWSClient', () => {
         client.createMasterKey(logger, (err, keyId, keyArn) => {
             assert.ifError(err);
             assert.strictEqual(keyId, 'arn:aws:kms:region:accountId:key/mock-key-id');
-            assert.strictEqual(keyArn,
-                'arn:scality:kms:external:aws_kms:tests:key/arn:aws:kms:region:accountId:key/mock-key-id');
+            assert.strictEqual(
+                keyArn,
+                'arn:scality:kms:external:aws_kms:tests:key/arn:aws:kms:region:accountId:key/mock-key-id',
+            );
             assert(sendStub.calledOnce);
             done();
         });
@@ -312,7 +316,7 @@ describe('KmsAWSClient', () => {
             message: 'The request key was not found',
             $metadata: {
                 httpStatusCode: 404,
-            }
+            },
         });
         sendStub = sinon.stub(client.client, 'send');
         sendStub.rejects(mockError);
@@ -329,7 +333,7 @@ describe('KmsAWSClient', () => {
             message: 'The request key is not in a valid state',
             $metadata: {
                 httpStatusCode: 400,
-            }
+            },
         });
 
         sendStub = sinon.stub(client.client, 'send');
@@ -370,14 +374,14 @@ describe('KmsAWSClient', () => {
             KeyId: 'mocked-kms-key-id',
             $metadata: {
                 httpStatusCode: 200,
-                requestId: 'mock-request-id'
-            }
+                requestId: 'mock-request-id',
+            },
         };
-        
+
         sendStub = sinon.stub(client.client, 'send');
         sendStub.resolves(mockResponse);
 
-        client.generateDataKey(1, key, logger, (err) => {
+        client.generateDataKey(1, key, logger, err => {
             assert.ifError(err);
             assert(sendStub.calledOnce);
             assert.strictEqual(sendStub.getCall(0).firstArg.input.KeyId, awsArn);

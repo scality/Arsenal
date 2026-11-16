@@ -1,7 +1,6 @@
-'use strict'; // eslint-disable-line strict
+'use strict';
 
 module.exports = [
-
     /* Invalid type */
 
     Buffer.from('2100000000000000', 'hex'),

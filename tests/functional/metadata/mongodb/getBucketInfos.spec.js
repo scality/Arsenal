@@ -5,8 +5,7 @@ const werelogs = require('werelogs');
 const { MongoMemoryReplSet } = require('mongodb-memory-server');
 const logger = new werelogs.Logger('MongoClientInterface', 'debug', 'debug');
 const BucketInfo = require('../../../../lib/models/BucketInfo').default;
-const MetadataWrapper =
-    require('../../../../lib/storage/metadata/MetadataWrapper');
+const MetadataWrapper = require('../../../../lib/storage/metadata/MetadataWrapper');
 
 const IMPL_NAME = 'mongodb';
 const DB_NAME = 'metadata';
@@ -40,9 +39,7 @@ const BUCKET_MD = {
 
 const mongoserver = new MongoMemoryReplSet({
     debug: false,
-    instanceOpts: [
-        { port: 27021 },
-    ],
+    instanceOpts: [{ port: 27021 }],
     replSet: {
         name: 'rs0',
         count: 1,
@@ -96,7 +93,7 @@ describe('MongoClientInterface:metadata.getBucketInfos', () => {
         sinon.restore();
     });
 
-    const checkBuckets = async (metadata) => {
+    const checkBuckets = async metadata => {
         const { bucketCount, bucketInfos } = await metadata.getBucketInfos(logger);
         assert.strictEqual(bucketCount, 10);
         assert.strictEqual(bucketInfos.length, 10);
@@ -119,18 +116,24 @@ describe('MongoClientInterface:metadata.getBucketInfos', () => {
 
     it('should ignore views & system.views collection', async () => {
         await metadata.client.db.command({
-            create: 'view1', viewOn: `${BUCKET_NAME}0`, pipeline: [{
-                $match: { _locationConstraint: 'us-east-1' },
-            }],
+            create: 'view1',
+            viewOn: `${BUCKET_NAME}0`,
+            pipeline: [
+                {
+                    $match: { _locationConstraint: 'us-east-1' },
+                },
+            ],
         });
 
         await checkBuckets(metadata);
     });
 
     it('should fail on getBucketAttributes error', async () => {
-        sinon.stub(metadata.client, 'getBucketAttributes')
+        sinon
+            .stub(metadata.client, 'getBucketAttributes')
             .callThrough()
-            .onSecondCall().callsArgWith(2, new Error('error'));
+            .onSecondCall()
+            .callsArgWith(2, new Error('error'));
 
         try {
             await metadata.getBucketInfos(logger);

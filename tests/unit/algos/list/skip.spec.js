@@ -1,13 +1,9 @@
-'use strict'; // eslint-disable-line strict
+'use strict';
 
 const assert = require('assert');
 const sinon = require('sinon');
 const Skip = require('../../../../lib/algos/list/skip');
-const {
-    FILTER_END,
-    FILTER_SKIP,
-    SKIP_NONE,
-} = require('../../../../lib/algos/list/tools');
+const { FILTER_END, FILTER_SKIP, SKIP_NONE } = require('../../../../lib/algos/list/tools');
 
 describe('Skip Algorithm', () => {
     it('Should fail when listingEnd callback undefined', done => {

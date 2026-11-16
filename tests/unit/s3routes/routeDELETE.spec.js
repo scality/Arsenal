@@ -31,9 +31,7 @@ describe('routeDELETE', () => {
         routeDELETE(request, response, api, log, statsClient);
 
         const err = errorInstances.InvalidRequest.customizeDescription('A key must be specified');
-        expect(routesUtils.responseNoBody).toHaveBeenCalledWith(
-            err, null, response, 200, log,
-        );
+        expect(routesUtils.responseNoBody).toHaveBeenCalledWith(err, null, response, 200, log);
     });
 
     it('should call multipartDelete if uploadId and objectKey are present', () => {
@@ -42,9 +40,7 @@ describe('routeDELETE', () => {
 
         routeDELETE(request, response, api, log, statsClient);
 
-        expect(api.callApiMethod).toHaveBeenCalledWith(
-            'multipartDelete', request, response, log, expect.any(Function),
-        );
+        expect(api.callApiMethod).toHaveBeenCalledWith('multipartDelete', request, response, log, expect.any(Function));
     });
 
     it('should call bucketDeleteWebsite if query.website is present and objectKey is undefined', () => {
@@ -54,7 +50,11 @@ describe('routeDELETE', () => {
         routeDELETE(request, response, api, log, statsClient);
 
         expect(api.callApiMethod).toHaveBeenCalledWith(
-            'bucketDeleteWebsite', request, response, log, expect.any(Function),
+            'bucketDeleteWebsite',
+            request,
+            response,
+            log,
+            expect.any(Function),
         );
     });
 
@@ -64,9 +64,7 @@ describe('routeDELETE', () => {
 
         routeDELETE(request, response, api, log, statsClient);
 
-        expect(api.callApiMethod).toHaveBeenCalledWith(
-            'bucketDelete', request, response, log, expect.any(Function),
-        );
+        expect(api.callApiMethod).toHaveBeenCalledWith('bucketDelete', request, response, log, expect.any(Function));
     });
 
     it('should call objectDelete if objectKey is present and no query is defined', () => {
@@ -75,9 +73,7 @@ describe('routeDELETE', () => {
 
         routeDELETE(request, response, api, log, statsClient);
 
-        expect(api.callApiMethod).toHaveBeenCalledWith(
-            'objectDelete', request, response, log, expect.any(Function),
-        );
+        expect(api.callApiMethod).toHaveBeenCalledWith('objectDelete', request, response, log, expect.any(Function));
     });
 
     it('should call objectDeleteTagging if query.tagging is present and objectKey is defined', () => {
@@ -87,7 +83,11 @@ describe('routeDELETE', () => {
         routeDELETE(request, response, api, log, statsClient);
 
         expect(api.callApiMethod).toHaveBeenCalledWith(
-            'objectDeleteTagging', request, response, log, expect.any(Function),
+            'objectDeleteTagging',
+            request,
+            response,
+            log,
+            expect.any(Function),
         );
     });
 
@@ -102,9 +102,7 @@ describe('routeDELETE', () => {
 
         routeDELETE(request, response, api, log, statsClient);
 
-        expect(routesUtils.responseNoBody).toHaveBeenCalledWith(
-            null, {}, response, 204, log,
-        );
+        expect(routesUtils.responseNoBody).toHaveBeenCalledWith(null, {}, response, 204, log);
     });
 
     it('should return 204 when objectDelete encounters NoSuchVersion errors', () => {
@@ -118,9 +116,7 @@ describe('routeDELETE', () => {
 
         routeDELETE(request, response, api, log, statsClient);
 
-        expect(routesUtils.responseNoBody).toHaveBeenCalledWith(
-            null, {}, response, 204, log,
-        );
+        expect(routesUtils.responseNoBody).toHaveBeenCalledWith(null, {}, response, 204, log);
     });
 
     it('should return error code when objectDelete encounters non-arsenal errors', () => {
@@ -134,9 +130,7 @@ describe('routeDELETE', () => {
 
         routeDELETE(request, response, api, log, statsClient);
 
-        expect(routesUtils.responseNoBody).toHaveBeenCalledWith(
-            otherError, {}, response, undefined, log,
-        );
+        expect(routesUtils.responseNoBody).toHaveBeenCalledWith(otherError, {}, response, undefined, log);
     });
 
     it('should call bucketDeleteRateLimit if query.rate-limit is set', () => {
@@ -146,7 +140,11 @@ describe('routeDELETE', () => {
         routeDELETE(request, response, api, log, statsClient);
 
         expect(api.callApiMethod).toHaveBeenCalledWith(
-            'bucketDeleteRateLimit', request, response, log, expect.any(Function),
+            'bucketDeleteRateLimit',
+            request,
+            response,
+            log,
+            expect.any(Function),
         );
     });
 });

@@ -27,7 +27,9 @@ class HttpResponseMock extends Writable {
 
     end(data, encoding, callback) {
         if (!this.writable) {
-            if (typeof data === 'function') data();
+            if (typeof data === 'function') {
+                data();
+            }
             return;
         }
 
@@ -49,7 +51,9 @@ class HttpResponseMock extends Writable {
             headersObj = statusMessage;
         }
 
-        if (!headersObj) return;
+        if (!headersObj) {
+            return;
+        }
 
         if (Array.isArray(headersObj)) {
             // the even-numbered offsets are key values,

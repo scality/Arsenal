@@ -1,4 +1,4 @@
-'use strict'; // eslint-disable-line
+'use strict';
 
 const temp = require('temp');
 const assert = require('assert');
@@ -87,7 +87,7 @@ describe('level-net - LevelDB over network', () => {
         if (crudList.includes('C')) {
             const value = `${key}:testvalue1`;
             opList.push(done => {
-                const dbg = `put sub '${db.path.join(':')}' ` + `key '${key}' value '${value}'`;
+                const dbg = `put sub '${db.path.join(':')}' key '${key}' value '${value}'`;
                 debug(`BEGIN ${dbg}`);
                 db.withRequestLogger(reqLogger).put(key, value, params, err => {
                     debug(`END ${dbg} -> ${err}`);
@@ -112,7 +112,7 @@ describe('level-net - LevelDB over network', () => {
         if (crudList.includes('U')) {
             const value = `${key}:testvalue2`;
             opList.push(done => {
-                const dbg = `update sub '${db.path.join(':')}' ` + `key '${key}' value '${value}'`;
+                const dbg = `update sub '${db.path.join(':')}' key '${key}' value '${value}'`;
                 debug(`BEGIN ${dbg}`);
                 db.withRequestLogger(reqLogger).put(key, value, params, err => {
                     debug(`END ${dbg} -> ${err}`);
@@ -121,7 +121,7 @@ describe('level-net - LevelDB over network', () => {
             });
             // read after write to check contents have been updated
             opList.push(done => {
-                const dbg = `get (check) sub '${db.path.join(':')}' ` + `key '${key}'`;
+                const dbg = `get (check) sub '${db.path.join(':')}' key '${key}'`;
                 debug(`BEGIN ${dbg}`);
                 db.withRequestLogger(reqLogger).get(key, params, (err, data) => {
                     debug(`END ${dbg} -> (${err},'${data}')`);
@@ -142,7 +142,7 @@ describe('level-net - LevelDB over network', () => {
             });
             // check that contents have effectively been deleted
             opList.push(done => {
-                const dbg = `get (check) sub '${db.path.join(':')}' ` + `key '${key}'`;
+                const dbg = `get (check) sub '${db.path.join(':')}' key '${key}'`;
                 debug(`BEGIN ${dbg}`);
                 db.withRequestLogger(reqLogger).get(key, params, err => {
                     debug(`END ${dbg} -> ${err}`);

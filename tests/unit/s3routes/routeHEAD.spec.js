@@ -27,12 +27,7 @@ describe('routeHEAD', () => {
         jest.spyOn(routesUtils, 'responseXMLBody').mockImplementation();
 
         routeHEAD(request, response, api, logger, statsClient);
-        expect(routesUtils.responseXMLBody).toHaveBeenCalledWith(
-            errors.MethodNotAllowed,
-            null,
-            response,
-            logger,
-        );
+        expect(routesUtils.responseXMLBody).toHaveBeenCalledWith(errors.MethodNotAllowed, null, response, logger);
     });
 
     it('should call bucketHead if objectKey is undefined', () => {
@@ -43,26 +38,14 @@ describe('routeHEAD', () => {
 
         routeHEAD(request, response, api, logger, statsClient);
 
-        expect(api.callApiMethod).toHaveBeenCalledWith(
-            'bucketHead',
-            request,
-            response,
-            logger,
-            expect.any(Function),
-        );
+        expect(api.callApiMethod).toHaveBeenCalledWith('bucketHead', request, response, logger, expect.any(Function));
 
         const callback = api.callApiMethod.mock.calls[0][4];
         const corsHeaders = { 'x-amz-cors': 'test' };
         callback(null, corsHeaders);
 
         expect(routesUtils.statsReport500).toHaveBeenCalledWith(null, statsClient);
-        expect(routesUtils.responseNoBody).toHaveBeenCalledWith(
-            null,
-            corsHeaders,
-            response,
-            200,
-            logger,
-        );
+        expect(routesUtils.responseNoBody).toHaveBeenCalledWith(null, corsHeaders, response, 200, logger);
     });
 
     it('should call objectHead if bucketName and objectKey are defined', () => {
@@ -73,25 +56,13 @@ describe('routeHEAD', () => {
 
         routeHEAD(request, response, api, logger, statsClient);
 
-        expect(api.callApiMethod).toHaveBeenCalledWith(
-            'objectHead',
-            request,
-            response,
-            logger,
-            expect.any(Function),
-        );
+        expect(api.callApiMethod).toHaveBeenCalledWith('objectHead', request, response, logger, expect.any(Function));
 
         const callback = api.callApiMethod.mock.calls[0][4];
         const resHeaders = { 'x-amz-meta-test': 'test' };
         callback(null, resHeaders);
 
         expect(routesUtils.statsReport500).toHaveBeenCalledWith(null, statsClient);
-        expect(routesUtils.responseContentHeaders).toHaveBeenCalledWith(
-            null,
-            {},
-            resHeaders,
-            response,
-            logger,
-        );
+        expect(routesUtils.responseContentHeaders).toHaveBeenCalledWith(null, {}, resHeaders, response, logger);
     });
 });

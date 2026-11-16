@@ -45,11 +45,9 @@ export function check(
         return { err: errors.AccessDenied };
     }
 
-    const validationResult = validateCredentials(credential, timestamp,
-        log);
+    const validationResult = validateCredentials(credential, timestamp, log);
     if (validationResult instanceof ArsenalError) {
-        log.debug('credentials in improper format', { credential,
-            timestamp, validationResult });
+        log.debug('credentials in improper format', { credential, timestamp, validationResult });
         return { err: validationResult };
     }
     const accessKey = credential[0];
@@ -69,8 +67,7 @@ export function check(
             proxyPath = decodeURIComponent(request.headers.proxy_path);
         } catch {
             log.debug('invalid proxy_path header', { proxyPath });
-            return { err: errorInstances.InvalidArgument.customizeDescription(
-                'invalid proxy_path header') };
+            return { err: errorInstances.InvalidArgument.customizeDescription('invalid proxy_path header') };
         }
     }
 
@@ -94,8 +91,7 @@ export function check(
         // building string to sign
         payloadChecksum: constants.authChecksumUnsignedPayload,
         timestamp,
-        credentialScope:
-            `${scopeDate}/${region}/${service}/${requestType}`,
+        credentialScope: `${scopeDate}/${region}/${service}/${requestType}`,
         awsService: service,
         proxyPath,
     });

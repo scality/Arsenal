@@ -11,8 +11,7 @@ import { KMSServiceException } from '@aws-sdk/client-kms';
  */
 function _normalizeArsenalError(err: string | Error, messagePrefix: string) {
     if (typeof err === 'string') {
-        return errorInstances.InternalError
-            .customizeDescription(`${messagePrefix} ${err}`);
+        return errorInstances.InternalError.customizeDescription(`${messagePrefix} ${err}`);
     } else if (
         err instanceof Error ||
         // INFO: The second part is here only for Jest, to remove when we'll be
@@ -20,11 +19,9 @@ function _normalizeArsenalError(err: string | Error, messagePrefix: string) {
         // @ts-expect-error
         (err && typeof err.message === 'string')
     ) {
-        return errorInstances.InternalError
-            .customizeDescription(`${messagePrefix} ${err.message}`);
+        return errorInstances.InternalError.customizeDescription(`${messagePrefix} ${err.message}`);
     }
-    return errorInstances.InternalError
-        .customizeDescription(`${messagePrefix} Unspecified error`);
+    return errorInstances.InternalError.customizeDescription(`${messagePrefix} Unspecified error`);
 }
 
 export function arsenalErrorKMIP(err: string | Error) {
@@ -33,10 +30,13 @@ export function arsenalErrorKMIP(err: string | Error) {
 
 const allowedKmsErrorCodes = Object.keys(allowedKmsErrors) as unknown as (keyof typeof allowedKmsErrors)[];
 
-type AwsSdkError = (S3ServiceException | KMSServiceException | (Error & {
-    name: string;
-    $metadata?: { [key: string]: unknown };
-}));
+type AwsSdkError =
+    | S3ServiceException
+    | KMSServiceException
+    | (Error & {
+          name: string;
+          $metadata?: { [key: string]: unknown };
+      });
 
 function getAwsErrorCode(err: unknown): string | undefined {
     if (err instanceof S3ServiceException || err instanceof KMSServiceException) {
@@ -75,7 +75,7 @@ export function arsenalErrorAWSKMS(err: string | Error | S3ServiceException) {
                 is_arsenal_error: true,
                 type: `KMS.${errorCode}`, // aws s3 prefix kms errors with KMS.
                 code: 500,
-                description: `unexpected AWS_KMS error`,
+                description: 'unexpected AWS_KMS error',
                 stack: err instanceof Error ? err.stack : undefined,
             });
         }

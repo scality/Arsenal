@@ -295,7 +295,7 @@ class MongoClientInterface {
             locations,
         } = params;
         const cred = MongoUtils.credPrefix(authCredentials);
-        this.mongoUrl = `mongodb://${cred}${replicaSetHosts}/` + `?w=${writeConcern}&readPreference=${readPreference}`;
+        this.mongoUrl = `mongodb://${cred}${replicaSetHosts}/?w=${writeConcern}&readPreference=${readPreference}`;
 
         if (!shardCollections) {
             this.mongoUrl += `&replicaSet=${replicaSet}`;
@@ -337,7 +337,7 @@ class MongoClientInterface {
             (MONGO_CONNECT_TIMEOUT_MS && Number.isNaN(MONGO_CONNECT_TIMEOUT_MS)) ||
             (MONGO_SOCKET_TIMEOUT_MS && Number.isNaN(MONGO_SOCKET_TIMEOUT_MS))
         ) {
-            this.logger.error('MongoDB connect and socket timeouts must be a ' + 'number. Using default value(s).');
+            this.logger.error('MongoDB connect and socket timeouts must be a number. Using default value(s).');
         }
         const connectTimeoutMS = CONNECT_TIMEOUT_MS;
         const socketTimeoutMS = SOCKET_TIMEOUT_MS;

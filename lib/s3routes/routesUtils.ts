@@ -701,10 +701,10 @@ export function responseStreamData(
         // locations to fetch
         const contentLength = resHeaders && resHeaders['Content-Length'];
         if (contentLength !== undefined && !_contentLengthMatchesLocations(contentLength, dataLocations)) {
-            log.error(
-                'logic error: total length of fetched data ' + 'locations does not match returned content-length',
-                { contentLength, dataLocations },
-            );
+            log.error('logic error: total length of fetched data locations does not match returned content-length', {
+                contentLength,
+                dataLocations,
+            });
             return XMLResponseBackend.errorResponse(errors.InternalError, response, log, resHeaders);
         }
     }
@@ -1177,9 +1177,8 @@ export function isValidObjectKey(objectKey: string, prefixBlacklist: string[]) {
 export function validateObjectKeyLength(objectKey: string, maxByteLength?: number) {
     if (maxByteLength !== 0 && Buffer.byteLength(objectKey, 'utf8') > (maxByteLength || objectKeyByteLimit)) {
         return errorInstances.KeyTooLong.customizeDescription(
-            'Object key is too ' +
-                'long. Maximum number of bytes allowed in keys is ' +
-                `${maxByteLength || objectKeyByteLimit}.`,
+            'Object key is too long. Maximum number of bytes allowed ' +
+                `in keys is ${maxByteLength || objectKeyByteLimit}.`,
         );
     }
     return null;

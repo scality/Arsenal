@@ -9,7 +9,7 @@ export default function stringHash(str: string): number {
     let i = str.length;
 
     while (i) {
-        hash = hash * 33 ^ str.charCodeAt(--i);
+        hash = (hash * 33) ^ str.charCodeAt(--i);
     }
 
     /* JavaScript does bitwise operations (like XOR, above) on

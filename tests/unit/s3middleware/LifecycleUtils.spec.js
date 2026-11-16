@@ -272,7 +272,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
         });
     });
 
-    it('should return Transition across many rules: first rule with ' + 'multiple transitions', () => {
+    it('should return Transition across many rules: first rule with multiple transitions', () => {
         const applicableRules = [
             new LifecycleRule()
                 .addTransitions([
@@ -306,7 +306,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
         });
     });
 
-    it('should return Transition across many rules: second rule with ' + 'multiple transitions', () => {
+    it('should return Transition across many rules: second rule with multiple transitions', () => {
         const applicableRules = [
             new LifecycleRule()
                 .addTransitions([
@@ -344,7 +344,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
         });
     });
 
-    it('should return Transition across many rules: combination of Date ' + 'and Days gets Date result', () => {
+    it('should return Transition across many rules: combination of Date and Days gets Date result', () => {
         const applicableDate = getDate({ numberOfDaysFromNow: -1 });
         const applicableRules = [
             new LifecycleRule()
@@ -375,7 +375,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
         });
     });
 
-    it('should return Transition across many rules: combination of Date ' + 'and Days gets Days result', () => {
+    it('should return Transition across many rules: combination of Date and Days gets Days result', () => {
         const applicableRules = [
             new LifecycleRule()
                 .addTransitions([
@@ -405,7 +405,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
         });
     });
 
-    it('should not return transition when Transitions has no applicable ' + 'rule: Days', () => {
+    it('should not return transition when Transitions has no applicable rule: Days', () => {
         const applicableRules = [
             new LifecycleRule()
                 .addTransitions([
@@ -422,7 +422,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
         assert.strictEqual(rules.Transition, undefined);
     });
 
-    it('should not return transition when Transitions has no applicable ' + 'rule: Date', () => {
+    it('should not return transition when Transitions has no applicable rule: Date', () => {
         const applicableRules = [
             new LifecycleRule()
                 .addTransitions([
@@ -439,7 +439,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
         assert.strictEqual(rules.Transition, undefined);
     });
 
-    it('should not return transition when Transitions is an empty ' + 'array', () => {
+    it('should not return transition when Transitions is an empty array', () => {
         const applicableRules = [new LifecycleRule().addTransitions([]).build()];
         const rules = lutils.getApplicableRules(applicableRules, {});
         assert.strictEqual(rules.Transition, undefined);
@@ -473,7 +473,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
         });
     });
 
-    it('should return Transition when multiple rule transitions', () => {
+    it('should return NoncurrentVersionTransition when multiple rule transitions', () => {
         const applicableRules = [
             new LifecycleRule()
                 .addNCVTransitions([
@@ -499,7 +499,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
         });
     });
 
-    it('should return Transition across many rules: first rule', () => {
+    it('should return NoncurrentVersionTransition across many rules: first rule', () => {
         const applicableRules = [
             new LifecycleRule()
                 .addNCVTransitions([
@@ -529,7 +529,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
         });
     });
 
-    it('should return Transition across many rules: second rule', () => {
+    it('should return NoncurrentVersionTransition across many rules: second rule', () => {
         const applicableRules = [
             new LifecycleRule()
                 .addNCVTransitions([
@@ -559,7 +559,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
         });
     });
 
-    it('should return Transition across many rules: first rule with ' + 'multiple transitions', () => {
+    it('should return NoncurrentVersionTransition across many rules: first rule with multiple transitions', () => {
         const applicableRules = [
             new LifecycleRule()
                 .addNCVTransitions([
@@ -593,7 +593,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
         });
     });
 
-    it('should return Transition across many rules: second rule with ' + 'multiple transitions', () => {
+    it('should return NoncurrentVersionTransition across many rules: second rule with multiple transitions', () => {
         const applicableRules = [
             new LifecycleRule()
                 .addNCVTransitions([
@@ -631,7 +631,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
         });
     });
 
-    it('should not return transition when Transitions has no applicable ' + 'rule: Days', () => {
+    it('should not return NoncurrentVersionTransition when it has no applicable rule: NoncurrentDays', () => {
         const applicableRules = [
             new LifecycleRule()
                 .addNCVTransitions([
@@ -648,7 +648,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
         assert.strictEqual(rules.Transition, undefined);
     });
 
-    it('should not return transition when Transitions is an empty ' + 'array', () => {
+    it('should not return NoncurrentVersionTransition when NoncurrentVersionTransitions is an empty array', () => {
         const applicableRules = [new LifecycleRule().addNCVTransitions([]).build()];
         const rules = lutils.getApplicableRules(applicableRules, {});
         assert.strictEqual(rules.Transition, undefined);
@@ -661,7 +661,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
     });
 
     describe('transitioning to the same storage class', () => {
-        it('should not return transition when applicable transition is ' + 'already stored at the destination', () => {
+        it('should not return transition when applicable transition is already stored at the destination', () => {
             const applicableRules = [
                 new LifecycleRule()
                     .addTransitions([
@@ -707,7 +707,7 @@ describe('LifecycleUtils::getApplicableRules', () => {
             },
         );
 
-        it('should not return transition when applicable transition is ' + 'already stored at the destination', () => {
+        it('should not return NoncurrentVersionTransition already stored at the destination', () => {
             const applicableRules = [
                 new LifecycleRule()
                     .addNCVTransitions([
@@ -724,34 +724,30 @@ describe('LifecycleUtils::getApplicableRules', () => {
             assert.strictEqual(rules.Transition, undefined);
         });
 
-        it(
-            'should not return transition when applicable transition is ' +
-                'already stored at the destination: multiple rules',
-            () => {
-                const applicableRules = [
-                    new LifecycleRule()
-                        .addNCVTransitions([
-                            {
-                                Days: 2,
-                                StorageClass: 'zenko',
-                            },
-                        ])
-                        .build(),
-                    new LifecycleRule()
-                        .addNCVTransitions([
-                            {
-                                Days: 1,
-                                StorageClass: 'STANDARD',
-                            },
-                        ])
-                        .build(),
-                ];
-                const lastModified = getDate({ numberOfDaysFromNow: -3 });
-                const object = getMetadataObject(lastModified, 'zenko');
-                const rules = lutils.getApplicableRules(applicableRules, object);
-                assert.strictEqual(rules.Transition, undefined);
-            },
-        );
+        it('should not return NoncurrentVersionTransition already stored at the destination: multiple rules', () => {
+            const applicableRules = [
+                new LifecycleRule()
+                    .addNCVTransitions([
+                        {
+                            Days: 2,
+                            StorageClass: 'zenko',
+                        },
+                    ])
+                    .build(),
+                new LifecycleRule()
+                    .addNCVTransitions([
+                        {
+                            Days: 1,
+                            StorageClass: 'STANDARD',
+                        },
+                    ])
+                    .build(),
+            ];
+            const lastModified = getDate({ numberOfDaysFromNow: -3 });
+            const object = getMetadataObject(lastModified, 'zenko');
+            const rules = lutils.getApplicableRules(applicableRules, object);
+            assert.strictEqual(rules.Transition, undefined);
+        });
     });
 });
 
@@ -1334,109 +1330,5 @@ describe('LifecycleUtils::compareTransitions', () => {
             lastModified: '1970-01-01T00:00:00.000Z',
         });
         assert.deepStrictEqual(result, transition2);
-    });
-});
-
-describe('LifecycleUtils::getApplicableNCVTransition', () => {
-    let lutils;
-
-    beforeAll(() => {
-        lutils = new LifecycleUtils(supportedLifecycleRules);
-    });
-
-    describe('using NoncurrentDays time type', () => {
-        it('should return undefined if no rules given', () => {
-            const result = lutils.getApplicableNCVTransition({
-                transitions: [],
-                currentDate: '1970-01-03T00:00:00.000Z',
-                lastModified: '1970-01-01T00:00:00.000Z',
-                store: {},
-            });
-            assert.deepStrictEqual(result, undefined);
-        });
-
-        it('should return undefined when no rule applies', () => {
-            const result = lutils.getApplicableNCVTransition({
-                transitions: [
-                    {
-                        NoncurrentDays: 1,
-                        StorageClass: 'zenko',
-                    },
-                ],
-                currentDate: '1970-01-01T23:59:59.999Z',
-                lastModified: '1970-01-01T00:00:00.000Z',
-                store: {},
-            });
-            assert.deepStrictEqual(result, undefined);
-        });
-
-        it('should return a single rule if it applies', () => {
-            const result = lutils.getApplicableNCVTransition({
-                transitions: [
-                    {
-                        NoncurrentDays: 1,
-                        StorageClass: 'zenko',
-                    },
-                ],
-                currentDate: '1970-01-02T00:00:00.000Z',
-                lastModified: '1970-01-01T00:00:00.000Z',
-                store: {},
-            });
-            const expected = {
-                NoncurrentDays: 1,
-                StorageClass: 'zenko',
-            };
-            assert.deepStrictEqual(result, expected);
-        });
-
-        it('should return the most applicable rule: last rule', () => {
-            const result = lutils.getApplicableNCVTransition({
-                transitions: [
-                    {
-                        NoncurrentDays: 1,
-                        StorageClass: 'zenko',
-                    },
-                    {
-                        NoncurrentDays: 10,
-                        StorageClass: 'zenko',
-                    },
-                ],
-                currentDate: '1970-01-11T00:00:00.000Z',
-                lastModified: '1970-01-01T00:00:00.000Z',
-                store: {},
-            });
-            const expected = {
-                NoncurrentDays: 10,
-                StorageClass: 'zenko',
-            };
-            assert.deepStrictEqual(result, expected);
-        });
-
-        it('should return the most applicable rule: middle rule', () => {
-            const result = lutils.getApplicableNCVTransition({
-                transitions: [
-                    {
-                        NoncurrentDays: 1,
-                        StorageClass: 'zenko',
-                    },
-                    {
-                        NoncurrentDays: 4,
-                        StorageClass: 'zenko',
-                    },
-                    {
-                        NoncurrentDays: 10,
-                        StorageClass: 'zenko',
-                    },
-                ],
-                currentDate: '1970-01-05T00:00:00.000Z',
-                lastModified: '1970-01-01T00:00:00.000Z',
-                store: {},
-            });
-            const expected = {
-                NoncurrentDays: 4,
-                StorageClass: 'zenko',
-            };
-            assert.deepStrictEqual(result, expected);
-        });
     });
 });

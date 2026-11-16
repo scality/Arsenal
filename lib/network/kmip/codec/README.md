@@ -5,19 +5,19 @@ client and a server.
 
 About the structure of the messages:
 
-* It is composed of fields and nested fields
-* It varies depending on the context of the request and who emits the message.
-* It follows the same encoding rules for both the client and the server
-* The set of primitive types is the cornerstone of the protocol, the structure
+- It is composed of fields and nested fields
+- It varies depending on the context of the request and who emits the message.
+- It follows the same encoding rules for both the client and the server
+- The set of primitive types is the cornerstone of the protocol, the structure
   description is contained within the messages along with the actual payload.
-* The set of defined tags is the keystone of the protocol. It permits to
+- The set of defined tags is the keystone of the protocol. It permits to
   attribute a meaning to the fields of a structured message.
 
 The role of the codec is twofold.
 
-* To decode a message from a particular encoding, to an abstract
+- To decode a message from a particular encoding, to an abstract
   representation of the KMIP structured messages.
-* To encode a message from its abstract representation to the particular
+- To encode a message from its abstract representation to the particular
   encoding.
 
 The codecs are not responsible for sending the messages on the wire.
@@ -29,12 +29,12 @@ The primitive data types defined by the protocol are represented internally
 as data structures following the form
 
 ```javascript
-    const abstractKmipField = {
-        [tagName]: {
-            type,
-            value
-        }
-    };
+const abstractKmipField = {
+    [tagName]: {
+        type,
+        value,
+    },
+};
 ```
 
 The tag name `tagName` is a string. It is decoded from the tag value
@@ -50,7 +50,7 @@ element carries the length information for varying data types.
 ## Constructing an abstract Message
 
 ```javascript
-    const msg = KMIP.Message(content);
+const msg = KMIP.Message(content);
 ```
 
 The static method `KMIP.Message` instantiates an object of the class
@@ -243,12 +243,12 @@ of the KMIP class (e.g. `encodeMask` and `decodemask` are not static class
 function but regular methods).
 
 ```javascript
-    const kmip = new KMIP;
-    const mask = ['Encrypt', 'Decrypt'];
-    const bitMask = kmip.encodeMask('Cryptographic Usage Mask', mask);
-    const decodedMask = kmip.decodeMask('Cryptographic Usage Mask', bitMask);
-    assert.deepStrictEqual(decodedMask, mask);
-    assert(bitMask === 12);
+const kmip = new KMIP();
+const mask = ['Encrypt', 'Decrypt'];
+const bitMask = kmip.encodeMask('Cryptographic Usage Mask', mask);
+const decodedMask = kmip.decodeMask('Cryptographic Usage Mask', bitMask);
+assert.deepStrictEqual(decodedMask, mask);
+assert(bitMask === 12);
 ```
 
 #### Attribute

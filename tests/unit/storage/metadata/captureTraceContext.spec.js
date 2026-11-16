@@ -42,9 +42,7 @@ describe('stampActiveTraceContext', () => {
     });
 
     it('writes { traceparent } when active span yields a traceparent', () => {
-        mockGetSpan.mockReturnValue({
-            /* opaque span object */
-        });
+        mockGetSpan.mockReturnValue({/* opaque span object */});
         mockInject.mockImplementation((ctx, carrier, setter) => {
             setter.set(carrier, 'traceparent', '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01');
         });
