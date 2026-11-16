@@ -297,7 +297,7 @@ class DummyService {
         return new AzureDummyContainerClient(key);
     }
 
-    _handleGetObject(command) {
+    _handleGetObject() {
         const stream = new DummyObjectStream(0, 10000000);
         const response = {
             Body: stream,
@@ -305,8 +305,8 @@ class DummyService {
                 httpStatusCode: 200,
                 requestId: 'mock-request-id',
                 attempts: 1,
-                totalRetryDelay: 0
-            }
+                totalRetryDelay: 0,
+            },
         };
         return Promise.resolve(response);
     }
@@ -314,11 +314,9 @@ class DummyService {
     // Send method using the command mapping
     send(command) {
         const handler = this.commandHandlers.get(command.constructor);
-        
+
         if (!handler) {
-            return Promise.reject(new Error(
-                `DummyService.send: Unhandled command type: ${command.constructor.name}`
-            ));
+            return Promise.reject(new Error(`DummyService.send: Unhandled command type: ${command.constructor.name}`));
         }
         try {
             return handler(command);

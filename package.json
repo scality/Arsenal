@@ -112,7 +112,7 @@
         "dev": "nodemon --ext ts --ignore build --exec \"yarn build\"",
         "ft_pykmip_test": "jest tests/functional/pykmip",
         "ft_test": "jest tests/functional --testTimeout=120000 --forceExit --testPathIgnorePatterns tests/functional/pykmip",
-        "lint": "eslint $(git ls-files '*ts' ' *.js')",
+        "lint": "eslint $(git ls-files '*.ts' '*.js')",
         "lint_md": "mdlint $(git ls-files '*.md')",
         "lint_yml": "yamllint $(git ls-files '*.yml')",
         "prettier": "prettier",
