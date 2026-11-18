@@ -453,6 +453,47 @@ describe('MongoClientInterface:putObjectVerCase2', () => {
             return done();
         });
     });
+
+    it('should apply params.conditions to the master filter', async () => {
+        let capturedFilter;
+        const collection = {
+            updateOne: filter => {
+                capturedFilter = filter;
+                return Promise.resolve();
+            },
+        };
+        const params = { conditions: { number: { $gt: 42 }, string: 'forty-two' } };
+        const putObjectVerCase2 = promisify(client.putObjectVerCase2.bind(client));
+        await putObjectVerCase2(collection, 'example-bucket', 'example-object', {}, params, logger);
+        assert.deepStrictEqual(capturedFilter, {
+            _id: 'example-master-key',
+            'value.number': { $gt: 42 },
+            'value.string': 'forty-two',
+        });
+    });
+
+    it('should return PreconditionFailed when the stored master does not satisfy params.conditions', async () => {
+        const collection = {
+            updateOne: () => Promise.reject({ code: 11000 }),
+        };
+        const params = { conditions: { number: { $gt: 42 } } };
+        const putObjectVerCase2 = promisify(client.putObjectVerCase2.bind(client));
+        await assert.rejects(
+            putObjectVerCase2(collection, 'example-bucket', 'example-object', {}, params, logger),
+            err => err.is.PreconditionFailed,
+        );
+    });
+
+    it('should return a retryable InternalError on a duplicate key without params.conditions', async () => {
+        const collection = {
+            updateOne: () => Promise.reject({ code: 11000 }),
+        };
+        const putObjectVerCase2 = promisify(client.putObjectVerCase2.bind(client));
+        await assert.rejects(
+            putObjectVerCase2(collection, 'example-bucket', 'example-object', {}, {}, logger),
+            err => err.is.InternalError,
+        );
+    });
 });
 
 describe('MongoClientInterface:putObjectVerCase3', () => {
@@ -624,6 +665,49 @@ describe('MongoClientInterface:putObjectVerCase4', () => {
             return done();
         });
     });
+
+    it('should apply params.conditions to the version filter', async () => {
+        sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[4](null, {}));
+        let capturedFilter;
+        const collection = {
+            updateOne: filter => {
+                capturedFilter = filter;
+                return Promise.resolve();
+            },
+            bulkWrite: () => Promise.resolve({}),
+        };
+        const params = { conditions: { number: { $gt: 42 }, string: 'forty-two' } };
+        const putObjectVerCase4 = promisify(client.putObjectVerCase4.bind(client));
+        await putObjectVerCase4(collection, 'example-bucket', 'example-object', {}, params, logger);
+        assert.deepStrictEqual(capturedFilter, {
+            _id: 'example-version-key',
+            'value.number': { $gt: 42 },
+            'value.string': 'forty-two',
+        });
+    });
+
+    it('should return PreconditionFailed when the existing version does not satisfy params.conditions', async () => {
+        const collection = {
+            updateOne: () => Promise.reject({ code: 11000 }),
+        };
+        const params = { conditions: { number: { $gt: 42 } } };
+        const putObjectVerCase4 = promisify(client.putObjectVerCase4.bind(client));
+        await assert.rejects(
+            putObjectVerCase4(collection, 'example-bucket', 'example-object', {}, params, logger),
+            err => err.is.PreconditionFailed,
+        );
+    });
+
+    it('should return a retryable InternalError on a duplicate key without params.conditions', async () => {
+        const collection = {
+            updateOne: () => Promise.reject({ code: 11000 }),
+        };
+        const putObjectVerCase4 = promisify(client.putObjectVerCase4.bind(client));
+        await assert.rejects(
+            putObjectVerCase4(collection, 'example-bucket', 'example-object', {}, {}, logger),
+            err => err.is.InternalError,
+        );
+    });
 });
 
 describe('MongoClientInterface:putObjectNoVer', () => {
@@ -670,6 +754,47 @@ describe('MongoClientInterface:putObjectNoVer', () => {
                 return done();
             },
             false,
+        );
+    });
+
+    it('should apply params.conditions to the object filter', async () => {
+        let capturedFilter;
+        const collection = {
+            updateOne: filter => {
+                capturedFilter = filter;
+                return Promise.resolve({});
+            },
+        };
+        const params = { conditions: { number: { $gt: 42 }, string: 'forty-two' } };
+        const putObjectNoVer = promisify(client.putObjectNoVer.bind(client));
+        await putObjectNoVer(collection, 'example-bucket', 'example-object', {}, params, logger);
+        assert.deepStrictEqual(capturedFilter, {
+            _id: 'example-master-key',
+            'value.number': { $gt: 42 },
+            'value.string': 'forty-two',
+        });
+    });
+
+    it('should return PreconditionFailed when the stored object does not satisfy params.conditions', async () => {
+        const collection = {
+            updateOne: () => Promise.reject({ code: 11000 }),
+        };
+        const params = { conditions: { number: { $gt: 42 } } };
+        const putObjectNoVer = promisify(client.putObjectNoVer.bind(client));
+        await assert.rejects(
+            putObjectNoVer(collection, 'example-bucket', 'example-object', {}, params, logger),
+            err => err.is.PreconditionFailed,
+        );
+    });
+
+    it('should return a retryable InternalError on a duplicate key without params.conditions', async () => {
+        const collection = {
+            updateOne: () => Promise.reject({ code: 11000 }),
+        };
+        const putObjectNoVer = promisify(client.putObjectNoVer.bind(client));
+        await assert.rejects(
+            putObjectNoVer(collection, 'example-bucket', 'example-object', {}, {}, logger),
+            err => err.is.InternalError,
         );
     });
 });
@@ -819,6 +944,88 @@ describe('MongoClientInterface:putObjectNoVerWithOplogUpdate trace-context plumb
                 assert.strictEqual(tombstone.traceContext, undefined);
                 done();
             },
+        );
+    });
+});
+
+describe('MongoClientInterface:putObjectNoVerWithOplogUpdate conditions', () => {
+    let client;
+
+    beforeAll(() => {
+        client = new MongoClientInterface({});
+    });
+
+    beforeEach(() => {
+        sinon.stub(utils, 'formatMasterKey').callsFake(() => 'example-master-key');
+    });
+
+    afterEach(() => {
+        sinon.restore();
+    });
+
+    const params = {
+        vFormat: 'v0',
+        needOplogUpdate: true,
+        originOp: 's3:ReplaceArchivedObject',
+        conditions: { number: { $gt: 42 } },
+    };
+
+    it('should apply params.conditions to the find filter', async () => {
+        let capturedFilter;
+        const collection = {
+            findOneAndUpdate: filter => {
+                capturedFilter = filter;
+                return Promise.resolve({ value: { key: 'existing' } });
+            },
+            bulkWrite: () => Promise.resolve({ ok: 1 }),
+        };
+        const putObjectNoVerWithOplogUpdate = promisify(client.putObjectNoVerWithOplogUpdate.bind(client));
+        await putObjectNoVerWithOplogUpdate(collection, 'bucket', 'example', {}, params, log);
+        assert.deepStrictEqual(capturedFilter.$and, [{ 'value.number': { $gt: 42 } }]);
+        assert.deepStrictEqual(capturedFilter._id, 'example-master-key');
+    });
+
+    it('should return PreconditionFailed when the stored object does not satisfy params.conditions', async () => {
+        const collection = {
+            findOneAndUpdate: () => Promise.resolve(null),
+            findOne: () => Promise.resolve({ _id: 'example-master-key' }),
+        };
+        const putObjectNoVerWithOplogUpdate = promisify(client.putObjectNoVerWithOplogUpdate.bind(client));
+        await assert.rejects(
+            putObjectNoVerWithOplogUpdate(collection, 'bucket', 'example', {}, params, log),
+            err => err.is.PreconditionFailed,
+        );
+    });
+
+    it('should exclude deleted objects from the condition mismatch disambiguation', async () => {
+        let capturedFilter;
+        const collection = {
+            findOneAndUpdate: () => Promise.resolve(null),
+            findOne: filter => {
+                capturedFilter = filter;
+                return Promise.resolve(null);
+            },
+        };
+        const putObjectNoVerWithOplogUpdate = promisify(client.putObjectNoVerWithOplogUpdate.bind(client));
+        await assert.rejects(
+            putObjectNoVerWithOplogUpdate(collection, 'bucket', 'example', {}, params, log),
+            err => err.is.InternalError,
+        );
+        assert.deepStrictEqual(capturedFilter, {
+            _id: 'example-master-key',
+            $or: [{ 'value.deleted': { $exists: false } }, { 'value.deleted': { $eq: false } }],
+        });
+    });
+
+    it('should not return PreconditionFailed when the object is missing', async () => {
+        const collection = {
+            findOneAndUpdate: () => Promise.resolve(null),
+            findOne: () => Promise.resolve(null),
+        };
+        const putObjectNoVerWithOplogUpdate = promisify(client.putObjectNoVerWithOplogUpdate.bind(client));
+        await assert.rejects(
+            putObjectNoVerWithOplogUpdate(collection, 'bucket', 'example', {}, params, log),
+            err => err.is.InternalError,
         );
     });
 });
