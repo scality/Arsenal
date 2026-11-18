@@ -1,6 +1,6 @@
 {
     "name": "@scality/arsenal",
-    "version": "8.6.3",
+    "version": "8.6.4",
     "engines": {
         "node": ">=22"
     },
