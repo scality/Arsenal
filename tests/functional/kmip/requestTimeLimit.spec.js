@@ -76,6 +76,22 @@ describe('KMIP request time limit', () => {
             assert.strictEqual(secondResult.calls(), 1);
         });
 
+        it('should answer a request sent by the callback of a request interrupted with a timed out one', async () => {
+            // the first connection never answers, the next ones answer at once
+            server.answerDelayMs = connection => (connection === 0 ? null : 0);
+            const transport = new TransportTemplate(tls, transportOptions(REQUEST_TIMEOUT_MS));
+
+            const timedOut = send(transport);
+            const resent = new Promise(resolve => {
+                transport.send(logger, request, () => resolve(send(transport, Buffer.from('resent'))));
+            });
+
+            assert.strictEqual((await timedOut).err.code, 'ETIMEDOUT');
+            const resentResult = await resent;
+            assert.ifError(resentResult.err);
+            assert.strictEqual(resentResult.response.toString(), 'resent');
+        });
+
         it('should send a request made right after a timed out one on a new connection', async () => {
             server.answerDelayMs = () => null;
             const transport = new TransportTemplate(tls, transportOptions(REQUEST_TIMEOUT_MS));
