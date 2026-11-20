@@ -77,19 +77,23 @@ export default class TransportTemplate {
      * @param error - the error to call the callback function with.
      */
     _drainQueuesWithError(error: Error) {
-        // On log the same queue size for each message for simplicity
-        const queueSizes = {
-            req: this.callbackPipeline.length,
-            deferred: this.deferedRequests.length,
-        };
-        this.callbackPipeline.forEach(({ cb, latencies }) => {
-            cb(error, undefined, undefined, latencies, queueSizes);
-        });
-        this.deferedRequests.forEach(({ cb, timestamp }) => {
-            cb(error, undefined, undefined, { defered: timestamp }, queueSizes);
-        });
+        // Empty the queues before calling the callbacks: a request sent from
+        // a callback then waits in the new queues like any other request
+        const callbackPipeline = this.callbackPipeline;
+        const deferedRequests = this.deferedRequests;
         this.callbackPipeline = [];
         this.deferedRequests = [];
+        // On log the same queue size for each message for simplicity
+        const queueSizes = {
+            req: callbackPipeline.length,
+            deferred: deferedRequests.length,
+        };
+        callbackPipeline.forEach(({ cb, latencies }) => {
+            cb(error, undefined, undefined, latencies, queueSizes);
+        });
+        deferedRequests.forEach(({ cb, timestamp }) => {
+            cb(error, undefined, undefined, { defered: timestamp }, queueSizes);
+        });
     }
 
     /**

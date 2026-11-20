@@ -50,4 +50,33 @@ describe('KMIP transport on a lost connection', () => {
         assert.ifError(next.err);
         assert.ok(next.response.equals(request));
     });
+
+    it('should answer a request sent by the callback of a request failed by a connection error', async () => {
+        // the first connection is reset on its first request, the next one answers
+        server.answerDelayMs = connection => {
+            if (connection === 0) {
+                server.connections[0].reset();
+                return null;
+            }
+            return 0;
+        };
+        const transport = new TransportTemplate(tls, {
+            pipelineDepth: 8,
+            tls: { host: '127.0.0.1', port: server.port, ca: certs.ca },
+        });
+
+        let failedError;
+        const resent = await new Promise(resolve => {
+            transport.send(logger, request, err => {
+                failedError = err;
+                transport.send(logger, Buffer.from('resent'), (resentErr, conversation, response) =>
+                    resolve({ err: resentErr, response }),
+                );
+            });
+        });
+
+        assert.strictEqual(failedError.code, 'ECONNRESET');
+        assert.ifError(resent.err);
+        assert.strictEqual(resent.response.toString(), 'resent');
+    });
 });
