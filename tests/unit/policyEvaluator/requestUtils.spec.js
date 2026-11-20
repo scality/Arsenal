@@ -134,6 +134,38 @@ describe('requestUtils.getClientIp', () => {
             const result = getClientIpFromHeader(`${forgedIp}, ${untrustedClientIp}:5678`);
             assert.strictEqual(result, testProxyIp);
         });
+
+        it('should return the only entry if it is not a trusted proxy', () => {
+            const result = getClientIpFromHeader(untrustedClientIp);
+            assert.strictEqual(result, untrustedClientIp);
+        });
+
+        it('should skip several trusted proxies right of the client address', () => {
+            const result = getClientIpFromHeader(
+                `${forgedIp}, ${untrustedClientIp}, ${trustedLoadBalancerIp}, 192.168.102.20`);
+            assert.strictEqual(result, untrustedClientIp);
+        });
+
+        it('should ignore empty entries forged by the client', () => {
+            const result = getClientIpFromHeader(`${forgedIp}, , ${untrustedClientIp}`);
+            assert.strictEqual(result, untrustedClientIp);
+        });
+
+        it('should read every value of a repeated header', () => {
+            const result = getClientIpFromHeader([forgedIp, untrustedClientIp]);
+            assert.strictEqual(result, untrustedClientIp);
+        });
+
+        it('should return an IPv6 client address', () => {
+            const result = getClientIpFromHeader(`${forgedIp}, 2001:db8::1, ${trustedLoadBalancerIp}`);
+            assert.strictEqual(result, '2001:db8::1');
+        });
+
+        it('should skip a trusted proxy written as an IPv4-mapped IPv6 address', () => {
+            const result = getClientIpFromHeader(
+                `${forgedIp}, ${untrustedClientIp}, ::ffff:${trustedLoadBalancerIp}`);
+            assert.strictEqual(result, untrustedClientIp);
+        });
     });
 });
 
