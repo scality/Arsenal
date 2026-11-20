@@ -89,6 +89,52 @@ describe('requestUtils.getClientIp', () => {
         const result = requestUtils.getClientIp(request, configWithProxy);
         assert.strictEqual(result, dummyRemoteIP);
     });
+
+    describe('with a forwarded-for header from a trusted proxy', () => {
+        const untrustedClientIp = '10.20.30.40';
+        const forgedIp = '10.0.0.1';
+        const trustedLoadBalancerIp = '192.168.101.10';
+
+        const getClientIpFromHeader = header => {
+            const request = new DummyRequest({
+                headers: {
+                    'x-forwarded-for': header,
+                },
+                url: '/',
+                parsedHost: 'localhost',
+                socket: {
+                    remoteAddress: testProxyIp,
+                },
+            });
+            return requestUtils.getClientIp(request, configWithProxy);
+        };
+
+        it('should ignore an address forged by the client left of its own address', () => {
+            const result = getClientIpFromHeader(`${forgedIp}, ${untrustedClientIp}`);
+            assert.strictEqual(result, untrustedClientIp);
+        });
+
+        it('should skip trusted proxies right of the client address', () => {
+            const result = getClientIpFromHeader(
+                `${forgedIp}, ${untrustedClientIp}, ${trustedLoadBalancerIp}`);
+            assert.strictEqual(result, untrustedClientIp);
+        });
+
+        it('should return the left-most address if every address is a trusted proxy', () => {
+            const result = getClientIpFromHeader(`${testClientIp1}, ${trustedLoadBalancerIp}`);
+            assert.strictEqual(result, testClientIp1);
+        });
+
+        it('should return the last trusted hop if an entry is not a valid address', () => {
+            const result = getClientIpFromHeader(`${forgedIp}, unknown, ${trustedLoadBalancerIp}`);
+            assert.strictEqual(result, trustedLoadBalancerIp);
+        });
+
+        it('should return the socket peer if the right-most entry is not a valid address', () => {
+            const result = getClientIpFromHeader(`${forgedIp}, ${untrustedClientIp}:5678`);
+            assert.strictEqual(result, testProxyIp);
+        });
+    });
 });
 
 describe('requestUtils.getHttpProtocolSecurity', () => {
