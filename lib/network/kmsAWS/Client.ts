@@ -16,7 +16,17 @@ import {
 const { NodeHttpHandler } = require('@smithy/node-http-handler');
 import * as werelogs from 'werelogs';
 import assert from 'assert';
-import { KMSInterface, KmsBackend, getKeyIdFromArn, KmsProtocol, KmsType, makeBackend } from '../KMSInterface';
+import {
+    KMSInterface,
+    KmsBackend,
+    getKeyIdFromArn,
+    KmsProtocol,
+    KmsRequestOutcome,
+    KmsType,
+    makeBackend,
+    OnKmsRequestDone,
+    reportKmsRequest,
+} from '../KMSInterface';
 
 type TLSVersion = 'TLSv1.3' | 'TLSv1.2' | 'TLSv1.1' | 'TLSv1';
 
@@ -52,6 +62,20 @@ interface KMSOptions {
      * retries a timed out attempt. No limit when not set.
      */
     requestTimeoutMs?: number;
+    /** Called once for each attempt of a request sent to the KMS */
+    onRequestDone?: OnKmsRequestDone;
+}
+
+/** Socket errors the SDK also names TimeoutError */
+const CONNECTION_LOSS_CODES = ['ECONNRESET', 'EPIPE'];
+
+/**
+ * @param err - error of an attempt
+ * @returns whether the attempt failed on a time limit
+ */
+function isTimeout(err: unknown): boolean {
+    const { name, code } = err as Error & { code?: string };
+    return name === 'TimeoutError' && !CONNECTION_LOSS_CODES.includes(code ?? '');
 }
 
 interface ClientOptions {
@@ -66,7 +90,8 @@ export default class Client implements KMSInterface {
 
     constructor(options: ClientOptions) {
         this._supportsDefaultKeyPerAccount = true;
-        const { providerName, tls, ak, sk, region, endpoint, noAwsArn, requestTimeoutMs } = options.kmsAWS;
+        const { providerName, tls, ak, sk, region, endpoint, noAwsArn, requestTimeoutMs, onRequestDone } =
+            options.kmsAWS;
 
         const requestHandler = new NodeHttpHandler({
             httpAgent: !tls
@@ -104,8 +129,46 @@ export default class Client implements KMSInterface {
             credentials,
             requestHandler,
         });
+        if (onRequestDone) {
+            this.reportEachAttempt(onRequestDone);
+        }
         this.backend = makeBackend(KmsType.external, KmsProtocol.aws_kms, providerName);
         this.noAwsArn = noAwsArn;
+    }
+
+    /**
+     * Report each attempt of a request: the SDK retries a failed attempt
+     * @param onRequestDone - called once for each attempt
+     */
+    private reportEachAttempt(onRequestDone: OnKmsRequestDone): void {
+        // The SDK runs the attempts without the logger of the request
+        const logger = new werelogs.Logger('KmsAWSClient');
+        this.client.middlewareStack.add(
+            (next, context) => async args => {
+                const start = Date.now();
+                const report = (outcome: KmsRequestOutcome) =>
+                    reportKmsRequest(
+                        onRequestDone,
+                        {
+                            // every command of the SDK client names itself
+                            operation: String(context.commandName).replace(/Command$/, ''),
+                            outcome,
+                            durationMs: Date.now() - start,
+                        },
+                        logger,
+                    );
+                try {
+                    const output = await next(args);
+                    report('success');
+                    return output;
+                } catch (err) {
+                    report(isTimeout(err) ? 'timeout' : 'error');
+                    throw err;
+                }
+            },
+            // Inside the retry loop, which runs in an earlier step, and around the parsing of the response
+            { step: 'deserialize', priority: 'high', name: 'reportKmsRequest' },
+        );
     }
 
     get supportsDefaultKeyPerAccount(): boolean {
