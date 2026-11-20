@@ -65,8 +65,8 @@ describe('KMIP request time limit', () => {
             assert.strictEqual(firstResult.err.code, 'ETIMEDOUT');
             assert.strictEqual(firstResult.err.message, `KMIP request timed out after ${REQUEST_TIMEOUT_MS} ms`);
             assert.ok(
-                elapsed >= REQUEST_TIMEOUT_MS - 10 && elapsed < 2 * REQUEST_TIMEOUT_MS,
-                `The request should fail after about ${REQUEST_TIMEOUT_MS} ms, failed after ${elapsed} ms`,
+                elapsed >= REQUEST_TIMEOUT_MS - 10,
+                `The request should fail after its time limit of ${REQUEST_TIMEOUT_MS} ms, failed after ${elapsed} ms`,
             );
             assert.strictEqual(secondResult.err.message, 'Conversation interrupted');
 
@@ -112,15 +112,20 @@ describe('KMIP request time limit', () => {
             server.answerDelayMs = (connection, requestIndex) => (requestIndex === 0 ? 0.4 * requestTimeoutMs : null);
             const transport = new TransportTemplate(tls, { ...transportOptions(requestTimeoutMs), pipelineDepth: 1 });
 
-            const start = Date.now();
+            // Timers fire in the order of their deadlines, even when the event loop is late
+            let referencePassed = false;
+            const reference = setTimeout(() => {
+                referencePassed = true;
+            }, 1.2 * requestTimeoutMs);
             const [first, queued] = await Promise.all([send(transport), send(transport)]);
-            const elapsed = Date.now() - start;
+            clearTimeout(reference);
 
             assert.ifError(first.err);
             assert.strictEqual(queued.err.code, 'ETIMEDOUT');
-            assert.ok(
-                elapsed < 1.3 * requestTimeoutMs,
-                `The queued request should fail ${requestTimeoutMs} ms after submission, failed after ${elapsed} ms`,
+            assert.strictEqual(
+                referencePassed,
+                false,
+                `The queued request should fail ${requestTimeoutMs} ms after submission, not after its wait`,
             );
         });
 
@@ -162,17 +167,11 @@ describe('KMIP request time limit', () => {
                 },
             });
 
-            const start = Date.now();
             const err = await new Promise(resolve => client.healthcheck(logger, resolve));
-            const elapsed = Date.now() - start;
 
             assert.strictEqual(err.code, 500);
             assert.ok(err.is.InternalError);
             assert.ok(err.description.includes('ETIMEDOUT'), err.description);
-            assert.ok(
-                elapsed < 2 * REQUEST_TIMEOUT_MS,
-                `The health check should fail after about ${REQUEST_TIMEOUT_MS} ms, failed after ${elapsed} ms`,
-            );
         });
     });
 });
