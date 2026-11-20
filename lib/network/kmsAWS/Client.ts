@@ -47,6 +47,11 @@ interface KMSOptions {
      *  - `arn:scality:kms:external:aws_kms:custom:key/cbd69d33-ba8e-4b56-8cfe`
      */
     noAwsArn?: boolean;
+    /**
+     * Time limit of each attempt of a request, connection included. The SDK
+     * retries a timed out attempt. No limit when not set.
+     */
+    requestTimeoutMs?: number;
 }
 
 interface ClientOptions {
@@ -61,7 +66,7 @@ export default class Client implements KMSInterface {
 
     constructor(options: ClientOptions) {
         this._supportsDefaultKeyPerAccount = true;
-        const { providerName, tls, ak, sk, region, endpoint, noAwsArn } = options.kmsAWS;
+        const { providerName, tls, ak, sk, region, endpoint, noAwsArn, requestTimeoutMs } = options.kmsAWS;
 
         const requestHandler = new NodeHttpHandler({
             httpAgent: !tls
@@ -80,6 +85,9 @@ export default class Client implements KMSInterface {
                       key: tls.key,
                   })
                 : undefined,
+            requestTimeout: requestTimeoutMs,
+            // Without it, a request over the time limit only logs a warning
+            throwOnRequestTimeout: true,
         });
 
         const credentials =
