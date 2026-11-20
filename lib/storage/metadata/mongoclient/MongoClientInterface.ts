@@ -1286,7 +1286,7 @@ class MongoClientInterface {
                         return cb(err);
                     }
 
-                    MongoUtils.serialize(mstObjVal);
+                    MongoUtils.serialize(mstObjVal!);
                     const ops: AnyBulkWriteOperation<ObjectMetastoreDocument>[] = [];
                     // filter to get master
                     const filter = {
@@ -1562,6 +1562,7 @@ class MongoClientInterface {
         cb: ArsenalCallback<string | void>,
     ): void {
         MongoUtils.serialize(objVal);
+        stampActiveTraceContext(objVal);
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
         const _params = Object.assign({}, params);
         return this.getBucketVFormat(bucketName, log, (err, vFormat?) => {
@@ -1915,7 +1916,6 @@ class MongoClientInterface {
     ) {
         const masterKey = formatMasterKey(objName, vFormat);
         MongoUtils.serialize(objVal);
-        objVal.originOp = 's3:ObjectRemoved:Delete';
         c.findOneAndReplace(
             {
                 '_id': masterKey,
@@ -1989,6 +1989,7 @@ class MongoClientInterface {
      * @param {String} objName object name
      * @param {Object} mst master version metadata
      * @param {String} vFormat key format version
+     * @param {String} originOp origin operation
      * @param {Object} log logger
      * @param {Function} cb callback
      * @return {undefined}
@@ -1999,6 +2000,7 @@ class MongoClientInterface {
         objName: string,
         mst: { versionId: string },
         vFormat: string,
+        originOp: string,
         log: werelogs.Logger,
         cb: ArsenalCallback<void>,
     ) {
@@ -2023,7 +2025,7 @@ class MongoClientInterface {
                     'value.isPHD': true,
                     'value.versionId': mst.versionId,
                 };
-                this.internalDeleteObject(c, bucketName, masterKey, filter, null, log, err => {
+                this.internalDeleteObject(c, bucketName, masterKey, filter, null, originOp, log, err => {
                     if (err) {
                         // the PHD master might get updated when a PUT is performed
                         // before the repair is done, we don't want to return an error
@@ -2109,24 +2111,15 @@ class MongoClientInterface {
                         .catch(err => next(err)),
                 // delete version
                 next =>
-                    this.internalDeleteObject(
-                        c,
-                        bucketName,
-                        versionKey,
-                        {},
-                        params,
-                        log,
-                        err => {
-                            // we don't return an error in case we don't find
-                            // a version as we expect this case when dealing with
-                            // a versioning suspended object.
-                            if (err?.is.NoSuchKey) {
-                                return next(null);
-                            }
-                            return next(err);
-                        },
-                        originOp,
-                    ),
+                    this.internalDeleteObject(c, bucketName, versionKey, {}, params, originOp, log, err => {
+                        // we don't return an error in case we don't find
+                        // a version as we expect this case when dealing with
+                        // a versioning suspended object.
+                        if (err?.is.NoSuchKey) {
+                            return next(null);
+                        }
+                        return next(err);
+                    }),
             ],
             err => {
                 if (err) {
@@ -2137,7 +2130,16 @@ class MongoClientInterface {
                     });
                     return cb(errors.InternalError);
                 }
-                return this.deleteOrRepairPHD(c, bucketName, objName, { versionId: _vid }, params.vFormat, log, cb);
+                return this.deleteOrRepairPHD(
+                    c,
+                    bucketName,
+                    objName,
+                    { versionId: _vid },
+                    params.vFormat,
+                    originOp,
+                    log,
+                    cb,
+                );
             },
         );
     }
@@ -2166,34 +2168,25 @@ class MongoClientInterface {
         originOp = 's3:ObjectRemoved:Delete',
     ) {
         const versionKey = formatVersionKey(objName, params.versionId, params.vFormat);
-        this.internalDeleteObject(
-            c,
-            bucketName,
-            versionKey,
-            {},
-            params,
-            log,
-            err => {
-                if (err) {
-                    if (err.is.NoSuchKey) {
-                        log.error('deleteObjectVerNotMaster: unable to find target object to delete', {
-                            error: err.message,
-                            bucket: bucketName,
-                            key: objName,
-                        });
-                        return cb(errors.NoSuchKey);
-                    }
-                    log.error('deleteObjectVerNotMaster: error deleting object with no version', {
+        this.internalDeleteObject(c, bucketName, versionKey, {}, params, originOp, log, err => {
+            if (err) {
+                if (err.is.NoSuchKey) {
+                    log.error('deleteObjectVerNotMaster: unable to find target object to delete', {
                         error: err.message,
                         bucket: bucketName,
                         key: objName,
                     });
-                    return cb(errors.InternalError);
+                    return cb(errors.NoSuchKey);
                 }
-                return cb(null);
-            },
-            originOp,
-        );
+                log.error('deleteObjectVerNotMaster: error deleting object with no version', {
+                    error: err.message,
+                    bucket: bucketName,
+                    key: objName,
+                });
+                return cb(errors.InternalError);
+            }
+            return cb(null);
+        });
     }
 
     /**
@@ -2289,30 +2282,21 @@ class MongoClientInterface {
         originOp = 's3:ObjectRemoved:Delete',
     ) {
         const masterKey = formatMasterKey(objName, params.vFormat);
-        this.internalDeleteObject(
-            c,
-            bucketName,
-            masterKey,
-            {},
-            params,
-            log,
-            err => {
-                if (err) {
-                    if (err.is.NoSuchKey) {
-                        return cb(null);
-                    }
-
-                    log.error('deleteObjectNoVer: error deleting object with no version', {
-                        error: err.message,
-                        bucket: bucketName,
-                        key: objName,
-                    });
-                    return cb(err);
+        this.internalDeleteObject(c, bucketName, masterKey, {}, params, originOp, log, err => {
+            if (err) {
+                if (err.is.NoSuchKey) {
+                    return cb(null);
                 }
-                return cb(null);
-            },
-            originOp,
-        );
+
+                log.error('deleteObjectNoVer: error deleting object with no version', {
+                    error: err.message,
+                    bucket: bucketName,
+                    key: objName,
+                });
+                return cb(err);
+            }
+            return cb(null);
+        });
     }
 
     /**
@@ -2324,10 +2308,10 @@ class MongoClientInterface {
      * @param {string} key Key of the object to delete
      * @param {object} filter additional query filters
      * @param {object} params request params
+     * @param {String} [originOp=s3:ObjectRemoved:Delete] origin operation
      * @param {Logger} log logger instance
      * @param {Function} cb callback containing error
      * and BulkWriteResult
-     * @param {String} [originOp=s3:ObjectRemoved:Delete] origin operation
      * @return {undefined}
      */
     internalDeleteObject(
@@ -2336,9 +2320,9 @@ class MongoClientInterface {
         key: string,
         filter: UpdateFilter<ObjectMetastoreDocument>,
         params: ObjectMDOperationParams | null,
+        originOp = 's3:ObjectRemoved:Delete',
         log: werelogs.Logger,
         cb: ArsenalCallback<unknown>,
-        originOp = 's3:ObjectRemoved:Delete',
     ) {
         // filter used when deleting object
         const deleteFilter = Object.assign(
@@ -3261,7 +3245,7 @@ class MongoClientInterface {
                 });
                 return cb(errors.InternalError);
             }
-            return this.internalDeleteObject(c, bucketName, masterKey, filter, null, log, err => {
+            return this.internalDeleteObject(c, bucketName, masterKey, filter, null, undefined, log, err => {
                 if (err) {
                     // unable to find an object that matches the conditions
                     if (err.is.NoSuchKey) {
