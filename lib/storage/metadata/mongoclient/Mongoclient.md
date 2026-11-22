@@ -222,6 +222,26 @@ concurrency between 2 clients then we are sure that the 2 groups of
 operations will be clearly decided in the oplog (the last writer will
 win).
 
+#### PutObject() with a Condition on the Master
+
+A put with `params.ifNoneMatch` (`'*'`) or `params.ifMatch` (a
+`content-md5`) is written only if the master satisfies the condition:
+no master or a delete marker for `ifNoneMatch`, an object with that
+`content-md5` for `ifMatch`. The condition is part of the filter of the
+single-document write on the master, so MongoDB evaluates it and writes
+in one atomic step. A write that does not match writes nothing; the
+master is then read once to choose the error: `PreconditionFailed`,
+`NoSuchKey`, or `ConditionalRequestConflict` when the master is a
+placeholder, is flagged as deleted, or failed only the version guard.
+
+In a versioned bucket the order of the two writes is reversed: the
+master is written first, with the condition and the version guard in
+its filter, then the version is inserted. The master write is the
+commit point, so a rejected put creates no version and no oplog event.
+If the version insert fails, the master is put back while it still holds
+the new version id. A crash between the two writes leaves a master
+without its version entry.
+
 #### DeleteObject()
 
 This is probably the most complex case to manage because it involves a

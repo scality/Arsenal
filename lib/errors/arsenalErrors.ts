@@ -430,6 +430,11 @@ export const PreconditionFailed: ErrorFormat = {
     description: 'At least one of the preconditions you specified did not hold.',
 };
 
+export const ConditionalRequestConflict: ErrorFormat = {
+    code: 409,
+    description: 'The conditional request cannot succeed due to a conflicting operation against this resource.',
+};
+
 export const Redirect: ErrorFormat = {
     code: 307,
     description: 'Temporary redirect.',

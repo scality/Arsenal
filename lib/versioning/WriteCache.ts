@@ -119,8 +119,10 @@ export default class WriteCache {
             this.queue[cacheKey].queue.forEach(callback => {
                 // always return the value from cache, not the value that
                 // started dequeueing, because the cache might be updated
-                // synchronously by a dequeued request
-                if (err) {
+                // synchronously by a dequeued request; this also holds when
+                // the key was not found, since a dequeued request may have
+                // created it
+                if (err && !err.is.ObjNotFound) {
                     return callback(err);
                 }
                 if (this.cache[cacheKey].value === undefined) {

@@ -1,4 +1,5 @@
 const assert = require('assert');
+const async = require('async');
 const sinon = require('sinon');
 const werelogs = require('werelogs');
 
@@ -153,6 +154,78 @@ describe('MetadataWrapper::raftSessionId propagation', () => {
             metadataWrapper.getBucketAndObjectMD(bucketName, objName, {}, mockLog, (...args) => {
                 assert.strictEqual(args.length, 1, 'Error callback should have only 1 parameter');
                 assert.strictEqual(args[0], testError);
+                done();
+            });
+        });
+    });
+});
+
+describe('MetadataWrapper::conditional puts', () => {
+    const log = {
+        debug: () => {},
+        trace: () => {},
+        error: () => {},
+    };
+
+    function wrapperWithClient(client) {
+        const wrapper = new MetadataWrapper('mem', {}, null, logger);
+        wrapper.client = client;
+        return wrapper;
+    }
+
+    it(
+        'putObjectMD should return NotImplemented for a ' +
+            'conditional put on a backend without supportsConditionalPut',
+        done => {
+            const putObject = sinon.stub().callsFake((b, o, v, p, l, cb) => cb(null));
+            const wrapper = wrapperWithClient({ putObject });
+            async.eachSeries(
+                [{ ifNoneMatch: '*' }, { ifMatch: 'd41d8cd98f00b204e9800998ecf8427e' }, { ifMatch: '' }],
+                (params, next) =>
+                    wrapper.putObjectMD('bucket', 'key', {}, params, log, err => {
+                        assert(err && err.is.NotImplemented, `expected NotImplemented for ${JSON.stringify(params)}`);
+                        next();
+                    }),
+                () => {
+                    assert.strictEqual(putObject.callCount, 0);
+                    done();
+                },
+            );
+        },
+    );
+
+    it('putObjectMD should pass ifNoneMatch and ifMatch through to a backend with supportsConditionalPut', done => {
+        const putObject = sinon.stub().callsFake((b, o, v, p, l, cb) => cb(null));
+        const wrapper = wrapperWithClient({ putObject, supportsConditionalPut: true });
+        wrapper.putObjectMD('bucket', 'key', {}, { ifNoneMatch: '*' }, log, err => {
+            assert.ifError(err);
+            wrapper.putObjectMD('bucket', 'key', {}, { ifMatch: 'abc', versioning: true }, log, err => {
+                assert.ifError(err);
+                assert.strictEqual(putObject.callCount, 2);
+                assert.deepStrictEqual(putObject.firstCall.args[3], { ifNoneMatch: '*' });
+                assert.deepStrictEqual(putObject.secondCall.args[3], { ifMatch: 'abc', versioning: true });
+                done();
+            });
+        });
+    });
+
+    it('putObjectMD should not gate a put without condition', done => {
+        const putObject = sinon.stub().callsFake((b, o, v, p, l, cb) => cb(null));
+        const wrapper = wrapperWithClient({ putObject });
+        wrapper.putObjectMD('bucket', 'key', {}, { versioning: true }, log, err => {
+            assert.ifError(err);
+            assert.strictEqual(putObject.callCount, 1);
+            done();
+        });
+    });
+
+    it('supportsConditionalPut should follow the client after switch', done => {
+        const wrapper = new MetadataWrapper('mem', {}, null, logger);
+        assert.strictEqual(wrapper.supportsConditionalPut(), true);
+        wrapper.switch({ putObject: () => {} }, () => {
+            assert.strictEqual(wrapper.supportsConditionalPut(), false);
+            wrapper.switch({ putObject: () => {}, supportsConditionalPut: true }, () => {
+                assert.strictEqual(wrapper.supportsConditionalPut(), true);
                 done();
             });
         });
