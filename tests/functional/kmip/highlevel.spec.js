@@ -4,20 +4,12 @@ const assert = require('assert');
 const crypto = require('crypto');
 const async = require('async');
 const TTLVCodec = require('../../../lib/network/kmip/codec/ttlv').default;
-const LoopbackServerChannel = require('../../utils/kmip/LoopbackServerChannel');
-const TransportTemplate = require('../../../lib/network/kmip/transport/TransportTemplate').default;
 const TlsTransport = require('../../../lib/network/kmip/transport/tls').default;
-const KMIP = require('../../../lib/network/kmip').default;
 const KMIPClient = require('../../../lib/network/kmip/Client').default;
+const LoopbackServerTransport = require('../../utils/kmip/LoopbackServerTransport');
 const { logger } = require('../../utils/kmip/ersatz');
 const util = require('util');
 const sinon = require('sinon');
-
-class LoopbackServerTransport extends TransportTemplate {
-    constructor(options) {
-        super(new LoopbackServerChannel(KMIP, TTLVCodec), options);
-    }
-}
 
 const defaultOptions = {
     kmip: {

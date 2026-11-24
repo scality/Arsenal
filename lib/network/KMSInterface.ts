@@ -183,6 +183,38 @@ export function validateKeyDetail(
     return null;
 }
 
+export type KmsRequestOutcome = 'success' | 'error' | 'timeout';
+
+/** A request sent to a KMS, once it is answered or has failed */
+export interface KmsRequestReport {
+    /** Operation name in the KMS protocol, such as `Encrypt` */
+    operation: string;
+    outcome: KmsRequestOutcome;
+    /** From when the request is issued to its answer or failure, any wait before it is sent included */
+    durationMs: number;
+}
+
+/** Called once for each request a KMS client sends. An error it throws is logged; the request keeps its outcome */
+export type OnKmsRequestDone = (report: KmsRequestReport) => void;
+
+/**
+ * Call onRequestDone with the report of a request, logging an error it throws
+ * @param onRequestDone - the callback of the KMS client, if set
+ * @param report - the report of the request
+ * @param logger - logs an error thrown by onRequestDone
+ */
+export function reportKmsRequest(
+    onRequestDone: OnKmsRequestDone | undefined,
+    report: KmsRequestReport,
+    logger: werelogs.Logger,
+): void {
+    try {
+        onRequestDone?.(report);
+    } catch (error) {
+        logger.error('KMS request report failed', { error, report });
+    }
+}
+
 export interface KMSInterface {
     readonly backend: KmsBackend<KmsType>;
 
