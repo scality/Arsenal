@@ -115,13 +115,16 @@ export function instrumentApiMethod<T extends (...args: any[]) => any>(
         return apiMethod;
     }
     const spanName = `${spanPrefix}${methodName}`;
-    return function instrumented(this: unknown, ...args: any[]) {
+    const instrumented = function instrumented(this: unknown, ...args: any[]) {
         const callbackIndex = (args as any).findLastIndex((a: any) => typeof a === 'function');
         if (callbackIndex !== -1) {
             return instrumentCallbackHandler(this, apiMethod, spanName, args, callbackIndex);
         }
         return instrumentAsyncHandler(this, apiMethod, spanName, args);
-    } as T;
+    };
+    // Callers may read the handler's name, which must not change when tracing is on
+    Object.defineProperty(instrumented, 'name', { value: apiMethod.name });
+    return instrumented as T;
 }
 
 // Manual span lifecycle for consumers whose dispatch owns the start + end sites
