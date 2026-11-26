@@ -154,6 +154,14 @@ describe('instrumentApiMethod', () => {
             assert.strictEqual(spans.length, 1);
             assert.strictEqual(spans[0].name, 'CustomAPI.objectGetAsync');
         });
+
+        it("should keep the handler's name on the wrapper", () => {
+            function putMetadata() {}
+            const wrapped = instrumentApiMethod(putMetadata, 'anySpanName');
+
+            assert.notStrictEqual(wrapped, putMetadata);
+            assert.strictEqual(wrapped.name, 'putMetadata');
+        });
     });
 
     describe('OTEL off', () => {
