@@ -5,8 +5,7 @@ const { TLSSocket } = require('tls');
 
 describe('requestUtils.getClientIp', () => {
     // s3 config with 'requests.viaProxy` enabled
-    const configWithProxy
-        = require('../../utils/dummyS3ConfigProxy.json');
+    const configWithProxy = require('../../utils/dummyS3ConfigProxy.json');
     // s3 config with 'requests.viaProxy` disabled
     const configWithoutProxy = require('../../utils/dummyS3Config.json');
     const testClientIp1 = '192.168.100.1';
@@ -41,53 +40,139 @@ describe('requestUtils.getClientIp', () => {
         assert.strictEqual(result, testClientIp2);
     });
 
-    it('should not return client Ip address from header if the request is forwarded from proxies, but the request ' +
-        'has no expected header or the header value is empty', () => {
-        const request = new DummyRequest({
-            headers: {
-                'x-forwarded-for': '',
-            },
-            url: '/',
-            parsedHost: 'localhost',
-            socket: {
-                remoteAddress: testClientIp2,
-            },
-        });
-        const result = requestUtils.getClientIp(request, configWithProxy);
-        assert.strictEqual(result, testClientIp2);
-    });
+    it(
+        'should not return client Ip address from header if the request is forwarded from proxies, but the request ' +
+            'has no expected header or the header value is empty',
+        () => {
+            const request = new DummyRequest({
+                headers: {
+                    'x-forwarded-for': '',
+                },
+                url: '/',
+                parsedHost: 'localhost',
+                socket: {
+                    remoteAddress: testClientIp2,
+                },
+            });
+            const result = requestUtils.getClientIp(request, configWithProxy);
+            assert.strictEqual(result, testClientIp2);
+        },
+    );
 
-    it('should not return client Ip address from header if the request comes via proxies and ' +
-        'no request config is available as the proxy is not trusted', () => {
-        const request = new DummyRequest({
-            headers: {
-                'x-forwarded-for': testClientIp1,
-            },
-            url: '/',
-            parsedHost: 'localhost',
-            socket: {
-                remoteAddress: testProxyIp,
-            },
-        });
-        const result = requestUtils.getClientIp(request, configWithoutProxy);
-        assert.strictEqual(result, testProxyIp);
-    });
+    it(
+        'should not return client Ip address from header if the request comes via proxies and ' +
+            'no request config is available as the proxy is not trusted',
+        () => {
+            const request = new DummyRequest({
+                headers: {
+                    'x-forwarded-for': testClientIp1,
+                },
+                url: '/',
+                parsedHost: 'localhost',
+                socket: {
+                    remoteAddress: testProxyIp,
+                },
+            });
+            const result = requestUtils.getClientIp(request, configWithoutProxy);
+            assert.strictEqual(result, testProxyIp);
+        },
+    );
 
-    it('should return client Ip address from socket info if the request comes via proxies and ' +
-        'request config is available and ip check fails', () => {
-        const dummyRemoteIP = '221.10.221.10';
-        const request = new DummyRequest({
-            headers: {
-                'x-forwarded-for': testClientIp1,
-            },
-            url: '/',
-            parsedHost: 'localhost',
-            socket: {
-                remoteAddress: dummyRemoteIP,
-            },
+    it(
+        'should return client Ip address from socket info if the request comes via proxies and ' +
+            'request config is available and ip check fails',
+        () => {
+            const dummyRemoteIP = '221.10.221.10';
+            const request = new DummyRequest({
+                headers: {
+                    'x-forwarded-for': testClientIp1,
+                },
+                url: '/',
+                parsedHost: 'localhost',
+                socket: {
+                    remoteAddress: dummyRemoteIP,
+                },
+            });
+            const result = requestUtils.getClientIp(request, configWithProxy);
+            assert.strictEqual(result, dummyRemoteIP);
+        },
+    );
+
+    describe('with a forwarded-for header from a trusted proxy', () => {
+        const untrustedClientIp = '10.20.30.40';
+        const forgedIp = '10.0.0.1';
+        const trustedLoadBalancerIp = '192.168.101.10';
+
+        const getClientIpFromHeader = header => {
+            const request = new DummyRequest({
+                headers: {
+                    'x-forwarded-for': header,
+                },
+                url: '/',
+                parsedHost: 'localhost',
+                socket: {
+                    remoteAddress: testProxyIp,
+                },
+            });
+            return requestUtils.getClientIp(request, configWithProxy);
+        };
+
+        it('should ignore an address forged by the client left of its own address', () => {
+            const result = getClientIpFromHeader(`${forgedIp}, ${untrustedClientIp}`);
+            assert.strictEqual(result, untrustedClientIp);
         });
-        const result = requestUtils.getClientIp(request, configWithProxy);
-        assert.strictEqual(result, dummyRemoteIP);
+
+        it('should skip trusted proxies right of the client address', () => {
+            const result = getClientIpFromHeader(`${forgedIp}, ${untrustedClientIp}, ${trustedLoadBalancerIp}`);
+            assert.strictEqual(result, untrustedClientIp);
+        });
+
+        it('should return the left-most address if every address is a trusted proxy', () => {
+            const result = getClientIpFromHeader(`${testClientIp1}, ${trustedLoadBalancerIp}`);
+            assert.strictEqual(result, testClientIp1);
+        });
+
+        it('should return the last trusted hop if an entry is not a valid address', () => {
+            const result = getClientIpFromHeader(`${forgedIp}, unknown, ${trustedLoadBalancerIp}`);
+            assert.strictEqual(result, trustedLoadBalancerIp);
+        });
+
+        it('should return the socket peer if the right-most entry is not a valid address', () => {
+            const result = getClientIpFromHeader(`${forgedIp}, ${untrustedClientIp}:5678`);
+            assert.strictEqual(result, testProxyIp);
+        });
+
+        it('should return the only entry if it is not a trusted proxy', () => {
+            const result = getClientIpFromHeader(untrustedClientIp);
+            assert.strictEqual(result, untrustedClientIp);
+        });
+
+        it('should skip several trusted proxies right of the client address', () => {
+            const result = getClientIpFromHeader(
+                `${forgedIp}, ${untrustedClientIp}, ${trustedLoadBalancerIp}, 192.168.102.20`,
+            );
+            assert.strictEqual(result, untrustedClientIp);
+        });
+
+        it('should ignore empty entries forged by the client', () => {
+            const result = getClientIpFromHeader(`${forgedIp}, , ${untrustedClientIp}`);
+            assert.strictEqual(result, untrustedClientIp);
+        });
+
+        it('should read every value of a repeated header', () => {
+            const result = getClientIpFromHeader([forgedIp, untrustedClientIp]);
+            assert.strictEqual(result, untrustedClientIp);
+        });
+
+        it('should return an IPv6 client address', () => {
+            const result = getClientIpFromHeader(`${forgedIp}, 2001:db8::1, ${trustedLoadBalancerIp}`);
+            assert.strictEqual(result, '2001:db8::1');
+        });
+
+        it('should skip a trusted proxy written as an IPv4-mapped IPv6 address', () => {
+            const result = getClientIpFromHeader(`${forgedIp}, ${untrustedClientIp}, ::ffff:${trustedLoadBalancerIp}`);
+            assert.strictEqual(result, untrustedClientIp);
+        });
     });
 });
 
@@ -194,18 +279,18 @@ describe('requestUtils.computeIpAndHttpProtocolSecurity', () => {
         // Create a mock TLS socket that allows property assignment
         const mockTLSSocket = {
             remoteAddress: testClientIp2,
-            encrypted: true
+            encrypted: true,
         };
         // Make it pass instanceof check
         Object.setPrototypeOf(mockTLSSocket, TLSSocket.prototype);
-        
+
         const request = new DummyRequest({
             headers: {},
             url: '/',
             parsedHost: 'localhost',
             socket: mockTLSSocket,
         });
-        
+
         requestUtils.computeIpAndHttpProtocolSecurity(request, configWithoutProxy);
         assert.strictEqual(request.clientIp, testClientIp2);
         assert.strictEqual(request.isSecure, true);
@@ -237,11 +322,11 @@ describe('requestUtils.computeIpAndHttpProtocolSecurity', () => {
                 remoteAddress: testProxyIp,
             },
         });
-        
+
         // Call individual functions first
         const ip = requestUtils.getClientIp(request, configWithProxy);
         const isSecure = requestUtils.getHttpProtocolSecurity(request, configWithProxy);
-        
+
         // Combined function should return cached result
         requestUtils.computeIpAndHttpProtocolSecurity(request, configWithProxy);
         assert.strictEqual(request.clientIp, testClientIp1);
