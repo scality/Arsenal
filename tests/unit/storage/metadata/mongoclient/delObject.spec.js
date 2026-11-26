@@ -90,7 +90,7 @@ describe('MongoClientInterface:delObject', () => {
     it('deleteObjectNoVer:: should fail when internalDeleteObject fails', done => {
         const internalDeleteObjectStub = sinon
             .stub(client, 'internalDeleteObject')
-            .callsArgWith(7, errors.InternalError);
+            .callsArgWith(8, errors.InternalError);
         client.deleteObjectNoVer(null, 'example-bucket', 'example-object', {}, logger, err => {
             assert(internalDeleteObjectStub.calledOnce);
             assert(err.is.InternalError);
@@ -99,7 +99,7 @@ describe('MongoClientInterface:delObject', () => {
     });
 
     it('deleteObjectNoVer:: should not fail', done => {
-        sinon.stub(client, 'internalDeleteObject').callsArgWith(7, null, { ok: 1 });
+        sinon.stub(client, 'internalDeleteObject').callsArgWith(8, null, { ok: 1 });
         client.deleteObjectNoVer(null, 'example-bucket', 'example-object', {}, logger, err => {
             assert.deepStrictEqual(err, null);
             return done();
@@ -121,7 +121,7 @@ describe('MongoClientInterface:delObject', () => {
             findOne: () => Promise.resolve(null),
         };
         sinon.stub(client, 'isLatestLocalizedVersion').callsFake((...args) => args[5](null, false));
-        sinon.stub(client, 'internalDeleteObject').callsArgWith(7, errors.NoSuchKey);
+        sinon.stub(client, 'internalDeleteObject').callsArgWith(8, errors.NoSuchKey);
         client.deleteObjectVer(collection, 'example-bucket', 'example-object', { versionId: '1234' }, logger, err => {
             assert(err.is.NoSuchKey);
             return done();
@@ -201,7 +201,7 @@ describe('MongoClientInterface:delObject', () => {
     });
 
     it('deleteObjectVerNotMaster:: should fail when findOneAndDelete fails', done => {
-        sinon.stub(client, 'internalDeleteObject').callsArgWith(7, errors.InternalError);
+        sinon.stub(client, 'internalDeleteObject').callsArgWith(8, errors.InternalError);
         client.deleteObjectVerNotMaster(null, 'example-bucket', 'example-object', {}, logger, err => {
             assert(err.is.InternalError);
             return done();
@@ -212,8 +212,8 @@ describe('MongoClientInterface:delObject', () => {
         const collection = {
             updateOne: () => Promise.resolve(),
         };
-        sinon.stub(client, 'internalDeleteObject').callsArg(7);
-        sinon.stub(client, 'deleteOrRepairPHD').callsFake((...args) => args[7](errors.InternalError));
+        sinon.stub(client, 'internalDeleteObject').callsArg(8);
+        sinon.stub(client, 'deleteOrRepairPHD').callsFake((...args) => args[8](errors.InternalError));
         client.deleteObjectVerMaster(collection, 'example-bucket', 'example-object', {}, logger, err => {
             assert(err.is.InternalError);
             return done();
@@ -224,8 +224,8 @@ describe('MongoClientInterface:delObject', () => {
         const collection = {
             updateOne: () => Promise.resolve(),
         };
-        sinon.stub(client, 'internalDeleteObject').callsArg(7);
-        sinon.stub(client, 'deleteOrRepairPHD').callsArg(7);
+        sinon.stub(client, 'internalDeleteObject').callsArg(8);
+        sinon.stub(client, 'deleteOrRepairPHD').callsArg(8);
         client.deleteObjectVerMaster(collection, 'example-bucket', 'example-object', {}, logger, err => {
             assert.deepStrictEqual(err, undefined);
             return done();
@@ -235,7 +235,7 @@ describe('MongoClientInterface:delObject', () => {
     it('deleteOrRepairPHD:: should not fail', done => {
         sinon.useFakeTimers();
         sinon.stub(client, 'getLatestVersion').callsFake((...args) => args[4](null, { isDeleteMarker: false }));
-        sinon.stub(client, 'internalDeleteObject').callsArg(7);
+        sinon.stub(client, 'internalDeleteObject').callsArg(8);
         sinon.stub(client, 'asyncRepair');
         client.deleteOrRepairPHD(
             {},
@@ -244,6 +244,7 @@ describe('MongoClientInterface:delObject', () => {
             {},
             'v0',
             's3:ObjectRemoved:Delete',
+            undefined,
             logger,
             err => {
                 assert.deepStrictEqual(err, null);
@@ -285,6 +286,7 @@ describe('MongoClientInterface:delObject', () => {
             null,
             null,
             undefined,
+            undefined,
             logger,
             err => {
                 assert(err.is.NoSuchKey);
@@ -299,10 +301,20 @@ describe('MongoClientInterface:delObject', () => {
             findOneAndUpdate: sinon.stub().resolves({ value: { value: objMD } }),
         };
         const originOp = 's3:TestOriginOp:Created';
-        client.internalDeleteObject(collection, 'example-bucket', 'example-object', {}, null, originOp, logger, () => {
-            assert.deepEqual(collection.bulkWrite.args[0][0][0].updateOne.update.$set.value.originOp, originOp);
-            return done();
-        });
+        client.internalDeleteObject(
+            collection,
+            'example-bucket',
+            'example-object',
+            {},
+            null,
+            originOp,
+            undefined,
+            logger,
+            () => {
+                assert.deepEqual(collection.bulkWrite.args[0][0][0].updateOne.update.$set.value.originOp, originOp);
+                return done();
+            },
+        );
     });
 
     it('internalDeleteObject:: should directly delete object if params.doesNotNeedOpogUpdate is true', done => {
@@ -318,6 +330,7 @@ describe('MongoClientInterface:delObject', () => {
             'example-object',
             null,
             params,
+            undefined,
             undefined,
             logger,
             err => {
@@ -342,6 +355,7 @@ describe('MongoClientInterface:delObject', () => {
             'example-object',
             null,
             null,
+            undefined,
             undefined,
             logger,
             err => {
@@ -369,6 +383,7 @@ describe('MongoClientInterface:delObject', () => {
             'example-object',
             filter,
             null,
+            undefined,
             undefined,
             logger,
             err => {
@@ -419,20 +434,19 @@ describe('MongoClientInterface:internalDeleteObject trace-context plumbing', () 
         sinon.restore();
     });
 
-    it('stamps the active traceContext on the delete tombstone', done => {
-        otel.activateSpan();
-        client.internalDeleteObject(collection, 'bucket', 'example', {}, null, undefined, logger, err => {
+    it('sets the given traceContext on the delete tombstone', done => {
+        const traceContext = { traceparent: otel.TRACEPARENT };
+        client.internalDeleteObject(collection, 'bucket', 'example', {}, null, undefined, traceContext, logger, err => {
             assert.ifError(err);
             assert.ok(bulkWriteArg, 'bulkWrite was called');
             const written = bulkWriteArg[0].updateOne.update.$set.value;
-            assert.deepStrictEqual(written.traceContext, { traceparent: otel.TRACEPARENT });
+            assert.deepStrictEqual(written.traceContext, traceContext);
             done();
         });
     });
 
-    it("clears the loaded objVal's stale traceContext when no span is active", done => {
-        otel.deactivateSpan();
-        client.internalDeleteObject(collection, 'bucket', 'example', {}, null, undefined, logger, err => {
+    it("clears the loaded objVal's stale traceContext when none is given", done => {
+        client.internalDeleteObject(collection, 'bucket', 'example', {}, null, undefined, undefined, logger, err => {
             assert.ifError(err);
             const written = bulkWriteArg[0].updateOne.update.$set.value;
             assert.strictEqual(written.traceContext, undefined);
@@ -442,7 +456,7 @@ describe('MongoClientInterface:internalDeleteObject trace-context plumbing', () 
 
     it('returns NoSuchKey when target object is not found', done => {
         collection.findOneAndUpdate = sinon.stub().callsFake(() => Promise.resolve({ value: null }));
-        client.internalDeleteObject(collection, 'bucket', 'missing', {}, null, undefined, logger, err => {
+        client.internalDeleteObject(collection, 'bucket', 'missing', {}, null, undefined, undefined, logger, err => {
             assert.ok(err);
             assert(err.is.NoSuchKey);
             done();

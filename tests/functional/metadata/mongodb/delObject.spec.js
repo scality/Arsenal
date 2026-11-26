@@ -444,6 +444,17 @@ describe('MongoClientInterface::metadata.deleteObjectMD', () => {
                             ),
                         next => {
                             const bulkWrite = sinon.spy(Collection.prototype, 'bulkWrite');
+                            // the placeholder master delete runs after getLatestVersion, under
+                            // another active span: it must still carry the request's
+                            const otherSpan = trace.getTracer('test').startSpan('other');
+                            const getLatestVersion = metadata.client.getLatestVersion;
+                            sinon
+                                .stub(metadata.client, 'getLatestVersion')
+                                .callsFake((...args) =>
+                                    context.with(trace.setSpan(context.active(), otherSpan), () =>
+                                        getLatestVersion.apply(metadata.client, args),
+                                    ),
+                                );
                             context.with(trace.setSpan(context.active(), span), () =>
                                 metadata.deleteObjectMD(
                                     BUCKET_NAME,
@@ -458,6 +469,7 @@ describe('MongoClientInterface::metadata.deleteObjectMD', () => {
                                             ),
                                         );
                                         bulkWrite.restore();
+                                        metadata.client.getLatestVersion.restore();
                                         // leave the metadata promise chain before asserting
                                         setImmediate(() => next(err));
                                     },

@@ -1,5 +1,5 @@
 import { context, propagation, trace } from '@opentelemetry/api';
-import ObjectMD from '../../models/ObjectMD';
+import ObjectMD, { ObjectMDData } from '../../models/ObjectMD';
 
 /**
  * Stamp the currently-active OTEL W3C trace context onto a
@@ -19,12 +19,14 @@ export function stampActiveTraceContext(objMd: ObjectMD): void;
 export function stampActiveTraceContext(data: Record<string, any>): void;
 export function stampActiveTraceContext(data: ObjectMD | Record<string, any>): void {
     const target: Record<string, any> = data instanceof ObjectMD ? data.getValue() : data;
+    setTraceContext(target, getActiveTraceContext());
+}
 
+export function getActiveTraceContext(): ObjectMDData['traceContext'] {
     const ctx = context.active();
     const span = trace.getSpan(ctx);
     if (!span) {
-        delete target.traceContext;
-        return;
+        return undefined;
     }
 
     const carrier: Record<string, string> = {};
@@ -34,8 +36,7 @@ export function stampActiveTraceContext(data: ObjectMD | Record<string, any>): v
         },
     });
     if (!carrier.traceparent) {
-        delete target.traceContext;
-        return;
+        return undefined;
     }
 
     const out: { traceparent: string; tracestate?: string } = {
@@ -44,5 +45,13 @@ export function stampActiveTraceContext(data: ObjectMD | Record<string, any>): v
     if (carrier.tracestate) {
         out.tracestate = carrier.tracestate;
     }
-    target.traceContext = out;
+    return out;
+}
+
+export function setTraceContext(target: Record<string, any>, traceContext: ObjectMDData['traceContext']): void {
+    if (traceContext) {
+        target.traceContext = traceContext;
+    } else {
+        delete target.traceContext;
+    }
 }
