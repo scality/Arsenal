@@ -102,7 +102,7 @@ describe('MongoClientInterface:deleteObjectWithCond', () => {
         sinon.stub(client, 'getCollection').callsFake(() => ({}));
         sinon.stub(client, 'getBucketVFormat').callsFake((bucketName, log, cb) => cb(null));
         sinon.stub(utils, 'translateConditions').callsFake(() => null);
-        sinon.stub(client, 'internalDeleteObject').callsArgWith(6, errors.InternalError);
+        sinon.stub(client, 'internalDeleteObject').callsArgWith(8, errors.InternalError);
         client.deleteObjectWithCond('example-bucket', 'example-object', {}, logger, err => {
             assert(err.is.InternalError);
             return done();

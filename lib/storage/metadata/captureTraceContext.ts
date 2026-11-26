@@ -1,5 +1,5 @@
 import { context, propagation, trace } from '@opentelemetry/api';
-import ObjectMD from '../../models/ObjectMD';
+import ObjectMD, { ObjectMDData } from '../../models/ObjectMD';
 
 /**
  * Stamp the currently-active OTEL W3C trace context onto a
@@ -9,11 +9,8 @@ import ObjectMD from '../../models/ObjectMD';
  * traceContext so stale context loaded from storage is not carried
  * forward into a new oplog entry.
  *
- * Mongo writes go through `MongoUtils.serialize`, which calls this — so
- * callers there don't invoke this directly. Use this helper directly
- * only at write sites that bypass serialize (e.g. paths that hand off
- * a pre-built `ObjectMDData` to bulkWrite without going through tag
- * escape).
+ * Call it at each write site of a new value. A stored version copied
+ * as is to the master keeps its own trace context and is not stamped.
  *
  * Accepts either an `ObjectMD` instance (stamps onto its underlying
  * `getValue()` object) or a raw metadata object.
@@ -22,12 +19,14 @@ export function stampActiveTraceContext(objMd: ObjectMD): void;
 export function stampActiveTraceContext(data: Record<string, any>): void;
 export function stampActiveTraceContext(data: ObjectMD | Record<string, any>): void {
     const target: Record<string, any> = data instanceof ObjectMD ? data.getValue() : data;
+    setTraceContext(target, getActiveTraceContext());
+}
 
+export function getActiveTraceContext(): ObjectMDData['traceContext'] {
     const ctx = context.active();
     const span = trace.getSpan(ctx);
     if (!span) {
-        delete target.traceContext;
-        return;
+        return undefined;
     }
 
     const carrier: Record<string, string> = {};
@@ -37,8 +36,7 @@ export function stampActiveTraceContext(data: ObjectMD | Record<string, any>): v
         },
     });
     if (!carrier.traceparent) {
-        delete target.traceContext;
-        return;
+        return undefined;
     }
 
     const out: { traceparent: string; tracestate?: string } = {
@@ -47,5 +45,13 @@ export function stampActiveTraceContext(data: ObjectMD | Record<string, any>): v
     if (carrier.tracestate) {
         out.tracestate = carrier.tracestate;
     }
-    target.traceContext = out;
+    return out;
+}
+
+export function setTraceContext(target: Record<string, any>, traceContext: ObjectMDData['traceContext']): void {
+    if (traceContext) {
+        target.traceContext = traceContext;
+    } else {
+        delete target.traceContext;
+    }
 }

@@ -18,7 +18,7 @@ import { ErrorLike, reshapeExceptionError } from '../../../errorUtils';
 import errors, { ArsenalError, errorInstances } from '../../../errors';
 import BucketInfo, { BucketMetadata, Capabilities } from '../../../models/BucketInfo';
 import ObjectMD, { ObjectMDData } from '../../../models/ObjectMD';
-import { stampActiveTraceContext } from '../captureTraceContext';
+import { getActiveTraceContext, setTraceContext, stampActiveTraceContext } from '../captureTraceContext';
 import * as jsutil from '../../../jsutil';
 import { ArsenalCallback, NestedOmit } from '../../../types';
 
@@ -1562,6 +1562,7 @@ class MongoClientInterface {
         cb: ArsenalCallback<string | void>,
     ): void {
         MongoUtils.serialize(objVal);
+        stampActiveTraceContext(objVal);
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
         const _params = Object.assign({}, params);
         return this.getBucketVFormat(bucketName, log, (err, vFormat?) => {
@@ -1915,7 +1916,6 @@ class MongoClientInterface {
     ) {
         const masterKey = formatMasterKey(objName, vFormat);
         MongoUtils.serialize(objVal);
-        objVal.originOp = 's3:ObjectRemoved:Delete';
         c.findOneAndReplace(
             {
                 '_id': masterKey,
@@ -1989,6 +1989,8 @@ class MongoClientInterface {
      * @param {String} objName object name
      * @param {Object} mst master version metadata
      * @param {String} vFormat key format version
+     * @param {String} originOp origin operation
+     * @param {Object} [traceContext] trace context of the request
      * @param {Object} log logger
      * @param {Function} cb callback
      * @return {undefined}
@@ -1999,6 +2001,8 @@ class MongoClientInterface {
         objName: string,
         mst: { versionId: string },
         vFormat: string,
+        originOp: string,
+        traceContext: ObjectMDData['traceContext'],
         log: werelogs.Logger,
         cb: ArsenalCallback<void>,
     ) {
@@ -2023,7 +2027,7 @@ class MongoClientInterface {
                     'value.isPHD': true,
                     'value.versionId': mst.versionId,
                 };
-                this.internalDeleteObject(c, bucketName, masterKey, filter, null, log, err => {
+                this.internalDeleteObject(c, bucketName, masterKey, filter, null, originOp, traceContext, log, err => {
                     if (err) {
                         // the PHD master might get updated when a PUT is performed
                         // before the repair is done, we don't want to return an error
@@ -2067,6 +2071,7 @@ class MongoClientInterface {
      * @param {Object} log logger
      * @param {Function} cb callback
      * @param {String} [originOp=s3:ObjectRemoved:Delete] origin operation
+     * @param {Object} [traceContext] trace context of the request
      * @return {undefined}
      */
     deleteObjectVerMaster(
@@ -2077,6 +2082,7 @@ class MongoClientInterface {
         log: werelogs.Logger,
         cb: ArsenalCallback<void>,
         originOp = 's3:ObjectRemoved:Delete',
+        traceContext?: ObjectMDData['traceContext'],
     ) {
         const masterKey = formatMasterKey(objName, params.vFormat);
         const versionKey = formatVersionKey(objName, params.versionId, params.vFormat);
@@ -2115,6 +2121,8 @@ class MongoClientInterface {
                         versionKey,
                         {},
                         params,
+                        originOp,
+                        traceContext,
                         log,
                         err => {
                             // we don't return an error in case we don't find
@@ -2125,7 +2133,6 @@ class MongoClientInterface {
                             }
                             return next(err);
                         },
-                        originOp,
                     ),
             ],
             err => {
@@ -2137,7 +2144,17 @@ class MongoClientInterface {
                     });
                     return cb(errors.InternalError);
                 }
-                return this.deleteOrRepairPHD(c, bucketName, objName, { versionId: _vid }, params.vFormat, log, cb);
+                return this.deleteOrRepairPHD(
+                    c,
+                    bucketName,
+                    objName,
+                    { versionId: _vid },
+                    params.vFormat,
+                    originOp,
+                    traceContext,
+                    log,
+                    cb,
+                );
             },
         );
     }
@@ -2154,6 +2171,7 @@ class MongoClientInterface {
      * @param {Object} log logger
      * @param {Function} cb callback
      * @param {String} [originOp=s3:ObjectRemoved:Delete] origin operation
+     * @param {Object} [traceContext] trace context of the request
      * @return {undefined}
      */
     deleteObjectVerNotMaster(
@@ -2164,36 +2182,28 @@ class MongoClientInterface {
         log: werelogs.Logger,
         cb: ArsenalCallback<void>,
         originOp = 's3:ObjectRemoved:Delete',
+        traceContext?: ObjectMDData['traceContext'],
     ) {
         const versionKey = formatVersionKey(objName, params.versionId, params.vFormat);
-        this.internalDeleteObject(
-            c,
-            bucketName,
-            versionKey,
-            {},
-            params,
-            log,
-            err => {
-                if (err) {
-                    if (err.is.NoSuchKey) {
-                        log.error('deleteObjectVerNotMaster: unable to find target object to delete', {
-                            error: err.message,
-                            bucket: bucketName,
-                            key: objName,
-                        });
-                        return cb(errors.NoSuchKey);
-                    }
-                    log.error('deleteObjectVerNotMaster: error deleting object with no version', {
+        this.internalDeleteObject(c, bucketName, versionKey, {}, params, originOp, traceContext, log, err => {
+            if (err) {
+                if (err.is.NoSuchKey) {
+                    log.error('deleteObjectVerNotMaster: unable to find target object to delete', {
                         error: err.message,
                         bucket: bucketName,
                         key: objName,
                     });
-                    return cb(errors.InternalError);
+                    return cb(errors.NoSuchKey);
                 }
-                return cb(null);
-            },
-            originOp,
-        );
+                log.error('deleteObjectVerNotMaster: error deleting object with no version', {
+                    error: err.message,
+                    bucket: bucketName,
+                    key: objName,
+                });
+                return cb(errors.InternalError);
+            }
+            return cb(null);
+        });
     }
 
     /**
@@ -2210,6 +2220,7 @@ class MongoClientInterface {
      * @param {Object} log logger
      * @param {Function} cb callback
      * @param {String} [originOp=s3:ObjectRemoved:Delete] origin operation
+     * @param {Object} [traceContext] trace context of the request
      * @return {undefined}
      */
     deleteObjectVer(
@@ -2220,6 +2231,7 @@ class MongoClientInterface {
         log: werelogs.Logger,
         cb: ArsenalCallback<void>,
         originOp = 's3:ObjectRemoved:Delete',
+        traceContext?: ObjectMDData['traceContext'],
     ) {
         const masterKey = formatMasterKey(objName, params.vFormat);
         async.waterfall(
@@ -2253,9 +2265,27 @@ class MongoClientInterface {
                 },
                 (isMaster, next) => {
                     if (isMaster) {
-                        return this.deleteObjectVerMaster(c, bucketName, objName, params, log, next, originOp);
+                        return this.deleteObjectVerMaster(
+                            c,
+                            bucketName,
+                            objName,
+                            params,
+                            log,
+                            next,
+                            originOp,
+                            traceContext,
+                        );
                     }
-                    return this.deleteObjectVerNotMaster(c, bucketName, objName, params, log, next, originOp);
+                    return this.deleteObjectVerNotMaster(
+                        c,
+                        bucketName,
+                        objName,
+                        params,
+                        log,
+                        next,
+                        originOp,
+                        traceContext,
+                    );
                 },
             ],
             (err: ArsenalError | null | undefined) => {
@@ -2277,6 +2307,7 @@ class MongoClientInterface {
      * @param {Object} log logger
      * @param {Function} cb callback
      * @param {String} [originOp=s3:ObjectRemoved:Delete] origin operation
+     * @param {Object} [traceContext] trace context of the request
      * @return {undefined}
      */
     deleteObjectNoVer(
@@ -2287,32 +2318,24 @@ class MongoClientInterface {
         log: werelogs.Logger,
         cb: ArsenalCallback<void>,
         originOp = 's3:ObjectRemoved:Delete',
+        traceContext?: ObjectMDData['traceContext'],
     ) {
         const masterKey = formatMasterKey(objName, params.vFormat);
-        this.internalDeleteObject(
-            c,
-            bucketName,
-            masterKey,
-            {},
-            params,
-            log,
-            err => {
-                if (err) {
-                    if (err.is.NoSuchKey) {
-                        return cb(null);
-                    }
-
-                    log.error('deleteObjectNoVer: error deleting object with no version', {
-                        error: err.message,
-                        bucket: bucketName,
-                        key: objName,
-                    });
-                    return cb(err);
+        this.internalDeleteObject(c, bucketName, masterKey, {}, params, originOp, traceContext, log, err => {
+            if (err) {
+                if (err.is.NoSuchKey) {
+                    return cb(null);
                 }
-                return cb(null);
-            },
-            originOp,
-        );
+
+                log.error('deleteObjectNoVer: error deleting object with no version', {
+                    error: err.message,
+                    bucket: bucketName,
+                    key: objName,
+                });
+                return cb(err);
+            }
+            return cb(null);
+        });
     }
 
     /**
@@ -2324,10 +2347,11 @@ class MongoClientInterface {
      * @param {string} key Key of the object to delete
      * @param {object} filter additional query filters
      * @param {object} params request params
+     * @param {String} [originOp=s3:ObjectRemoved:Delete] origin operation
+     * @param {Object} [traceContext] trace context of the request
      * @param {Logger} log logger instance
      * @param {Function} cb callback containing error
      * and BulkWriteResult
-     * @param {String} [originOp=s3:ObjectRemoved:Delete] origin operation
      * @return {undefined}
      */
     internalDeleteObject(
@@ -2336,9 +2360,10 @@ class MongoClientInterface {
         key: string,
         filter: UpdateFilter<ObjectMetastoreDocument>,
         params: ObjectMDOperationParams | null,
+        originOp = 's3:ObjectRemoved:Delete',
+        traceContext: ObjectMDData['traceContext'],
         log: werelogs.Logger,
         cb: ArsenalCallback<unknown>,
-        originOp = 's3:ObjectRemoved:Delete',
     ) {
         // filter used when deleting object
         const deleteFilter = Object.assign(
@@ -2425,7 +2450,7 @@ class MongoClientInterface {
                             const objMetadata = new ObjectMD(obj.value);
                             objMetadata.setOriginOp(originOp);
                             objMetadata.setDeleted(true);
-                            stampActiveTraceContext(objMetadata);
+                            setTraceContext(objMetadata.getValue(), traceContext);
                             return next(null, objMetadata.getValue());
                         })
                         .catch(err => {
@@ -2518,15 +2543,16 @@ class MongoClientInterface {
     ) {
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
         const _params = Object.assign({}, params);
+        const traceContext = getActiveTraceContext();
         return this.getBucketVFormat(bucketName, log, (err, vFormat?) => {
             if (err) {
                 return cb(err);
             }
             _params.vFormat = vFormat;
             if (_params && _params.versionId) {
-                return this.deleteObjectVer(c, bucketName, objName, _params, log, cb, originOp);
+                return this.deleteObjectVer(c, bucketName, objName, _params, log, cb, originOp, traceContext);
             }
-            return this.deleteObjectNoVer(c, bucketName, objName, _params, log, cb, originOp);
+            return this.deleteObjectNoVer(c, bucketName, objName, _params, log, cb, originOp, traceContext);
         });
     }
 
@@ -3247,6 +3273,7 @@ class MongoClientInterface {
     ) {
         const c = this.getCollection<ObjectMetastoreDocument>(bucketName);
         const method = 'deleteObjectWithCond';
+        const traceContext = getActiveTraceContext();
         this.getBucketVFormat(bucketName, log, (err, vFormat?) => {
             if (err) {
                 return cb(err);
@@ -3261,24 +3288,34 @@ class MongoClientInterface {
                 });
                 return cb(errors.InternalError);
             }
-            return this.internalDeleteObject(c, bucketName, masterKey, filter, null, log, err => {
-                if (err) {
-                    // unable to find an object that matches the conditions
-                    if (err.is.NoSuchKey) {
-                        log.error('unable to find target object to delete', {
+            return this.internalDeleteObject(
+                c,
+                bucketName,
+                masterKey,
+                filter,
+                null,
+                undefined,
+                traceContext,
+                log,
+                err => {
+                    if (err) {
+                        // unable to find an object that matches the conditions
+                        if (err.is.NoSuchKey) {
+                            log.error('unable to find target object to delete', {
+                                method,
+                                filter,
+                            });
+                            return cb(errors.NoSuchKey);
+                        }
+                        log.error('error occurred when attempting to delete object', {
                             method,
-                            filter,
+                            error: err.message,
                         });
-                        return cb(errors.NoSuchKey);
+                        return cb(errors.InternalError);
                     }
-                    log.error('error occurred when attempting to delete object', {
-                        method,
-                        error: err.message,
-                    });
-                    return cb(errors.InternalError);
-                }
-                return cb(null);
-            });
+                    return cb(null);
+                },
+            );
         });
     }
 
