@@ -78,6 +78,10 @@ describe('BucketClientInterface', () => {
         bucketClient = new BucketClientInterface(params, mockBucketClient, logger);
     });
 
+    it('should not advertise supportsConditionalPut', () => {
+        assert.strictEqual(Boolean(bucketClient.supportsConditionalPut), false);
+    });
+
     afterEach(() => {
         sandbox.restore();
     });

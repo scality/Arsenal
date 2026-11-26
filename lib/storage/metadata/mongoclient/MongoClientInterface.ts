@@ -65,6 +65,16 @@ const __COUNT_ITEMS = 'countitems';
 const ASYNC_REPAIR_TIMEOUT = 15000;
 const MONGODB_DUPLICATE_KEY_ERROR = 11000;
 
+/**
+ * @param params - put params
+ * @return - true when the put is conditional on the master (If-None-Match or If-Match)
+ */
+function isConditionalPut(params?: ObjectMDOperationParams): boolean {
+    return (
+        params !== undefined && params !== null && (params.ifNoneMatch !== undefined || params.ifMatch !== undefined)
+    );
+}
+
 const MONGO_CONNECT_TIMEOUT_MS = process.env.MONGO_CONNECT_TIMEOUT_MS;
 const MONGO_SOCKET_TIMEOUT_MS = process.env.MONGO_SOCKET_TIMEOUT_MS;
 const MONGO_POOL_SIZE = process.env.MONGO_POOL_SIZE;
@@ -140,6 +150,8 @@ export type ObjectMDOperationParams = {
     doesNotNeedOpogUpdate?: boolean;
     conditions: any;
     hideNonLocalizedVersions?: boolean;
+    ifNoneMatch?: string;
+    ifMatch?: string;
 };
 
 export type InternalListObjectParams = {
@@ -277,6 +289,7 @@ class MongoClientInterface {
     private isConnected = false;
 
     readonly supportsHideNonLocalizedVersions = true;
+    readonly supportsConditionalPut = true;
 
     constructor(params: MongoDBClientInterfaceParameters) {
         const {
@@ -900,6 +913,197 @@ class MongoClientInterface {
     }
 
     /**
+     * Filter of a write on the master that only matches when the condition
+     * of a conditional put holds. With If-None-Match, only a delete-marker
+     * master matches, an absent one is inserted by the upsert of the caller.
+     * Placeholders and masters flagged as being deleted never match.
+     * @param masterKey - key of the master
+     * @param params - put params, with ifNoneMatch or ifMatch
+     * @param newVersionId - version id of a new version, to keep the master
+     *   from moving to an older version
+     * @return - the filter
+     */
+    conditionalMasterFilter(
+        masterKey: string,
+        params: ObjectMDOperationParams,
+        newVersionId?: string,
+    ): Record<string, any> {
+        const filter: Record<string, any> = {
+            '_id': masterKey,
+            'value.isPHD': { $ne: true },
+            'value.deleted': { $ne: true },
+        };
+        if (params.ifNoneMatch !== undefined) {
+            filter['value.isDeleteMarker'] = true;
+        } else {
+            filter['value.content-md5'] = params.ifMatch;
+            filter['value.isDeleteMarker'] = { $ne: true };
+        }
+        if (newVersionId !== undefined) {
+            filter.$or = [{ 'value.versionId': { $exists: false } }, { 'value.versionId': { $gt: newVersionId } }];
+        }
+        return filter;
+    }
+
+    /**
+     * Choose the error of a conditional put whose write did not match.
+     * Nothing was written, so this read only classifies and needs no atomicity.
+     * @param c - bucket collection
+     * @param masterKey - key of the master
+     * @param params - put params, with ifNoneMatch or ifMatch
+     * @param log - logger
+     * @param cb - always called with an error
+     * @return {undefined}
+     */
+    classifyConditionalFailure(
+        c: Collection<ObjectMetastoreDocument>,
+        masterKey: string,
+        params: ObjectMDOperationParams,
+        log: werelogs.Logger,
+        cb: ArsenalCallback<never>,
+    ) {
+        const ifNoneMatch = params.ifNoneMatch !== undefined;
+        return c
+            .findOne({ _id: masterKey })
+            .then(doc => {
+                const master = doc?.value;
+                let err: ArsenalError;
+                if (!master) {
+                    // with If-None-Match, the master was there a moment ago
+                    err = ifNoneMatch ? errors.ConditionalRequestConflict : errors.NoSuchKey;
+                } else if (master.isPHD || master.deleted) {
+                    err = errors.ConditionalRequestConflict;
+                } else if (master.isDeleteMarker) {
+                    // with If-None-Match, only the version guard can have failed
+                    err = ifNoneMatch ? errors.ConditionalRequestConflict : errors.NoSuchKey;
+                } else if (ifNoneMatch || master['content-md5'] !== params.ifMatch) {
+                    err = errors.PreconditionFailed;
+                } else {
+                    // equal content-md5: only the version guard can have failed
+                    err = errors.ConditionalRequestConflict;
+                }
+                log.debug('conditional put rejected', { masterKey, error: err.message });
+                return cb(err);
+            })
+            .catch(err => {
+                log.error('classifyConditionalFailure: error reading master', { error: err.message });
+                return cb(errors.InternalError);
+            });
+    }
+
+    /**
+     * Conditional put of the master alone, in one single-document operation
+     * whose filter carries the condition.
+     * @param c - bucket collection
+     * @param masterKey - key of the master
+     * @param objVal - object metadata
+     * @param params - put params, with ifNoneMatch or ifMatch
+     * @param log - logger
+     * @param cb - callback(err)
+     * @return {undefined}
+     */
+    putMasterConditional(
+        c: Collection<ObjectMetastoreDocument>,
+        masterKey: string,
+        objVal: ObjectMDData,
+        params: ObjectMDOperationParams,
+        log: werelogs.Logger,
+        cb: ArsenalCallback<void>,
+    ) {
+        const filter = this.conditionalMasterFilter(masterKey, params);
+        if (params.ifNoneMatch !== undefined) {
+            // a master that is an object does not match: the upsert then
+            // inserts an _id that exists and fails with a duplicate key
+            return c
+                .updateOne(filter, { $set: { _id: masterKey, value: objVal } }, { upsert: true })
+                .then(() => cb(null))
+                .catch(err => {
+                    if (err.code === MONGODB_DUPLICATE_KEY_ERROR) {
+                        return this.classifyConditionalFailure(c, masterKey, params, log, cb);
+                    }
+                    log.error('putMasterConditional: error putting object', { error: err.message });
+                    return cb(errors.InternalError);
+                });
+        }
+        return c
+            .updateOne(filter, { $set: { value: objVal } }, { upsert: false })
+            .then(res => {
+                if (res.matchedCount === 0) {
+                    return this.classifyConditionalFailure(c, masterKey, params, log, cb);
+                }
+                return cb(null);
+            })
+            .catch(err => {
+                log.error('putMasterConditional: error putting object', { error: err.message });
+                return cb(errors.InternalError);
+            });
+    }
+
+    /**
+     * Conditional put of a new version in a versioned bucket. The master is
+     * written first, with the condition and the version guard in its filter:
+     * it is the commit point, so nothing is written when the condition fails.
+     * The version entry is inserted next; if that fails, the master is put
+     * back as long as it still holds this version. See Mongoclient.md.
+     * @param c - bucket collection
+     * @param masterKey - key of the master
+     * @param versionKey - key of the new version
+     * @param objVal - object metadata, with its new versionId
+     * @param params - put params, with ifNoneMatch or ifMatch
+     * @param log - logger
+     * @param cb - callback(err, versionInfo)
+     * @return {undefined}
+     */
+    putObjectVerCase1Conditional(
+        c: Collection<ObjectMetastoreDocument>,
+        masterKey: string,
+        versionKey: string,
+        objVal: ObjectMDData,
+        params: ObjectMDOperationParams,
+        log: werelogs.Logger,
+        cb: ArsenalCallback<string>,
+    ) {
+        const versionId = objVal.versionId;
+        const ifNoneMatch = params.ifNoneMatch !== undefined;
+        const filter = this.conditionalMasterFilter(masterKey, params, versionId);
+        return c
+            .findOneAndUpdate(
+                filter,
+                { $set: { _id: masterKey, value: objVal } },
+                { upsert: ifNoneMatch, returnDocument: 'before' },
+            )
+            .then(before => {
+                if (!before && !ifNoneMatch) {
+                    return this.classifyConditionalFailure(c, masterKey, params, log, cb);
+                }
+                return c
+                    .insertOne({ _id: versionKey, value: objVal } as ObjectMetastoreDocument)
+                    .then(() => cb(null, `{"versionId": "${versionId}"}`))
+                    .catch(err => {
+                        log.error('putObjectVerCase1: error inserting the version after a conditional put', {
+                            error: err.message,
+                        });
+                        const ours = { '_id': masterKey, 'value.versionId': versionId };
+                        const undo = before ? c.updateOne(ours, { $set: { value: before.value } }) : c.deleteOne(ours);
+                        return undo
+                            .catch(undoErr =>
+                                log.error('putObjectVerCase1: error putting the master back', {
+                                    error: undoErr.message,
+                                }),
+                            )
+                            .then(() => cb(errors.InternalError));
+                    });
+            })
+            .catch(err => {
+                if (err.code === MONGODB_DUPLICATE_KEY_ERROR) {
+                    return this.classifyConditionalFailure(c, masterKey, params, log, cb);
+                }
+                log.error('putObjectVerCase1: error putting the master conditionally', { error: err.message });
+                return cb(errors.InternalError);
+            });
+    }
+
+    /**
      * In this case we generate a versionId and
      * sequentially create the object THEN update the master.
      * Master is deleted when version put is a delete marker
@@ -936,6 +1140,14 @@ class MongoClientInterface {
         objVal.versionId = versionId;
         const versionKey = formatVersionKey(objName, versionId, params.vFormat);
         const masterKey = formatMasterKey(objName, params.vFormat);
+        if (isConditionalPut(params)) {
+            if (objVal.isDeleteMarker || !this.isLocalized(objVal)) {
+                cb(errors.NotImplemented);
+            } else {
+                this.putObjectVerCase1Conditional(c, masterKey, versionKey, objVal, params, log, cb);
+            }
+            return;
+        }
         // initiating array of operations with version creation
         const ops: AnyBulkWriteOperation<ObjectMetastoreDocument>[] = [
             {
@@ -1070,6 +1282,11 @@ class MongoClientInterface {
             });
             return cb(errors.InternalError);
         }
+        if (isConditionalPut(params)) {
+            return this.putMasterConditional(c, masterKey, objVal, params, log, err =>
+                err ? cb(err) : cb(null, `{"versionId": "${objVal.versionId}"}`),
+            );
+        }
         return c
             .updateOne(
                 { _id: masterKey },
@@ -1112,6 +1329,9 @@ class MongoClientInterface {
         log: werelogs.Logger,
         cb: ArsenalCallback<string>,
     ) {
+        if (isConditionalPut(params)) {
+            return cb(errors.NotImplemented);
+        }
         objVal.versionId = params.versionId;
         const versionKey = formatVersionKey(objName, params.versionId, params.vFormat);
         const masterKey = formatMasterKey(objName, params.vFormat);
@@ -1255,6 +1475,10 @@ class MongoClientInterface {
         log: werelogs.Logger,
         cb: ArsenalCallback<string>,
     ) {
+        if (isConditionalPut(params)) {
+            cb(errors.NotImplemented);
+            return;
+        }
         const versionKey = formatVersionKey(objName, params.versionId, params.vFormat);
         const masterKey = formatMasterKey(objName, params.vFormat);
         c.updateOne(
@@ -1384,6 +1608,9 @@ class MongoClientInterface {
             return this.putObjectNoVerWithOplogUpdate(collection, bucketName, objName, value, params, log, cb);
         }
         const key = formatMasterKey(objName, params.vFormat);
+        if (isConditionalPut(params)) {
+            return this.putMasterConditional(collection, key, value, params, log, cb);
+        }
         const putFilter = { _id: key };
         return collection
             .updateOne(
@@ -1434,10 +1661,13 @@ class MongoClientInterface {
         const key = formatMasterKey(objName, params.vFormat);
         const putFilter = { _id: key };
         // filter used when finding and updating object
+        const isConditional = isConditionalPut(params);
         const findFilter = {
             ...putFilter,
             $or: [{ 'value.deleted': { $exists: false } }, { 'value.deleted': { $eq: false } }],
+            ...(isConditional ? this.conditionalMasterFilter(key, params) : {}),
         };
+        let conditionalErr: ArsenalError | null = null;
         const updateDeleteFilter = {
             ...putFilter,
             'value.deleted': true,
@@ -1458,6 +1688,12 @@ class MongoClientInterface {
                             },
                         )
                         .then(doc => {
+                            if (!doc?.value && isConditional) {
+                                return this.classifyConditionalFailure(collection, key, params, log, err => {
+                                    conditionalErr = err;
+                                    return next(err);
+                                });
+                            }
                             if (!doc?.value) {
                                 log.error('internalPutObject: unable to find target object to update', {
                                     bucket: bucketName,
@@ -1511,6 +1747,9 @@ class MongoClientInterface {
                         .catch(next),
             ],
             err => {
+                if (conditionalErr && !conditionalErr.is.InternalError) {
+                    return cb(conditionalErr);
+                }
                 if (err) {
                     log.error('internalPutObject: error updating object', {
                         bucket: bucketName,

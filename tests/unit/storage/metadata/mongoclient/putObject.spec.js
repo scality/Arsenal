@@ -1057,3 +1057,326 @@ describe('MongoClientInterface:putObjectNoVerWithOplogUpdate trace-context plumb
         );
     });
 });
+
+describe('MongoClientInterface: conditional puts on the master', () => {
+    const md5A = '9b2cf535f27731c974343645a3985328';
+    const md5B = '3c6e0b8a9c15224a8228b9a98ca1531d';
+    const v0 = { vFormat: BucketVersioningKeyFormat.v0 };
+    let client;
+
+    function call(fn, ...args) {
+        return new Promise(resolve => fn.call(client, ...args, log, (err, res) => resolve({ err, res })));
+    }
+
+    function dupKey() {
+        return Object.assign(new Error('E11000 duplicate key error'), { code: 11000 });
+    }
+
+    const notDeleting = { 'value.isPHD': { $ne: true }, 'value.deleted': { $ne: true } };
+
+    beforeAll(() => {
+        client = new MongoClientInterface({});
+    });
+
+    afterEach(() => sinon.restore());
+
+    it('putObjectNoVer with ifNoneMatch should upsert with the delete-marker filter', async () => {
+        const collection = { updateOne: sinon.stub().resolves({ matchedCount: 0, upsertedCount: 1 }) };
+        const value = { 'content-md5': md5B };
+        const { err } = await call(client.putObjectNoVer, collection, 'b', 'key', value, { ...v0, ifNoneMatch: '*' });
+        assert.ifError(err);
+        assert(collection.updateOne.calledOnce);
+        assert.deepStrictEqual(collection.updateOne.firstCall.args, [
+            { '_id': 'key', ...notDeleting, 'value.isDeleteMarker': true },
+            { $set: { _id: 'key', value } },
+            { upsert: true },
+        ]);
+    });
+
+    it('putObjectNoVer with ifNoneMatch should classify a duplicate key as PreconditionFailed', async () => {
+        const collection = {
+            updateOne: sinon.stub().rejects(dupKey()),
+            findOne: sinon.stub().resolves({ _id: 'key', value: { 'content-md5': md5A } }),
+        };
+        const { err } = await call(client.putObjectNoVer, collection, 'b', 'key', {}, { ...v0, ifNoneMatch: '*' });
+        assert(err && err.is.PreconditionFailed);
+        assert.deepStrictEqual(collection.findOne.firstCall.args, [{ _id: 'key' }]);
+    });
+
+    it('putObjectNoVer with ifMatch should not upsert and should classify a missing master as NoSuchKey', async () => {
+        const collection = {
+            updateOne: sinon.stub().resolves({ matchedCount: 0 }),
+            findOne: sinon.stub().resolves(null),
+        };
+        const value = { 'content-md5': md5B };
+        const { err } = await call(client.putObjectNoVer, collection, 'b', 'key', value, { ...v0, ifMatch: md5A });
+        assert(err && err.is.NoSuchKey);
+        assert.deepStrictEqual(collection.updateOne.firstCall.args, [
+            { '_id': 'key', ...notDeleting, 'value.content-md5': md5A, 'value.isDeleteMarker': { $ne: true } },
+            { $set: { value } },
+            { upsert: false },
+        ]);
+    });
+
+    it('putObjectNoVer with ifMatch should succeed when the master matches', async () => {
+        const collection = { updateOne: sinon.stub().resolves({ matchedCount: 1 }) };
+        const { err } = await call(client.putObjectNoVer, collection, 'b', 'key', {}, { ...v0, ifMatch: md5A });
+        assert.ifError(err);
+    });
+
+    it('putObjectNoVerWithOplogUpdate with a condition should classify a miss instead of InternalError', async () => {
+        const collection = {
+            findOneAndUpdate: sinon.stub().resolves(null),
+            findOne: sinon.stub().resolves({ _id: 'key', value: { 'content-md5': md5A } }),
+            bulkWrite: sinon.stub().resolves({}),
+        };
+        const params = { ...v0, needOplogUpdate: true, originOp: 's3:ObjectCreated:Put', ifMatch: md5B };
+        const { err } = await call(client.putObjectNoVer, collection, 'b', 'key', {}, params);
+        assert(err && err.is.PreconditionFailed);
+        assert.strictEqual(collection.findOneAndUpdate.firstCall.args[0]['value.content-md5'], md5B);
+        assert(collection.bulkWrite.notCalled);
+    });
+
+    it('putObjectVerCase2 with a condition should use the same filters', async () => {
+        const collection = {
+            updateOne: sinon.stub().rejects(dupKey()),
+            findOne: sinon.stub().resolves({ _id: 'key', value: { 'content-md5': md5A } }),
+        };
+        let res = await call(client.putObjectVerCase2, collection, 'b', 'key', {}, { ...v0, ifNoneMatch: '*' });
+        assert(res.err && res.err.is.PreconditionFailed);
+        assert.deepStrictEqual(collection.updateOne.firstCall.args[0], {
+            '_id': 'key',
+            ...notDeleting,
+            'value.isDeleteMarker': true,
+        });
+
+        collection.updateOne = sinon.stub().resolves({ matchedCount: 0 });
+        res = await call(client.putObjectVerCase2, collection, 'b', 'key', {}, { ...v0, ifMatch: md5B });
+        assert(res.err && res.err.is.PreconditionFailed);
+        assert.strictEqual(collection.updateOne.firstCall.args[2].upsert, false);
+
+        collection.updateOne = sinon.stub().resolves({ matchedCount: 1 });
+        res = await call(client.putObjectVerCase2, collection, 'b', 'key', {}, { ...v0, ifMatch: md5A });
+        assert.ifError(res.err);
+        assert(res.res.includes('"versionId"'));
+    });
+
+    it('putObjectVerCase1 with a condition should write the master before the version entry', async () => {
+        const collection = {
+            findOneAndUpdate: sinon.stub().resolves(null),
+            insertOne: sinon.stub().resolves({}),
+            bulkWrite: sinon.stub().resolves({}),
+        };
+        const value = { 'content-md5': md5B };
+        let res = await call(client.putObjectVerCase1, collection, 'b', 'key', value, {
+            ...v0,
+            versioning: true,
+            ifNoneMatch: '*',
+        });
+        assert.ifError(res.err);
+        sinon.assert.callOrder(collection.findOneAndUpdate, collection.insertOne);
+        assert(collection.bulkWrite.notCalled);
+        const versionId = value.versionId;
+        const [filter, update, options] = collection.findOneAndUpdate.firstCall.args;
+        assert.deepStrictEqual(filter, {
+            '_id': 'key',
+            ...notDeleting,
+            'value.isDeleteMarker': true,
+            '$or': [{ 'value.versionId': { $exists: false } }, { 'value.versionId': { $gt: versionId } }],
+        });
+        assert.deepStrictEqual(update, { $set: { _id: 'key', value } });
+        assert.deepStrictEqual(options, { upsert: true, returnDocument: 'before' });
+        assert.strictEqual(collection.insertOne.firstCall.args[0]._id, `key\0${versionId}`);
+        assert(res.res.includes(versionId));
+
+        collection.findOneAndUpdate = sinon.stub().resolves({ _id: 'key', value: { 'content-md5': md5A } });
+        collection.insertOne = sinon.stub().resolves({});
+        res = await call(
+            client.putObjectVerCase1,
+            collection,
+            'b',
+            'key',
+            { 'content-md5': md5B },
+            {
+                ...v0,
+                versioning: true,
+                ifMatch: md5A,
+            },
+        );
+        assert.ifError(res.err);
+        assert.strictEqual(collection.findOneAndUpdate.firstCall.args[0]['value.content-md5'], md5A);
+        assert.deepStrictEqual(collection.findOneAndUpdate.firstCall.args[2], {
+            upsert: false,
+            returnDocument: 'before',
+        });
+        sinon.assert.callOrder(collection.findOneAndUpdate, collection.insertOne);
+    });
+
+    it('putObjectVerCase1 should write nothing when the master does not match', async () => {
+        const collection = {
+            findOneAndUpdate: sinon.stub().rejects(dupKey()),
+            findOne: sinon.stub().resolves({ _id: 'key', value: { 'content-md5': md5A, 'versionId': 'zzz' } }),
+            insertOne: sinon.stub().resolves({}),
+            bulkWrite: sinon.stub().resolves({}),
+        };
+        let res = await call(
+            client.putObjectVerCase1,
+            collection,
+            'b',
+            'key',
+            {},
+            {
+                ...v0,
+                versioning: true,
+                ifNoneMatch: '*',
+            },
+        );
+        assert(res.err && res.err.is.PreconditionFailed);
+        collection.findOneAndUpdate = sinon.stub().resolves(null);
+        res = await call(
+            client.putObjectVerCase1,
+            collection,
+            'b',
+            'key',
+            {},
+            {
+                ...v0,
+                versioning: true,
+                ifMatch: md5B,
+            },
+        );
+        assert(res.err && res.err.is.PreconditionFailed);
+        assert(collection.insertOne.notCalled);
+        assert(collection.bulkWrite.notCalled);
+    });
+
+    it('putObjectVerCase1 should restore the master when the version insert fails', async () => {
+        const collection = {
+            findOneAndUpdate: sinon.stub().resolves(null),
+            insertOne: sinon.stub().rejects(new Error('insert failed')),
+            deleteOne: sinon.stub().resolves({}),
+            updateOne: sinon.stub().resolves({}),
+        };
+        const value = {};
+        let res = await call(client.putObjectVerCase1, collection, 'b', 'key', value, {
+            ...v0,
+            versioning: true,
+            ifNoneMatch: '*',
+        });
+        assert(res.err && res.err.is.InternalError);
+        assert.deepStrictEqual(collection.deleteOne.firstCall.args[0], {
+            '_id': 'key',
+            'value.versionId': value.versionId,
+        });
+        assert(collection.updateOne.notCalled);
+
+        const previous = { 'content-md5': md5A, 'versionId': 'older' };
+        collection.findOneAndUpdate = sinon.stub().resolves({ _id: 'key', value: previous });
+        collection.deleteOne = sinon.stub().resolves({});
+        const value2 = {};
+        res = await call(client.putObjectVerCase1, collection, 'b', 'key', value2, {
+            ...v0,
+            versioning: true,
+            ifMatch: md5A,
+        });
+        assert(res.err && res.err.is.InternalError);
+        assert.deepStrictEqual(collection.updateOne.firstCall.args, [
+            { '_id': 'key', 'value.versionId': value2.versionId },
+            { $set: { value: previous } },
+        ]);
+        assert(collection.deleteOne.notCalled);
+    });
+
+    it('putObjectVerCase1 with a condition should refuse a delete marker', async () => {
+        const collection = { findOneAndUpdate: sinon.stub(), bulkWrite: sinon.stub() };
+        const res = await call(
+            client.putObjectVerCase1,
+            collection,
+            'b',
+            'key',
+            { isDeleteMarker: true },
+            {
+                ...v0,
+                versioning: true,
+                ifNoneMatch: '*',
+            },
+        );
+        assert(res.err && res.err.is.NotImplemented);
+        assert(collection.findOneAndUpdate.notCalled);
+        assert(collection.bulkWrite.notCalled);
+    });
+
+    it(
+        'classifyConditionalFailure should return ' +
+            'ConditionalRequestConflict for a placeholder, a deleted flag or a lost version guard',
+        async () => {
+            const cases = [
+                [{ isPHD: true, versionId: 'v' }, { ifNoneMatch: '*' }, 'ConditionalRequestConflict'],
+                [{ isPHD: true, versionId: 'v' }, { ifMatch: md5A }, 'ConditionalRequestConflict'],
+                [{ 'content-md5': md5A, 'deleted': true }, { ifNoneMatch: '*' }, 'ConditionalRequestConflict'],
+                [{ 'content-md5': md5A, 'deleted': true }, { ifMatch: md5A }, 'ConditionalRequestConflict'],
+                [{ 'content-md5': md5A }, { ifMatch: md5A }, 'ConditionalRequestConflict'],
+                [{ isDeleteMarker: true }, { ifNoneMatch: '*' }, 'ConditionalRequestConflict'],
+                [null, { ifNoneMatch: '*' }, 'ConditionalRequestConflict'],
+                [{ isDeleteMarker: true }, { ifMatch: md5A }, 'NoSuchKey'],
+                [null, { ifMatch: md5A }, 'NoSuchKey'],
+                [{ 'content-md5': md5A }, { ifNoneMatch: '*' }, 'PreconditionFailed'],
+                [{ 'content-md5': md5B }, { ifMatch: md5A }, 'PreconditionFailed'],
+            ];
+            for (const [master, params, expected] of cases) {
+                const collection = { findOne: sinon.stub().resolves(master ? { _id: 'key', value: master } : null) };
+                const { err } = await call(client.classifyConditionalFailure, collection, 'key', params);
+                assert(err && err.is[expected], `${JSON.stringify(master)} ${JSON.stringify(params)}: ${expected}`);
+            }
+            const failing = { findOne: sinon.stub().rejects(new Error('read failed')) };
+            const { err } = await call(client.classifyConditionalFailure, failing, 'key', { ifNoneMatch: '*' });
+            assert(err && err.is.InternalError);
+        },
+    );
+
+    it('putObjectVerCase3 and putObjectVerCase4 with a condition should return NotImplemented', async () => {
+        const collection = { findOne: sinon.stub(), bulkWrite: sinon.stub(), updateOne: sinon.stub() };
+        for (const fn of [client.putObjectVerCase3, client.putObjectVerCase4]) {
+            for (const cond of [{ ifNoneMatch: '*' }, { ifMatch: md5A }]) {
+                const { err } = await call(fn, collection, 'b', 'key', {}, { ...v0, versionId: 'v1', ...cond });
+                assert(err && err.is.NotImplemented);
+            }
+        }
+        assert(collection.findOne.notCalled);
+        assert(collection.bulkWrite.notCalled);
+        assert(collection.updateOne.notCalled);
+    });
+
+    it('puts without condition should send the same operations as before', async () => {
+        const collection = {
+            updateOne: sinon.stub().resolves({}),
+            bulkWrite: sinon.stub().resolves({}),
+            findOneAndUpdate: sinon.stub(),
+            insertOne: sinon.stub(),
+        };
+        const value = { 'content-md5': md5A };
+        await call(client.putObjectNoVer, collection, 'b', 'key', value, { ...v0 });
+        assert.deepStrictEqual(collection.updateOne.firstCall.args, [
+            { _id: 'key' },
+            { $set: { _id: 'key', value } },
+            { upsert: true },
+        ]);
+        await call(client.putObjectVerCase2, collection, 'b', 'key', value, { ...v0, versionId: '' });
+        assert.deepStrictEqual(collection.updateOne.secondCall.args, [
+            { _id: 'key' },
+            { $set: { value }, $setOnInsert: { _id: 'key' } },
+            { upsert: true },
+        ]);
+        const value1 = { 'content-md5': md5B };
+        await call(client.putObjectVerCase1, collection, 'b', 'key', value1, { ...v0, versioning: true });
+        const ops = collection.bulkWrite.firstCall.args[0];
+        assert.strictEqual(ops.length, 2);
+        assert.deepStrictEqual(ops[0], { insertOne: { document: { _id: `key\0${value1.versionId}`, value: value1 } } });
+        assert.deepStrictEqual(ops[1].updateOne.filter, {
+            _id: 'key',
+            $or: [{ 'value.versionId': { $exists: false } }, { 'value.versionId': { $gt: value1.versionId } }],
+        });
+        assert(collection.findOneAndUpdate.notCalled);
+        assert(collection.insertOne.notCalled);
+    });
+});

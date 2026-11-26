@@ -1532,3 +1532,217 @@ describe('test versioning request processor', () => {
         });
     });
 });
+
+describe('test VRP conditional put', () => {
+    const md5A = '9b2cf535f27731c974343645a3985328';
+    const md5B = '3c6e0b8a9c15224a8228b9a98ca1531d';
+    const objA = JSON.stringify({ 'content-md5': md5A });
+    const objB = JSON.stringify({ 'content-md5': md5B });
+    let store;
+    let batches;
+    let pro;
+
+    beforeEach(() => {
+        store = {};
+        batches = [];
+        const api = {
+            get: (request, log, callback) =>
+                setTimeout(() => {
+                    const value = store[request.key];
+                    return value !== undefined ? callback(null, value) : callback(errors.ObjNotFound);
+                }),
+            list: dbapi.list,
+            batch: (request, log, callback) => {
+                batches.push(request.array);
+                setTimeout(() => {
+                    request.array.forEach(op => {
+                        if (op.type === 'del') {
+                            delete store[op.key];
+                        } else {
+                            store[op.key] = op.value;
+                        }
+                    });
+                    callback(null);
+                }, batchDelayGen());
+            },
+        };
+        const condWgm = new WGM(api);
+        pro = new VRP(new WriteCache(condWgm), condWgm, vcfg);
+    });
+
+    function put(value, options, cb) {
+        pro.put({ db: 'foo', key: 'bar', value, options }, logger, cb);
+    }
+
+    function masterMd5() {
+        return store.bar === undefined ? undefined : JSON.parse(store.bar)['content-md5'];
+    }
+
+    function versionKeys() {
+        return Object.keys(store).filter(k => k.startsWith(`bar${VID_SEP}`));
+    }
+
+    it('ifNoneMatch should write when the key is absent', done => {
+        put(objA, { ifNoneMatch: '*' }, err => {
+            assert.ifError(err);
+            assert.strictEqual(masterMd5(), md5A);
+            done();
+        });
+    });
+
+    it('ifNoneMatch should fail with PreconditionFailed and keep the object when the key exists', done => {
+        store.bar = objA;
+        put(objB, { ifNoneMatch: '*', versioning: true }, err => {
+            assert(err && err.is.PreconditionFailed);
+            assert.strictEqual(masterMd5(), md5A);
+            assert.strictEqual(batches.length, 0);
+            done();
+        });
+    });
+
+    it('ifNoneMatch should write over a delete marker master', done => {
+        store.bar = JSON.stringify({ isDeleteMarker: true, versionId: 'old' });
+        put(objB, { ifNoneMatch: '*', versioning: true }, err => {
+            assert.ifError(err);
+            assert.strictEqual(masterMd5(), md5B);
+            assert.strictEqual(versionKeys().length, 1);
+            done();
+        });
+    });
+
+    it('ifMatch should write when content-md5 is equal', done => {
+        store.bar = objA;
+        put(objB, { ifMatch: md5A }, err => {
+            assert.ifError(err);
+            assert.strictEqual(masterMd5(), md5B);
+            done();
+        });
+    });
+
+    it('ifMatch should fail with PreconditionFailed when content-md5 differs', done => {
+        store.bar = objA;
+        put(objB, { ifMatch: md5B }, err => {
+            assert(err && err.is.PreconditionFailed);
+            assert.strictEqual(masterMd5(), md5A);
+            assert.strictEqual(batches.length, 0);
+            done();
+        });
+    });
+
+    it('ifMatch should fail with NoSuchKey when the key is absent or a delete marker', done => {
+        put(objB, { ifMatch: md5A }, err => {
+            assert(err && err.is.NoSuchKey);
+            assert.strictEqual(store.bar, undefined);
+            store.bar = JSON.stringify({ 'isDeleteMarker': true, 'versionId': 'old', 'content-md5': md5A });
+            put(objB, { ifMatch: md5A, versioning: true }, err => {
+                assert(err && err.is.NoSuchKey);
+                assert.strictEqual(batches.length, 0);
+                done();
+            });
+        });
+    });
+
+    it('conditions should apply with versioning true and with versionId empty', done => {
+        async.eachSeries(
+            [{ versioning: true }, { versionId: '' }],
+            (mode, next) => {
+                store = {};
+                async.series(
+                    [
+                        cb => put(objA, { ...mode, ifNoneMatch: '*' }, cb),
+                        cb =>
+                            put(objB, { ...mode, ifNoneMatch: '*' }, err => {
+                                assert(err && err.is.PreconditionFailed);
+                                cb();
+                            }),
+                        cb =>
+                            put(objB, { ...mode, ifMatch: md5B }, err => {
+                                assert(err && err.is.PreconditionFailed);
+                                cb();
+                            }),
+                        cb => put(objB, { ...mode, ifMatch: md5A }, cb),
+                    ],
+                    err => {
+                        assert.ifError(err);
+                        assert.strictEqual(masterMd5(), md5B);
+                        next();
+                    },
+                );
+            },
+            done,
+        );
+    });
+
+    it('a condition with a non-empty versionId should return NotImplemented', done => {
+        put(objA, { ifNoneMatch: '*', versionId: fixedVersionId }, err => {
+            assert(err && err.is.NotImplemented);
+            put(objA, { ifMatch: md5A, versionId: 'null' }, err => {
+                assert(err && err.is.NotImplemented);
+                assert.strictEqual(batches.length, 0);
+                done();
+            });
+        });
+    });
+
+    it('a conditional put on a placeholder master should return ConditionalRequestConflict and write nothing', done => {
+        store.bar = Version.generatePHDVersion(fixedVersionId);
+        put(objB, { ifNoneMatch: '*', versioning: true }, err => {
+            assert(err && err.is.ConditionalRequestConflict);
+            put(objB, { ifMatch: md5A }, err => {
+                assert(err && err.is.ConditionalRequestConflict);
+                assert.strictEqual(batches.length, 0);
+                assert.strictEqual(store.bar, Version.generatePHDVersion(fixedVersionId));
+                done();
+            });
+        });
+    });
+
+    it('two conditional puts issued before either batch completes should give one success', done => {
+        const count = 16;
+        async.times(
+            count,
+            (i, next) =>
+                setTimeout(
+                    () =>
+                        put(
+                            JSON.stringify({ 'content-md5': `md5-${i}` }),
+                            { ifNoneMatch: '*', versioning: true },
+                            err => next(null, err),
+                        ),
+                    i % 3,
+                ),
+            (err, results) => {
+                assert.ifError(err);
+                assert.strictEqual(results.filter(e => !e).length, 1);
+                assert.strictEqual(results.filter(e => e && e.is.PreconditionFailed).length, count - 1);
+                assert.strictEqual(versionKeys().length, 1);
+                assert.strictEqual(batches.length, 1);
+                done();
+            },
+        );
+    });
+
+    it('a put without condition should produce the same batch as before', done => {
+        async.series(
+            [
+                cb => put(objA, undefined, cb),
+                cb => put(objB, { versioning: true }, cb),
+                cb => put(objA, { versionId: '' }, cb),
+            ],
+            err => {
+                assert.ifError(err);
+                assert.strictEqual(batches.length, 3);
+                assert.deepStrictEqual(batches[0], [{ key: 'bar', value: objA }]);
+                assert.strictEqual(batches[1].length, 2);
+                assert.strictEqual(batches[1][0].key, 'bar');
+                assert(batches[1][1].key.startsWith(`bar${VID_SEP}`));
+                assert.strictEqual(batches[1][0].value, batches[1][1].value);
+                assert.strictEqual(JSON.parse(batches[1][0].value)['content-md5'], md5B);
+                assert.strictEqual(batches[2].length, 1);
+                assert.strictEqual(batches[2][0].key, 'bar');
+                assert.strictEqual(JSON.parse(batches[2][0].value)['content-md5'], md5A);
+                done();
+            },
+        );
+    });
+});

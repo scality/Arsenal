@@ -393,14 +393,72 @@ export default class VersioningRequestProcessor {
             );
         };
 
-        if (versionId) {
-            return this.processVersionSpecificPut(request, logger, versioningCb);
+        const processPut = () => {
+            if (versionId) {
+                return this.processVersionSpecificPut(request, logger, versioningCb);
+            }
+            if (versioning) {
+                return this.processNewVersionPut(request, logger, versioningCb);
+            }
+            // no versioning or versioning configuration off
+            return this.writeCache.batch({ db, array: [{ key, value }] }, logger, callback);
+        };
+
+        if (options && (options.ifNoneMatch !== undefined || options.ifMatch !== undefined)) {
+            // a conditional put is only defined on the master
+            if (options.versionId) {
+                return callback(errors.NotImplemented);
+            }
+            // Invariant: nothing asynchronous may run between this get callback
+            // and writeCache.batch. The branches of processPut() reach batch()
+            // synchronously and batch() caches the new value before returning,
+            // so a concurrent conditional put on the same key either is called
+            // back after that value was cached or reads it from the cache.
+            return this.writeCache.get({ db, key }, logger, (err, data) => {
+                if (err && !err.is.ObjNotFound) {
+                    return callback(err);
+                }
+                const conditionErr = this._checkMasterCondition(err ? undefined : data, options);
+                if (conditionErr) {
+                    return callback(conditionErr);
+                }
+                return processPut();
+            });
         }
-        if (versioning) {
-            return this.processNewVersionPut(request, logger, versioningCb);
+        return processPut();
+    }
+
+    /**
+     * Evaluate the condition of a conditional put (options.ifNoneMatch or
+     * options.ifMatch) against the current master value.
+     *
+     * @param data - stringified master, undefined when there is none
+     * @param options - put options
+     * @return - the error to return, or null when the condition holds
+     */
+    _checkMasterCondition(data: string | undefined, options: any): ArsenalError | null {
+        if (data === undefined) {
+            return options.ifNoneMatch !== undefined ? null : errors.NoSuchKey;
         }
-        // no versioning or versioning configuration off
-        return this.writeCache.batch({ db, array: [{ key, value }] }, logger, callback);
+        if (Version.isPHD(data)) {
+            return errors.ConditionalRequestConflict;
+        }
+        if (Version.isDeleteMarker(data)) {
+            return options.ifNoneMatch !== undefined ? null : errors.NoSuchKey;
+        }
+        if (options.ifNoneMatch !== undefined) {
+            return errors.PreconditionFailed;
+        }
+        let master;
+        try {
+            master = JSON.parse(data);
+        } catch {
+            return errors.InternalError;
+        }
+        if (master['content-md5'] !== options.ifMatch) {
+            return errors.PreconditionFailed;
+        }
+        return null;
     }
 
     /**
