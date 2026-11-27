@@ -154,6 +154,10 @@ export type InternalListObjectParams = {
     start?: undefined;
     gt?: undefined;
     hideNonLocalizedVersions?: boolean;
+    // For ListObjects on a v0 bucket. v0 stores each version right after its master (`key`, then
+    // `key\0versionId`), so the query returns every version and delete marker along with the masters.
+    // Drop the versions and the delete markers in the query instead of reading them just to throw them away.
+    excludeVersionsAndDeleteMarkers?: boolean;
 };
 
 export interface UsedCapacityMetrics {
@@ -2582,13 +2586,23 @@ class MongoClientInterface {
         });
         if (!params.secondaryStreamParams) {
             // listing masters only (DelimiterMaster)
-            stream = new MongoReadStream(c, params.mainStreamParams, params.mongifiedSearch, nonLocalizedFilter);
+            const mainStreamFilter = params.excludeVersionsAndDeleteMarkers
+                ? {
+                      // version keys are `${key}\0${versionId}`, object keys never contain `\0`
+                      // (escaped `\x00` in the regex source: a BSON regex cannot hold a raw NUL)
+                      // eslint-disable-next-line no-control-regex
+                      _id: { $not: /\x00/ },
+                      'value.isDeleteMarker': { $ne: true },
+                      ...nonLocalizedFilter,
+                  }
+                : nonLocalizedFilter;
+            stream = new MongoReadStream(c, params.mainStreamParams, params.mongifiedSearch, mainStreamFilter);
             baseStream = stream;
-            if (vFormat === BUCKET_VERSIONS.v1) {
+            if (vFormat === BUCKET_VERSIONS.v1 || params.excludeVersionsAndDeleteMarkers) {
                 /**
-                 * When listing masters only in v1 we can't just skip PHD
-                 * we have to replace them with the latest version of
-                 * the object.
+                 * When listing masters only in v1, or in v0 without the
+                 * version keys, we can't just skip PHD: we have to replace
+                 * them with the latest version of the object.
                  * Here we use a trasform stream that we pipe with the
                  * mongo read steam and that checks and replaces the key
                  * read if it's a PHD
@@ -2597,9 +2611,10 @@ class MongoClientInterface {
                     objectMode: true,
                     transform(obj, encoding, callback) {
                         if (Version.isPHD(obj.value)) {
-                            const key = obj.key.slice(DB_PREFIXES.Master.length);
+                            const key =
+                                vFormat === BUCKET_VERSIONS.v1 ? obj.key.slice(DB_PREFIXES.Master.length) : obj.key;
                             // ignore hideNonLocalizedVersions: the master is the latest localized version
-                            getLatestVersion(c, key, BUCKET_VERSIONS.v1, log, (err, version?) => {
+                            getLatestVersion(c, key, vFormat, log, (err, version?) => {
                                 if (err) {
                                     // ignoring PHD keys with no versions as all versions
                                     // might get deleted before the PHD key gets resolved by the listing
@@ -2738,6 +2753,7 @@ class MongoClientInterface {
                 mongifiedSearch: params.mongifiedSearch,
                 // masters always point at a localized version, so only the version listings have anything to hide
                 hideNonLocalizedVersions: params.hideNonLocalizedVersions && extName === 'DelimiterVersions',
+                excludeVersionsAndDeleteMarkers: extName === 'DelimiterMaster' && vFormat === BUCKET_VERSIONS.v0,
             };
             return this.internalListObject(bucketName, internalParams, extension, vFormat, log, cb);
         });
